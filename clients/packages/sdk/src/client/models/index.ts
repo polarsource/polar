@@ -6720,31 +6720,6 @@ export interface OrganizationFeatureSettings {
 /**
  * 
  * @export
- * @interface OrganizationFeatureSettingsUpdate
- */
-export interface OrganizationFeatureSettingsUpdate {
-    /**
-     * 
-     * @type {boolean}
-     * @memberof OrganizationFeatureSettingsUpdate
-     */
-    articles_enabled?: boolean;
-    /**
-     * 
-     * @type {boolean}
-     * @memberof OrganizationFeatureSettingsUpdate
-     */
-    subscriptions_enabled?: boolean;
-    /**
-     * 
-     * @type {boolean}
-     * @memberof OrganizationFeatureSettingsUpdate
-     */
-    issue_funding_enabled?: boolean;
-}
-/**
- * 
- * @export
  * @interface OrganizationMember
  */
 export interface OrganizationMember {
@@ -6807,43 +6782,6 @@ export interface OrganizationProfileSettings {
 /**
  * 
  * @export
- * @interface OrganizationProfileSettingsUpdate
- */
-export interface OrganizationProfileSettingsUpdate {
-    /**
-     * 
-     * @type {boolean}
-     * @memberof OrganizationProfileSettingsUpdate
-     */
-    set_description?: boolean;
-    /**
-     * 
-     * @type {string}
-     * @memberof OrganizationProfileSettingsUpdate
-     */
-    description?: string;
-    /**
-     * 
-     * @type {Array<string>}
-     * @memberof OrganizationProfileSettingsUpdate
-     */
-    featured_projects?: Array<string>;
-    /**
-     * 
-     * @type {Array<string>}
-     * @memberof OrganizationProfileSettingsUpdate
-     */
-    featured_organizations?: Array<string>;
-    /**
-     * 
-     * @type {Array<string>}
-     * @memberof OrganizationProfileSettingsUpdate
-     */
-    links?: Array<string>;
-}
-/**
- * 
- * @export
  * @interface OrganizationSetAccount
  */
 export interface OrganizationSetAccount {
@@ -6875,12 +6813,6 @@ export interface OrganizationStripePortalSession {
 export interface OrganizationUpdate {
     /**
      * 
-     * @type {boolean}
-     * @memberof OrganizationUpdate
-     */
-    set_default_upfront_split_to_contributors?: boolean;
-    /**
-     * 
      * @type {number}
      * @memberof OrganizationUpdate
      */
@@ -6899,12 +6831,6 @@ export interface OrganizationUpdate {
     billing_email?: string;
     /**
      * 
-     * @type {boolean}
-     * @memberof OrganizationUpdate
-     */
-    set_default_badge_custom_content?: boolean;
-    /**
-     * 
      * @type {string}
      * @memberof OrganizationUpdate
      */
@@ -6917,22 +6843,10 @@ export interface OrganizationUpdate {
     pledge_minimum_amount?: number;
     /**
      * 
-     * @type {boolean}
-     * @memberof OrganizationUpdate
-     */
-    set_total_monthly_spending_limit?: boolean;
-    /**
-     * 
      * @type {number}
      * @memberof OrganizationUpdate
      */
     total_monthly_spending_limit?: number;
-    /**
-     * 
-     * @type {boolean}
-     * @memberof OrganizationUpdate
-     */
-    set_per_user_monthly_spending_limit?: boolean;
     /**
      * 
      * @type {number}
@@ -6953,16 +6867,16 @@ export interface OrganizationUpdate {
     public_donation_timestamps?: boolean;
     /**
      * 
-     * @type {OrganizationProfileSettingsUpdate}
+     * @type {OrganizationProfileSettings}
      * @memberof OrganizationUpdate
      */
-    profile_settings?: OrganizationProfileSettingsUpdate;
+    profile_settings?: OrganizationProfileSettings;
     /**
      * 
-     * @type {OrganizationFeatureSettingsUpdate}
+     * @type {OrganizationFeatureSettings}
      * @memberof OrganizationUpdate
      */
-    feature_settings?: OrganizationFeatureSettingsUpdate;
+    feature_settings?: OrganizationFeatureSettings;
 }
 /**
  * 

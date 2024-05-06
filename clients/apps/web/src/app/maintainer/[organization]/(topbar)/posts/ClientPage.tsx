@@ -25,6 +25,7 @@ import {
 } from '@mui/icons-material'
 import { Article } from '@polar-sh/sdk'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { PolarTimeAgo } from 'polarkit/components/ui/atoms'
 import Button from 'polarkit/components/ui/atoms/button'
 import { Card } from 'polarkit/components/ui/atoms/card'
@@ -96,6 +97,8 @@ const ClientPage = () => {
   const showNoPostsYet =
     !showPosts && posts.data?.items && posts.data.items.length === 0
 
+  const router = useRouter()
+
   const enablePosts = async () => {
     if (!org) return
 
@@ -109,6 +112,9 @@ const ClientPage = () => {
             articles_enabled: true,
           },
         },
+      })
+      .then(() => {
+        router.refresh()
       })
       .catch(() => {
         setEnablingPosts(false)

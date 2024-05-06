@@ -452,7 +452,6 @@ async def update_badge_settings(
         org_update.pledge_minimum_amount = settings.minimum_amount
 
     if settings.message:
-        org_update.set_default_badge_custom_content = True
         org_update.default_badge_custom_content = settings.message
 
     await organization.update_settings(session, org, org_update)

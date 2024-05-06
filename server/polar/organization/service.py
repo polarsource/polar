@@ -23,6 +23,7 @@ from polar.worker import enqueue_job
 from .schemas import (
     OrganizationCreateFromGitHubInstallation,
     OrganizationCreateFromGitHubUser,
+    OrganizationFeatureSettings,
     OrganizationProfileSettings,
     OrganizationUpdate,
 )
@@ -220,6 +221,10 @@ class OrganizationService(ResourceServiceReader[Organization]):
             organization.profile_settings
         )
 
+        feature_settings = OrganizationFeatureSettings.model_validate(
+            organization.feature_settings
+        )
+
         if settings.profile_settings is not None:
             if settings.profile_settings.set_description:
                 profile_settings.description = (
@@ -244,10 +249,22 @@ class OrganizationService(ResourceServiceReader[Organization]):
             organization.profile_settings = profile_settings.model_dump(mode="json")
 
         if settings.feature_settings is not None:
-            organization.feature_settings = {
-                **organization.feature_settings,
-                **settings.feature_settings.model_dump(mode="json", exclude_unset=True),
-            }
+            if settings.feature_settings.issue_funding_enabled is not None:
+                feature_settings.issue_funding_enabled = (
+                    settings.feature_settings.issue_funding_enabled
+                )
+
+            if settings.feature_settings.articles_enabled is not None:
+                feature_settings.articles_enabled = (
+                    settings.feature_settings.articles_enabled
+                )
+
+            if settings.feature_settings.subscriptions_enabled is not None:
+                feature_settings.subscriptions_enabled = (
+                    settings.feature_settings.subscriptions_enabled
+                )
+
+            organization.feature_settings = feature_settings.model_dump(mode="json")
 
         if settings.donations_enabled is not None:
             organization.donations_enabled = settings.donations_enabled

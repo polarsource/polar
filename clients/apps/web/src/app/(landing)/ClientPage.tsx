@@ -14,8 +14,8 @@ import {
   FavoriteBorderOutlined,
   HowToVoteOutlined,
   PercentOutlined,
+  StickyNote2Outlined,
   SyncAltOutlined,
-  TextSnippet,
   TextSnippetOutlined,
 } from '@mui/icons-material'
 import { SubscriptionTier, UserSignupType } from '@polar-sh/sdk'
@@ -29,7 +29,7 @@ import { twMerge } from 'tailwind-merge'
 
 const Box = ({ children }: PropsWithChildren) => {
   return (
-    <div className="flex flex-row bg-white">
+    <div className="dark:bg-polar-900 flex flex-row bg-white">
       <AnimatedSeparator
         className="hidden md:block"
         orientation="vertical"
@@ -102,7 +102,7 @@ const HeroSection = () => {
         viewport={{ once: true }}
       >
         <div className="flex flex-col gap-y-8">
-          <h1 className="text-pretty text-4xl leading-tight text-gray-950">
+          <h1 className="dark:text-polar-50 text-pretty text-4xl leading-tight text-gray-950">
             Get paid coding on your passion
           </h1>
           <p className="text-xl leading-relaxed text-gray-500">
@@ -139,9 +139,17 @@ const HeroSection = () => {
         className="flex-grow md:hidden"
         orientation="horizontal"
       />
-      <div className="flex flex-col items-center justify-center bg-gray-50 p-12 md:w-3/5">
+      <div className="dark:bg-polar-800 flex flex-col items-center justify-center bg-gray-50 p-12 md:w-3/5">
         <Image
+          className="block dark:hidden"
           src="/assets/landing/subscriptions_view.webp"
+          alt="Polar Subscriptions Page"
+          width={800}
+          height={640}
+        />
+        <Image
+          className="hidden dark:block"
+          src="/assets/landing/subscriptions_view_dark.png"
           alt="Polar Subscriptions Page"
           width={800}
           height={640}
@@ -170,7 +178,7 @@ const BenefitsUpsell = () => {
       />
       <div className="flex flex-col gap-y-12 pr-6 md:w-1/2 md:pr-24">
         <div className="flex flex-col gap-y-8">
-          <h1 className="text-pretty text-4xl  leading-tight text-gray-950">
+          <h1 className="dark:text-polar-50 text-pretty text-4xl leading-tight text-gray-950">
             Powerful & built-in subscription benefits
           </h1>
           <p className="text-xl leading-relaxed text-gray-500">
@@ -182,12 +190,12 @@ const BenefitsUpsell = () => {
         <div className="flex flex-col gap-y-8">
           <ul className="flex flex-col gap-y-4">
             <li className="flex flex-row gap-x-4">
-              <TextSnippet className="text-blue-500" />
+              <StickyNote2Outlined className="text-blue-500" />
               <div className="flex flex-col">
-                <span className="font-medium text-gray-950">
+                <span className="dark:text-polar-50 font-medium text-gray-950">
                   Premium posts & newsletter
                 </span>
-                <p className="text-sm text-gray-500">
+                <p className="dark:text-polar-500 text-sm text-gray-500">
                   Offer your paid subscribers early sneak peaks, educational
                   content, code examples and more.
                 </p>
@@ -196,10 +204,10 @@ const BenefitsUpsell = () => {
             <li className="flex flex-row gap-x-4">
               <GitHubIcon width={30} height={30} className="text-blue-500" />
               <div className="flex flex-col">
-                <span className="font-medium text-gray-950">
+                <span className="dark:text-polar-50 font-medium text-gray-950">
                   Access to private GitHub repositories
                 </span>
-                <p className="text-sm text-gray-500">
+                <p className="dark:text-polar-500 text-sm text-gray-500">
                   Enabling early access, sponsorware, self-hosted products,
                   starter kits, courses and so much more.
                 </p>
@@ -208,10 +216,10 @@ const BenefitsUpsell = () => {
             <li className="flex flex-row gap-x-4">
               <DiscordIcon size={30} className="text-blue-500" />
               <div className="flex flex-col">
-                <span className="font-medium text-gray-950">
+                <span className="dark:text-polar-50 font-medium text-gray-950">
                   Discord invites
                 </span>
-                <p className="text-sm text-gray-500">
+                <p className="dark:text-polar-500 text-sm text-gray-500">
                   Setup custom roles per tier. Enabling membership channels to
                   individuals & support for businesses.
                 </p>
@@ -220,10 +228,10 @@ const BenefitsUpsell = () => {
             <li className="flex flex-row gap-x-4">
               <BoltOutlined className="text-blue-500" />
               <div className="flex flex-col">
-                <span className="font-medium text-gray-950">
+                <span className="dark:text-polar-50 font-medium text-gray-950">
                   Sponsorship 2.0
                 </span>
-                <p className="text-sm text-gray-500">
+                <p className="dark:text-polar-500 text-sm text-gray-500">
                   Offer logo promotions on README, sites and posts. Polar will
                   automate it. No more manual overhead.
                 </p>
@@ -270,16 +278,18 @@ const FeaturesUpsell = () => {
     return (
       <div
         className={twMerge(
-          'flex flex-col items-center justify-center gap-12 overflow-hidden border-gray-200 p-12 text-center',
+          'dark:border-polar-700 flex flex-col items-center justify-center gap-12 overflow-hidden border-gray-200 p-12 text-center',
           className,
         )}
       >
         <div className="flex w-full flex-col items-center justify-center gap-y-4">
           <Icon className="text-blue-500" fontSize="large" />
-          <h3 className="text-pretty text-xl font-medium text-gray-950">
+          <h3 className="dark:text-polar-50 text-pretty text-xl font-medium text-gray-950">
             {title}
           </h3>
-          <p className="text-pretty text-gray-500">{description}</p>
+          <p className="dark:text-polar-500 text-pretty text-gray-500">
+            {description}
+          </p>
         </div>
         {children}
       </div>
@@ -306,7 +316,7 @@ const FeaturesUpsell = () => {
             (tier) => (
               <SubscriptionTierCard
                 key={tier.id}
-                className="h-full w-[280px] border-none ring-1 ring-gray-100"
+                className="dark:ring-polar-700 h-full w-[280px] border-none ring-1 ring-gray-100"
                 variant="small"
                 subscriptionTier={tier}
               >
@@ -384,12 +394,16 @@ const DevelopersUpsell = () => {
     return (
       <Link
         href={href}
-        className="bg-gray-75 flex flex-col items-center gap-y-6 p-8"
+        className="bg-gray-75 dark:bg-polar-800 flex flex-col items-center gap-y-6 p-8"
       >
         <Avatar className="h-16 w-16" avatar_url={avatarUrl} name={name} />
         <div className="flex flex-col items-center gap-y-2 text-center">
-          <h3 className="font-medium text-gray-950">{name}</h3>
-          <p className="text-sm text-gray-500">{description}</p>
+          <h3 className="dark:text-polar-50 font-medium text-gray-950">
+            {name}
+          </h3>
+          <p className="dark:text-polar-500 text-sm text-gray-500">
+            {description}
+          </p>
         </div>
       </Link>
     )
@@ -473,14 +487,14 @@ const DevelopersUpsell = () => {
       <AnimatedSeparator className="md:hidden" orientation="horizontal" />
       <div className="flex flex-col gap-y-12 px-6 py-16 md:w-1/2 md:px-16">
         <div className="flex flex-col gap-y-8">
-          <h1 className="text-pretty text-4xl  leading-tight text-gray-950">
+          <h1 className="dark:text-polar-50 text-pretty text-4xl leading-tight text-gray-950">
             Serving world-class developers
           </h1>
-          <p className="text-xl leading-relaxed text-gray-500">
+          <p className="dark:text-polar-500 text-xl leading-relaxed text-gray-500">
             We&apos;re proud to support incredible developers and open source
             initiatives that are shaping the future.
           </p>
-          <p className="text-xl leading-relaxed text-gray-500">
+          <p className="dark:text-polar-500 text-xl leading-relaxed text-gray-500">
             Join us today.
           </p>
         </div>
@@ -503,7 +517,9 @@ const Pricing = () => {
         <span className="text-blue-500">{children}</span>
         <div className="flex flex-col gap-2">
           <h1 className="text-xl leading-snug">{title}</h1>
-          <p className="text-lg text-gray-500">{description}</p>
+          <p className="dark:text-polar-500 text-lg text-gray-500">
+            {description}
+          </p>
         </div>
       </div>
     )
@@ -518,7 +534,7 @@ const Pricing = () => {
       whileInView="animate"
       viewport={{ once: true }}
     >
-      <h1 className="px-6 py-24 text-4xl text-gray-950 md:px-16 md:text-center">
+      <h1 className="dark:text-polar-50 px-6 py-24 text-4xl text-gray-950 md:px-16 md:text-center">
         Pricing
       </h1>
 
@@ -562,7 +578,7 @@ const SignUpBanner = () => {
       whileInView="animate"
       viewport={{ once: true }}
     >
-      <h1 className="text-center text-4xl leading-snug text-gray-950">
+      <h1 className="dark:text-polar-50 text-center text-4xl leading-snug text-gray-950">
         We&apos;ve run out of sales pitches
       </h1>
 

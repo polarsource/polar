@@ -2,8 +2,11 @@
 
 import { organizationPageLink } from '@/utils/nav'
 import { CheckCircleIcon } from '@heroicons/react/24/outline'
+import { FavoriteBorderOutlined } from '@mui/icons-material'
 import { Issue, IssueStateEnum, Label } from '@polar-sh/sdk'
+import Link from 'next/link'
 import { PolarTimeAgo } from 'polarkit/components/ui/atoms'
+import Button from 'polarkit/components/ui/atoms/button'
 import { twMerge } from 'tailwind-merge'
 import IconCounter from './IconCounter'
 import IssueLabel from './IssueLabel'
@@ -14,6 +17,7 @@ interface IssueSummaryProps {
   showLogo?: boolean
   showStatus?: boolean
   right?: React.ReactElement
+  linkToFunding?: boolean
 }
 
 const IssueSummary: React.FC<IssueSummaryProps> = ({
@@ -21,6 +25,7 @@ const IssueSummary: React.FC<IssueSummaryProps> = ({
   showLogo,
   showStatus,
   right,
+  linkToFunding,
 }) => {
   const {
     title,
@@ -51,6 +56,12 @@ const IssueSummary: React.FC<IssueSummaryProps> = ({
 
   const markdownTitle = generateMarkdownTitle(title)
 
+  const fundingLink = organizationPageLink(
+    organization,
+    `${repository.name}/issues/${number}`,
+  )
+  linkToFunding = linkToFunding !== undefined ? linkToFunding : true
+
   return (
     <div className="dark:md:hover:bg-polar-800 duration-50 dark:text-polar-50 md:hover:bg-gray-75 group flex flex-col items-start justify-between gap-4 overflow-hidden px-6 py-4 pb-5 md:flex-row md:items-center md:rounded-2xl">
       <div className="flex flex-row items-center">
@@ -69,15 +80,18 @@ const IssueSummary: React.FC<IssueSummaryProps> = ({
 
         <div className="flex flex-col gap-2">
           <div className="flex flex-wrap items-start gap-x-4 gap-y-2">
-            <a
-              className="text-md dark:text-polar-50 text-nowrap font-medium"
-              href={organizationPageLink(
-                organization,
-                `${repository.name}/issues/${number}`,
-              )}
-            >
-              {markdownTitle}
-            </a>
+            {linkToFunding ? (
+              <Link
+                className="text-md dark:text-polar-50 text-nowrap font-medium"
+                href={fundingLink}
+              >
+                {markdownTitle}
+              </Link>
+            ) : (
+              <span className="text-md dark:text-polar-50 text-nowrap font-medium">
+                {markdownTitle}
+              </span>
+            )}
 
             {issue.labels &&
               issue.labels.map((label: Label) => {
@@ -86,7 +100,13 @@ const IssueSummary: React.FC<IssueSummaryProps> = ({
           </div>
           <div className="dark:text-polar-400 text-xs text-gray-500">
             <p>
-              #{number}{' '}
+              <a
+                href={`https://github.com/${organization.name}/${repository.name}/issues/${number}`}
+                className="text-gray-700"
+                rel="nofollow"
+              >
+                #{number}
+              </a>{' '}
               {isOpen ? (
                 <>
                   opened <PolarTimeAgo date={createdAt} />
@@ -132,6 +152,12 @@ const IssueSummary: React.FC<IssueSummaryProps> = ({
           )}
         </div>
 
+        <Link href={fundingLink} className="font-medium text-blue-500">
+          <Button size="sm" variant="secondary" asChild>
+            <FavoriteBorderOutlined fontSize="inherit" />
+            <span className="ml-1.5">Fund</span>
+          </Button>
+        </Link>
         {right}
       </div>
     </div>

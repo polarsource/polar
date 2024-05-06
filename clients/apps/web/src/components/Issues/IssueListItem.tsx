@@ -93,6 +93,7 @@ const IssueListItem = (props: {
               {props.right}
             </>
           }
+          linkToFunding={!props.canAddRemovePolarLabel}
         />
         {havePledgeOrReference && (
           <IssueActivityBox>

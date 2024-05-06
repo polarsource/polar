@@ -25,7 +25,6 @@ import MaintainerNavigation from '../Dashboard/MaintainerNavigation'
 import MaintainerRepoSelection from '../Dashboard/MaintainerRepoSelection'
 import MetaNavigation from '../Dashboard/MetaNavigation'
 import DashboardProfileDropdown from '../Navigation/DashboardProfileDropdown'
-import DashboardLayoutContext from './DashboardLayoutContext'
 import { BrandingMenu } from './Public/BrandingMenu'
 
 const GitHubAppUpsell = () => {
@@ -112,9 +111,6 @@ const DashboardSidebar = () => {
 }
 
 const DashboardLayout = (props: PropsWithChildren<{ className?: string }>) => {
-  const layoutContext = useContext(DashboardLayoutContext)
-  const marginTop = layoutContext.isMD ? layoutContext.topbarHeight || 79 : 0
-
   return (
     <>
       <div className="relative flex h-full w-full flex-col md:flex-row">
@@ -129,12 +125,7 @@ const DashboardLayout = (props: PropsWithChildren<{ className?: string }>) => {
           )}
         >
           {/* On large devices, scroll here. On small devices the _document_ is the only element that should scroll. */}
-          <main
-            className="relative w-full md:overflow-auto"
-            style={{
-              marginTop,
-            }}
-          >
+          <main className="relative w-full md:overflow-auto">
             <Suspense>{props.children}</Suspense>
           </main>
         </div>

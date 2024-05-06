@@ -92,7 +92,7 @@ export default function ClientPage({
 
   return (
     <>
-      <DashboardTopbar isFixed useOrgFromURL>
+      <DashboardTopbar useOrgFromURL>
         <RepoPickerHeader
           currentRepository={currentRepo}
           repositories={allOrgRepositories}

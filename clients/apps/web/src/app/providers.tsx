@@ -46,7 +46,7 @@ export function PolarThemeProvider({
   children: React.ReactElement
 }) {
   const pathname = usePathname()
-  const PAGES_WITH_FORCED_LIGHT_THEME = ['/', '/careers']
+  const PAGES_WITH_FORCED_LIGHT_THEME: string[] = []
 
   const forcedTheme = PAGES_WITH_FORCED_LIGHT_THEME.includes(pathname)
     ? 'light'

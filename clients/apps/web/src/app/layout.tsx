@@ -26,8 +26,7 @@ export const metadata: Metadata = {
   description:
     'Pledge for progress. Polar gives open source maintainers a better and funded backlog based on what drives the most impact within their community.',
   openGraph: {
-    images:
-      'https://framerusercontent.com/images/RY34ZklhknDgQWNxaSSQDYqVBM.jpg',
+    images: 'https://polar.sh/assets/brand/polar_og.jpg',
     type: 'website',
     title: 'Polar - Pledge for progress',
     siteName: 'Polar',
@@ -35,8 +34,7 @@ export const metadata: Metadata = {
       'Polar gives open source maintainers a better and funded backlog based on what drives the most impact within their community.',
   },
   twitter: {
-    images:
-      'https://framerusercontent.com/images/RY34ZklhknDgQWNxaSSQDYqVBM.jpg',
+    images: 'https://polar.sh/assets/brand/polar_og.jpg',
     card: 'summary_large_image',
     title: 'Polar - Pledge for progress',
     description:

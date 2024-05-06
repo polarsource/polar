@@ -10,7 +10,7 @@ import {
   CreatePersonalAccessTokenResponse,
   ListResourceSubscriptionSummary,
   Organization,
-  OrganizationProfileSettingsUpdate,
+  OrganizationProfileSettings,
   SubscriptionTier,
   SubscriptionTierType,
 } from '@polar-sh/sdk'
@@ -62,7 +62,7 @@ export const OrganizationPublicSidebar = ({
 
   const updateOrganizationMutation = useUpdateOrganization()
 
-  const updateProfile = (setting: OrganizationProfileSettingsUpdate) => {
+  const updateProfile = (setting: OrganizationProfileSettings) => {
     return updateOrganizationMutation
       .mutateAsync({
         id: organization.id,
@@ -76,7 +76,6 @@ export const OrganizationPublicSidebar = ({
   const updateDescription = (description: string) => {
     updateProfile({
       description,
-      set_description: true,
     })
   }
 

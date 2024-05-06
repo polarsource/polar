@@ -20,7 +20,7 @@ import {
   Article,
   IssueFunding,
   Organization,
-  OrganizationProfileSettingsUpdate,
+  OrganizationProfileSettings,
   PublicDonation,
   Repository,
   SubscriptionTier,
@@ -65,7 +65,7 @@ const ClientPage = ({
   const updateOrganizationMutation = useUpdateOrganization()
 
   const updateOrganization = (
-    setting: Partial<OrganizationProfileSettingsUpdate>,
+    setting: Partial<OrganizationProfileSettings>,
   ) => {
     return updateOrganizationMutation
       .mutateAsync({

@@ -117,11 +117,7 @@ const PaymentMethodSettings = ({
     async (organizationSettings: OrganizationSettingsForm) => {
       await updateOrganization.mutateAsync({
         id: org.id,
-        settings: {
-          set_per_user_monthly_spending_limit: true,
-          set_total_monthly_spending_limit: true,
-          ...organizationSettings,
-        },
+        settings: organizationSettings,
       })
       setDidSave(true)
     },

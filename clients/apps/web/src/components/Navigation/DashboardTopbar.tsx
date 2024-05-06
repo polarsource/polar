@@ -79,16 +79,18 @@ const DashboardTopbar = ({
   return (
     <>
       <div className={className}>
-        <div className="mx-auto flex w-full max-w-screen-xl flex-row flex-wrap items-center justify-start gap-x-4 gap-y-2 px-4 py-8 sm:px-6 md:gap-x-12 md:px-8 xl:gap-x-24">
-          <h4 className="dark:text-polar-100 whitespace-nowrap text-xl font-medium ">
-            {title ?? currentRoute?.title}
-          </h4>
-          <div className="flex flex-col gap-4  md:flex-row md:items-center md:gap-y-24">
-            {currentRoute &&
-            'subs' in currentRoute &&
-            (currentRoute.subs?.length ?? 0) > 0 ? (
-              <SubNav items={currentRoute.subs ?? []} />
-            ) : null}
+        <div className="mx-auto flex w-full max-w-screen-xl flex-row flex-wrap items-start justify-start gap-x-4 gap-y-2 px-4 py-8 sm:px-6 md:gap-x-12 md:px-8 xl:gap-x-24">
+          <div className="flex flex-row items-center gap-x-4 gap-y-6 md:flex-col md:items-start md:gap-x-12">
+            <h4 className="dark:text-polar-100 whitespace-nowrap text-xl font-medium">
+              {title ?? currentRoute?.title}
+            </h4>
+            <div className="flex flex-col gap-4 md:flex-row md:items-center md:gap-y-24">
+              {currentRoute &&
+              'subs' in currentRoute &&
+              (currentRoute.subs?.length ?? 0) > 0 ? (
+                <SubNav items={currentRoute.subs ?? []} />
+              ) : null}
+            </div>
           </div>
           <div className="flex w-full flex-1 flex-row items-center justify-end gap-x-6 md:justify-end">
             {children}

@@ -698,6 +698,44 @@ class TestSearchSubscribedSubscriptions:
             assert "user" not in item
 
     @pytest.mark.auth
+    async def test_valid_organization_member(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        user: User,
+        organization_second: Organization,
+        subscription_tier: SubscriptionTier,
+    ) -> None:
+        """
+        We were bitten by a bug where we resolved the organization from the user,
+        but in this context, we shouldn't set an organization implicitly.
+        """
+        organization_second.is_personal = True
+        await save_fixture(organization_second)
+        user_organization = UserOrganization(
+            user_id=user.id,
+            organization_id=organization_second.id,
+        )
+        await save_fixture(user_organization)
+
+        await create_active_subscription(
+            save_fixture,
+            subscription_tier=subscription_tier,
+            user=user,
+            started_at=datetime(2023, 1, 1),
+            ended_at=datetime(2023, 6, 15),
+        )
+
+        response = await client.get("/api/v1/subscriptions/subscriptions/subscribed")
+
+        assert response.status_code == 200
+
+        json = response.json()
+        assert json["pagination"]["total_count"] == 1
+        for item in json["items"]:
+            assert "user" not in item
+
+    @pytest.mark.auth
     async def test_with_multiple_subscriptions(
         self,
         save_fixture: SaveFixture,

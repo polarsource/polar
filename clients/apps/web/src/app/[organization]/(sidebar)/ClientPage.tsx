@@ -15,7 +15,7 @@ import { useUpdateOrganization } from '@/hooks/queries'
 import { CONFIG } from '@/utils/config'
 import { organizationPageLink } from '@/utils/nav'
 import { useTrafficRecordPageView } from '@/utils/traffic'
-import { GitHub, ViewDayOutlined } from '@mui/icons-material'
+import { GitHub, StickyNote2Outlined } from '@mui/icons-material'
 import {
   Article,
   IssueFunding,
@@ -100,7 +100,7 @@ const ClientPage = ({
       </div>
     ) : (
       <div className="dark:text-polar-400 flex h-full w-full flex-col items-center gap-y-4 pt-16 text-gray-600">
-        <ViewDayOutlined fontSize="large" />
+        <StickyNote2Outlined fontSize="large" />
         <div className="flex w-full flex-col items-center gap-y-2 px-12 text-center">
           <h3 className="p-2 text-lg font-medium">
             {organization.name} is typing...

@@ -61,7 +61,7 @@ export default function ClientPage({
           srcSet={`/embed/posts.svg?org=${organization.name}&darkmode`}
         />
         <img
-          alt="Posts on Polar"
+          alt="Newsletter on Polar"
           src={`/embed/posts.svg?org=${organization.name}`}
         />
       </picture>

@@ -15,8 +15,8 @@ import {
   FavoriteBorderOutlined,
   HowToVoteOutlined,
   SpaceDashboardOutlined,
+  StickyNote2Outlined,
   TuneOutlined,
-  ViewDayOutlined,
   VolunteerActivismOutlined,
   Webhook,
   WifiTetheringOutlined,
@@ -151,9 +151,9 @@ const maintainerRoutesList = (org: Organization): Route[] => [
     subs: undefined,
   },
   {
-    id: 'posts',
-    title: 'Posts',
-    icon: <ViewDayOutlined className="h-5 w-5" fontSize="inherit" />,
+    id: 'newsletter',
+    title: 'Newsletter',
+    icon: <StickyNote2Outlined className="h-5 w-5" fontSize="inherit" />,
     postIcon: undefined,
     link: `/maintainer/${org.name}/posts`,
     checkIsActive: (currentRoute: string): boolean => {

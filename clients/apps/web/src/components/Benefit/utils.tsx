@@ -58,7 +58,7 @@ export const benefitsDisplayNames: {
   [key in BenefitType]: string
 } = {
   [BenefitType.ADS]: 'Ad',
-  [BenefitType.ARTICLES]: 'Posts',
+  [BenefitType.ARTICLES]: 'Newsletter',
   [BenefitType.CUSTOM]: 'Custom',
   [BenefitType.DISCORD]: 'Discord Invite',
   [BenefitType.GITHUB_REPOSITORY]: 'GitHub Repository Access',

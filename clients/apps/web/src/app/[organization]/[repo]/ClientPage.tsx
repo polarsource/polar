@@ -269,7 +269,7 @@ const ClientPage = ({
               posts.length > 0 && (
                 <div className="flex flex-col gap-6">
                   <div className="flex flex-row items-center gap-4">
-                    <h3>Posts from the creator</h3>
+                    <h3>Newsletter from the creator</h3>
                   </div>
                   <ShadowBoxOnMd className="flex w-full flex-col gap-6 md:p-6">
                     {posts.map((post) => (

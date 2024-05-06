@@ -53,7 +53,7 @@ export const OrganizationPublicPageNav = ({
         {organization.feature_settings?.articles_enabled && (
           <Link href={organizationPageLink(organization, 'posts')}>
             <TabsTrigger value="posts" size="small">
-              Posts
+              Newsletter
             </TabsTrigger>
           </Link>
         )}

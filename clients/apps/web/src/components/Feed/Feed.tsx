@@ -2,7 +2,7 @@
 
 import { useListArticles } from '@/hooks/queries'
 import { useSSE } from '@/hooks/sse'
-import { ViewDayOutlined } from '@mui/icons-material'
+import { StickyNote2Outlined } from '@mui/icons-material'
 import { Article } from '@polar-sh/sdk'
 import { useEffect } from 'react'
 import { useInView } from 'react-intersection-observer'
@@ -33,11 +33,11 @@ export const Feed = () => {
   if (infiniteArticles.length === 0) {
     return (
       <div className="dark:text-polar-400 flex h-full flex-col items-center gap-y-4 pt-32 text-gray-600">
-        <ViewDayOutlined fontSize="large" />
+        <StickyNote2Outlined fontSize="large" />
         <div className="flex flex-col items-center gap-y-2">
           <h3 className="p-2 text-lg font-medium">No posts found</h3>
           <p className="dark:text-polar-500 min-w-0 truncate text-gray-500">
-            Posts from creators you subscribe to will appear here
+            Newsletters from creators you subscribe to will appear here
           </p>
         </div>
       </div>

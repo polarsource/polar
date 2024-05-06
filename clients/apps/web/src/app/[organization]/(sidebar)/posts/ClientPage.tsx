@@ -5,7 +5,7 @@ import { useIsOrganizationAdmin } from '@/hooks'
 import { useSearchArticles } from '@/hooks/queries'
 import { organizationPageLink } from '@/utils/nav'
 import { useTrafficRecordPageView } from '@/utils/traffic'
-import { ViewDayOutlined } from '@mui/icons-material'
+import { StickyNote2Outlined } from '@mui/icons-material'
 import { Article, ListResourceArticle, Organization } from '@polar-sh/sdk'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
@@ -70,7 +70,7 @@ const ClientPage = ({
             infinitePosts.length === 0 &&
             (pinnedArticles.items?.length ?? 0) === 0 ? (
               <div className="dark:text-polar-400 flex h-full w-full flex-col items-center gap-y-4 pt-32 text-gray-600">
-                <ViewDayOutlined fontSize="large" />
+                <StickyNote2Outlined fontSize="large" />
                 <div className="flex w-full flex-col items-center gap-y-2 px-12 text-center">
                   {isAdmin ? (
                     <>

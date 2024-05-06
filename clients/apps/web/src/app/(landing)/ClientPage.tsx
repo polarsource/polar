@@ -586,7 +586,7 @@ const MOCKED_SUBSCRIPTION_TIERS: Partial<SubscriptionTier>[] = [
     benefits: [
       {
         id: '123',
-        description: 'Weekly Posts',
+        description: 'Weekly Newsletter',
         type: 'articles',
         created_at: new Date().toDateString(),
         selectable: false,
@@ -613,7 +613,7 @@ const MOCKED_SUBSCRIPTION_TIERS: Partial<SubscriptionTier>[] = [
     benefits: [
       {
         id: '123',
-        description: 'Premium Posts',
+        description: 'Premium Newsletter',
         type: 'articles',
         created_at: new Date().toDateString(),
         selectable: false,
@@ -649,7 +649,7 @@ const MOCKED_SUBSCRIPTION_TIERS: Partial<SubscriptionTier>[] = [
     benefits: [
       {
         id: '123',
-        description: 'Premium Posts',
+        description: 'Premium Newsletter',
         type: 'articles',
         created_at: new Date().toDateString(),
         selectable: false,
@@ -658,7 +658,7 @@ const MOCKED_SUBSCRIPTION_TIERS: Partial<SubscriptionTier>[] = [
       },
       {
         id: '456',
-        description: 'Your logotype in Posts',
+        description: 'Your logotype in Newsletter',
         type: 'articles',
         created_at: new Date().toDateString(),
         selectable: false,

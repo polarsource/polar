@@ -21,7 +21,7 @@ import {
   ArrowForward,
   ArrowForwardOutlined,
   LanguageOutlined,
-  ViewDayOutlined,
+  StickyNote2Outlined,
 } from '@mui/icons-material'
 import { Article } from '@polar-sh/sdk'
 import Link from 'next/link'
@@ -120,18 +120,18 @@ const ClientPage = () => {
       <EmptyLayout>
         <div className="dark:text-polar-200 flex flex-col items-center justify-center space-y-10 py-96 text-gray-600">
           <span className="text-6xl text-blue-400">
-            <ViewDayOutlined fontSize="inherit" />
+            <StickyNote2Outlined fontSize="inherit" />
           </span>
           <div className="flex flex-col items-center gap-4 text-center">
             <h2 className="dark:text-polar-50 text-2xl font-medium text-gray-950">
-              Posts
+              Newsletter
             </h2>
             <h2 className="text-lg">
-              Create and publish posts to engage with your audience
+              Create and publish a newsletter to engage with your audience
             </h2>
           </div>
           <Button loading={enablingPosts} onClick={enablePosts}>
-            Enable Posts
+            Enable Newsletter
           </Button>
         </div>
       </EmptyLayout>
@@ -171,7 +171,7 @@ const ClientPage = () => {
 
               {showNoPostsYet ? (
                 <div className="dark:text-polar-500 flex h-full flex-col items-center gap-y-4 pt-32 text-gray-500">
-                  <ViewDayOutlined fontSize="large" />
+                  <StickyNote2Outlined fontSize="large" />
                   <div className="flex flex-col items-center gap-y-2">
                     <h3 className="p-2 text-lg font-medium">No posts yet</h3>
                     <p className="dark:text-polar-600 min-w-0 truncate text-gray-300">

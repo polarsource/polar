@@ -49,7 +49,7 @@ const Footer = ({
                 Pricing
               </FooterLink>
               <FooterLink href="https://docs.polar.sh/maintainers/posts">
-                Posts & Newsletter
+                Newsletter
               </FooterLink>
               <FooterLink href="https://docs.polar.sh/maintainers/issue-funding">
                 Issue Funding

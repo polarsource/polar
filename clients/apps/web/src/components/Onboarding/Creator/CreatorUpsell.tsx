@@ -7,7 +7,7 @@ import { organizationPageLink } from '@/utils/nav'
 import {
   CloseOutlined,
   DonutLargeOutlined,
-  ViewDayOutlined,
+  StickyNote2Outlined,
   WifiTetheringOutlined,
 } from '@mui/icons-material'
 import { Platforms } from '@polar-sh/sdk'
@@ -78,7 +78,9 @@ export const useUpsellSteps = () => {
       currentOrg?.feature_settings?.articles_enabled
     ) {
       steps.push({
-        icon: <ViewDayOutlined className="text-blue-500 dark:text-blue-400" />,
+        icon: (
+          <StickyNote2Outlined className="text-blue-500 dark:text-blue-400" />
+        ),
         title: 'Write your first post',
         description:
           'Start building a community & newsletter by writing your first post – your hello world on Polar',

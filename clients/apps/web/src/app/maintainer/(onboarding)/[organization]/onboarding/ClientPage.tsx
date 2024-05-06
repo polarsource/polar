@@ -8,7 +8,7 @@ import {
   HowToVoteOutlined,
   HubOutlined,
   ShapeLineOutlined,
-  ViewDayOutlined,
+  StickyNote2Outlined,
   VolunteerActivismOutlined,
 } from '@mui/icons-material'
 import { Organization } from '@polar-sh/sdk'
@@ -164,10 +164,10 @@ export default function ClientPage({
         />
         <FeatureItem
           id="articles_enabled"
-          name="Posts"
+          name="Newsletter"
           description="Reach your supporters with a newsletter by writing about your projects"
           active={features.includes('articles_enabled')}
-          icon={<ViewDayOutlined fontSize="inherit" />}
+          icon={<StickyNote2Outlined fontSize="inherit" />}
           onClick={toggleFeature}
         />
       </StaggerReveal>

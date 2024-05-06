@@ -4,8 +4,10 @@ from typing import Any
 import pytest
 from httpx import AsyncClient
 
+from polar.auth.scope import Scope
 from polar.models import Benefit, Organization, UserOrganization
 from polar.models.benefit import BenefitType
+from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_benefit
 
@@ -22,7 +24,7 @@ class TestSearchBenefits:
         assert response.status_code == 401
 
     @pytest.mark.auth
-    async def test_not_existing_organization(self, client: AsyncClient) -> None:
+    async def test_user_not_existing_organization(self, client: AsyncClient) -> None:
         response = await client.get(
             "/api/v1/benefits/search",
             params={"platform": "github", "organization_name": "not_existing"},
@@ -31,7 +33,7 @@ class TestSearchBenefits:
         assert response.status_code == 404
 
     @pytest.mark.auth
-    async def test_not_user_organization(
+    async def test_user_not_organization_member(
         self,
         client: AsyncClient,
         organization: Organization,
@@ -50,8 +52,11 @@ class TestSearchBenefits:
         json = response.json()
         assert json["pagination"]["total_count"] == 0
 
-    @pytest.mark.auth
-    async def test_organization(
+    @pytest.mark.auth(
+        AuthSubjectFixture(scopes={Scope.web_default}),
+        AuthSubjectFixture(scopes={Scope.creator_benefits_read}),
+    )
+    async def test_user_valid(
         self,
         client: AsyncClient,
         organization: Organization,
@@ -73,6 +78,22 @@ class TestSearchBenefits:
 
         items = json["items"]
         assert items[0]["id"] == str(benefits[0].id)
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="organization", scopes={Scope.web_default}),
+        AuthSubjectFixture(
+            subject="organization", scopes={Scope.creator_benefits_read}
+        ),
+    )
+    async def test_organization(
+        self, client: AsyncClient, benefits: list[Benefit]
+    ) -> None:
+        response = await client.get("/api/v1/benefits/search")
+
+        assert response.status_code == 200
+
+        json = response.json()
+        assert json["pagination"]["total_count"] == 3
 
 
 @pytest.mark.asyncio

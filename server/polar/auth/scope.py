@@ -16,6 +16,9 @@ class Scope(StrEnum):
     backer_subscriptions_read = "backer:subscriptions:read"
     backer_subscriptions_write = "backer:subscriptions:write"
 
+    creator_benefits_read = "creator:benefits:read"
+    creator_benefits_write = "creator:benefits:write"
+
     creator_webhooks_read = "creator:webhooks:read"
     creator_webhooks_write = "creator:webhooks:write"
     backer_webhooks_read = "backer:webhooks:read"

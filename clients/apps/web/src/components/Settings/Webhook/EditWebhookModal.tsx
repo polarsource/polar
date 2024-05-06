@@ -1,7 +1,6 @@
 'use client'
 
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
-import { api } from '@/utils/api'
 
 import {
   Organization,
@@ -13,18 +12,28 @@ import { useForm } from 'react-hook-form'
 
 import { ConfirmModal } from '@/components/Modal/ConfirmModal'
 import { useModal } from '@/components/Modal/useModal'
+import {
+  FieldEvents,
+  FieldSecret,
+  FieldUrl,
+} from '@/components/Settings/Webhook/WebhookForm'
+import {
+  useDeleteWebhookEndpoint,
+  useEditWebhookEndpoint,
+} from '@/hooks/queries'
 import { useRouter } from 'next/navigation'
 import Button from 'polarkit/components/ui/atoms/button'
 import { ShadowBoxOnMd } from 'polarkit/components/ui/atoms/shadowbox'
 import { Form } from 'polarkit/components/ui/form'
-import { FieldEvents, FieldSecret, FieldUrl } from '../../../Form'
 
-export default function ClientPage({
+export default function EditWebhookModal({
   organization,
   endpoint,
+  hide,
 }: {
   organization: Organization
   endpoint: WebhookEndpoint
+  hide: () => void
 }) {
   const form = useForm<WebhookEndpointUpdate>({
     defaultValues: {
@@ -37,15 +46,17 @@ export default function ClientPage({
 
   const [isSaving, setIsSaving] = useState(false)
 
+  const updateWebhookEndpoint = useEditWebhookEndpoint()
+
   const onSubmit = useCallback(
     async (form: WebhookEndpointUpdate) => {
       setIsSaving(true)
-      await api.webhooks.updateWebhookEndpoint({
+      await updateWebhookEndpoint.mutateAsync({
         id: endpoint.id,
         webhookEndpointUpdate: form,
       })
       setIsSaving(false)
-      window.location.reload()
+      hide()
     },
     [endpoint],
   )
@@ -58,11 +69,14 @@ export default function ClientPage({
 
   const router = useRouter()
 
+  const deleteWebhookEndpoint = useDeleteWebhookEndpoint()
+
   const handleDeleteWebhookEndpoint = useCallback(async () => {
-    await api.webhooks.deleteWebhookEndpoint({ id: endpoint.id })
-    router.push(`/maintainer/${organization.name}/webhooks`)
+    await deleteWebhookEndpoint.mutateAsync({ id: endpoint.id })
     hideDeleteModal()
-  }, [hideDeleteModal, router, endpoint, organization])
+    hide()
+    router.push(`/maintainer/${organization.name}/settings`)
+  }, [hideDeleteModal, router, endpoint, organization, hide])
 
   return (
     <DashboardBody>
@@ -86,7 +100,7 @@ export default function ClientPage({
           </form>
         </Form>
 
-        <ShadowBoxOnMd className="flex flex-col gap-y-8">
+        <ShadowBoxOnMd className="flex flex-col gap-y-8 md:bg-gray-100">
           <div className="flex flex-row items-start justify-between">
             <div className="flex flex-col gap-y-1">
               <h3 className="dark:text-polar-50 font-medium text-gray-950">

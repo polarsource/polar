@@ -1,8 +1,5 @@
 'use client'
 
-import { DashboardBody } from '@/components/Layout/DashboardLayout'
-import { api } from '@/utils/api'
-
 import {
   Organization,
   WebhookEndpoint,
@@ -11,16 +8,20 @@ import {
 import { useCallback, useState } from 'react'
 import { useForm } from 'react-hook-form'
 
+import { InlineModalHeader } from '@/components/Modal/InlineModal'
+import { useCreateWebhookEndpoint } from '@/hooks/queries'
 import Link from 'next/link'
 import Button from 'polarkit/components/ui/atoms/button'
 import { Form } from 'polarkit/components/ui/form'
 import { Banner } from 'polarkit/components/ui/molecules'
-import { FieldEvents, FieldSecret, FieldUrl } from '../Form'
+import { FieldEvents, FieldSecret, FieldUrl } from './WebhookForm'
 
-export default function ClientPage({
+export default function NewWebhookModal({
   organization,
+  hide,
 }: {
   organization: Organization
+  hide: () => void
 }) {
   const form = useForm<WebhookEndpointCreate>({
     defaultValues: {
@@ -33,28 +34,33 @@ export default function ClientPage({
   const [created, setCreated] = useState<WebhookEndpoint>()
   const [isCreating, setIsCreating] = useState(false)
 
-  const onSubmit = useCallback(async (form: WebhookEndpointCreate) => {
-    setIsCreating(true)
-    const res = await api.webhooks.createWebhookEndpoint({
-      webhookEndpointCreate: form,
-    })
-    setCreated(res)
-    setIsCreating(false)
-  }, [])
+  const createWebhookEndpoint = useCreateWebhookEndpoint()
+
+  const onSubmit = useCallback(
+    async (form: WebhookEndpointCreate) => {
+      setIsCreating(true)
+      const res = await createWebhookEndpoint.mutateAsync(form)
+      setCreated(res)
+      setIsCreating(false)
+      hide()
+    },
+    [hide],
+  )
 
   return (
-    <DashboardBody>
-      <div className="flex flex-col gap-8">
+    <div className="flex flex-col">
+      <InlineModalHeader hide={hide}>
         <div className="flex items-center justify-between gap-2">
           <h2 className="text-xl">New webhook</h2>
         </div>
-
+      </InlineModalHeader>
+      <div className="flex flex-col gap-y-8 p-8">
         {created ? (
           <Banner color={'green'}>
             <div className="flex w-full flex-row items-center justify-between">
               <span>Your hook was setup, and is now receiving events!</span>
               <Link
-                href={`/maintainer/${organization.name}/webhooks/endpoints/${created.id}`}
+                href={`/maintainer/${organization.name}/settings/webhooks/endpoints/${created.id}`}
                 className="shrink-0"
               >
                 <Button asChild>Go to</Button>
@@ -82,6 +88,6 @@ export default function ClientPage({
           </form>
         </Form>
       </div>
-    </DashboardBody>
+    </div>
   )
 }

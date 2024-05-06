@@ -91,7 +91,9 @@ export const FieldSecret = ({ isUpdate }: { isUpdate: boolean }) => {
                   }
                 />
               </FormControl>
-              <Button onClick={generateSecret}>Generate</Button>
+              <Button onClick={generateSecret} variant="secondary">
+                Generate
+              </Button>
             </div>
             <div className="text-xs text-gray-500">
               Polar will sign all webhook payloads with this secret (following
@@ -152,7 +154,11 @@ export const FieldEvents = () => {
                   />
                 </FormControl>
                 <FormLabel className="text-sm leading-none">{event}</FormLabel>
-                <Link className="text-xs text-blue-400" href={href}>
+                <Link
+                  className="text-xs text-blue-400"
+                  href={href}
+                  target="_blank"
+                >
                   Schema
                 </Link>
                 <FormMessage />

@@ -65,7 +65,7 @@ Stripe transaction- and payout fees apply in addition. _We're covering this up u
 1. [Create an account or enable maintainer mode for an existing Polar
    account](/maintainers/issue-funding/getting-started/setup-account)
 2. [Install Polar for select
-   repositories](/maintainers/issues-funding/getting-started/app-installation)
+   repositories](/maintainers/issue-funding/getting-started/app-installation)
 3. [Customize the Polar badge & how it's embedded](/maintainers/issue-funding/getting-started/badge-settings)
 4. [Promote funding within your
    community](/maintainers/issue-funding/promote) (recommended,

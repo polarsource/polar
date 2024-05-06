@@ -13,7 +13,7 @@ from polar.postgres import AsyncSession, get_db_session
 from polar.posthog import posthog
 from polar.tags.api import Tags
 
-from ..subscription import auth
+from . import auth
 from .schemas import Benefit as BenefitSchema
 from .schemas import BenefitCreate, BenefitUpdate, benefit_schema_map
 from .service.benefit import benefit as benefit_service
@@ -25,7 +25,7 @@ router = APIRouter(prefix="/benefits", tags=["benefits"])
 
 @router.get("/search", response_model=ListResource[BenefitSchema], tags=[Tags.PUBLIC])
 async def search_benefits(
-    auth_subject: auth.CreatorSubscriptionsRead,
+    auth_subject: auth.BenefitsRead,
     pagination: PaginationParamsQuery,
     organization: ResolvedOrganization,
     type: BenefitType | None = Query(None),
@@ -49,7 +49,7 @@ async def search_benefits(
 @router.get("/lookup", response_model=BenefitSchema, tags=[Tags.PUBLIC])
 async def lookup_benefit(
     benefit_id: UUID4,
-    auth_subject: auth.CreatorSubscriptionsRead,
+    auth_subject: auth.BenefitsRead,
     session: AsyncSession = Depends(get_db_session),
 ) -> Benefit:
     benefit = await benefit_service.get_by_id(session, auth_subject, benefit_id)
@@ -62,7 +62,7 @@ async def lookup_benefit(
 
 @router.post("/", response_model=BenefitSchema, status_code=201, tags=[Tags.PUBLIC])
 async def create_benefit(
-    auth_subject: auth.CreatorSubscriptionsWrite,
+    auth_subject: auth.BenefitsWrite,
     benefit_create: BenefitCreate = Body(..., discriminator="type"),
     authz: Authz = Depends(Authz.authz),
     session: AsyncSession = Depends(get_db_session),
@@ -86,7 +86,7 @@ async def create_benefit(
 async def update_benefit(
     id: UUID4,
     benefit_update: BenefitUpdate,
-    auth_subject: auth.CreatorSubscriptionsWrite,
+    auth_subject: auth.BenefitsWrite,
     authz: Authz = Depends(Authz.authz),
     session: AsyncSession = Depends(get_db_session),
 ) -> Benefit:
@@ -114,7 +114,7 @@ async def update_benefit(
 @router.delete("/{id}", status_code=204, tags=[Tags.PUBLIC])
 async def delete_benefit(
     id: UUID4,
-    auth_subject: auth.CreatorSubscriptionsWrite,
+    auth_subject: auth.BenefitsWrite,
     authz: Authz = Depends(Authz.authz),
     session: AsyncSession = Depends(get_db_session),
 ) -> None:

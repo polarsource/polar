@@ -115,7 +115,7 @@ const ClientPage = () => {
 
   return (
     <Tabs className="flex flex-col" value={tab} onValueChange={onTabChange}>
-      <DashboardTopbar title="Create Post" isFixed useOrgFromURL>
+      <DashboardTopbar title="Create Post" useOrgFromURL>
         <Button
           onClick={() => {
             captureEvent('posts:create_save_button:create')

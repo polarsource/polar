@@ -1,8 +1,6 @@
 import { organizationPageLink } from '@/utils/nav'
-import { FavoriteBorderOutlined } from '@mui/icons-material'
 import { IssueFunding, Organization } from '@polar-sh/sdk'
 import Link from 'next/link'
-import Button from 'polarkit/components/ui/atoms/button'
 import { ShadowBoxOnMd } from 'polarkit/components/ui/atoms/shadowbox'
 import { Fragment } from 'react'
 import IssueActivityBox from '../Issues/IssueActivityBox'
@@ -37,23 +35,7 @@ export const OrganizationIssueSummaryList = ({
         <div className="-mx-4 flex flex-col divide-y md:divide-y-0">
           {issues.map((i) => (
             <Fragment key={i.issue.id}>
-              <IssueSummary
-                issue={i.issue}
-                right={
-                  <Link
-                    href={organizationPageLink(
-                      organization,
-                      `${i.issue.repository.name}/issues/${i.issue.number}`,
-                    )}
-                    className="font-medium text-blue-500"
-                  >
-                    <Button size="sm" variant="secondary" asChild>
-                      <FavoriteBorderOutlined fontSize="inherit" />
-                      <span className="ml-1.5">Fund</span>
-                    </Button>
-                  </Link>
-                }
-              />
+              <IssueSummary issue={i.issue} />
               {i.total.amount > 0 ||
               !!i.funding_goal ||
               !!i.issue.upfront_split_to_contributors ? (

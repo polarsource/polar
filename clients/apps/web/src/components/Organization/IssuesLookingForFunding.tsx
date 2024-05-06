@@ -1,9 +1,7 @@
 'use client'
 
 import { useSearchFunding } from '@/hooks/queries'
-import { organizationPageLink } from '@/utils/nav'
 import {
-  FavoriteBorderOutlined,
   FilterList,
   HowToVoteOutlined,
   SearchOutlined,
@@ -15,7 +13,6 @@ import {
   Organization,
   Repository,
 } from '@polar-sh/sdk'
-import Link from 'next/link'
 import {
   ReadonlyURLSearchParams,
   useRouter,
@@ -104,23 +101,7 @@ const IssuesLookingForFunding = ({
           <div className="dark:divider-polar-700 -mx-6 flex flex-col divide-y md:divide-y-0">
             {listIssues.map((i) => (
               <Fragment key={i.issue.id}>
-                <IssueSummary
-                  issue={i.issue}
-                  right={
-                    <Link
-                      href={organizationPageLink(
-                        i.issue.repository.organization,
-                        `${i.issue.repository.name}/issues/${i.issue.number}`,
-                      )}
-                      className="font-medium text-blue-500"
-                    >
-                      <Button size="sm" variant="secondary" asChild>
-                        <FavoriteBorderOutlined fontSize="inherit" />
-                        <span className="ml-1.5">Fund</span>
-                      </Button>
-                    </Link>
-                  }
-                />
+                <IssueSummary issue={i.issue} />
                 {(i.total.amount > 0 ||
                   !!i.funding_goal ||
                   !!i.issue.upfront_split_to_contributors) && (

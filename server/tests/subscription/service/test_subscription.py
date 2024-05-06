@@ -1236,7 +1236,6 @@ class TestSearchSubscribed:
         session: AsyncSession,
         save_fixture: SaveFixture,
         user: User,
-        user_organization: UserOrganization,
         user_second: User,
         subscription_tier: SubscriptionTier,
     ) -> None:

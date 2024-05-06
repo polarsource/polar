@@ -76,10 +76,6 @@ async def _resolve_optional_organization(
             raise ResourceNotFound("Organization not found")
         return organization
 
-    # Fallback with the user's personal organization, if any
-    if is_user(auth_subject):
-        return await organization_service.get_personal(session, auth_subject.subject.id)
-
     return None
 
 
@@ -90,9 +86,18 @@ ResolvedOptionalOrganization = Annotated[
 
 async def _resolve_organization(
     organization: ResolvedOptionalOrganization,
+    auth_subject: AuthSubject[Subject] = Depends(get_auth_subject),
+    session: AsyncSession = Depends(get_db_session),
 ) -> Organization:
+    # Try to fallback with the user's personal organization, if any
+    if organization is None and is_user(auth_subject):
+        organization = await organization_service.get_personal(
+            session, auth_subject.subject.id
+        )
+
     if organization is None:
         raise BadRequest("An organization is required.")
+
     return organization
 
 

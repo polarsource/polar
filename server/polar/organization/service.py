@@ -23,7 +23,6 @@ from polar.worker import enqueue_job
 from .schemas import (
     OrganizationCreateFromGitHubInstallation,
     OrganizationCreateFromGitHubUser,
-    OrganizationFeatureSettings,
     OrganizationProfileSettings,
     OrganizationUpdate,
 )

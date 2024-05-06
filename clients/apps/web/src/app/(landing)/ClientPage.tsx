@@ -29,7 +29,7 @@ import { twMerge } from 'tailwind-merge'
 
 const Box = ({ children }: PropsWithChildren) => {
   return (
-    <div className="dark:bg-polar-900 flex flex-row bg-white">
+    <div className="flex flex-row bg-white dark:bg-transparent">
       <AnimatedSeparator
         className="hidden md:block"
         orientation="vertical"
@@ -67,9 +67,7 @@ export default function Page() {
       <Box>
         <Pricing />
       </Box>
-      <Box>
-        <SignUpBanner />
-      </Box>
+      <SignUpBanner />
     </div>
   )
 }
@@ -394,7 +392,7 @@ const DevelopersUpsell = () => {
     return (
       <Link
         href={href}
-        className="bg-gray-75 dark:bg-polar-800 flex flex-col items-center gap-y-6 p-8"
+        className="bg-gray-75 dark:bg-polar-900 flex flex-col items-center gap-y-6 p-8"
       >
         <Avatar className="h-16 w-16" avatar_url={avatarUrl} name={name} />
         <div className="flex flex-col items-center gap-y-2 text-center">

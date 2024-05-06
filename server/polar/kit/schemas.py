@@ -17,12 +17,16 @@ class TimestampedSchema(Schema):
 
 
 def _empty_str_to_none(value: str | None) -> str | None:
-    if value == "":
-        return None
+    if isinstance(value, str):
+        stripped_value = value.strip()
+        if stripped_value == "":
+            return None
+        return stripped_value
     return value
 
 
-EmptyStrToNone = Annotated[str | None, AfterValidator(_empty_str_to_none)]
+EmptyStrToNoneValidator = AfterValidator(_empty_str_to_none)
+EmptyStrToNone = Annotated[str | None, EmptyStrToNoneValidator]
 
 
 def _validate_email_dns(email: str) -> str:

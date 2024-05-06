@@ -243,10 +243,7 @@ async def test_update_organization_no_admin(
 ) -> None:
     response = await client.patch(
         f"/api/v1/organizations/{organization.id}",
-        json={
-            "set_default_upfront_split_to_contributors": True,
-            "default_upfront_split_to_contributors": 85,
-        },
+        json={"default_upfront_split_to_contributors": 85},
     )
 
     assert response.status_code == 401
@@ -270,7 +267,6 @@ async def test_update_organization(
     response = await client.patch(
         f"/api/v1/organizations/{organization.id}",
         json={
-            "set_default_upfront_split_to_contributors": True,
             "default_upfront_split_to_contributors": 85,
         },
     )
@@ -281,9 +277,7 @@ async def test_update_organization(
 
     response = await client.patch(
         f"/api/v1/organizations/{organization.id}",
-        json={
-            "default_upfront_split_to_contributors": 70,  # no change
-        },
+        json={},  # no change
     )
 
     assert response.status_code == 200
@@ -292,9 +286,7 @@ async def test_update_organization(
 
     response = await client.patch(
         f"/api/v1/organizations/{organization.id}",
-        json={
-            "set_default_upfront_split_to_contributors": True,  # unset!
-        },
+        json={"default_upfront_split_to_contributors": None},
     )
 
     assert response.status_code == 200
@@ -531,12 +523,7 @@ async def test_update_organization_profile_settings_description(
     # set description
     response = await client.patch(
         f"/api/v1/organizations/{organization.id}",
-        json={
-            "profile_settings": {
-                "description": "Hello world!",
-                "set_description": True,
-            }
-        },
+        json={"profile_settings": {"description": "Hello world!"}},
     )
 
     assert response.status_code == 200
@@ -546,26 +533,17 @@ async def test_update_organization_profile_settings_description(
     # should trim description of leading/trailing whitespace
     response = await client.patch(
         f"/api/v1/organizations/{organization.id}",
-        json={
-            "profile_settings": {
-                "description": "     Hello whitespace!    ",
-                "set_description": True,
-            }
-        },
+        json={"profile_settings": {"description": "     Hello whitespace!    "}},
     )
 
     assert response.status_code == 200
     assert response.json()["id"] == str(organization.id)
     assert response.json()["profile_settings"]["description"] == "Hello whitespace!"
 
-    # setting description without set_description should not affect description
+    # omit description should not affect it
     response = await client.patch(
         f"/api/v1/organizations/{organization.id}",
-        json={
-            "profile_settings": {
-                "description": "Hello moon!",
-            }
-        },
+        json={"profile_settings": {}},
     )
 
     assert response.status_code == 200
@@ -575,12 +553,7 @@ async def test_update_organization_profile_settings_description(
     # setting a description which exceeds the maximum length
     response = await client.patch(
         f"/api/v1/organizations/{organization.id}",
-        json={
-            "profile_settings": {
-                "description": "a" * 161,
-                "set_description": True,
-            }
-        },
+        json={"profile_settings": {"description": "a" * 161}},
     )
 
     assert 422 == response.status_code
@@ -662,15 +635,6 @@ async def test_issue_funding_enabled(
 
     response = await client.patch(
         f"/api/v1/organizations/{organization.id}",
-        json={"feature_settings": {"issue_funding_enabled": None}},
-    )
-    assert response.status_code == 200
-    assert (
-        response.json()["feature_settings"]["issue_funding_enabled"] is True
-    )  # no change
-
-    response = await client.patch(
-        f"/api/v1/organizations/{organization.id}",
         json={"feature_settings": {}},
     )
     assert response.status_code == 200
@@ -684,15 +648,6 @@ async def test_issue_funding_enabled(
     )
     assert response.status_code == 200
     assert response.json()["feature_settings"]["issue_funding_enabled"] is False
-
-    response = await client.patch(
-        f"/api/v1/organizations/{organization.id}",
-        json={"feature_settings": {"issue_funding_enabled": None}},
-    )
-    assert response.status_code == 200
-    assert (
-        response.json()["feature_settings"]["issue_funding_enabled"] is False
-    )  # no change
 
     response = await client.patch(
         f"/api/v1/organizations/{organization.id}",
@@ -728,13 +683,6 @@ async def test_articles_enabled(
 
     response = await client.patch(
         f"/api/v1/organizations/{organization.id}",
-        json={"feature_settings": {"articles_enabled": None}},
-    )
-    assert response.status_code == 200
-    assert response.json()["feature_settings"]["articles_enabled"] is True  # no change
-
-    response = await client.patch(
-        f"/api/v1/organizations/{organization.id}",
         json={"feature_settings": {}},
     )
     assert response.status_code == 200
@@ -746,13 +694,6 @@ async def test_articles_enabled(
     )
     assert response.status_code == 200
     assert response.json()["feature_settings"]["articles_enabled"] is False
-
-    response = await client.patch(
-        f"/api/v1/organizations/{organization.id}",
-        json={"feature_settings": {"articles_enabled": None}},
-    )
-    assert response.status_code == 200
-    assert response.json()["feature_settings"]["articles_enabled"] is False  # no change
 
     response = await client.patch(
         f"/api/v1/organizations/{organization.id}",
@@ -786,15 +727,6 @@ async def test_subscriptions_enabled(
 
     response = await client.patch(
         f"/api/v1/organizations/{organization.id}",
-        json={"feature_settings": {"subscriptions_enabled": None}},
-    )
-    assert response.status_code == 200
-    assert (
-        response.json()["feature_settings"]["subscriptions_enabled"] is True
-    )  # no change
-
-    response = await client.patch(
-        f"/api/v1/organizations/{organization.id}",
         json={"feature_settings": {}},
     )
     assert response.status_code == 200
@@ -808,15 +740,6 @@ async def test_subscriptions_enabled(
     )
     assert response.status_code == 200
     assert response.json()["feature_settings"]["subscriptions_enabled"] is False
-
-    response = await client.patch(
-        f"/api/v1/organizations/{organization.id}",
-        json={"feature_settings": {"subscriptions_enabled": None}},
-    )
-    assert response.status_code == 200
-    assert (
-        response.json()["feature_settings"]["subscriptions_enabled"] is False
-    )  # no change
 
     response = await client.patch(
         f"/api/v1/organizations/{organization.id}",
@@ -852,13 +775,6 @@ async def test_donations_enabled(
 
     response = await client.patch(
         f"/api/v1/organizations/{organization.id}",
-        json={"donations_enabled": None},
-    )
-    assert response.status_code == 200
-    assert response.json()["donations_enabled"] is True  # no change
-
-    response = await client.patch(
-        f"/api/v1/organizations/{organization.id}",
         json={},
     )
     assert response.status_code == 200
@@ -870,20 +786,6 @@ async def test_donations_enabled(
     )
     assert response.status_code == 200
     assert response.json()["donations_enabled"] is False
-
-    response = await client.patch(
-        f"/api/v1/organizations/{organization.id}",
-        json={"donations_enabled": None},
-    )
-    assert response.status_code == 200
-    assert response.json()["donations_enabled"] is False  # no change
-
-    response = await client.patch(
-        f"/api/v1/organizations/{organization.id}",
-        json={},
-    )
-    assert response.status_code == 200
-    assert response.json()["donations_enabled"] is False  # no change
 
 
 @pytest.mark.asyncio

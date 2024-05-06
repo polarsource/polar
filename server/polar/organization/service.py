@@ -23,8 +23,6 @@ from polar.worker import enqueue_job
 from .schemas import (
     OrganizationCreateFromGitHubInstallation,
     OrganizationCreateFromGitHubUser,
-    OrganizationFeatureSettings,
-    OrganizationProfileSettings,
     OrganizationUpdate,
 )
 
@@ -165,121 +163,59 @@ class OrganizationService(ResourceServiceReader[Organization]):
         self,
         session: AsyncSession,
         organization: Organization,
-        settings: OrganizationUpdate,
+        organization_update: OrganizationUpdate,
     ) -> Organization:
-        if settings.billing_email is not None:
-            organization.billing_email = settings.billing_email
+        if (
+            organization_update.per_user_monthly_spending_limit
+            and not organization.total_monthly_spending_limit
+        ):
+            raise BadRequest(
+                "per_user_monthly_spending_limit requires total_monthly_spending_limit to be set"
+            )
+
+        if (
+            organization_update.per_user_monthly_spending_limit is not None
+            and organization.total_monthly_spending_limit is not None
+            and organization_update.per_user_monthly_spending_limit
+            > organization.total_monthly_spending_limit
+        ):
+            raise BadRequest(
+                "per_user_monthly_spending_limit can not be higher than total_monthly_spending_limit"
+            )
 
         if organization.onboarded_at is None:
             organization.onboarded_at = datetime.now(UTC)
 
-        if settings.set_default_upfront_split_to_contributors:
-            organization.default_upfront_split_to_contributors = (
-                settings.default_upfront_split_to_contributors
-            )
+        if organization_update.profile_settings is not None:
+            organization.profile_settings = {
+                **organization.profile_settings,
+                **organization_update.profile_settings.model_dump(
+                    mode="json", exclude_unset=True
+                ),
+            }
 
-        if settings.pledge_badge_show_amount is not None:
-            organization.pledge_badge_show_amount = settings.pledge_badge_show_amount
+        if organization_update.feature_settings is not None:
+            organization.feature_settings = {
+                **organization.feature_settings,
+                **organization_update.feature_settings.model_dump(
+                    mode="json", exclude_unset=True, exclude_none=True
+                ),
+            }
 
-        if settings.set_default_badge_custom_content:
-            organization.default_badge_custom_content = (
-                settings.default_badge_custom_content
-            )
-
-        if settings.pledge_minimum_amount is not None:
-            organization.pledge_minimum_amount = settings.pledge_minimum_amount
-
-        if settings.set_total_monthly_spending_limit:
-            organization.total_monthly_spending_limit = (
-                settings.total_monthly_spending_limit
-            )
-
-        if settings.set_per_user_monthly_spending_limit:
-            if (
-                settings.per_user_monthly_spending_limit
-                and not organization.total_monthly_spending_limit
-            ):
-                raise BadRequest(
-                    "per_user_monthly_spending_limit requires total_monthly_spending_limit to be set"
-                )
-
-            if (
-                settings.per_user_monthly_spending_limit is not None
-                and organization.total_monthly_spending_limit is not None
-                and settings.per_user_monthly_spending_limit
-                > organization.total_monthly_spending_limit
-            ):
-                raise BadRequest(
-                    "per_user_monthly_spending_limit can not be higher than total_monthly_spending_limit"
-                )
-
-            organization.per_user_monthly_spending_limit = (
-                settings.per_user_monthly_spending_limit
-            )
-
-        profile_settings = OrganizationProfileSettings.model_validate(
-            organization.profile_settings
+        update_dict = organization_update.model_dump(
+            by_alias=True,
+            exclude_unset=True,
+            exclude={"profile_settings", "feature_settings"},
         )
-
-        feature_settings = OrganizationFeatureSettings.model_validate(
-            organization.feature_settings
-        )
-
-        if settings.profile_settings is not None:
-            if settings.profile_settings.set_description:
-                profile_settings.description = (
-                    settings.profile_settings.description.strip()
-                    if settings.profile_settings.description is not None
-                    else None
-                )
-
-            if settings.profile_settings.featured_projects is not None:
-                profile_settings.featured_projects = (
-                    settings.profile_settings.featured_projects
-                )
-
-            if settings.profile_settings.featured_organizations is not None:
-                profile_settings.featured_organizations = (
-                    settings.profile_settings.featured_organizations
-                )
-
-            if settings.profile_settings.links is not None:
-                profile_settings.links = settings.profile_settings.links
-
-            organization.profile_settings = profile_settings.model_dump(mode="json")
-
-        if settings.feature_settings is not None:
-            if settings.feature_settings.issue_funding_enabled is not None:
-                feature_settings.issue_funding_enabled = (
-                    settings.feature_settings.issue_funding_enabled
-                )
-
-            if settings.feature_settings.articles_enabled is not None:
-                feature_settings.articles_enabled = (
-                    settings.feature_settings.articles_enabled
-                )
-
-            if settings.feature_settings.subscriptions_enabled is not None:
-                feature_settings.subscriptions_enabled = (
-                    settings.feature_settings.subscriptions_enabled
-                )
-
-            organization.feature_settings = feature_settings.model_dump(mode="json")
-
-        if settings.donations_enabled is not None:
-            organization.donations_enabled = settings.donations_enabled
-
-        if settings.public_donation_timestamps is not None:
-            organization.public_donation_timestamps = (
-                settings.public_donation_timestamps
-            )
+        for key, value in update_dict.items():
+            setattr(organization, key, value)
 
         session.add(organization)
 
         log.info(
             "organization.update_settings",
             organization_id=organization.id,
-            settings=settings.model_dump(mode="json"),
+            settings=organization_update.model_dump(mode="json"),
         )
 
         await self._after_update(session, organization)

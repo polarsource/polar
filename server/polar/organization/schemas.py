@@ -1,14 +1,15 @@
 from collections.abc import Sequence
 from datetime import datetime
-from typing import Self
+from typing import Annotated, Self
 from uuid import UUID
 
 from pydantic import UUID4, Field, HttpUrl
 
+from polar.config import settings
 from polar.currency.schemas import CurrencyAmount
 from polar.enums import Platforms
 from polar.integrations.github import types
-from polar.kit.schemas import Schema
+from polar.kit.schemas import EmptyStrToNoneValidator, Schema
 from polar.models.organization import Organization as OrganizationModel
 
 
@@ -25,11 +26,11 @@ class OrganizationFeatureSettings(Schema):
 
 
 class OrganizationProfileSettings(Schema):
-    description: str | None = Field(
-        None,
-        description="A description of the organization",
-        max_length=160,
-    )
+    description: Annotated[
+        str | None,
+        Field(max_length=160, description="A description of the organization"),
+        EmptyStrToNoneValidator,
+    ] = None
     featured_projects: list[UUID4] | None = Field(
         None, description="A list of featured projects"
     )
@@ -113,23 +114,11 @@ class Organization(Schema):
         o: OrganizationModel,
         include_member_fields: bool = False,
     ) -> Self:
-        profile_settings = OrganizationProfileSettings(
-            description=o.profile_settings.get("description", None),
-            featured_projects=o.profile_settings.get("featured_projects", None),
-            featured_organizations=o.profile_settings.get(
-                "featured_organizations", None
-            ),
-            links=o.profile_settings.get("links", None),
+        profile_settings = OrganizationProfileSettings.model_validate(
+            o.profile_settings
         )
-
-        feature_settings = OrganizationFeatureSettings(
-            articles_enabled=o.feature_settings.get("articles_enabled", False),
-            subscriptions_enabled=o.feature_settings.get(
-                "subscriptions_enabled", False
-            ),
-            issue_funding_enabled=o.feature_settings.get(
-                "issue_funding_enabled", False
-            ),
+        feature_settings = OrganizationFeatureSettings.model_validate(
+            o.feature_settings
         )
 
         return cls(
@@ -172,49 +161,27 @@ class Organization(Schema):
         )
 
 
-class OrganizationProfileSettingsUpdate(Schema):
-    set_description: bool | None = None
-    description: str | None = Field(
-        None,
-        max_length=160,
-    )
-
-    featured_projects: list[UUID4] | None = None
-    featured_organizations: list[UUID4] | None = None
-    links: list[HttpUrl] | None = None
-
-
-class OrganizationFeatureSettingsUpdate(Schema):
-    articles_enabled: bool | None = None
-    subscriptions_enabled: bool | None = None
-    issue_funding_enabled: bool | None = None
-
-
 class OrganizationUpdate(Schema):
-    set_default_upfront_split_to_contributors: bool | None = None
     default_upfront_split_to_contributors: int | None = Field(
         default=None, ge=0.0, le=100.0
     )
 
-    pledge_badge_show_amount: bool | None = None
+    pledge_badge_show_amount: bool = False
     billing_email: str | None = None
 
-    set_default_badge_custom_content: bool | None = None
     default_badge_custom_content: str | None = None
 
-    pledge_minimum_amount: int | None = None
+    pledge_minimum_amount: int = settings.MINIMUM_ORG_PLEDGE_AMOUNT
 
-    set_total_monthly_spending_limit: bool | None = None
     total_monthly_spending_limit: int | None = None
 
-    set_per_user_monthly_spending_limit: bool | None = None
     per_user_monthly_spending_limit: int | None = None
 
-    donations_enabled: bool | None = None
-    public_donation_timestamps: bool | None = None
+    donations_enabled: bool = False
+    public_donation_timestamps: bool = False
 
-    profile_settings: OrganizationProfileSettingsUpdate | None = None
-    feature_settings: OrganizationFeatureSettingsUpdate | None = None
+    profile_settings: OrganizationProfileSettings | None = None
+    feature_settings: OrganizationFeatureSettings | None = None
 
 
 class OrganizationSetAccount(Schema):

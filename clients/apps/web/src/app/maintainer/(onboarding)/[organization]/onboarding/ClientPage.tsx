@@ -1,5 +1,6 @@
 'use client'
 
+import { StaggerReveal } from '@/components/Shared/StaggerReveal'
 import { useUpdateOrganization } from '@/hooks/queries'
 import {
   Bolt,
@@ -92,7 +93,7 @@ export default function ClientPage({
           your usecase
         </p>
       </div>
-      <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
+      <StaggerReveal className="grid grid-cols-1 gap-8 md:grid-cols-2">
         <OnboardingCard
           title="Open Source Maintainer"
           description="Enable crowdfunding through GitHub Issues, and offer benefits via subscriptions to your supporters"
@@ -135,8 +136,8 @@ export default function ClientPage({
             ])
           }}
         />
-      </div>
-      <div className="flex flex-col gap-y-2">
+      </StaggerReveal>
+      <StaggerReveal className="flex flex-col gap-y-2">
         <FeatureItem
           id="subscriptions_enabled"
           name="Subscriptions"
@@ -169,7 +170,7 @@ export default function ClientPage({
           icon={<ViewDayOutlined fontSize="inherit" />}
           onClick={toggleFeature}
         />
-      </div>
+      </StaggerReveal>
       <p className="dark:text-polar-500 text-center text-sm text-gray-500">
         Don&apos;t worry - you can enable any of these features later
       </p>
@@ -202,42 +203,44 @@ const OnboardingCard = ({
   onClick,
 }: OnboardingCardProps) => {
   return (
-    <Card
-      className={twMerge(
-        'dark:hover:bg-polar-800 dark:ring-polar-800 relative flex h-full select-none flex-col border-none ring-0 transition-colors hover:cursor-pointer hover:bg-gray-50 dark:ring-1',
-        active
-          ? 'dark:bg-polar-800 bg-white shadow-sm'
-          : 'dark:bg-polar-900 bg-gray-200',
-      )}
-      onClick={onClick}
-    >
-      <CardHeader className="relative flex flex-row justify-between gap-x-4 gap-y-8 pb-4">
-        <div className="flex flex-col gap-y-8">
-          <span
-            className={twMerge(
-              active
-                ? 'text-blue-500 dark:text-blue-400'
-                : 'dark:text-polar-600 text-gray-400',
-            )}
-          >
-            {icon}
-          </span>
-          <h3 className="text-2xl font-bold">{title}</h3>
-        </div>
-        {active && (
-          <Button
-            className="absolute right-6 top-6 h-8 w-8"
-            size="icon"
-            variant={active ? 'default' : 'secondary'}
-          >
-            <CheckOutlined fontSize="inherit" />
-          </Button>
+    <StaggerReveal.Child>
+      <Card
+        className={twMerge(
+          'dark:hover:bg-polar-800 dark:ring-polar-800 relative flex h-full select-none flex-col border-none ring-0 transition-colors hover:cursor-pointer hover:bg-gray-50 dark:ring-1',
+          active
+            ? 'dark:bg-polar-800 bg-white shadow-sm'
+            : 'dark:bg-polar-900 bg-gray-200',
         )}
-      </CardHeader>
-      <CardContent className="h-full">
-        <p className="dark:text-polar-500 text-gray-500">{description}</p>
-      </CardContent>
-    </Card>
+        onClick={onClick}
+      >
+        <CardHeader className="relative flex flex-row justify-between gap-x-4 gap-y-8 pb-4">
+          <div className="flex flex-col gap-y-8">
+            <span
+              className={twMerge(
+                active
+                  ? 'text-blue-500 dark:text-blue-400'
+                  : 'dark:text-polar-600 text-gray-400',
+              )}
+            >
+              {icon}
+            </span>
+            <h3 className="text-2xl font-bold">{title}</h3>
+          </div>
+          {active && (
+            <Button
+              className="absolute right-6 top-6 h-8 w-8"
+              size="icon"
+              variant={active ? 'default' : 'secondary'}
+            >
+              <CheckOutlined fontSize="inherit" />
+            </Button>
+          )}
+        </CardHeader>
+        <CardContent className="h-full">
+          <p className="dark:text-polar-500 text-gray-500">{description}</p>
+        </CardContent>
+      </Card>
+    </StaggerReveal.Child>
   )
 }
 
@@ -259,7 +262,7 @@ const FeatureItem = ({
   onClick,
 }: FeatureItemProps) => {
   return (
-    <div
+    <StaggerReveal.Child
       className={twMerge(
         'dark:bg-polar-900 dark:hover:bg-polar-800 flex select-none flex-row items-center justify-between gap-4 rounded-2xl bg-gray-200/70 px-6 py-4 transition-colors hover:cursor-pointer hover:bg-gray-50',
         active ? 'dark:bg-polar-800 bg-white shadow-sm' : '',
@@ -270,7 +273,7 @@ const FeatureItem = ({
         className={twMerge(
           'flex flex-row items-baseline gap-x-4',
           active
-            ? 'dark:text-polar-50 text-white'
+            ? 'dark:text-polar-50 text-black'
             : 'dark:text-polar-500 text-gray-500',
         )}
       >
@@ -296,6 +299,6 @@ const FeatureItem = ({
           <CheckOutlined fontSize="inherit" />
         </Button>
       )}
-    </div>
+    </StaggerReveal.Child>
   )
 }

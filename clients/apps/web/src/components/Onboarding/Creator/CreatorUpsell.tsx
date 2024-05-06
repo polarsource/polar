@@ -72,7 +72,11 @@ export const useUpsellSteps = () => {
       })
     }
 
-    if (posts?.items?.length === 0 && !onboardingCompletedMap.postCreated) {
+    if (
+      posts?.items?.length === 0 &&
+      !onboardingCompletedMap.postCreated &&
+      currentOrg?.feature_settings?.articles_enabled
+    ) {
       steps.push({
         icon: <ViewDayOutlined className="text-blue-500 dark:text-blue-400" />,
         title: 'Write your first post',
@@ -89,7 +93,8 @@ export const useUpsellSteps = () => {
 
     if (
       nonFreeTiers.length === 0 &&
-      !onboardingCompletedMap.subscriptionTierCreated
+      !onboardingCompletedMap.subscriptionTierCreated &&
+      currentOrg?.feature_settings?.subscriptions_enabled
     ) {
       steps.push({
         icon: <SubscriptionGroupIcon type="individual" className="text-2xl" />,

@@ -225,7 +225,7 @@ exports[`code 1`] = `
         </pre>
       </div>
       <button
-        class="font-normal ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 whitespace-nowrap text-blue-500 dark:text-polar-200 hover:bg-blue-100 dark:hover:bg-polar-600 flex items-center justify-center p-2 absolute right-6 top-6 h-8 w-8 rounded-full bg-gray-50 text-sm dark:bg-gray-900"
+        class="font-normal select-none ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 whitespace-nowrap text-blue-500 dark:text-polar-200 hover:bg-blue-100 dark:hover:bg-polar-600 flex items-center justify-center p-2 absolute right-6 top-6 h-8 w-8 rounded-full bg-gray-50 text-sm dark:bg-gray-900"
       >
         <div
           class="flex flex-row items-center"

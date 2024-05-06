@@ -20,6 +20,7 @@ import {
 } from 'react'
 import { twMerge } from 'tailwind-merge'
 import DashboardNavigation from '../Dashboard/DashboardNavigation'
+import DisabledMaintainerNavigation from '../Dashboard/DisabledMaintainerNavigation'
 import MaintainerNavigation from '../Dashboard/MaintainerNavigation'
 import MaintainerRepoSelection from '../Dashboard/MaintainerRepoSelection'
 import MetaNavigation from '../Dashboard/MetaNavigation'
@@ -99,6 +100,7 @@ const DashboardSidebar = () => {
 
           {shouldRenderMaintainerNavigation && <MaintainerNavigation />}
           <DashboardNavigation />
+          {shouldRenderMaintainerNavigation && <DisabledMaintainerNavigation />}
         </div>
 
         <div className="dark:border-t-polar-800 flex flex-col gap-y-2 border-t border-t-gray-100">

@@ -102,6 +102,35 @@ export const useMaintainerRoutes = (
   return r
 }
 
+export const useMaintainerDisabledRoutes = (
+  org?: Organization,
+): RouteWithActive[] => {
+  const path = usePathname()
+
+  const r = useMemo(() => {
+    if (!org) {
+      return []
+    }
+
+    return maintainerRoutesList(org)
+      .filter((o) => {
+        switch (o.id) {
+          case 'org-issues':
+          case 'org-subscriptions':
+          case 'newsletter':
+          case 'donations':
+            return true
+          default:
+            return false
+        }
+      })
+      .filter((o) => !o.if)
+      .map(applyIsActive(path))
+  }, [org, path])
+
+  return r
+}
+
 export const useDashboardRoutes = (
   org: Organization | undefined,
   isPersonal: boolean,
@@ -159,7 +188,7 @@ const maintainerRoutesList = (org: Organization): Route[] => [
     checkIsActive: (currentRoute: string): boolean => {
       return currentRoute.startsWith(`/maintainer/${org.name}/posts`)
     },
-    if: true,
+    if: org.feature_settings?.articles_enabled,
   },
   {
     id: 'org-subscriptions',
@@ -170,7 +199,7 @@ const maintainerRoutesList = (org: Organization): Route[] => [
     checkIsActive: (currentRoute: string): boolean => {
       return currentRoute.startsWith(`/maintainer/${org.name}/subscriptions`)
     },
-    if: true,
+    if: org.feature_settings?.subscriptions_enabled,
     subs: [
       {
         title: 'Overview',
@@ -212,7 +241,7 @@ const maintainerRoutesList = (org: Organization): Route[] => [
     checkIsActive: (currentRoute: string): boolean => {
       return currentRoute.startsWith(`/maintainer/${org.name}/donations`)
     },
-    if: true,
+    if: org.donations_enabled,
   },
   {
     id: 'org-issues',
@@ -223,7 +252,7 @@ const maintainerRoutesList = (org: Organization): Route[] => [
     checkIsActive: (currentRoute: string): boolean => {
       return currentRoute.startsWith(`/maintainer/${org.name}/issues`)
     },
-    if: true,
+    if: org.feature_settings?.issue_funding_enabled,
     subs: [
       {
         title: 'Overview',

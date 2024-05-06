@@ -171,15 +171,6 @@ const maintainerRoutesList = (org: Organization): Route[] => [
     if: true,
   },
   {
-    id: 'public-page',
-    title: 'Public Page',
-    link: organizationPageLink(org),
-    postIcon: undefined,
-    icon: <ArrowUpRightIcon className="h-5 w-5" fontSize="inherit" />,
-    if: true,
-    subs: undefined,
-  },
-  {
     id: 'newsletter',
     title: 'Newsletter',
     icon: <StickyNote2Outlined className="h-5 w-5" fontSize="inherit" />,

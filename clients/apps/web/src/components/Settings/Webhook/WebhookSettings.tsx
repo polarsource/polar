@@ -1,6 +1,7 @@
 'use client'
 
 import { useListWebhooksEndpoints } from '@/hooks/queries'
+import { ArrowUpRightIcon } from '@heroicons/react/20/solid'
 import { Organization, WebhookEndpoint } from '@polar-sh/sdk'
 import Link from 'next/link'
 import {
@@ -8,8 +9,17 @@ import {
   ShadowListGroup,
 } from 'polarkit/components/ui/atoms'
 import Button from 'polarkit/components/ui/atoms/button'
+import { InlineModal } from '../../Modal/InlineModal'
+import { useModal } from '../../Modal/useModal'
+import NewWebhookModal from './NewWebhookModal'
 
 const WebhookSettings = (props: { org: Organization }) => {
+  const {
+    isShown: isNewWebhookModalShown,
+    show: showNewWebhookModal,
+    hide: hideNewWebhookModal,
+  } = useModal()
+
   const endpoints = useListWebhooksEndpoints({
     organizationId: props.org.id,
     limit: 100,
@@ -36,23 +46,31 @@ const WebhookSettings = (props: { org: Organization }) => {
         )}
         <ShadowListGroup.Item>
           <div className="flex flex-row items-center gap-x-4">
-            <Link
-              href={`/maintainer/${props.org.name}/webhooks/new`}
-              className="shrink-0"
-            >
-              <Button asChild>Add endpoint</Button>
-            </Link>
+            <Button asChild onClick={showNewWebhookModal}>
+              Add Endpoint
+            </Button>
             <Link
               href="https://api.polar.sh/docs#/webhooks/"
               className="shrink-0"
             >
-              <Button asChild variant={'outline'}>
-                Documentation
+              <Button className="gap-x-1" asChild variant="ghost">
+                <span>Documentation</span>
+                <ArrowUpRightIcon className="h-4 w-4" />
               </Button>
             </Link>
           </div>
         </ShadowListGroup.Item>
       </ShadowListGroup>
+      <InlineModal
+        isShown={isNewWebhookModalShown}
+        hide={hideNewWebhookModal}
+        modalContent={
+          <NewWebhookModal
+            hide={hideNewWebhookModal}
+            organization={props.org}
+          />
+        }
+      />
     </div>
   )
 }
@@ -70,8 +88,8 @@ const Endpoint = ({
     <div className="flex w-full flex-col gap-y-4">
       <div className="flex flex-row items-center justify-between ">
         <div className="flex  flex-row overflow-hidden">
-          <div className="gap-y flex flex-col overflow-hidden">
-            <h3 className="text-md mr-4 overflow-hidden text-ellipsis whitespace-nowrap font-mono">
+          <div className="flex flex-col gap-y-1 overflow-hidden">
+            <h3 className="text-md mr-4 overflow-hidden text-ellipsis whitespace-nowrap font-mono text-sm">
               {endpoint.url}
             </h3>
             <p className="dark:text-polar-400 text-sm text-gray-500">
@@ -84,10 +102,10 @@ const Endpoint = ({
         </div>
         <div className="dark:text-polar-400 flex flex-shrink-0 flex-row items-center gap-x-4 space-x-4 text-gray-500">
           <Link
-            href={`/maintainer/${organization.name}/webhooks/endpoints/${endpoint.id}`}
+            href={`/maintainer/${organization.name}/settings/webhooks/endpoints/${endpoint.id}`}
           >
-            <Button asChild size={'sm'}>
-              Edit
+            <Button asChild variant="secondary">
+              Details
             </Button>
           </Link>
         </div>

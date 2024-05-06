@@ -7,8 +7,8 @@ import GeneralSettings from '@/components/Settings/GeneralSettings'
 import NotificationSettings from '@/components/Settings/NotificationSettings'
 import PaymentMethodSettings from '@/components/Settings/PaymentMethodSettings'
 import { Section, SectionDescription } from '@/components/Settings/Section'
-import WebhookNotificationSettings from '@/components/Settings/WebhookNotificationSettings'
-import WebhookSettings from '@/components/Settings/WebhookSettings'
+import WebhookNotificationSettings from '@/components/Settings/Webhook/WebhookNotificationSettings'
+import WebhookSettings from '@/components/Settings/Webhook/WebhookSettings'
 import { useListAdminOrganizations } from '@/hooks/queries'
 
 export default function Page() {

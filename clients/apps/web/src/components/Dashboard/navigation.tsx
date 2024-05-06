@@ -290,13 +290,11 @@ const maintainerRoutesList = (org: Organization): Route[] => [
     postIcon: undefined,
     link: `/maintainer/${org.name}/webhooks`,
     if: false,
-    subs: [
-      {
-        title: 'Endpoints',
-        link: `/maintainer/${org.name}/webhooks`,
-        icon: <Webhook fontSize="inherit" />,
-      },
-    ],
+    checkIsActive: (currentRoute: string): boolean => {
+      return currentRoute.startsWith(
+        `/maintainer/${org.name}/settings/webhooks`,
+      )
+    },
   },
 ]
 

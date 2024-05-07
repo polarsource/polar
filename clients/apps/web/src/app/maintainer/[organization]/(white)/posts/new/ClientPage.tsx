@@ -10,6 +10,7 @@ import { ArticleCreate } from '@polar-sh/sdk'
 import { redirect, useRouter } from 'next/navigation'
 import Button from 'polarkit/components/ui/atoms/button'
 import { Tabs } from 'polarkit/components/ui/atoms/tabs'
+import { Separator } from 'polarkit/components/ui/separator'
 import { useEffect, useState } from 'react'
 
 const ClientPage = () => {
@@ -115,7 +116,7 @@ const ClientPage = () => {
 
   return (
     <Tabs className="flex flex-col" value={tab} onValueChange={onTabChange}>
-      <DashboardTopbar title="Create Post" useOrgFromURL>
+      <DashboardTopbar title="Create Post" marginBottom={false} useOrgFromURL>
         <Button
           onClick={() => {
             captureEvent('posts:create_save_button:create')
@@ -127,6 +128,7 @@ const ClientPage = () => {
           Save
         </Button>
       </DashboardTopbar>
+      <Separator className="dark:bg-polar-700 bg-gray-100" />
       <PostEditor
         disabled={create.isPending}
         canCreate={canCreate}

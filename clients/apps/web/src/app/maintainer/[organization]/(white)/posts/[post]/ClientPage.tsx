@@ -17,6 +17,7 @@ import { redirect, useParams, useRouter } from 'next/navigation'
 import Button from 'polarkit/components/ui/atoms/button'
 import { Tabs } from 'polarkit/components/ui/atoms/tabs'
 import { Banner } from 'polarkit/components/ui/molecules'
+import { Separator } from 'polarkit/components/ui/separator'
 import { useCallback, useEffect, useRef, useState } from 'react'
 
 const ClientPage = () => {
@@ -165,7 +166,7 @@ const ClientPage = () => {
 
   return (
     <Tabs className="flex flex-col" value={tab} onValueChange={onTabChange}>
-      <DashboardTopbar title="Edit Post" useOrgFromURL>
+      <DashboardTopbar title="Edit Post" marginBottom={false} useOrgFromURL>
         <div className="flex flex-row items-center gap-x-2">
           <span className="dark:text-polar-500 px-4 text-sm text-gray-500">
             {isPublished ? 'Published' : 'Unpublished'}
@@ -191,6 +192,7 @@ const ClientPage = () => {
           </Button>
         </div>
       </DashboardTopbar>
+      <Separator className="dark:bg-polar-700 bg-gray-100" />
       <PostEditor
         article={post.data}
         title={localArticle.title}

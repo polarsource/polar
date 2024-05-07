@@ -40,9 +40,6 @@ from .metadata import get_server_metadata
 from .requests import StarletteJsonRequest, StarletteOAuth2Request
 from .service.oauth2_grant import oauth2_grant as oauth2_grant_service
 
-ExpiresInConfigType: typing.TypeAlias = dict[str, int]
-TokenGeneratorType: typing.TypeAlias = typing.Callable[..., str]
-
 logger: Logger = structlog.get_logger(__name__)
 
 
@@ -311,8 +308,9 @@ class AuthorizationServer(_AuthorizationServer):
             "refresh_token": refresh_token_hash,
         }
         sub_type, sub = typing.cast(SubTypeValue, request.user)
+        client = typing.cast(OAuth2Client, request.client)
         oauth2_token = OAuth2Token(
-            **token_data, client_id=request.client_id, sub_type=sub_type
+            **token_data, client_id=client.client_id, sub_type=sub_type
         )
         oauth2_token.sub = sub
         self.session.add(oauth2_token)

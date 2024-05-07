@@ -182,9 +182,8 @@ const BenefitsUpsell = () => {
       <div className="flex h-full max-h-[660px] w-full flex-row items-center justify-center gap-8 overflow-hidden border-b px-12 md:w-2/5 md:border-none">
         <motion.div className="flex flex-col gap-y-6" style={{ y: listY }}>
           {MOCKED_SUBSCRIPTION_TIERS.map((tier) => (
-            <motion.div className="w-[300px]">
+            <motion.div key={tier.id} className="w-[300px]">
               <SubscriptionTierCard
-                key={tier.id}
                 className="dark:ring-polar-700 h-full border-none ring-1 ring-gray-100"
                 variant="small"
                 subscriptionTier={tier}

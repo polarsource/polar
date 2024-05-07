@@ -35,7 +35,7 @@ const Box = ({
   return (
     <div
       className={twMerge(
-        'flex flex-row bg-white dark:bg-transparent',
+        'flex flex-row bg-gray-50 dark:bg-transparent',
         className,
       )}
     >
@@ -64,7 +64,7 @@ export default function Page() {
       <Box>
         <HeroSection />
       </Box>
-      <Box className="bg-gray-50">
+      <Box>
         <BenefitsUpsell />
       </Box>
       <Box>
@@ -172,14 +172,14 @@ const BenefitsUpsell = () => {
 
   return (
     <motion.div
-      className="flex flex-col items-start px-6 md:flex-row md:px-0"
+      className="flex flex-col items-start md:flex-row md:px-0"
       initial="initial"
       variants={{ initial: { opacity: 0 }, animate: { opacity: 1 } }}
       transition={{ delay: 0.2, duration: 0.5, ease: 'easeInOut' }}
       whileInView="animate"
       viewport={{ once: true }}
     >
-      <div className="flex h-full max-h-[642px] w-full flex-row items-center justify-center gap-8 overflow-hidden px-12 md:w-2/5">
+      <div className="flex h-full max-h-[660px] w-full flex-row items-center justify-center gap-8 overflow-hidden border-b px-12 md:w-2/5 md:border-none">
         <motion.div className="flex flex-col gap-y-6" style={{ y: listY }}>
           {MOCKED_SUBSCRIPTION_TIERS.map((tier) => (
             <motion.div className="w-[300px]">
@@ -193,10 +193,10 @@ const BenefitsUpsell = () => {
           ))}
         </motion.div>
       </div>
-      <div className="flex flex-col gap-y-12 px-16 py-24 pr-6 md:w-3/5 md:pr-24">
+      <div className="flex w-full flex-col gap-y-12 px-8 py-24 pr-6 md:w-3/5 md:px-20 md:pr-24">
         <div className="flex flex-col gap-y-8">
           <h1 className="dark:text-polar-50 text-pretty text-4xl leading-tight text-gray-950">
-            Automatic & built-in subscription benefits
+            Powerful & automatic subscription benefits
           </h1>
           <p className="dark:text-polar-400 text-pretty text-lg text-gray-600">
             Offer subscription tiers with benefits, built for the developer
@@ -291,7 +291,7 @@ const FeaturesUpsell = () => {
           <h3 className="dark:text-polar-50 text-pretty text-xl font-medium text-gray-950">
             {title}
           </h3>
-          <p className="dark:text-polar-500 text-pretty text-gray-500">
+          <p className="dark:text-polar-400 text-pretty text-gray-500">
             {description}
           </p>
         </div>
@@ -389,7 +389,7 @@ const DevelopersUpsell = () => {
     return (
       <Link
         href={href}
-        className="bg-gray-75 dark:bg-polar-900 flex flex-col items-center gap-y-6 p-8"
+        className="dark:bg-polar-900 flex flex-col items-center gap-y-6 bg-gray-100 p-8"
       >
         <Avatar className="h-16 w-16" avatar_url={avatarUrl} name={name} />
         <div className="flex flex-col items-center gap-y-2 text-center">

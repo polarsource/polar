@@ -202,7 +202,9 @@ The Polar API is online at `https://api.polar.sh`.
 """,  # noqa: E501
         routes=[format(r) for r in app.routes if show(r)],
         webhooks=webhooks_app.webhooks.routes,
-        servers=[{"url": "https://api.polar.sh"}],
+        servers=[{"url": "https://api.polar.sh"}]
+        if not settings.is_development()
+        else None,
     )
     openapi_schema["info"]["x-logo"] = {
         "url": "https://7vk6rcnylug0u6hg.public.blob.vercel-storage.com/image-Yq60IIuVbCa1dEBIFFDYKlZo74PzKl.png"

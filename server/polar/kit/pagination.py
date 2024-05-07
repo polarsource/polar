@@ -90,7 +90,7 @@ async def get_pagination_params(
         10,
         description=(
             f"Size of a page, defaults to 10. "
-            f"Maximum is {settings.API_PAGINATION_MAX_LIMIT}"
+            f"Maximum is {settings.API_PAGINATION_MAX_LIMIT}."
         ),
         gt=0,
     ),
@@ -107,7 +107,7 @@ class Pagination(Schema):
 
 
 class ListResource(BaseModel, Generic[T]):
-    items: Sequence[T] = []
+    items: list[T] = []
     pagination: Pagination
 
     @classmethod
@@ -115,7 +115,7 @@ class ListResource(BaseModel, Generic[T]):
         cls, items: Sequence[T], total_count: int, pagination_params: PaginationParams
     ) -> Self:
         return cls(
-            items=items,
+            items=list(items),
             pagination=Pagination(
                 total_count=total_count,
                 max_page=math.ceil(total_count / pagination_params.limit),

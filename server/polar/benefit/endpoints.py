@@ -1,6 +1,8 @@
+from typing import Annotated
+
 import structlog
 from fastapi import Body, Depends, Query
-from pydantic import UUID4
+from pydantic import UUID4, Field
 
 from polar.authz.service import Authz
 from polar.exceptions import BadRequest, ResourceNotFound
@@ -15,8 +17,9 @@ from polar.tags.api import Tags
 
 from . import auth
 from .schemas import Benefit as BenefitSchema
-from .schemas import BenefitCreate, BenefitUpdate, benefit_schema_map
+from .schemas import BenefitCreate, BenefitGrant, BenefitUpdate, benefit_schema_map
 from .service.benefit import benefit as benefit_service
+from .service.benefit_grant import benefit_grant as benefit_grant_service
 
 log = structlog.get_logger()
 
@@ -58,6 +61,64 @@ async def lookup_benefit(
         raise ResourceNotFound()
 
     return benefit
+
+
+@router.get(
+    "/{id}/grants",
+    response_model=ListResource[BenefitGrant],
+    tags=[Tags.PUBLIC],
+    description=(
+        "List the individual grants for a benefit.\n\n"
+        "It's especially useful to check if a user has been granted a benefit."
+    ),
+    responses={
+        404: {"description": "Benefit not found.", "model": ResourceNotFound.schema()},
+    },
+)
+async def list_benefit_grants(
+    id: Annotated[UUID4, Field(description="The benefit ID")],
+    auth_subject: auth.BenefitsRead,
+    pagination: PaginationParamsQuery,
+    is_granted: bool | None = Query(
+        None,
+        description=(
+            "Filter by granted status. "
+            "If `true`, only granted benefits will be returned. "
+            "If `false`, only revoked benefits will be returned. "
+        ),
+    ),
+    user_id: UUID4 | None = Query(
+        None,
+        description=("Filter by user ID."),
+    ),
+    github_user_id: int | None = Query(
+        None,
+        description=(
+            "Filter by GitHub user ID. "
+            "Only available for users who have linked their GitHub account on Polar."
+        ),
+    ),
+    session: AsyncSession = Depends(get_db_session),
+) -> ListResource[BenefitGrant]:
+    benefit = await benefit_service.get_by_id(session, auth_subject, id)
+
+    if benefit is None:
+        raise ResourceNotFound()
+
+    results, count = await benefit_grant_service.list(
+        session,
+        benefit,
+        is_granted=is_granted,
+        user_id=user_id,
+        github_user_id=github_user_id,
+        pagination=pagination,
+    )
+
+    return ListResource.from_paginated_results(
+        [BenefitGrant.model_validate(result) for result in results],
+        count,
+        pagination,
+    )
 
 
 @router.post("/", response_model=BenefitSchema, status_code=201, tags=[Tags.PUBLIC])

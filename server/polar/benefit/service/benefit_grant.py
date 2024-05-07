@@ -1,5 +1,6 @@
 from collections.abc import Sequence
 from typing import Unpack
+from uuid import UUID
 
 import structlog
 from sqlalchemy import select
@@ -7,11 +8,13 @@ from sqlalchemy import select
 from polar.benefit.benefits import BenefitPreconditionError, get_benefit_service
 from polar.eventstream.service import publish as eventstream_publish
 from polar.exceptions import PolarError
+from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.services import ResourceServiceReader
 from polar.logging import Logger
-from polar.models import Benefit, BenefitGrant, User
+from polar.models import Benefit, BenefitGrant, OAuthAccount, User
 from polar.models.benefit import BenefitProperties, BenefitType
 from polar.models.benefit_grant import BenefitGrantScope
+from polar.models.user import OAuthPlatform
 from polar.notifications.notification import (
     BenefitPreconditionErrorNotificationPayload,
     NotificationType,
@@ -38,6 +41,43 @@ class EmptyScopeError(BenefitGrantError):
 
 
 class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
+    async def list(
+        self,
+        session: AsyncSession,
+        benefit: Benefit,
+        *,
+        is_granted: bool | None = None,
+        user_id: UUID | None = None,
+        github_user_id: int | None = None,
+        pagination: PaginationParams,
+    ) -> tuple[Sequence[BenefitGrant], int]:
+        statement = (
+            select(BenefitGrant)
+            .where(
+                BenefitGrant.benefit_id == benefit.id,
+                BenefitGrant.deleted_at.is_(None),
+            )
+            .order_by(BenefitGrant.created_at.desc())
+        )
+
+        if is_granted is not None:
+            statement = statement.where(BenefitGrant.is_granted.is_(is_granted))
+
+        if user_id is not None:
+            statement = statement.where(BenefitGrant.user_id == user_id)
+
+        if github_user_id is not None:
+            oauth_account_statement = select(OAuthAccount.user_id).where(
+                OAuthAccount.deleted_at.is_(None),
+                OAuthAccount.platform == OAuthPlatform.github,
+                OAuthAccount.account_id == str(github_user_id),
+            )
+            statement = statement.where(
+                BenefitGrant.user_id.in_(oauth_account_statement)
+            )
+
+        return await paginate(session, statement, pagination=pagination)
+
     async def grant_benefit(
         self,
         session: AsyncSession,

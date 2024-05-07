@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Annotated
 
-from pydantic import AfterValidator, BaseModel, ConfigDict, EmailStr
+from pydantic import AfterValidator, BaseModel, ConfigDict, EmailStr, Field
 from pydantic_core import PydanticCustomError
 
 from .email import EmailNotValidError, validate_email
@@ -12,8 +12,10 @@ class Schema(BaseModel):
 
 
 class TimestampedSchema(Schema):
-    created_at: datetime
-    modified_at: datetime | None = None
+    created_at: datetime = Field(..., description="Creation timestamp of the object.")
+    modified_at: datetime | None = Field(
+        None, description="Last modification timestamp of the object."
+    )
 
 
 def _empty_str_to_none(value: str | None) -> str | None:

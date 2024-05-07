@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Literal
 
 from pydantic import UUID4, Field, computed_field, field_validator
@@ -291,3 +292,34 @@ BenefitSubscriber = (
 
 # Properties that are public (included in Subscription Tier endpoints)
 BenefitPublic = BenefitBase | BenefitArticles
+
+
+class BenefitGrant(TimestampedSchema):
+    """
+    A grant of a benefit to a user.
+    """
+
+    id: UUID4 = Field(description="The ID of the grant.")
+    granted_at: datetime | None = Field(
+        None,
+        description=(
+            "The timestamp when the benefit was granted. "
+            "If `None`, the benefit is not granted."
+        ),
+    )
+    is_granted: bool = Field(description="Whether the benefit is granted.")
+    revoked_at: datetime | None = Field(
+        None,
+        description=(
+            "The timestamp when the benefit was revoked. "
+            "If `None`, the benefit is not revoked."
+        ),
+    )
+    is_revoked: bool = Field(description="Whether the benefit is revoked.")
+    subscription_id: UUID4 = Field(
+        description="The ID of the subscription that granted this benefit."
+    )
+    user_id: UUID4 = Field(description="The ID of the user concerned by this grant.")
+    benefit_id: UUID4 = Field(
+        description="The ID of the benefit concerned by this grant."
+    )

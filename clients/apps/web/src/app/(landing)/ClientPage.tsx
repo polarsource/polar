@@ -17,6 +17,7 @@ import {
   StickyNote2Outlined,
   SyncAltOutlined,
   TextSnippetOutlined,
+  VolunteerActivismOutlined,
 } from '@mui/icons-material'
 import { SubscriptionTier, UserSignupType } from '@polar-sh/sdk'
 import { motion, useScroll, useTransform } from 'framer-motion'
@@ -27,9 +28,17 @@ import Button from 'polarkit/components/ui/atoms/button'
 import { ComponentProps, PropsWithChildren } from 'react'
 import { twMerge } from 'tailwind-merge'
 
-const Box = ({ children }: PropsWithChildren) => {
+const Box = ({
+  children,
+  className,
+}: PropsWithChildren<{ className?: string }>) => {
   return (
-    <div className="flex flex-row bg-white dark:bg-transparent">
+    <div
+      className={twMerge(
+        'flex flex-row bg-white dark:bg-transparent',
+        className,
+      )}
+    >
       <AnimatedSeparator
         className="hidden md:block"
         orientation="vertical"
@@ -55,7 +64,7 @@ export default function Page() {
       <Box>
         <HeroSection />
       </Box>
-      <Box>
+      <Box className="bg-gray-50">
         <BenefitsUpsell />
       </Box>
       <Box>
@@ -101,11 +110,11 @@ const HeroSection = () => {
       >
         <div className="flex flex-col gap-y-8">
           <h1 className="dark:text-polar-50 text-pretty text-4xl leading-tight text-gray-950">
-            Get paid coding on your passion
+            From a first donation to IPO
           </h1>
           <p className="text-xl leading-relaxed text-gray-500">
-            Polar is the creator platform for developers. Offer your supporters
-            & customers a subscription designed for the developer ecosystem.
+            The all-in-one funding & monetization platform for open source- and
+            indie developers. Built entirely open source.
           </p>
         </div>
 
@@ -116,7 +125,7 @@ const HeroSection = () => {
             userSignupType={UserSignupType.MAINTAINER}
             returnTo="/maintainer"
           />
-          <p className="text-xs leading-normal text-gray-400">
+          <p className="dark:text-polar-500 text-xs leading-normal text-gray-400">
             By using Polar you agree to our{' '}
             <BlueLink href="/legal/terms" target="_blank">
               Terms of Service
@@ -158,102 +167,99 @@ const HeroSection = () => {
 }
 
 const BenefitsUpsell = () => {
+  const { scrollYProgress } = useScroll()
+  const listY = useTransform(scrollYProgress, [0, 1], ['0%', '-50%'])
+
   return (
     <motion.div
-      className="flex flex-col gap-16 px-6 py-24 md:flex-row md:px-0"
+      className="flex flex-col items-start px-6 md:flex-row md:px-0"
       initial="initial"
       variants={{ initial: { opacity: 0 }, animate: { opacity: 1 } }}
       transition={{ delay: 0.2, duration: 0.5, ease: 'easeInOut' }}
       whileInView="animate"
       viewport={{ once: true }}
     >
-      <Image
-        className="rounded-3xl object-cover object-right md:w-1/2 md:rounded-none md:rounded-r-3xl"
-        src="/assets/landing/new_subscription_tier_view.webp"
-        alt="Polar New Subscription Tier Page"
-        width={1800}
-        height={1200}
-      />
-      <div className="flex flex-col gap-y-12 pr-6 md:w-1/2 md:pr-24">
+      <div className="flex h-full max-h-[642px] w-full flex-row items-center justify-center gap-8 overflow-hidden px-12 md:w-2/5">
+        <motion.div className="flex flex-col gap-y-6" style={{ y: listY }}>
+          {MOCKED_SUBSCRIPTION_TIERS.map((tier) => (
+            <motion.div className="w-[300px]">
+              <SubscriptionTierCard
+                key={tier.id}
+                className="dark:ring-polar-700 h-full border-none ring-1 ring-gray-100"
+                variant="small"
+                subscriptionTier={tier}
+              />
+            </motion.div>
+          ))}
+        </motion.div>
+      </div>
+      <div className="flex flex-col gap-y-12 px-16 py-24 pr-6 md:w-3/5 md:pr-24">
         <div className="flex flex-col gap-y-8">
           <h1 className="dark:text-polar-50 text-pretty text-4xl leading-tight text-gray-950">
-            Powerful & built-in subscription benefits
+            Automatic & built-in subscription benefits
           </h1>
-          <p className="text-xl leading-relaxed text-gray-500">
-            Polar is built open source & in public.
-            <br />
-            We&apos;re just getting started.
+          <p className="dark:text-polar-400 text-pretty text-lg text-gray-600">
+            Offer subscription tiers with benefits, built for the developer
+            ecosystem.
           </p>
         </div>
         <div className="flex flex-col gap-y-8">
           <ul className="flex flex-col gap-y-4">
             <li className="flex flex-row gap-x-4">
-              <StickyNote2Outlined className="text-blue-500" />
+              <StickyNote2Outlined className="dark:text-polar-50 text-gray-950" />
               <div className="flex flex-col">
                 <span className="dark:text-polar-50 font-medium text-gray-950">
                   Premium posts & newsletter
                 </span>
-                <p className="dark:text-polar-500 text-sm text-gray-500">
-                  Offer your paid subscribers early sneak peaks, educational
-                  content, code examples and more.
+                <p className="dark:text-polar-400 text-sm text-gray-500">
+                  Offer your paid subscribers early sneak peaks & educational
+                  content.
                 </p>
               </div>
             </li>
             <li className="flex flex-row gap-x-4">
-              <GitHubIcon width={30} height={30} className="text-blue-500" />
+              <GitHubIcon
+                width={25}
+                height={25}
+                className="dark:text-polar-50 text-gray-950"
+              />
               <div className="flex flex-col">
                 <span className="dark:text-polar-50 font-medium text-gray-950">
                   Access to private GitHub repositories
                 </span>
-                <p className="dark:text-polar-500 text-sm text-gray-500">
-                  Enabling early access, sponsorware, self-hosted products,
-                  starter kits, courses and so much more.
+                <p className="dark:text-polar-400 text-sm text-gray-500">
+                  Enabling early access, sponsorware, courses & so much more.
                 </p>
               </div>
             </li>
             <li className="flex flex-row gap-x-4">
-              <DiscordIcon size={30} className="text-blue-500" />
+              <DiscordIcon
+                size={25}
+                className="dark:text-polar-50 text-gray-950"
+              />
               <div className="flex flex-col">
                 <span className="dark:text-polar-50 font-medium text-gray-950">
                   Discord invites
                 </span>
-                <p className="dark:text-polar-500 text-sm text-gray-500">
-                  Setup custom roles per tier. Enabling membership channels to
-                  individuals & support for businesses.
+                <p className="dark:text-polar-400 text-sm text-gray-500">
+                  Manage membership channels to individuals & support for
+                  businesses.
                 </p>
               </div>
             </li>
             <li className="flex flex-row gap-x-4">
-              <BoltOutlined className="text-blue-500" />
+              <BoltOutlined className="dark:text-polar-50 text-gray-950" />
               <div className="flex flex-col">
                 <span className="dark:text-polar-50 font-medium text-gray-950">
                   Sponsorship 2.0
                 </span>
-                <p className="dark:text-polar-500 text-sm text-gray-500">
-                  Offer logo promotions on README, sites and posts. Polar will
-                  automate it. No more manual overhead.
+                <p className="dark:text-polar-400 text-sm text-gray-500">
+                  Logo promotions on README, sites & newsletters. Polar will
+                  automate it.
                 </p>
               </div>
             </li>
           </ul>
-        </div>
-        <div className="flex flex-row items-center gap-x-4">
-          <Link href="https://github.com/polarsource/polar" target="_blank">
-            <Button className="bg-blue-50" size="lg" variant="secondary">
-              <div className="flex flex-row items-center gap-x-3">
-                <GitHubIcon width={16} />
-                <span>GitHub</span>
-              </div>
-            </Button>
-          </Link>
-          <Link href="https://discord.gg/zneAsTPUt7" target="_blank">
-            <Button className="bg-blue-50" size="lg" variant="secondary">
-              <div className="flex flex-row items-center gap-x-3">
-                <DiscordIcon />
-                <span>Join our Discord</span>
-              </div>
-            </Button>
-          </Link>
         </div>
       </div>
     </motion.div>
@@ -281,7 +287,7 @@ const FeaturesUpsell = () => {
         )}
       >
         <div className="flex w-full flex-col items-center justify-center gap-y-4">
-          <Icon className="text-blue-500" fontSize="large" />
+          <Icon className="text-blue-500 dark:text-blue-400" fontSize="large" />
           <h3 className="dark:text-polar-50 text-pretty text-xl font-medium text-gray-950">
             {title}
           </h3>
@@ -307,40 +313,13 @@ const FeaturesUpsell = () => {
         icon={Bolt}
         title="Individual & Business Subscriptions"
         description="Separate membership perks & commercial offerings."
-        className="col-span-1 row-span-2 gap-16 border-b md:border-b-0 md:border-r"
-      >
-        <div className="animate-infinite-scroll flex h-fit flex-row items-start justify-stretch gap-x-8 self-start text-left">
-          {[...MOCKED_SUBSCRIPTION_TIERS, ...MOCKED_SUBSCRIPTION_TIERS].map(
-            (tier) => (
-              <SubscriptionTierCard
-                key={tier.id}
-                className="dark:ring-polar-700 h-full w-[280px] border-none ring-1 ring-gray-100"
-                variant="small"
-                subscriptionTier={tier}
-              >
-                <Button fullWidth>Subscribe</Button>
-              </SubscriptionTierCard>
-            ),
-          )}
-        </div>
-      </Feature>
+        className="col-span-2 gap-16 border-b md:border-b-0 md:border-r"
+      />
       <Feature
         icon={TextSnippetOutlined}
         title="Posts & Newletter"
-        description="Write posts in an editor designed for developers. Share them with everyone, paid subscribers or a mix (paywalled sections)."
-        className="col-span-2 md:px-32"
-      />
-      <Feature
-        icon={ApiOutlined}
-        title="API & SDK"
-        description="Integrate it all on your own docs, sites or services using our API & SDK."
-        className="col-start-2 col-end-3 border-t"
-      />
-      <Feature
-        icon={AttachMoneyOutlined}
-        title="Value-add taxes handled"
-        description="We handle it as the merchant of record."
-        className="col-start-3 col-end-4 border-t md:border-l"
+        description="Share newsletters with everyone, paid subscribers or a mix."
+        className="col-span-1"
       />
       <Feature
         icon={HowToVoteOutlined}
@@ -369,6 +348,24 @@ const FeaturesUpsell = () => {
           height={640}
         />
       </Feature>
+      <Feature
+        icon={VolunteerActivismOutlined}
+        title="Donations"
+        description="Give your supporters an easy way to donate."
+        className="col-span-1 border-t md:border-r"
+      />
+      <Feature
+        icon={AttachMoneyOutlined}
+        title="Value-add taxes handled"
+        description="We handle it as the merchant of record."
+        className="col-start-2 col-end-3 border-t"
+      />
+      <Feature
+        icon={ApiOutlined}
+        title="API & SDK"
+        description="Integrate it all on your own docs, sites or services using our API & SDK."
+        className="col-start-3 col-end-4 border-t md:border-l"
+      />
     </motion.div>
   )
 }
@@ -492,9 +489,24 @@ const DevelopersUpsell = () => {
             We&apos;re proud to support incredible developers and open source
             initiatives that are shaping the future.
           </p>
-          <p className="dark:text-polar-500 text-xl leading-relaxed text-gray-500">
-            Join us today.
-          </p>
+        </div>
+        <div className="flex flex-row items-center gap-x-4">
+          <Link href="https://github.com/polarsource/polar" target="_blank">
+            <Button className="bg-blue-50" size="lg" variant="secondary">
+              <div className="flex flex-row items-center gap-x-3">
+                <GitHubIcon width={16} />
+                <span>GitHub</span>
+              </div>
+            </Button>
+          </Link>
+          <Link href="https://discord.gg/zneAsTPUt7" target="_blank">
+            <Button className="bg-blue-50" size="lg" variant="secondary">
+              <div className="flex flex-row items-center gap-x-3">
+                <DiscordIcon />
+                <span>Join our Discord</span>
+              </div>
+            </Button>
+          </Link>
         </div>
       </div>
     </motion.div>
@@ -512,7 +524,7 @@ const Pricing = () => {
   }>) => {
     return (
       <div className="flex w-full flex-1 flex-col gap-8 px-8 py-12 md:px-12 md:py-24">
-        <span className="text-blue-500">{children}</span>
+        <span className="text-blue-500 dark:text-blue-400">{children}</span>
         <div className="flex flex-col gap-2">
           <h1 className="text-xl leading-snug">{title}</h1>
           <p className="dark:text-polar-500 text-lg text-gray-500">
@@ -594,8 +606,7 @@ const MOCKED_SUBSCRIPTION_TIERS: Partial<SubscriptionTier>[] = [
   {
     name: 'Follower',
     type: 'free',
-    description:
-      'A simple way to follow my projects. This tier is free and will give you access to my weekly newsletter.',
+    description: 'A simple way to follow my projects.',
 
     benefits: [
       {
@@ -613,7 +624,7 @@ const MOCKED_SUBSCRIPTION_TIERS: Partial<SubscriptionTier>[] = [
     name: 'Supporter',
     type: 'individual',
     description:
-      'Thanks for supporting me & my projects. As a Supporter you will get access to my weekly newsletter & bug report priority across my open source projects.',
+      'Access to my weekly newsletter, my private GitHub repository & invite to my Discord server.',
     prices: [
       {
         id: '123',
@@ -636,8 +647,17 @@ const MOCKED_SUBSCRIPTION_TIERS: Partial<SubscriptionTier>[] = [
       },
       {
         id: '456',
-        description: 'Bug Report Priority',
-        type: 'custom',
+        description: 'Access to GitHub repository',
+        type: 'github_repository',
+        created_at: new Date().toDateString(),
+        selectable: false,
+        deletable: false,
+        organization_id: '123',
+      },
+      {
+        id: '789',
+        description: 'Discord Invite',
+        type: 'discord',
         created_at: new Date().toDateString(),
         selectable: false,
         deletable: false,
@@ -649,7 +669,7 @@ const MOCKED_SUBSCRIPTION_TIERS: Partial<SubscriptionTier>[] = [
     name: 'Enterprise',
     type: 'business',
     description:
-      'Your support means a lot! This business tier will give your company exposure in my weekly newsletter, and 4 hours of monthly consulting.',
+      'Exclusive support, exposure in my weekly newsletter & premium role on Discord.',
     prices: [
       {
         id: '123',
@@ -663,15 +683,6 @@ const MOCKED_SUBSCRIPTION_TIERS: Partial<SubscriptionTier>[] = [
     benefits: [
       {
         id: '123',
-        description: 'Premium Newsletter',
-        type: 'articles',
-        created_at: new Date().toDateString(),
-        selectable: false,
-        deletable: false,
-        organization_id: '123',
-      },
-      {
-        id: '456',
         description: 'Your logotype in Newsletter',
         type: 'articles',
         created_at: new Date().toDateString(),
@@ -680,9 +691,18 @@ const MOCKED_SUBSCRIPTION_TIERS: Partial<SubscriptionTier>[] = [
         organization_id: '123',
       },
       {
+        id: '456',
+        description: 'Access to GitHub repository',
+        type: 'github_repository',
+        created_at: new Date().toDateString(),
+        selectable: false,
+        deletable: false,
+        organization_id: '123',
+      },
+      {
         id: '789',
-        description: '4 hours of consulting',
-        type: 'custom',
+        description: 'Premium Role on Discord',
+        type: 'discord',
         created_at: new Date().toDateString(),
         selectable: false,
         deletable: false,

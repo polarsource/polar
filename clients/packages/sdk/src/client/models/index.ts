@@ -2447,7 +2447,7 @@ export interface BenefitBase {
  * 
  * @export
  */
-export type BenefitCreate = { type: 'ads' } & BenefitAdsCreate | { type: 'custom' } & BenefitCustomCreate | { type: 'discord' } & BenefitDiscordCreate | { type: 'github_repository' } & BenefitGitHubRepositoryCreate;
+export type BenefitCreate = { type: 'ads' } & BenefitAdsCreate | { type: 'custom' } & BenefitCustomCreate | { type: 'discord' } & BenefitDiscordCreate | { type: 'downloads' } & BenefitDownloadsCreate | { type: 'github_repository' } & BenefitGitHubRepositoryCreate;
 /**
  * A benefit of type `custom`.
  * 
@@ -2988,6 +2988,263 @@ export const BenefitDiscordUpdateTypeEnum = {
     DISCORD: 'discord'
 } as const;
 export type BenefitDiscordUpdateTypeEnum = typeof BenefitDiscordUpdateTypeEnum[keyof typeof BenefitDiscordUpdateTypeEnum];
+
+/**
+ * 
+ * @export
+ * @interface BenefitDownloads
+ */
+export interface BenefitDownloads {
+    /**
+     * Creation timestamp of the object.
+     * @type {string}
+     * @memberof BenefitDownloads
+     */
+    created_at: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitDownloads
+     */
+    modified_at?: string;
+    /**
+     * The ID of the benefit.
+     * @type {string}
+     * @memberof BenefitDownloads
+     */
+    id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitDownloads
+     */
+    type: BenefitDownloadsTypeEnum;
+    /**
+     * The description of the benefit.
+     * @type {string}
+     * @memberof BenefitDownloads
+     */
+    description: string;
+    /**
+     * Whether the benefit is selectable when creating a product.
+     * @type {boolean}
+     * @memberof BenefitDownloads
+     */
+    selectable: boolean;
+    /**
+     * Whether the benefit is deletable.
+     * @type {boolean}
+     * @memberof BenefitDownloads
+     */
+    deletable: boolean;
+    /**
+     * The ID of the organization owning the benefit.
+     * @type {string}
+     * @memberof BenefitDownloads
+     */
+    organization_id: string;
+    /**
+     * 
+     * @type {BenefitDownloadsProperties}
+     * @memberof BenefitDownloads
+     */
+    properties: BenefitDownloadsProperties;
+}
+
+
+/**
+ * @export
+ */
+export const BenefitDownloadsTypeEnum = {
+    DOWNLOADS: 'downloads'
+} as const;
+export type BenefitDownloadsTypeEnum = typeof BenefitDownloadsTypeEnum[keyof typeof BenefitDownloadsTypeEnum];
+
+/**
+ * 
+ * @export
+ * @interface BenefitDownloadsCreate
+ */
+export interface BenefitDownloadsCreate {
+    /**
+     * The description of the benefit. Will be displayed on products having this benefit.
+     * @type {string}
+     * @memberof BenefitDownloadsCreate
+     */
+    description: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitDownloadsCreate
+     */
+    organization_id?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitDownloadsCreate
+     */
+    type: BenefitDownloadsCreateTypeEnum;
+    /**
+     * 
+     * @type {BenefitDownloadsCreateProperties}
+     * @memberof BenefitDownloadsCreate
+     */
+    properties: BenefitDownloadsCreateProperties;
+}
+
+
+/**
+ * @export
+ */
+export const BenefitDownloadsCreateTypeEnum = {
+    DOWNLOADS: 'downloads'
+} as const;
+export type BenefitDownloadsCreateTypeEnum = typeof BenefitDownloadsCreateTypeEnum[keyof typeof BenefitDownloadsCreateTypeEnum];
+
+/**
+ * 
+ * @export
+ * @interface BenefitDownloadsCreateProperties
+ */
+export interface BenefitDownloadsCreateProperties {
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitDownloadsCreateProperties
+     */
+    foobar?: string;
+}
+/**
+ * 
+ * @export
+ * @interface BenefitDownloadsProperties
+ */
+export interface BenefitDownloadsProperties {
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitDownloadsProperties
+     */
+    foobar: string;
+}
+/**
+ * 
+ * @export
+ * @interface BenefitDownloadsSubscriber
+ */
+export interface BenefitDownloadsSubscriber {
+    /**
+     * Creation timestamp of the object.
+     * @type {string}
+     * @memberof BenefitDownloadsSubscriber
+     */
+    created_at: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitDownloadsSubscriber
+     */
+    modified_at?: string;
+    /**
+     * The ID of the benefit.
+     * @type {string}
+     * @memberof BenefitDownloadsSubscriber
+     */
+    id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitDownloadsSubscriber
+     */
+    type: BenefitDownloadsSubscriberTypeEnum;
+    /**
+     * The description of the benefit.
+     * @type {string}
+     * @memberof BenefitDownloadsSubscriber
+     */
+    description: string;
+    /**
+     * Whether the benefit is selectable when creating a product.
+     * @type {boolean}
+     * @memberof BenefitDownloadsSubscriber
+     */
+    selectable: boolean;
+    /**
+     * Whether the benefit is deletable.
+     * @type {boolean}
+     * @memberof BenefitDownloadsSubscriber
+     */
+    deletable: boolean;
+    /**
+     * The ID of the organization owning the benefit.
+     * @type {string}
+     * @memberof BenefitDownloadsSubscriber
+     */
+    organization_id: string;
+    /**
+     * 
+     * @type {BenefitDownloadsSubscriberProperties}
+     * @memberof BenefitDownloadsSubscriber
+     */
+    properties: BenefitDownloadsSubscriberProperties;
+}
+
+
+/**
+ * @export
+ */
+export const BenefitDownloadsSubscriberTypeEnum = {
+    DOWNLOADS: 'downloads'
+} as const;
+export type BenefitDownloadsSubscriberTypeEnum = typeof BenefitDownloadsSubscriberTypeEnum[keyof typeof BenefitDownloadsSubscriberTypeEnum];
+
+/**
+ * 
+ * @export
+ * @interface BenefitDownloadsSubscriberProperties
+ */
+export interface BenefitDownloadsSubscriberProperties {
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitDownloadsSubscriberProperties
+     */
+    foobar: string;
+}
+/**
+ * 
+ * @export
+ * @interface BenefitDownloadsUpdate
+ */
+export interface BenefitDownloadsUpdate {
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitDownloadsUpdate
+     */
+    description?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitDownloadsUpdate
+     */
+    type: BenefitDownloadsUpdateTypeEnum;
+    /**
+     * 
+     * @type {BenefitDownloadsCreateProperties}
+     * @memberof BenefitDownloadsUpdate
+     */
+    properties?: BenefitDownloadsCreateProperties;
+}
+
+
+/**
+ * @export
+ */
+export const BenefitDownloadsUpdateTypeEnum = {
+    DOWNLOADS: 'downloads'
+} as const;
+export type BenefitDownloadsUpdateTypeEnum = typeof BenefitDownloadsUpdateTypeEnum[keyof typeof BenefitDownloadsUpdateTypeEnum];
 
 /**
  * A benefit of type `github_repository`.
@@ -3595,7 +3852,8 @@ export const BenefitType = {
     ARTICLES: 'articles',
     ADS: 'ads',
     DISCORD: 'discord',
-    GITHUB_REPOSITORY: 'github_repository'
+    GITHUB_REPOSITORY: 'github_repository',
+    DOWNLOADS: 'downloads'
 } as const;
 export type BenefitType = typeof BenefitType[keyof typeof BenefitType];
 
@@ -3603,7 +3861,7 @@ export type BenefitType = typeof BenefitType[keyof typeof BenefitType];
  * @type BenefitUpdate
  * @export
  */
-export type BenefitUpdate = BenefitAdsUpdate | BenefitArticlesUpdate | BenefitCustomUpdate | BenefitDiscordUpdate | BenefitGitHubRepositoryUpdate;
+export type BenefitUpdate = BenefitAdsUpdate | BenefitArticlesUpdate | BenefitCustomUpdate | BenefitDiscordUpdate | BenefitDownloadsUpdate | BenefitGitHubRepositoryUpdate;
 
 /**
  * 
@@ -3935,7 +4193,7 @@ export interface CustomDomainForwardResponse {
  * @type Data
  * @export
  */
-export type Data = BenefitAds | BenefitArticles | BenefitCustom | BenefitDiscord | BenefitGitHubRepository;
+export type Data = BenefitAds | BenefitArticles | BenefitCustom | BenefitDiscord | BenefitDownloads | BenefitGitHubRepository;
 
 /**
  * 
@@ -4942,7 +5200,7 @@ export interface IssueUpdateBadgeMessage {
  * @type ItemsInner
  * @export
  */
-export type ItemsInner = BenefitAds | BenefitArticles | BenefitCustom | BenefitDiscord | BenefitGitHubRepository;
+export type ItemsInner = BenefitAds | BenefitArticles | BenefitCustom | BenefitDiscord | BenefitDownloads | BenefitGitHubRepository;
 
 /**
  * 
@@ -4999,19 +5257,19 @@ export interface ListResourceAccount {
 /**
  * 
  * @export
- * @interface ListResourceAnnotatedUnionBenefitArticlesSubscriberBenefitAdsSubscriberBenefitDiscordSubscriberBenefitCustomSubscriberBenefitGitHubRepositorySubscriberDiscriminatorMergeJSONSchema
+ * @interface ListResourceAnnotatedUnionBenefitArticlesSubscriberBenefitAdsSubscriberBenefitDiscordSubscriberBenefitCustomSubscriberBenefitGitHubRepositorySubscriberBenefitDownloadsSubscriberDiscriminatorMergeJSONSchema
  */
-export interface ListResourceAnnotatedUnionBenefitArticlesSubscriberBenefitAdsSubscriberBenefitDiscordSubscriberBenefitCustomSubscriberBenefitGitHubRepositorySubscriberDiscriminatorMergeJSONSchema {
+export interface ListResourceAnnotatedUnionBenefitArticlesSubscriberBenefitAdsSubscriberBenefitDiscordSubscriberBenefitCustomSubscriberBenefitGitHubRepositorySubscriberBenefitDownloadsSubscriberDiscriminatorMergeJSONSchema {
     /**
      * 
      * @type {Array<UserBenefit>}
-     * @memberof ListResourceAnnotatedUnionBenefitArticlesSubscriberBenefitAdsSubscriberBenefitDiscordSubscriberBenefitCustomSubscriberBenefitGitHubRepositorySubscriberDiscriminatorMergeJSONSchema
+     * @memberof ListResourceAnnotatedUnionBenefitArticlesSubscriberBenefitAdsSubscriberBenefitDiscordSubscriberBenefitCustomSubscriberBenefitGitHubRepositorySubscriberBenefitDownloadsSubscriberDiscriminatorMergeJSONSchema
      */
     items?: Array<UserBenefit>;
     /**
      * 
      * @type {Pagination}
-     * @memberof ListResourceAnnotatedUnionBenefitArticlesSubscriberBenefitAdsSubscriberBenefitDiscordSubscriberBenefitCustomSubscriberBenefitGitHubRepositorySubscriberDiscriminatorMergeJSONSchema
+     * @memberof ListResourceAnnotatedUnionBenefitArticlesSubscriberBenefitAdsSubscriberBenefitDiscordSubscriberBenefitCustomSubscriberBenefitGitHubRepositorySubscriberBenefitDownloadsSubscriberDiscriminatorMergeJSONSchema
      */
     pagination: Pagination;
 }
@@ -5436,19 +5694,19 @@ export interface ListResourceTransaction {
 /**
  * 
  * @export
- * @interface ListResourceUnionBenefitArticlesBenefitAdsBenefitCustomBenefitDiscordBenefitGitHubRepository
+ * @interface ListResourceUnionBenefitArticlesBenefitAdsBenefitCustomBenefitDiscordBenefitGitHubRepositoryBenefitDownloads
  */
-export interface ListResourceUnionBenefitArticlesBenefitAdsBenefitCustomBenefitDiscordBenefitGitHubRepository {
+export interface ListResourceUnionBenefitArticlesBenefitAdsBenefitCustomBenefitDiscordBenefitGitHubRepositoryBenefitDownloads {
     /**
      * 
      * @type {Array<ItemsInner>}
-     * @memberof ListResourceUnionBenefitArticlesBenefitAdsBenefitCustomBenefitDiscordBenefitGitHubRepository
+     * @memberof ListResourceUnionBenefitArticlesBenefitAdsBenefitCustomBenefitDiscordBenefitGitHubRepositoryBenefitDownloads
      */
     items?: Array<ItemsInner>;
     /**
      * 
      * @type {Pagination}
-     * @memberof ListResourceUnionBenefitArticlesBenefitAdsBenefitCustomBenefitDiscordBenefitGitHubRepository
+     * @memberof ListResourceUnionBenefitArticlesBenefitAdsBenefitCustomBenefitDiscordBenefitGitHubRepositoryBenefitDownloads
      */
     pagination: Pagination;
 }
@@ -9551,19 +9809,19 @@ export type ResourceNotFoundTypeEnum = typeof ResourceNotFoundTypeEnum[keyof typ
  * @type ResponseBenefitsCreateBenefit
  * @export
  */
-export type ResponseBenefitsCreateBenefit = BenefitAds | BenefitArticles | BenefitCustom | BenefitDiscord | BenefitGitHubRepository;
+export type ResponseBenefitsCreateBenefit = BenefitAds | BenefitArticles | BenefitCustom | BenefitDiscord | BenefitDownloads | BenefitGitHubRepository;
 
 /**
  * @type ResponseBenefitsGetBenefit
  * @export
  */
-export type ResponseBenefitsGetBenefit = BenefitAds | BenefitArticles | BenefitCustom | BenefitDiscord | BenefitGitHubRepository;
+export type ResponseBenefitsGetBenefit = BenefitAds | BenefitArticles | BenefitCustom | BenefitDiscord | BenefitDownloads | BenefitGitHubRepository;
 
 /**
  * @type ResponseBenefitsUpdateBenefit
  * @export
  */
-export type ResponseBenefitsUpdateBenefit = BenefitAds | BenefitArticles | BenefitCustom | BenefitDiscord | BenefitGitHubRepository;
+export type ResponseBenefitsUpdateBenefit = BenefitAds | BenefitArticles | BenefitCustom | BenefitDiscord | BenefitDownloads | BenefitGitHubRepository;
 
 /**
  * @type ResponseOauth2Oauth2Authorize
@@ -9576,7 +9834,7 @@ export type ResponseOauth2Oauth2Authorize = { sub_type: 'organization' } & Autho
  * 
  * @export
  */
-export type ResponseUsersGetBenefit = { type: 'ads' } & BenefitAdsSubscriber | { type: 'articles' } & BenefitArticlesSubscriber | { type: 'custom' } & BenefitCustomSubscriber | { type: 'discord' } & BenefitDiscordSubscriber | { type: 'github_repository' } & BenefitGitHubRepositorySubscriber;
+export type ResponseUsersGetBenefit = { type: 'ads' } & BenefitAdsSubscriber | { type: 'articles' } & BenefitArticlesSubscriber | { type: 'custom' } & BenefitCustomSubscriber | { type: 'discord' } & BenefitDiscordSubscriber | { type: 'downloads' } & BenefitDownloadsSubscriber | { type: 'github_repository' } & BenefitGitHubRepositorySubscriber;
 /**
  * 
  * @export
@@ -11387,7 +11645,7 @@ export interface UserBase {
  * 
  * @export
  */
-export type UserBenefit = { type: 'ads' } & BenefitAdsSubscriber | { type: 'articles' } & BenefitArticlesSubscriber | { type: 'custom' } & BenefitCustomSubscriber | { type: 'discord' } & BenefitDiscordSubscriber | { type: 'github_repository' } & BenefitGitHubRepositorySubscriber;
+export type UserBenefit = { type: 'ads' } & BenefitAdsSubscriber | { type: 'articles' } & BenefitArticlesSubscriber | { type: 'custom' } & BenefitCustomSubscriber | { type: 'discord' } & BenefitDiscordSubscriber | { type: 'downloads' } & BenefitDownloadsSubscriber | { type: 'github_repository' } & BenefitGitHubRepositorySubscriber;
 /**
  * 
  * @export

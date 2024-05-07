@@ -6474,9 +6474,15 @@ export interface NotificationsMarkRead {
 /**
  * 
  * @export
- * @interface OAuth2Client
+ * @interface OAuth2ClientConfiguration
  */
-export interface OAuth2Client {
+export interface OAuth2ClientConfiguration {
+    /**
+     * 
+     * @type {Array<string>}
+     * @memberof OAuth2ClientConfiguration
+     */
+    redirect_uris: Array<string>;
     /**
      * 
      * @type {Array<string>}
@@ -6540,15 +6546,33 @@ export interface OAuth2Client {
     /**
      * Creation timestamp of the object.
      * @type {string}
-     * @memberof OAuth2Client
+     * @memberof OAuth2ClientConfiguration
      */
-    created_at: string;
+    token_endpoint_auth_method?: OAuth2ClientConfigurationTokenEndpointAuthMethodEnum;
+    /**
+     * 
+     * @type {Array<string>}
+     * @memberof OAuth2ClientConfiguration
+     */
+    grant_types?: Array<OAuth2ClientConfigurationGrantTypesEnum>;
+    /**
+     * 
+     * @type {Array<string>}
+     * @memberof OAuth2ClientConfiguration
+     */
+    response_types?: Array<OAuth2ClientConfigurationResponseTypesEnum>;
+    /**
+     * 
+     * @type {Array<Scope>}
+     * @memberof OAuth2ClientConfiguration
+     */
+    scope?: Array<Scope>;
     /**
      * 
      * @type {string}
-     * @memberof OAuth2Client
+     * @memberof OAuth2ClientConfiguration
      */
-    modified_at?: string;
+    client_name: string;
     /**
      * 
      * @type {string}

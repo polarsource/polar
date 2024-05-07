@@ -19,11 +19,14 @@ import {
   useState,
 } from 'react'
 import { twMerge } from 'tailwind-merge'
+import { CommandPalette } from '../CommandPalette/CommandPalette'
 import DashboardNavigation from '../Dashboard/DashboardNavigation'
 import DisabledMaintainerNavigation from '../Dashboard/DisabledMaintainerNavigation'
 import MaintainerNavigation from '../Dashboard/MaintainerNavigation'
 import MaintainerRepoSelection from '../Dashboard/MaintainerRepoSelection'
 import MetaNavigation from '../Dashboard/MetaNavigation'
+import { Modal } from '../Modal'
+import { useModal } from '../Modal/useModal'
 import DashboardProfileDropdown from '../Navigation/DashboardProfileDropdown'
 import { BrandingMenu } from './Public/BrandingMenu'
 
@@ -111,6 +114,28 @@ const DashboardSidebar = () => {
 }
 
 const DashboardLayout = (props: PropsWithChildren<{ className?: string }>) => {
+  const {
+    isShown: isCommandPaletteShown,
+    show: showCommandPalette,
+    hide: hideCommandPalette,
+  } = useModal()
+
+  useEffect(() => {
+    const handleKeyPress = (e: KeyboardEvent) => {
+      if (isCommandPaletteShown) return
+
+      if (e.key === 'k' && e.metaKey) {
+        showCommandPalette()
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyPress)
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyPress)
+    }
+  }, [isCommandPaletteShown])
+
   return (
     <>
       <div className="relative flex h-full w-full flex-col md:flex-row">
@@ -130,6 +155,11 @@ const DashboardLayout = (props: PropsWithChildren<{ className?: string }>) => {
           </main>
         </div>
       </div>
+      <Modal
+        isShown={isCommandPaletteShown}
+        hide={hideCommandPalette}
+        modalContent={<CommandPalette />}
+      />
     </>
   )
 }

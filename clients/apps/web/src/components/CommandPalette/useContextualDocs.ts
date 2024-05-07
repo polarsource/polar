@@ -1,23 +1,24 @@
 import openapiSchema from '@polar-sh/sdk/openapi'
-
 import { usePathname } from 'next/navigation'
-
-interface ContextualDocs {
-  api: Record<string, (typeof openapiSchema)['paths']>
-}
 
 export const useContextualDocs = () => {
   const path = usePathname()
   const normalizedPath = path.split('/').slice(3).join('/')
-  const sitemap = buildSitemap(normalizedPath as any)
+  const sitemap = buildSitemap(normalizedPath as keyof Sitemap)
+
+  return sitemap
 }
 
 type FindMatchingPath<
   A extends string,
-  B = keyof (typeof openapiSchema)['paths'],
+  B extends
+    keyof (typeof openapiSchema)['paths'] = keyof (typeof openapiSchema)['paths'],
 > = B extends `${infer X}${A}${infer Y}`
   ? A extends string
-    ? `${X}${A}${Y}`
+    ? {
+        path: `${X}${A}${Y}`
+        methods: (typeof openapiSchema)['paths'][B]
+      }
     : never
   : never
 
@@ -30,9 +31,9 @@ type Sitemap = {
 }
 
 const filterPath = <T extends string>(key: T) =>
-  Object.keys(openapiSchema.paths).filter((path) =>
-    path.includes(key),
-  ) as FindMatchingPath<T>[]
+  Object.entries(openapiSchema.paths)
+    .filter(([path]) => path.includes(key))
+    .map(([path, methods]) => ({ path, methods }) as FindMatchingPath<T>)
 
 const sitemap: Sitemap = {
   posts: filterPath('/api/v1/articles'),

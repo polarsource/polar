@@ -220,7 +220,7 @@ export const DashboardBody = (props: {
   return (
     <div
       className={twMerge(
-        'relative mx-auto mt-8 max-w-screen-xl px-4 pb-6 sm:px-6 md:px-8',
+        'relative mx-auto max-w-screen-xl px-4 pb-6 sm:px-6 md:px-8',
         props.className,
       )}
     >

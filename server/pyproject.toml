@@ -48,6 +48,7 @@ opentelemetry-instrumentation-httpx = "^0.45b0"
 opentelemetry-instrumentation-sqlalchemy = "^0.45b0"
 opentelemetry-instrumentation-redis = "^0.45b0"
 netaddr = "^1.2.1"
+makefun = "^1.15.2"
 
 [tool.poetry.group.backoffice]
 optional = true

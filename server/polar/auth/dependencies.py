@@ -1,9 +1,11 @@
+from inspect import Parameter, Signature
 from typing import Annotated
 
-from fastapi import Depends, Request
+from fastapi import Depends, Request, Security
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from makefun import with_signature
 
-from polar.auth.scope import Scope
+from polar.auth.scope import RESERVED_SCOPES, Scope
 from polar.config import settings
 from polar.exceptions import PolarError, Unauthorized
 from polar.models import OAuth2Token
@@ -77,22 +79,17 @@ async def get_auth_subject(
     return AuthSubject(Anonymous(), set(), AuthMethod.NONE)
 
 
-class Authenticator:
-    allowed_subjects: set[SubjectType]
-    required_scopes: set[Scope]
-
+class _Authenticator:
     def __init__(
         self,
         *,
         allowed_subjects: set[SubjectType] = SUBJECTS,
         required_scopes: set[Scope] | None = None,
-    ):
+    ) -> None:
         self.allowed_subjects = allowed_subjects
-        self.required_scopes = required_scopes or set()
+        self.required_scopes = required_scopes
 
-    def __call__(
-        self, auth_subject: AuthSubject[Subject] = Depends(get_auth_subject)
-    ) -> AuthSubject[Subject]:
+    def __call__(self, auth_subject: AuthSubject[Subject]) -> AuthSubject[Subject]:
         # Anonymous
         if is_anonymous(auth_subject):
             if Anonymous in self.allowed_subjects:
@@ -114,6 +111,43 @@ class Authenticator:
             return auth_subject
 
         raise MissingScope(auth_subject.scopes, self.required_scopes)
+
+
+def Authenticator(
+    allowed_subjects: set[SubjectType] = SUBJECTS,
+    required_scopes: set[Scope] | None = None,
+) -> _Authenticator:
+    """
+    Here comes some blood magic 🧙‍♂️
+
+    Generate a version of `_Authenticator` with an overriden `__call__` signature.
+
+    By doing so, we can dynamically inject the required scopes into FastAPI
+    dependency, so they are properrly detected by the OpenAPI generator.
+    """
+    parameters: list[Parameter] = [
+        Parameter(name="self", kind=Parameter.POSITIONAL_OR_KEYWORD),
+        Parameter(
+            name="auth_subject",
+            kind=Parameter.POSITIONAL_OR_KEYWORD,
+            default=Security(
+                get_auth_subject,
+                scopes=[
+                    s.value for s in (required_scopes or {}) if s not in RESERVED_SCOPES
+                ],
+            ),
+        ),
+    ]
+    signature = Signature(parameters)
+
+    class _AuthenticatorSignature(_Authenticator):
+        @with_signature(signature)
+        def __call__(self, auth_subject: AuthSubject[Subject]) -> AuthSubject[Subject]:
+            return super().__call__(auth_subject)
+
+    return _AuthenticatorSignature(
+        allowed_subjects=allowed_subjects, required_scopes=required_scopes
+    )
 
 
 _WebUserOrAnonymous = Authenticator(

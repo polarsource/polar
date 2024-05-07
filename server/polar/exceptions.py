@@ -1,3 +1,6 @@
+from typing import Literal
+
+from pydantic import BaseModel, create_model
 from sqlalchemy import exc as sqlalchemy
 
 IntegrityError = sqlalchemy.IntegrityError
@@ -19,6 +22,12 @@ class PolarError(Exception):
         super().__init__(message)
         self.message = message
         self.status_code = status_code
+
+    @classmethod
+    def schema(cls) -> type[BaseModel]:
+        type_literal = Literal[cls.__name__]  # type: ignore
+
+        return create_model(cls.__name__, type=(type_literal, ...), message=(str, ...))
 
 
 class PolarTaskError(PolarError): ...

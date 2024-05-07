@@ -7,7 +7,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   return (
     <>
       <DashboardLayout>
-        <DashboardTopbar useOrgFromURL={false} hideProfile={false} />
+        <DashboardTopbar useOrgFromURL={false} />
         <DashboardBody>{children}</DashboardBody>
       </DashboardLayout>
     </>

@@ -199,6 +199,21 @@ class BenefitGitHubRepositorySubscriberProperties(Schema):
     repository_name: RepositoryName
 
 
+## Downloads
+
+
+class BenefitDownloadsCreateProperties(Schema):
+    foobar: str | None = None
+
+
+class BenefitDownloadsProperties(Schema):
+    foobar: str
+
+
+class BenefitDownloadsSubscriberProperties(Schema):
+    foobar: str
+
+
 # BenefitCreate
 
 IsTaxApplicable = Annotated[bool, Field(description="Whether the benefit is taxable.")]
@@ -248,11 +263,17 @@ class BenefitGitHubRepositoryCreate(BenefitCreateBase):
     properties: BenefitGitHubRepositoryCreateProperties
 
 
+class BenefitDownloadsCreate(BenefitCreateBase):
+    type: Literal[BenefitType.downloads]
+    properties: BenefitDownloadsCreateProperties
+
+
 BenefitCreate = (
     BenefitCustomCreate
     | BenefitAdsCreate
     | BenefitDiscordCreate
     | BenefitGitHubRepositoryCreate
+    | BenefitDownloadsCreate
 )
 
 
@@ -297,12 +318,18 @@ class BenefitGitHubRepositoryUpdate(BenefitUpdateBase):
     properties: BenefitGitHubRepositoryCreateProperties | None = None
 
 
+class BenefitDownloadsUpdate(BenefitUpdateBase):
+    type: Literal[BenefitType.downloads]
+    properties: BenefitDownloadsCreateProperties | None = None
+
+
 BenefitUpdate = (
     BenefitArticlesUpdate
     | BenefitAdsUpdate
     | BenefitCustomUpdate
     | BenefitDiscordUpdate
     | BenefitGitHubRepositoryUpdate
+    | BenefitDownloadsUpdate
 )
 
 
@@ -378,12 +405,18 @@ class BenefitGitHubRepository(BenefitBase):
     properties: BenefitGitHubRepositoryProperties
 
 
+class BenefitDownloads(BenefitBase):
+    type: Literal[BenefitType.downloads]
+    properties: BenefitDownloadsProperties
+
+
 Benefit = (
     BenefitArticles
     | BenefitAds
     | BenefitCustom
     | BenefitDiscord
     | BenefitGitHubRepository
+    | BenefitDownloads
 )
 
 benefit_schema_map: dict[BenefitType, type[Benefit]] = {
@@ -392,6 +425,7 @@ benefit_schema_map: dict[BenefitType, type[Benefit]] = {
     BenefitType.ads: BenefitAds,
     BenefitType.custom: BenefitCustom,
     BenefitType.github_repository: BenefitGitHubRepository,
+    BenefitType.downloads: BenefitDownloads,
 }
 
 
@@ -483,13 +517,19 @@ class BenefitGitHubRepositorySubscriber(BenefitBase):
     properties: BenefitGitHubRepositorySubscriberProperties
 
 
+class BenefitDownloadsSubscriber(BenefitBase):
+    type: Literal[BenefitType.downloads]
+    properties: BenefitDownloadsSubscriberProperties
+
+
 # Properties that are available to subscribers only
 BenefitSubscriber = Annotated[
     BenefitArticlesSubscriber
     | BenefitAdsSubscriber
     | BenefitDiscordSubscriber
     | BenefitCustomSubscriber
-    | BenefitGitHubRepositorySubscriber,
+    | BenefitGitHubRepositorySubscriber
+    | BenefitDownloadsSubscriber,
     Discriminator("type"),
 ]
 

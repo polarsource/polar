@@ -27,6 +27,7 @@ class BenefitType(StrEnum):
     ads = "ads"
     discord = "discord"
     github_repository = "github_repository"
+    downloads = "downloads"
 
     def is_tax_applicable(self) -> bool:
         try:
@@ -71,6 +72,10 @@ class BenefitGitHubRepositoryProperties(BenefitProperties):
     repository_owner: str
     repository_name: str
     permission: Literal["pull", "triage", "push", "maintain", "admin"]
+
+
+class BenefitDownloadsProperties(BenefitProperties):
+    foobar: str
 
 
 class Benefit(RecordModel):
@@ -152,5 +157,16 @@ class BenefitGitHubRepository(Benefit):
 
     __mapper_args__ = {
         "polymorphic_identity": BenefitType.github_repository,
+        "polymorphic_load": "inline",
+    }
+
+
+class BenefitDownloads(Benefit):
+    properties: Mapped[BenefitDownloadsProperties] = mapped_column(
+        use_existing_column=True
+    )
+
+    __mapper_args__ = {
+        "polymorphic_identity": BenefitType.downloads,
         "polymorphic_load": "inline",
     }

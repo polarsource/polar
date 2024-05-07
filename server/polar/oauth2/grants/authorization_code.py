@@ -1,4 +1,3 @@
-import time
 import typing
 import uuid
 
@@ -10,7 +9,6 @@ from authlib.oauth2.rfc6749.errors import (
 from authlib.oauth2.rfc6749.grants import (
     AuthorizationCodeGrant as _AuthorizationCodeGrant,
 )
-from authlib.oauth2.rfc6749.grants import RefreshTokenGrant as _RefreshTokenGrant
 from authlib.oauth2.rfc6749.requests import OAuth2Request
 from authlib.oauth2.rfc7636 import CodeChallenge as _CodeChallenge
 from authlib.oidc.core.errors import ConsentRequiredError, LoginRequiredError
@@ -24,20 +22,19 @@ from polar.kit.crypto import generate_token, get_token_hash
 from polar.models import (
     OAuth2AuthorizationCode,
     OAuth2Client,
-    OAuth2Token,
     Organization,
     User,
     UserOrganization,
 )
 
-from .constants import AUTHORIZATION_CODE_PREFIX, JWT_CONFIG
-from .requests import StarletteOAuth2Request
-from .service.oauth2_grant import oauth2_grant as oauth2_grant_service
-from .sub_type import SubType, SubTypeValue
-from .userinfo import UserInfo, generate_user_info
+from ..constants import AUTHORIZATION_CODE_PREFIX, JWT_CONFIG
+from ..requests import StarletteOAuth2Request
+from ..service.oauth2_grant import oauth2_grant as oauth2_grant_service
+from ..sub_type import SubType, SubTypeValue
+from ..userinfo import UserInfo, generate_user_info
 
 if typing.TYPE_CHECKING:
-    from .authorization_server import AuthorizationServer
+    from ..authorization_server import AuthorizationServer
 
 
 def _exists_nonce(
@@ -289,45 +286,3 @@ class ValidateSubAndPrompt:
         )
         result = self._session.execute(statement)
         return result.unique().scalar_one_or_none()
-
-
-class RefreshTokenGrant(_RefreshTokenGrant):
-    server: "AuthorizationServer"
-
-    INCLUDE_NEW_REFRESH_TOKEN = True
-    TOKEN_ENDPOINT_AUTH_METHODS = ["client_secret_basic", "client_secret_post"]
-
-    def authenticate_refresh_token(self, refresh_token: str) -> OAuth2Token | None:
-        refresh_token_hash = get_token_hash(refresh_token, secret=settings.SECRET)
-        statement = select(OAuth2Token).where(
-            OAuth2Token.refresh_token == refresh_token_hash
-        )
-        result = self.server.session.execute(statement)
-        token = result.unique().scalar_one_or_none()
-        if token is not None and not typing.cast(bool, token.is_revoked()):
-            return token
-        return None
-
-    def authenticate_user(self, refresh_token: OAuth2Token) -> SubTypeValue | None:
-        return refresh_token.get_sub_type_value()
-
-    def revoke_old_credential(self, refresh_token: OAuth2Token) -> None:
-        refresh_token.refresh_token_revoked_at = int(time.time())  # pyright: ignore
-        self.server.session.add(refresh_token)
-        self.server.session.flush()
-
-
-def register_grants(server: "AuthorizationServer") -> None:
-    server.register_grant(
-        AuthorizationCodeGrant,
-        [
-            CodeChallenge(),
-            OpenIDCode(server.session, require_nonce=False),
-            OpenIDToken(),
-            ValidateSubAndPrompt(server.session),
-        ],
-    )
-    server.register_grant(RefreshTokenGrant)
-
-
-__all__ = ["register_grants", "AuthorizationCodeGrant"]

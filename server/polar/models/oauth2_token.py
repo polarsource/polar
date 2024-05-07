@@ -1,6 +1,8 @@
 from typing import Any, cast
 
 from authlib.integrations.sqla_oauth2 import OAuth2TokenMixin
+from sqlalchemy import String
+from sqlalchemy.orm import Mapped, mapped_column
 
 from polar.auth.scope import Scope, scope_to_set
 from polar.kit.db.models import RecordModel
@@ -9,6 +11,8 @@ from polar.oauth2.sub_type import SubTypeModelMixin
 
 class OAuth2Token(RecordModel, OAuth2TokenMixin, SubTypeModelMixin):
     __tablename__ = "oauth2_tokens"
+
+    nonce: Mapped[str | None] = mapped_column(String, index=True, nullable=True)
 
     def get_expires_at(self) -> int:
         return cast(int, self.issued_at) + cast(int, self.expires_in)

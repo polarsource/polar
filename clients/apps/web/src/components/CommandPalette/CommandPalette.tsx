@@ -8,7 +8,7 @@ import {
   TabsList,
   TabsTrigger,
 } from 'polarkit/components/ui/atoms/tabs'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { useContextualDocs } from './useContextualDocs'
 
@@ -40,9 +40,37 @@ export const CommandPalette = ({}: CommandPaletteProps) => {
     setActiveItem(items[0])
   }, [items])
 
+  useEffect(() => {
+    const handleArrowKeys = (e: KeyboardEvent) => {
+      if (!activeItem) return
+
+      if (e.key === 'ArrowDown') {
+        const currentIndex = items.findIndex(
+          (item) => item.path === activeItem.path,
+        )
+        if (currentIndex < items.length - 1) {
+          setActiveItem(items[currentIndex + 1])
+        }
+      } else if (e.key === 'ArrowUp') {
+        const currentIndex = items.findIndex(
+          (item) => item.path === activeItem.path,
+        )
+        if (currentIndex > 0) {
+          setActiveItem(items[currentIndex - 1])
+        }
+      }
+    }
+
+    document.addEventListener('keydown', handleArrowKeys)
+
+    return () => {
+      document.removeEventListener('keydown', handleArrowKeys)
+    }
+  }, [items, activeItem])
+
   return (
     <div className="dark:bg-polar-900 dark:border-polar-800 flex w-full flex-grow flex-col overflow-hidden rounded-3xl border bg-gray-100">
-      <div className="dark:bg-polar-950 dark:border-polar-800 flex flex-row border-b bg-white px-8 py-6">
+      <div className="dark:bg-polar-950 dark:border-polar-800 flex flex-row border-b border-gray-200 bg-white px-8 py-6">
         <input
           className="dark:text-polar-50 dark:placeholder:text-polar-500 w-full border-none bg-transparent p-0 text-xl text-gray-950 placeholder:text-gray-400 focus:border-none focus:outline-none focus:ring-0"
           placeholder="Enter Command..."
@@ -134,10 +162,23 @@ const CommandItem = ({
   active,
   onClick,
 }: CommandItemProps) => {
+  const ref = useRef<HTMLDivElement>(null)
+
+  const handleSelect = useCallback(() => {
+    ref.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+  }, [])
+
+  useEffect(() => {
+    if (active) {
+      handleSelect()
+    }
+  }, [active, handleSelect])
+
   return (
     <div
+      ref={ref}
       className={twMerge(
-        'dark:hover:bg-polar-800 flex flex-col gap-y-1 rounded-2xl border border-transparent px-4 py-3 text-sm transition-colors hover:cursor-pointer hover:bg-white dark:border-transparent',
+        'dark:hover:bg-polar-800 flex scroll-m-4 flex-col gap-y-1 rounded-2xl border border-transparent px-4 py-3 text-sm transition-colors hover:cursor-pointer hover:bg-white dark:border-transparent',
         active
           ? 'dark:bg-polar-800 dark:border-polar-700 bg-white shadow-sm'
           : '',

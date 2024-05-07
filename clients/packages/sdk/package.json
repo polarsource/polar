@@ -6,7 +6,8 @@
   "module": "./dist/index.mjs",
   "types": "./dist/index.d.ts",
   "exports": {
-    ".": "./dist/index.js"
+    ".": "./dist/index.js",
+    "./openapi": "./dist/openapi/source.json"
   },
   "files": [
     "dist/*"
@@ -14,7 +15,7 @@
   "scripts": {
     "download": "node scripts/generate-schema.js http://127.0.0.1:8000/openapi.json openapi/source.json openapi/updated.json",
     "generate": "pnpm download && ./generate",
-    "build": "tsup src/index.ts --format cjs,esm --dts",
+    "build": "tsup src/index.ts --format cjs,esm --dts && cp -r openapi dist/openapi",
     "prepublishOnly": "pnpm run build"
   },
   "devDependencies": {

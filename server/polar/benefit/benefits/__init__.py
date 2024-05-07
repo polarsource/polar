@@ -18,6 +18,7 @@ from .base import (
 )
 from .custom import BenefitCustomService
 from .discord import BenefitDiscordService
+from .downloads import BenefitDownloadsService
 from .github_repository import BenefitGitHubRepositoryService
 
 _SERVICE_CLASS_MAP: dict[
@@ -29,6 +30,7 @@ _SERVICE_CLASS_MAP: dict[
     BenefitType.ads: BenefitAdsService,
     BenefitType.discord: BenefitDiscordService,
     BenefitType.github_repository: BenefitGitHubRepositoryService,
+    BenefitType.downloads: BenefitDownloadsService,
 }
 
 

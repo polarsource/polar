@@ -48,10 +48,11 @@ export const SubNav = (props: { items: SubRouteWithActive[] }) => {
 const DashboardTopbar = ({
   children,
   title,
+  marginBottom = true,
 }: PropsWithChildren<{
   title?: string
   useOrgFromURL: boolean
-  hideProfile?: boolean
+  marginBottom?: boolean
 }>) => {
   const { currentUser } = useAuth()
 
@@ -73,7 +74,8 @@ const DashboardTopbar = ({
   const currentRoute = routes.find((r) => r.isActive)
 
   const className = twMerge(
-    'flex h-fit md:min-h-20 w-full items-center justify-between space-x-4 mb-6',
+    'flex h-fit md:min-h-20 w-full items-center justify-between space-x-4',
+    marginBottom && 'mb-6',
   )
 
   return (

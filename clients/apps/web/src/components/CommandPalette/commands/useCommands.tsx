@@ -1,5 +1,4 @@
 import { Organization } from '@polar-sh/sdk'
-import { useRouter } from 'next/navigation'
 import {
   PropsWithChildren,
   createContext,
@@ -10,11 +9,13 @@ import {
 } from 'react'
 import { Command } from './commands'
 import { SCOPES, Scope, ScopeKey, ScopeType } from './scopes'
+import { useScopes } from './useScopes'
 
 export interface CommandContextValue {
   scopes: ReturnType<typeof SCOPES>
   scopeKey: ScopeKey
   scope?: Scope
+  scopeKeys: ScopeKey[]
   setScopeKeys: (
     scopeKeys: ((scopeKeys: ScopeKey[]) => ScopeKey[]) | ScopeKey[],
   ) => void
@@ -30,6 +31,7 @@ const defaultCommandContextValue: CommandContextValue = {
   scopes: [] as any,
   scopeKey: 'global',
   scope: { name: 'global', commands: [], type: ScopeType.Global },
+  scopeKeys: [],
   setScopeKeys: (
     scopeKeys: ((scopeKeys: ScopeKey[]) => ScopeKey[]) | ScopeKey[],
   ) => [],
@@ -59,16 +61,10 @@ export const CommandContextProvider = ({
 
   const scopeKey = useMemo(() => scopeKeys[scopeKeys.length - 1], [scopeKeys])
 
-  const router = useRouter()
-  const scopes = useMemo(() => {
-    return SCOPES({
-      router,
-      organization,
-      hideCommandPalette,
-      setScopeKeys,
-      scopeKey,
-    })
-  }, [router, organization, hideCommandPalette])
+  const scopes = useScopes(organization, {
+    setScopeKeys,
+    hideCommandPalette,
+  })
 
   const scope = useMemo(
     () => scopes.find((scope) => scope.name === scopeKey),
@@ -160,6 +156,7 @@ export const CommandContextProvider = ({
       value={{
         scopes,
         scope,
+        scopeKeys,
         setScopeKeys,
         scopeKey,
         commands,

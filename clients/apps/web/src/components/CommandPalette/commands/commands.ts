@@ -10,8 +10,8 @@ export interface Command {
 export const GLOBAL_COMMANDS = ({
   router,
   organization,
-  hideCommandPalette,
   setScopeKeys,
+  hideCommandPalette,
 }: ScopeContext): Command[] => {
   return [
     {

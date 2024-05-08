@@ -86,6 +86,7 @@ export const CommandContextProvider = ({
   )
 
   useEffect(() => {
+    console.log('commands', commands[0])
     setSelectedCommand(commands[0])
   }, [commands])
 

@@ -74,6 +74,7 @@ export const CommandContextProvider = ({
     () => scopes.find((scope) => scope.name === scopeKey),
     [scopes, scopeKey],
   )
+
   // Filter out commands based on input
   const commands = useMemo(
     () =>
@@ -86,9 +87,12 @@ export const CommandContextProvider = ({
   )
 
   useEffect(() => {
-    console.log('commands', commands[0])
     setSelectedCommand(commands[0])
   }, [commands])
+
+  useEffect(() => {
+    setInput('')
+  }, [scopeKeys])
 
   useEffect(() => {
     const handleArrowKeys = (e: KeyboardEvent) => {

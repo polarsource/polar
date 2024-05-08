@@ -1,23 +1,19 @@
 import openapiSchema from '@polar-sh/sdk/openapi'
-import { usePathname } from 'next/navigation'
+import { Command } from './commands/commands'
 
-export const useContextualDocs = () => {
-  const path = usePathname()
-  const normalizedPath = path.split('/').slice(3).join('/')
-  const sitemap = buildSitemap(normalizedPath as keyof Sitemap)
-
-  return sitemap
-}
+type SchemaPaths = (typeof openapiSchema)['paths']
+type SchemaPathKey = keyof SchemaPaths
+type SchemaPathMethods<T extends SchemaPathKey> = SchemaPaths[T]
+type SchemaPathMethod<T extends SchemaPathKey> = keyof SchemaPathMethods<T>
 
 type FindMatchingPath<
   A extends string,
-  B extends
-    keyof (typeof openapiSchema)['paths'] = keyof (typeof openapiSchema)['paths'],
+  B extends SchemaPathKey = SchemaPathKey,
 > = B extends `${infer X}${A}${infer Y}`
   ? A extends string
     ? {
         path: `${X}${A}${Y}`
-        methods: (typeof openapiSchema)['paths'][B]
+        methods: SchemaPathMethods<B>
       }
     : never
   : never
@@ -28,7 +24,10 @@ type Sitemap = {
   donations: FindMatchingPath<'/api/v1/donations'>[]
   subscriptions: FindMatchingPath<'/api/v1/subscriptions'>[]
   webhooks: FindMatchingPath<'/api/v1/webhooks'>[]
+  funding: FindMatchingPath<'/api/v1/funding'>[]
 }
+
+type SitemapKey = keyof typeof sitemap
 
 const filterPath = <T extends string>(key: T) =>
   Object.entries(openapiSchema.paths)
@@ -41,12 +40,16 @@ const sitemap: Sitemap = {
   donations: filterPath('/api/v1/donations'),
   subscriptions: filterPath('/api/v1/subscriptions'),
   webhooks: filterPath('/api/v1/webhooks'),
+  funding: filterPath('/api/v1/funding'),
 }
 
-// Returns a sitemap value if the path is somewhat similar to the sitemap key
-const buildSitemap = (path: keyof typeof sitemap) => {
-  const keys = Object.keys(sitemap)
-  const key = keys.find((k) => path.includes(k))
+export const createAPICommands = (key: SitemapKey): Command[] => {
+  const site = sitemap[key]
 
-  return sitemap[key as keyof typeof sitemap]
+  return site.map(({ path, methods }) => {
+    const name = path.split('/').slice(3).join(' ').replace('_', ' ')
+    const description = path
+
+    return { name, description }
+  })
 }

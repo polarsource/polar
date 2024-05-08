@@ -1,6 +1,7 @@
 'use client'
 
 import LogoIcon from '@/components/Brand/LogoIcon'
+import { useCurrentOrgAndRepoFromURL } from '@/hooks'
 import { useAuth } from '@/hooks/auth'
 import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
 import { CONFIG } from '@/utils/config'
@@ -120,6 +121,8 @@ const DashboardLayout = (props: PropsWithChildren<{ className?: string }>) => {
     hide: hideCommandPalette,
   } = useModal()
 
+  const { org: organization } = useCurrentOrgAndRepoFromURL()
+
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
       if (isCommandPaletteShown) return
@@ -158,7 +161,16 @@ const DashboardLayout = (props: PropsWithChildren<{ className?: string }>) => {
       <Modal
         isShown={isCommandPaletteShown}
         hide={hideCommandPalette}
-        modalContent={<CommandPalette />}
+        modalContent={
+          organization ? (
+            <CommandPalette
+              organization={organization}
+              hide={hideCommandPalette}
+            />
+          ) : (
+            <></>
+          )
+        }
       />
     </>
   )

@@ -1,5 +1,13 @@
+import { Organization } from '@polar-sh/sdk'
+import { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime'
 import { createAPICommands } from '../useAPICommands'
 import { Command, GLOBAL_COMMANDS } from './commands'
+
+export interface ScopeContext {
+  router: AppRouterInstance
+  organization: Organization
+  hideCommandPalette: () => void
+}
 
 export enum ScopeType {
   Global,
@@ -40,11 +48,11 @@ const API_SCOPES: Scope<ScopeType.Isolated>[] = [
   },
 ]
 
-export const SCOPES: Scope[] = [
+export const SCOPES = (context: ScopeContext): Scope[] => [
   {
     name: 'global',
     type: ScopeType.Global,
-    commands: GLOBAL_COMMANDS,
+    commands: GLOBAL_COMMANDS(context),
   },
   ...API_SCOPES,
 ]

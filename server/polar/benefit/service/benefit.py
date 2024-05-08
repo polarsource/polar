@@ -59,7 +59,7 @@ class BenefitService(ResourceService[Benefit, BenefitCreate, BenefitUpdate]):
         res = await session.execute(query)
         return res.scalars().unique().one_or_none()
 
-    async def search(
+    async def list(
         self,
         session: AsyncSession,
         auth_subject: AuthSubject[User | Organization],

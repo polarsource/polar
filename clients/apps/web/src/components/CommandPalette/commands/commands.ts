@@ -1,4 +1,4 @@
-import { ScopeContext } from './scopes'
+import { API_SCOPES, ScopeContext } from './scopes'
 
 export interface Command {
   name: string
@@ -23,12 +23,12 @@ export const GLOBAL_COMMANDS = ({
         router.push(`/${organization.name}`)
       },
     },
-    {
-      name: 'Issues API',
-      description: 'View API documentation for Issues',
+    ...API_SCOPES.map((scope) => ({
+      name: `${scope.name.replace('api:', '')} API`,
+      description: `View API documentation for ${scope.name.replace('api:', '')}`,
       action: () => {
-        setScopeKeys(['global', 'api:issues'])
+        setScopeKeys(['global', scope.name])
       },
-    },
+    })),
   ]
 }

@@ -9,14 +9,17 @@ import {
   useState,
 } from 'react'
 import { Command } from './commands'
-import { SCOPES, Scope, ScopeType } from './scopes'
+import { SCOPES, Scope, ScopeKey, ScopeType } from './scopes'
 
 export interface CommandContextValue {
-  scopes: Scope[]
-  scope: Scope
-  setScope: (scope: Scope) => void
+  scopes: ReturnType<typeof SCOPES>
+  scopeKey: ScopeKey
+  scope?: Scope
+  setScopeKeys: (
+    scopeKeys: ((scopeKeys: ScopeKey[]) => ScopeKey[]) | ScopeKey[],
+  ) => void
   commands: Command[]
-  selectedCommand: Command
+  selectedCommand?: Command
   setSelectedCommand: (command: Command) => void
   input: string
   setInput: (input: string) => void
@@ -24,9 +27,12 @@ export interface CommandContextValue {
 }
 
 const defaultCommandContextValue: CommandContextValue = {
-  scopes: [],
+  scopes: [] as any,
+  scopeKey: 'global',
   scope: { name: 'global', commands: [], type: ScopeType.Global },
-  setScope: (scope: Scope) => {},
+  setScopeKeys: (
+    scopeKeys: ((scopeKeys: ScopeKey[]) => ScopeKey[]) | ScopeKey[],
+  ) => [],
   commands: [],
   selectedCommand: { name: '', description: '' },
   setSelectedCommand: (command: Command) => {},
@@ -47,22 +53,28 @@ export const CommandContextProvider = ({
   organization,
   hideCommandPalette,
 }: PropsWithChildren<CommandContextProviderProps>) => {
-  const router = useRouter()
+  const [scopeKeys, setScopeKeys] = useState<ScopeKey[]>(['global'])
+  const [selectedCommand, setSelectedCommand] = useState<Command>()
+  const [input, setInput] = useState('')
 
+  const scopeKey = useMemo(() => scopeKeys[scopeKeys.length - 1], [scopeKeys])
+
+  const router = useRouter()
   const scopes = useMemo(() => {
     return SCOPES({
       router,
       organization,
       hideCommandPalette,
+      setScopeKeys,
+      scopeKey,
     })
   }, [router, organization, hideCommandPalette])
 
-  const [scope, setScope] = useState<Scope>(
-    scopes.find((scope) => scope.type === ScopeType.Global)!,
+  const scope = useMemo(
+    () => scopes.find((scope) => scope.name === scopeKey),
+    [scopes, scopeKey],
   )
-  const commands = useMemo(() => scope.commands, [scope])
-  const [selectedCommand, setSelectedCommand] = useState<Command>(commands[0])
-  const [input, setInput] = useState('')
+  const commands = useMemo(() => scope?.commands ?? [], [scope])
 
   useEffect(() => {
     setSelectedCommand(commands[0])
@@ -104,14 +116,12 @@ export const CommandContextProvider = ({
       if (
         e.key === 'Backspace' &&
         input.length === 0 &&
-        scope.type === ScopeType.Isolated
+        scope?.type === ScopeType.Isolated
       ) {
         e.preventDefault()
         e.stopPropagation()
 
-        console.log(scopes.find((scope) => scope.type === ScopeType.Global)!)
-
-        setScope(scopes.find((scope) => scope.type === ScopeType.Global)!)
+        setScopeKeys((prev) => prev.slice(0, -1))
       }
     }
 
@@ -127,7 +137,8 @@ export const CommandContextProvider = ({
     input,
     scope,
     scopes,
-    setScope,
+    scopeKey,
+    setScopeKeys,
   ])
 
   return (
@@ -135,7 +146,8 @@ export const CommandContextProvider = ({
       value={{
         scopes,
         scope,
-        setScope,
+        setScopeKeys,
+        scopeKey,
         commands,
         selectedCommand,
         setSelectedCommand,

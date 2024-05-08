@@ -39,14 +39,14 @@ const CommandPaletteInput = () => {
   const { scope, input, setInput } = useCommands()
 
   const renderBackButton = useMemo(
-    () => scope.type === ScopeType.Isolated,
+    () => scope?.type === ScopeType.Isolated,
     [scope],
   )
 
   return (
     <div className="dark:bg-polar-950 dark:border-polar-800 flex flex-row gap-x-4 border-b border-gray-200 bg-white px-8 py-6">
       {renderBackButton && (
-        <div className="dark:bg-polar-700 flex h-8 w-8 flex-shrink-0 flex-col items-center justify-center rounded-lg bg-gray-200 shadow-sm">
+        <div className="dark:bg-polar-700 flex aspect-square h-full flex-shrink-0 flex-col items-center justify-center rounded-lg bg-gray-200">
           <ArrowBackOutlined fontSize="inherit" />
         </div>
       )}
@@ -62,7 +62,7 @@ const CommandPaletteInput = () => {
 }
 
 const CommandPaletteContainer = () => {
-  const { scopes, scope, setScope } = useCommands()
+  const { scopes, scope, setScopeKeys } = useCommands()
   const pathname = usePathname()
 
   useEffect(() => {
@@ -71,14 +71,12 @@ const CommandPaletteContainer = () => {
     )
 
     if (scopeCandidate) {
-      setScope(scopeCandidate)
-    } else {
-      setScope(scopes.find((scope) => scope.type === ScopeType.Global)!)
+      setScopeKeys(['global', scopeCandidate.name])
     }
   }, [])
 
   const container = useMemo(() => {
-    switch (scope.name.split(':')[0]) {
+    switch (scope?.name.split(':')[0]) {
       case 'api':
         return <APIContainer />
       default:

@@ -36,17 +36,24 @@ export const CommandPalette = ({ organization, hide }: CommandPaletteProps) => {
 }
 
 const CommandPaletteInput = () => {
-  const { scope, input, setInput } = useCommands()
+  const { scope, input, setInput, setScopeKeys } = useCommands()
 
   const renderBackButton = useMemo(
     () => scope?.type === ScopeType.Isolated,
     [scope],
   )
 
+  const handleBack = useCallback(() => {
+    setScopeKeys((scopeKeys) => scopeKeys.slice(0, -1))
+  }, [setScopeKeys])
+
   return (
     <div className="dark:bg-polar-950 dark:border-polar-800 flex flex-row gap-x-4 border-b border-gray-200 bg-white px-8 py-6">
       {renderBackButton && (
-        <div className="dark:bg-polar-700 flex aspect-square h-full flex-shrink-0 flex-col items-center justify-center rounded-lg bg-gray-200">
+        <div
+          className="dark:bg-polar-700 dark:hover:bg-polar-600 flex aspect-square h-full flex-shrink-0 flex-col items-center justify-center rounded-lg bg-gray-200 transition-colors hover:cursor-pointer hover:bg-gray-100"
+          onClick={handleBack}
+        >
           <ArrowBackOutlined fontSize="inherit" />
         </div>
       )}

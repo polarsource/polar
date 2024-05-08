@@ -24,7 +24,7 @@ export interface Scope<T extends ScopeType = ScopeType> {
   type: T
 }
 
-const API_SCOPES = [
+export const API_SCOPES = [
   {
     name: 'api:issues',
     type: ScopeType.Isolated,

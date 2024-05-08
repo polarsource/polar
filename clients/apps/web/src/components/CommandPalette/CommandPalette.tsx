@@ -132,12 +132,26 @@ export const CommandItem = ({
       onClick={onClick}
     >
       <div className="flex flex-row items-center justify-between gap-x-3">
-        <h3 className="dark:text-polar-50 font-medium capitalize text-gray-950">
+        <h3
+          className={twMerge(
+            'font-medium capitalize',
+            active
+              ? 'dark:text-polar-50 text-gray-950'
+              : 'dark:text-polar-500 text-gray-500',
+          )}
+        >
           {command}
         </h3>
         {children}
       </div>
-      <span className="dark:text-polar-500 truncate font-mono text-xs text-gray-500">
+      <span
+        className={twMerge(
+          'truncate font-mono text-xs',
+          active
+            ? 'dark:text-polar-500 text-gray-500'
+            : 'dark:text-polar-600 text-gray-400',
+        )}
+      >
         {description}
       </span>
     </div>

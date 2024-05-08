@@ -2,16 +2,12 @@ import { Organization } from '@polar-sh/sdk'
 import { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime'
 import { createAPICommands } from './APICommands'
 import { Command, GLOBAL_COMMANDS } from './commands'
+import { CommandContextValue } from './useCommands'
 
-export interface ScopeContext {
+export type ScopeContext = {
   router: AppRouterInstance
   organization: Organization
-  scopeKey: ScopeKey
-  setScopeKeys: (
-    scopeKeys: ((scopeKeys: ScopeKey[]) => ScopeKey[]) | ScopeKey[],
-  ) => void
-  hideCommandPalette: () => void
-}
+} & Pick<CommandContextValue, 'setScopeKeys' | 'hideCommandPalette'>
 
 export enum ScopeType {
   Global,

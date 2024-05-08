@@ -44,8 +44,8 @@ async def sync_repository_issues(
     organization_id: UUID,
     repository_id: UUID,
     polar_context: PolarWorkerContext,
-    crawl_with_installation_id: int
-    | None = None,  # Override which installation to use when crawling
+    # Override which installation to use when crawling
+    crawl_with_installation_id: int | None = None,
 ) -> None:
     with polar_context.to_execution_context():
         async with AsyncSessionMaker(ctx) as session:

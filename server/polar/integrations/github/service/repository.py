@@ -28,8 +28,8 @@ class GithubRepositoryService(RepositoryService):
     async def enqueue_sync(
         self,
         repository: Repository,
-        crawl_with_installation_id: int
-        | None = None,  # Override which installation to use when crawling
+        # Override which installation to use when crawling
+        crawl_with_installation_id: int | None = None,
     ) -> None:
         enqueue_job(
             "github.repo.sync.issues",

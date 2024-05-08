@@ -1,14 +1,12 @@
 import { useAuth } from '@/hooks'
-import { BenefitDownloadsCreate } from '@polar-sh/sdk'
+import { BenefitFilesCreate } from '@polar-sh/sdk'
 import { useFormContext } from 'react-hook-form'
 
-interface DownloadsBenefitFormProps {
+interface FilesBenefitFormProps {
   update?: boolean
 }
 
-export const DownloadsBenefitForm = ({
-  update = false,
-}: DownloadsBenefitFormProps) => {
+export const FilesBenefitForm = ({ update = false }: FilesBenefitFormProps) => {
   const {
     control,
     watch,
@@ -16,7 +14,7 @@ export const DownloadsBenefitForm = ({
     setValue,
     setError,
     clearErrors,
-  } = useFormContext<BenefitDownloadsCreate>()
+  } = useFormContext<BenefitFilesCreate>()
 
   const description = watch('description')
 

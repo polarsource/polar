@@ -491,7 +491,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/ListResource_Annotated_Union_BenefitArticlesSubscriber__BenefitAdsSubscriber__BenefitDiscordSubscriber__BenefitCustomSubscriber__BenefitGitHubRepositorySubscriber__BenefitDownloadsSubscriber___Discriminator__MergeJSONSchema__"
+                                    "$ref": "#/components/schemas/ListResource_Annotated_Union_BenefitArticlesSubscriber__BenefitAdsSubscriber__BenefitDiscordSubscriber__BenefitCustomSubscriber__BenefitGitHubRepositorySubscriber__BenefitFilesSubscriber___Discriminator__MergeJSONSchema__"
                                 }
                             }
                         }
@@ -570,7 +570,7 @@
                                             "$ref": "#/components/schemas/BenefitGitHubRepositorySubscriber"
                                         },
                                         {
-                                            "$ref": "#/components/schemas/BenefitDownloadsSubscriber"
+                                            "$ref": "#/components/schemas/BenefitFilesSubscriber"
                                         }
                                     ],
                                     "discriminator": {
@@ -581,7 +581,7 @@
                                             "discord": "#/components/schemas/BenefitDiscordSubscriber",
                                             "custom": "#/components/schemas/BenefitCustomSubscriber",
                                             "github_repository": "#/components/schemas/BenefitGitHubRepositorySubscriber",
-                                            "downloads": "#/components/schemas/BenefitDownloadsSubscriber"
+                                            "files": "#/components/schemas/BenefitFilesSubscriber"
                                         }
                                     },
                                     "title": "Response Users:Get Benefit"
@@ -11609,7 +11609,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/ListResource_Union_BenefitArticles__BenefitAds__BenefitCustom__BenefitDiscord__BenefitGitHubRepository__BenefitDownloads__"
+                                    "$ref": "#/components/schemas/ListResource_Union_BenefitArticles__BenefitAds__BenefitCustom__BenefitDiscord__BenefitGitHubRepository__BenefitFiles__"
                                 }
                             }
                         }
@@ -11668,7 +11668,7 @@
                                         "$ref": "#/components/schemas/BenefitGitHubRepositoryCreate"
                                     },
                                     {
-                                        "$ref": "#/components/schemas/BenefitDownloadsCreate"
+                                        "$ref": "#/components/schemas/BenefitFilesCreate"
                                     }
                                 ],
                                 "discriminator": {
@@ -11678,7 +11678,7 @@
                                         "ads": "#/components/schemas/BenefitAdsCreate",
                                         "discord": "#/components/schemas/BenefitDiscordCreate",
                                         "github_repository": "#/components/schemas/BenefitGitHubRepositoryCreate",
-                                        "downloads": "#/components/schemas/BenefitDownloadsCreate"
+                                        "files": "#/components/schemas/BenefitFilesCreate"
                                     }
                                 },
                                 "title": "Benefit Create"
@@ -11709,7 +11709,7 @@
                                             "$ref": "#/components/schemas/BenefitGitHubRepository"
                                         },
                                         {
-                                            "$ref": "#/components/schemas/BenefitDownloads"
+                                            "$ref": "#/components/schemas/BenefitFiles"
                                         }
                                     ],
                                     "title": "Response Benefits:Create Benefit"
@@ -11792,7 +11792,7 @@
                                             "$ref": "#/components/schemas/BenefitGitHubRepository"
                                         },
                                         {
-                                            "$ref": "#/components/schemas/BenefitDownloads"
+                                            "$ref": "#/components/schemas/BenefitFiles"
                                         }
                                     ],
                                     "title": "Response Benefits:Get Benefit"
@@ -11881,7 +11881,7 @@
                                         "$ref": "#/components/schemas/BenefitGitHubRepositoryUpdate"
                                     },
                                     {
-                                        "$ref": "#/components/schemas/BenefitDownloadsUpdate"
+                                        "$ref": "#/components/schemas/BenefitFilesUpdate"
                                     }
                                 ],
                                 "title": "Benefit Update"
@@ -11912,7 +11912,7 @@
                                             "$ref": "#/components/schemas/BenefitGitHubRepository"
                                         },
                                         {
-                                            "$ref": "#/components/schemas/BenefitDownloads"
+                                            "$ref": "#/components/schemas/BenefitFiles"
                                         }
                                     ],
                                     "title": "Response Benefits:Update Benefit"
@@ -12197,8 +12197,8 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "webhooks:read",
-                            "webhooks:write"
+                            "webhooks:write",
+                            "webhooks:read"
                         ]
                     },
                     {
@@ -12368,8 +12368,8 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "webhooks:read",
-                            "webhooks:write"
+                            "webhooks:write",
+                            "webhooks:read"
                         ]
                     },
                     {
@@ -12604,8 +12604,8 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "webhooks:read",
-                            "webhooks:write"
+                            "webhooks:write",
+                            "webhooks:read"
                         ]
                     },
                     {
@@ -12770,8 +12770,8 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "creator:products:read",
-                            "creator:products:write"
+                            "creator:products:write",
+                            "creator:products:read"
                         ]
                     },
                     {
@@ -12995,8 +12995,8 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "creator:products:read",
-                            "creator:products:write"
+                            "creator:products:write",
+                            "creator:products:read"
                         ]
                     },
                     {
@@ -17228,7 +17228,7 @@
                 ],
                 "title": "BenefitDiscordUpdate"
             },
-            "BenefitDownloads": {
+            "BenefitFiles": {
                 "properties": {
                     "created_at": {
                         "type": "string",
@@ -17258,9 +17258,9 @@
                     "type": {
                         "type": "string",
                         "enum": [
-                            "downloads"
+                            "files"
                         ],
-                        "const": "downloads",
+                        "const": "files",
                         "title": "Type"
                     },
                     "description": {
@@ -17285,7 +17285,7 @@
                         "description": "The ID of the organization owning the benefit."
                     },
                     "properties": {
-                        "$ref": "#/components/schemas/BenefitDownloadsProperties"
+                        "$ref": "#/components/schemas/BenefitFilesProperties"
                     }
                 },
                 "type": "object",
@@ -17299,9 +17299,9 @@
                     "organization_id",
                     "properties"
                 ],
-                "title": "BenefitDownloads"
+                "title": "BenefitFiles"
             },
-            "BenefitDownloadsCreate": {
+            "BenefitFilesCreate": {
                 "properties": {
                     "description": {
                         "type": "string",
@@ -17326,13 +17326,13 @@
                     "type": {
                         "type": "string",
                         "enum": [
-                            "downloads"
+                            "files"
                         ],
-                        "const": "downloads",
+                        "const": "files",
                         "title": "Type"
                     },
                     "properties": {
-                        "$ref": "#/components/schemas/BenefitDownloadsCreateProperties"
+                        "$ref": "#/components/schemas/BenefitFilesCreateProperties"
                     }
                 },
                 "type": "object",
@@ -17341,9 +17341,9 @@
                     "type",
                     "properties"
                 ],
-                "title": "BenefitDownloadsCreate"
+                "title": "BenefitFilesCreate"
             },
-            "BenefitDownloadsCreateProperties": {
+            "BenefitFilesCreateProperties": {
                 "properties": {
                     "foobar": {
                         "anyOf": [
@@ -17358,9 +17358,9 @@
                     }
                 },
                 "type": "object",
-                "title": "BenefitDownloadsCreateProperties"
+                "title": "BenefitFilesCreateProperties"
             },
-            "BenefitDownloadsProperties": {
+            "BenefitFilesProperties": {
                 "properties": {
                     "foobar": {
                         "type": "string",
@@ -17371,9 +17371,9 @@
                 "required": [
                     "foobar"
                 ],
-                "title": "BenefitDownloadsProperties"
+                "title": "BenefitFilesProperties"
             },
-            "BenefitDownloadsSubscriber": {
+            "BenefitFilesSubscriber": {
                 "properties": {
                     "created_at": {
                         "type": "string",
@@ -17403,9 +17403,9 @@
                     "type": {
                         "type": "string",
                         "enum": [
-                            "downloads"
+                            "files"
                         ],
-                        "const": "downloads",
+                        "const": "files",
                         "title": "Type"
                     },
                     "description": {
@@ -17430,7 +17430,7 @@
                         "description": "The ID of the organization owning the benefit."
                     },
                     "properties": {
-                        "$ref": "#/components/schemas/BenefitDownloadsSubscriberProperties"
+                        "$ref": "#/components/schemas/BenefitFilesSubscriberProperties"
                     }
                 },
                 "type": "object",
@@ -17444,9 +17444,9 @@
                     "organization_id",
                     "properties"
                 ],
-                "title": "BenefitDownloadsSubscriber"
+                "title": "BenefitFilesSubscriber"
             },
-            "BenefitDownloadsSubscriberProperties": {
+            "BenefitFilesSubscriberProperties": {
                 "properties": {
                     "foobar": {
                         "type": "string",
@@ -17457,9 +17457,9 @@
                 "required": [
                     "foobar"
                 ],
-                "title": "BenefitDownloadsSubscriberProperties"
+                "title": "BenefitFilesSubscriberProperties"
             },
-            "BenefitDownloadsUpdate": {
+            "BenefitFilesUpdate": {
                 "properties": {
                     "description": {
                         "anyOf": [
@@ -17478,15 +17478,15 @@
                     "type": {
                         "type": "string",
                         "enum": [
-                            "downloads"
+                            "files"
                         ],
-                        "const": "downloads",
+                        "const": "files",
                         "title": "Type"
                     },
                     "properties": {
                         "anyOf": [
                             {
-                                "$ref": "#/components/schemas/BenefitDownloadsCreateProperties"
+                                "$ref": "#/components/schemas/BenefitFilesCreateProperties"
                             },
                             {
                                 "type": "null"
@@ -17498,7 +17498,7 @@
                 "required": [
                     "type"
                 ],
-                "title": "BenefitDownloadsUpdate"
+                "title": "BenefitFilesUpdate"
             },
             "BenefitGitHubRepository": {
                 "properties": {
@@ -18222,7 +18222,7 @@
                     "ads",
                     "discord",
                     "github_repository",
-                    "downloads"
+                    "files"
                 ],
                 "title": "BenefitType"
             },
@@ -20113,7 +20113,7 @@
                 ],
                 "title": "ListResource[Account]"
             },
-            "ListResource_Annotated_Union_BenefitArticlesSubscriber__BenefitAdsSubscriber__BenefitDiscordSubscriber__BenefitCustomSubscriber__BenefitGitHubRepositorySubscriber__BenefitDownloadsSubscriber___Discriminator__MergeJSONSchema__": {
+            "ListResource_Annotated_Union_BenefitArticlesSubscriber__BenefitAdsSubscriber__BenefitDiscordSubscriber__BenefitCustomSubscriber__BenefitGitHubRepositorySubscriber__BenefitFilesSubscriber___Discriminator__MergeJSONSchema__": {
                 "properties": {
                     "items": {
                         "items": {
@@ -20134,7 +20134,7 @@
                                     "$ref": "#/components/schemas/BenefitGitHubRepositorySubscriber"
                                 },
                                 {
-                                    "$ref": "#/components/schemas/BenefitDownloadsSubscriber"
+                                    "$ref": "#/components/schemas/BenefitFilesSubscriber"
                                 }
                             ],
                             "title": "UserBenefit",
@@ -20145,7 +20145,7 @@
                                     "articles": "#/components/schemas/BenefitArticlesSubscriber",
                                     "custom": "#/components/schemas/BenefitCustomSubscriber",
                                     "discord": "#/components/schemas/BenefitDiscordSubscriber",
-                                    "downloads": "#/components/schemas/BenefitDownloadsSubscriber",
+                                    "files": "#/components/schemas/BenefitFilesSubscriber",
                                     "github_repository": "#/components/schemas/BenefitGitHubRepositorySubscriber"
                                 }
                             }
@@ -20162,7 +20162,7 @@
                 "required": [
                     "pagination"
                 ],
-                "title": "ListResource[Annotated[Union[BenefitArticlesSubscriber, BenefitAdsSubscriber, BenefitDiscordSubscriber, BenefitCustomSubscriber, BenefitGitHubRepositorySubscriber, BenefitDownloadsSubscriber], Discriminator, MergeJSONSchema]]"
+                "title": "ListResource[Annotated[Union[BenefitArticlesSubscriber, BenefitAdsSubscriber, BenefitDiscordSubscriber, BenefitCustomSubscriber, BenefitGitHubRepositorySubscriber, BenefitFilesSubscriber], Discriminator, MergeJSONSchema]]"
             },
             "ListResource_Article_": {
                 "properties": {
@@ -20604,7 +20604,7 @@
                 ],
                 "title": "ListResource[Transaction]"
             },
-            "ListResource_Union_BenefitArticles__BenefitAds__BenefitCustom__BenefitDiscord__BenefitGitHubRepository__BenefitDownloads__": {
+            "ListResource_Union_BenefitArticles__BenefitAds__BenefitCustom__BenefitDiscord__BenefitGitHubRepository__BenefitFiles__": {
                 "properties": {
                     "items": {
                         "items": {
@@ -20625,7 +20625,7 @@
                                     "$ref": "#/components/schemas/BenefitGitHubRepository"
                                 },
                                 {
-                                    "$ref": "#/components/schemas/BenefitDownloads"
+                                    "$ref": "#/components/schemas/BenefitFiles"
                                 }
                             ]
                         },
@@ -20641,7 +20641,7 @@
                 "required": [
                     "pagination"
                 ],
-                "title": "ListResource[Union[BenefitArticles, BenefitAds, BenefitCustom, BenefitDiscord, BenefitGitHubRepository, BenefitDownloads]]"
+                "title": "ListResource[Union[BenefitArticles, BenefitAds, BenefitCustom, BenefitDiscord, BenefitGitHubRepository, BenefitFiles]]"
             },
             "ListResource_UserAdvertisementCampaign_": {
                 "properties": {
@@ -29051,7 +29051,7 @@
                                 "$ref": "#/components/schemas/BenefitGitHubRepository"
                             },
                             {
-                                "$ref": "#/components/schemas/BenefitDownloads"
+                                "$ref": "#/components/schemas/BenefitFiles"
                             }
                         ],
                         "title": "Data"
@@ -29092,7 +29092,7 @@
                                 "$ref": "#/components/schemas/BenefitGitHubRepository"
                             },
                             {
-                                "$ref": "#/components/schemas/BenefitDownloads"
+                                "$ref": "#/components/schemas/BenefitFiles"
                             }
                         ],
                         "title": "Data"

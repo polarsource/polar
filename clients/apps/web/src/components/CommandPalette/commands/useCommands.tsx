@@ -74,7 +74,16 @@ export const CommandContextProvider = ({
     () => scopes.find((scope) => scope.name === scopeKey),
     [scopes, scopeKey],
   )
-  const commands = useMemo(() => scope?.commands ?? [], [scope])
+  // Filter out commands based on input
+  const commands = useMemo(
+    () =>
+      scope?.commands.filter(
+        (command) =>
+          command.name.toLowerCase().includes(input.toLowerCase()) ||
+          command.description.toLowerCase().includes(input.toLowerCase()),
+      ) ?? [],
+    [scope, input],
+  )
 
   useEffect(() => {
     setSelectedCommand(commands[0])

@@ -14,19 +14,19 @@ from tests.fixtures.random_objects import create_benefit
 
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
-class TestSearchBenefits:
+class TestListBenefits:
     async def test_anonymous(
         self,
         client: AsyncClient,
     ) -> None:
-        response = await client.get("/api/v1/benefits/search")
+        response = await client.get("/api/v1/benefits/")
 
         assert response.status_code == 401
 
     @pytest.mark.auth
     async def test_user_not_existing_organization(self, client: AsyncClient) -> None:
         response = await client.get(
-            "/api/v1/benefits/search",
+            "/api/v1/benefits/",
             params={"platform": "github", "organization_name": "not_existing"},
         )
 
@@ -40,7 +40,7 @@ class TestSearchBenefits:
         benefits: list[Benefit],
     ) -> None:
         response = await client.get(
-            "/api/v1/benefits/search",
+            "/api/v1/benefits/",
             params={
                 "platform": organization.platform.value,
                 "organization_name": organization.name,
@@ -64,7 +64,7 @@ class TestSearchBenefits:
         benefits: list[Benefit],
     ) -> None:
         response = await client.get(
-            "/api/v1/benefits/search",
+            "/api/v1/benefits/",
             params={
                 "platform": organization.platform.value,
                 "organization_name": organization.name,
@@ -88,7 +88,7 @@ class TestSearchBenefits:
     async def test_organization(
         self, client: AsyncClient, benefits: list[Benefit]
     ) -> None:
-        response = await client.get("/api/v1/benefits/search")
+        response = await client.get("/api/v1/benefits/")
 
         assert response.status_code == 200
 
@@ -98,23 +98,17 @@ class TestSearchBenefits:
 
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
-class TestLookupBenefit:
+class TestGetBenefit:
     async def test_anonymous(
         self, client: AsyncClient, benefit_organization: Benefit
     ) -> None:
-        response = await client.get(
-            "/api/v1/benefits/lookup",
-            params={"benefit_id": str(benefit_organization.id)},
-        )
+        response = await client.get(f"/api/v1/benefits/{benefit_organization.id}")
 
         assert response.status_code == 401
 
     @pytest.mark.auth
     async def test_not_existing(self, client: AsyncClient) -> None:
-        response = await client.get(
-            "/api/v1/benefits/lookup",
-            params={"benefit_id": str(uuid.uuid4())},
-        )
+        response = await client.get(f"/api/v1/benefits/{uuid.uuid4()}")
 
         assert response.status_code == 404
 
@@ -125,10 +119,7 @@ class TestLookupBenefit:
         benefit_organization: Benefit,
         user_organization_admin: UserOrganization,
     ) -> None:
-        response = await client.get(
-            "/api/v1/benefits/lookup",
-            params={"benefit_id": str(benefit_organization.id)},
-        )
+        response = await client.get(f"/api/v1/benefits/{benefit_organization.id}")
 
         assert response.status_code == 200
 

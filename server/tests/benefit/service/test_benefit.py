@@ -50,7 +50,7 @@ class TestSearch:
         # then
         session.expunge_all()
 
-        results, count = await benefit_service.search(
+        results, count = await benefit_service.list(
             session, auth_subject, pagination=PaginationParams(1, 10)
         )
 
@@ -69,7 +69,7 @@ class TestSearch:
         # then
         session.expunge_all()
 
-        results, count = await benefit_service.search(
+        results, count = await benefit_service.list(
             session, auth_subject, pagination=PaginationParams(1, 10)
         )
 
@@ -93,7 +93,7 @@ class TestSearch:
         # then
         session.expunge_all()
 
-        results, count = await benefit_service.search(
+        results, count = await benefit_service.list(
             session,
             auth_subject,
             type=BenefitType.custom,
@@ -117,7 +117,7 @@ class TestSearch:
         # then
         session.expunge_all()
 
-        results, count = await benefit_service.search(
+        results, count = await benefit_service.list(
             session,
             auth_subject,
             organization=organization,
@@ -139,7 +139,7 @@ class TestSearch:
         # then
         session.expunge_all()
 
-        results, count = await benefit_service.search(
+        results, count = await benefit_service.list(
             session,
             auth_subject,
             organization=organization,

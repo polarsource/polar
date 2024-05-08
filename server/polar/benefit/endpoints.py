@@ -26,15 +26,15 @@ log = structlog.get_logger()
 router = APIRouter(prefix="/benefits", tags=["benefits"])
 
 
-@router.get("/search", response_model=ListResource[BenefitSchema], tags=[Tags.PUBLIC])
-async def search_benefits(
+@router.get("/", response_model=ListResource[BenefitSchema], tags=[Tags.PUBLIC])
+async def list_benefits(
     auth_subject: auth.BenefitsRead,
     pagination: PaginationParamsQuery,
     organization: ResolvedOrganization,
     type: BenefitType | None = Query(None),
     session: AsyncSession = Depends(get_db_session),
 ) -> ListResource[BenefitSchema]:
-    results, count = await benefit_service.search(
+    results, count = await benefit_service.list(
         session,
         auth_subject,
         type=type,
@@ -49,13 +49,13 @@ async def search_benefits(
     )
 
 
-@router.get("/lookup", response_model=BenefitSchema, tags=[Tags.PUBLIC])
-async def lookup_benefit(
-    benefit_id: UUID4,
+@router.get("/{id}", response_model=BenefitSchema, tags=[Tags.PUBLIC])
+async def get_benefit(
+    id: UUID4,
     auth_subject: auth.BenefitsRead,
     session: AsyncSession = Depends(get_db_session),
 ) -> Benefit:
-    benefit = await benefit_service.get_by_id(session, auth_subject, benefit_id)
+    benefit = await benefit_service.get_by_id(session, auth_subject, id)
 
     if benefit is None:
         raise ResourceNotFound()

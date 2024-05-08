@@ -2,6 +2,7 @@ import time
 import typing
 
 import jwt
+import structlog
 from authlib.oauth2.rfc6749.errors import (
     InvalidGrantError,
     InvalidRequestError,
@@ -14,12 +15,15 @@ from sqlalchemy import select
 
 from polar.auth.scope import RESERVED_SCOPES, Scope, scope_to_set
 from polar.enums import Platforms
+from polar.logging import Logger
 from polar.models import OAuth2Token, Organization
 
 from ..sub_type import SubType
 
 if typing.TYPE_CHECKING:
     from ..authorization_server import AuthorizationServer
+
+log: Logger = structlog.get_logger()
 
 
 class GitHubOIDCIDToken(typing.TypedDict):
@@ -71,16 +75,21 @@ class GitHubOIDCIDTokenGrant(BaseGrant, TokenEndpointMixin):
         self._jwks_client = jwks_client
 
     def validate_token_request(self) -> None:
+        log.info("Validate GitHub OIDC ID Token grant request.")
+
         id_token = self.request.form.get("id_token")
         if id_token is None:
+            log.info("Missing id_token in request.")
             raise InvalidRequestError('Missing "id_token" in request.')
 
         scope = self.request.scope
         if scope is None:
+            log.info("Missing scope in request.")
             raise InvalidRequestError('Missing "scope" in request.')
         try:
             scope_to_set(scope)
         except ValueError as e:
+            log.info("Invalid scope.")
             raise InvalidScopeError() from e
 
         try:
@@ -89,13 +98,14 @@ class GitHubOIDCIDTokenGrant(BaseGrant, TokenEndpointMixin):
                 id_token, signing_key.key, algorithms=["RS256"], audience="polar"
             )
         except jwt.PyJWTError as e:
+            log.info("Invalid id_token.", error=str(e))
             raise InvalidGrantError('Invalid "id_token".') from e
 
-        nonce_statement = select(OAuth2Token).where(
-            OAuth2Token.nonce == id_token_data["jti"]
-        )
+        nonce = id_token_data.get("jti")
+        nonce_statement = select(OAuth2Token).where(OAuth2Token.nonce == nonce)
         result = self.server.session.execute(nonce_statement)
         if result.unique().scalar_one_or_none() is not None:
+            log.info("Access token already issued for id_token.", nonce=nonce)
             raise InvalidGrantError('Invalid "id_token".')
 
         statement = select(Organization).where(
@@ -106,6 +116,10 @@ class GitHubOIDCIDTokenGrant(BaseGrant, TokenEndpointMixin):
         organization = result.unique().scalar_one_or_none()
 
         if organization is None:
+            log.info(
+                "Organization not found.",
+                organization=id_token_data["repository_owner"],
+            )
             raise InvalidGrantError('Invalid "id_token".')
 
         self.request.user = SubType.organization, organization  # pyright: ignore

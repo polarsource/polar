@@ -1,3 +1,5 @@
+import { Organization } from '@polar-sh/sdk'
+import { useRouter } from 'next/navigation'
 import {
   PropsWithChildren,
   createContext,
@@ -9,34 +11,58 @@ import {
 import { Command } from './commands'
 import { SCOPES, Scope, ScopeType } from './scopes'
 
-const defaultScope = SCOPES.find((scope) => scope.type === ScopeType.Global)
-
-if (!defaultScope) {
-  throw new Error('No global scope found')
-}
-
 export interface CommandContextValue {
+  scopes: Scope[]
   scope: Scope
   setScope: (scope: Scope) => void
   commands: Command[]
   selectedCommand: Command
   setSelectedCommand: (command: Command) => void
+  input: string
+  setInput: (input: string) => void
+  hideCommandPalette: () => void
 }
 
 const defaultCommandContextValue: CommandContextValue = {
-  scope: defaultScope,
+  scopes: [],
+  scope: { name: 'global', commands: [], type: ScopeType.Global },
   setScope: (scope: Scope) => {},
   commands: [],
-  selectedCommand: defaultScope.commands[0],
+  selectedCommand: { name: '', description: '' },
   setSelectedCommand: (command: Command) => {},
+  input: '',
+  setInput: (input: string) => {},
+  hideCommandPalette: () => {},
 }
 
 const CommandContext = createContext(defaultCommandContextValue)
 
-export const CommandContextProvider = ({ children }: PropsWithChildren) => {
-  const [scope, setScope] = useState<Scope>(defaultScope)
+interface CommandContextProviderProps {
+  organization: Organization
+  hideCommandPalette: () => void
+}
+
+export const CommandContextProvider = ({
+  children,
+  organization,
+  hideCommandPalette,
+}: PropsWithChildren<CommandContextProviderProps>) => {
+  const router = useRouter()
+
+  const scopes = useMemo(() => {
+    return SCOPES({
+      router,
+      organization,
+      hideCommandPalette,
+    })
+  }, [router, organization, hideCommandPalette])
+
+  const [scope, setScope] = useState<Scope>(
+    scopes.find((scope) => scope.type === ScopeType.Global)!,
+  )
   const commands = useMemo(() => scope.commands, [scope])
   const [selectedCommand, setSelectedCommand] = useState<Command>(commands[0])
+  const [input, setInput] = useState('')
 
   useEffect(() => {
     setSelectedCommand(commands[0])
@@ -67,6 +93,26 @@ export const CommandContextProvider = ({ children }: PropsWithChildren) => {
           setSelectedCommand(commands[currentIndex - 1])
         }
       }
+
+      if (e.key === 'Enter' && selectedCommand.action) {
+        e.preventDefault()
+        e.stopPropagation()
+
+        selectedCommand.action()
+      }
+
+      if (
+        e.key === 'Backspace' &&
+        input.length === 0 &&
+        scope.type === ScopeType.Isolated
+      ) {
+        e.preventDefault()
+        e.stopPropagation()
+
+        console.log(scopes.find((scope) => scope.type === ScopeType.Global)!)
+
+        setScope(scopes.find((scope) => scope.type === ScopeType.Global)!)
+      }
     }
 
     document.addEventListener('keydown', handleArrowKeys)
@@ -74,11 +120,29 @@ export const CommandContextProvider = ({ children }: PropsWithChildren) => {
     return () => {
       document.removeEventListener('keydown', handleArrowKeys)
     }
-  }, [commands, selectedCommand])
+  }, [
+    commands,
+    selectedCommand,
+    hideCommandPalette,
+    input,
+    scope,
+    scopes,
+    setScope,
+  ])
 
   return (
     <CommandContext.Provider
-      value={{ scope, setScope, commands, selectedCommand, setSelectedCommand }}
+      value={{
+        scopes,
+        scope,
+        setScope,
+        commands,
+        selectedCommand,
+        setSelectedCommand,
+        input,
+        setInput,
+        hideCommandPalette,
+      }}
     >
       {children}
     </CommandContext.Provider>

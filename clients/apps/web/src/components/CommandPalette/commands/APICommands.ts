@@ -1,5 +1,5 @@
 import openapiSchema from '@polar-sh/sdk/openapi'
-import { Command } from './commands/commands'
+import { Command } from './commands'
 
 type SchemaPaths = (typeof openapiSchema)['paths']
 type SchemaPathKey = keyof SchemaPaths

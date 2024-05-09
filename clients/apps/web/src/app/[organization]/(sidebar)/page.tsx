@@ -265,6 +265,7 @@ export default async function Page({
 
   let featuredOrganizations: Organization[] = []
   let links: Link[] = []
+  let featuredProjects: Repository[] = []
 
   try {
     const featuredOrganizationIDs =
@@ -278,6 +279,20 @@ export default async function Page({
         ),
       ),
     )
+
+    const featuredProjectIDs =
+      organization.profile_settings?.featured_projects ?? []
+
+    const loadFeaturedProjects =
+      featuredProjectIDs.length > 0
+        ? await Promise.all(
+            featuredProjectIDs.map((id) =>
+              api.repositories
+                .get({ id }, cacheConfig)
+                .catch((err) => console.error(err)),
+            ),
+          )
+        : sortedRepositories.slice(0, 2) ?? []
 
     const fallbackLinks = [
       `https://github.com/${organization.name}`,
@@ -304,28 +319,17 @@ export default async function Page({
     )
 
     featuredOrganizations = loadFeaturedOrganizations
+
+    featuredProjects = loadFeaturedProjects.filter((repo): repo is Repository =>
+      Boolean(repo),
+    )
+
     links = loadLinkOpengraphs.filter(
       (link): link is Link => link !== undefined,
     )
   } catch (err) {
     notFound()
   }
-
-  let featuredProjects: Repository[] = []
-
-  const featuredProjectIDs =
-    organization.profile_settings?.featured_projects ?? []
-
-  const loadFeaturedProjects =
-    featuredProjectIDs.length > 0
-      ? await Promise.all(
-          featuredProjectIDs.map((id) =>
-            api.repositories.get({ id }, cacheConfig),
-          ),
-        )
-      : sortedRepositories.slice(0, 2) ?? []
-
-  featuredProjects = loadFeaturedProjects.filter(Boolean)
 
   const posts = [
     ...(pinnedArticles.items ?? []),

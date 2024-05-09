@@ -128,6 +128,13 @@ class Settings(BaseSettings):
     LOGFIRE_TOKEN: str | None = None
     LOGFIRE_PROJECT_NAME: str = "polar"
 
+    # AWS (File Downloads)
+    AWS_ACCESS_KEY_ID: str = ""
+    AWS_SECRET_ACCESS_KEY: str = ""
+    AWS_REGION: str = "us-east-2"
+    AWS_SIGNATURE_VERSION: str = "v4"
+    AWS_S3_FILES_BUCKET_NAME: str = ""
+
     # Application behaviours
     API_PAGINATION_MAX_LIMIT: int = 100
 

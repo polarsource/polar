@@ -4,11 +4,12 @@ import {
   ArticlesApi,
   AuthApi,
   BackofficeApi,
+  BenefitsApi,
   CheckoutsApi,
   Configuration,
   DashboardApi,
-  BenefitsApi,
   DonationsApi,
+  FilesApi,
   FundingApi,
   HealthApi,
   IntegrationsDiscordApi,
@@ -17,12 +18,13 @@ import {
   IssuesApi,
   MagicLinkApi,
   NotificationsApi,
-  OrganizationsApi,
   Oauth2Api,
+  OrdersApi,
+  OrganizationsApi,
   PaymentMethodsApi,
-  ProductsApi,
   PersonalAccessTokenApi,
   PledgesApi,
+  ProductsApi,
   PullRequestsApi,
   RepositoriesApi,
   RewardsApi,
@@ -31,7 +33,6 @@ import {
   TrafficApi,
   TransactionsApi,
   UsersApi,
-  OrdersApi,
   WebhookNotificationsApi,
   WebhooksApi,
 } from '.'
@@ -48,9 +49,9 @@ export class PolarAPI {
   public readonly donations: DonationsApi
   public readonly funding: FundingApi
   public readonly health: HealthApi
-  public readonly integrationsDiscord: IntegrationsDiscordApi;
-  public readonly integrationsGitHub: IntegrationsGithubApi;
-  public readonly integrationsGitHubRepositoryBenefit: IntegrationsGithubRepositoryBenefitApi;
+  public readonly integrationsDiscord: IntegrationsDiscordApi
+  public readonly integrationsGitHub: IntegrationsGithubApi
+  public readonly integrationsGitHubRepositoryBenefit: IntegrationsGithubRepositoryBenefitApi
   public readonly issues: IssuesApi
   public readonly magicLink: MagicLinkApi
   public readonly notifications: NotificationsApi
@@ -71,7 +72,7 @@ export class PolarAPI {
   public readonly users: UsersApi
   public readonly webhookNotifications: WebhookNotificationsApi
   public readonly webhooks: WebhooksApi
-
+  public readonly files: FilesApi
 
   constructor(config: Configuration) {
     this.accounts = new AccountsApi(config)
@@ -85,9 +86,10 @@ export class PolarAPI {
     this.donations = new DonationsApi(config)
     this.funding = new FundingApi(config)
     this.health = new HealthApi(config)
-    this.integrationsDiscord= new IntegrationsDiscordApi(config)
-    this.integrationsGitHub= new IntegrationsGithubApi(config)
-    this.integrationsGitHubRepositoryBenefit= new IntegrationsGithubRepositoryBenefitApi(config)
+    this.integrationsDiscord = new IntegrationsDiscordApi(config)
+    this.integrationsGitHub = new IntegrationsGithubApi(config)
+    this.integrationsGitHubRepositoryBenefit =
+      new IntegrationsGithubRepositoryBenefitApi(config)
     this.issues = new IssuesApi(config)
     this.magicLink = new MagicLinkApi(config)
     this.notifications = new NotificationsApi(config)
@@ -108,5 +110,6 @@ export class PolarAPI {
     this.users = new UsersApi(config)
     this.webhookNotifications = new WebhookNotificationsApi(config)
     this.webhooks = new WebhooksApi(config)
+    this.files = new FilesApi(config)
   }
 }

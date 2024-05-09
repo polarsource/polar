@@ -4739,6 +4739,50 @@ export interface ExternalGitHubPullRequestReference {
 /**
  * 
  * @export
+ * @interface FileCreate
+ */
+export interface FileCreate {
+    /**
+     * 
+     * @type {string}
+     * @memberof FileCreate
+     */
+    name: string;
+    /**
+     * 
+     * @type {number}
+     * @memberof FileCreate
+     */
+    size: number;
+    /**
+     * 
+     * @type {string}
+     * @memberof FileCreate
+     */
+    type: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof FileCreate
+     */
+    last_modified_at: string;
+}
+/**
+ * 
+ * @export
+ * @interface FileCreateSignedURL
+ */
+export interface FileCreateSignedURL {
+    /**
+     * 
+     * @type {string}
+     * @memberof FileCreateSignedURL
+     */
+    url: string;
+}
+/**
+ * 
+ * @export
  * @interface FreeSubscriptionUpgrade
  */
 export interface FreeSubscriptionUpgrade {

@@ -32,7 +32,7 @@ import {
 } from 'polarkit/components/ui/form'
 import React, { useMemo } from 'react'
 import { useFormContext } from 'react-hook-form'
-import { FilesBenefitForm } from './FilesBenefitForm'
+import { FilesBenefitForm } from './Files/BenefitForm'
 import { GitHubRepositoryBenefitForm } from './GitHubRepositoryBenefitForm'
 import { benefitsDisplayNames } from './utils'
 

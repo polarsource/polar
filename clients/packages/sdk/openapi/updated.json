@@ -11527,8 +11527,8 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "creator:benefits:read",
-                            "creator:benefits:write"
+                            "creator:benefits:write",
+                            "creator:benefits:read"
                         ]
                     },
                     {
@@ -11747,8 +11747,8 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "creator:benefits:read",
-                            "creator:benefits:write"
+                            "creator:benefits:write",
+                            "creator:benefits:read"
                         ]
                     },
                     {
@@ -12043,8 +12043,8 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "creator:benefits:read",
-                            "creator:benefits:write"
+                            "creator:benefits:write",
+                            "creator:benefits:read"
                         ]
                     },
                     {
@@ -12197,8 +12197,8 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "webhooks:write",
-                            "webhooks:read"
+                            "webhooks:read",
+                            "webhooks:write"
                         ]
                     },
                     {
@@ -12368,8 +12368,8 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "webhooks:write",
-                            "webhooks:read"
+                            "webhooks:read",
+                            "webhooks:write"
                         ]
                     },
                     {
@@ -12604,8 +12604,8 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "webhooks:write",
-                            "webhooks:read"
+                            "webhooks:read",
+                            "webhooks:write"
                         ]
                     },
                     {
@@ -12770,8 +12770,8 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "creator:products:write",
-                            "creator:products:read"
+                            "creator:products:read",
+                            "creator:products:write"
                         ]
                     },
                     {
@@ -12995,8 +12995,8 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "creator:products:write",
-                            "creator:products:read"
+                            "creator:products:read",
+                            "creator:products:write"
                         ]
                     },
                     {
@@ -13750,6 +13750,55 @@
                         }
                     }
                 }
+            }
+        },
+        "/api/v1/files/": {
+            "post": {
+                "tags": [
+                    "files"
+                ],
+                "summary": "Create File",
+                "operationId": "create_file",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/FileCreate"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/FileCreateSignedURL"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "OpenIdConnect": []
+                    },
+                    {
+                        "HTTPBearer": []
+                    }
+                ]
             }
         }
     },
@@ -18643,6 +18692,48 @@
                     "state"
                 ],
                 "title": "ExternalGitHubPullRequestReference"
+            },
+            "FileCreate": {
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "title": "Name"
+                    },
+                    "size": {
+                        "type": "integer",
+                        "title": "Size"
+                    },
+                    "type": {
+                        "type": "string",
+                        "title": "Type"
+                    },
+                    "last_modified_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "title": "Last Modified At"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "name",
+                    "size",
+                    "type",
+                    "last_modified_at"
+                ],
+                "title": "FileCreate"
+            },
+            "FileCreateSignedURL": {
+                "properties": {
+                    "url": {
+                        "type": "string",
+                        "title": "Url"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "url"
+                ],
+                "title": "FileCreateSignedURL"
             },
             "FreeSubscriptionUpgrade": {
                 "properties": {

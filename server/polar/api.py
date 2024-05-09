@@ -10,6 +10,7 @@ from polar.checkout.endpoints import router as checkout_router
 from polar.dashboard.endpoints import router as dashboard_router
 from polar.donation.endpoints import router as donations_router
 from polar.eventstream.endpoints import router as stream_router
+from polar.files.endpoints import router as files_router
 from polar.funding.endpoints import router as funding_router
 from polar.integrations.discord.endpoints import router as discord_router
 from polar.integrations.github.endpoints import router as github_router
@@ -109,3 +110,5 @@ router.include_router(product_router)
 router.include_router(order_router)
 # /checkout
 router.include_router(checkout_router)
+# /files
+router.include_router(files_router)

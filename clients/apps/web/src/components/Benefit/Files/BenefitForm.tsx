@@ -1,6 +1,10 @@
+'use client'
+
 import { useAuth } from '@/hooks'
 import { BenefitFilesCreate } from '@polar-sh/sdk'
 import { useFormContext } from 'react-hook-form'
+
+import Dropzone from './Dropzone'
 
 interface FilesBenefitFormProps {
   update?: boolean
@@ -23,6 +27,7 @@ export const FilesBenefitForm = ({ update = false }: FilesBenefitFormProps) => {
   return (
     <>
       <p>Downloads form</p>
+      <Dropzone onUploaded={() => console.log('uploaded')} />
     </>
   )
 }

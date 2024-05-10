@@ -22,7 +22,6 @@ import type {
   ListResourceBenefitGrant,
   ListResourceUnionBenefitArticlesBenefitAdsBenefitCustomBenefitDiscordBenefitGitHubRepository,
   NotPermitted,
-  Platforms,
   ResourceNotFound,
   ResponseBenefitsCreateBenefit,
   ResponseBenefitsGetBenefit,
@@ -51,11 +50,10 @@ export interface BenefitsApiListBenefitGrantsRequest {
 }
 
 export interface BenefitsApiListBenefitsRequest {
+    organizationId?: string;
     type?: BenefitType;
     page?: number;
     limit?: number;
-    organizationName?: string;
-    platform?: Platforms;
 }
 
 export interface BenefitsApiUpdateBenefitRequest {
@@ -263,11 +261,15 @@ export class BenefitsApi extends runtime.BaseAPI {
     }
 
     /**
-     * List benefits created on an organization.
+     * List benefits.
      * List Benefits
      */
     async listBenefitsRaw(requestParameters: BenefitsApiListBenefitsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListResourceUnionBenefitArticlesBenefitAdsBenefitCustomBenefitDiscordBenefitGitHubRepository>> {
         const queryParameters: any = {};
+
+        if (requestParameters['organizationId'] != null) {
+            queryParameters['organization_id'] = requestParameters['organizationId'];
+        }
 
         if (requestParameters['type'] != null) {
             queryParameters['type'] = requestParameters['type'];
@@ -279,14 +281,6 @@ export class BenefitsApi extends runtime.BaseAPI {
 
         if (requestParameters['limit'] != null) {
             queryParameters['limit'] = requestParameters['limit'];
-        }
-
-        if (requestParameters['organizationName'] != null) {
-            queryParameters['organization_name'] = requestParameters['organizationName'];
-        }
-
-        if (requestParameters['platform'] != null) {
-            queryParameters['platform'] = requestParameters['platform'];
         }
 
         const headerParameters: runtime.HTTPHeaders = {};
@@ -310,7 +304,7 @@ export class BenefitsApi extends runtime.BaseAPI {
     }
 
     /**
-     * List benefits created on an organization.
+     * List benefits.
      * List Benefits
      */
     async listBenefits(requestParameters: BenefitsApiListBenefitsRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ListResourceUnionBenefitArticlesBenefitAdsBenefitCustomBenefitDiscordBenefitGitHubRepository> {
@@ -353,7 +347,7 @@ export class BenefitsApi extends runtime.BaseAPI {
         }
         const response = await this.request({
             path: `/api/v1/benefits/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
-            method: 'POST',
+            method: 'PATCH',
             headers: headerParameters,
             query: queryParameters,
             body: requestParameters['benefitUpdate'],

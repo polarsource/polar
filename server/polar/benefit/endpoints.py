@@ -24,7 +24,7 @@ log = structlog.get_logger()
 
 router = APIRouter(prefix="/benefits", tags=["benefits"])
 
-BenefitID = Annotated[UUID4, Path(description="The benefit ID")]
+BenefitID = Annotated[UUID4, Path(description="The benefit ID.")]
 BenefitNotFound = {
     "description": "Benefit not found.",
     "model": ResourceNotFound.schema(),

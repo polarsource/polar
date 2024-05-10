@@ -11,7 +11,7 @@ from polar.auth.scope import Scope
 from polar.authz.service import AccessType, Authz
 from polar.benefit.schemas import benefit_schema_map
 from polar.donation.schemas import Donation as DonationSchema
-from polar.exceptions import NotPermitted, ResourceNotFound
+from polar.exceptions import NotPermitted, PolarRequestValidationError, ResourceNotFound
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.utils import utc_now
@@ -131,7 +131,19 @@ class WebhookService:
             if not await authz.can(
                 auth_subject.subject, AccessType.write, organization
             ):
-                raise NotPermitted()
+                raise PolarRequestValidationError(
+                    [
+                        {
+                            "loc": (
+                                "body",
+                                "organization_id",
+                            ),
+                            "msg": "Organization not found.",
+                            "type": "value_error",
+                            "input": organization.id,
+                        }
+                    ]
+                )
             endpoint.organization_id = organization.id
 
         session.add(endpoint)

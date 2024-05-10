@@ -17,12 +17,15 @@ export default function ClientPage({
 
   return (
     <EmptyLayout>
-      <div className="dark:text-polar-200 flex flex-col items-center justify-center space-y-10 py-96 text-gray-600">
+      <div className="dark:text-polar-200 flex flex-col text-gray-600">
         <div className="flex flex-col items-center gap-4 text-center">
           <h2 className="dark:text-polar-50 text-2xl font-medium text-gray-950">
             File upload demo
           </h2>
-          <Dropzone onUploaded={() => console.log('uploaded')} />
+          <Dropzone
+            organization={organization}
+            onUploaded={() => console.log('uploaded')}
+          />
         </div>
       </div>
     </EmptyLayout>

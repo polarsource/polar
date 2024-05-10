@@ -7245,9 +7245,9 @@
                             },
                             "description": "Filter by the type of purchase the customer made.",
                             "default": [
-                                "subscription",
+                                "donation",
                                 "order",
-                                "donation"
+                                "subscription"
                             ],
                             "title": "Customer Types"
                         },
@@ -7716,8 +7716,8 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "creator:subscriptions:write",
-                            "creator:subscriptions:read"
+                            "creator:subscriptions:read",
+                            "creator:subscriptions:write"
                         ]
                     },
                     {
@@ -7865,8 +7865,8 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "creator:subscriptions:write",
-                            "creator:subscriptions:read"
+                            "creator:subscriptions:read",
+                            "creator:subscriptions:write"
                         ]
                     },
                     {
@@ -8295,8 +8295,8 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "creator:subscriptions:write",
-                            "creator:subscriptions:read"
+                            "creator:subscriptions:read",
+                            "creator:subscriptions:write"
                         ]
                     },
                     {
@@ -11527,8 +11527,8 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "creator:benefits:write",
-                            "creator:benefits:read"
+                            "creator:benefits:read",
+                            "creator:benefits:write"
                         ]
                     },
                     {
@@ -11747,8 +11747,8 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "creator:benefits:write",
-                            "creator:benefits:read"
+                            "creator:benefits:read",
+                            "creator:benefits:write"
                         ]
                     },
                     {
@@ -12043,8 +12043,8 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "creator:benefits:write",
-                            "creator:benefits:read"
+                            "creator:benefits:read",
+                            "creator:benefits:write"
                         ]
                     },
                     {
@@ -13775,7 +13775,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/FileCreateSignedURL"
+                                    "$ref": "#/components/schemas/FileRead"
                                 }
                             }
                         }
@@ -13794,6 +13794,14 @@
                 "security": [
                     {
                         "OpenIdConnect": []
+                    },
+                    {
+                        "HTTPBearer": []
+                    },
+                    {
+                        "OpenIdConnect": [
+                            "creator:files:write"
+                        ]
                     },
                     {
                         "HTTPBearer": []
@@ -18695,6 +18703,11 @@
             },
             "FileCreate": {
                 "properties": {
+                    "organization_id": {
+                        "type": "string",
+                        "format": "uuid4",
+                        "title": "Organization Id"
+                    },
                     "name": {
                         "type": "string",
                         "title": "Name"
@@ -18703,37 +18716,127 @@
                         "type": "integer",
                         "title": "Size"
                     },
-                    "type": {
+                    "mime_type": {
                         "type": "string",
-                        "title": "Type"
+                        "title": "Mime Type"
                     },
-                    "last_modified_at": {
-                        "type": "string",
-                        "format": "date-time",
-                        "title": "Last Modified At"
+                    "version": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Version"
                     }
                 },
                 "type": "object",
                 "required": [
+                    "organization_id",
                     "name",
                     "size",
-                    "type",
-                    "last_modified_at"
+                    "mime_type"
                 ],
                 "title": "FileCreate"
             },
-            "FileCreateSignedURL": {
+            "FileRead": {
                 "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid4",
+                        "title": "Id"
+                    },
+                    "organization_id": {
+                        "type": "string",
+                        "format": "uuid4",
+                        "title": "Organization Id"
+                    },
+                    "name": {
+                        "type": "string",
+                        "title": "Name"
+                    },
+                    "extension": {
+                        "type": "string",
+                        "title": "Extension"
+                    },
+                    "version": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Version"
+                    },
+                    "mime_type": {
+                        "type": "string",
+                        "title": "Mime Type"
+                    },
+                    "size": {
+                        "type": "integer",
+                        "title": "Size"
+                    },
+                    "status": {
+                        "type": "string",
+                        "title": "Status"
+                    },
                     "url": {
                         "type": "string",
                         "title": "Url"
+                    },
+                    "url_expires_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "title": "Url Expires At"
+                    },
+                    "uploaded_at": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "date-time"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Uploaded At"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "title": "Created At"
+                    },
+                    "modified_at": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "date-time"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Modified At"
                     }
                 },
                 "type": "object",
                 "required": [
-                    "url"
+                    "id",
+                    "organization_id",
+                    "name",
+                    "extension",
+                    "mime_type",
+                    "size",
+                    "status",
+                    "url",
+                    "url_expires_at",
+                    "created_at"
                 ],
-                "title": "FileCreateSignedURL"
+                "title": "FileRead"
             },
             "FreeSubscriptionUpgrade": {
                 "properties": {
@@ -20785,7 +20888,7 @@
                     "scope": {
                         "type": "string",
                         "title": "Scope",
-                        "default": "openid profile email articles:read user:read organizations:read organizations:write creator:subscriptions:read creator:subscriptions:write creator:products:read creator:products:write creator:benefits:read creator:benefits:write orders:read webhooks:read webhooks:write user:benefits:read user:orders:read user:subscriptions:read user:subscriptions:write user:advertisement_campaigns:read user:advertisement_campaigns:write"
+                        "default": "openid profile email articles:read user:read organizations:read organizations:write creator:subscriptions:read creator:subscriptions:write creator:products:read creator:products:write creator:benefits:read creator:benefits:write orders:read webhooks:read webhooks:write user:benefits:read user:orders:read user:subscriptions:read user:subscriptions:write user:advertisement_campaigns:read user:advertisement_campaigns:write creator:files:read creator:files:write backer:files:read"
                     },
                     "client_name": {
                         "type": "string",
@@ -20946,7 +21049,7 @@
                     "scope": {
                         "type": "string",
                         "title": "Scope",
-                        "default": "openid profile email articles:read user:read organizations:read organizations:write creator:subscriptions:read creator:subscriptions:write creator:products:read creator:products:write creator:benefits:read creator:benefits:write orders:read webhooks:read webhooks:write user:benefits:read user:orders:read user:subscriptions:read user:subscriptions:write user:advertisement_campaigns:read user:advertisement_campaigns:write"
+                        "default": "openid profile email articles:read user:read organizations:read organizations:write creator:subscriptions:read creator:subscriptions:write creator:products:read creator:products:write creator:benefits:read creator:benefits:write orders:read webhooks:read webhooks:write user:benefits:read user:orders:read user:subscriptions:read user:subscriptions:write user:advertisement_campaigns:read user:advertisement_campaigns:write creator:files:read creator:files:write backer:files:read"
                     },
                     "client_name": {
                         "type": "string",
@@ -21067,7 +21170,7 @@
                     "scope": {
                         "type": "string",
                         "title": "Scope",
-                        "default": "openid profile email articles:read user:read organizations:read organizations:write creator:subscriptions:read creator:subscriptions:write creator:products:read creator:products:write creator:benefits:read creator:benefits:write orders:read webhooks:read webhooks:write user:benefits:read user:orders:read user:subscriptions:read user:subscriptions:write user:advertisement_campaigns:read user:advertisement_campaigns:write"
+                        "default": "openid profile email articles:read user:read organizations:read organizations:write creator:subscriptions:read creator:subscriptions:write creator:products:read creator:products:write creator:benefits:read creator:benefits:write orders:read webhooks:read webhooks:write user:benefits:read user:orders:read user:subscriptions:read user:subscriptions:write user:advertisement_campaigns:read user:advertisement_campaigns:write creator:files:read creator:files:write backer:files:read"
                     },
                     "client_name": {
                         "type": "string",
@@ -24241,13 +24344,19 @@
                     "user:subscriptions:read",
                     "user:subscriptions:write",
                     "user:advertisement_campaigns:read",
-                    "user:advertisement_campaigns:write"
+                    "user:advertisement_campaigns:write",
+                    "creator:files:read",
+                    "creator:files:write",
+                    "backer:files:read"
                 ],
                 "title": "Scope",
                 "enumNames": {
                     "articles:read": "Articles Read",
+                    "backer:files:read": "Read & Download Files",
                     "creator:benefits:read": "Read benefits",
                     "creator:benefits:write": "Create or modify benefits",
+                    "creator:files:read": "Read & Download Files",
+                    "creator:files:write": "Upload Files",
                     "creator:subscriptions:read": "Read subscription tiers and subscribers",
                     "creator:subscriptions:write": "Create or modify subscription tiers and subscribers",
                     "email": "Read your email address",

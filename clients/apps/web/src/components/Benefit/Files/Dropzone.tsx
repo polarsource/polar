@@ -1,9 +1,17 @@
 'use client'
 
+import { Organization } from '@polar-sh/sdk'
+
 import { api } from '@/utils/api'
 import { useRef } from 'react'
 
-const Dropzone = ({ onUploaded }: { onUploaded: (url: string) => void }) => {
+const Dropzone = ({
+  organization,
+  onUploaded,
+}: {
+  organization: Organization
+  onUploaded: (url: string) => void
+}) => {
   const inputFileRef = useRef<HTMLInputElement>(null)
 
   const handleUpload = async (image: string) => {
@@ -11,28 +19,22 @@ const Dropzone = ({ onUploaded }: { onUploaded: (url: string) => void }) => {
       throw new Error('No file selected')
     }
 
-    console.log('handleUpload')
     if (image === undefined) {
       throw new Error('No image')
     }
 
-    // 1. Get signed S3 URL from our API
     const file = inputFileRef.current.files[0]
-    console.log('file upload', file)
-    console.log('api', api.files)
-
     const params = {
+      organization_id: organization.id,
       name: file.name,
       size: file.size,
-      type: file.type,
-      last_modified_at: file.lastModifiedDate,
+      mime_type: file.type,
+      version: null,
     }
     const response = await api.files.createFile({
       fileCreate: params,
     })
-    console.log('response', response)
 
-    // 2. Post to S3
     const binary = atob(image.split(',')[1])
     const array = []
     for (var i = 0; i < binary.length; i++) {
@@ -40,14 +42,10 @@ const Dropzone = ({ onUploaded }: { onUploaded: (url: string) => void }) => {
     }
 
     let blob = new Blob([new Uint8Array(array)], { type: file.type })
-    console.log('Uploading to: ', response.url)
     const result = await fetch(response.url, {
       method: 'PUT',
       body: blob,
     })
-    console.log('Result: ', result)
-    // Final URL for the user doesn't need the query string params
-    // this.uploadURL = response.uploadURL.split('?')[0]
   }
 
   return (
@@ -55,7 +53,6 @@ const Dropzone = ({ onUploaded }: { onUploaded: (url: string) => void }) => {
       <form
         onSubmit={async (event) => {
           event.preventDefault()
-          await handleUpload()
         }}
       >
         <input
@@ -78,7 +75,6 @@ const Dropzone = ({ onUploaded }: { onUploaded: (url: string) => void }) => {
                 }
               }
               reader.readAsDataURL(e.target.files[0])
-            } else {
             }
           }}
         />

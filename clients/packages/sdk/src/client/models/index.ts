@@ -1563,10 +1563,10 @@ export interface AuthorizeOrganization {
 export interface AuthorizeResponseOrganization {
     /**
      * 
-     * @type {OAuth2Client}
+     * @type {OAuth2ClientPublic}
      * @memberof AuthorizeResponseOrganization
      */
-    client: OAuth2Client;
+    client: OAuth2ClientPublic;
     /**
      * 
      * @type {string}
@@ -1610,10 +1610,10 @@ export type AuthorizeResponseOrganizationSubTypeEnum = typeof AuthorizeResponseO
 export interface AuthorizeResponseUser {
     /**
      * 
-     * @type {OAuth2Client}
+     * @type {OAuth2ClientPublic}
      * @memberof AuthorizeResponseUser
      */
-    client: OAuth2Client;
+    client: OAuth2ClientPublic;
     /**
      * 
      * @type {string}
@@ -1947,13 +1947,15 @@ export interface BackofficeReward {
     pledger_email?: string;
 }
 /**
+ * A benefit of type `ads`.
  * 
+ * Use it so your backers can display ads on your README, website, etc.
  * @export
  * @interface BenefitAds
  */
 export interface BenefitAds {
     /**
-     * 
+     * Creation timestamp of the object.
      * @type {string}
      * @memberof BenefitAds
      */
@@ -1965,7 +1967,7 @@ export interface BenefitAds {
      */
     modified_at?: string;
     /**
-     * 
+     * The ID of the benefit.
      * @type {string}
      * @memberof BenefitAds
      */
@@ -1977,25 +1979,25 @@ export interface BenefitAds {
      */
     type: BenefitAdsTypeEnum;
     /**
-     * 
+     * The description of the benefit.
      * @type {string}
      * @memberof BenefitAds
      */
     description: string;
     /**
-     * 
+     * Whether the benefit is selectable when creating a product.
      * @type {boolean}
      * @memberof BenefitAds
      */
     selectable: boolean;
     /**
-     * 
+     * Whether the benefit is deletable.
      * @type {boolean}
      * @memberof BenefitAds
      */
     deletable: boolean;
     /**
-     * 
+     * The ID of the organization owning the benefit.
      * @type {string}
      * @memberof BenefitAds
      */
@@ -2024,7 +2026,7 @@ export type BenefitAdsTypeEnum = typeof BenefitAdsTypeEnum[keyof typeof BenefitA
  */
 export interface BenefitAdsCreate {
     /**
-     * 
+     * The description of the benefit. Will be displayed on products having this benefit.
      * @type {string}
      * @memberof BenefitAdsCreate
      */
@@ -2059,19 +2061,19 @@ export const BenefitAdsCreateTypeEnum = {
 export type BenefitAdsCreateTypeEnum = typeof BenefitAdsCreateTypeEnum[keyof typeof BenefitAdsCreateTypeEnum];
 
 /**
- * 
+ * Properties for a benefit of type `ads`.
  * @export
  * @interface BenefitAdsProperties
  */
 export interface BenefitAdsProperties {
     /**
-     * 
+     * The height of the displayed ad.
      * @type {number}
      * @memberof BenefitAdsProperties
      */
     image_height?: number;
     /**
-     * 
+     * The width of the displayed ad.
      * @type {number}
      * @memberof BenefitAdsProperties
      */
@@ -2084,7 +2086,7 @@ export interface BenefitAdsProperties {
  */
 export interface BenefitAdsSubscriber {
     /**
-     * 
+     * Creation timestamp of the object.
      * @type {string}
      * @memberof BenefitAdsSubscriber
      */
@@ -2096,7 +2098,7 @@ export interface BenefitAdsSubscriber {
      */
     modified_at?: string;
     /**
-     * 
+     * The ID of the benefit.
      * @type {string}
      * @memberof BenefitAdsSubscriber
      */
@@ -2108,25 +2110,25 @@ export interface BenefitAdsSubscriber {
      */
     type: BenefitAdsSubscriberTypeEnum;
     /**
-     * 
+     * The description of the benefit.
      * @type {string}
      * @memberof BenefitAdsSubscriber
      */
     description: string;
     /**
-     * 
+     * Whether the benefit is selectable when creating a product.
      * @type {boolean}
      * @memberof BenefitAdsSubscriber
      */
     selectable: boolean;
     /**
-     * 
+     * Whether the benefit is deletable.
      * @type {boolean}
      * @memberof BenefitAdsSubscriber
      */
     deletable: boolean;
     /**
-     * 
+     * The ID of the organization owning the benefit.
      * @type {string}
      * @memberof BenefitAdsSubscriber
      */
@@ -2184,13 +2186,15 @@ export const BenefitAdsUpdateTypeEnum = {
 export type BenefitAdsUpdateTypeEnum = typeof BenefitAdsUpdateTypeEnum[keyof typeof BenefitAdsUpdateTypeEnum];
 
 /**
+ * A benefit of type `articles`.
  * 
+ * Use it to grant access to posts.
  * @export
  * @interface BenefitArticles
  */
 export interface BenefitArticles {
     /**
-     * 
+     * Creation timestamp of the object.
      * @type {string}
      * @memberof BenefitArticles
      */
@@ -2202,7 +2206,7 @@ export interface BenefitArticles {
      */
     modified_at?: string;
     /**
-     * 
+     * The ID of the benefit.
      * @type {string}
      * @memberof BenefitArticles
      */
@@ -2214,25 +2218,25 @@ export interface BenefitArticles {
      */
     type: BenefitArticlesTypeEnum;
     /**
-     * 
+     * The description of the benefit.
      * @type {string}
      * @memberof BenefitArticles
      */
     description: string;
     /**
-     * 
+     * Whether the benefit is selectable when creating a product.
      * @type {boolean}
      * @memberof BenefitArticles
      */
     selectable: boolean;
     /**
-     * 
+     * Whether the benefit is deletable.
      * @type {boolean}
      * @memberof BenefitArticles
      */
     deletable: boolean;
     /**
-     * 
+     * The ID of the organization owning the benefit.
      * @type {string}
      * @memberof BenefitArticles
      */
@@ -2255,13 +2259,13 @@ export const BenefitArticlesTypeEnum = {
 export type BenefitArticlesTypeEnum = typeof BenefitArticlesTypeEnum[keyof typeof BenefitArticlesTypeEnum];
 
 /**
- * 
+ * Properties for a benefit of type `articles`.
  * @export
  * @interface BenefitArticlesProperties
  */
 export interface BenefitArticlesProperties {
     /**
-     * 
+     * Whether the user can access paid articles.
      * @type {boolean}
      * @memberof BenefitArticlesProperties
      */
@@ -2274,7 +2278,7 @@ export interface BenefitArticlesProperties {
  */
 export interface BenefitArticlesSubscriber {
     /**
-     * 
+     * Creation timestamp of the object.
      * @type {string}
      * @memberof BenefitArticlesSubscriber
      */
@@ -2286,7 +2290,7 @@ export interface BenefitArticlesSubscriber {
      */
     modified_at?: string;
     /**
-     * 
+     * The ID of the benefit.
      * @type {string}
      * @memberof BenefitArticlesSubscriber
      */
@@ -2298,25 +2302,25 @@ export interface BenefitArticlesSubscriber {
      */
     type: BenefitArticlesSubscriberTypeEnum;
     /**
-     * 
+     * The description of the benefit.
      * @type {string}
      * @memberof BenefitArticlesSubscriber
      */
     description: string;
     /**
-     * 
+     * Whether the benefit is selectable when creating a product.
      * @type {boolean}
      * @memberof BenefitArticlesSubscriber
      */
     selectable: boolean;
     /**
-     * 
+     * Whether the benefit is deletable.
      * @type {boolean}
      * @memberof BenefitArticlesSubscriber
      */
     deletable: boolean;
     /**
-     * 
+     * The ID of the organization owning the benefit.
      * @type {string}
      * @memberof BenefitArticlesSubscriber
      */
@@ -2339,13 +2343,13 @@ export const BenefitArticlesSubscriberTypeEnum = {
 export type BenefitArticlesSubscriberTypeEnum = typeof BenefitArticlesSubscriberTypeEnum[keyof typeof BenefitArticlesSubscriberTypeEnum];
 
 /**
- * 
+ * Properties available to subscribers for a benefit of type `articles`.
  * @export
  * @interface BenefitArticlesSubscriberProperties
  */
 export interface BenefitArticlesSubscriberProperties {
     /**
-     * 
+     * Whether the user can access paid articles.
      * @type {boolean}
      * @memberof BenefitArticlesSubscriberProperties
      */
@@ -2387,7 +2391,7 @@ export type BenefitArticlesUpdateTypeEnum = typeof BenefitArticlesUpdateTypeEnum
  */
 export interface BenefitBase {
     /**
-     * 
+     * Creation timestamp of the object.
      * @type {string}
      * @memberof BenefitBase
      */
@@ -2399,37 +2403,37 @@ export interface BenefitBase {
      */
     modified_at?: string;
     /**
-     * 
+     * The ID of the benefit.
      * @type {string}
      * @memberof BenefitBase
      */
     id: string;
     /**
-     * 
+     * The type of the benefit.
      * @type {BenefitType}
      * @memberof BenefitBase
      */
     type: BenefitType;
     /**
-     * 
+     * The description of the benefit.
      * @type {string}
      * @memberof BenefitBase
      */
     description: string;
     /**
-     * 
+     * Whether the benefit is selectable when creating a product.
      * @type {boolean}
      * @memberof BenefitBase
      */
     selectable: boolean;
     /**
-     * 
+     * Whether the benefit is deletable.
      * @type {boolean}
      * @memberof BenefitBase
      */
     deletable: boolean;
     /**
-     * 
+     * The ID of the organization owning the benefit.
      * @type {string}
      * @memberof BenefitBase
      */
@@ -2442,13 +2446,15 @@ export interface BenefitBase {
  */
 export type BenefitCreate = { type: 'ads' } & BenefitAdsCreate | { type: 'custom' } & BenefitCustomCreate | { type: 'discord' } & BenefitDiscordCreate | { type: 'github_repository' } & BenefitGitHubRepositoryCreate;
 /**
+ * A benefit of type `custom`.
  * 
+ * Use it to grant any kind of benefit that doesn't fit in the other types.
  * @export
  * @interface BenefitCustom
  */
 export interface BenefitCustom {
     /**
-     * 
+     * Creation timestamp of the object.
      * @type {string}
      * @memberof BenefitCustom
      */
@@ -2460,7 +2466,7 @@ export interface BenefitCustom {
      */
     modified_at?: string;
     /**
-     * 
+     * The ID of the benefit.
      * @type {string}
      * @memberof BenefitCustom
      */
@@ -2472,25 +2478,25 @@ export interface BenefitCustom {
      */
     type: BenefitCustomTypeEnum;
     /**
-     * 
+     * The description of the benefit.
      * @type {string}
      * @memberof BenefitCustom
      */
     description: string;
     /**
-     * 
+     * Whether the benefit is selectable when creating a product.
      * @type {boolean}
      * @memberof BenefitCustom
      */
     selectable: boolean;
     /**
-     * 
+     * Whether the benefit is deletable.
      * @type {boolean}
      * @memberof BenefitCustom
      */
     deletable: boolean;
     /**
-     * 
+     * The ID of the organization owning the benefit.
      * @type {string}
      * @memberof BenefitCustom
      */
@@ -2502,7 +2508,7 @@ export interface BenefitCustom {
      */
     properties: BenefitCustomProperties;
     /**
-     * 
+     * Whether the benefit is taxable.
      * @type {boolean}
      * @memberof BenefitCustom
      */
@@ -2519,13 +2525,13 @@ export const BenefitCustomTypeEnum = {
 export type BenefitCustomTypeEnum = typeof BenefitCustomTypeEnum[keyof typeof BenefitCustomTypeEnum];
 
 /**
- * 
+ * Schema to create a benefit of type `custom`.
  * @export
  * @interface BenefitCustomCreate
  */
 export interface BenefitCustomCreate {
     /**
-     * 
+     * The description of the benefit. Will be displayed on products having this benefit.
      * @type {string}
      * @memberof BenefitCustomCreate
      */
@@ -2543,7 +2549,7 @@ export interface BenefitCustomCreate {
      */
     type: BenefitCustomCreateTypeEnum;
     /**
-     * 
+     * Whether the benefit is taxable.
      * @type {boolean}
      * @memberof BenefitCustomCreate
      */
@@ -2566,7 +2572,7 @@ export const BenefitCustomCreateTypeEnum = {
 export type BenefitCustomCreateTypeEnum = typeof BenefitCustomCreateTypeEnum[keyof typeof BenefitCustomCreateTypeEnum];
 
 /**
- * 
+ * Properties for a benefit of type `custom`.
  * @export
  * @interface BenefitCustomProperties
  */
@@ -2585,7 +2591,7 @@ export interface BenefitCustomProperties {
  */
 export interface BenefitCustomSubscriber {
     /**
-     * 
+     * Creation timestamp of the object.
      * @type {string}
      * @memberof BenefitCustomSubscriber
      */
@@ -2597,7 +2603,7 @@ export interface BenefitCustomSubscriber {
      */
     modified_at?: string;
     /**
-     * 
+     * The ID of the benefit.
      * @type {string}
      * @memberof BenefitCustomSubscriber
      */
@@ -2609,25 +2615,25 @@ export interface BenefitCustomSubscriber {
      */
     type: BenefitCustomSubscriberTypeEnum;
     /**
-     * 
+     * The description of the benefit.
      * @type {string}
      * @memberof BenefitCustomSubscriber
      */
     description: string;
     /**
-     * 
+     * Whether the benefit is selectable when creating a product.
      * @type {boolean}
      * @memberof BenefitCustomSubscriber
      */
     selectable: boolean;
     /**
-     * 
+     * Whether the benefit is deletable.
      * @type {boolean}
      * @memberof BenefitCustomSubscriber
      */
     deletable: boolean;
     /**
-     * 
+     * The ID of the organization owning the benefit.
      * @type {string}
      * @memberof BenefitCustomSubscriber
      */
@@ -2650,7 +2656,7 @@ export const BenefitCustomSubscriberTypeEnum = {
 export type BenefitCustomSubscriberTypeEnum = typeof BenefitCustomSubscriberTypeEnum[keyof typeof BenefitCustomSubscriberTypeEnum];
 
 /**
- * 
+ * Properties available to subscribers for a benefit of type `custom`.
  * @export
  * @interface BenefitCustomSubscriberProperties
  */
@@ -2698,13 +2704,15 @@ export const BenefitCustomUpdateTypeEnum = {
 export type BenefitCustomUpdateTypeEnum = typeof BenefitCustomUpdateTypeEnum[keyof typeof BenefitCustomUpdateTypeEnum];
 
 /**
+ * A benefit of type `discord`.
  * 
+ * Use it to automatically invite your backers to a Discord server.
  * @export
  * @interface BenefitDiscord
  */
 export interface BenefitDiscord {
     /**
-     * 
+     * Creation timestamp of the object.
      * @type {string}
      * @memberof BenefitDiscord
      */
@@ -2716,7 +2724,7 @@ export interface BenefitDiscord {
      */
     modified_at?: string;
     /**
-     * 
+     * The ID of the benefit.
      * @type {string}
      * @memberof BenefitDiscord
      */
@@ -2728,25 +2736,25 @@ export interface BenefitDiscord {
      */
     type: BenefitDiscordTypeEnum;
     /**
-     * 
+     * The description of the benefit.
      * @type {string}
      * @memberof BenefitDiscord
      */
     description: string;
     /**
-     * 
+     * Whether the benefit is selectable when creating a product.
      * @type {boolean}
      * @memberof BenefitDiscord
      */
     selectable: boolean;
     /**
-     * 
+     * Whether the benefit is deletable.
      * @type {boolean}
      * @memberof BenefitDiscord
      */
     deletable: boolean;
     /**
-     * 
+     * The ID of the organization owning the benefit.
      * @type {string}
      * @memberof BenefitDiscord
      */
@@ -2775,7 +2783,7 @@ export type BenefitDiscordTypeEnum = typeof BenefitDiscordTypeEnum[keyof typeof 
  */
 export interface BenefitDiscordCreate {
     /**
-     * 
+     * The description of the benefit. Will be displayed on products having this benefit.
      * @type {string}
      * @memberof BenefitDiscordCreate
      */
@@ -2810,7 +2818,7 @@ export const BenefitDiscordCreateTypeEnum = {
 export type BenefitDiscordCreateTypeEnum = typeof BenefitDiscordCreateTypeEnum[keyof typeof BenefitDiscordCreateTypeEnum];
 
 /**
- * 
+ * Properties to create a benefit of type `discord`.
  * @export
  * @interface BenefitDiscordCreateProperties
  */
@@ -2822,26 +2830,26 @@ export interface BenefitDiscordCreateProperties {
      */
     guild_token: string;
     /**
-     * 
+     * The ID of the Discord role to grant.
      * @type {string}
      * @memberof BenefitDiscordCreateProperties
      */
     role_id: string;
 }
 /**
- * 
+ * Properties for a benefit of type `discord`.
  * @export
  * @interface BenefitDiscordProperties
  */
 export interface BenefitDiscordProperties {
     /**
-     * 
+     * The ID of the Discord server.
      * @type {string}
      * @memberof BenefitDiscordProperties
      */
     guild_id: string;
     /**
-     * 
+     * The ID of the Discord role to grant.
      * @type {string}
      * @memberof BenefitDiscordProperties
      */
@@ -2860,7 +2868,7 @@ export interface BenefitDiscordProperties {
  */
 export interface BenefitDiscordSubscriber {
     /**
-     * 
+     * Creation timestamp of the object.
      * @type {string}
      * @memberof BenefitDiscordSubscriber
      */
@@ -2872,7 +2880,7 @@ export interface BenefitDiscordSubscriber {
      */
     modified_at?: string;
     /**
-     * 
+     * The ID of the benefit.
      * @type {string}
      * @memberof BenefitDiscordSubscriber
      */
@@ -2884,25 +2892,25 @@ export interface BenefitDiscordSubscriber {
      */
     type: BenefitDiscordSubscriberTypeEnum;
     /**
-     * 
+     * The description of the benefit.
      * @type {string}
      * @memberof BenefitDiscordSubscriber
      */
     description: string;
     /**
-     * 
+     * Whether the benefit is selectable when creating a product.
      * @type {boolean}
      * @memberof BenefitDiscordSubscriber
      */
     selectable: boolean;
     /**
-     * 
+     * Whether the benefit is deletable.
      * @type {boolean}
      * @memberof BenefitDiscordSubscriber
      */
     deletable: boolean;
     /**
-     * 
+     * The ID of the organization owning the benefit.
      * @type {string}
      * @memberof BenefitDiscordSubscriber
      */
@@ -2925,13 +2933,13 @@ export const BenefitDiscordSubscriberTypeEnum = {
 export type BenefitDiscordSubscriberTypeEnum = typeof BenefitDiscordSubscriberTypeEnum[keyof typeof BenefitDiscordSubscriberTypeEnum];
 
 /**
- * 
+ * Properties available to subscribers for a benefit of type `discord`.
  * @export
  * @interface BenefitDiscordSubscriberProperties
  */
 export interface BenefitDiscordSubscriberProperties {
     /**
-     * 
+     * The ID of the Discord server.
      * @type {string}
      * @memberof BenefitDiscordSubscriberProperties
      */
@@ -2973,13 +2981,15 @@ export const BenefitDiscordUpdateTypeEnum = {
 export type BenefitDiscordUpdateTypeEnum = typeof BenefitDiscordUpdateTypeEnum[keyof typeof BenefitDiscordUpdateTypeEnum];
 
 /**
+ * A benefit of type `github_repository`.
  * 
+ * Use it to automatically invite your backers to a private GitHub repository.
  * @export
  * @interface BenefitGitHubRepository
  */
 export interface BenefitGitHubRepository {
     /**
-     * 
+     * Creation timestamp of the object.
      * @type {string}
      * @memberof BenefitGitHubRepository
      */
@@ -2991,7 +3001,7 @@ export interface BenefitGitHubRepository {
      */
     modified_at?: string;
     /**
-     * 
+     * The ID of the benefit.
      * @type {string}
      * @memberof BenefitGitHubRepository
      */
@@ -3003,25 +3013,25 @@ export interface BenefitGitHubRepository {
      */
     type: BenefitGitHubRepositoryTypeEnum;
     /**
-     * 
+     * The description of the benefit.
      * @type {string}
      * @memberof BenefitGitHubRepository
      */
     description: string;
     /**
-     * 
+     * Whether the benefit is selectable when creating a product.
      * @type {boolean}
      * @memberof BenefitGitHubRepository
      */
     selectable: boolean;
     /**
-     * 
+     * Whether the benefit is deletable.
      * @type {boolean}
      * @memberof BenefitGitHubRepository
      */
     deletable: boolean;
     /**
-     * 
+     * The ID of the organization owning the benefit.
      * @type {string}
      * @memberof BenefitGitHubRepository
      */
@@ -3050,7 +3060,7 @@ export type BenefitGitHubRepositoryTypeEnum = typeof BenefitGitHubRepositoryType
  */
 export interface BenefitGitHubRepositoryCreate {
     /**
-     * 
+     * The description of the benefit. Will be displayed on products having this benefit.
      * @type {string}
      * @memberof BenefitGitHubRepositoryCreate
      */
@@ -3085,7 +3095,7 @@ export const BenefitGitHubRepositoryCreateTypeEnum = {
 export type BenefitGitHubRepositoryCreateTypeEnum = typeof BenefitGitHubRepositoryCreateTypeEnum[keyof typeof BenefitGitHubRepositoryCreateTypeEnum];
 
 /**
- * 
+ * Properties to create a benefit of type `github_repository`.
  * @export
  * @interface BenefitGitHubRepositoryCreateProperties
  */
@@ -3109,7 +3119,7 @@ export interface BenefitGitHubRepositoryCreateProperties {
      */
     repository_name?: string;
     /**
-     * 
+     * The permission level to grant. Read more about roles and their permissions on [GitHub documentation](https://docs.github.com/en/organizations/managing-user-access-to-your-organizations-repositories/managing-repository-roles/repository-roles-for-an-organization#permissions-for-each-role).
      * @type {string}
      * @memberof BenefitGitHubRepositoryCreateProperties
      */
@@ -3130,7 +3140,7 @@ export const BenefitGitHubRepositoryCreatePropertiesPermissionEnum = {
 export type BenefitGitHubRepositoryCreatePropertiesPermissionEnum = typeof BenefitGitHubRepositoryCreatePropertiesPermissionEnum[keyof typeof BenefitGitHubRepositoryCreatePropertiesPermissionEnum];
 
 /**
- * 
+ * Properties for a benefit of type `github_repository`.
  * @export
  * @interface BenefitGitHubRepositoryProperties
  */
@@ -3142,19 +3152,19 @@ export interface BenefitGitHubRepositoryProperties {
      */
     repository_id?: string;
     /**
-     * 
+     * The owner of the repository.
      * @type {string}
      * @memberof BenefitGitHubRepositoryProperties
      */
     repository_owner: string;
     /**
-     * 
+     * The name of the repository.
      * @type {string}
      * @memberof BenefitGitHubRepositoryProperties
      */
     repository_name: string;
     /**
-     * 
+     * The permission level to grant. Read more about roles and their permissions on [GitHub documentation](https://docs.github.com/en/organizations/managing-user-access-to-your-organizations-repositories/managing-repository-roles/repository-roles-for-an-organization#permissions-for-each-role).
      * @type {string}
      * @memberof BenefitGitHubRepositoryProperties
      */
@@ -3181,7 +3191,7 @@ export type BenefitGitHubRepositoryPropertiesPermissionEnum = typeof BenefitGitH
  */
 export interface BenefitGitHubRepositorySubscriber {
     /**
-     * 
+     * Creation timestamp of the object.
      * @type {string}
      * @memberof BenefitGitHubRepositorySubscriber
      */
@@ -3193,7 +3203,7 @@ export interface BenefitGitHubRepositorySubscriber {
      */
     modified_at?: string;
     /**
-     * 
+     * The ID of the benefit.
      * @type {string}
      * @memberof BenefitGitHubRepositorySubscriber
      */
@@ -3205,25 +3215,25 @@ export interface BenefitGitHubRepositorySubscriber {
      */
     type: BenefitGitHubRepositorySubscriberTypeEnum;
     /**
-     * 
+     * The description of the benefit.
      * @type {string}
      * @memberof BenefitGitHubRepositorySubscriber
      */
     description: string;
     /**
-     * 
+     * Whether the benefit is selectable when creating a product.
      * @type {boolean}
      * @memberof BenefitGitHubRepositorySubscriber
      */
     selectable: boolean;
     /**
-     * 
+     * Whether the benefit is deletable.
      * @type {boolean}
      * @memberof BenefitGitHubRepositorySubscriber
      */
     deletable: boolean;
     /**
-     * 
+     * The ID of the organization owning the benefit.
      * @type {string}
      * @memberof BenefitGitHubRepositorySubscriber
      */
@@ -3246,19 +3256,19 @@ export const BenefitGitHubRepositorySubscriberTypeEnum = {
 export type BenefitGitHubRepositorySubscriberTypeEnum = typeof BenefitGitHubRepositorySubscriberTypeEnum[keyof typeof BenefitGitHubRepositorySubscriberTypeEnum];
 
 /**
- * 
+ * Properties available to subscribers for a benefit of type `github_repository`.
  * @export
  * @interface BenefitGitHubRepositorySubscriberProperties
  */
 export interface BenefitGitHubRepositorySubscriberProperties {
     /**
-     * 
+     * The owner of the repository.
      * @type {string}
      * @memberof BenefitGitHubRepositorySubscriberProperties
      */
     repository_owner: string;
     /**
-     * 
+     * The name of the repository.
      * @type {string}
      * @memberof BenefitGitHubRepositorySubscriberProperties
      */
@@ -3299,6 +3309,73 @@ export const BenefitGitHubRepositoryUpdateTypeEnum = {
 } as const;
 export type BenefitGitHubRepositoryUpdateTypeEnum = typeof BenefitGitHubRepositoryUpdateTypeEnum[keyof typeof BenefitGitHubRepositoryUpdateTypeEnum];
 
+/**
+ * A grant of a benefit to a user.
+ * @export
+ * @interface BenefitGrant
+ */
+export interface BenefitGrant {
+    /**
+     * Creation timestamp of the object.
+     * @type {string}
+     * @memberof BenefitGrant
+     */
+    created_at: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitGrant
+     */
+    modified_at?: string;
+    /**
+     * The ID of the grant.
+     * @type {string}
+     * @memberof BenefitGrant
+     */
+    id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitGrant
+     */
+    granted_at?: string;
+    /**
+     * Whether the benefit is granted.
+     * @type {boolean}
+     * @memberof BenefitGrant
+     */
+    is_granted: boolean;
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitGrant
+     */
+    revoked_at?: string;
+    /**
+     * Whether the benefit is revoked.
+     * @type {boolean}
+     * @memberof BenefitGrant
+     */
+    is_revoked: boolean;
+    /**
+     * The ID of the subscription that granted this benefit.
+     * @type {string}
+     * @memberof BenefitGrant
+     */
+    subscription_id: string;
+    /**
+     * The ID of the user concerned by this grant.
+     * @type {string}
+     * @memberof BenefitGrant
+     */
+    user_id: string;
+    /**
+     * The ID of the benefit concerned by this grant.
+     * @type {string}
+     * @memberof BenefitGrant
+     */
+    benefit_id: string;
+}
 /**
  * 
  * @export
@@ -4884,6 +4961,25 @@ export interface ListResourceBackofficeReward {
 /**
  * 
  * @export
+ * @interface ListResourceBenefitGrant
+ */
+export interface ListResourceBenefitGrant {
+    /**
+     * 
+     * @type {Array<BenefitGrant>}
+     * @memberof ListResourceBenefitGrant
+     */
+    items?: Array<BenefitGrant>;
+    /**
+     * 
+     * @type {Pagination}
+     * @memberof ListResourceBenefitGrant
+     */
+    pagination: Pagination;
+}
+/**
+ * 
+ * @export
  * @interface ListResourceDonation
  */
 export interface ListResourceDonation {
@@ -6257,6 +6353,35 @@ export interface MaintainerPledgedIssuePendingNotificationPayload {
     maintainer_has_account: boolean;
 }
 /**
+ * 
+ * @export
+ * @interface NotPermitted
+ */
+export interface NotPermitted {
+    /**
+     * 
+     * @type {string}
+     * @memberof NotPermitted
+     */
+    type: NotPermittedTypeEnum;
+    /**
+     * 
+     * @type {string}
+     * @memberof NotPermitted
+     */
+    detail: string;
+}
+
+
+/**
+ * @export
+ */
+export const NotPermittedTypeEnum = {
+    NOT_PERMITTED: 'NotPermitted'
+} as const;
+export type NotPermittedTypeEnum = typeof NotPermittedTypeEnum[keyof typeof NotPermittedTypeEnum];
+
+/**
  * @type NotificationsInner
  * 
  * @export
@@ -6297,74 +6422,255 @@ export interface NotificationsMarkRead {
 /**
  * 
  * @export
- * @interface OAuth2Client
+ * @interface OAuth2ClientConfiguration
  */
-export interface OAuth2Client {
+export interface OAuth2ClientConfiguration {
+    /**
+     * 
+     * @type {Array<string>}
+     * @memberof OAuth2ClientConfiguration
+     */
+    redirect_uris: Array<string>;
     /**
      * 
      * @type {string}
-     * @memberof OAuth2Client
+     * @memberof OAuth2ClientConfiguration
      */
-    created_at: string;
+    token_endpoint_auth_method?: OAuth2ClientConfigurationTokenEndpointAuthMethodEnum;
+    /**
+     * 
+     * @type {Array<string>}
+     * @memberof OAuth2ClientConfiguration
+     */
+    grant_types?: Array<OAuth2ClientConfigurationGrantTypesEnum>;
+    /**
+     * 
+     * @type {Array<string>}
+     * @memberof OAuth2ClientConfiguration
+     */
+    response_types?: Array<OAuth2ClientConfigurationResponseTypesEnum>;
+    /**
+     * 
+     * @type {Array<Scope>}
+     * @memberof OAuth2ClientConfiguration
+     */
+    scope?: Array<Scope>;
     /**
      * 
      * @type {string}
-     * @memberof OAuth2Client
+     * @memberof OAuth2ClientConfiguration
      */
-    modified_at?: string;
+    client_name: string;
     /**
      * 
      * @type {string}
-     * @memberof OAuth2Client
-     */
-    id: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof OAuth2Client
-     */
-    client_id: string;
-    /**
-     * 
-     * @type {OAuth2ClientMetadata}
-     * @memberof OAuth2Client
-     */
-    client_metadata: OAuth2ClientMetadata;
-}
-/**
- * 
- * @export
- * @interface OAuth2ClientMetadata
- */
-export interface OAuth2ClientMetadata {
-    /**
-     * 
-     * @type {string}
-     * @memberof OAuth2ClientMetadata
-     */
-    client_name?: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof OAuth2ClientMetadata
+     * @memberof OAuth2ClientConfiguration
      */
     client_uri?: string;
     /**
      * 
      * @type {string}
-     * @memberof OAuth2ClientMetadata
+     * @memberof OAuth2ClientConfiguration
      */
     logo_uri?: string;
     /**
      * 
      * @type {string}
-     * @memberof OAuth2ClientMetadata
+     * @memberof OAuth2ClientConfiguration
      */
     tos_uri?: string;
     /**
      * 
      * @type {string}
-     * @memberof OAuth2ClientMetadata
+     * @memberof OAuth2ClientConfiguration
+     */
+    policy_uri?: string;
+}
+
+
+/**
+ * @export
+ */
+export const OAuth2ClientConfigurationTokenEndpointAuthMethodEnum = {
+    CLIENT_SECRET_POST: 'client_secret_post'
+} as const;
+export type OAuth2ClientConfigurationTokenEndpointAuthMethodEnum = typeof OAuth2ClientConfigurationTokenEndpointAuthMethodEnum[keyof typeof OAuth2ClientConfigurationTokenEndpointAuthMethodEnum];
+
+/**
+ * @export
+ */
+export const OAuth2ClientConfigurationGrantTypesEnum = {
+    AUTHORIZATION_CODE: 'authorization_code',
+    REFRESH_TOKEN: 'refresh_token'
+} as const;
+export type OAuth2ClientConfigurationGrantTypesEnum = typeof OAuth2ClientConfigurationGrantTypesEnum[keyof typeof OAuth2ClientConfigurationGrantTypesEnum];
+
+/**
+ * @export
+ */
+export const OAuth2ClientConfigurationResponseTypesEnum = {
+    CODE: 'code'
+} as const;
+export type OAuth2ClientConfigurationResponseTypesEnum = typeof OAuth2ClientConfigurationResponseTypesEnum[keyof typeof OAuth2ClientConfigurationResponseTypesEnum];
+
+/**
+ * 
+ * @export
+ * @interface OAuth2ClientConfigurationUpdate
+ */
+export interface OAuth2ClientConfigurationUpdate {
+    /**
+     * 
+     * @type {Array<string>}
+     * @memberof OAuth2ClientConfigurationUpdate
+     */
+    redirect_uris: Array<string>;
+    /**
+     * 
+     * @type {string}
+     * @memberof OAuth2ClientConfigurationUpdate
+     */
+    token_endpoint_auth_method?: OAuth2ClientConfigurationUpdateTokenEndpointAuthMethodEnum;
+    /**
+     * 
+     * @type {Array<string>}
+     * @memberof OAuth2ClientConfigurationUpdate
+     */
+    grant_types?: Array<OAuth2ClientConfigurationUpdateGrantTypesEnum>;
+    /**
+     * 
+     * @type {Array<string>}
+     * @memberof OAuth2ClientConfigurationUpdate
+     */
+    response_types?: Array<OAuth2ClientConfigurationUpdateResponseTypesEnum>;
+    /**
+     * 
+     * @type {Array<Scope>}
+     * @memberof OAuth2ClientConfigurationUpdate
+     */
+    scope?: Array<Scope>;
+    /**
+     * 
+     * @type {string}
+     * @memberof OAuth2ClientConfigurationUpdate
+     */
+    client_name: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof OAuth2ClientConfigurationUpdate
+     */
+    client_uri?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof OAuth2ClientConfigurationUpdate
+     */
+    logo_uri?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof OAuth2ClientConfigurationUpdate
+     */
+    tos_uri?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof OAuth2ClientConfigurationUpdate
+     */
+    policy_uri?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof OAuth2ClientConfigurationUpdate
+     */
+    client_id: string;
+}
+
+
+/**
+ * @export
+ */
+export const OAuth2ClientConfigurationUpdateTokenEndpointAuthMethodEnum = {
+    CLIENT_SECRET_POST: 'client_secret_post'
+} as const;
+export type OAuth2ClientConfigurationUpdateTokenEndpointAuthMethodEnum = typeof OAuth2ClientConfigurationUpdateTokenEndpointAuthMethodEnum[keyof typeof OAuth2ClientConfigurationUpdateTokenEndpointAuthMethodEnum];
+
+/**
+ * @export
+ */
+export const OAuth2ClientConfigurationUpdateGrantTypesEnum = {
+    AUTHORIZATION_CODE: 'authorization_code',
+    REFRESH_TOKEN: 'refresh_token'
+} as const;
+export type OAuth2ClientConfigurationUpdateGrantTypesEnum = typeof OAuth2ClientConfigurationUpdateGrantTypesEnum[keyof typeof OAuth2ClientConfigurationUpdateGrantTypesEnum];
+
+/**
+ * @export
+ */
+export const OAuth2ClientConfigurationUpdateResponseTypesEnum = {
+    CODE: 'code'
+} as const;
+export type OAuth2ClientConfigurationUpdateResponseTypesEnum = typeof OAuth2ClientConfigurationUpdateResponseTypesEnum[keyof typeof OAuth2ClientConfigurationUpdateResponseTypesEnum];
+
+/**
+ * 
+ * @export
+ * @interface OAuth2ClientPublic
+ */
+export interface OAuth2ClientPublic {
+    /**
+     * Creation timestamp of the object.
+     * @type {string}
+     * @memberof OAuth2ClientPublic
+     */
+    created_at: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof OAuth2ClientPublic
+     */
+    modified_at?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof OAuth2ClientPublic
+     */
+    id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof OAuth2ClientPublic
+     */
+    client_id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof OAuth2ClientPublic
+     */
+    client_name?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof OAuth2ClientPublic
+     */
+    client_uri?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof OAuth2ClientPublic
+     */
+    logo_uri?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof OAuth2ClientPublic
+     */
+    tos_uri?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof OAuth2ClientPublic
      */
     policy_uri?: string;
 }
@@ -6375,7 +6681,7 @@ export interface OAuth2ClientMetadata {
  */
 export interface OAuthAccountRead {
     /**
-     * 
+     * Creation timestamp of the object.
      * @type {string}
      * @memberof OAuthAccountRead
      */
@@ -8076,16 +8382,45 @@ export interface RepositoryUpdate {
     profile_settings?: RepositoryProfileSettingsUpdate;
 }
 /**
+ * 
+ * @export
+ * @interface ResourceNotFound
+ */
+export interface ResourceNotFound {
+    /**
+     * 
+     * @type {string}
+     * @memberof ResourceNotFound
+     */
+    type: ResourceNotFoundTypeEnum;
+    /**
+     * 
+     * @type {string}
+     * @memberof ResourceNotFound
+     */
+    detail: string;
+}
+
+
+/**
+ * @export
+ */
+export const ResourceNotFoundTypeEnum = {
+    RESOURCE_NOT_FOUND: 'ResourceNotFound'
+} as const;
+export type ResourceNotFoundTypeEnum = typeof ResourceNotFoundTypeEnum[keyof typeof ResourceNotFoundTypeEnum];
+
+/**
  * @type ResponseBenefitsCreateBenefit
  * @export
  */
 export type ResponseBenefitsCreateBenefit = BenefitAds | BenefitArticles | BenefitCustom | BenefitDiscord | BenefitGitHubRepository;
 
 /**
- * @type ResponseBenefitsLookupBenefit
+ * @type ResponseBenefitsGetBenefit
  * @export
  */
-export type ResponseBenefitsLookupBenefit = BenefitAds | BenefitArticles | BenefitCustom | BenefitDiscord | BenefitGitHubRepository;
+export type ResponseBenefitsGetBenefit = BenefitAds | BenefitArticles | BenefitCustom | BenefitDiscord | BenefitGitHubRepository;
 
 /**
  * @type ResponseBenefitsUpdateBenefit
@@ -8298,6 +8633,8 @@ export const Scope = {
     CREATORSUBSCRIPTIONSWRITE: 'creator:subscriptions:write',
     BACKERSUBSCRIPTIONSREAD: 'backer:subscriptions:read',
     BACKERSUBSCRIPTIONSWRITE: 'backer:subscriptions:write',
+    CREATORBENEFITSREAD: 'creator:benefits:read',
+    CREATORBENEFITSWRITE: 'creator:benefits:write',
     CREATORWEBHOOKSREAD: 'creator:webhooks:read',
     CREATORWEBHOOKSWRITE: 'creator:webhooks:write',
     BACKERWEBHOOKSREAD: 'backer:webhooks:read',
@@ -8417,7 +8754,7 @@ export interface SubscribeSessionCreate {
  */
 export interface Subscription {
     /**
-     * 
+     * Creation timestamp of the object.
      * @type {string}
      * @memberof Subscription
      */
@@ -8605,7 +8942,7 @@ export type SubscriptionStatus = typeof SubscriptionStatus[keyof typeof Subscrip
  */
 export interface SubscriptionSubscriber {
     /**
-     * 
+     * Creation timestamp of the object.
      * @type {string}
      * @memberof SubscriptionSubscriber
      */
@@ -8739,7 +9076,7 @@ export interface SubscriptionSummary {
  */
 export interface SubscriptionTier {
     /**
-     * 
+     * Creation timestamp of the object.
      * @type {string}
      * @memberof SubscriptionTier
      */
@@ -8879,7 +9216,7 @@ export type SubscriptionTierCreateTypeEnum = typeof SubscriptionTierCreateTypeEn
  */
 export interface SubscriptionTierPrice {
     /**
-     * 
+     * Creation timestamp of the object.
      * @type {string}
      * @memberof SubscriptionTierPrice
      */
@@ -8964,7 +9301,7 @@ export type SubscriptionTierPriceRecurringInterval = typeof SubscriptionTierPric
  */
 export interface SubscriptionTierSubscriber {
     /**
-     * 
+     * Creation timestamp of the object.
      * @type {string}
      * @memberof SubscriptionTierSubscriber
      */
@@ -9434,7 +9771,7 @@ export interface TrafficStatisticsPeriod {
  */
 export interface Transaction {
     /**
-     * 
+     * Creation timestamp of the object.
      * @type {string}
      * @memberof Transaction
      */
@@ -9591,7 +9928,7 @@ export interface Transaction {
  */
 export interface TransactionDetails {
     /**
-     * 
+     * Creation timestamp of the object.
      * @type {string}
      * @memberof TransactionDetails
      */
@@ -9754,7 +10091,7 @@ export interface TransactionDetails {
  */
 export interface TransactionDonation {
     /**
-     * 
+     * Creation timestamp of the object.
      * @type {string}
      * @memberof TransactionDonation
      */
@@ -9785,7 +10122,7 @@ export interface TransactionDonation {
  */
 export interface TransactionEmbedded {
     /**
-     * 
+     * Creation timestamp of the object.
      * @type {string}
      * @memberof TransactionEmbedded
      */
@@ -9888,7 +10225,7 @@ export interface TransactionEmbedded {
  */
 export interface TransactionIssue {
     /**
-     * 
+     * Creation timestamp of the object.
      * @type {string}
      * @memberof TransactionIssue
      */
@@ -9955,7 +10292,7 @@ export interface TransactionIssue {
  */
 export interface TransactionIssueReward {
     /**
-     * 
+     * Creation timestamp of the object.
      * @type {string}
      * @memberof TransactionIssueReward
      */
@@ -9992,7 +10329,7 @@ export interface TransactionIssueReward {
  */
 export interface TransactionOrganization {
     /**
-     * 
+     * Creation timestamp of the object.
      * @type {string}
      * @memberof TransactionOrganization
      */
@@ -10041,7 +10378,7 @@ export interface TransactionOrganization {
  */
 export interface TransactionPledge {
     /**
-     * 
+     * Creation timestamp of the object.
      * @type {string}
      * @memberof TransactionPledge
      */
@@ -10078,7 +10415,7 @@ export interface TransactionPledge {
  */
 export interface TransactionRepository {
     /**
-     * 
+     * Creation timestamp of the object.
      * @type {string}
      * @memberof TransactionRepository
      */
@@ -10121,7 +10458,7 @@ export interface TransactionRepository {
  */
 export interface TransactionSubscription {
     /**
-     * 
+     * Creation timestamp of the object.
      * @type {string}
      * @memberof TransactionSubscription
      */
@@ -10158,7 +10495,7 @@ export interface TransactionSubscription {
  */
 export interface TransactionSubscriptionPrice {
     /**
-     * 
+     * Creation timestamp of the object.
      * @type {string}
      * @memberof TransactionSubscriptionPrice
      */
@@ -10207,7 +10544,7 @@ export interface TransactionSubscriptionPrice {
  */
 export interface TransactionSubscriptionTier {
     /**
-     * 
+     * Creation timestamp of the object.
      * @type {string}
      * @memberof TransactionSubscriptionTier
      */
@@ -10414,7 +10751,7 @@ export interface UserBase {
  */
 export interface UserRead {
     /**
-     * 
+     * Creation timestamp of the object.
      * @type {string}
      * @memberof UserRead
      */
@@ -10657,7 +10994,7 @@ export type WebhookBenefitUpdatedPayloadTypeEnum = typeof WebhookBenefitUpdatedP
  */
 export interface WebhookDelivery {
     /**
-     * 
+     * Creation timestamp of the object.
      * @type {string}
      * @memberof WebhookDelivery
      */
@@ -10729,7 +11066,7 @@ export type WebhookDonationCreatedPayloadTypeEnum = typeof WebhookDonationCreate
  */
 export interface WebhookEndpoint {
     /**
-     * 
+     * Creation timestamp of the object.
      * @type {string}
      * @memberof WebhookEndpoint
      */
@@ -10834,7 +11171,7 @@ export interface WebhookEndpointUpdate {
  */
 export interface WebhookEvent {
     /**
-     * 
+     * Creation timestamp of the object.
      * @type {string}
      * @memberof WebhookEvent
      */

@@ -46,6 +46,16 @@ const Dropzone = ({
       method: 'PUT',
       body: blob,
     })
+
+    console.log('S3 result', result)
+    if (!result.ok) {
+      throw new Error('Failed to upload image')
+    }
+
+    const process = await api.files.markUploaded({
+      fileId: response.id,
+    })
+    console.log('Process result', process)
   }
 
   return (

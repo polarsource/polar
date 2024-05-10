@@ -27,12 +27,14 @@ class FileRead(Schema):
 
     status: str
 
-    url: str
-    url_expires_at: datetime
-
     uploaded_at: datetime | None = None
     created_at: datetime
     modified_at: datetime | None = None
+
+
+class FilePresignedRead(FileRead):
+    url: str
+    url_expires_at: datetime
 
     @classmethod
     def from_presign(cls, record: File, url: str) -> Self:

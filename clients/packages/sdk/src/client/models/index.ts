@@ -4776,6 +4776,91 @@ export interface FileCreate {
 /**
  * 
  * @export
+ * @interface FilePresignedRead
+ */
+export interface FilePresignedRead {
+    /**
+     * 
+     * @type {string}
+     * @memberof FilePresignedRead
+     */
+    id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof FilePresignedRead
+     */
+    organization_id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof FilePresignedRead
+     */
+    name: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof FilePresignedRead
+     */
+    extension: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof FilePresignedRead
+     */
+    version?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof FilePresignedRead
+     */
+    mime_type: string;
+    /**
+     * 
+     * @type {number}
+     * @memberof FilePresignedRead
+     */
+    size: number;
+    /**
+     * 
+     * @type {string}
+     * @memberof FilePresignedRead
+     */
+    status: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof FilePresignedRead
+     */
+    uploaded_at?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof FilePresignedRead
+     */
+    created_at: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof FilePresignedRead
+     */
+    modified_at?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof FilePresignedRead
+     */
+    url: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof FilePresignedRead
+     */
+    url_expires_at: string;
+}
+/**
+ * 
+ * @export
  * @interface FileRead
  */
 export interface FileRead {
@@ -4827,18 +4912,6 @@ export interface FileRead {
      * @memberof FileRead
      */
     status: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof FileRead
-     */
-    url: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof FileRead
-     */
-    url_expires_at: string;
     /**
      * 
      * @type {string}

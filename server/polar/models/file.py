@@ -80,9 +80,18 @@ class File(RecordModel):
         nullable=True,
     )
 
+    version_id: Mapped[str] = mapped_column(String, nullable=True)
+    checksum_sha256: Mapped[str] = mapped_column(String, nullable=True)
+    etag: Mapped[str] = mapped_column(String, nullable=True)
+
     @hybrid_property
     def uploaded(self) -> bool:
         return self.status == FileStatus.uploaded
+
+    def mark_uploaded(self) -> None:
+        self.status = FileStatus.uploaded
+        # TODO: Get this from S3?
+        self.uploaded_at = utc_now()
 
 
 __all__ = ("File", "FileStatus", "FileExtension")

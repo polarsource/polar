@@ -42,7 +42,7 @@ const SubscriptionTierEditModal: React.FC<SubscriptionTierEditModalProps> = ({
   hide,
 }) => {
   const subscriptionTier = useSubscriptionTier(tier)
-  const organizationBenefits = useBenefits(organization.name)
+  const organizationBenefits = useBenefits(organization.id)
 
   if (!subscriptionTier.data || !organizationBenefits.data) {
     return null

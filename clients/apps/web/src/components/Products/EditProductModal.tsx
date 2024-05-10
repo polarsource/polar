@@ -40,7 +40,7 @@ export const EditProductModal = ({ product, hide }: EditProductModalProps) => {
     product.benefits,
   )
   const { org } = useCurrentOrgAndRepoFromURL()
-  const { data } = useBenefits(org?.name, 999)
+  const { data } = useBenefits(org?.id, 999)
 
   const benefits = data?.items ?? []
 

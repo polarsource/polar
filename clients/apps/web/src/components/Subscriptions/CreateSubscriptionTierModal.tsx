@@ -35,7 +35,7 @@ interface CreateSubscriptionTierModalProps {
 const CreateSubscriptionTierModal: React.FC<
   CreateSubscriptionTierModalProps
 > = ({ type, organization, hide }) => {
-  const organizationBenefits = useBenefits(organization.name)
+  const organizationBenefits = useBenefits(organization.id)
 
   if (!organizationBenefits.data) {
     return null

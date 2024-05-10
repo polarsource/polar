@@ -30,9 +30,8 @@ const AuthorizePage = ({
   const serializedSearchParams = new URLSearchParams(searchParams).toString()
   const actionURL = `${getServerURL()}/api/v1/oauth2/consent?${serializedSearchParams}`
 
-  const clientName = client.client_metadata.client_name || client.client_id
-  const hasTerms =
-    client.client_metadata.policy_uri || client.client_metadata.tos_uri
+  const clientName = client.client_name || client.client_id
+  const hasTerms = client.policy_uri || client.tos_uri
 
   return (
     <form method="post" action={actionURL}>
@@ -42,13 +41,9 @@ const AuthorizePage = ({
           <div className="flex flex-row items-center gap-2">
             <LogoType className="h-10" />
             <AddOutlined className="h-5" />
-            {client.client_metadata.logo_uri ? (
+            {client.logo_uri ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={client.client_metadata.logo_uri}
-                className="h-10"
-                alt={clientName}
-              />
+              <img src={client.logo_uri} className="h-10" alt={clientName} />
             ) : (
               <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-500">
                 {clientName[0].toUpperCase()}
@@ -118,21 +113,19 @@ const AuthorizePage = ({
           {hasTerms && (
             <div className="mt-8 text-center text-sm text-gray-500">
               Before using this app, you can review {clientName}&apos;s{' '}
-              {client.client_metadata.tos_uri && (
+              {client.tos_uri && (
                 <a
                   className="dark:text-polar-300 text-gray-700"
-                  href={client.client_metadata.tos_uri}
+                  href={client.tos_uri}
                 >
                   Terms of Service
                 </a>
               )}
-              {client.client_metadata.tos_uri &&
-                client.client_metadata.policy_uri &&
-                ' and '}
-              {client.client_metadata.policy_uri && (
+              {client.tos_uri && client.policy_uri && ' and '}
+              {client.policy_uri && (
                 <a
                   className="dark:text-polar-300 text-gray-700"
-                  href={client.client_metadata.policy_uri}
+                  href={client.policy_uri}
                 >
                   Privacy Policy
                 </a>

@@ -36,7 +36,7 @@ export const useBenefits = (
   useQuery({
     queryKey: ['benefits', 'organization', orgName],
     queryFn: () =>
-      api.benefits.searchBenefits({
+      api.benefits.listBenefits({
         organizationName: orgName ?? '',
         platform,
         limit,
@@ -49,8 +49,8 @@ export const useBenefit = (id?: string) =>
   useQuery({
     queryKey: ['benefits', 'id', id],
     queryFn: () => {
-      return api.benefits.lookupBenefit({
-        benefitId: id ?? '',
+      return api.benefits.getBenefit({
+        id: id ?? '',
       })
     },
     retry: defaultRetry,

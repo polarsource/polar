@@ -1,6 +1,6 @@
 'use client'
 
-import { Organization } from '@polar-sh/sdk'
+import { FileRead, Organization } from '@polar-sh/sdk'
 
 import { api } from '@/utils/api'
 import { useRef } from 'react'
@@ -10,7 +10,7 @@ const Dropzone = ({
   onUploaded,
 }: {
   organization: Organization
-  onUploaded: (url: string) => void
+  onUploaded: (file: FileRead) => void
 }) => {
   const inputFileRef = useRef<HTMLInputElement>(null)
 
@@ -47,7 +47,6 @@ const Dropzone = ({
       body: blob,
     })
 
-    console.log('S3 result', result)
     if (!result.ok) {
       throw new Error('Failed to upload image')
     }
@@ -55,40 +54,35 @@ const Dropzone = ({
     const process = await api.files.markUploaded({
       fileId: response.id,
     })
-    console.log('Process result', process)
+
+    onUploaded(process)
   }
 
   return (
     <>
-      <form
-        onSubmit={async (event) => {
-          event.preventDefault()
-        }}
-      >
-        <input
-          name="file"
-          ref={inputFileRef}
-          type="file"
-          required
-          accept="image/*"
-          tabIndex={-1}
-          onChange={async (e) => {
-            if (e.target.files && e.target.files[0]) {
-              const reader = new FileReader()
-              reader.onload = async (readerLoad) => {
-                if (
-                  readerLoad.target &&
-                  typeof readerLoad.target.result === 'string'
-                ) {
-                  console.log('imageSet', readerLoad.target.result)
-                  await handleUpload(readerLoad.target.result)
-                }
+      <input
+        name="file"
+        ref={inputFileRef}
+        type="file"
+        required
+        accept="image/*"
+        tabIndex={-1}
+        onChange={async (e) => {
+          if (e.target.files && e.target.files[0]) {
+            const reader = new FileReader()
+            reader.onload = async (readerLoad) => {
+              if (
+                readerLoad.target &&
+                typeof readerLoad.target.result === 'string'
+              ) {
+                console.log('imageSet', readerLoad.target.result)
+                await handleUpload(readerLoad.target.result)
               }
-              reader.readAsDataURL(e.target.files[0])
             }
-          }}
-        />
-      </form>
+            reader.readAsDataURL(e.target.files[0])
+          }
+        }}
+      />
     </>
   )
 }

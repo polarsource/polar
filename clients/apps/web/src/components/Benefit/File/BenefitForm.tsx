@@ -1,16 +1,20 @@
 'use client'
 
 import { useAuth } from '@/hooks'
-import { BenefitFileCreate } from '@polar-sh/sdk'
+import { BenefitFileCreate, FileRead, Organization } from '@polar-sh/sdk'
 import { useFormContext } from 'react-hook-form'
 
 import Dropzone from './Dropzone'
 
 interface FileBenefitFormProps {
+  organization: Organization
   update?: boolean
 }
 
-export const FileBenefitForm = ({ update = false }: FileBenefitFormProps) => {
+export const FileBenefitForm = ({
+  organization,
+  update = false,
+}: FileBenefitFormProps) => {
   const {
     control,
     watch,
@@ -24,10 +28,15 @@ export const FileBenefitForm = ({ update = false }: FileBenefitFormProps) => {
 
   const { currentUser } = useAuth()
 
+  const onUploaded = (file: FileRead) => {
+    const fileId = file.id
+    setValue('properties.files', [fileId])
+  }
+
   return (
     <>
       <p>Downloads form</p>
-      <Dropzone onUploaded={() => console.log('uploaded')} />
+      <Dropzone onUploaded={onUploaded} organization={organization} />
     </>
   )
 }

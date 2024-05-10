@@ -3109,10 +3109,10 @@ export type BenefitFileCreateTypeEnum = typeof BenefitFileCreateTypeEnum[keyof t
 export interface BenefitFileCreateProperties {
     /**
      * 
-     * @type {string}
+     * @type {Array<string>}
      * @memberof BenefitFileCreateProperties
      */
-    foobar?: string;
+    files: Array<string>;
 }
 /**
  * 
@@ -3122,10 +3122,10 @@ export interface BenefitFileCreateProperties {
 export interface BenefitFileProperties {
     /**
      * 
-     * @type {string}
+     * @type {Array<string>}
      * @memberof BenefitFileProperties
      */
-    foobar: string;
+    files: Array<string>;
 }
 /**
  * 
@@ -3206,10 +3206,10 @@ export type BenefitFileSubscriberTypeEnum = typeof BenefitFileSubscriberTypeEnum
 export interface BenefitFileSubscriberProperties {
     /**
      * 
-     * @type {string}
+     * @type {Array<string>}
      * @memberof BenefitFileSubscriberProperties
      */
-    foobar: string;
+    files: Array<string>;
 }
 /**
  * 

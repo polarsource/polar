@@ -1,16 +1,16 @@
 'use client'
 
 import { useAuth } from '@/hooks'
-import { BenefitFilesCreate } from '@polar-sh/sdk'
+import { BenefitFileCreate } from '@polar-sh/sdk'
 import { useFormContext } from 'react-hook-form'
 
 import Dropzone from './Dropzone'
 
-interface FilesBenefitFormProps {
+interface FileBenefitFormProps {
   update?: boolean
 }
 
-export const FilesBenefitForm = ({ update = false }: FilesBenefitFormProps) => {
+export const FileBenefitForm = ({ update = false }: FileBenefitFormProps) => {
   const {
     control,
     watch,
@@ -18,7 +18,7 @@ export const FilesBenefitForm = ({ update = false }: FilesBenefitFormProps) => {
     setValue,
     setError,
     clearErrors,
-  } = useFormContext<BenefitFilesCreate>()
+  } = useFormContext<BenefitFileCreate>()
 
   const description = watch('description')
 

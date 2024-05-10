@@ -77,7 +77,7 @@ export const benefitsDisplayNames: {
   [BenefitType.CUSTOM]: 'Custom',
   [BenefitType.DISCORD]: 'Discord Invite',
   [BenefitType.GITHUB_REPOSITORY]: 'GitHub Repository Access',
-  [BenefitType.FILE]: 'Hosted Downloads',
+  [BenefitType.FILES]: 'Hosted Downloads',
 }
 
 const isArticleBenefit = (

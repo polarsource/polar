@@ -19,10 +19,13 @@ import type {
   BenefitType,
   BenefitUpdate,
   HTTPValidationError,
+  ListResourceBenefitGrant,
   ListResourceUnionBenefitArticlesBenefitAdsBenefitCustomBenefitDiscordBenefitGitHubRepository,
+  NotPermitted,
   Platforms,
+  ResourceNotFound,
   ResponseBenefitsCreateBenefit,
-  ResponseBenefitsLookupBenefit,
+  ResponseBenefitsGetBenefit,
   ResponseBenefitsUpdateBenefit,
 } from '../models/index';
 
@@ -34,11 +37,20 @@ export interface BenefitsApiDeleteBenefitRequest {
     id: string;
 }
 
-export interface BenefitsApiLookupBenefitRequest {
-    benefitId: string;
+export interface BenefitsApiGetBenefitRequest {
+    id: string;
 }
 
-export interface BenefitsApiSearchBenefitsRequest {
+export interface BenefitsApiListBenefitGrantsRequest {
+    id: string;
+    isGranted?: boolean;
+    userId?: string;
+    githubUserId?: number;
+    page?: number;
+    limit?: number;
+}
+
+export interface BenefitsApiListBenefitsRequest {
     type?: BenefitType;
     page?: number;
     limit?: number;
@@ -57,6 +69,7 @@ export interface BenefitsApiUpdateBenefitRequest {
 export class BenefitsApi extends runtime.BaseAPI {
 
     /**
+     * Create a benefit.
      * Create Benefit
      */
     async createBenefitRaw(requestParameters: BenefitsApiCreateBenefitRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ResponseBenefitsCreateBenefit>> {
@@ -93,6 +106,7 @@ export class BenefitsApi extends runtime.BaseAPI {
     }
 
     /**
+     * Create a benefit.
      * Create Benefit
      */
     async createBenefit(requestParameters: BenefitsApiCreateBenefitRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ResponseBenefitsCreateBenefit> {
@@ -101,6 +115,7 @@ export class BenefitsApi extends runtime.BaseAPI {
     }
 
     /**
+     * Delete a benefit.  > [!WARNING] > Every grants associated with the benefit will be revoked. > Users will lose access to the benefit.
      * Delete Benefit
      */
     async deleteBenefitRaw(requestParameters: BenefitsApiDeleteBenefitRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<void>> {
@@ -134,6 +149,7 @@ export class BenefitsApi extends runtime.BaseAPI {
     }
 
     /**
+     * Delete a benefit.  > [!WARNING] > Every grants associated with the benefit will be revoked. > Users will lose access to the benefit.
      * Delete Benefit
      */
     async deleteBenefit(requestParameters: BenefitsApiDeleteBenefitRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<void> {
@@ -141,20 +157,80 @@ export class BenefitsApi extends runtime.BaseAPI {
     }
 
     /**
-     * Lookup Benefit
+     * Get a benefit by ID.
+     * Get Benefit
      */
-    async lookupBenefitRaw(requestParameters: BenefitsApiLookupBenefitRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ResponseBenefitsLookupBenefit>> {
-        if (requestParameters['benefitId'] == null) {
+    async getBenefitRaw(requestParameters: BenefitsApiGetBenefitRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ResponseBenefitsGetBenefit>> {
+        if (requestParameters['id'] == null) {
             throw new runtime.RequiredError(
-                'benefitId',
-                'Required parameter "benefitId" was null or undefined when calling lookupBenefit().'
+                'id',
+                'Required parameter "id" was null or undefined when calling getBenefit().'
             );
         }
 
         const queryParameters: any = {};
 
-        if (requestParameters['benefitId'] != null) {
-            queryParameters['benefit_id'] = requestParameters['benefitId'];
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("HTTPBearer", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+        const response = await this.request({
+            path: `/api/v1/benefits/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
+            method: 'GET',
+            headers: headerParameters,
+            query: queryParameters,
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse(response);
+    }
+
+    /**
+     * Get a benefit by ID.
+     * Get Benefit
+     */
+    async getBenefit(requestParameters: BenefitsApiGetBenefitRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ResponseBenefitsGetBenefit> {
+        const response = await this.getBenefitRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
+     * List the individual grants for a benefit.  It\'s especially useful to check if a user has been granted a benefit.
+     * List Benefit Grants
+     */
+    async listBenefitGrantsRaw(requestParameters: BenefitsApiListBenefitGrantsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListResourceBenefitGrant>> {
+        if (requestParameters['id'] == null) {
+            throw new runtime.RequiredError(
+                'id',
+                'Required parameter "id" was null or undefined when calling listBenefitGrants().'
+            );
+        }
+
+        const queryParameters: any = {};
+
+        if (requestParameters['isGranted'] != null) {
+            queryParameters['is_granted'] = requestParameters['isGranted'];
+        }
+
+        if (requestParameters['userId'] != null) {
+            queryParameters['user_id'] = requestParameters['userId'];
+        }
+
+        if (requestParameters['githubUserId'] != null) {
+            queryParameters['github_user_id'] = requestParameters['githubUserId'];
+        }
+
+        if (requestParameters['page'] != null) {
+            queryParameters['page'] = requestParameters['page'];
+        }
+
+        if (requestParameters['limit'] != null) {
+            queryParameters['limit'] = requestParameters['limit'];
         }
 
         const headerParameters: runtime.HTTPHeaders = {};
@@ -168,7 +244,7 @@ export class BenefitsApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/benefits/lookup`,
+            path: `/api/v1/benefits/{id}/grants`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
@@ -178,17 +254,19 @@ export class BenefitsApi extends runtime.BaseAPI {
     }
 
     /**
-     * Lookup Benefit
+     * List the individual grants for a benefit.  It\'s especially useful to check if a user has been granted a benefit.
+     * List Benefit Grants
      */
-    async lookupBenefit(requestParameters: BenefitsApiLookupBenefitRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ResponseBenefitsLookupBenefit> {
-        const response = await this.lookupBenefitRaw(requestParameters, initOverrides);
+    async listBenefitGrants(requestParameters: BenefitsApiListBenefitGrantsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ListResourceBenefitGrant> {
+        const response = await this.listBenefitGrantsRaw(requestParameters, initOverrides);
         return await response.value();
     }
 
     /**
-     * Search Benefits
+     * List benefits created on an organization.
+     * List Benefits
      */
-    async searchBenefitsRaw(requestParameters: BenefitsApiSearchBenefitsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListResourceUnionBenefitArticlesBenefitAdsBenefitCustomBenefitDiscordBenefitGitHubRepository>> {
+    async listBenefitsRaw(requestParameters: BenefitsApiListBenefitsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListResourceUnionBenefitArticlesBenefitAdsBenefitCustomBenefitDiscordBenefitGitHubRepository>> {
         const queryParameters: any = {};
 
         if (requestParameters['type'] != null) {
@@ -222,7 +300,7 @@ export class BenefitsApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/benefits/search`,
+            path: `/api/v1/benefits/`,
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
@@ -232,14 +310,16 @@ export class BenefitsApi extends runtime.BaseAPI {
     }
 
     /**
-     * Search Benefits
+     * List benefits created on an organization.
+     * List Benefits
      */
-    async searchBenefits(requestParameters: BenefitsApiSearchBenefitsRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ListResourceUnionBenefitArticlesBenefitAdsBenefitCustomBenefitDiscordBenefitGitHubRepository> {
-        const response = await this.searchBenefitsRaw(requestParameters, initOverrides);
+    async listBenefits(requestParameters: BenefitsApiListBenefitsRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ListResourceUnionBenefitArticlesBenefitAdsBenefitCustomBenefitDiscordBenefitGitHubRepository> {
+        const response = await this.listBenefitsRaw(requestParameters, initOverrides);
         return await response.value();
     }
 
     /**
+     * Update a benefit.
      * Update Benefit
      */
     async updateBenefitRaw(requestParameters: BenefitsApiUpdateBenefitRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ResponseBenefitsUpdateBenefit>> {
@@ -283,6 +363,7 @@ export class BenefitsApi extends runtime.BaseAPI {
     }
 
     /**
+     * Update a benefit.
      * Update Benefit
      */
     async updateBenefit(requestParameters: BenefitsApiUpdateBenefitRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ResponseBenefitsUpdateBenefit> {

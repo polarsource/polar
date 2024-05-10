@@ -14,19 +14,31 @@ from .service import organization as organization_service
 _OrganizationNameQuery = Query(
     min_length=1,
     examples=["my-org"],
-    description="Filter by organization name.",
+    description=(
+        "Filter by organization name. "
+        "Required unless you are authenticated as an organization."
+    ),
 )
-
-
 OrganizationNameQuery = Annotated[str, _OrganizationNameQuery]
 OptionalOrganizationNameQuery = Annotated[str | None, _OrganizationNameQuery]
+
+_PlatformQuery = Query(
+    examples=[Platforms.github],
+    description=(
+        "Platform linked to `organization_name`. "
+        "Required if `organization_name` is set. "
+        "Currently, only `github` is supported."
+    ),
+)
+PlatformQuery = Annotated[Platforms, _PlatformQuery]
+OptionalPlatformQuery = Annotated[Platforms | None, _PlatformQuery]
 
 _OrganizationNamePlatform = tuple[str, Platforms]
 
 
 async def _get_optional_organization_name_platform(
     organization_name: OptionalOrganizationNameQuery = None,
-    platform: Platforms | None = Query(None),
+    platform: OptionalPlatformQuery = None,
 ) -> _OrganizationNamePlatform | None:
     if organization_name is None:
         return None
@@ -47,8 +59,7 @@ async def _get_optional_organization_name_platform(
 
 
 async def _get_organization_name_platform(
-    organization_name: OrganizationNameQuery,
-    platform: Platforms = Query(...),
+    organization_name: OrganizationNameQuery, platform: PlatformQuery
 ) -> _OrganizationNamePlatform:
     return organization_name, platform
 

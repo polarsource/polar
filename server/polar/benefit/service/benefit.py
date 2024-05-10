@@ -9,7 +9,7 @@ from sqlalchemy.orm import contains_eager, joinedload
 
 from polar.auth.models import AuthSubject, is_organization, is_user
 from polar.authz.service import AccessType, Authz
-from polar.exceptions import NotPermitted, PolarError
+from polar.exceptions import NotPermitted, PolarError, PolarRequestValidationError
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.services import ResourceService
@@ -32,13 +32,6 @@ from .benefit_grant import benefit_grant as benefit_grant_service
 
 
 class BenefitError(PolarError): ...
-
-
-class OrganizationDoesNotExist(BenefitError):
-    def __init__(self, organization_id: uuid.UUID) -> None:
-        self.organization_id = organization_id
-        message = f"Organization with id {organization_id} does not exist."
-        super().__init__(message, 422)
 
 
 class BenefitService(ResourceService[Benefit, BenefitCreate, BenefitUpdate]):
@@ -113,7 +106,19 @@ class BenefitService(ResourceService[Benefit, BenefitCreate, BenefitUpdate]):
             session, auth_subject, create_schema
         )
         if not await authz.can(subject, AccessType.write, organization):
-            raise OrganizationDoesNotExist(organization.id)
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "loc": (
+                            "body",
+                            "organization_id",
+                        ),
+                        "msg": "Organization not found.",
+                        "type": "value_error",
+                        "input": organization.id,
+                    }
+                ]
+            )
 
         try:
             is_tax_applicable = getattr(create_schema, "is_tax_applicable")

@@ -4,13 +4,12 @@ from typing import TypeVar
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
-from fastapi.exceptions import RequestValidationError
 from pytest_mock import MockerFixture
 
 from polar.auth.models import Anonymous, AuthMethod, AuthSubject, Subject
 from polar.auth.scope import Scope
 from polar.authz.service import Authz
-from polar.exceptions import NotPermitted
+from polar.exceptions import NotPermitted, PolarRequestValidationError
 from polar.kit.pagination import PaginationParams
 from polar.models import Benefit, Organization, SubscriptionTier, User, UserOrganization
 from polar.models.benefit import BenefitType
@@ -559,7 +558,7 @@ class TestUserCreate:
         # then
         session.expunge_all()
 
-        with pytest.raises(RequestValidationError):
+        with pytest.raises(PolarRequestValidationError):
             await subscription_tier_service.user_create(
                 session, authz, create_schema, auth_subject
             )
@@ -755,7 +754,7 @@ class TestUserCreate:
         # then
         session.expunge_all()
 
-        with pytest.raises(RequestValidationError):
+        with pytest.raises(PolarRequestValidationError):
             await subscription_tier_service.user_create(
                 session, authz, create_schema, auth_subject
             )

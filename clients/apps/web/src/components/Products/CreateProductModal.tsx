@@ -36,7 +36,7 @@ export interface CreateProductModalProps {
 export const CreateProductModal = ({ hide }: CreateProductModalProps) => {
   const [selectedBenefits, setBenefits] = useState<BenefitPublicInner[]>([])
   const { org } = useCurrentOrgAndRepoFromURL()
-  const { data } = useBenefits(org?.name, 999)
+  const { data } = useBenefits(org?.id, 999)
 
   const benefits = data?.items ?? []
 

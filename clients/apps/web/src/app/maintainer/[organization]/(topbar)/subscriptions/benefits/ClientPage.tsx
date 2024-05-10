@@ -40,7 +40,7 @@ const ClientPage = ({ organization }: { organization: Organization }) => {
     BenefitPublicInner | undefined
   >()
   const { data: benefits, isFetched: benefitsIsFetched } = useBenefits(
-    organization.name,
+    organization.id,
     100,
   )
   const { data: subscriptionTiers } = useSubscriptionTiers(

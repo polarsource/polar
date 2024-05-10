@@ -1,4 +1,4 @@
-import { BenefitCreate, BenefitUpdate, Platforms } from '@polar-sh/sdk'
+import { BenefitCreate, BenefitUpdate } from '@polar-sh/sdk'
 import { useMutation, useQuery } from '@tanstack/react-query'
 
 import { api, queryClient } from '@/utils/api'
@@ -28,21 +28,16 @@ const _invalidateBenefitsQueries = ({
   })
 }
 
-export const useBenefits = (
-  orgName?: string,
-  limit = 30,
-  platform: Platforms = Platforms.GITHUB,
-) =>
+export const useBenefits = (orgId?: string, limit = 30) =>
   useQuery({
-    queryKey: ['benefits', 'organization', orgName],
+    queryKey: ['benefits', 'organization', orgId],
     queryFn: () =>
       api.benefits.listBenefits({
-        organizationName: orgName ?? '',
-        platform,
+        organizationId: orgId ?? '',
         limit,
       }),
     retry: defaultRetry,
-    enabled: !!orgName,
+    enabled: !!orgId,
   })
 
 export const useBenefit = (id?: string) =>

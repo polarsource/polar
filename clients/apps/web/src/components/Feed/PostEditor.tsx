@@ -187,7 +187,7 @@ const Sidebar = () => {
 
   const { org } = useCurrentOrgAndRepoFromURL()
 
-  const benefits = useBenefits(org?.name)
+  const benefits = useBenefits(org?.id)
   const benefitItems = benefits.data?.items ?? []
   const adBenefits = benefitItems.filter((b) => b.type === 'ads')
 

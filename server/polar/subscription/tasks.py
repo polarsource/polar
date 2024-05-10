@@ -4,7 +4,7 @@ import structlog
 from discord_webhook import AsyncDiscordWebhook, DiscordEmbed
 
 from polar.config import settings
-from polar.exceptions import PolarError
+from polar.exceptions import PolarTaskError
 from polar.kit.money import get_cents_in_dollar_string
 from polar.logging import Logger
 from polar.organization.service import organization as organization_service
@@ -19,14 +19,14 @@ from .service.subscription_tier_price import (
 log: Logger = structlog.get_logger()
 
 
-class SubscriptionTaskError(PolarError): ...
+class SubscriptionTaskError(PolarTaskError): ...
 
 
 class SubscriptionDoesNotExist(SubscriptionTaskError):
     def __init__(self, subscription_id: uuid.UUID) -> None:
         self.subscription_id = subscription_id
         message = f"The subscription with id {subscription_id} does not exist."
-        super().__init__(message, 500)
+        super().__init__(message)
 
 
 class SubscriptionTierDoesNotExist(SubscriptionTaskError):
@@ -35,7 +35,7 @@ class SubscriptionTierDoesNotExist(SubscriptionTaskError):
         message = (
             f"The subscription tier with id {subscription_tier_id} does not exist."
         )
-        super().__init__(message, 500)
+        super().__init__(message)
 
 
 @task("subscription.subscription.enqueue_benefits_grants")

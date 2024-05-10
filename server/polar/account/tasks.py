@@ -4,7 +4,7 @@ from discord_webhook import AsyncDiscordWebhook, DiscordEmbed
 
 from polar.config import settings
 from polar.enums import AccountType
-from polar.exceptions import PolarError
+from polar.exceptions import PolarTaskError
 from polar.held_balance.service import held_balance as held_balance_service
 from polar.models import Account
 from polar.notifications.notification import (
@@ -19,14 +19,14 @@ from polar.worker import AsyncSessionMaker, JobContext, PolarWorkerContext, task
 from .service import account as account_service
 
 
-class AccountTaskError(PolarError): ...
+class AccountTaskError(PolarTaskError): ...
 
 
 class AccountDoesNotExist(AccountTaskError):
     def __init__(self, account_id: uuid.UUID) -> None:
         self.account_id = account_id
         message = f"The account with id {account_id} does not exist."
-        super().__init__(message, 500)
+        super().__init__(message)
 
 
 async def send_account_under_review_discord_notification(account: Account) -> None:

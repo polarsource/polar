@@ -4,7 +4,7 @@ from typing import Literal, Unpack
 import structlog
 from arq import Retry
 
-from polar.exceptions import PolarError
+from polar.exceptions import PolarTaskError
 from polar.logging import Logger
 from polar.models.benefit import BenefitType
 from polar.models.benefit_grant import BenefitGrantScopeArgs
@@ -26,35 +26,35 @@ from .service.benefit_grant_scope import resolve_scope
 log: Logger = structlog.get_logger()
 
 
-class BenefitTaskError(PolarError): ...
+class BenefitTaskError(PolarTaskError): ...
 
 
 class UserDoesNotExist(BenefitTaskError):
     def __init__(self, user_id: uuid.UUID) -> None:
         self.user_id = user_id
         message = f"The user with id {user_id} does not exist."
-        super().__init__(message, 500)
+        super().__init__(message)
 
 
 class BenefitDoesNotExist(BenefitTaskError):
     def __init__(self, benefit_id: uuid.UUID) -> None:
         self.benefit_id = benefit_id
         message = f"The benefit with id {benefit_id} does not exist."
-        super().__init__(message, 500)
+        super().__init__(message)
 
 
 class BenefitGrantDoesNotExist(BenefitTaskError):
     def __init__(self, benefit_grant_id: uuid.UUID) -> None:
         self.benefit_grant_id = benefit_grant_id
         message = f"The benefit grant with id {benefit_grant_id} does not exist."
-        super().__init__(message, 500)
+        super().__init__(message)
 
 
 class OrganizationDoesNotExist(BenefitTaskError):
     def __init__(self, organization_id: uuid.UUID) -> None:
         self.organization_id = organization_id
         message = f"The organization with id {organization_id} does not exist."
-        super().__init__(message, 500)
+        super().__init__(message)
 
 
 @task("benefit.grant")

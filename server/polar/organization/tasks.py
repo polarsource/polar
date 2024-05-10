@@ -2,7 +2,7 @@ import uuid
 
 from polar.account.service import account as account_service
 from polar.benefit.service.benefit import benefit as benefit_service
-from polar.exceptions import PolarError
+from polar.exceptions import PolarTaskError
 from polar.held_balance.service import held_balance as held_balance_service
 from polar.postgres import AsyncSession
 from polar.subscription.service.subscription_tier import (
@@ -13,14 +13,14 @@ from polar.worker import AsyncSessionMaker, JobContext, PolarWorkerContext, task
 from .service import organization as organization_service
 
 
-class OrganizationTaskError(PolarError): ...
+class OrganizationTaskError(PolarTaskError): ...
 
 
 class OrganizationDoesNotExist(OrganizationTaskError):
     def __init__(self, organization_id: uuid.UUID) -> None:
         self.organization_id = organization_id
         message = f"The organization with id {organization_id} does not exist."
-        super().__init__(message, 500)
+        super().__init__(message)
 
 
 class OrganizationAccountNotSet(OrganizationTaskError):
@@ -30,14 +30,14 @@ class OrganizationAccountNotSet(OrganizationTaskError):
             f"The organization with id {organization_id} "
             "does not have an account set."
         )
-        super().__init__(message, 500)
+        super().__init__(message)
 
 
 class AccountDoesNotExist(OrganizationTaskError):
     def __init__(self, account_id: uuid.UUID) -> None:
         self.account_id = account_id
         message = f"The account with id {account_id} does not exist."
-        super().__init__(message, 500)
+        super().__init__(message)
 
 
 async def organization_post_creation_actions(

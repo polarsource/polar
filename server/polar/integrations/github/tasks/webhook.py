@@ -6,7 +6,7 @@ import structlog
 
 from polar.context import ExecutionContext
 from polar.eventstream.service import publish_members
-from polar.exceptions import PolarError
+from polar.exceptions import PolarTaskError
 from polar.integrations.github import client as github
 from polar.kit.extensions.sqlalchemy import sql
 from polar.kit.utils import utc_now
@@ -35,7 +35,7 @@ from .utils import (
 log = structlog.get_logger()
 
 
-class GitHubTasksWebhookError(PolarError): ...
+class GitHubTasksWebhookError(PolarTaskError): ...
 
 
 class UnknownRepositoryTransferOrganization(GitHubTasksWebhookError):

@@ -4,7 +4,7 @@ from discord_webhook import AsyncDiscordWebhook, DiscordEmbed
 
 from polar.config import settings
 from polar.enums import AccountType
-from polar.exceptions import PolarError
+from polar.exceptions import PolarTaskError
 from polar.kit.money import get_cents_in_dollar_string
 from polar.worker import (
     AsyncSessionMaker,
@@ -20,14 +20,14 @@ from .service.processor_fee import (
 )
 
 
-class TransactionTaskError(PolarError): ...
+class TransactionTaskError(PolarTaskError): ...
 
 
 class PayoutDoesNotExist(TransactionTaskError):
     def __init__(self, payout_id: uuid.UUID) -> None:
         self.payout_id = payout_id
         message = f"The payout with id {payout_id} does not exist."
-        super().__init__(message, 500)
+        super().__init__(message)
 
 
 @interval(hour=0, minute=0)

@@ -1,9 +1,6 @@
 from typing import Literal
 
 from pydantic import BaseModel, create_model
-from sqlalchemy import exc as sqlalchemy
-
-IntegrityError = sqlalchemy.IntegrityError
 
 
 class PolarError(Exception):
@@ -15,10 +12,10 @@ class PolarError(Exception):
 
     Args:
         message: The error message that'll be displayed to the user.
-        status_code: The status code of the HTTP response. Defaults to 400.
+        status_code: The status code of the HTTP response. Defaults to 500.
     """
 
-    def __init__(self, message: str, status_code: int = 400) -> None:
+    def __init__(self, message: str, status_code: int = 500) -> None:
         super().__init__(message)
         self.message = message
         self.status_code = status_code
@@ -27,10 +24,19 @@ class PolarError(Exception):
     def schema(cls) -> type[BaseModel]:
         type_literal = Literal[cls.__name__]  # type: ignore
 
-        return create_model(cls.__name__, type=(type_literal, ...), message=(str, ...))
+        return create_model(cls.__name__, type=(type_literal, ...), detail=(str, ...))
 
 
-class PolarTaskError(PolarError): ...
+class PolarTaskError(PolarError):
+    """
+    Base exception class for errors raised by tasks.
+
+    Args:
+        message: The error message.
+    """
+
+    def __init__(self, message: str) -> None:
+        super().__init__(message)
 
 
 class PolarRedirectionError(PolarError):
@@ -71,9 +77,6 @@ class InternalServerError(PolarError):
         self, message: str = "Internal Server Error", status_code: int = 500
     ) -> None:
         super().__init__(message, status_code)
-
-
-class StripeError(PolarError): ...
 
 
 class ResourceNotFound(PolarError):

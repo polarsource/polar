@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import structlog
+from sqlalchemy.exc import IntegrityError
 
-from polar.exceptions import IntegrityError, ResourceNotFound
+from polar.exceptions import ResourceNotFound
 from polar.integrations.github.client import (
     get_app_installation_client,
 )

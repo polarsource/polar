@@ -11259,7 +11259,7 @@ export interface TransactionSale {
      */
     product_price: TransactionProductPrice;
     /**
-     * 
+     * Creation timestamp of the object.
      * @type {string}
      * @memberof TransactionSale
      */

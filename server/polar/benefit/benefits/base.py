@@ -1,11 +1,7 @@
-from typing import Any, LiteralString, Protocol, TypedDict, TypeVar
-
-from fastapi.exceptions import RequestValidationError
-from pydantic import ValidationError
-from pydantic_core import InitErrorDetails, PydanticCustomError
+from typing import Any, Protocol, TypeVar
 
 from polar.auth.models import AuthSubject
-from polar.exceptions import PolarError
+from polar.exceptions import PolarError, PolarRequestValidationError, ValidationError
 from polar.models import Benefit, Organization, User
 from polar.models.benefit import BenefitProperties
 from polar.notifications.notification import (
@@ -17,42 +13,22 @@ from polar.postgres import AsyncSession
 class BenefitServiceError(PolarError): ...
 
 
-class BenefitPropertyValidationError(TypedDict):
-    type: LiteralString
-    message: LiteralString
-    loc: tuple[int | str, ...]
-    input: Any
-
-
-class BenefitPropertiesValidationError(BenefitServiceError):
+class BenefitPropertiesValidationError(PolarRequestValidationError):
     """
     Benefit properties validation error.
     """
 
-    errors: list[BenefitPropertyValidationError]
-    """List of errors."""
-
-    def __init__(self, errors: list[BenefitPropertyValidationError]) -> None:
-        self.errors = errors
-        message = "Benefit properties are invalid."
-        super().__init__(message, 422)
-
-    def to_request_validation_error(
-        self, loc_prefix: tuple[str | int, ...]
-    ) -> RequestValidationError:
-        pydantic_errors: list[InitErrorDetails] = []
-        for error in self.errors:
-            pydantic_errors.append(
-                {
-                    "type": PydanticCustomError(error["type"], error["message"]),
-                    "loc": (*loc_prefix, "properties", *error["loc"]),
-                    "input": error["input"],
-                }
-            )
-        pydantic_error = ValidationError.from_exception_data(
-            self.__class__.__name__, pydantic_errors
-        )
-        return RequestValidationError(pydantic_error.errors())
+    def __init__(self, errors: list[ValidationError]) -> None:
+        errors = [
+            {
+                "loc": ("body", "properties", *error["loc"]),
+                "msg": error["msg"],
+                "type": error["type"],
+                "input": error["input"],
+            }
+            for error in errors
+        ]
+        super().__init__(errors)
 
 
 class BenefitRetriableError(BenefitServiceError):

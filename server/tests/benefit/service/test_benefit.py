@@ -345,7 +345,7 @@ class TestUserCreate:
             [
                 {
                     "type": "property_error",
-                    "message": "The property is invalid",
+                    "msg": "The property is invalid",
                     "loc": ("key",),
                     "input": "foobar",
                 }
@@ -365,7 +365,7 @@ class TestUserCreate:
         # then
         session.expunge_all()
 
-        with pytest.raises(RequestValidationError):
+        with pytest.raises(BenefitPropertiesValidationError):
             await benefit_service.user_create(
                 session, authz, create_schema, auth_subject
             )

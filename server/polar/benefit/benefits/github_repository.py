@@ -228,7 +228,7 @@ class BenefitGitHubRepositoryService(
                 [
                     {
                         "type": "invalid_auth_subject",
-                        "message": (
+                        "msg": (
                             "We do not yet support creating this benefit "
                             "with an organization token."
                         ),
@@ -257,7 +257,7 @@ class BenefitGitHubRepositoryService(
                 [
                     {
                         "type": "invalid_user_auth",
-                        "message": "You have not authenticated with the github_repository_benefit app",
+                        "msg": "You have not authenticated with the github_repository_benefit app",
                         "loc": ("repository_owner",),
                         "input": repository_owner,  # ?
                     }
@@ -278,7 +278,7 @@ class BenefitGitHubRepositoryService(
                 [
                     {
                         "type": "no_repository_acccess",
-                        "message": "You don't have access to this repository.",
+                        "msg": "You don't have access to this repository.",
                         "loc": ("repository_name",),
                         "input": repository_name,
                     }
@@ -296,7 +296,7 @@ class BenefitGitHubRepositoryService(
                 [
                     {
                         "type": "no_repository_installation_found",
-                        "message": "Could not find a installation for this repository.",
+                        "msg": "Could not find a installation for this repository.",
                         "loc": ("repository_name",),
                         "input": repository_name,
                     }
@@ -314,7 +314,7 @@ class BenefitGitHubRepositoryService(
                     [
                         {
                             "type": "personal_organization_repository",
-                            "message": "For security reasons, "
+                            "msg": "For security reasons, "
                             "repositories on personal organizations are not supported.",
                             "loc": ("repository_name",),
                             "input": repository_name,
@@ -343,7 +343,7 @@ class BenefitGitHubRepositoryService(
                 [
                     {
                         "type": "invalid_repository",
-                        "message": "This repository does not exist.",
+                        "msg": "This repository does not exist.",
                         "loc": ("repository_id",),
                         "input": repository_id,
                     }
@@ -356,7 +356,7 @@ class BenefitGitHubRepositoryService(
                 [
                     {
                         "type": "no_repository_acccess",
-                        "message": "You don't have access to this repository.",
+                        "msg": "You don't have access to this repository.",
                         "loc": ("repository_id",),
                         "input": repository_id,
                     }
@@ -371,7 +371,7 @@ class BenefitGitHubRepositoryService(
                     [
                         {
                             "type": "personal_organization_repository",
-                            "message": "For security reasons, "
+                            "msg": "For security reasons, "
                             "repositories on personal organizations are not supported.",
                             "loc": ("repository_id",),
                             "input": repository_id,

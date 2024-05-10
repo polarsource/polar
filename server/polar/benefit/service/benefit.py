@@ -26,7 +26,7 @@ from polar.models.webhook_endpoint import WebhookEventType
 from polar.organization.resolver import get_payload_organization
 from polar.webhook.service import webhook as webhook_service
 
-from ..benefits import BenefitPropertiesValidationError, get_benefit_service
+from ..benefits import get_benefit_service
 from ..schemas import BenefitCreate, BenefitUpdate
 from .benefit_grant import benefit_grant as benefit_grant_service
 
@@ -121,13 +121,10 @@ class BenefitService(ResourceService[Benefit, BenefitCreate, BenefitUpdate]):
             is_tax_applicable = create_schema.type.is_tax_applicable()
 
         benefit_service = get_benefit_service(create_schema.type, session)
-        try:
-            properties = await benefit_service.validate_properties(
-                auth_subject,
-                create_schema.properties.model_dump(mode="json", by_alias=True),
-            )
-        except BenefitPropertiesValidationError as e:
-            raise e.to_request_validation_error(("body", create_schema.type))
+        properties = await benefit_service.validate_properties(
+            auth_subject,
+            create_schema.properties.model_dump(mode="json", by_alias=True),
+        )
 
         benefit = Benefit(
             organization=organization,
@@ -174,13 +171,10 @@ class BenefitService(ResourceService[Benefit, BenefitCreate, BenefitUpdate]):
         properties_update: BaseModel | None = getattr(update_schema, "properties", None)
         if properties_update is not None:
             benefit_service = get_benefit_service(benefit.type, session)
-            try:
-                update_dict["properties"] = await benefit_service.validate_properties(
-                    auth_subject,
-                    properties_update.model_dump(mode="json", by_alias=True),
-                )
-            except BenefitPropertiesValidationError as e:
-                raise e.to_request_validation_error(("body", benefit.type))
+            update_dict["properties"] = await benefit_service.validate_properties(
+                auth_subject,
+                properties_update.model_dump(mode="json", by_alias=True),
+            )
 
         previous_properties = benefit.properties
 

@@ -168,7 +168,7 @@ async def create_benefit(
     return benefit
 
 
-@router.post(
+@router.patch(
     "/{id}",
     response_model=BenefitSchema,
     tags=[Tags.PUBLIC],

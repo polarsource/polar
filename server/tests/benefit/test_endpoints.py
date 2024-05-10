@@ -222,7 +222,7 @@ class TestUpdateBenefit:
         client: AsyncClient,
         benefit_organization: Benefit,
     ) -> None:
-        response = await client.post(
+        response = await client.patch(
             f"/api/v1/benefits/{benefit_organization.id}",
             json={
                 "type": benefit_organization.type,
@@ -234,7 +234,7 @@ class TestUpdateBenefit:
 
     @pytest.mark.auth
     async def test_not_existing(self, client: AsyncClient) -> None:
-        response = await client.post(
+        response = await client.patch(
             f"/api/v1/benefits/{uuid.uuid4()}",
             json={"type": "custom", "description": "Updated Name"},
         )
@@ -263,7 +263,7 @@ class TestUpdateBenefit:
         benefit_organization: Benefit,
         user_organization_admin: UserOrganization,
     ) -> None:
-        response = await client.post(
+        response = await client.patch(
             f"/api/v1/benefits/{benefit_organization.id}",
             json={"type": benefit_organization.type, **payload},
         )
@@ -277,7 +277,7 @@ class TestUpdateBenefit:
         benefit_organization: Benefit,
         user_organization_admin: UserOrganization,
     ) -> None:
-        response = await client.post(
+        response = await client.patch(
             f"/api/v1/benefits/{benefit_organization.id}",
             json={
                 "type": benefit_organization.type,
@@ -305,7 +305,7 @@ class TestUpdateBenefit:
             organization=organization,
             properties={"paid_articles": False},
         )
-        response = await client.post(
+        response = await client.patch(
             f"/api/v1/benefits/{benefit.id}",
             json={
                 "type": benefit.type,
@@ -336,7 +336,7 @@ class TestUpdateBenefit:
             properties={"note": "NOTE"},
         )
 
-        response = await client.post(
+        response = await client.patch(
             f"/api/v1/benefits/{benefit.id}",
             json={
                 "type": benefit.type,

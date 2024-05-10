@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, cast
 
 import structlog
 
@@ -49,4 +49,4 @@ class BenefitFileService(BenefitServiceProtocol[BenefitFile, BenefitFileProperti
     async def validate_properties(
         self, auth_subject: AuthSubject[User | Organization], properties: dict[str, Any]
     ) -> BenefitFileProperties:
-        ...
+        return cast(BenefitFileProperties, properties)

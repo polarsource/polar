@@ -6,6 +6,7 @@ import {
   BenefitCustomCreate,
   BenefitDiscordCreate,
   BenefitType,
+  Organization,
 } from '@polar-sh/sdk'
 import { usePathname } from 'next/navigation'
 import Button from 'polarkit/components/ui/atoms/button'
@@ -36,27 +37,40 @@ import { FileBenefitForm } from './File/BenefitForm'
 import { GitHubRepositoryBenefitForm } from './GitHubRepositoryBenefitForm'
 import { benefitsDisplayNames } from './utils'
 
-export const NewBenefitForm = () => {
+export const NewBenefitForm = ({
+  organization,
+}: {
+  organization: Organization
+}) => {
   const { watch } = useFormContext<BenefitCreate>()
   const type = watch('type')
 
-  return <BenefitForm type={type} />
+  return <BenefitForm organization={organization} type={type} />
 }
 
 interface UpdateBenefitFormProps {
+  organization: Organization
   type: BenefitType
 }
 
-export const UpdateBenefitForm = ({ type }: UpdateBenefitFormProps) => {
-  return <BenefitForm type={type} update={true} />
+export const UpdateBenefitForm = ({
+  organization,
+  type,
+}: UpdateBenefitFormProps) => {
+  return <BenefitForm organization={organization} type={type} update={true} />
 }
 
 interface BenefitFormProps {
+  organization: Organization
   type: BenefitType
   update?: boolean
 }
 
-export const BenefitForm = ({ type, update = false }: BenefitFormProps) => {
+export const BenefitForm = ({
+  organization,
+  type,
+  update = false,
+}: BenefitFormProps) => {
   const { control } = useFormContext<BenefitCreate>()
 
   return (
@@ -100,7 +114,9 @@ export const BenefitForm = ({ type, update = false }: BenefitFormProps) => {
       {type === 'github_repository' && (
         <GitHubRepositoryBenefitForm update={update} />
       )}
-      {type === 'file' && <FileBenefitForm update={update} />}
+      {type === 'file' && (
+        <FileBenefitForm organization={organization} update={update} />
+      )}
     </>
   )
 }

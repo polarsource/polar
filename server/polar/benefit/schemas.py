@@ -203,15 +203,15 @@ class BenefitGitHubRepositorySubscriberProperties(Schema):
 
 
 class BenefitFileCreateProperties(Schema):
-    foobar: str | None = None
+    files: list[UUID4]
 
 
 class BenefitFileProperties(Schema):
-    foobar: str
+    files: list[UUID4]
 
 
 class BenefitFileSubscriberProperties(Schema):
-    foobar: str
+    files: list[UUID4]
 
 
 # BenefitCreate

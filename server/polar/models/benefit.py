@@ -76,7 +76,7 @@ class BenefitGitHubRepositoryProperties(BenefitProperties):
 
 
 class BenefitFileProperties(BenefitProperties):
-    foobar: str
+    files: list[UUID]
 
 
 class Benefit(RecordModel):

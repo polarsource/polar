@@ -5,7 +5,7 @@ import structlog
 from polar.auth.models import AuthSubject
 from polar.logging import Logger
 from polar.models import Organization, User
-from polar.models.benefit import BenefitFile, BenefitFileProperties
+from polar.models.benefit import BenefitFiles, BenefitFilesProperties
 
 from .base import (
     BenefitServiceProtocol,
@@ -17,10 +17,10 @@ precondition_error_subject_template = ()
 precondition_error_body_template = """"""
 
 
-class BenefitFileService(BenefitServiceProtocol[BenefitFile, BenefitFileProperties]):
+class BenefitFilesService(BenefitServiceProtocol[BenefitFiles, BenefitFilesProperties]):
     async def grant(
         self,
-        benefit: BenefitFile,
+        benefit: BenefitFiles,
         user: User,
         grant_properties: dict[str, Any],
         *,
@@ -31,7 +31,7 @@ class BenefitFileService(BenefitServiceProtocol[BenefitFile, BenefitFileProperti
 
     async def revoke(
         self,
-        benefit: BenefitFile,
+        benefit: BenefitFiles,
         user: User,
         grant_properties: dict[str, Any],
         *,
@@ -41,12 +41,12 @@ class BenefitFileService(BenefitServiceProtocol[BenefitFile, BenefitFileProperti
 
     async def requires_update(
         self,
-        benefit: BenefitFile,
-        previous_properties: BenefitFileProperties,
+        benefit: BenefitFiles,
+        previous_properties: BenefitFilesProperties,
     ) -> bool:
         ...
 
     async def validate_properties(
         self, auth_subject: AuthSubject[User | Organization], properties: dict[str, Any]
-    ) -> BenefitFileProperties:
-        return cast(BenefitFileProperties, properties)
+    ) -> BenefitFilesProperties:
+        return cast(BenefitFilesProperties, properties)

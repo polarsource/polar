@@ -33,7 +33,7 @@ import {
 } from 'polarkit/components/ui/form'
 import React, { useMemo } from 'react'
 import { useFormContext } from 'react-hook-form'
-import { FileBenefitForm } from './File/BenefitForm'
+import { FilesBenefitForm } from './Files/BenefitForm'
 import { GitHubRepositoryBenefitForm } from './GitHubRepositoryBenefitForm'
 import { benefitsDisplayNames } from './utils'
 
@@ -114,8 +114,8 @@ export const BenefitForm = ({
       {type === 'github_repository' && (
         <GitHubRepositoryBenefitForm update={update} />
       )}
-      {type === 'file' && (
-        <FileBenefitForm organization={organization} update={update} />
+      {type === 'files' && (
+        <FilesBenefitForm organization={organization} update={update} />
       )}
     </>
   )

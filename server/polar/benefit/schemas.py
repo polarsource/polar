@@ -202,15 +202,15 @@ class BenefitGitHubRepositorySubscriberProperties(Schema):
 ## Downloads
 
 
-class BenefitFilesCreateProperties(Schema):
+class BenefitFileCreateProperties(Schema):
     foobar: str | None = None
 
 
-class BenefitFilesProperties(Schema):
+class BenefitFileProperties(Schema):
     foobar: str
 
 
-class BenefitFilesSubscriberProperties(Schema):
+class BenefitFileSubscriberProperties(Schema):
     foobar: str
 
 
@@ -263,9 +263,9 @@ class BenefitGitHubRepositoryCreate(BenefitCreateBase):
     properties: BenefitGitHubRepositoryCreateProperties
 
 
-class BenefitFilesCreate(BenefitCreateBase):
-    type: Literal[BenefitType.files]
-    properties: BenefitFilesCreateProperties
+class BenefitFileCreate(BenefitCreateBase):
+    type: Literal[BenefitType.file]
+    properties: BenefitFileCreateProperties
 
 
 BenefitCreate = (
@@ -273,7 +273,7 @@ BenefitCreate = (
     | BenefitAdsCreate
     | BenefitDiscordCreate
     | BenefitGitHubRepositoryCreate
-    | BenefitFilesCreate
+    | BenefitFileCreate
 )
 
 
@@ -318,9 +318,9 @@ class BenefitGitHubRepositoryUpdate(BenefitUpdateBase):
     properties: BenefitGitHubRepositoryCreateProperties | None = None
 
 
-class BenefitFilesUpdate(BenefitUpdateBase):
-    type: Literal[BenefitType.files]
-    properties: BenefitFilesCreateProperties | None = None
+class BenefitFileUpdate(BenefitUpdateBase):
+    type: Literal[BenefitType.file]
+    properties: BenefitFileCreateProperties | None = None
 
 
 BenefitUpdate = (
@@ -329,7 +329,7 @@ BenefitUpdate = (
     | BenefitCustomUpdate
     | BenefitDiscordUpdate
     | BenefitGitHubRepositoryUpdate
-    | BenefitFilesUpdate
+    | BenefitFileUpdate
 )
 
 
@@ -405,9 +405,9 @@ class BenefitGitHubRepository(BenefitBase):
     properties: BenefitGitHubRepositoryProperties
 
 
-class BenefitFiles(BenefitBase):
-    type: Literal[BenefitType.files]
-    properties: BenefitFilesProperties
+class BenefitFile(BenefitBase):
+    type: Literal[BenefitType.file]
+    properties: BenefitFileProperties
 
 
 Benefit = (
@@ -416,7 +416,7 @@ Benefit = (
     | BenefitCustom
     | BenefitDiscord
     | BenefitGitHubRepository
-    | BenefitFiles
+    | BenefitFile
 )
 
 benefit_schema_map: dict[BenefitType, type[Benefit]] = {
@@ -425,7 +425,7 @@ benefit_schema_map: dict[BenefitType, type[Benefit]] = {
     BenefitType.ads: BenefitAds,
     BenefitType.custom: BenefitCustom,
     BenefitType.github_repository: BenefitGitHubRepository,
-    BenefitType.files: BenefitFiles,
+    BenefitType.file: BenefitFile,
 }
 
 
@@ -517,9 +517,9 @@ class BenefitGitHubRepositorySubscriber(BenefitBase):
     properties: BenefitGitHubRepositorySubscriberProperties
 
 
-class BenefitFilesSubscriber(BenefitBase):
-    type: Literal[BenefitType.files]
-    properties: BenefitFilesSubscriberProperties
+class BenefitFileSubscriber(BenefitBase):
+    type: Literal[BenefitType.file]
+    properties: BenefitFileSubscriberProperties
 
 
 # Properties that are available to subscribers only
@@ -529,7 +529,7 @@ BenefitSubscriber = Annotated[
     | BenefitDiscordSubscriber
     | BenefitCustomSubscriber
     | BenefitGitHubRepositorySubscriber
-    | BenefitFilesSubscriber,
+    | BenefitFileSubscriber,
     Discriminator("type"),
 ]
 

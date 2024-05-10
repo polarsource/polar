@@ -118,7 +118,7 @@ class TestSearch:
         results, count = await benefit_service.list(
             session,
             auth_subject,
-            organization=organization,
+            organization_id=organization.id,
             pagination=PaginationParams(1, 10),
         )
 
@@ -131,17 +131,13 @@ class TestSearch:
         self,
         auth_subject: AuthSubject[Organization],
         session: AsyncSession,
-        organization: Organization,
         benefit_organization: Benefit,
     ) -> None:
         # then
         session.expunge_all()
 
         results, count = await benefit_service.list(
-            session,
-            auth_subject,
-            organization=organization,
-            pagination=PaginationParams(1, 10),
+            session, auth_subject, pagination=PaginationParams(1, 10)
         )
 
         assert count == 1
@@ -225,6 +221,7 @@ class TestUserCreate:
             description="Benefit",
             is_tax_applicable=True,
             properties=BenefitCustomProperties(),
+            organization_id=None,
         )
 
         # then

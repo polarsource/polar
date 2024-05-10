@@ -15,37 +15,16 @@ from tests.fixtures.random_objects import create_benefit
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
 class TestListBenefits:
-    async def test_anonymous(
-        self,
-        client: AsyncClient,
-    ) -> None:
+    async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.get("/api/v1/benefits/")
 
         assert response.status_code == 401
 
     @pytest.mark.auth
-    async def test_user_not_existing_organization(self, client: AsyncClient) -> None:
-        response = await client.get(
-            "/api/v1/benefits/",
-            params={"platform": "github", "organization_name": "not_existing"},
-        )
-
-        assert response.status_code == 422
-
-    @pytest.mark.auth
     async def test_user_not_organization_member(
-        self,
-        client: AsyncClient,
-        organization: Organization,
-        benefits: list[Benefit],
+        self, client: AsyncClient, benefits: list[Benefit]
     ) -> None:
-        response = await client.get(
-            "/api/v1/benefits/",
-            params={
-                "platform": organization.platform.value,
-                "organization_name": organization.name,
-            },
-        )
+        response = await client.get("/api/v1/benefits/")
 
         assert response.status_code == 200
 
@@ -59,17 +38,10 @@ class TestListBenefits:
     async def test_user_valid(
         self,
         client: AsyncClient,
-        organization: Organization,
         user_organization: UserOrganization,
         benefits: list[Benefit],
     ) -> None:
-        response = await client.get(
-            "/api/v1/benefits/",
-            params={
-                "platform": organization.platform.value,
-                "organization_name": organization.name,
-            },
-        )
+        response = await client.get("/api/v1/benefits/")
 
         assert response.status_code == 200
 

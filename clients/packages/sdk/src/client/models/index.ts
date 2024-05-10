@@ -4747,6 +4747,12 @@ export interface FileCreate {
      * @type {string}
      * @memberof FileCreate
      */
+    organization_id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof FileCreate
+     */
     name: string;
     /**
      * 
@@ -4759,26 +4765,98 @@ export interface FileCreate {
      * @type {string}
      * @memberof FileCreate
      */
-    type: string;
+    mime_type: string;
     /**
      * 
      * @type {string}
      * @memberof FileCreate
      */
-    last_modified_at: string;
+    version?: string;
 }
 /**
  * 
  * @export
- * @interface FileCreateSignedURL
+ * @interface FileRead
  */
-export interface FileCreateSignedURL {
+export interface FileRead {
     /**
      * 
      * @type {string}
-     * @memberof FileCreateSignedURL
+     * @memberof FileRead
+     */
+    id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof FileRead
+     */
+    organization_id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof FileRead
+     */
+    name: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof FileRead
+     */
+    extension: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof FileRead
+     */
+    version?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof FileRead
+     */
+    mime_type: string;
+    /**
+     * 
+     * @type {number}
+     * @memberof FileRead
+     */
+    size: number;
+    /**
+     * 
+     * @type {string}
+     * @memberof FileRead
+     */
+    status: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof FileRead
      */
     url: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof FileRead
+     */
+    url_expires_at: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof FileRead
+     */
+    uploaded_at?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof FileRead
+     */
+    created_at: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof FileRead
+     */
+    modified_at?: string;
 }
 /**
  * 
@@ -10090,7 +10168,10 @@ export const Scope = {
     USERSUBSCRIPTIONSREAD: 'user:subscriptions:read',
     USERSUBSCRIPTIONSWRITE: 'user:subscriptions:write',
     USERADVERTISEMENT_CAMPAIGNSREAD: 'user:advertisement_campaigns:read',
-    USERADVERTISEMENT_CAMPAIGNSWRITE: 'user:advertisement_campaigns:write'
+    USERADVERTISEMENT_CAMPAIGNSWRITE: 'user:advertisement_campaigns:write',
+    CREATORFILESREAD: 'creator:files:read',
+    CREATORFILESWRITE: 'creator:files:write',
+    BACKERFILESREAD: 'backer:files:read'
 } as const;
 export type Scope = typeof Scope[keyof typeof Scope];
 

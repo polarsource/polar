@@ -39,6 +39,10 @@ class Scope(StrEnum):
     user_advertisement_campaigns_read = "user:advertisement_campaigns:read"
     user_advertisement_campaigns_write = "user:advertisement_campaigns:write"
 
+    creator_files_read = "creator:files:read"
+    creator_files_write = "creator:files:write"
+    backer_files_read = "backer:files:read"
+
     @classmethod
     def __get_pydantic_json_schema__(
         cls, core_schema: cs.CoreSchema, handler: GetJsonSchemaHandler
@@ -64,6 +68,9 @@ SCOPES_SUPPORTED_DISPLAY_NAMES: dict[Scope, str] = {
     Scope.creator_benefits_write: "Create or modify benefits",
     Scope.webhooks_read: "Read webhooks",
     Scope.webhooks_write: "Create or modify webhooks",
+    Scope.creator_files_read: "Read & Download Files",
+    Scope.creator_files_write: "Upload Files",
+    Scope.backer_files_read: "Read & Download Files",
 }
 
 

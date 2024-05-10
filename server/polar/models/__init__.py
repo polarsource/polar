@@ -7,6 +7,7 @@ from .articles_subscription import ArticlesSubscription
 from .benefit import Benefit
 from .benefit_grant import BenefitGrant
 from .donation import Donation
+from .file import File
 from .held_balance import HeldBalance
 from .invites import Invite
 from .issue import Issue
@@ -83,4 +84,5 @@ __all__ = [
     "WebhookEndpoint",
     "WebhookEvent",
     "WebhookNotification",
+    "File",
 ]

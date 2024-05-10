@@ -16,7 +16,7 @@
 import * as runtime from '../runtime';
 import type {
   FileCreate,
-  FileCreateSignedURL,
+  FileRead,
   HTTPValidationError,
 } from '../models/index';
 
@@ -32,7 +32,7 @@ export class FilesApi extends runtime.BaseAPI {
     /**
      * Create File
      */
-    async createFileRaw(requestParameters: FilesApiCreateFileRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<FileCreateSignedURL>> {
+    async createFileRaw(requestParameters: FilesApiCreateFileRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<FileRead>> {
         if (requestParameters['fileCreate'] == null) {
             throw new runtime.RequiredError(
                 'fileCreate',
@@ -68,7 +68,7 @@ export class FilesApi extends runtime.BaseAPI {
     /**
      * Create File
      */
-    async createFile(requestParameters: FilesApiCreateFileRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<FileCreateSignedURL> {
+    async createFile(requestParameters: FilesApiCreateFileRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<FileRead> {
         const response = await this.createFileRaw(requestParameters, initOverrides);
         return await response.value();
     }

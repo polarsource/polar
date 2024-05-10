@@ -1,11 +1,11 @@
 from typing import Annotated
 
 import structlog
-from fastapi import Body, Depends, Query
-from pydantic import UUID4, Field
+from fastapi import Body, Depends, Path, Query
+from pydantic import UUID4
 
 from polar.authz.service import Authz
-from polar.exceptions import BadRequest, ResourceNotFound
+from polar.exceptions import BadRequest, NotPermitted, ResourceNotFound
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.routing import APIRouter
 from polar.models import Benefit
@@ -25,15 +25,26 @@ log = structlog.get_logger()
 
 router = APIRouter(prefix="/benefits", tags=["benefits"])
 
+BenefitID = Annotated[UUID4, Path(description="The benefit ID")]
+BenefitNotFound = {
+    "description": "Benefit not found.",
+    "model": ResourceNotFound.schema(),
+}
+
 
 @router.get("/", response_model=ListResource[BenefitSchema], tags=[Tags.PUBLIC])
 async def list_benefits(
     auth_subject: auth.BenefitsRead,
     pagination: PaginationParamsQuery,
     organization: ResolvedOrganization,
-    type: BenefitType | None = Query(None),
+    type: BenefitType | None = Query(
+        None,
+        description="Filter by benefit type.",
+        examples=[BenefitType.github_repository],
+    ),
     session: AsyncSession = Depends(get_db_session),
 ) -> ListResource[BenefitSchema]:
+    """List benefits created on an organization."""
     results, count = await benefit_service.list(
         session,
         auth_subject,
@@ -49,12 +60,18 @@ async def list_benefits(
     )
 
 
-@router.get("/{id}", response_model=BenefitSchema, tags=[Tags.PUBLIC])
+@router.get(
+    "/{id}",
+    response_model=BenefitSchema,
+    tags=[Tags.PUBLIC],
+    responses={404: BenefitNotFound},
+)
 async def get_benefit(
-    id: UUID4,
+    id: BenefitID,
     auth_subject: auth.BenefitsRead,
     session: AsyncSession = Depends(get_db_session),
 ) -> Benefit:
+    """Get a benefit by ID."""
     benefit = await benefit_service.get_by_id(session, auth_subject, id)
 
     if benefit is None:
@@ -67,16 +84,10 @@ async def get_benefit(
     "/{id}/grants",
     response_model=ListResource[BenefitGrant],
     tags=[Tags.PUBLIC],
-    description=(
-        "List the individual grants for a benefit.\n\n"
-        "It's especially useful to check if a user has been granted a benefit."
-    ),
-    responses={
-        404: {"description": "Benefit not found.", "model": ResourceNotFound.schema()},
-    },
+    responses={404: BenefitNotFound},
 )
 async def list_benefit_grants(
-    id: Annotated[UUID4, Field(description="The benefit ID")],
+    id: BenefitID,
     auth_subject: auth.BenefitsRead,
     pagination: PaginationParamsQuery,
     is_granted: bool | None = Query(
@@ -100,6 +111,11 @@ async def list_benefit_grants(
     ),
     session: AsyncSession = Depends(get_db_session),
 ) -> ListResource[BenefitGrant]:
+    """
+    List the individual grants for a benefit.
+
+    It's especially useful to check if a user has been granted a benefit.
+    """
     benefit = await benefit_service.get_by_id(session, auth_subject, id)
 
     if benefit is None:
@@ -121,13 +137,22 @@ async def list_benefit_grants(
     )
 
 
-@router.post("/", response_model=BenefitSchema, status_code=201, tags=[Tags.PUBLIC])
+@router.post(
+    "/",
+    response_model=BenefitSchema,
+    status_code=201,
+    tags=[Tags.PUBLIC],
+    responses={201: {"description": "Benefit created."}},
+)
 async def create_benefit(
     auth_subject: auth.BenefitsWrite,
     benefit_create: BenefitCreate = Body(..., discriminator="type"),
     authz: Authz = Depends(Authz.authz),
     session: AsyncSession = Depends(get_db_session),
 ) -> Benefit:
+    """
+    Create a benefit.
+    """
     benefit = await benefit_service.user_create(
         session, authz, benefit_create, auth_subject
     )
@@ -143,14 +168,29 @@ async def create_benefit(
     return benefit
 
 
-@router.post("/{id}", response_model=BenefitSchema, tags=[Tags.PUBLIC])
+@router.post(
+    "/{id}",
+    response_model=BenefitSchema,
+    tags=[Tags.PUBLIC],
+    responses={
+        200: {"description": "Benefit updated."},
+        403: {
+            "description": "You don't have the permission to update this benefit.",
+            "model": NotPermitted.schema(),
+        },
+        404: BenefitNotFound,
+    },
+)
 async def update_benefit(
-    id: UUID4,
+    id: BenefitID,
     benefit_update: BenefitUpdate,
     auth_subject: auth.BenefitsWrite,
     authz: Authz = Depends(Authz.authz),
     session: AsyncSession = Depends(get_db_session),
 ) -> Benefit:
+    """
+    Update a benefit.
+    """
     benefit = await benefit_service.get_by_id(session, auth_subject, id)
 
     if benefit is None:
@@ -172,13 +212,35 @@ async def update_benefit(
     )
 
 
-@router.delete("/{id}", status_code=204, tags=[Tags.PUBLIC])
+@router.delete(
+    "/{id}",
+    status_code=204,
+    tags=[Tags.PUBLIC],
+    responses={
+        204: {"description": "Benefit deleted."},
+        403: {
+            "description": (
+                "You don't have the permission to update this benefit "
+                "or it's not deletable."
+            ),
+            "model": NotPermitted.schema(),
+        },
+        404: BenefitNotFound,
+    },
+)
 async def delete_benefit(
-    id: UUID4,
+    id: BenefitID,
     auth_subject: auth.BenefitsWrite,
     authz: Authz = Depends(Authz.authz),
     session: AsyncSession = Depends(get_db_session),
 ) -> None:
+    """
+    Delete a benefit.
+
+    > [!WARNING]
+    > Every grants associated with the benefit will be revoked.
+    > Users will lose access to the benefit.
+    """
     benefit = await benefit_service.get_by_id(session, auth_subject, id)
 
     if benefit is None:

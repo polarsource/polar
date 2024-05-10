@@ -1,31 +1,15 @@
 from typing import Protocol
 
-from fastapi.exceptions import RequestValidationError
 from pydantic import UUID4
-from pydantic_core import InitErrorDetails, PydanticCustomError
 
 from polar.auth.models import AuthSubject, Subject, is_organization
+from polar.exceptions import PolarRequestValidationError
 from polar.models import Organization
 from polar.postgres import AsyncSession
 
 
 class OrganizationIDModel(Protocol):
     organization_id: UUID4 | None
-
-
-class PayloadOrganizationValidationError(RequestValidationError):
-    def __init__(self, value: UUID4) -> None:
-        errors: list[InitErrorDetails] = [
-            {
-                "type": PydanticCustomError(
-                    "organization_token",
-                    "Setting organization_id is disallowed when using an organization token.",
-                ),
-                "loc": ("organization_id",),
-                "input": value,
-            }
-        ]
-        super().__init__(errors)
 
 
 async def get_payload_organization(
@@ -38,14 +22,18 @@ async def get_payload_organization(
 
     if is_organization(auth_subject):
         if model.organization_id is not None:
-            raise RequestValidationError(
+            raise PolarRequestValidationError(
                 [
                     {
-                        "type": PydanticCustomError(
-                            "not_settable_organization_id",
-                            "Setting organization_id is disallowed when using an organization token.",
+                        "type": "organization_token",
+                        "msg": (
+                            "Setting organization_id is disallowed "
+                            "when using an organization token."
                         ),
-                        "loc": ("organization_id",),
+                        "loc": (
+                            "body",
+                            "organization_id",
+                        ),
                         "input": model.organization_id,
                     }
                 ]
@@ -53,11 +41,16 @@ async def get_payload_organization(
         return auth_subject.subject
 
     if model.organization_id is None:
-        raise RequestValidationError(
+        raise PolarRequestValidationError(
             [
                 {
                     "type": "missing",
-                    "loc": ("organization_id",),
+                    "msg": "organization_id is required.",
+                    "loc": (
+                        "body",
+                        "organization_id",
+                    ),
+                    "input": None,
                 }
             ]
         )
@@ -65,13 +58,15 @@ async def get_payload_organization(
     organization = await organization_service.get(session, model.organization_id)
 
     if organization is None:
-        raise RequestValidationError(
+        raise PolarRequestValidationError(
             [
                 {
-                    "type": PydanticCustomError(
-                        "invalid_organization", "This organization does not exist."
+                    "loc": (
+                        "body",
+                        "organization_id",
                     ),
-                    "loc": ("organization_id",),
+                    "msg": "Organization not found.",
+                    "type": "value_error",
                     "input": model.organization_id,
                 }
             ]

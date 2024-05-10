@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Literal
+from typing import Annotated, Literal
 
 from pydantic import UUID4, Field, computed_field, field_validator
 
@@ -19,40 +19,77 @@ class BenefitProperties(Schema): ...
 
 ## Custom
 
+Note = Annotated[
+    str | None,
+    Field(
+        description=(
+            "Private note to be shared with users who have this benefit granted."
+        ),
+    ),
+]
+
 
 class BenefitCustomProperties(Schema):
-    note: str | None = None
+    """
+    Properties for a benefit of type `custom`.
+    """
+
+    note: Note = None
 
 
 class BenefitCustomSubscriberProperties(Schema):
-    note: str | None = None
+    """
+    Properties available to subscribers for a benefit of type `custom`.
+    """
+
+    note: Note = None
 
 
 ## Articles
 
+PaidArticles = Annotated[
+    bool, Field(description="Whether the user can access paid articles.")
+]
+
 
 class BenefitArticlesProperties(Schema):
-    paid_articles: bool
+    """
+    Properties for a benefit of type `articles`.
+    """
+
+    paid_articles: PaidArticles
 
 
 class BenefitArticlesSubscriberProperties(Schema):
-    paid_articles: bool
+    """
+    Properties available to subscribers for a benefit of type `articles`.
+    """
+
+    paid_articles: PaidArticles
 
 
 ## Ads
 
 
 class BenefitAdsProperties(Schema):
-    image_height: int = 400
-    image_width: int = 400
+    """
+    Properties for a benefit of type `ads`.
+    """
+
+    image_height: int = Field(400, description="The height of the displayed ad.")
+    image_width: int = Field(400, description="The width of the displayed ad.")
 
 
 ## Discord
 
 
 class BenefitDiscordProperties(Schema):
-    guild_id: str
-    role_id: str
+    """
+    Properties for a benefit of type `discord`.
+    """
+
+    guild_id: str = Field(..., description="The ID of the Discord server.")
+    role_id: str = Field(..., description="The ID of the Discord role to grant.")
 
     @computed_field  # type: ignore[misc]
     @property
@@ -65,8 +102,12 @@ class BenefitDiscordProperties(Schema):
 
 
 class BenefitDiscordCreateProperties(Schema):
+    """
+    Properties to create a benefit of type `discord`.
+    """
+
     guild_token: str = Field(serialization_alias="guild_id")
-    role_id: str
+    role_id: str = Field(..., description="The ID of the Discord role to grant.")
 
     @field_validator("guild_token")
     @classmethod
@@ -83,36 +124,77 @@ class BenefitDiscordCreateProperties(Schema):
 
 
 class BenefitDiscordSubscriberProperties(Schema):
-    guild_id: str
+    """
+    Properties available to subscribers for a benefit of type `discord`.
+    """
+
+    guild_id: str = Field(..., description="The ID of the Discord server.")
 
 
 ## GitHub Repository
 
+Permission = Annotated[
+    Literal["pull", "triage", "push", "maintain", "admin"],
+    Field(
+        description=(
+            "The permission level to grant. "
+            "Read more about roles and their permissions on "
+            "[GitHub documentation](https://docs.github.com/en/organizations/managing-user-access-to-your-organizations-repositories/managing-repository-roles/repository-roles-for-an-organization#permissions-for-each-role)."
+        )
+    ),
+]
+RepositoryOwner = Annotated[
+    str,
+    Field(description="The owner of the repository.", examples=["polarsource"]),
+]
+RepositoryName = Annotated[
+    str,
+    Field(description="The name of the repository.", examples=["private_repo"]),
+]
+
 
 class BenefitGitHubRepositoryCreateProperties(Schema):
+    """
+    Properties to create a benefit of type `github_repository`.
+    """
+
     # For benefits created before 2014-13-15 repository_id will be set
     # no new benefits of this type are allowed to be created
     repository_id: UUID4 | None = None
     # For benefits created after 2014-13-15 both repository_owner and repository_name will be set
-    repository_owner: str | None = None
-    repository_name: str | None = None
-    permission: Literal["pull", "triage", "push", "maintain", "admin"]
+    repository_owner: str | None = Field(
+        None, description="The owner of the repository.", examples=["polarsource"]
+    )
+    repository_name: str | None = Field(
+        None, description="The name of the repository.", examples=["private_repo"]
+    )
+    permission: Permission
 
 
 class BenefitGitHubRepositoryProperties(Schema):
+    """
+    Properties for a benefit of type `github_repository`.
+    """
+
     # Is set to None for all benefits created after 2024-03-15
     repository_id: UUID4 | None = None
-    repository_owner: str
-    repository_name: str
-    permission: Literal["pull", "triage", "push", "maintain", "admin"]
+    repository_owner: RepositoryOwner
+    repository_name: RepositoryName
+    permission: Permission
 
 
 class BenefitGitHubRepositorySubscriberProperties(Schema):
-    repository_owner: str
-    repository_name: str
+    """
+    Properties available to subscribers for a benefit of type `github_repository`.
+    """
+
+    repository_owner: RepositoryOwner
+    repository_name: RepositoryName
 
 
 # BenefitCreate
+
+IsTaxApplicable = Annotated[bool, Field(description="Whether the benefit is taxable.")]
 
 
 class BenefitCreateBase(Schema):
@@ -120,13 +202,27 @@ class BenefitCreateBase(Schema):
         ...,
         min_length=BENEFIT_DESCRIPTION_MIN_LENGTH,
         max_length=BENEFIT_DESCRIPTION_MAX_LENGTH,
+        description=(
+            "The description of the benefit. "
+            "Will be displayed on products having this benefit."
+        ),
     )
-    organization_id: UUID4 | None = None
+    organization_id: UUID4 | None = Field(
+        None,
+        description=(
+            "The ID of the organization owning the benefit. "
+            "**Required unless you use an organization token.**"
+        ),
+    )
 
 
 class BenefitCustomCreate(BenefitCreateBase):
+    """
+    Schema to create a benefit of type `custom`.
+    """
+
     type: Literal[BenefitType.custom]
-    is_tax_applicable: bool
+    is_tax_applicable: IsTaxApplicable
     properties: BenefitCustomProperties
 
 
@@ -161,6 +257,10 @@ class BenefitUpdateBase(Schema):
         None,
         min_length=BENEFIT_DESCRIPTION_MIN_LENGTH,
         max_length=BENEFIT_DESCRIPTION_MAX_LENGTH,
+        description=(
+            "The description of the benefit. "
+            "Will be displayed on products having this benefit."
+        ),
     )
 
 
@@ -203,36 +303,70 @@ BenefitUpdate = (
 
 
 class BenefitBase(TimestampedSchema):
-    id: UUID4
-    type: BenefitType
-    description: str
-    selectable: bool
-    deletable: bool
-    organization_id: UUID4
+    id: UUID4 = Field(..., description="The ID of the benefit.")
+    type: BenefitType = Field(..., description="The type of the benefit.")
+    description: str = Field(..., description="The description of the benefit.")
+    selectable: bool = Field(
+        ..., description="Whether the benefit is selectable when creating a product."
+    )
+    deletable: bool = Field(..., description="Whether the benefit is deletable.")
+    organization_id: UUID4 = Field(
+        ..., description="The ID of the organization owning the benefit."
+    )
 
 
 class BenefitCustom(BenefitBase):
+    """
+    A benefit of type `custom`.
+
+    Use it to grant any kind of benefit that doesn't fit in the other types.
+    """
+
     type: Literal[BenefitType.custom]
     properties: BenefitCustomProperties
-    is_tax_applicable: bool
+    is_tax_applicable: IsTaxApplicable
 
 
 class BenefitArticles(BenefitBase):
+    """
+    A benefit of type `articles`.
+
+    Use it to grant access to posts.
+    """
+
     type: Literal[BenefitType.articles]
     properties: BenefitArticlesProperties
 
 
 class BenefitAds(BenefitBase):
+    """
+    A benefit of type `ads`.
+
+    Use it so your backers can display ads on your README, website, etc.
+    """
+
     type: Literal[BenefitType.ads]
     properties: BenefitAdsProperties
 
 
 class BenefitDiscord(BenefitBase):
+    """
+    A benefit of type `discord`.
+
+    Use it to automatically invite your backers to a Discord server.
+    """
+
     type: Literal[BenefitType.discord]
     properties: BenefitDiscordProperties
 
 
 class BenefitGitHubRepository(BenefitBase):
+    """
+    A benefit of type `github_repository`.
+
+    Use it to automatically invite your backers to a private GitHub repository.
+    """
+
     type: Literal[BenefitType.github_repository]
     properties: BenefitGitHubRepositoryProperties
 

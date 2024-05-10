@@ -2,7 +2,6 @@ import uuid
 from unittest.mock import MagicMock
 
 import pytest
-from fastapi.exceptions import RequestValidationError
 from pytest_mock import MockerFixture
 
 from polar.auth.models import AuthSubject
@@ -16,13 +15,12 @@ from polar.benefit.schemas import (
     BenefitCustomProperties,
     BenefitCustomUpdate,
 )
+from polar.benefit.service.benefit import benefit as benefit_service
 from polar.benefit.service.benefit import (  # type: ignore[attr-defined]
-    OrganizationDoesNotExist,
     benefit_grant_service,
 )
-from polar.benefit.service.benefit import benefit as benefit_service
 from polar.benefit.service.benefit_grant import BenefitGrantService
-from polar.exceptions import NotPermitted
+from polar.exceptions import NotPermitted, PolarRequestValidationError
 from polar.kit.pagination import PaginationParams
 from polar.models import Benefit, Organization, User, UserOrganization
 from polar.models.benefit import BenefitType
@@ -232,7 +230,7 @@ class TestUserCreate:
         # then
         session.expunge_all()
 
-        with pytest.raises(RequestValidationError):
+        with pytest.raises(PolarRequestValidationError):
             await benefit_service.user_create(
                 session, authz, create_schema, auth_subject
             )
@@ -252,7 +250,7 @@ class TestUserCreate:
         # then
         session.expunge_all()
 
-        with pytest.raises(RequestValidationError):
+        with pytest.raises(PolarRequestValidationError):
             await benefit_service.user_create(
                 session, authz, create_schema, auth_subject
             )
@@ -276,7 +274,7 @@ class TestUserCreate:
         # then
         session.expunge_all()
 
-        with pytest.raises(OrganizationDoesNotExist):
+        with pytest.raises(PolarRequestValidationError):
             await benefit_service.user_create(
                 session, authz, create_schema, auth_subject
             )
@@ -325,7 +323,7 @@ class TestUserCreate:
         # then
         session.expunge_all()
 
-        with pytest.raises(RequestValidationError):
+        with pytest.raises(PolarRequestValidationError):
             await benefit_service.user_create(
                 session, authz, create_schema, auth_subject
             )

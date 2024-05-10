@@ -3,14 +3,13 @@ from typing import cast
 from unittest.mock import MagicMock
 
 import pytest
-from fastapi.exceptions import RequestValidationError
 from pytest_mock import MockerFixture
 
 from polar.auth.exceptions import MissingScope
 from polar.auth.models import AuthSubject
 from polar.auth.scope import Scope
 from polar.authz.service import Authz
-from polar.exceptions import NotPermitted, ResourceNotFound
+from polar.exceptions import NotPermitted, PolarRequestValidationError, ResourceNotFound
 from polar.models import (
     Organization,
     User,
@@ -163,7 +162,7 @@ class TestCreateEndpoint:
             url=webhook_url, secret="SECRET", events=[], organization_id=uuid.uuid4()
         )
 
-        with pytest.raises(RequestValidationError):
+        with pytest.raises(PolarRequestValidationError):
             await webhook_service.create_endpoint(
                 session, authz, auth_subject, create_schema
             )

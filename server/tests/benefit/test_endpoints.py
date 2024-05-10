@@ -30,7 +30,7 @@ class TestListBenefits:
             params={"platform": "github", "organization_name": "not_existing"},
         )
 
-        assert response.status_code == 404
+        assert response.status_code == 422
 
     @pytest.mark.auth
     async def test_user_not_organization_member(

@@ -35,7 +35,7 @@ class TestSearchSubscriptionTiers:
             params={"platform": "github", "organization_name": "not_existing"},
         )
 
-        assert response.status_code == 404
+        assert response.status_code == 422
 
     async def test_anonymous_organization(
         self,
@@ -616,7 +616,7 @@ class TestSearchSubscriptions:
             params={"platform": "github", "organization_name": "not_existing"},
         )
 
-        assert response.status_code == 404
+        assert response.status_code == 422
 
     @pytest.mark.auth
     async def test_valid_organization(
@@ -669,7 +669,7 @@ class TestSearchSubscribedSubscriptions:
             params={"platform": "github", "organization_name": "not_existing"},
         )
 
-        assert response.status_code == 404
+        assert response.status_code == 422
 
     @pytest.mark.auth
     async def test_valid(
@@ -912,7 +912,7 @@ class TestSearchSubscriptionsSummary:
             params={"platform": "github", "organization_name": "not_existing"},
         )
 
-        assert response.status_code == 404
+        assert response.status_code == 422
 
     async def test_valid(
         self,
@@ -986,7 +986,7 @@ class TestGetSubscriptionsStatistics:
             },
         )
 
-        assert response.status_code == 404
+        assert response.status_code == 422
 
     @pytest.mark.auth
     async def test_valid(

@@ -5,7 +5,7 @@ from fastapi import Depends, Query
 from polar.auth.dependencies import get_auth_subject
 from polar.auth.models import AuthSubject, Subject, is_organization, is_user
 from polar.enums import Platforms
-from polar.exceptions import BadRequest, ResourceNotFound
+from polar.exceptions import BadRequest, PolarRequestValidationError
 from polar.models import Organization
 from polar.postgres import AsyncSession, get_db_session
 
@@ -32,7 +32,16 @@ async def _get_optional_organization_name_platform(
         return None
 
     if platform is None:
-        raise BadRequest("platform is required when organization_name is set")
+        raise PolarRequestValidationError(
+            [
+                {
+                    "loc": ("query", "platform"),
+                    "msg": "platform is required when organization name is provided.",
+                    "type": "missing",
+                    "input": None,
+                }
+            ]
+        )
 
     return (organization_name, platform)
 
@@ -60,9 +69,22 @@ async def _resolve_optional_organization(
     # Organization token
     if is_organization(auth_subject):
         if organization_name_platform is not None:
-            raise BadRequest(
-                "You cannot filter by organization "
-                "when authenticated as an organization."
+            organization_name, platform = organization_name_platform
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "loc": ("query",),
+                        "msg": (
+                            "You cannot filter by organization "
+                            "when authenticated as an organization."
+                        ),
+                        "type": "organization_token",
+                        "input": {
+                            "organization_name": organization_name,
+                            "platform": platform,
+                        },
+                    }
+                ]
             )
         return auth_subject.subject
 
@@ -73,7 +95,19 @@ async def _resolve_optional_organization(
             session, platform, organization_name
         )
         if organization is None:
-            raise ResourceNotFound("Organization not found")
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "loc": ("query",),
+                        "msg": "Organization not found.",
+                        "type": "value_error",
+                        "input": {
+                            "organization_name": organization_name,
+                            "platform": platform,
+                        },
+                    }
+                ]
+            )
         return organization
 
     return None

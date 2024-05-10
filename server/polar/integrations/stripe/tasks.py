@@ -6,7 +6,7 @@ from arq import Retry
 
 from polar.account.service import account as account_service
 from polar.donation.service import donation_service
-from polar.exceptions import PolarError
+from polar.exceptions import PolarTaskError
 from polar.integrations.stripe.schemas import (
     DonationPaymentIntentMetadata,
     PaymentIntentSuccessWebhook,
@@ -50,7 +50,7 @@ MAX_RETRIES = 5
 DELAY = 10
 
 
-class StripeTaskError(PolarError): ...
+class StripeTaskError(PolarTaskError): ...
 
 
 class UnsetAccountOnPayoutEvent(StripeTaskError):

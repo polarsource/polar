@@ -8,8 +8,8 @@ from githubkit import GitHub
 from githubkit.compat import GitHubModel
 from githubkit.exception import RequestFailed
 from pydantic import Discriminator, Field, Tag, ValidationError
+from sqlalchemy.exc import IntegrityError
 
-from polar.exceptions import IntegrityError
 from polar.integrations.github.service.issue import github_issue
 from polar.integrations.github.service.pull_request import github_pull_request
 from polar.issue.hooks import (

@@ -1,14 +1,11 @@
 import structlog
 from httpx_oauth.clients.github import GitHubOAuth2
 from httpx_oauth.oauth2 import OAuth2Token, RefreshTokenError
+from sqlalchemy.exc import IntegrityError
 
 import polar.integrations.github.client as github
 from polar.config import settings
-from polar.exceptions import (
-    IntegrityError,
-    PolarError,
-    ResourceAlreadyExists,
-)
+from polar.exceptions import PolarError, ResourceAlreadyExists
 from polar.integrations.github import types
 from polar.integrations.github.service.user import github_user as github_user_service
 from polar.integrations.github_repository_benefit.schemas import (

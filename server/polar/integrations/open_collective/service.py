@@ -38,7 +38,7 @@ class OpenCollectiveAPIError(OpenCollectiveServiceError):
 
 class CollectiveNotFoundError(OpenCollectiveServiceError):
     def __init__(self, slug: str):
-        super().__init__(f"No collective found with slug {slug}.")
+        super().__init__(f"No collective found with slug {slug}.", 400)
 
 
 class OpenCollectiveService:

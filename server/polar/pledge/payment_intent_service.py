@@ -5,7 +5,7 @@ from typing import cast
 import stripe as stripe_lib
 import structlog
 
-from polar.exceptions import NotPermitted, ResourceNotFound, StripeError
+from polar.exceptions import NotPermitted, PolarError, ResourceNotFound
 from polar.integrations.loops.service import loops as loops_service
 from polar.integrations.stripe.schemas import PledgePaymentIntentMetadata
 from polar.integrations.stripe.service import stripe as stripe_service
@@ -85,7 +85,7 @@ class PaymentIntentService:
                 anonymous_email=intent.email,
             )
         except stripe_lib.InvalidRequestError as e:
-            raise StripeError("Invalid Stripe Request") from e
+            raise PolarError("Invalid Stripe Request") from e
 
         return PledgeStripePaymentIntentMutationResponse(
             payment_intent_id=payment_intent.id,

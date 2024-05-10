@@ -217,14 +217,15 @@ class AccountService(ResourceService[Account, AccountCreate, AccountUpdate]):
                 account_create.open_collective_slug
             )
         except OpenCollectiveAPIError as e:
-            raise AccountServiceError(e.message) from e
+            raise AccountServiceError(e.message, e.status_code) from e
         except CollectiveNotFoundError as e:
-            raise AccountServiceError(e.message) from e
+            raise AccountServiceError(e.message, e.status_code) from e
 
         if not collective.is_eligible:
             raise AccountServiceError(
                 "This collective is not eligible to receive payouts. "
-                "You can use Stripe instead."
+                "You can use Stripe instead.",
+                400,
             )
 
         account = Account(

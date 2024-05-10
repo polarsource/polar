@@ -1,7 +1,7 @@
 import uuid
 
 from polar.config import settings
-from polar.exceptions import PolarError
+from polar.exceptions import PolarTaskError
 from polar.subscription.service.subscription import subscription as subscription_service
 from polar.subscription.service.subscription_tier import (
     subscription_tier as subscription_tier_service,
@@ -11,14 +11,14 @@ from polar.worker import AsyncSessionMaker, JobContext, PolarWorkerContext, task
 from .service import user as user_service
 
 
-class UserTaskError(PolarError): ...
+class UserTaskError(PolarTaskError): ...
 
 
 class UserDoesNotExist(UserTaskError):
     def __init__(self, user_id: uuid.UUID) -> None:
         self.user_id = user_id
         message = f"The user with id {user_id} does not exist."
-        super().__init__(message, 500)
+        super().__init__(message)
 
 
 @task("user.on_after_signup")

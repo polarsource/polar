@@ -81,7 +81,7 @@ async def test_create_open_collective_get_collective_error(
         },
     )
 
-    assert response.status_code == 400
+    assert response.status_code == error.status_code
 
     json = response.json()
     assert json["detail"] == error.message

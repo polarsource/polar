@@ -10,7 +10,6 @@ from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.routing import APIRouter
 from polar.models import Benefit
 from polar.models.benefit import BenefitType
-from polar.organization.dependencies import ResolvedOrganization
 from polar.postgres import AsyncSession, get_db_session
 from polar.posthog import posthog
 from polar.tags.api import Tags
@@ -36,7 +35,9 @@ BenefitNotFound = {
 async def list_benefits(
     auth_subject: auth.BenefitsRead,
     pagination: PaginationParamsQuery,
-    organization: ResolvedOrganization,
+    organization_id: UUID4 | None = Query(
+        None, description="Filter by organization ID."
+    ),
     type: BenefitType | None = Query(
         None,
         description="Filter by benefit type.",
@@ -44,12 +45,12 @@ async def list_benefits(
     ),
     session: AsyncSession = Depends(get_db_session),
 ) -> ListResource[BenefitSchema]:
-    """List benefits created on an organization."""
+    """List benefits."""
     results, count = await benefit_service.list(
         session,
         auth_subject,
         type=type,
-        organization=organization,
+        organization_id=organization_id,
         pagination=pagination,
     )
 

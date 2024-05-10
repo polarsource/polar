@@ -12,11 +12,7 @@ from starlette.routing import BaseRoute
 from polar import receivers, worker  # noqa
 from polar.api import router
 from polar.config import settings
-from polar.exception_handlers import (
-    polar_exception_handler,
-    polar_redirection_exception_handler,
-)
-from polar.exceptions import PolarError, PolarRedirectionError
+from polar.exception_handlers import add_exception_handlers
 from polar.health.endpoints import router as health_router
 from polar.kit.cors.cors import CallbackCORSMiddleware
 from polar.kit.cors.custom_domain_cors import is_allowed_custom_domain
@@ -125,11 +121,7 @@ def create_app() -> FastAPI:
     app.add_middleware(PrometheusHttpMiddleware)
     app.add_middleware(LogCorrelationIdMiddleware)
 
-    app.add_exception_handler(
-        PolarRedirectionError,
-        polar_redirection_exception_handler,  # type: ignore
-    )
-    app.add_exception_handler(PolarError, polar_exception_handler)  # type: ignore
+    add_exception_handlers(app)
     app.add_exception_handler(OAuth2Error, oauth2_error_exception_handler)  # pyright: ignore
 
     # /.well-known

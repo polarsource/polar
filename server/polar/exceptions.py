@@ -1,6 +1,8 @@
-from typing import Literal
+from typing import Any, Literal, LiteralString, TypedDict
 
 from pydantic import BaseModel, create_model
+from pydantic_core import ErrorDetails, InitErrorDetails, PydanticCustomError
+from pydantic_core import ValidationError as PydanticValidationError
 
 
 class PolarError(Exception):
@@ -87,3 +89,30 @@ class ResourceNotFound(PolarError):
 class ResourceAlreadyExists(PolarError):
     def __init__(self, message: str = "Already exists", status_code: int = 409) -> None:
         super().__init__(message, status_code)
+
+
+class ValidationError(TypedDict):
+    loc: tuple[int | str, ...]
+    msg: LiteralString
+    type: LiteralString
+    input: Any
+
+
+class PolarRequestValidationError(PolarError):
+    def __init__(self, errors: list[ValidationError]) -> None:
+        self._errors = errors
+
+    def errors(self) -> list[ErrorDetails]:
+        pydantic_errors: list[InitErrorDetails] = []
+        for error in self._errors:
+            pydantic_errors.append(
+                {
+                    "type": PydanticCustomError(error["type"], error["msg"]),
+                    "loc": error["loc"],
+                    "input": error["input"],
+                }
+            )
+        pydantic_error = PydanticValidationError.from_exception_data(
+            self.__class__.__name__, pydantic_errors
+        )
+        return pydantic_error.errors()

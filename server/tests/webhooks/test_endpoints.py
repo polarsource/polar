@@ -84,11 +84,7 @@ class TestListWebhookEndpoints:
 @pytest.mark.http_auto_expunge
 class TestCreateWebhookEndpoint:
     @pytest.mark.auth(AuthSubjectFixture(scopes=set()))
-    async def test_user_missing_scope(
-        self,
-        client: AsyncClient,
-        user: User,
-    ) -> None:
+    async def test_user_missing_scope(self, client: AsyncClient) -> None:
         params = {
             "url": "https://example.com/hook",
             "secret": "foo",

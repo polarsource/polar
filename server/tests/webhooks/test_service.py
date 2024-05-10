@@ -104,7 +104,7 @@ class TestCreateEndpoint:
             url=webhook_url, secret="SECRET", events=[], organization_id=organization.id
         )
 
-        with pytest.raises(NotPermitted):
+        with pytest.raises(PolarRequestValidationError):
             await webhook_service.create_endpoint(
                 session, authz, auth_subject, create_schema
             )

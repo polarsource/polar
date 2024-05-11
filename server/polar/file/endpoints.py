@@ -48,7 +48,7 @@ async def get_file(
         user=subject,
         file=file,
     )
-    # TODO: Update download request count
+    await file_permission_service.increment_download_count(session, permission)
     return ret
 
 

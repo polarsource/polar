@@ -65,7 +65,6 @@ const Dropzone = ({
         ref={inputFileRef}
         type="file"
         required
-        accept="image/*"
         tabIndex={-1}
         onChange={async (e) => {
           if (e.target.files && e.target.files[0]) {

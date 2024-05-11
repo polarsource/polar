@@ -5,6 +5,7 @@ from pydantic import UUID4
 
 from polar.kit.schemas import Schema
 from polar.models import File
+from polar.models.file_permission import FilePermissionStatus
 
 
 class FileCreate(Schema):
@@ -58,3 +59,15 @@ class FilePresignedRead(FileRead):
 class FileUpdate(Schema):
     id: UUID4
     uploaded_at: datetime
+
+
+class FilePermissionCreate(Schema):
+    file_id: UUID4
+    user_id: UUID4
+    status: FilePermissionStatus
+
+
+class FilePermissionUpdate(Schema):
+    file_id: UUID4
+    user_id: UUID4
+    status: FilePermissionStatus

@@ -176,6 +176,17 @@ class FilePermissionService(
         record = res.scalars().one_or_none()
         return record
 
+    async def increment_download_count(
+        self,
+        session: AsyncSession,
+        permission: FilePermission,
+    ) -> FilePermission:
+        permission.downloaded += 1
+        permission.last_downloaded_at = utc_now()
+        session.add(permission)
+        await session.flush()
+        return permission
+
 
 file = FileService(File)
 file_permission = FilePermissionService(FilePermission)

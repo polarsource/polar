@@ -182,7 +182,7 @@ class FilePermissionService(
         permission: FilePermission,
     ) -> FilePermission:
         permission.downloaded += 1
-        permission.last_downloaded_at = utc_now()
+        permission.latest_download_at = utc_now()
         session.add(permission)
         await session.flush()
         return permission

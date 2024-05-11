@@ -13,10 +13,43 @@ from . import auth
 from .schemas import FileCreate, FilePresignedRead, FileRead
 from .service import FileNotFound
 from .service import file as file_service
+from .service import file_permission as file_permission_service
 
 log = structlog.get_logger()
 
 router = APIRouter(prefix="/files", tags=["files"])
+
+
+@router.get(
+    "/{file_id}",
+    tags=[Tags.PUBLIC],
+    response_model=FilePresignedRead,
+)
+async def get_file(
+    file_id: UUID,
+    auth_subject: auth.BackerFilesRead,
+    authz: Authz = Depends(Authz.authz),
+    session: AsyncSession = Depends(get_db_session),
+) -> FilePresignedRead:
+    subject = auth_subject.subject
+
+    file = await file_service.get(session, file_id)
+    if not file:
+        raise FileNotFound()
+
+    permission = await file_permission_service.get_permission(
+        session, user=subject, file=file
+    )
+    if not (permission or await authz.can(subject, AccessType.read, permission)):
+        raise NotPermitted()
+
+    ret = await file_service.generate_presigned_download_url(
+        session,
+        user=subject,
+        file=file,
+    )
+    # TODO: Update download request count
+    return ret
 
 
 @router.post(
@@ -36,7 +69,7 @@ async def create_file(
     if not await authz.can(subject, AccessType.write, organization):
         raise NotPermitted()
 
-    return await file_service.generate_presigned_url(
+    return await file_service.generate_presigned_upload_url(
         session,
         organization=organization,
         create_schema=file,

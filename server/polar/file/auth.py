@@ -15,3 +15,17 @@ CreatorFilesWrite = Annotated[
         )
     ),
 ]
+
+BackerFilesRead = Annotated[
+    AuthSubject[User],
+    Depends(
+        Authenticator(
+            required_scopes={
+                Scope.web_default,
+                Scope.creator_files_read,
+                Scope.backer_files_read,
+            },
+            allowed_subjects={User},
+        )
+    ),
+]

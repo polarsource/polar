@@ -7,10 +7,10 @@ from polar.config import settings
 from polar.exceptions import PolarError, ResourceNotFound
 from polar.kit.services import ResourceService
 from polar.kit.utils import generate_uuid, utc_now
-from polar.models import Organization
+from polar.models import Organization, User
 from polar.models.file import File, FileStatus
-from polar.models.file_permission import FilePermission
-from polar.postgres import AsyncSession
+from polar.models.file_permission import FilePermission, FilePermissionStatus
+from polar.postgres import AsyncSession, sql
 
 from .client import s3_client
 from .schemas import (
@@ -37,7 +37,7 @@ class FileNotFound(ResourceNotFound):
 
 
 class FileService(ResourceService[File, FileCreate, FileUpdate]):
-    async def generate_presigned_url(
+    async def generate_presigned_upload_url(
         self,
         session: AsyncSession,
         *,
@@ -79,7 +79,31 @@ class FileService(ResourceService[File, FileCreate, FileUpdate]):
         await session.flush()
         assert instance.id is not None
 
-        return FilePresignedRead.from_presign(instance, url=signed_post_url)
+        return FilePresignedRead.from_presign(
+            instance,
+            url=signed_post_url,
+            expires_at=presign_expires_at,
+        )
+
+    async def generate_presigned_download_url(
+        self, session: AsyncSession, *, user: User, file: File
+    ) -> FilePresignedRead:
+        expires_in = 3600
+        presigned_at = utc_now()
+        signed_download_url = s3_client.generate_presigned_url(
+            "get_object",
+            Params=dict(
+                Bucket=settings.AWS_S3_FILES_BUCKET_NAME,
+                Key=file.key,
+            ),
+            ExpiresIn=expires_in,
+        )
+        presign_expires_at = presigned_at + timedelta(seconds=expires_in)
+        return FilePresignedRead.from_presign(
+            file,
+            url=signed_download_url,
+            expires_at=presign_expires_at,
+        )
 
     async def mark_uploaded(
         self,
@@ -119,7 +143,7 @@ class FileService(ResourceService[File, FileCreate, FileUpdate]):
 
 
 class FilePermissionService(
-    ResourceService[File, FilePermissionCreate, FilePermissionUpdate]
+    ResourceService[FilePermission, FilePermissionCreate, FilePermissionUpdate]
 ):
     async def create_or_update(
         self,
@@ -139,6 +163,18 @@ class FilePermissionService(
         instance = records[0]
         assert instance.id is not None
         return instance
+
+    async def get_permission(
+        self, session: AsyncSession, *, user: User, file: File
+    ) -> FilePermission | None:
+        statement = sql.select(FilePermission).where(
+            FilePermission.user_id == user.id,
+            FilePermission.file_id == file.id,
+            FilePermission.status == FilePermissionStatus.granted,
+        )
+        res = await session.execute(statement)
+        record = res.scalars().one_or_none()
+        return record
 
 
 file = FileService(File)

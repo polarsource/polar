@@ -9,10 +9,17 @@ from polar.kit.services import ResourceService
 from polar.kit.utils import generate_uuid, utc_now
 from polar.models import Organization
 from polar.models.file import File, FileStatus
+from polar.models.file_permission import FilePermission
 from polar.postgres import AsyncSession
 
 from .client import s3_client
-from .schemas import FileCreate, FilePresignedRead, FileUpdate
+from .schemas import (
+    FileCreate,
+    FilePermissionCreate,
+    FilePermissionUpdate,
+    FilePresignedRead,
+    FileUpdate,
+)
 
 log = structlog.get_logger()
 
@@ -111,4 +118,28 @@ class FileService(ResourceService[File, FileCreate, FileUpdate]):
         return file
 
 
+class FilePermissionService(
+    ResourceService[File, FilePermissionCreate, FilePermissionUpdate]
+):
+    async def create_or_update(
+        self,
+        session: AsyncSession,
+        create_schema: FilePermissionCreate,
+    ) -> FilePermission:
+        records = await self.upsert_many(
+            session,
+            create_schemas=[create_schema],
+            constraints=[FilePermission.file_id, FilePermission.user_id],
+            mutable_keys={
+                "status",
+            },
+            autocommit=False,
+        )
+        await session.flush()
+        instance = records[0]
+        assert instance.id is not None
+        return instance
+
+
 file = FileService(File)
+file_permission = FilePermissionService(FilePermission)

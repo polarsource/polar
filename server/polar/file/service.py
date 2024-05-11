@@ -19,6 +19,7 @@ from .schemas import (
     FilePermissionUpdate,
     FilePresignedRead,
     FileUpdate,
+    get_disposition,
 )
 
 log = structlog.get_logger()
@@ -61,6 +62,8 @@ class FileService(ResourceService[File, FileCreate, FileUpdate]):
             Params=dict(
                 Bucket=settings.AWS_S3_FILES_BUCKET_NAME,
                 Key=key,
+                ContentDisposition=get_disposition(create_schema.name),
+                ContentType=create_schema.mime_type,
             ),
             ExpiresIn=expires_in,
         )
@@ -95,9 +98,12 @@ class FileService(ResourceService[File, FileCreate, FileUpdate]):
             Params=dict(
                 Bucket=settings.AWS_S3_FILES_BUCKET_NAME,
                 Key=file.key,
+                ResponseContentDisposition=get_disposition(file.name),
+                ResponseContentType=file.mime_type,
             ),
             ExpiresIn=expires_in,
         )
+
         presign_expires_at = presigned_at + timedelta(seconds=expires_in)
         return FilePresignedRead.from_presign(
             file,

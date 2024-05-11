@@ -8,6 +8,10 @@ from polar.models import File
 from polar.models.file_permission import FilePermissionStatus
 
 
+def get_disposition(file_name: str):
+    return f'attachment; filename="{file_name}"'
+
+
 class FileCreate(Schema):
     organization_id: UUID4
     name: str
@@ -37,6 +41,8 @@ class FilePresignedRead(FileRead):
     url: str
     url_expires_at: datetime
 
+    headers: dict[str, str] = {}
+
     @classmethod
     def from_presign(cls, record: File, url: str, expires_at: datetime) -> Self:
         return cls(
@@ -53,6 +59,10 @@ class FilePresignedRead(FileRead):
             uploaded_at=record.uploaded_at,
             created_at=record.created_at,
             modified_at=record.modified_at,
+            headers={
+                "Content-Disposition": get_disposition(record.name),
+                "Content-Type": record.mime_type,
+            },
         )
 
 

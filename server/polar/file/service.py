@@ -55,12 +55,12 @@ class FileService(ResourceService[File, FileCreate, FileUpdate]):
         # Each organization gets its own directory
         key = f"{organization.id}/{file_name}"
 
-        expires_in = 3600
+        expires_in = settings.S3_FILES_PRESIGN_TTL
         presigned_at = utc_now()
         signed_post_url = s3_client.generate_presigned_url(
             "put_object",
             Params=dict(
-                Bucket=settings.AWS_S3_FILES_BUCKET_NAME,
+                Bucket=settings.S3_FILES_BUCKET_NAME,
                 Key=key,
                 ContentDisposition=get_disposition(create_schema.name),
                 ContentType=create_schema.mime_type,
@@ -91,12 +91,12 @@ class FileService(ResourceService[File, FileCreate, FileUpdate]):
     async def generate_presigned_download_url(
         self, session: AsyncSession, *, user: User, file: File
     ) -> FilePresignedRead:
-        expires_in = 3600
+        expires_in = settings.S3_FILES_PRESIGN_TTL
         presigned_at = utc_now()
         signed_download_url = s3_client.generate_presigned_url(
             "get_object",
             Params=dict(
-                Bucket=settings.AWS_S3_FILES_BUCKET_NAME,
+                Bucket=settings.S3_FILES_BUCKET_NAME,
                 Key=file.key,
                 ResponseContentDisposition=get_disposition(file.name),
                 ResponseContentType=file.mime_type,
@@ -119,7 +119,7 @@ class FileService(ResourceService[File, FileCreate, FileUpdate]):
         file: File,
     ) -> File:
         metadata = s3_client.get_object_attributes(
-            Bucket=settings.AWS_S3_FILES_BUCKET_NAME,
+            Bucket=settings.S3_FILES_BUCKET_NAME,
             Key=file.key,
             # VersionId=file.version,
             ObjectAttributes=[

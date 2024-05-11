@@ -4857,6 +4857,12 @@ export interface FilePresignedRead {
      * @memberof FilePresignedRead
      */
     url_expires_at: string;
+    /**
+     * 
+     * @type {{ [key: string]: string; }}
+     * @memberof FilePresignedRead
+     */
+    headers?: { [key: string]: string; };
 }
 /**
  * 

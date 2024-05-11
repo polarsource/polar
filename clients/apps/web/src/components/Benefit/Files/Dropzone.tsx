@@ -44,6 +44,7 @@ const Dropzone = ({
     let blob = new Blob([new Uint8Array(array)], { type: file.type })
     const result = await fetch(response.url, {
       method: 'PUT',
+      headers: response.headers,
       body: blob,
     })
 

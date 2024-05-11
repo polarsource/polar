@@ -38,7 +38,7 @@ class FilePresignedRead(FileRead):
     url_expires_at: datetime
 
     @classmethod
-    def from_presign(cls, record: File, url: str) -> Self:
+    def from_presign(cls, record: File, url: str, expires_at: datetime) -> Self:
         return cls(
             id=record.id,
             organization_id=record.organization_id,
@@ -49,7 +49,7 @@ class FilePresignedRead(FileRead):
             size=record.size,
             status=record.status,
             url=url,
-            url_expires_at=record.presign_expires_at,
+            url_expires_at=expires_at,
             uploaded_at=record.uploaded_at,
             created_at=record.created_at,
             modified_at=record.modified_at,

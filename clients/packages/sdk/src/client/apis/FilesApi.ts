@@ -25,6 +25,10 @@ export interface FilesApiCreateFileRequest {
     fileCreate: FileCreate;
 }
 
+export interface FilesApiGetFileRequest {
+    fileId: string;
+}
+
 export interface FilesApiMarkUploadedRequest {
     fileId: string;
 }
@@ -75,6 +79,47 @@ export class FilesApi extends runtime.BaseAPI {
      */
     async createFile(requestParameters: FilesApiCreateFileRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<FilePresignedRead> {
         const response = await this.createFileRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
+     * Get File
+     */
+    async getFileRaw(requestParameters: FilesApiGetFileRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<FilePresignedRead>> {
+        if (requestParameters['fileId'] == null) {
+            throw new runtime.RequiredError(
+                'fileId',
+                'Required parameter "fileId" was null or undefined when calling getFile().'
+            );
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("HTTPBearer", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+        const response = await this.request({
+            path: `/api/v1/files/{file_id}`.replace(`{${"file_id"}}`, encodeURIComponent(String(requestParameters['fileId']))),
+            method: 'GET',
+            headers: headerParameters,
+            query: queryParameters,
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse(response);
+    }
+
+    /**
+     * Get File
+     */
+    async getFile(requestParameters: FilesApiGetFileRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<FilePresignedRead> {
+        const response = await this.getFileRaw(requestParameters, initOverrides);
         return await response.value();
     }
 

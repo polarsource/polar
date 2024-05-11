@@ -9,6 +9,7 @@ from polar.issue.service import issue as issue_service
 from polar.models.account import Account
 from polar.models.article import Article
 from polar.models.benefit import Benefit
+from polar.models.file_permission import FilePermission, FilePermissionStatus
 from polar.models.issue import Issue
 from polar.models.issue_reward import IssueReward
 from polar.models.organization import Organization
@@ -43,6 +44,7 @@ Object = (
     | Subscription
     | Article
     | WebhookEndpoint
+    | FilePermission
 )
 
 
@@ -252,6 +254,17 @@ class Authz:
                 return await self._can_user_write_webhook_endpoint(subject, object)
             if isinstance(subject, Organization):
                 return object.organization_id == subject.id
+
+        #
+        # FilePermission
+        #
+
+        if (
+            isinstance(subject, User)
+            and accessType == AccessType.read
+            and isinstance(object, FilePermission)
+        ):
+            return await self._can_user_read_file(subject, object)
 
         raise Exception(
             f"Unknown subject/action/object combination. subject={type(subject)} access={accessType} object={type(object)}"  # noqa: E501
@@ -481,6 +494,19 @@ class Authz:
             return True
 
         return False
+
+    #
+    # File
+    #
+    async def _can_user_read_file(self, subject: User, object: FilePermission) -> bool:
+        if subject.id != object.user_id:
+            return False
+
+        status = object.status == FilePermissionStatus.granted.value
+        import pdb
+
+        pdb.set_trace()
+        return status
 
     #
     # WebhookEndpoint

@@ -539,8 +539,8 @@ class TestOAuth2Authorize:
         json = response.json()
         assert json["client"]["client_id"] == oauth2_client.client_id
         assert set(json["scopes"]) == {"openid", "profile", "email"}
-        assert json["sub_type"] == SubType.user
-        assert json["sub"]["id"] == str(user.id)
+        assert json["sub_type"] == SubType.organization
+        assert json["sub"]["id"] == str(organization.id)
 
 
 @pytest.mark.asyncio
@@ -741,8 +741,8 @@ class TestOAuth2Consent:
 
         grant = oauth2_grant_service._get_by_sub_and_client_id(
             sync_session,
-            sub_type=SubType.user,
-            sub_id=user.id,
+            sub_type=SubType.organization,
+            sub_id=organization.id,
             client_id=cast(str, oauth2_client.client_id),
         )
         assert grant is not None

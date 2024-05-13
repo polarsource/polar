@@ -6,6 +6,7 @@ import {
   AuthorizeResponseOrganization,
   AuthorizeResponseUser,
   AuthorizeUser,
+  Scope,
 } from '@polar-sh/sdk'
 import Avatar from 'polarkit/components/ui/atoms/avatar'
 import Button from 'polarkit/components/ui/atoms/button'
@@ -22,9 +23,11 @@ const isSubTypeUser = (
 
 const AuthorizePage = ({
   authorizeResponse: { client, scopes, sub_type, sub },
+  scopeDisplayNames,
   searchParams,
 }: {
   authorizeResponse: AuthorizeResponseUser | AuthorizeResponseOrganization
+  scopeDisplayNames: Record<Scope, string>
   searchParams: Record<string, string>
 }) => {
   const serializedSearchParams = new URLSearchParams(searchParams).toString()
@@ -83,7 +86,7 @@ const AuthorizePage = ({
             </>
           )}
           <div className="w-full text-center">
-            They&apos;ll get access to the following data:
+            They&apos;ll be able to do the following:
           </div>
           <div className="flex w-full flex-col gap-2">
             {scopes.map((scope) => (
@@ -91,7 +94,7 @@ const AuthorizePage = ({
                 key={scope}
                 className="w-full rounded-md border px-4 py-3 text-center font-mono text-sm"
               >
-                {scope}
+                {scopeDisplayNames[scope]}
               </div>
             ))}
           </div>

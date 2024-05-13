@@ -2,12 +2,7 @@ from typing import TYPE_CHECKING
 from uuid import UUID
 
 from sqlalchemy import ForeignKey, Integer, UniqueConstraint
-from sqlalchemy.orm import (
-    Mapped,
-    declared_attr,
-    mapped_column,
-    relationship,
-)
+from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.kit.db.models import RecordModel
 from polar.kit.extensions.sqlalchemy import PostgresUUID
@@ -16,13 +11,13 @@ if TYPE_CHECKING:
     from polar.models import Benefit
 
 
-class SubscriptionTierBenefit(RecordModel):
-    __tablename__ = "subscription_tier_benefits"
-    __table_args__ = (UniqueConstraint("subscription_tier_id", "order"),)
+class ProductBenefit(RecordModel):
+    __tablename__ = "product_benefits"
+    __table_args__ = (UniqueConstraint("product_id", "order"),)
 
-    subscription_tier_id: Mapped[UUID] = mapped_column(
+    product_id: Mapped[UUID] = mapped_column(
         PostgresUUID,
-        ForeignKey("subscription_tiers.id", ondelete="cascade"),
+        ForeignKey("products.id", ondelete="cascade"),
         primary_key=True,
     )
     benefit_id: Mapped[UUID] = mapped_column(

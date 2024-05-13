@@ -9,8 +9,8 @@ from polar.models.benefit import Benefit
 from polar.models.donation import Donation
 from polar.models.organization import Organization
 from polar.models.pledge import Pledge
+from polar.models.product import Product
 from polar.models.subscription import Subscription
-from polar.models.subscription_tier import SubscriptionTier
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.organization.schemas import Organization as OrganizationSchema
 from polar.pledge.schemas import Pledge as PledgeSchema
@@ -20,8 +20,8 @@ from polar.subscription.schemas import SubscriptionTier as SubscriptionTierSchem
 WebhookTypeObject = Union[  # noqa: UP007
     tuple[Literal[WebhookEventType.subscription_created], Subscription],
     tuple[Literal[WebhookEventType.subscription_updated], Subscription],
-    tuple[Literal[WebhookEventType.subscription_tier_created], SubscriptionTier],
-    tuple[Literal[WebhookEventType.subscription_tier_updated], SubscriptionTier],
+    tuple[Literal[WebhookEventType.subscription_tier_created], Product],
+    tuple[Literal[WebhookEventType.subscription_tier_updated], Product],
     tuple[Literal[WebhookEventType.pledge_created], Pledge],
     tuple[Literal[WebhookEventType.pledge_updated], Pledge],
     tuple[Literal[WebhookEventType.donation_created], Donation],

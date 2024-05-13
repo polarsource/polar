@@ -13,24 +13,13 @@ from sqlalchemy import (
     type_coerce,
 )
 from sqlalchemy.ext.hybrid import hybrid_property
-from sqlalchemy.orm import (
-    Mapped,
-    declared_attr,
-    mapped_column,
-    relationship,
-)
+from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.kit.db.models import RecordModel
 from polar.kit.extensions.sqlalchemy import PostgresUUID
 
 if TYPE_CHECKING:
-    from polar.models import (
-        BenefitGrant,
-        Organization,
-        SubscriptionTier,
-        SubscriptionTierPrice,
-        User,
-    )
+    from polar.models import BenefitGrant, Organization, Product, ProductPrice, User
 
 
 class SubscriptionStatus(StrEnum):
@@ -87,25 +76,25 @@ class Subscription(RecordModel):
     def organization(cls) -> Mapped["Organization"]:
         return relationship("Organization", lazy="raise")
 
-    subscription_tier_id: Mapped[UUID] = mapped_column(
+    product_id: Mapped[UUID] = mapped_column(
         PostgresUUID,
-        ForeignKey("subscription_tiers.id", ondelete="cascade"),
+        ForeignKey("products.id", ondelete="cascade"),
         nullable=False,
         index=True,
     )
 
     @declared_attr
-    def subscription_tier(cls) -> Mapped["SubscriptionTier"]:
-        return relationship("SubscriptionTier", lazy="raise")
+    def product(cls) -> Mapped["Product"]:
+        return relationship("Product", lazy="raise")
 
     price_id: Mapped[UUID | None] = mapped_column(
-        ForeignKey("subscription_tier_prices.id", ondelete="set null"),
+        ForeignKey("product_prices.id", ondelete="set null"),
     )
 
     @declared_attr
-    def price(cls) -> Mapped["SubscriptionTierPrice | None"]:
+    def price(cls) -> Mapped["ProductPrice | None"]:
         return relationship(
-            "SubscriptionTierPrice", lazy="raise", back_populates="subscriptions"
+            "ProductPrice", lazy="raise", back_populates="subscriptions"
         )
 
     @declared_attr

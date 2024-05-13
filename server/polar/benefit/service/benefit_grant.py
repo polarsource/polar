@@ -296,9 +296,9 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
         scope_name = ""
         organization_name = ""
         if subscription := scope.get("subscription"):
-            await session.refresh(subscription, {"subscription_tier"})
-            scope_name = subscription.subscription_tier.name
-            subscription_tier = subscription.subscription_tier
+            await session.refresh(subscription, {"product"})
+            scope_name = subscription.product.name
+            subscription_tier = subscription.product
             managing_organization = await organization_service.get(
                 session, subscription_tier.organization_id
             )

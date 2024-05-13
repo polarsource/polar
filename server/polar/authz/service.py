@@ -13,9 +13,9 @@ from polar.models.issue import Issue
 from polar.models.issue_reward import IssueReward
 from polar.models.organization import Organization
 from polar.models.pledge import Pledge
+from polar.models.product import Product
 from polar.models.repository import Repository
 from polar.models.subscription import Subscription
-from polar.models.subscription_tier import SubscriptionTier
 from polar.models.user import User
 from polar.models.webhook_endpoint import WebhookEndpoint
 from polar.postgres import AsyncSession, get_db_session
@@ -38,7 +38,7 @@ Object = (
     | IssueReward
     | Issue
     | Pledge
-    | SubscriptionTier
+    | Product
     | Benefit
     | Subscription
     | Article
@@ -214,7 +214,7 @@ class Authz:
         #
         # SubscriptionTier
         #
-        if isinstance(object, SubscriptionTier) and accessType == AccessType.write:
+        if isinstance(object, Product) and accessType == AccessType.write:
             if isinstance(subject, User):
                 return await self._can_user_write_organization(
                     subject, object.organization

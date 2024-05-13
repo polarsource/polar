@@ -9,10 +9,10 @@ from polar.kit.db.models import RecordModel
 from polar.kit.extensions.sqlalchemy import PostgresUUID
 
 if TYPE_CHECKING:
-    from polar.models import Subscription, SubscriptionTier
+    from polar.models import Product, Subscription
 
 
-class SubscriptionTierPriceRecurringInterval(StrEnum):
+class ProductPriceRecurringInterval(StrEnum):
     month = "month"
     year = "year"
 
@@ -20,10 +20,10 @@ class SubscriptionTierPriceRecurringInterval(StrEnum):
         return cast(Literal["month", "year"], self.value)
 
 
-class SubscriptionTierPrice(RecordModel):
-    __tablename__ = "subscription_tier_prices"
+class ProductPrice(RecordModel):
+    __tablename__ = "product_prices"
 
-    recurring_interval: Mapped[SubscriptionTierPriceRecurringInterval] = mapped_column(
+    recurring_interval: Mapped[ProductPriceRecurringInterval] = mapped_column(
         String, nullable=False, index=True
     )
     price_amount: Mapped[int] = mapped_column(Integer, nullable=False)
@@ -32,17 +32,15 @@ class SubscriptionTierPrice(RecordModel):
 
     stripe_price_id: Mapped[str] = mapped_column(String, nullable=False)
 
-    subscription_tier_id: Mapped[UUID] = mapped_column(
+    product_id: Mapped[UUID] = mapped_column(
         PostgresUUID,
-        ForeignKey("subscription_tiers.id", ondelete="cascade"),
+        ForeignKey("products.id", ondelete="cascade"),
         nullable=False,
     )
 
     @declared_attr
-    def subscription_tier(cls) -> Mapped["SubscriptionTier"]:
-        return relationship(
-            "SubscriptionTier", lazy="raise", back_populates="all_prices"
-        )
+    def product(cls) -> Mapped["Product"]:
+        return relationship("Product", lazy="raise", back_populates="all_prices")
 
     @declared_attr
     def subscriptions(cls) -> Mapped[list["Subscription"]]:

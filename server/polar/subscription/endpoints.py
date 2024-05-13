@@ -16,8 +16,8 @@ from polar.kit.csv import get_emails_from_csv, get_iterable_from_binary_io
 from polar.kit.pagination import ListResource, PaginationParams, PaginationParamsQuery
 from polar.kit.routing import APIRouter
 from polar.kit.sorting import Sorting, SortingGetter
-from polar.models import Subscription, SubscriptionTier
-from polar.models.subscription_tier import SubscriptionTierType
+from polar.models import Product, Subscription
+from polar.models.product import SubscriptionTierType
 from polar.organization.dependencies import (
     ResolvedOptionalOrganization,
     ResolvedOrganization,
@@ -92,7 +92,7 @@ async def lookup_subscription_tier(
     subscription_tier_id: UUID4,
     auth_subject: auth.CreatorSubscriptionsReadOrAnonymous,
     session: AsyncSession = Depends(get_db_session),
-) -> SubscriptionTier:
+) -> Product:
     subscription_tier = await subscription_tier_service.get_by_id(
         session, auth_subject, subscription_tier_id
     )
@@ -114,7 +114,7 @@ async def create_subscription_tier(
     auth_subject: auth.CreatorSubscriptionsWrite,
     authz: Authz = Depends(Authz.authz),
     session: AsyncSession = Depends(get_db_session),
-) -> SubscriptionTier:
+) -> Product:
     return await subscription_tier_service.user_create(
         session, authz, subscription_tier_create, auth_subject
     )
@@ -127,7 +127,7 @@ async def update_subscription_tier(
     auth_subject: auth.CreatorSubscriptionsWrite,
     authz: Authz = Depends(Authz.authz),
     session: AsyncSession = Depends(get_db_session),
-) -> SubscriptionTier:
+) -> Product:
     subscription_tier = await subscription_tier_service.get_by_id(
         session, auth_subject, id
     )
@@ -167,7 +167,7 @@ async def archive_subscription_tier(
     auth_subject: auth.CreatorSubscriptionsWrite,
     authz: Authz = Depends(Authz.authz),
     session: AsyncSession = Depends(get_db_session),
-) -> SubscriptionTier:
+) -> Product:
     subscription_tier = await subscription_tier_service.get_by_id(
         session, auth_subject, id
     )
@@ -197,7 +197,7 @@ async def update_subscription_tier_benefits(
     auth_subject: auth.CreatorSubscriptionsWrite,
     authz: Authz = Depends(Authz.authz),
     session: AsyncSession = Depends(get_db_session),
-) -> SubscriptionTier:
+) -> Product:
     subscription_tier = await subscription_tier_service.get_by_id(
         session, auth_subject, id
     )
@@ -544,7 +544,7 @@ async def subscriptions_export(
                 sub.user.username_or_email,
                 sub.created_at.strftime("%Y-%m-%d %H:%M:%S"),
                 "true" if sub.active else "false",
-                sub.subscription_tier.name,
+                sub.product.name,
             ]
 
             # strip commas (poor mans CSV)

@@ -20,8 +20,8 @@ if TYPE_CHECKING:
         IssueReward,
         Organization,
         Pledge,
+        ProductPrice,
         Subscription,
-        SubscriptionTierPrice,
         User,
     )
 
@@ -312,22 +312,22 @@ class Transaction(RecordModel):
     def subscription(cls) -> Mapped["Subscription | None"]:
         return relationship("Subscription", lazy="raise")
 
-    subscription_tier_price_id: Mapped[UUID | None] = mapped_column(
+    product_price_id: Mapped[UUID | None] = mapped_column(
         PostgresUUID,
-        ForeignKey("subscription_tier_prices.id", ondelete="set null"),
+        ForeignKey("product_prices.id", ondelete="set null"),
         nullable=True,
         index=True,
     )
     """
-    ID of the `SubscriptionTierPrice` related to this transaction.
+    ID of the `ProductPrice` related to this transaction.
 
     Useful to keep track of the price at the time of the transaction,
-    which might change if the subscription is upgraded or downgraded.
+    which might change if the product is updated.
     """
 
     @declared_attr
-    def subscription_tier_price(cls) -> Mapped["SubscriptionTierPrice | None"]:
-        return relationship("SubscriptionTierPrice", lazy="raise")
+    def product_price(cls) -> Mapped["ProductPrice | None"]:
+        return relationship("ProductPrice", lazy="raise")
 
     issue_reward_id: Mapped[UUID | None] = mapped_column(
         PostgresUUID,

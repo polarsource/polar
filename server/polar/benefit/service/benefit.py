@@ -17,7 +17,7 @@ from polar.kit.utils import utc_now
 from polar.models import (
     Benefit,
     Organization,
-    SubscriptionTierBenefit,
+    ProductBenefit,
     User,
     UserOrganization,
 )
@@ -217,8 +217,8 @@ class BenefitService(ResourceService[Benefit, BenefitCreate, BenefitUpdate]):
 
         benefit.deleted_at = utc_now()
         session.add(benefit)
-        statement = delete(SubscriptionTierBenefit).where(
-            SubscriptionTierBenefit.benefit_id == benefit.id
+        statement = delete(ProductBenefit).where(
+            ProductBenefit.benefit_id == benefit.id
         )
         await session.execute(statement)
 

@@ -3,7 +3,7 @@ import uuid
 import pytest
 from pytest_mock import MockerFixture
 
-from polar.models import Subscription, SubscriptionTier
+from polar.models import Product, Subscription
 from polar.postgres import AsyncSession
 from polar.subscription.service.subscription import SubscriptionService
 from polar.subscription.tasks import (  # type: ignore[attr-defined]
@@ -77,7 +77,7 @@ class TestSubscriptionUpdateSubscriptionTierBenefitsGrants:
         mocker: MockerFixture,
         job_context: JobContext,
         polar_worker_context: PolarWorkerContext,
-        subscription_tier: SubscriptionTier,
+        subscription_tier: Product,
         session: AsyncSession,
     ) -> None:
         update_subscription_tier_benefits_grants_mock = mocker.patch.object(

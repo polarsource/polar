@@ -3,9 +3,9 @@ from pydantic import UUID4
 from polar.enums import Platforms
 from polar.kit.schemas import Schema, TimestampedSchema
 from polar.models.pledge import PledgeState
+from polar.models.product import SubscriptionTierType
+from polar.models.product_price import ProductPriceRecurringInterval
 from polar.models.subscription import SubscriptionStatus
-from polar.models.subscription_tier import SubscriptionTierType
-from polar.models.subscription_tier_price import SubscriptionTierPriceRecurringInterval
 from polar.models.transaction import PaymentProcessor, PlatformFeeType, TransactionType
 
 
@@ -72,7 +72,7 @@ class TransactionSubscriptionTier(TimestampedSchema):
 
 class TransactionSubscriptionPrice(TimestampedSchema):
     id: UUID4
-    recurring_interval: SubscriptionTierPriceRecurringInterval
+    recurring_interval: ProductPriceRecurringInterval
     price_amount: int
     price_currency: str
     is_archived: bool

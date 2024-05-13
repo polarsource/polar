@@ -8,13 +8,13 @@ from pydantic import UUID4, AnyHttpUrl, Field
 from polar.benefit.schemas import BenefitPublic, BenefitSubscriber
 from polar.enums import Platforms
 from polar.kit.schemas import EmailStrDNS, EmptyStrToNone, Schema, TimestampedSchema
-from polar.models.subscription import SubscriptionStatus
-from polar.models.subscription_tier import SubscriptionTier as SubscriptionTierModel
-from polar.models.subscription_tier import SubscriptionTierType
-from polar.models.subscription_tier_price import (
-    SubscriptionTierPrice as SubscriptionTierPriceModel,
+from polar.models.product import Product as SubscriptionTierModel
+from polar.models.product import SubscriptionTierType
+from polar.models.product_price import (
+    ProductPrice as SubscriptionTierPriceModel,
 )
-from polar.models.subscription_tier_price import SubscriptionTierPriceRecurringInterval
+from polar.models.product_price import ProductPriceRecurringInterval
+from polar.models.subscription import SubscriptionStatus
 
 TIER_NAME_MIN_LENGTH = 3
 TIER_NAME_MAX_LENGTH = 24
@@ -27,7 +27,7 @@ MAXIMUM_PRICE_AMOUNT = 99999999
 
 
 class SubscriptionTierPriceCreate(Schema):
-    recurring_interval: SubscriptionTierPriceRecurringInterval
+    recurring_interval: ProductPriceRecurringInterval
     price_amount: int = Field(..., gt=0, le=MAXIMUM_PRICE_AMOUNT)
     price_currency: str = Field("usd", pattern="usd")
 
@@ -71,7 +71,7 @@ class SubscriptionTierBenefitsUpdate(Schema):
 
 class SubscriptionTierPrice(TimestampedSchema):
     id: UUID4
-    recurring_interval: SubscriptionTierPriceRecurringInterval
+    recurring_interval: ProductPriceRecurringInterval
     price_amount: int
     price_currency: str
     is_archived: bool

@@ -11,12 +11,7 @@ from polar.kit.extensions.sqlalchemy import PostgresUUID
 from polar.models.benefit import BenefitArticles, BenefitType
 
 if TYPE_CHECKING:
-    from polar.models import (
-        Benefit,
-        Organization,
-        SubscriptionTierBenefit,
-        SubscriptionTierPrice,
-    )
+    from polar.models import Benefit, Organization, ProductBenefit, ProductPrice
 
 
 class SubscriptionTierType(StrEnum):
@@ -25,8 +20,8 @@ class SubscriptionTierType(StrEnum):
     business = "business"
 
 
-class SubscriptionTier(RecordModel):
-    __tablename__ = "subscription_tiers"
+class Product(RecordModel):
+    __tablename__ = "products"
 
     __table_args__ = (Index("idx_organization_id_type", "organization_id", "type"),)
 
@@ -55,36 +50,34 @@ class SubscriptionTier(RecordModel):
         return relationship("Organization", lazy="raise")
 
     @declared_attr
-    def all_prices(cls) -> Mapped[list["SubscriptionTierPrice"]]:
+    def all_prices(cls) -> Mapped[list["ProductPrice"]]:
         # Prices are almost always needed, so eager loading makes sense
-        return relationship(
-            "SubscriptionTierPrice", lazy="raise", back_populates="subscription_tier"
-        )
+        return relationship("ProductPrice", lazy="raise", back_populates="product")
 
     @declared_attr
-    def prices(cls) -> Mapped[list["SubscriptionTierPrice"]]:
+    def prices(cls) -> Mapped[list["ProductPrice"]]:
         # Prices are almost always needed, so eager loading makes sense
         return relationship(
-            "SubscriptionTierPrice",
+            "ProductPrice",
             lazy="selectin",
             primaryjoin=(
                 "and_("
-                "SubscriptionTierPrice.subscription_tier_id == SubscriptionTier.id, "
-                "SubscriptionTierPrice.is_archived.is_(False)"
+                "ProductPrice.product_id == Product.id, "
+                "ProductPrice.is_archived.is_(False)"
                 ")"
             ),
             viewonly=True,
         )
 
-    subscription_tier_benefits: Mapped[list["SubscriptionTierBenefit"]] = relationship(
+    product_benefits: Mapped[list["ProductBenefit"]] = relationship(
         # Benefits are almost always needed, so eager loading makes sense
         lazy="selectin",
-        order_by="SubscriptionTierBenefit.order",
+        order_by="ProductBenefit.order",
         cascade="all, delete-orphan",
     )
 
     benefits: AssociationProxy[list["Benefit"]] = association_proxy(
-        "subscription_tier_benefits", "benefit"
+        "product_benefits", "benefit"
     )
 
     @property
@@ -107,7 +100,7 @@ class SubscriptionTier(RecordModel):
                 return cast(BenefitArticles, benefit)
         return None
 
-    def get_price(self, id: UUID) -> "SubscriptionTierPrice | None":
+    def get_price(self, id: UUID) -> "ProductPrice | None":
         for price in self.prices:
             if price.id == id:
                 return price

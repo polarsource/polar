@@ -6,7 +6,7 @@ import pytest
 from polar.article.service import article_service
 from polar.benefit.benefits.articles import BenefitArticlesService
 from polar.benefit.service.benefit import benefit as benefit_service
-from polar.models import Organization, SubscriptionTier, User
+from polar.models import Organization, Product, User
 from polar.models.benefit import (
     BenefitArticles,
     BenefitType,
@@ -29,7 +29,7 @@ async def test_concurrent_subscription_upgrade(
     save_fixture: SaveFixture,
     user: User,
     organization: Organization,
-    subscription_tier: SubscriptionTier,
+    subscription_tier: Product,
 ) -> None:
     previous_subscription = await create_subscription(
         save_fixture,

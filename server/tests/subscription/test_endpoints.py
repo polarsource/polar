@@ -10,8 +10,8 @@ from httpx import AsyncClient
 from polar.models import (
     Benefit,
     Organization,
+    Product,
     Subscription,
-    SubscriptionTier,
     User,
     UserOrganization,
 )
@@ -41,7 +41,7 @@ class TestSearchSubscriptionTiers:
         self,
         client: AsyncClient,
         organization: Organization,
-        subscription_tiers: list[SubscriptionTier],
+        subscription_tiers: list[Product],
     ) -> None:
         response = await client.get(
             "/api/v1/subscriptions/tiers/search",
@@ -62,7 +62,7 @@ class TestSearchSubscriptionTiers:
         save_fixture: SaveFixture,
         client: AsyncClient,
         organization: Organization,
-        subscription_tier: SubscriptionTier,
+        subscription_tier: Product,
         benefits: list[Benefit],
     ) -> None:
         subscription_tier = await add_subscription_benefits(
@@ -111,7 +111,7 @@ class TestLookupSubscriptionTier:
     async def test_valid(
         self,
         client: AsyncClient,
-        subscription_tier: SubscriptionTier,
+        subscription_tier: Product,
     ) -> None:
         response = await client.get(
             "/api/v1/subscriptions/tiers/lookup",
@@ -128,7 +128,7 @@ class TestLookupSubscriptionTier:
         session: AsyncSession,
         save_fixture: SaveFixture,
         client: AsyncClient,
-        subscription_tier: SubscriptionTier,
+        subscription_tier: Product,
         benefits: list[Benefit],
     ) -> None:
         subscription_tier = await add_subscription_benefits(
@@ -294,7 +294,7 @@ class TestUpdateSubscriptionTier:
     async def test_anonymous(
         self,
         client: AsyncClient,
-        subscription_tier: SubscriptionTier,
+        subscription_tier: Product,
         session: AsyncSession,
     ) -> None:
         response = await client.post(
@@ -339,7 +339,7 @@ class TestUpdateSubscriptionTier:
         self,
         payload: dict[str, Any],
         client: AsyncClient,
-        subscription_tier: SubscriptionTier,
+        subscription_tier: Product,
         user_organization_admin: UserOrganization,
     ) -> None:
         response = await client.post(
@@ -353,7 +353,7 @@ class TestUpdateSubscriptionTier:
     async def test_valid(
         self,
         client: AsyncClient,
-        subscription_tier: SubscriptionTier,
+        subscription_tier: Product,
         user_organization_admin: UserOrganization,
     ) -> None:
         response = await client.post(
@@ -370,7 +370,7 @@ class TestUpdateSubscriptionTier:
     async def test_paid_tier_no_prices(
         self,
         client: AsyncClient,
-        subscription_tier: SubscriptionTier,
+        subscription_tier: Product,
         user_organization_admin: UserOrganization,
     ) -> None:
         response = await client.post(
@@ -383,7 +383,7 @@ class TestUpdateSubscriptionTier:
     async def test_free_tier_no_prices(
         self,
         client: AsyncClient,
-        subscription_tier_free: SubscriptionTier,
+        subscription_tier_free: Product,
         user_organization_admin: UserOrganization,
     ) -> None:
         response = await client.post(
@@ -399,7 +399,7 @@ class TestUpdateSubscriptionTierBenefits:
     async def test_anonymous(
         self,
         client: AsyncClient,
-        subscription_tier: SubscriptionTier,
+        subscription_tier: Product,
     ) -> None:
         response = await client.post(
             f"/api/v1/subscriptions/tiers/{subscription_tier.id}/benefits",
@@ -424,7 +424,7 @@ class TestUpdateSubscriptionTierBenefits:
     async def test_valid(
         self,
         client: AsyncClient,
-        subscription_tier: SubscriptionTier,
+        subscription_tier: Product,
         user_organization_admin: UserOrganization,
         benefit_organization: Benefit,
     ) -> None:
@@ -445,7 +445,7 @@ class TestArchiveSubscriptionTier:
     async def test_anonymous(
         self,
         client: AsyncClient,
-        subscription_tier: SubscriptionTier,
+        subscription_tier: Product,
     ) -> None:
         response = await client.post(
             f"/api/v1/subscriptions/tiers/{subscription_tier.id}/archive"
@@ -465,7 +465,7 @@ class TestArchiveSubscriptionTier:
     async def test_valid(
         self,
         client: AsyncClient,
-        subscription_tier: SubscriptionTier,
+        subscription_tier: Product,
         user_organization_admin: UserOrganization,
     ) -> None:
         response = await client.post(
@@ -498,7 +498,7 @@ class TestCreateSubscribeSession:
         self,
         success_url: str | None,
         client: AsyncClient,
-        subscription_tier: SubscriptionTier,
+        subscription_tier: Product,
     ) -> None:
         json = {
             "tier_id": str(subscription_tier.id),
@@ -514,7 +514,7 @@ class TestCreateSubscribeSession:
         assert response.status_code == 422
 
     async def test_invalid_customer_email(
-        self, client: AsyncClient, subscription_tier: SubscriptionTier
+        self, client: AsyncClient, subscription_tier: Product
     ) -> None:
         response = await client.post(
             "/api/v1/subscriptions/subscribe-sessions/",
@@ -531,7 +531,7 @@ class TestCreateSubscribeSession:
     async def test_anonymous_subscription_tier_organization(
         self,
         client: AsyncClient,
-        subscription_tier: SubscriptionTier,
+        subscription_tier: Product,
         stripe_service_mock: MagicMock,
     ) -> None:
         create_subscription_checkout_session_mock: MagicMock = (
@@ -569,7 +569,7 @@ class TestGetSubscribeSession:
     async def test_valid_subscription_tier_organization(
         self,
         client: AsyncClient,
-        subscription_tier: SubscriptionTier,
+        subscription_tier: Product,
         stripe_service_mock: MagicMock,
     ) -> None:
         get_checkout_session_mock: MagicMock = stripe_service_mock.get_checkout_session
@@ -626,7 +626,7 @@ class TestSearchSubscriptions:
         organization: Organization,
         user: User,
         user_organization: UserOrganization,
-        subscription_tier: SubscriptionTier,
+        subscription_tier: Product,
     ) -> None:
         await create_active_subscription(
             save_fixture,
@@ -678,7 +678,7 @@ class TestSearchSubscribedSubscriptions:
         save_fixture: SaveFixture,
         client: AsyncClient,
         user: User,
-        subscription_tier: SubscriptionTier,
+        subscription_tier: Product,
     ) -> None:
         await create_active_subscription(
             save_fixture,
@@ -704,7 +704,7 @@ class TestSearchSubscribedSubscriptions:
         client: AsyncClient,
         user: User,
         organization_second: Organization,
-        subscription_tier: SubscriptionTier,
+        subscription_tier: Product,
     ) -> None:
         """
         We were bitten by a bug where we resolved the organization from the user,
@@ -742,7 +742,7 @@ class TestSearchSubscribedSubscriptions:
         client: AsyncClient,
         user: User,
         organization: Organization,
-        subscription_tier: SubscriptionTier,
+        subscription_tier: Product,
     ) -> None:
         await create_active_subscription(
             save_fixture,
@@ -786,7 +786,7 @@ class TestCreateFreeSubscription:
     async def test_anonymous(
         self,
         client: AsyncClient,
-        subscription_tier_free: SubscriptionTier,
+        subscription_tier_free: Product,
     ) -> None:
         response = await client.post(
             "/api/v1/subscriptions/subscriptions/",
@@ -809,7 +809,7 @@ class TestUpgradeSubscription:
         self,
         client: AsyncClient,
         subscription: Subscription,
-        subscription_tier_second: SubscriptionTier,
+        subscription_tier_second: Product,
     ) -> None:
         response = await client.post(
             f"/api/v1/subscriptions/subscriptions/{subscription.id}",
@@ -825,7 +825,7 @@ class TestUpgradeSubscription:
     async def test_not_existing(
         self,
         client: AsyncClient,
-        subscription_tier_second: SubscriptionTier,
+        subscription_tier_second: Product,
     ) -> None:
         response = await client.post(
             f"/api/v1/subscriptions/subscriptions/{uuid.uuid4()}",
@@ -842,7 +842,7 @@ class TestUpgradeSubscription:
         self,
         client: AsyncClient,
         subscription: Subscription,
-        subscription_tier_second: SubscriptionTier,
+        subscription_tier_second: Product,
     ) -> None:
         response = await client.post(
             f"/api/v1/subscriptions/subscriptions/{subscription.id}",
@@ -921,7 +921,7 @@ class TestSearchSubscriptionsSummary:
         client: AsyncClient,
         organization: Organization,
         user: User,
-        subscription_tier: SubscriptionTier,
+        subscription_tier: Product,
     ) -> None:
         await create_active_subscription(
             save_fixture,
@@ -993,7 +993,7 @@ class TestGetSubscriptionsStatistics:
         self,
         client: AsyncClient,
         organization: Organization,
-        subscription_tiers: list[SubscriptionTier],
+        subscription_tiers: list[Product],
     ) -> None:
         response = await client.get(
             "/api/v1/subscriptions/subscriptions/statistics",

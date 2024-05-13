@@ -2,12 +2,7 @@ from typing import TYPE_CHECKING
 from uuid import UUID
 
 from sqlalchemy import ForeignKey, Integer
-from sqlalchemy.orm import (
-    Mapped,
-    declared_attr,
-    mapped_column,
-    relationship,
-)
+from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.kit.db.models import RecordModel
 from polar.kit.extensions.sqlalchemy import PostgresUUID
@@ -19,8 +14,8 @@ if TYPE_CHECKING:
         IssueReward,
         Organization,
         Pledge,
+        ProductPrice,
         Subscription,
-        SubscriptionTierPrice,
         Transaction,
     )
 
@@ -106,22 +101,22 @@ class HeldBalance(RecordModel):
     def subscription(cls) -> Mapped["Subscription | None"]:
         return relationship("Subscription", lazy="raise")
 
-    subscription_tier_price_id: Mapped[UUID | None] = mapped_column(
+    product_price_id: Mapped[UUID | None] = mapped_column(
         PostgresUUID,
-        ForeignKey("subscription_tier_prices.id", ondelete="set null"),
+        ForeignKey("product_prices.id", ondelete="set null"),
         nullable=True,
         index=True,
     )
     """
-    ID of the `SubscriptionTierPrice` related to this balance.
+    ID of the `ProductPrice` related to this balance.
 
     Useful to keep track of the price at the time of the balance creation,
-    which might change if the subscription is upgraded or downgraded.
+    which might change if the product is updated.
     """
 
     @declared_attr
-    def subscription_tier_price(cls) -> Mapped["SubscriptionTierPrice | None"]:
-        return relationship("SubscriptionTierPrice", lazy="raise")
+    def product_price(cls) -> Mapped["ProductPrice | None"]:
+        return relationship("ProductPrice", lazy="raise")
 
     issue_reward_id: Mapped[UUID | None] = mapped_column(
         PostgresUUID,

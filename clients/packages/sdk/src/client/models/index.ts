@@ -11000,7 +11000,7 @@ export const WebhookBenefitUpdatedPayloadTypeEnum = {
 export type WebhookBenefitUpdatedPayloadTypeEnum = typeof WebhookBenefitUpdatedPayloadTypeEnum[keyof typeof WebhookBenefitUpdatedPayloadTypeEnum];
 
 /**
- * 
+ * A webhook delivery for a webhook event.
  * @export
  * @interface WebhookDelivery
  */
@@ -11018,7 +11018,7 @@ export interface WebhookDelivery {
      */
     modified_at?: string;
     /**
-     * 
+     * The webhook delivery ID.
      * @type {string}
      * @memberof WebhookDelivery
      */
@@ -11030,13 +11030,13 @@ export interface WebhookDelivery {
      */
     http_code?: number;
     /**
-     * 
+     * Whether the delivery was successful.
      * @type {boolean}
      * @memberof WebhookDelivery
      */
     succeeded: boolean;
     /**
-     * 
+     * The webhook event sent by this delivery.
      * @type {WebhookEvent}
      * @memberof WebhookDelivery
      */
@@ -11072,7 +11072,7 @@ export const WebhookDonationCreatedPayloadTypeEnum = {
 export type WebhookDonationCreatedPayloadTypeEnum = typeof WebhookDonationCreatedPayloadTypeEnum[keyof typeof WebhookDonationCreatedPayloadTypeEnum];
 
 /**
- * 
+ * A webhook endpoint.
  * @export
  * @interface WebhookEndpoint
  */
@@ -11090,13 +11090,13 @@ export interface WebhookEndpoint {
      */
     modified_at?: string;
     /**
-     * 
+     * The webhook endpoint ID.
      * @type {string}
      * @memberof WebhookEndpoint
      */
     id: string;
     /**
-     * 
+     * The URL where the webhook events will be sent.
      * @type {string}
      * @memberof WebhookEndpoint
      */
@@ -11106,40 +11106,40 @@ export interface WebhookEndpoint {
      * @type {string}
      * @memberof WebhookEndpoint
      */
-    user_id: string | null;
+    user_id?: string;
     /**
      * 
      * @type {string}
      * @memberof WebhookEndpoint
      */
-    organization_id: string | null;
+    organization_id?: string;
     /**
-     * 
+     * The events that will trigger the webhook.
      * @type {Array<WebhookEventType>}
      * @memberof WebhookEndpoint
      */
     events: Array<WebhookEventType>;
 }
 /**
- * 
+ * Schema to create a webhook endpoint.
  * @export
  * @interface WebhookEndpointCreate
  */
 export interface WebhookEndpointCreate {
     /**
-     * 
+     * The URL where the webhook events will be sent.
      * @type {string}
      * @memberof WebhookEndpointCreate
      */
     url: string;
     /**
-     * 
+     * The secret used to sign the webhook events.
      * @type {string}
      * @memberof WebhookEndpointCreate
      */
     secret: string;
     /**
-     * 
+     * The events that will trigger the webhook.
      * @type {Array<WebhookEventType>}
      * @memberof WebhookEndpointCreate
      */
@@ -11152,32 +11152,38 @@ export interface WebhookEndpointCreate {
     organization_id?: string;
 }
 /**
- * 
+ * Schema to update a webhook endpoint.
  * @export
  * @interface WebhookEndpointUpdate
  */
 export interface WebhookEndpointUpdate {
     /**
-     * 
+     * The URL where the webhook events will be sent.
      * @type {string}
      * @memberof WebhookEndpointUpdate
      */
     url?: string;
     /**
-     * 
+     * The secret used to sign the webhook events.
      * @type {string}
      * @memberof WebhookEndpointUpdate
      */
     secret?: string;
     /**
-     * 
+     * The events that will trigger the webhook.
      * @type {Array<WebhookEventType>}
      * @memberof WebhookEndpointUpdate
      */
     events?: Array<WebhookEventType>;
 }
 /**
+ * A webhook event.
  * 
+ * An event represent something that happened in the system
+ * that should be sent to the webhook endpoint.
+ * 
+ * It can be delivered multiple times until it's marked as succeeded,
+ * each one creating a new delivery.
  * @export
  * @interface WebhookEvent
  */
@@ -11195,7 +11201,7 @@ export interface WebhookEvent {
      */
     modified_at?: string;
     /**
-     * 
+     * The webhook event ID.
      * @type {string}
      * @memberof WebhookEvent
      */
@@ -11213,7 +11219,7 @@ export interface WebhookEvent {
      */
     succeeded?: boolean;
     /**
-     * 
+     * The payload of the webhook event.
      * @type {string}
      * @memberof WebhookEvent
      */

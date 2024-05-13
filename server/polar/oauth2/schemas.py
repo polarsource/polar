@@ -57,8 +57,14 @@ class OAuth2ClientConfigurationUpdate(OAuth2ClientConfiguration):
     client_id: str
 
 
+class OAuth2Client(TimestampedSchema, OAuth2ClientConfiguration):
+    client_id: str
+    client_secret: str
+    client_id_issued_at: int
+    client_secret_expires_at: int
+
+
 class OAuth2ClientPublic(TimestampedSchema):
-    id: UUID4
     client_id: str
     client_name: str | None = None
     client_uri: str | None = None

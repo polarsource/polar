@@ -41,7 +41,19 @@ export interface Account {
      * @type {boolean}
      * @memberof Account
      */
-    is_details_submitted?: boolean;
+    is_details_submitted: boolean;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof Account
+     */
+    is_charges_enabled: boolean;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof Account
+     */
+    is_payouts_enabled: boolean;
     /**
      * 
      * @type {string}

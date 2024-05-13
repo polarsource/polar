@@ -40,19 +40,19 @@ RESERVED_SCOPES = {Scope.admin, Scope.web_default}
 SCOPES_SUPPORTED = [s.value for s in Scope if s not in RESERVED_SCOPES]
 SCOPES_SUPPORTED_DISPLAY_NAMES: dict[Scope, str] = {
     Scope.openid: "OpenID",
-    Scope.profile: "Profile",
-    Scope.email: "Email",
+    Scope.profile: "Read your profile",
+    Scope.email: "Read your email address",
     Scope.web_default: "Web Default",
     Scope.articles_read: "Articles Read",
     Scope.user_read: "User Read",
-    Scope.creator_subscriptions_read: "Read Subscription Tiers and Subscribers",
-    Scope.creator_subscriptions_write: "Create or modify Subscription Tiers and Subscribers",
-    Scope.backer_subscriptions_read: "Read Subscriptions",
-    Scope.backer_subscriptions_write: "Create or modify Subscriptions",
-    Scope.creator_benefits_read: "Read Benefits",
-    Scope.creator_benefits_write: "Create or modify Benefits",
-    Scope.webhooks_read: "Read Webhooks",
-    Scope.webhooks_write: "Create or modify Webhooks",
+    Scope.creator_subscriptions_read: "Read subscription tiers and subscribers",
+    Scope.creator_subscriptions_write: "Create or modify subscription tiers and subscribers",
+    Scope.backer_subscriptions_read: "Read subscriptions",
+    Scope.backer_subscriptions_write: "Create or modify subscriptions",
+    Scope.creator_benefits_read: "Read benefits",
+    Scope.creator_benefits_write: "Create or modify benefits",
+    Scope.webhooks_read: "Read webhooks",
+    Scope.webhooks_write: "Create or modify webhooks",
 }
 
 

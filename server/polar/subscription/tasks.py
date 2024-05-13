@@ -86,9 +86,7 @@ async def subscription_discord_notification(
         )
         assert price is not None
 
-        tier = await subscription_tier_service.get(
-            session, subscription.subscription_tier_id
-        )
+        tier = await subscription_tier_service.get(session, subscription.product_id)
         if not tier:
             raise SubscriptionDoesNotExist(subscription_id)
 

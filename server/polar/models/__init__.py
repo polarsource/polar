@@ -23,12 +23,12 @@ from .organization import Organization
 from .personal_access_token import PersonalAccessToken
 from .pledge import Pledge
 from .pledge_transaction import PledgeTransaction
+from .product import Product
+from .product_benefit import ProductBenefit
+from .product_price import ProductPrice
 from .pull_request import PullRequest
 from .repository import Repository
 from .subscription import Subscription
-from .subscription_tier import SubscriptionTier
-from .subscription_tier_benefit import SubscriptionTierBenefit
-from .subscription_tier_price import SubscriptionTierPrice
 from .traffic import Traffic
 from .transaction import Transaction
 from .user import OAuthAccount, User
@@ -68,9 +68,9 @@ __all__ = [
     "PullRequest",
     "Repository",
     "Subscription",
-    "SubscriptionTier",
-    "SubscriptionTierBenefit",
-    "SubscriptionTierPrice",
+    "Product",
+    "ProductBenefit",
+    "ProductPrice",
     "TimestampedModel",
     "Traffic",
     "Transaction",

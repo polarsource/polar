@@ -49,17 +49,17 @@ from polar.models import (
     HeldBalance,
     OAuthAccount,
     Organization,
+    Product,
+    ProductBenefit,
+    ProductPrice,
     Subscription,
-    SubscriptionTier,
-    SubscriptionTierBenefit,
-    SubscriptionTierPrice,
     Transaction,
     User,
     UserOrganization,
 )
 from polar.models.benefit import BenefitType
+from polar.models.product import SubscriptionTierType
 from polar.models.subscription import SubscriptionStatus
-from polar.models.subscription_tier import SubscriptionTierType
 from polar.models.transaction import TransactionType
 from polar.models.user import OAuthPlatform
 from polar.models.webhook_endpoint import WebhookEventType
@@ -230,7 +230,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
             joinedload(Subscription.user),
             joinedload(Subscription.organization),
             joinedload(Subscription.price),
-            joinedload(Subscription.subscription_tier),
+            joinedload(Subscription.product),
         )
 
         res = await session.execute(query)
@@ -261,15 +261,13 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         )
 
         if organization is not None:
-            statement = statement.where(
-                SubscriptionTier.organization_id == organization.id
-            )
+            statement = statement.where(Product.organization_id == organization.id)
 
         if type is not None:
-            statement = statement.where(SubscriptionTier.type == type)
+            statement = statement.where(Product.type == type)
 
         if subscription_tier_id is not None:
-            statement = statement.where(SubscriptionTier.id == subscription_tier_id)
+            statement = statement.where(Product.id == subscription_tier_id)
 
         if subscriber_user_id is not None:
             statement = statement.where(
@@ -303,16 +301,16 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
                 )
             if criterion == SearchSortProperty.price_amount:
                 order_by_clauses.append(
-                    clause_function(SubscriptionTierPrice.price_amount).nulls_last()
+                    clause_function(ProductPrice.price_amount).nulls_last()
                 )
             if criterion == SearchSortProperty.subscription_tier_type:
-                order_by_clauses.append(clause_function(SubscriptionTier.type))
+                order_by_clauses.append(clause_function(Product.type))
             if criterion == SearchSortProperty.subscription_tier:
-                order_by_clauses.append(clause_function(SubscriptionTier.name))
+                order_by_clauses.append(clause_function(Product.name))
         statement = statement.order_by(*order_by_clauses)
 
         statement = statement.options(
-            contains_eager(Subscription.subscription_tier),
+            contains_eager(Subscription.product),
             contains_eager(Subscription.price),
             contains_eager(Subscription.user),
             joinedload(Subscription.organization),
@@ -340,21 +338,19 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
     ) -> tuple[Sequence[Subscription], int]:
         statement = (
             self._get_subscribed_subscriptions_statement(auth_subject)
-            .join(SubscriptionTier)
+            .join(Product)
             .join(Subscription.price, isouter=True)
             .where(Subscription.started_at.is_not(None))
         )
 
         if organization is not None:
-            statement = statement.where(
-                SubscriptionTier.organization_id == organization.id
-            )
+            statement = statement.where(Product.organization_id == organization.id)
 
         if type is not None:
-            statement = statement.where(SubscriptionTier.type == type)
+            statement = statement.where(Product.type == type)
 
         if subscription_tier_id is not None:
-            statement = statement.where(SubscriptionTier.id == subscription_tier_id)
+            statement = statement.where(Product.id == subscription_tier_id)
 
         if subscriber_user_id is not None:
             statement = statement.where(
@@ -387,17 +383,15 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
                     clause_function(Subscription.current_period_end)
                 )
             if criterion == SearchSortProperty.price_amount:
-                order_by_clauses.append(
-                    clause_function(SubscriptionTierPrice.price_amount)
-                )
+                order_by_clauses.append(clause_function(ProductPrice.price_amount))
             if criterion == SearchSortProperty.subscription_tier_type:
-                order_by_clauses.append(clause_function(SubscriptionTier.type))
+                order_by_clauses.append(clause_function(Product.type))
             if criterion == SearchSortProperty.subscription_tier:
-                order_by_clauses.append(clause_function(SubscriptionTier.name))
+                order_by_clauses.append(clause_function(Product.name))
         statement = statement.order_by(*order_by_clauses)
 
         statement = statement.options(
-            contains_eager(Subscription.subscription_tier),
+            contains_eager(Subscription.product),
             contains_eager(Subscription.price),
             joinedload(Subscription.organization),
         )
@@ -416,7 +410,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         statement = (
             (
                 select(Subscription)
-                .join(Subscription.subscription_tier)
+                .join(Subscription.product)
                 .join(User, onclause=User.id == Subscription.user_id, isouter=True)
                 .join(
                     OAuthAccount,
@@ -429,13 +423,13 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
                 .options(
                     contains_eager(Subscription.user),
                     joinedload(Subscription.organization),
-                    contains_eager(Subscription.subscription_tier),
+                    contains_eager(Subscription.product),
                     joinedload(Subscription.price),
                 )
             )
             .where(
                 Subscription.active.is_(True),
-                SubscriptionTier.organization_id == organization.id,
+                Product.organization_id == organization.id,
             )
             .order_by(
                 # Put users with a GitHub account first, so we can display their avatar
@@ -462,15 +456,13 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
     ) -> list[Subscription]:
         statement = (
             select(Subscription)
-            .join(Subscription.subscription_tier)
+            .join(Subscription.product)
             .where(Subscription.user_id == user.id, Subscription.active.is_(True))
-            .options(contains_eager(Subscription.subscription_tier))
+            .options(contains_eager(Subscription.product))
         )
 
         if organization_id is not None:
-            statement = statement.where(
-                SubscriptionTier.organization_id == organization_id
-            )
+            statement = statement.where(Product.organization_id == organization_id)
 
         result = await session.execute(statement)
 
@@ -518,8 +510,8 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         session: AsyncSession,
         *,
         user: User,
-        subscription_tier: SubscriptionTier,
-        price: SubscriptionTierPrice | None = None,
+        subscription_tier: Product,
+        price: ProductPrice | None = None,
     ) -> Subscription:
         existing_subscriptions = await self.get_active_user_subscriptions(
             session, user, organization_id=subscription_tier.organization_id
@@ -538,7 +530,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
             started_at=start,
             user=user,
             organization=None,
-            subscription_tier=subscription_tier,
+            product=subscription_tier,
             price=price,
         )
         session.add(subscription)
@@ -564,7 +556,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
                 stripe_subscription.id, price_id
             )
 
-        subscription_tier = price.subscription_tier
+        subscription_tier = price.product
         subscription_tier_org = await organization_service.get(
             session, subscription_tier.organization_id
         )
@@ -600,7 +592,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         subscription.cancel_at_period_end = stripe_subscription.cancel_at_period_end
         subscription.ended_at = _from_timestamp(stripe_subscription.ended_at)
         subscription.price = price
-        subscription.subscription_tier = subscription_tier
+        subscription.product = subscription_tier
 
         subscription.set_started_at()
 
@@ -730,7 +722,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
 
         # subscribed to org
         if tier := await subscription_tier_service.get_loaded(
-            session, subscription.subscription_tier_id
+            session, subscription.product_id
         ):
             if subscribed_to_org := await organization_service.get(
                 session, tier.organization_id
@@ -809,7 +801,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
 
         await session.refresh(subscription, {"subscription_tier", "price"})
         account = await subscription_tier_service.get_managing_organization_account(
-            session, subscription.subscription_tier
+            session, subscription.product
         )
 
         tax = invoice.tax or 0
@@ -827,14 +819,14 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         held_balance = HeldBalance(
             amount=transfer_amount,
             subscription=subscription,
-            subscription_tier_price=subscription.price,
+            product_price=subscription.price,
             payment_transaction=payment_transaction,
         )
 
         # No account, create the held balance
         if account is None:
             managing_organization = await organization_service.get(
-                session, subscription.subscription_tier.organization_id
+                session, subscription.product.organization_id
             )
             assert managing_organization is not None
             held_balance.organization_id = managing_organization.id
@@ -873,7 +865,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         self, session: AsyncSession, subscription: Subscription
     ) -> None:
         subscription_tier = await subscription_tier_service.get(
-            session, subscription.subscription_tier_id
+            session, subscription.product_id
         )
         assert subscription_tier is not None
 
@@ -939,10 +931,10 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
                 )
 
     async def update_subscription_tier_benefits_grants(
-        self, session: AsyncSession, subscription_tier: SubscriptionTier
+        self, session: AsyncSession, subscription_tier: Product
     ) -> None:
         statement = select(Subscription).where(
-            Subscription.subscription_tier_id == subscription_tier.id,
+            Subscription.product_id == subscription_tier.id,
             Subscription.deleted_at.is_(None),
         )
         subscriptions = await session.stream_scalars(statement)
@@ -980,7 +972,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
             subscription, {"subscription_tier", "user", "organization", "price"}
         )
 
-        if subscription.subscription_tier.type == SubscriptionTierType.free:
+        if subscription.product.type == SubscriptionTierType.free:
             raise FreeSubscriptionUpgrade(subscription)
 
         new_subscription_tier = await subscription_tier_service.get_by_id(
@@ -993,7 +985,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
             )
 
         # Make sure the new tier belongs to the same organization
-        old_subscription_tier = subscription.subscription_tier
+        old_subscription_tier = subscription.product
         if (
             old_subscription_tier.organization_id
             != new_subscription_tier.organization_id
@@ -1011,7 +1003,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
             new_price=new_price.stripe_price_id,
         )
 
-        subscription.subscription_tier = new_subscription_tier
+        subscription.product = new_subscription_tier
         subscription.price = new_price
         session.add(subscription)
 
@@ -1076,17 +1068,17 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
 
         if organization is not None:
             subscriptions_statement = subscriptions_statement.where(
-                SubscriptionTier.organization_id == organization.id
+                Product.organization_id == organization.id
             )
 
         if types is not None:
             subscriptions_statement = subscriptions_statement.where(
-                SubscriptionTier.type.in_(types)
+                Product.type.in_(types)
             )
 
         if subscription_tier_id is not None:
             subscriptions_statement = subscriptions_statement.where(
-                SubscriptionTier.id == subscription_tier_id
+                Product.id == subscription_tier_id
             )
 
         # Set the interval to 1 month
@@ -1167,7 +1159,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
                     distinct(
                         tuple_(
                             Subscription.subscriber_id,
-                            Subscription.subscription_tier_id,
+                            Subscription.product_id,
                         )
                     )
                 ).filter(Subscription.id.is_not(None)),
@@ -1209,15 +1201,15 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
 
         webhooks = await webhook_notifications_service.search(
             session,
-            organization_id=subscription.subscription_tier.organization_id,
+            organization_id=subscription.product.organization_id,
         )
 
         organization = await organization_service.get(
-            session, subscription.subscription_tier.organization_id
+            session, subscription.product.organization_id
         )
         assert organization is not None
 
-        subscription_tier = subscription.subscription_tier
+        subscription_tier = subscription.product
         price = subscription.price
         price_display = f"${price.price_amount / 100} / {price.recurring_interval}"
 
@@ -1279,7 +1271,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
     ) -> Select[Any]:
         statement = (
             select(Subscription)
-            .join(Subscription.subscription_tier)
+            .join(Subscription.product)
             .where(
                 Subscription.deleted_at.is_(None),
             )
@@ -1290,8 +1282,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
                 UserOrganization,
                 isouter=True,
                 onclause=and_(
-                    UserOrganization.organization_id
-                    == SubscriptionTier.organization_id,
+                    UserOrganization.organization_id == Product.organization_id,
                     UserOrganization.user_id == auth_subject.subject.id,
                 ),
             ).where(
@@ -1299,7 +1290,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
             )
         elif is_organization(auth_subject):
             statement = statement.where(
-                SubscriptionTier.organization_id == auth_subject.subject.id,
+                Product.organization_id == auth_subject.subject.id,
             )
 
         return statement
@@ -1331,15 +1322,12 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         self,
         session: AsyncSession,
         subscription: Subscription,
-        current_subscription_tier: SubscriptionTier,
+        current_subscription_tier: Product,
     ) -> Sequence[BenefitGrant]:
         subscription_tier_benefits_statement = (
             select(Benefit.id)
-            .join(SubscriptionTierBenefit)
-            .where(
-                SubscriptionTierBenefit.subscription_tier_id
-                == current_subscription_tier.id
-            )
+            .join(ProductBenefit)
+            .where(ProductBenefit.product_id == current_subscription_tier.id)
         )
 
         statement = select(BenefitGrant).where(

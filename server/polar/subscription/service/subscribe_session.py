@@ -5,9 +5,9 @@ from polar.authz.service import AccessType, Authz
 from polar.exceptions import NotPermitted, PolarError, ResourceNotFound, Unauthorized
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.kit.db.postgres import AsyncSession
-from polar.models import SubscriptionTier, SubscriptionTierPrice
+from polar.models import Product, ProductPrice
 from polar.models.organization import Organization
-from polar.models.subscription_tier import SubscriptionTierType
+from polar.models.product import SubscriptionTierType
 from polar.organization.service import organization as organization_service
 
 from ..schemas import SubscribeSession
@@ -48,8 +48,8 @@ class SubscribeSessionService:
     async def create_subscribe_session(
         self,
         session: AsyncSession,
-        subscription_tier: SubscriptionTier,
-        price: SubscriptionTierPrice,
+        subscription_tier: Product,
+        price: ProductPrice,
         success_url: str,
         auth_subject: AuthSubject[Subject],
         authz: Authz,
@@ -104,8 +104,7 @@ class SubscribeSessionService:
                     free_subscription_upgrade = next(
                         subscription
                         for subscription in existing_subscriptions
-                        if subscription.subscription_tier.type
-                        == SubscriptionTierType.free
+                        if subscription.product.type == SubscriptionTierType.free
                     )
                 except StopIteration as e:
                     # Prevent authenticated user to subscribe to another plan

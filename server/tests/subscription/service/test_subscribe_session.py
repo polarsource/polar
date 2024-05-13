@@ -7,7 +7,7 @@ import pytest
 from polar.auth.models import Anonymous, AuthMethod, AuthSubject
 from polar.authz.service import Authz
 from polar.exceptions import NotPermitted, ResourceNotFound, Unauthorized
-from polar.models import Organization, SubscriptionTier, SubscriptionTierPrice, User
+from polar.models import Organization, Product, ProductPrice, User
 from polar.postgres import AsyncSession
 from polar.subscription.service.subscribe_session import (
     AlreadySubscribed,
@@ -41,7 +41,7 @@ class TestCreateSubscribeSession:
         auth_subject: AuthSubject[Anonymous],
         session: AsyncSession,
         authz: Authz,
-        subscription_tier_free: SubscriptionTier,
+        subscription_tier_free: Product,
     ) -> None:
         # then
         session.expunge_all()
@@ -57,7 +57,7 @@ class TestCreateSubscribeSession:
             await subscribe_session_service.create_subscribe_session(
                 session,
                 subscription_tier_free_loaded,
-                SubscriptionTierPrice(),
+                ProductPrice(),
                 "SUCCESS_URL",
                 auth_subject,
                 authz,
@@ -69,7 +69,7 @@ class TestCreateSubscribeSession:
         session: AsyncSession,
         save_fixture: SaveFixture,
         authz: Authz,
-        subscription_tier: SubscriptionTier,
+        subscription_tier: Product,
     ) -> None:
         subscription_tier.is_archived = True
         await save_fixture(subscription_tier)
@@ -101,7 +101,7 @@ class TestCreateSubscribeSession:
         session: AsyncSession,
         save_fixture: SaveFixture,
         authz: Authz,
-        subscription_tier: SubscriptionTier,
+        subscription_tier: Product,
         user: User,
     ) -> None:
         subscription = await create_active_subscription(
@@ -133,7 +133,7 @@ class TestCreateSubscribeSession:
         auth_subject: AuthSubject[Anonymous],
         session: AsyncSession,
         authz: Authz,
-        subscription_tier: SubscriptionTier,
+        subscription_tier: Product,
         stripe_service_mock: MagicMock,
     ) -> None:
         create_subscription_checkout_session_mock: MagicMock = (
@@ -192,7 +192,7 @@ class TestCreateSubscribeSession:
         auth_subject: AuthSubject[User],
         session: AsyncSession,
         authz: Authz,
-        subscription_tier: SubscriptionTier,
+        subscription_tier: Product,
         stripe_service_mock: MagicMock,
         user: User,
     ) -> None:
@@ -257,7 +257,7 @@ class TestCreateSubscribeSession:
         auth_subject: AuthSubject[User],
         session: AsyncSession,
         authz: Authz,
-        subscription_tier: SubscriptionTier,
+        subscription_tier: Product,
         stripe_service_mock: MagicMock,
         user: User,
     ) -> None:
@@ -319,7 +319,7 @@ class TestCreateSubscribeSession:
         auth_subject: AuthSubject[User],
         session: AsyncSession,
         authz: Authz,
-        subscription_tier: SubscriptionTier,
+        subscription_tier: Product,
         stripe_service_mock: MagicMock,
         user: User,
     ) -> None:
@@ -383,7 +383,7 @@ class TestCreateSubscribeSession:
         session: AsyncSession,
         save_fixture: SaveFixture,
         authz: Authz,
-        subscription_tier: SubscriptionTier,
+        subscription_tier: Product,
         stripe_service_mock: MagicMock,
         organization: Organization,
     ) -> None:
@@ -453,8 +453,8 @@ class TestCreateSubscribeSession:
         session: AsyncSession,
         save_fixture: SaveFixture,
         authz: Authz,
-        subscription_tier: SubscriptionTier,
-        subscription_tier_free: SubscriptionTier,
+        subscription_tier: Product,
+        subscription_tier_free: Product,
         stripe_service_mock: MagicMock,
         user: User,
     ) -> None:
@@ -520,7 +520,7 @@ class TestCreateSubscribeSession:
         auth_subject: AuthSubject[Anonymous],
         session: AsyncSession,
         authz: Authz,
-        subscription_tier: SubscriptionTier,
+        subscription_tier: Product,
         stripe_service_mock: MagicMock,
         organization_second: Organization,
     ) -> None:
@@ -551,7 +551,7 @@ class TestCreateSubscribeSession:
         auth_subject: AuthSubject[User],
         session: AsyncSession,
         authz: Authz,
-        subscription_tier: SubscriptionTier,
+        subscription_tier: Product,
         stripe_service_mock: MagicMock,
         organization_second: Organization,
         user: User,
@@ -584,7 +584,7 @@ class TestCreateSubscribeSession:
         session: AsyncSession,
         save_fixture: SaveFixture,
         authz: Authz,
-        subscription_tier: SubscriptionTier,
+        subscription_tier: Product,
         stripe_service_mock: MagicMock,
         organization_second: Organization,
         organization_second_admin: User,
@@ -683,7 +683,7 @@ class TestGetSubscribeSession:
         self,
         session: AsyncSession,
         stripe_service_mock: MagicMock,
-        subscription_tier: SubscriptionTier,
+        subscription_tier: Product,
     ) -> None:
         get_checkout_session_mock: MagicMock = stripe_service_mock.get_checkout_session
         get_checkout_session_mock.return_value = SimpleNamespace(

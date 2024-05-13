@@ -191,7 +191,7 @@ class TestCreatePayout:
             issue_reward=None,
             subscription=None,
             donation=None,
-            subscription_tier_price=None,
+            product_price=None,
             account_incurred_transactions=[],
         )
         await save_fixture(payout)

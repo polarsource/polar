@@ -3,8 +3,8 @@ from httpx import AsyncClient
 from pydantic import ValidationError
 
 from polar.models.organization import Organization
+from polar.models.product import Product
 from polar.models.repository import Repository
-from polar.models.subscription_tier import SubscriptionTier
 from polar.models.user_organization import UserOrganization
 from polar.postgres import AsyncSession
 from tests.fixtures.database import SaveFixture
@@ -243,7 +243,7 @@ async def test_update_repository_profile_settings_featured_organizations(
 async def test_update_repository_profile_settings_highlighted_subscription_tiers(
     client: AsyncClient,
     user_organization: UserOrganization,  # makes User a member of Organization
-    subscription_tier: SubscriptionTier,
+    subscription_tier: Product,
     repository: Repository,
     session: AsyncSession,
     save_fixture: SaveFixture,

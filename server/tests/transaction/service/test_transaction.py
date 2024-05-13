@@ -63,7 +63,7 @@ class TestSearch:
             result.issue_reward
             result.subscription
             if result.subscription is not None:
-                result.subscription.subscription_tier
+                result.subscription.product
 
     async def test_filter_type(
         self,

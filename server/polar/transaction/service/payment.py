@@ -159,7 +159,7 @@ class PaymentTransactionService(BaseTransactionService):
             pledge=pledge,
             subscription=subscription,
             donation=donation,
-            subscription_tier_price=subscription.price if subscription else None,
+            product_price=subscription.price if subscription else None,
         )
 
         # Compute and link fees

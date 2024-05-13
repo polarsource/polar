@@ -11,10 +11,10 @@ from polar.auth.scope import Scope
 from polar.authz.service import Authz
 from polar.exceptions import NotPermitted, PolarRequestValidationError
 from polar.kit.pagination import PaginationParams
-from polar.models import Benefit, Organization, SubscriptionTier, User, UserOrganization
+from polar.models import Benefit, Organization, Product, User, UserOrganization
 from polar.models.benefit import BenefitType
-from polar.models.subscription_tier import SubscriptionTierType
-from polar.models.subscription_tier_price import SubscriptionTierPriceRecurringInterval
+from polar.models.product import SubscriptionTierType
+from polar.models.product_price import ProductPriceRecurringInterval
 from polar.postgres import AsyncSession
 from polar.subscription.schemas import (
     ExistingSubscriptionTierPrice,
@@ -66,7 +66,7 @@ class TestSearch:
         self,
         auth_subject: AuthSubject[Anonymous],
         session: AsyncSession,
-        subscription_tiers: list[SubscriptionTier],
+        subscription_tiers: list[Product],
     ) -> None:
         # then
         session.expunge_all()
@@ -87,7 +87,7 @@ class TestSearch:
         self,
         auth_subject: AuthSubject[User],
         session: AsyncSession,
-        subscription_tiers: list[SubscriptionTier],
+        subscription_tiers: list[Product],
         user: User,
     ) -> None:
         # then
@@ -109,7 +109,7 @@ class TestSearch:
         self,
         auth_subject: AuthSubject[User],
         session: AsyncSession,
-        subscription_tiers: list[SubscriptionTier],
+        subscription_tiers: list[Product],
         user_organization: UserOrganization,
     ) -> None:
         # then
@@ -127,7 +127,7 @@ class TestSearch:
         self,
         auth_subject: AuthSubject[Organization],
         session: AsyncSession,
-        subscription_tiers: list[SubscriptionTier],
+        subscription_tiers: list[Product],
     ) -> None:
         # then
         session.expunge_all()
@@ -176,10 +176,10 @@ class TestSearch:
         auth_subject: AuthSubject[User],
         session: AsyncSession,
         organization: Organization,
-        subscription_tiers: list[SubscriptionTier],
-        subscription_tier_free: SubscriptionTier,
-        subscription_tier: SubscriptionTier,
-        subscription_tier_second: SubscriptionTier,
+        subscription_tiers: list[Product],
+        subscription_tier_free: Product,
+        subscription_tier: Product,
+        subscription_tier_second: Product,
     ) -> None:
         # then
         session.expunge_all()
@@ -393,8 +393,8 @@ class TestSearch:
                     save_fixture,
                     organization=organization,
                     prices=[
-                        (1000, SubscriptionTierPriceRecurringInterval.month),
-                        (2000, SubscriptionTierPriceRecurringInterval.year),
+                        (1000, ProductPriceRecurringInterval.month),
+                        (2000, ProductPriceRecurringInterval.year),
                     ],
                 )
             )
@@ -407,8 +407,8 @@ class TestSearch:
                     organization=organization,
                     is_archived=True,
                     prices=[
-                        (1000, SubscriptionTierPriceRecurringInterval.month),
-                        (2000, SubscriptionTierPriceRecurringInterval.year),
+                        (1000, ProductPriceRecurringInterval.month),
+                        (2000, ProductPriceRecurringInterval.year),
                     ],
                 )
             )
@@ -454,7 +454,7 @@ class TestGetById:
         self,
         auth_subject: AuthSubject[Anonymous],
         session: AsyncSession,
-        subscription_tier: SubscriptionTier,
+        subscription_tier: Product,
     ) -> None:
         # then
         session.expunge_all()
@@ -475,7 +475,7 @@ class TestGetById:
         self,
         auth_subject: AuthSubject[User],
         session: AsyncSession,
-        subscription_tier: SubscriptionTier,
+        subscription_tier: Product,
     ) -> None:
         # then
         session.expunge_all()
@@ -496,7 +496,7 @@ class TestGetById:
         self,
         auth_subject: AuthSubject[User],
         session: AsyncSession,
-        subscription_tier: SubscriptionTier,
+        subscription_tier: Product,
         user: User,
         user_organization: UserOrganization,
     ) -> None:
@@ -519,7 +519,7 @@ class TestGetById:
         self,
         auth_subject: AuthSubject[Organization],
         session: AsyncSession,
-        subscription_tier: SubscriptionTier,
+        subscription_tier: Product,
     ) -> None:
         # then
         session.expunge_all()
@@ -548,7 +548,7 @@ class TestUserCreate:
             organization_id=uuid.uuid4(),
             prices=[
                 SubscriptionTierPriceCreate(
-                    recurring_interval=SubscriptionTierPriceRecurringInterval.month,
+                    recurring_interval=ProductPriceRecurringInterval.month,
                     price_amount=1000,
                     price_currency="usd",
                 )
@@ -577,7 +577,7 @@ class TestUserCreate:
             organization_id=organization.id,
             prices=[
                 SubscriptionTierPriceCreate(
-                    recurring_interval=SubscriptionTierPriceRecurringInterval.month,
+                    recurring_interval=ProductPriceRecurringInterval.month,
                     price_amount=1000,
                     price_currency="usd",
                 )
@@ -616,7 +616,7 @@ class TestUserCreate:
             organization_id=organization.id,
             prices=[
                 SubscriptionTierPriceCreate(
-                    recurring_interval=SubscriptionTierPriceRecurringInterval.month,
+                    recurring_interval=ProductPriceRecurringInterval.month,
                     price_amount=1000,
                     price_currency="usd",
                 )
@@ -670,7 +670,7 @@ class TestUserCreate:
             is_highlighted=True,
             prices=[
                 SubscriptionTierPriceCreate(
-                    recurring_interval=SubscriptionTierPriceRecurringInterval.month,
+                    recurring_interval=ProductPriceRecurringInterval.month,
                     price_amount=1000,
                     price_currency="usd",
                 )
@@ -715,7 +715,7 @@ class TestUserCreate:
             organization_id=organization.id,
             prices=[
                 SubscriptionTierPriceCreate(
-                    recurring_interval=SubscriptionTierPriceRecurringInterval.month,
+                    recurring_interval=ProductPriceRecurringInterval.month,
                     price_amount=1000,
                     price_currency="usd",
                 )
@@ -744,7 +744,7 @@ class TestUserCreate:
             organization_id=organization.id,
             prices=[
                 SubscriptionTierPriceCreate(
-                    recurring_interval=SubscriptionTierPriceRecurringInterval.month,
+                    recurring_interval=ProductPriceRecurringInterval.month,
                     price_amount=1000,
                     price_currency="usd",
                 )
@@ -781,7 +781,7 @@ class TestUserCreate:
             name="Subscription Tier",
             prices=[
                 SubscriptionTierPriceCreate(
-                    recurring_interval=SubscriptionTierPriceRecurringInterval.month,
+                    recurring_interval=ProductPriceRecurringInterval.month,
                     price_amount=1000,
                     price_currency="usd",
                 )
@@ -805,7 +805,7 @@ class TestUserUpdate:
         auth_subject: AuthSubject[User],
         session: AsyncSession,
         authz: Authz,
-        subscription_tier: SubscriptionTier,
+        subscription_tier: Product,
     ) -> None:
         # then
         session.expunge_all()
@@ -835,7 +835,7 @@ class TestUserUpdate:
         session: AsyncSession,
         authz: Authz,
         auth_subject: AuthSubject[User | Organization],
-        subscription_tier: SubscriptionTier,
+        subscription_tier: Product,
         organization: Organization,
         user_organization_admin: UserOrganization,
         stripe_service_mock: MagicMock,
@@ -875,7 +875,7 @@ class TestUserUpdate:
         session: AsyncSession,
         authz: Authz,
         auth_subject: AuthSubject[User | Organization],
-        subscription_tier: SubscriptionTier,
+        subscription_tier: Product,
         user_organization_admin: UserOrganization,
         stripe_service_mock: MagicMock,
     ) -> None:
@@ -914,7 +914,7 @@ class TestUserUpdate:
         session: AsyncSession,
         authz: Authz,
         auth_subject: AuthSubject[User | Organization],
-        subscription_tier: SubscriptionTier,
+        subscription_tier: Product,
         user_organization_admin: UserOrganization,
         stripe_service_mock: MagicMock,
     ) -> None:
@@ -950,7 +950,7 @@ class TestUserUpdate:
         session: AsyncSession,
         authz: Authz,
         auth_subject: AuthSubject[User | Organization],
-        subscription_tier: SubscriptionTier,
+        subscription_tier: Product,
         user_organization_admin: UserOrganization,
         stripe_service_mock: MagicMock,
     ) -> None:
@@ -974,7 +974,7 @@ class TestUserUpdate:
                     id=subscription_tier_organization_loaded.prices[0].id
                 ),
                 SubscriptionTierPriceCreate(
-                    recurring_interval=SubscriptionTierPriceRecurringInterval.year,
+                    recurring_interval=ProductPriceRecurringInterval.year,
                     price_amount=12000,
                     price_currency="usd",
                 ),
@@ -1009,7 +1009,7 @@ class TestUserUpdate:
         session: AsyncSession,
         authz: Authz,
         auth_subject: AuthSubject[User | Organization],
-        subscription_tier: SubscriptionTier,
+        subscription_tier: Product,
         user_organization_admin: UserOrganization,
         stripe_service_mock: MagicMock,
     ) -> None:
@@ -1033,7 +1033,7 @@ class TestUserUpdate:
         update_schema = SubscriptionTierUpdate(
             prices=[
                 SubscriptionTierPriceCreate(
-                    recurring_interval=SubscriptionTierPriceRecurringInterval.year,
+                    recurring_interval=ProductPriceRecurringInterval.year,
                     price_amount=12000,
                     price_currency="usd",
                 ),
@@ -1066,7 +1066,7 @@ class TestUserUpdate:
         authz: Authz,
         auth_subject: AuthSubject[User | Organization],
         organization: Organization,
-        subscription_tier: SubscriptionTier,
+        subscription_tier: Product,
         user_organization_admin: UserOrganization,
         stripe_service_mock: MagicMock,
     ) -> None:
@@ -1113,7 +1113,7 @@ class TestCreateFree:
         session: AsyncSession,
         enqueue_job_mock: AsyncMock,
         organization: Organization,
-        subscription_tier_free: SubscriptionTier,
+        subscription_tier_free: Product,
     ) -> None:
         # then
         session.expunge_all()
@@ -1165,7 +1165,7 @@ class TestUpdateBenefits:
         auth_subject: AuthSubject[User],
         session: AsyncSession,
         authz: Authz,
-        subscription_tier: SubscriptionTier,
+        subscription_tier: Product,
     ) -> None:
         # then
         session.expunge_all()
@@ -1192,7 +1192,7 @@ class TestUpdateBenefits:
         authz: Authz,
         auth_subject: AuthSubject[User | Organization],
         user_organization_admin: UserOrganization,
-        subscription_tier: SubscriptionTier,
+        subscription_tier: Product,
         benefits: list[Benefit],
     ) -> None:
         subscription_tier = await add_subscription_benefits(
@@ -1221,9 +1221,9 @@ class TestUpdateBenefits:
 
         await session.refresh(subscription_tier_organization_loaded)
 
-        assert len(
-            subscription_tier_organization_loaded.subscription_tier_benefits
-        ) == len(benefits)
+        assert len(subscription_tier_organization_loaded.product_benefits) == len(
+            benefits
+        )
 
     @pytest.mark.auth(
         AuthSubjectFixture(subject="user"),
@@ -1236,7 +1236,7 @@ class TestUpdateBenefits:
         authz: Authz,
         auth_subject: AuthSubject[User | Organization],
         user_organization_admin: UserOrganization,
-        subscription_tier: SubscriptionTier,
+        subscription_tier: Product,
         benefits: list[Benefit],
     ) -> None:
         # then
@@ -1261,11 +1261,11 @@ class TestUpdateBenefits:
         )
         await session.flush()
 
-        assert len(subscription_tier.subscription_tier_benefits) == len(benefits)
+        assert len(subscription_tier.product_benefits) == len(benefits)
         for (
             i,
             subscription_tier_benefit,
-        ) in enumerate(subscription_tier.subscription_tier_benefits):
+        ) in enumerate(subscription_tier.product_benefits):
             assert subscription_tier_benefit.order == i
             assert benefits[i].id == subscription_tier_benefit.benefit_id
 
@@ -1288,7 +1288,7 @@ class TestUpdateBenefits:
         authz: Authz,
         auth_subject: AuthSubject[User | Organization],
         user_organization_admin: UserOrganization,
-        subscription_tier: SubscriptionTier,
+        subscription_tier: Product,
         benefits: list[Benefit],
     ) -> None:
         # then
@@ -1313,11 +1313,11 @@ class TestUpdateBenefits:
         )
         await session.flush()
 
-        assert len(subscription_tier.subscription_tier_benefits) == len(benefits)
+        assert len(subscription_tier.product_benefits) == len(benefits)
         for (
             i,
             subscription_tier_benefit,
-        ) in enumerate(subscription_tier.subscription_tier_benefits):
+        ) in enumerate(subscription_tier.product_benefits):
             assert subscription_tier_benefit.order == i
             assert benefits[-i - 1].id == subscription_tier_benefit.benefit_id
 
@@ -1341,7 +1341,7 @@ class TestUpdateBenefits:
         authz: Authz,
         auth_subject: AuthSubject[User | Organization],
         user_organization_admin: UserOrganization,
-        subscription_tier: SubscriptionTier,
+        subscription_tier: Product,
         benefits: list[Benefit],
     ) -> None:
         subscription_tier = await add_subscription_benefits(
@@ -1368,7 +1368,7 @@ class TestUpdateBenefits:
         )
         await session.flush()
 
-        assert len(subscription_tier.subscription_tier_benefits) == 0
+        assert len(subscription_tier.product_benefits) == 0
         assert len(added) == 0
         assert len(deleted) == len(benefits)
 
@@ -1389,7 +1389,7 @@ class TestUpdateBenefits:
         authz: Authz,
         auth_subject: AuthSubject[User | Organization],
         user_organization_admin: UserOrganization,
-        subscription_tier: SubscriptionTier,
+        subscription_tier: Product,
         benefits: list[Benefit],
     ) -> None:
         subscription_tier = await add_subscription_benefits(
@@ -1420,11 +1420,11 @@ class TestUpdateBenefits:
         )
         await session.flush()
 
-        assert len(subscription_tier.subscription_tier_benefits) == len(benefits)
+        assert len(subscription_tier.product_benefits) == len(benefits)
         for (
             i,
             subscription_tier_benefit,
-        ) in enumerate(subscription_tier.subscription_tier_benefits):
+        ) in enumerate(subscription_tier.product_benefits):
             assert subscription_tier_benefit.order == i
             assert benefits[-i - 1].id == subscription_tier_benefit.benefit_id
 
@@ -1448,7 +1448,7 @@ class TestUpdateBenefits:
         auth_subject: AuthSubject[User | Organization],
         user_organization_admin: UserOrganization,
         organization: Organization,
-        subscription_tier: SubscriptionTier,
+        subscription_tier: Product,
     ) -> None:
         not_selectable_benefit = await create_benefit(
             save_fixture,
@@ -1488,7 +1488,7 @@ class TestUpdateBenefits:
         auth_subject: AuthSubject[User | Organization],
         user_organization_admin: UserOrganization,
         organization: Organization,
-        subscription_tier: SubscriptionTier,
+        subscription_tier: Product,
     ) -> None:
         not_selectable_benefit = await create_benefit(
             save_fixture,
@@ -1535,7 +1535,7 @@ class TestUpdateBenefits:
         auth_subject: AuthSubject[User | Organization],
         user_organization_admin: UserOrganization,
         organization: Organization,
-        subscription_tier: SubscriptionTier,
+        subscription_tier: Product,
     ) -> None:
         not_selectable_benefit = await create_benefit(
             save_fixture,
@@ -1595,7 +1595,7 @@ class TestArchive:
         auth_subject: AuthSubject[User],
         session: AsyncSession,
         authz: Authz,
-        subscription_tier: SubscriptionTier,
+        subscription_tier: Product,
     ) -> None:
         # then
         session.expunge_all()
@@ -1620,7 +1620,7 @@ class TestArchive:
         session: AsyncSession,
         authz: Authz,
         auth_subject: AuthSubject[User | Organization],
-        subscription_tier_free: SubscriptionTier,
+        subscription_tier_free: Product,
         user_organization_admin: UserOrganization,
     ) -> None:
         # then
@@ -1646,7 +1646,7 @@ class TestArchive:
         session: AsyncSession,
         authz: Authz,
         auth_subject: AuthSubject[User | Organization],
-        subscription_tier: SubscriptionTier,
+        subscription_tier: Product,
         user_organization_admin: UserOrganization,
         stripe_service_mock: MagicMock,
     ) -> None:

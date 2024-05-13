@@ -153,7 +153,7 @@ class PayoutTransactionService(BaseTransactionService):
             pledge=None,
             issue_reward=None,
             subscription=None,
-            subscription_tier_price=None,
+            product_price=None,
             donation=None,
             paid_transactions=[],
             incurred_transactions=[],
@@ -321,9 +321,7 @@ class PayoutTransactionService(BaseTransactionService):
             .order_by(Transaction.created_at)
             .options(
                 # Subscription
-                selectinload(Transaction.subscription).joinedload(
-                    Subscription.subscription_tier
-                ),
+                selectinload(Transaction.subscription).joinedload(Subscription.product),
                 # Pledge
                 selectinload(Transaction.pledge)
                 .joinedload(Pledge.issue)
@@ -371,7 +369,9 @@ class PayoutTransactionService(BaseTransactionService):
                 elif transaction.pledge is not None:
                     description = f"Pledge to {transaction.pledge.issue.reference_key}"
                 elif transaction.subscription is not None:
-                    description = f"Subscription to {transaction.subscription.subscription_tier.name}"
+                    description = (
+                        f"Subscription to {transaction.subscription.product.name}"
+                    )
                 elif transaction.donation is not None:
                     description = (
                         f"Donation to {transaction.donation.to_organization.name}"

@@ -54,7 +54,7 @@ class HeldBalanceService(ResourceServiceReader[HeldBalance]):
                 joinedload(HeldBalance.payment_transaction),
                 joinedload(HeldBalance.pledge),
                 joinedload(HeldBalance.subscription),
-                joinedload(HeldBalance.subscription_tier_price),
+                joinedload(HeldBalance.product_price),
                 joinedload(HeldBalance.issue_reward),
                 joinedload(HeldBalance.donation),
             )
@@ -71,7 +71,7 @@ class HeldBalanceService(ResourceServiceReader[HeldBalance]):
                 amount=held_balance.amount,
                 pledge=held_balance.pledge,
                 subscription=held_balance.subscription,
-                subscription_tier_price=held_balance.subscription_tier_price,
+                subscription_tier_price=held_balance.product_price,
                 issue_reward=held_balance.issue_reward,
                 donation=held_balance.donation,
             )

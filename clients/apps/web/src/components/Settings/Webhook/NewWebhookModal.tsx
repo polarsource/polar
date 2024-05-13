@@ -44,7 +44,7 @@ export default function NewWebhookModal({
       setIsCreating(false)
       hide()
     },
-    [hide],
+    [hide, createWebhookEndpoint, setCreated, setIsCreating],
   )
 
   return (

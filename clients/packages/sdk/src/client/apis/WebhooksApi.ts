@@ -18,6 +18,8 @@ import type {
   HTTPValidationError,
   ListResourceWebhookDelivery,
   ListResourceWebhookEndpoint,
+  NotPermitted,
+  ResourceNotFound,
   WebhookEndpoint,
   WebhookEndpointCreate,
   WebhookEndpointUpdate,
@@ -63,7 +65,7 @@ export interface WebhooksApiUpdateWebhookEndpointRequest {
 export class WebhooksApi extends runtime.BaseAPI {
 
     /**
-     * Create a new Webhook Endpoint
+     * Create a webhook endpoint.
      * Create Webhook Endpoint
      */
     async createWebhookEndpointRaw(requestParameters: WebhooksApiCreateWebhookEndpointRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<WebhookEndpoint>> {
@@ -100,7 +102,7 @@ export class WebhooksApi extends runtime.BaseAPI {
     }
 
     /**
-     * Create a new Webhook Endpoint
+     * Create a webhook endpoint.
      * Create Webhook Endpoint
      */
     async createWebhookEndpoint(requestParameters: WebhooksApiCreateWebhookEndpointRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<WebhookEndpoint> {
@@ -109,7 +111,7 @@ export class WebhooksApi extends runtime.BaseAPI {
     }
 
     /**
-     * Delete a Webhook Endpoint
+     * Delete a webhook endpoint.
      * Delete Webhook Endpoint
      */
     async deleteWebhookEndpointRaw(requestParameters: WebhooksApiDeleteWebhookEndpointRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<void>> {
@@ -143,7 +145,7 @@ export class WebhooksApi extends runtime.BaseAPI {
     }
 
     /**
-     * Delete a Webhook Endpoint
+     * Delete a webhook endpoint.
      * Delete Webhook Endpoint
      */
     async deleteWebhookEndpoint(requestParameters: WebhooksApiDeleteWebhookEndpointRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<void> {
@@ -151,7 +153,7 @@ export class WebhooksApi extends runtime.BaseAPI {
     }
 
     /**
-     * Get a Webhook Endpoint
+     * Get a webhook endpoint by ID.
      * Get Webhook Endpoint
      */
     async getWebhookEndpointRaw(requestParameters: WebhooksApiGetWebhookEndpointRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<WebhookEndpoint>> {
@@ -185,7 +187,7 @@ export class WebhooksApi extends runtime.BaseAPI {
     }
 
     /**
-     * Get a Webhook Endpoint
+     * Get a webhook endpoint by ID.
      * Get Webhook Endpoint
      */
     async getWebhookEndpoint(requestParameters: WebhooksApiGetWebhookEndpointRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<WebhookEndpoint> {
@@ -194,7 +196,7 @@ export class WebhooksApi extends runtime.BaseAPI {
     }
 
     /**
-     * List Webhook Deliveries
+     * List webhook deliveries.  Deliveries are all the attempts to deliver a webhook event to an endpoint.
      * List Webhook Deliveries
      */
     async listWebhookDeliveriesRaw(requestParameters: WebhooksApiListWebhookDeliveriesRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListResourceWebhookDelivery>> {
@@ -233,7 +235,7 @@ export class WebhooksApi extends runtime.BaseAPI {
     }
 
     /**
-     * List Webhook Deliveries
+     * List webhook deliveries.  Deliveries are all the attempts to deliver a webhook event to an endpoint.
      * List Webhook Deliveries
      */
     async listWebhookDeliveries(requestParameters: WebhooksApiListWebhookDeliveriesRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ListResourceWebhookDelivery> {
@@ -242,7 +244,7 @@ export class WebhooksApi extends runtime.BaseAPI {
     }
 
     /**
-     * List Webhook Endpoints
+     * List webhook endpoints.
      * List Webhook Endpoints
      */
     async listWebhookEndpointsRaw(requestParameters: WebhooksApiListWebhookEndpointsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListResourceWebhookEndpoint>> {
@@ -285,7 +287,7 @@ export class WebhooksApi extends runtime.BaseAPI {
     }
 
     /**
-     * List Webhook Endpoints
+     * List webhook endpoints.
      * List Webhook Endpoints
      */
     async listWebhookEndpoints(requestParameters: WebhooksApiListWebhookEndpointsRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ListResourceWebhookEndpoint> {
@@ -294,7 +296,7 @@ export class WebhooksApi extends runtime.BaseAPI {
     }
 
     /**
-     * Schedule a re-delivery of a Webhook Event
+     * Schedule the re-delivery of a webhook event.
      * Redeliver Webhook Event
      */
     async redeliverWebhookEventRaw(requestParameters: WebhooksApiRedeliverWebhookEventRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<any>> {
@@ -332,7 +334,7 @@ export class WebhooksApi extends runtime.BaseAPI {
     }
 
     /**
-     * Schedule a re-delivery of a Webhook Event
+     * Schedule the re-delivery of a webhook event.
      * Redeliver Webhook Event
      */
     async redeliverWebhookEvent(requestParameters: WebhooksApiRedeliverWebhookEventRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<any> {
@@ -341,7 +343,7 @@ export class WebhooksApi extends runtime.BaseAPI {
     }
 
     /**
-     * Update a Webhook Endpoint
+     * Update a webhook endpoint.
      * Update Webhook Endpoint
      */
     async updateWebhookEndpointRaw(requestParameters: WebhooksApiUpdateWebhookEndpointRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<WebhookEndpoint>> {
@@ -385,7 +387,7 @@ export class WebhooksApi extends runtime.BaseAPI {
     }
 
     /**
-     * Update a Webhook Endpoint
+     * Update a webhook endpoint.
      * Update Webhook Endpoint
      */
     async updateWebhookEndpoint(requestParameters: WebhooksApiUpdateWebhookEndpointRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<WebhookEndpoint> {

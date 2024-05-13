@@ -5,6 +5,7 @@ import AuthenticationSettings from '@/components/Settings/AuthenticationSettings
 import ConnectedAppSettings from '@/components/Settings/ConnectedAppSettings'
 import GeneralSettings from '@/components/Settings/GeneralSettings'
 import NotificationSettings from '@/components/Settings/NotificationSettings'
+import { OAuthSettings } from '@/components/Settings/OAuth/OAuthSettings'
 import PaymentMethodSettings from '@/components/Settings/PaymentMethodSettings'
 import { Section, SectionDescription } from '@/components/Settings/Section'
 import WebhookNotificationSettings from '@/components/Settings/Webhook/WebhookNotificationSettings'
@@ -82,6 +83,15 @@ export default function Page() {
             </Section>
           </>
         ) : null}
+
+        <Section>
+          <SectionDescription
+            title="OAuth Apps"
+            description="Your configured OAuth Apps."
+          />
+
+          <OAuthSettings />
+        </Section>
       </div>
     </div>
   )

@@ -7,23 +7,13 @@ from polar.auth.models import AuthSubject, Organization, User
 from polar.auth.scope import Scope
 
 _WebhooksRead = Authenticator(
-    required_scopes={
-        Scope.web_default,
-        Scope.creator_webhooks_read,
-        Scope.creator_webhooks_write,
-        Scope.backer_webhooks_read,
-        Scope.backer_webhooks_write,
-    },
+    required_scopes={Scope.web_default, Scope.webhooks_read, Scope.webhooks_write},
     allowed_subjects={User, Organization},
 )
 WebhooksRead = Annotated[AuthSubject[User | Organization], Depends(_WebhooksRead)]
 
 _WebhooksWrite = Authenticator(
-    required_scopes={
-        Scope.web_default,
-        Scope.creator_webhooks_write,
-        Scope.backer_webhooks_write,
-    },
+    required_scopes={Scope.web_default, Scope.webhooks_write},
     allowed_subjects={User, Organization},
 )
 WebhooksWrite = Annotated[AuthSubject[User | Organization], Depends(_WebhooksWrite)]

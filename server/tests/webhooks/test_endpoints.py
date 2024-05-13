@@ -96,7 +96,7 @@ class TestCreateWebhookEndpoint:
 
     @pytest.mark.auth(
         AuthSubjectFixture(scopes={Scope.web_default}),
-        AuthSubjectFixture(scopes={Scope.backer_webhooks_write}),
+        AuthSubjectFixture(scopes={Scope.webhooks_write}),
     )
     async def test_user_valid(self, client: AsyncClient) -> None:
         params = {
@@ -120,9 +120,7 @@ class TestCreateWebhookEndpoint:
         assert response.status_code == 403
 
     @pytest.mark.auth(
-        AuthSubjectFixture(
-            subject="organization", scopes={Scope.creator_webhooks_write}
-        )
+        AuthSubjectFixture(subject="organization", scopes={Scope.webhooks_write})
     )
     async def test_organization_valid_creator_webhooks_write_scope(
         self, client: AsyncClient
@@ -155,7 +153,7 @@ class TestUpdateWebhookEndpoint:
 
     @pytest.mark.auth(
         AuthSubjectFixture(scopes={Scope.web_default}),
-        AuthSubjectFixture(scopes={Scope.creator_webhooks_write}),
+        AuthSubjectFixture(scopes={Scope.webhooks_write}),
     )
     async def test_user_valid(
         self,
@@ -180,9 +178,7 @@ class TestUpdateWebhookEndpoint:
         assert response.status_code == 403
 
     @pytest.mark.auth(
-        AuthSubjectFixture(
-            subject="organization", scopes={Scope.creator_webhooks_write}
-        )
+        AuthSubjectFixture(subject="organization", scopes={Scope.webhooks_write})
     )
     async def test_organization_valid_creator_webhooks_write_scope(
         self, client: AsyncClient, webhook_endpoint_organization: WebhookEndpoint
@@ -212,7 +208,7 @@ class TestDeleteWebhookEndpoint:
 
     @pytest.mark.auth(
         AuthSubjectFixture(scopes={Scope.web_default}),
-        AuthSubjectFixture(scopes={Scope.creator_webhooks_write}),
+        AuthSubjectFixture(scopes={Scope.webhooks_write}),
     )
     async def test_user_valid(
         self,
@@ -237,9 +233,7 @@ class TestDeleteWebhookEndpoint:
         assert response.status_code == 403
 
     @pytest.mark.auth(
-        AuthSubjectFixture(
-            subject="organization", scopes={Scope.creator_webhooks_write}
-        )
+        AuthSubjectFixture(subject="organization", scopes={Scope.webhooks_write})
     )
     async def test_organization_valid_creator_webhooks_write_scope(
         self, client: AsyncClient, webhook_endpoint_organization: WebhookEndpoint
@@ -299,7 +293,7 @@ class TestListWebhookDeliveries:
         assert json["items"][0]["id"] == str(webhook_delivery.id)
 
     @pytest.mark.auth(
-        AuthSubjectFixture(subject="organization", scopes={Scope.creator_webhooks_read})
+        AuthSubjectFixture(subject="organization", scopes={Scope.webhooks_write})
     )
     async def test_organization(
         self,

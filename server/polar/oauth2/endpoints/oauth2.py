@@ -5,6 +5,7 @@ from fastapi import Depends, Form, HTTPException, Request, Response
 
 from polar.auth.dependencies import WebUser, WebUserOrAnonymous
 from polar.auth.models import is_user
+from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.routing import APIRouter
 from polar.models import OAuth2Token, Organization
 from polar.organization.service import organization as organization_service
@@ -22,14 +23,31 @@ from ..dependencies import get_authorization_server, get_token
 from ..grants import AuthorizationCodeGrant
 from ..schemas import (
     AuthorizeResponse,
+    OAuth2Client,
     OAuth2ClientConfiguration,
     OAuth2ClientConfigurationUpdate,
     authorize_response_adapter,
 )
+from ..service.oauth2_client import oauth2_client as oauth2_client_service
 from ..sub_type import SubType
 from ..userinfo import UserInfo, generate_user_info
 
 router = APIRouter(prefix="/oauth2", tags=["oauth2"])
+
+
+@router.get("/", response_model=ListResource[OAuth2Client], tags=[Tags.PUBLIC])
+async def list_oauth2_clients(
+    auth_subject: WebUser,
+    pagination: PaginationParamsQuery,
+    session: AsyncSession = Depends(get_db_session),
+) -> ListResource[OAuth2Client]:
+    """List OAuth2 clients."""
+    results, count = await oauth2_client_service.list(
+        session, auth_subject, pagination=pagination
+    )
+    return ListResource.from_paginated_results(
+        [OAuth2Client.model_validate(result) for result in results], count, pagination
+    )
 
 
 @router.post("/register", name="oauth2.register", tags=[Tags.PUBLIC])

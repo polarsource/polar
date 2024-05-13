@@ -93,14 +93,19 @@ class Account(RecordModel):
     def organizations(cls) -> Mapped[list["Organization"]]:
         return relationship("Organization", lazy="raise", back_populates="account")
 
-    def is_ready(self) -> bool:
-        return self.status in {Account.Status.UNDER_REVIEW, Account.Status.ACTIVE}
-
     def is_active(self) -> bool:
         return self.status == Account.Status.ACTIVE
 
     def is_under_review(self) -> bool:
         return self.status == Account.Status.UNDER_REVIEW
+
+    def is_payout_ready(self) -> bool:
+        return self.is_active() and (
+            # For Stripe accounts, check if payouts are enabled.
+            # Normally, the account shouldn't be active if payouts are not enabled
+            # but let's be extra cautious
+            self.account_type != AccountType.stripe or self.is_payouts_enabled
+        )
 
     def get_associations_names(self) -> list[str]:
         associations_names: list[str] = []

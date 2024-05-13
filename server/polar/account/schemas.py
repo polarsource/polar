@@ -41,7 +41,9 @@ class Account(Schema):
     status: AccountModel.Status
     stripe_id: str | None = None
     open_collective_slug: str | None = None
-    is_details_submitted: bool | None = None
+    is_details_submitted: bool
+    is_charges_enabled: bool
+    is_payouts_enabled: bool
     country: str = Field(min_length=2, max_length=2)
 
     users: list[UserBase]
@@ -56,6 +58,8 @@ class Account(Schema):
             stripe_id=o.stripe_id,
             open_collective_slug=o.open_collective_slug,
             is_details_submitted=o.is_details_submitted,
+            is_charges_enabled=o.is_charges_enabled,
+            is_payouts_enabled=o.is_payouts_enabled,
             country=o.country,
             users=[UserBase.model_validate(user) for user in o.users],
             organizations=[

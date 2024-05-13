@@ -94,7 +94,7 @@ class PayoutTransactionService(BaseTransactionService):
     ) -> PayoutEstimate:
         if account.is_under_review():
             raise UnderReviewAccount(account)
-        if not account.is_ready():
+        if not account.is_payout_ready():
             raise NotReadyAccount(account)
 
         balance_amount = await transaction_service.get_transactions_sum(
@@ -122,7 +122,7 @@ class PayoutTransactionService(BaseTransactionService):
     ) -> Transaction:
         if account.is_under_review():
             raise UnderReviewAccount(account)
-        if not account.is_ready():
+        if not account.is_payout_ready():
             raise NotReadyAccount(account)
 
         balance_amount = await transaction_service.get_transactions_sum(

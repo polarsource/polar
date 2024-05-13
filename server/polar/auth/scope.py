@@ -1,5 +1,9 @@
 from enum import StrEnum
 
+from pydantic import GetJsonSchemaHandler
+from pydantic.json_schema import JsonSchemaValue
+from pydantic_core import core_schema as cs
+
 
 class Scope(StrEnum):
     openid = "openid"
@@ -19,10 +23,17 @@ class Scope(StrEnum):
     creator_benefits_read = "creator:benefits:read"
     creator_benefits_write = "creator:benefits:write"
 
-    creator_webhooks_read = "creator:webhooks:read"
-    creator_webhooks_write = "creator:webhooks:write"
-    backer_webhooks_read = "backer:webhooks:read"
-    backer_webhooks_write = "backer:webhooks:write"
+    webhooks_read = "webhooks:read"
+    webhooks_write = "webhooks:write"
+
+    @classmethod
+    def __get_pydantic_json_schema__(
+        cls, core_schema: cs.CoreSchema, handler: GetJsonSchemaHandler
+    ) -> JsonSchemaValue:
+        json_schema = handler(core_schema)
+        json_schema = handler.resolve_ref_schema(json_schema)
+        json_schema["enumNames"] = SCOPES_SUPPORTED_DISPLAY_NAMES
+        return json_schema
 
 
 RESERVED_SCOPES = {Scope.admin, Scope.web_default}
@@ -34,10 +45,14 @@ SCOPES_SUPPORTED_DISPLAY_NAMES: dict[Scope, str] = {
     Scope.web_default: "Web Default",
     Scope.articles_read: "Articles Read",
     Scope.user_read: "User Read",
-    Scope.creator_subscriptions_read: "Read Subscription Tiers, Benefits and Subscribers",
-    Scope.creator_subscriptions_write: "Create or modify Subscription Tiers, Benefits and Subscribers",
+    Scope.creator_subscriptions_read: "Read Subscription Tiers and Subscribers",
+    Scope.creator_subscriptions_write: "Create or modify Subscription Tiers and Subscribers",
     Scope.backer_subscriptions_read: "Read Subscriptions",
     Scope.backer_subscriptions_write: "Create or modify Subscriptions",
+    Scope.creator_benefits_read: "Read Benefits",
+    Scope.creator_benefits_write: "Create or modify Benefits",
+    Scope.webhooks_read: "Read Webhooks",
+    Scope.webhooks_write: "Create or modify Webhooks",
 }
 
 

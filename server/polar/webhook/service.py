@@ -5,9 +5,7 @@ from uuid import UUID
 from sqlalchemy import Select, and_, desc, or_, select, text
 from sqlalchemy.orm import contains_eager, joinedload
 
-from polar.auth.exceptions import MissingScope
 from polar.auth.models import AuthSubject, is_organization, is_user
-from polar.auth.scope import Scope
 from polar.authz.service import AccessType, Authz
 from polar.benefit.schemas import benefit_schema_map
 from polar.donation.schemas import Donation as DonationSchema
@@ -101,30 +99,11 @@ class WebhookService:
         # Organization ID unset: guess from auth_subject
         if create_schema.organization_id is None:
             if is_user(auth_subject):
-                if (
-                    not auth_subject.has_web_default_scope()
-                    and Scope.backer_webhooks_write not in auth_subject.scopes
-                ):
-                    raise MissingScope(
-                        auth_subject.scopes, {Scope.backer_webhooks_write}
-                    )
                 endpoint.user_id = auth_subject.subject.id
             elif is_organization(auth_subject):
-                if (
-                    not auth_subject.has_web_default_scope()
-                    and Scope.creator_webhooks_write not in auth_subject.scopes
-                ):
-                    raise MissingScope(
-                        auth_subject.scopes, {Scope.creator_webhooks_write}
-                    )
                 endpoint.organization_id = auth_subject.subject.id
         # Organization ID set: check if it's a user, and that he can write to it
         else:
-            if (
-                not auth_subject.has_web_default_scope()
-                and Scope.creator_webhooks_write not in auth_subject.scopes
-            ):
-                raise MissingScope(auth_subject.scopes, {Scope.creator_webhooks_write})
             organization = await get_payload_organization(
                 session, auth_subject, create_schema
             )
@@ -414,20 +393,6 @@ class WebhookService:
         auth_subject: AuthSubject[User | Organization],
         endpoint: WebhookEndpoint,
     ) -> None:
-        if (
-            endpoint.user_id is not None
-            and not auth_subject.has_web_default_scope()
-            and Scope.backer_webhooks_write not in auth_subject.scopes
-        ):
-            raise MissingScope(auth_subject.scopes, {Scope.backer_webhooks_write})
-
-        if (
-            endpoint.organization_id is not None
-            and not auth_subject.has_web_default_scope()
-            and Scope.creator_webhooks_write not in auth_subject.scopes
-        ):
-            raise MissingScope(auth_subject.scopes, {Scope.creator_webhooks_write})
-
         if not await authz.can(auth_subject.subject, AccessType.write, endpoint):
             raise NotPermitted()
 

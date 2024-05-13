@@ -133,6 +133,24 @@ class TestCreatePayout:
         with pytest.raises(NotReadyAccount):
             await payout_transaction_service.create_payout(session, account=account)
 
+    async def test_payout_disabled_account(
+        self, session: AsyncSession, user: User
+    ) -> None:
+        account = Account(
+            status=Account.Status.ACTIVE,
+            account_type=AccountType.stripe,
+            admin_id=user.id,
+            country="US",
+            currency="usd",
+            is_payouts_enabled=False,
+        )
+
+        # then
+        session.expunge_all()
+
+        with pytest.raises(NotReadyAccount):
+            await payout_transaction_service.create_payout(session, account=account)
+
     async def test_stripe(
         self,
         session: AsyncSession,

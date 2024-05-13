@@ -276,6 +276,16 @@ class AccountService(ResourceService[Account, AccountCreate, AccountUpdate]):
         ):
             account.status = Account.Status.ACTIVE
 
+        # If Stripe disables some capabilities, reset to ONBOARDING_STARTED
+        if any(
+            (
+                not account.is_details_submitted,
+                not account.is_charges_enabled,
+                not account.is_payouts_enabled,
+            )
+        ):
+            account.status = Account.Status.ONBOARDING_STARTED
+
         session.add(account)
         await session.commit()
 

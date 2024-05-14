@@ -82,7 +82,7 @@ const WebhookNotificationSettings = (props: { org: Organization }) => {
   }
 
   return (
-    <div className="flex w-full flex-col overflow-hidden">
+    <div className="flex w-full flex-col">
       <ShadowListGroup>
         {webhooks.data?.items && webhooks.data.items.length > 0 ? (
           webhooks.data?.items?.map((w) => {

@@ -111,6 +111,7 @@ export const CloseButton = (props: {
         props.className,
       )}
       onClick={() => props.hide()}
+      tabIndex={-1}
     >
       <XIcon />
     </button>

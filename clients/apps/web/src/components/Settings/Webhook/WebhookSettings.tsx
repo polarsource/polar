@@ -27,7 +27,7 @@ const WebhookSettings = (props: { org: Organization }) => {
   })
 
   return (
-    <div className="flex w-full flex-col overflow-hidden">
+    <div className="flex w-full flex-col">
       <ShadowListGroup>
         {endpoints.data?.items && endpoints.data.items.length > 0 ? (
           endpoints.data?.items?.map((e) => {

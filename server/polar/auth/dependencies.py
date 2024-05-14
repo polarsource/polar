@@ -7,7 +7,7 @@ from makefun import with_signature
 
 from polar.auth.scope import RESERVED_SCOPES, Scope
 from polar.config import settings
-from polar.exceptions import PolarError, Unauthorized
+from polar.exceptions import NotPermitted, PolarError, Unauthorized
 from polar.models import OAuth2Token
 from polar.oauth2.dependencies import get_optional_token
 from polar.postgres import AsyncSession, get_db_session
@@ -100,7 +100,7 @@ class _Authenticator:
         # Blocked subjects
         blocked_at = getattr(auth_subject.subject, "blocked_at", None)
         if blocked_at is not None:
-            raise Unauthorized()
+            raise NotPermitted()
 
         # Not allowed subject
         subject_type = type(auth_subject.subject)

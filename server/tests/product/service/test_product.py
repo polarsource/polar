@@ -1104,7 +1104,7 @@ class TestCreateFreeTier:
         assert subscription_tier.id == subscription_tier_free.id
 
         enqueue_job_mock.assert_called_once_with(
-            "subscription.subscription.update_subscription_tier_benefits_grants",
+            "subscription.subscription.update_product_benefits_grants",
             subscription_tier.id,
         )
 
@@ -1131,7 +1131,7 @@ class TestCreateFreeTier:
         assert free_subscription_tier.benefits[0].id == benefit_organization.id
 
         enqueue_job_mock.assert_called_once_with(
-            "subscription.subscription.update_subscription_tier_benefits_grants",
+            "subscription.subscription.update_product_benefits_grants",
             free_subscription_tier.id,
         )
 
@@ -1241,7 +1241,7 @@ class TestUpdateBenefits:
         assert len(deleted) == 0
 
         enqueue_job_mock.assert_called_once_with(
-            "subscription.subscription.update_subscription_tier_benefits_grants",
+            "subscription.subscription.update_product_benefits_grants",
             product.id,
         )
 
@@ -1288,7 +1288,7 @@ class TestUpdateBenefits:
         assert len(deleted) == 0
 
         enqueue_job_mock.assert_called_once_with(
-            "subscription.subscription.update_subscription_tier_benefits_grants",
+            "subscription.subscription.update_product_benefits_grants",
             product.id,
         )
 
@@ -1334,7 +1334,7 @@ class TestUpdateBenefits:
         assert len(deleted) == len(benefits)
 
         enqueue_job_mock.assert_called_once_with(
-            "subscription.subscription.update_subscription_tier_benefits_grants",
+            "subscription.subscription.update_product_benefits_grants",
             product.id,
         )
 
@@ -1388,7 +1388,7 @@ class TestUpdateBenefits:
         assert len(deleted) == 0
 
         enqueue_job_mock.assert_called_once_with(
-            "subscription.subscription.update_subscription_tier_benefits_grants",
+            "subscription.subscription.update_product_benefits_grants",
             product.id,
         )
 
@@ -1532,7 +1532,7 @@ class TestUpdateBenefits:
         assert len(deleted) == 0
 
         enqueue_job_mock.assert_called_once_with(
-            "subscription.subscription.update_subscription_tier_benefits_grants",
+            "subscription.subscription.update_product_benefits_grants",
             product.id,
         )
 

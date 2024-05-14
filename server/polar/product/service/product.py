@@ -362,7 +362,7 @@ class ProductService(ResourceService[Product, ProductCreate, ProductUpdate]):
         await session.flush()
 
         enqueue_job(
-            "subscription.subscription.update_subscription_tier_benefits_grants",
+            "subscription.subscription.update_product_benefits_grants",
             free_subscription_tier.id,
         )
 
@@ -414,7 +414,7 @@ class ProductService(ResourceService[Product, ProductCreate, ProductUpdate]):
         session.add(product)
 
         enqueue_job(
-            "subscription.subscription.update_subscription_tier_benefits_grants",
+            "subscription.subscription.update_product_benefits_grants",
             product.id,
         )
 

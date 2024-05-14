@@ -920,11 +920,11 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
                     subscription_id=subscription.id,
                 )
 
-    async def update_subscription_tier_benefits_grants(
-        self, session: AsyncSession, subscription_tier: Product
+    async def update_product_benefits_grants(
+        self, session: AsyncSession, product: Product
     ) -> None:
         statement = select(Subscription).where(
-            Subscription.product_id == subscription_tier.id,
+            Subscription.product_id == product.id,
             Subscription.deleted_at.is_(None),
         )
         subscriptions = await session.stream_scalars(statement)

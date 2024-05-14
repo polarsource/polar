@@ -990,7 +990,7 @@ class TestEnqueueBenefitsGrants:
 
 
 @pytest.mark.asyncio
-class TestUpdateSubscriptionTierBenefitsGrants:
+class TestUpdateProductBenefitsGrants:
     async def test_valid(
         self,
         session: AsyncSession,
@@ -1018,7 +1018,7 @@ class TestUpdateSubscriptionTierBenefitsGrants:
         # then
         session.expunge_all()
 
-        await subscription_service.update_subscription_tier_benefits_grants(
+        await subscription_service.update_product_benefits_grants(
             session, subscription_tier
         )
 

@@ -52,13 +52,13 @@ async def list_oauth2_clients(
 
 @router.post("/register", name="oauth2.register", tags=[Tags.PUBLIC])
 async def oauth2_register(
-    _client_configuration: OAuth2ClientConfiguration,
+    client_configuration: OAuth2ClientConfiguration,
     request: Request,
     auth_subject: WebUser,
     authorization_server: AuthorizationServer = Depends(get_authorization_server),
 ) -> Response:
-    await request.json()
     request.state.user = auth_subject.subject
+    request.state.parsed_data = client_configuration.model_dump(mode="json")
     return authorization_server.create_endpoint_response(
         ClientRegistrationEndpoint.ENDPOINT_NAME, request
     )

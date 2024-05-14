@@ -4,15 +4,13 @@ from sqlalchemy.orm import joinedload
 from polar.exceptions import PolarError
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.services import ResourceServiceReader
-from polar.models import (
-    ProductPrice,
-)
+from polar.models import ProductPrice
 
 
-class SubscriptionTierPriceError(PolarError): ...
+class ProductPriceError(PolarError): ...
 
 
-class SubscriptionTierPriceService(ResourceServiceReader[ProductPrice]):
+class ProductPriceService(ResourceServiceReader[ProductPrice]):
     async def get_by_stripe_price_id(
         self, session: AsyncSession, stripe_price_id: str
     ) -> ProductPrice | None:
@@ -25,4 +23,4 @@ class SubscriptionTierPriceService(ResourceServiceReader[ProductPrice]):
         return result.scalar_one_or_none()
 
 
-subscription_tier_price = SubscriptionTierPriceService(ProductPrice)
+product_price = ProductPriceService(ProductPrice)

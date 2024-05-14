@@ -89,16 +89,12 @@ from polar.webhook.webhooks import WebhookTypeObject
 from polar.webhook_notifications.service import webhook_notifications_service
 from polar.worker import enqueue_job
 
-from ...product.service.product import (
-    product as product_service,
-)
+from ...product.service.product import product as product_service
+from ...product.service.product_price import product_price as product_price_service
 from ..schemas import (
     FreeSubscriptionCreate,
     SubscriptionsStatisticsPeriod,
     SubscriptionUpgrade,
-)
-from .subscription_tier_price import (
-    subscription_tier_price as subscription_tier_price_service,
 )
 
 
@@ -550,9 +546,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         self, session: AsyncSession, *, stripe_subscription: stripe_lib.Subscription
     ) -> Subscription:
         price_id = stripe_subscription["items"].data[0].price.id
-        price = await subscription_tier_price_service.get_by_stripe_price_id(
-            session, price_id
-        )
+        price = await product_price_service.get_by_stripe_price_id(session, price_id)
         if price is None:
             raise AssociatedSubscriptionTierPriceDoesNotExist(
                 stripe_subscription.id, price_id
@@ -751,9 +745,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         subscription.set_started_at()
 
         price_id = stripe_subscription["items"].data[0].price.id
-        price = await subscription_tier_price_service.get_by_stripe_price_id(
-            session, price_id
-        )
+        price = await product_price_service.get_by_stripe_price_id(session, price_id)
         if price is None:
             raise AssociatedSubscriptionTierPriceDoesNotExist(
                 stripe_subscription.id, price_id

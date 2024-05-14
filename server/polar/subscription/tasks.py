@@ -10,13 +10,9 @@ from polar.logging import Logger
 from polar.organization.service import organization as organization_service
 from polar.worker import AsyncSessionMaker, JobContext, PolarWorkerContext, task
 
-from ..product.service.product import (
-    product as product_service,
-)
+from ..product.service.product import product as product_service
+from ..product.service.product_price import product_price as product_price_service
 from .service.subscription import subscription as subscription_service
-from .service.subscription_tier_price import (
-    subscription_tier_price as subscription_tier_price_service,
-)
 
 log: Logger = structlog.get_logger()
 
@@ -81,9 +77,7 @@ async def subscription_discord_notification(
             raise SubscriptionDoesNotExist(subscription_id)
 
         assert subscription.price_id is not None
-        price = await subscription_tier_price_service.get(
-            session, subscription.price_id
-        )
+        price = await product_price_service.get(session, subscription.price_id)
         assert price is not None
 
         tier = await product_service.get(session, subscription.product_id)

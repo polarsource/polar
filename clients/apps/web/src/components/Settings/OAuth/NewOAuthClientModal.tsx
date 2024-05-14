@@ -5,6 +5,17 @@ import Button from 'polarkit/components/ui/atoms/button'
 import { Form } from 'polarkit/components/ui/form'
 import { useCallback, useState } from 'react'
 import { useForm } from 'react-hook-form'
+import {
+  FieldLogo,
+  FieldName,
+  FieldRedirectURIs,
+  FieldScopes,
+} from './OAuthForm'
+
+export interface EnhancedOAuth2ClientConfiguration
+  extends Omit<OAuth2ClientConfiguration, 'redirect_uris'> {
+  redirect_uris: { uri: string }[]
+}
 
 interface NewOAuthClientModalProps {
   hideModal: () => void
@@ -13,21 +24,29 @@ interface NewOAuthClientModalProps {
 export const NewOAuthClientModal = ({
   hideModal,
 }: NewOAuthClientModalProps) => {
-  const form = useForm<OAuth2ClientConfiguration>()
+  const form = useForm<EnhancedOAuth2ClientConfiguration>({
+    defaultValues: {
+      redirect_uris: [{ uri: '' }],
+    },
+  })
 
   const { handleSubmit } = form
 
-  const [created, setCreated] = useState<OAuth2ClientConfiguration>()
+  const [created, setCreated] = useState<EnhancedOAuth2ClientConfiguration>()
   const [isCreating, setIsCreating] = useState(false)
 
   const createOAuth2Client = useCreateOAuth2Client()
 
   const onSubmit = useCallback(
-    async (form: OAuth2ClientConfiguration) => {
+    async (form: EnhancedOAuth2ClientConfiguration) => {
       setIsCreating(true)
-      const res = await createOAuth2Client.mutateAsync(form)
+      const res = await createOAuth2Client
+        .mutateAsync({
+          ...form,
+          redirect_uris: form.redirect_uris.map(({ uri }) => uri),
+        })
+        .finally(() => setIsCreating(false))
       setCreated(res)
-      setIsCreating(false)
       hideModal()
     },
     [hideModal, createOAuth2Client, setCreated, setIsCreating],
@@ -46,9 +65,10 @@ export const NewOAuthClientModal = ({
             onSubmit={handleSubmit(onSubmit)}
             className="max-w-[700px] space-y-8"
           >
-            <FieldUrl />
-            <FieldSecret isUpdate={false} />
-            <FieldEvents />
+            <FieldName />
+            <FieldLogo />
+            <FieldRedirectURIs />
+            <FieldScopes />
 
             <Button
               type="submit"

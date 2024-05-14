@@ -16,10 +16,16 @@
 import * as runtime from '../runtime';
 import type {
   HTTPValidationError,
+  ListResourceOAuth2Client,
   OAuth2ClientConfiguration,
   OAuth2ClientConfigurationUpdate,
   ResponseOauth2Oauth2Authorize,
 } from '../models/index';
+
+export interface Oauth2ApiListOauth2ClientsRequest {
+    page?: number;
+    limit?: number;
+}
 
 export interface Oauth2ApiOauth2ConfigureDeleteRequest {
     clientId: string;
@@ -46,6 +52,50 @@ export interface Oauth2ApiOauth2RegisterRequest {
  * 
  */
 export class Oauth2Api extends runtime.BaseAPI {
+
+    /**
+     * List OAuth2 clients.
+     * List Oauth2 Clients
+     */
+    async listOauth2ClientsRaw(requestParameters: Oauth2ApiListOauth2ClientsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListResourceOAuth2Client>> {
+        const queryParameters: any = {};
+
+        if (requestParameters['page'] != null) {
+            queryParameters['page'] = requestParameters['page'];
+        }
+
+        if (requestParameters['limit'] != null) {
+            queryParameters['limit'] = requestParameters['limit'];
+        }
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("HTTPBearer", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+        const response = await this.request({
+            path: `/api/v1/oauth2/`,
+            method: 'GET',
+            headers: headerParameters,
+            query: queryParameters,
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse(response);
+    }
+
+    /**
+     * List OAuth2 clients.
+     * List Oauth2 Clients
+     */
+    async listOauth2Clients(requestParameters: Oauth2ApiListOauth2ClientsRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ListResourceOAuth2Client> {
+        const response = await this.listOauth2ClientsRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
 
     /**
      * Oauth2.Authorize

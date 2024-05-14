@@ -1,8 +1,11 @@
 import { InlineModal } from '@/components/Modal/InlineModal'
 import { useModal } from '@/components/Modal/useModal'
 import { useOAuth2Clients } from '@/hooks/queries/oauth'
-import { OAuth2ClientConfiguration } from '@polar-sh/sdk'
-import { ShadowListGroup } from 'polarkit/components/ui/atoms'
+import { OAuth2Client } from '@polar-sh/sdk'
+import {
+  FormattedDateTime,
+  ShadowListGroup,
+} from 'polarkit/components/ui/atoms'
 import Button from 'polarkit/components/ui/atoms/button'
 import { NewOAuthClientModal } from './NewOAuthClientModal'
 
@@ -20,7 +23,7 @@ export const OAuthSettings = () => {
       {oauthClients.data?.items && oauthClients.data.items.length > 0 ? (
         oauthClients.data?.items?.map((client) => {
           return (
-            <ShadowListGroup.Item key={client.id}>
+            <ShadowListGroup.Item key={client.client_id}>
               <OAuthClientDetails client={client} />
             </ShadowListGroup.Item>
           )
@@ -51,9 +54,27 @@ export const OAuthSettings = () => {
 }
 
 interface OAuthClientDetailsProps {
-  client: OAuth2ClientConfiguration
+  client: OAuth2Client
 }
 
 const OAuthClientDetails = ({ client }: OAuthClientDetailsProps) => {
-  return <div></div>
+  return (
+    <div className="flex w-full flex-col gap-y-4">
+      <div className="flex flex-row items-center justify-between ">
+        <div className="flex  flex-row overflow-hidden">
+          <div className="flex flex-col gap-y-1 overflow-hidden">
+            <h3 className="text-md mr-4 overflow-hidden text-ellipsis whitespace-nowrap font-mono text-sm">
+              {client.client_name}
+            </h3>
+            <p className="dark:text-polar-400 text-sm text-gray-500">
+              <FormattedDateTime
+                datetime={client.created_at}
+                dateStyle="long"
+              />
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
 }

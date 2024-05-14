@@ -18,8 +18,9 @@ import {
 } from './OAuthForm'
 
 export interface EnhancedOAuth2ClientConfigurationUpdate
-  extends Omit<OAuth2ClientConfigurationUpdate, 'redirect_uris'> {
+  extends Omit<OAuth2ClientConfigurationUpdate, 'redirect_uris' | 'scope'> {
   redirect_uris: { uri: string }[]
+  scope: string[]
 }
 
 interface EditOAuthClientModalProps {
@@ -35,6 +36,7 @@ export const EditOAuthClientModal = ({
     defaultValues: {
       ...client,
       redirect_uris: client.redirect_uris.map((uri) => ({ uri })),
+      scope: client.scope?.split(' ') ?? [],
     },
   })
 
@@ -54,6 +56,7 @@ export const EditOAuthClientModal = ({
           oAuth2ClientConfigurationUpdate: {
             ...form,
             redirect_uris: form.redirect_uris.map(({ uri }) => uri),
+            scope: form.scope.join(' '),
           },
         })
         .finally(() => setIsUpdating(false))

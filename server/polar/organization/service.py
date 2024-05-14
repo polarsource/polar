@@ -68,7 +68,6 @@ class OrganizationService(ResourceServiceReader[Organization]):
     async def get_by_platform(
         self, session: AsyncSession, platform: Platforms, external_id: int
     ) -> Organization | None:
-        # TODO: Also add deleted_at=None in a separate commit
         return await self.get_by(
             session,
             platform=platform,
@@ -79,13 +78,11 @@ class OrganizationService(ResourceServiceReader[Organization]):
     async def get_by_name(
         self, session: AsyncSession, platform: Platforms, name: str
     ) -> Organization | None:
-        # TODO: Also add deleted_at=None in a separate commit
         return await self.get_by(session, platform=platform, name=name, blocked_at=None)
 
     async def get_by_custom_domain(
         self, session: AsyncSession, custom_domain: str
     ) -> Organization | None:
-        # TODO: Also add deleted_at=None in a separate commit
         query = sql.select(Organization).where(
             Organization.custom_domain == custom_domain,
             Organization.blocked_at.is_(None),

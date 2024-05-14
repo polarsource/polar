@@ -1,6 +1,6 @@
 import { InlineModalHeader } from '@/components/Modal/InlineModal'
-import { useCreateOAuth2Client } from '@/hooks/queries/oauth'
-import { OAuth2ClientConfiguration } from '@polar-sh/sdk'
+import { useEditOAuth2Client } from '@/hooks/queries/oauth'
+import { OAuth2Client, OAuth2ClientConfigurationUpdate } from '@polar-sh/sdk'
 import Button from 'polarkit/components/ui/atoms/button'
 import { Form } from 'polarkit/components/ui/form'
 import { useCallback, useState } from 'react'
@@ -14,52 +14,58 @@ import {
   FieldTOS,
 } from './OAuthForm'
 
-export interface EnhancedOAuth2ClientConfiguration
-  extends Omit<OAuth2ClientConfiguration, 'redirect_uris'> {
+export interface EnhancedOAuth2ClientConfigurationUpdate
+  extends Omit<OAuth2ClientConfigurationUpdate, 'redirect_uris'> {
   redirect_uris: { uri: string }[]
 }
 
-interface NewOAuthClientModalProps {
+interface EditOAuthClientModalProps {
+  client: OAuth2Client
   hideModal: () => void
 }
 
-export const NewOAuthClientModal = ({
+export const EditOAuthClientModal = ({
+  client,
   hideModal,
-}: NewOAuthClientModalProps) => {
-  const form = useForm<EnhancedOAuth2ClientConfiguration>({
+}: EditOAuthClientModalProps) => {
+  const form = useForm<EnhancedOAuth2ClientConfigurationUpdate>({
     defaultValues: {
-      redirect_uris: [{ uri: '' }],
-      token_endpoint_auth_method: 'client_secret_post',
+      ...client,
+      redirect_uris: client.redirect_uris.map((uri) => ({ uri })),
     },
   })
 
   const { handleSubmit } = form
 
-  const [created, setCreated] = useState<EnhancedOAuth2ClientConfiguration>()
-  const [isCreating, setIsCreating] = useState(false)
+  const [created, setCreated] =
+    useState<EnhancedOAuth2ClientConfigurationUpdate>()
+  const [isUpdating, setIsUpdating] = useState(false)
 
-  const createOAuth2Client = useCreateOAuth2Client()
+  const createOAuth2Client = useEditOAuth2Client()
 
   const onSubmit = useCallback(
-    async (form: EnhancedOAuth2ClientConfiguration) => {
-      setIsCreating(true)
+    async (form: EnhancedOAuth2ClientConfigurationUpdate) => {
+      setIsUpdating(true)
       const res = await createOAuth2Client
         .mutateAsync({
-          ...form,
-          redirect_uris: form.redirect_uris.map(({ uri }) => uri),
+          clientId: client.client_id,
+          oAuth2ClientConfigurationUpdate: {
+            ...form,
+            redirect_uris: form.redirect_uris.map(({ uri }) => uri),
+          },
         })
-        .finally(() => setIsCreating(false))
+        .finally(() => setIsUpdating(false))
       setCreated(res)
       hideModal()
     },
-    [hideModal, createOAuth2Client, setCreated, setIsCreating],
+    [hideModal, createOAuth2Client, setCreated, setIsUpdating, client],
   )
 
   return (
     <div className="flex flex-col">
       <InlineModalHeader hide={hideModal}>
         <div className="flex items-center justify-between gap-2">
-          <h2 className="text-xl">New OAuth App</h2>
+          <h2 className="text-xl">Edit OAuth App</h2>
         </div>
       </InlineModalHeader>
       <div className="flex flex-col gap-y-8 p-8">
@@ -77,10 +83,10 @@ export const NewOAuthClientModal = ({
 
             <Button
               type="submit"
-              loading={isCreating}
+              loading={isUpdating}
               disabled={Boolean(created)}
             >
-              Create
+              Update
             </Button>
           </form>
         </Form>

@@ -198,3 +198,47 @@ export const FieldScopes = () => {
     </div>
   )
 }
+
+export const FieldTOS = () => {
+  const { control } = useFormContext<EnhancedOAuth2ClientConfiguration>()
+
+  return (
+    <FormField
+      control={control}
+      name="tos_uri"
+      render={({ field }) => (
+        <FormItem className="flex flex-col gap-4">
+          <div className="flex flex-row items-center justify-between">
+            <FormLabel>Terms of Service</FormLabel>
+          </div>
+          <FormControl>
+            <Input {...field} placeholder="Link to Terms of Service" />
+          </FormControl>
+          <FormMessage />
+        </FormItem>
+      )}
+    />
+  )
+}
+
+export const FieldPrivacy = () => {
+  const { control } = useFormContext<EnhancedOAuth2ClientConfiguration>()
+
+  return (
+    <FormField
+      control={control}
+      name="policy_uri"
+      render={({ field }) => (
+        <FormItem className="flex flex-col gap-4">
+          <div className="flex flex-row items-center justify-between">
+            <FormLabel>Privacy Policy</FormLabel>
+          </div>
+          <FormControl>
+            <Input {...field} placeholder="Link to Privacy Policy" />
+          </FormControl>
+          <FormMessage />
+        </FormItem>
+      )}
+    />
+  )
+}

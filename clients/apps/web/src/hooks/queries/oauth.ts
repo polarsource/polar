@@ -36,3 +36,14 @@ export const useEditOAuth2Client = () =>
       })
     },
   })
+
+export const useDeleteOAuthClient = () =>
+  useMutation({
+    mutationFn: (clientId: string) =>
+      api.oauth2.oauth2ConfigureDelete({ clientId }),
+    onSuccess(_data, _variables, _context) {
+      queryClient.invalidateQueries({
+        queryKey: ['oauth2Clients'],
+      })
+    },
+  })

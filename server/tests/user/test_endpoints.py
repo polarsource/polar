@@ -3,6 +3,7 @@ from httpx import AsyncClient
 
 from polar.models.account import Account
 from polar.models.user import User
+from tests.fixtures.auth import AuthSubjectFixture
 
 
 @pytest.mark.asyncio
@@ -25,6 +26,14 @@ async def test_get_users_me_no_auth(client: AsyncClient) -> None:
         "/api/v1/users/me",
     )
 
+    assert response.status_code == 401
+
+
+@pytest.mark.asyncio
+@pytest.mark.http_auto_expunge
+@pytest.mark.auth(AuthSubjectFixture(subject="user_blocked"))
+async def test_get_users_me_blocked(user_blocked: User, client: AsyncClient) -> None:
+    response = await client.get("/api/v1/users/me")
     assert response.status_code == 401
 
 
@@ -69,6 +78,21 @@ async def test_set_preferences_false(client: AsyncClient) -> None:
 
 
 @pytest.mark.asyncio
+@pytest.mark.auth(AuthSubjectFixture(subject="user_blocked"))
+@pytest.mark.http_auto_expunge
+async def test_blocked_user_set_preferences(client: AsyncClient) -> None:
+    response = await client.put(
+        "/api/v1/users/me",
+        json={
+            "email_newsletters_and_changelogs": False,
+            "email_promotions_and_events": False,
+        },
+    )
+
+    assert response.status_code == 401
+
+
+@pytest.mark.asyncio
 @pytest.mark.auth
 @pytest.mark.http_auto_expunge
 async def test_set_account(
@@ -85,3 +109,19 @@ async def test_set_account(
     json = response.json()
 
     assert json["account_id"] == str(open_collective_account.id)
+
+
+@pytest.mark.asyncio
+@pytest.mark.auth(AuthSubjectFixture(subject="user_blocked"))
+@pytest.mark.http_auto_expunge
+async def test_blocked_user_set_account(
+    client: AsyncClient, open_collective_account: Account
+) -> None:
+    response = await client.patch(
+        "/api/v1/users/me/account",
+        json={
+            "account_id": str(open_collective_account.id),
+        },
+    )
+
+    assert response.status_code == 401

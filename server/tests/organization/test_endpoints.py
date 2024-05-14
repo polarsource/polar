@@ -31,6 +31,17 @@ async def test_get_organization(
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
 @pytest.mark.auth
+async def test_get_blocked_organization_404(
+    organization_blocked: Organization, client: AsyncClient
+) -> None:
+    response = await client.get(f"/api/v1/organizations/{organization_blocked.id}")
+
+    assert response.status_code == 404
+
+
+@pytest.mark.asyncio
+@pytest.mark.http_auto_expunge
+@pytest.mark.auth
 async def test_get_organization_member_only_fields_no_member(
     save_fixture: SaveFixture,
     organization: Organization,
@@ -132,6 +143,23 @@ async def test_list_organization_member(
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
 @pytest.mark.auth
+async def test_list_blocked_organization_member(
+    organization_blocked: Organization,
+    user_organization_blocked: UserOrganization,  # makes User a member of Organization
+    client: AsyncClient,
+) -> None:
+    response = await client.get("/api/v1/organizations")
+
+    assert response.status_code == 200
+
+    orgs = response.json()["items"]
+    for org in orgs:
+        assert org.id != str(organization_blocked.id)
+
+
+@pytest.mark.asyncio
+@pytest.mark.http_auto_expunge
+@pytest.mark.auth
 async def test_list_organization_member_allow_non_admin(
     organization: Organization,
     user_organization: UserOrganization,  # makes User a member of Organization
@@ -192,6 +220,19 @@ async def test_organization_lookup(
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
 @pytest.mark.auth
+async def test_organization_blocked_lookup_404(
+    organization_blocked: Organization, client: AsyncClient
+) -> None:
+    response = await client.get(
+        f"/api/v1/organizations/lookup?platform=github&organization_name={organization_blocked.name}"
+    )
+
+    assert response.status_code == 404
+
+
+@pytest.mark.asyncio
+@pytest.mark.http_auto_expunge
+@pytest.mark.auth
 async def test_organization_search(
     organization: Organization, client: AsyncClient
 ) -> None:
@@ -220,6 +261,20 @@ async def test_organization_search_no_matches(
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
 @pytest.mark.auth
+async def test_organization_blocked_search(
+    organization_blocked: Organization, client: AsyncClient
+) -> None:
+    response = await client.get(
+        f"/api/v1/organizations/search?platform=github&organization_name={organization_blocked.name}"
+    )
+
+    assert response.status_code == 200
+    assert response.json()["items"] == []
+
+
+@pytest.mark.asyncio
+@pytest.mark.http_auto_expunge
+@pytest.mark.auth
 async def test_get_organization_deleted(
     save_fixture: SaveFixture,
     organization: Organization,
@@ -238,6 +293,20 @@ async def test_get_organization_deleted(
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
 @pytest.mark.auth
+async def test_get_organization_blocked_404(
+    save_fixture: SaveFixture,
+    organization_blocked: Organization,
+    user_organization: UserOrganization,  # makes User a member of Organization
+    client: AsyncClient,
+) -> None:
+    response = await client.get(f"/api/v1/organizations/{organization_blocked.id}")
+
+    assert response.status_code == 404
+
+
+@pytest.mark.asyncio
+@pytest.mark.http_auto_expunge
+@pytest.mark.auth
 async def test_update_organization_no_admin(
     organization: Organization, client: AsyncClient
 ) -> None:
@@ -247,6 +316,20 @@ async def test_update_organization_no_admin(
     )
 
     assert response.status_code == 401
+
+
+@pytest.mark.asyncio
+@pytest.mark.http_auto_expunge
+@pytest.mark.auth
+async def test_update_blocked_organization_no_admin_404(
+    organization_blocked: Organization, client: AsyncClient
+) -> None:
+    response = await client.patch(
+        f"/api/v1/organizations/{organization_blocked.id}",
+        json={"default_upfront_split_to_contributors": 85},
+    )
+
+    assert response.status_code == 404
 
 
 @pytest.mark.asyncio

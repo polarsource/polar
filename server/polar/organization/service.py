@@ -46,26 +46,49 @@ class OrganizationService(ResourceServiceReader[Organization]):
     async def list_installed(self, session: AsyncSession) -> Sequence[Organization]:
         stmt = sql.select(Organization).where(
             Organization.deleted_at.is_(None),
+            Organization.blocked_at.is_(None),
             Organization.installation_id.is_not(None),
         )
         res = await session.execute(stmt)
         return res.scalars().all()
 
+    # Override get method to include `blocked_at` filter
+    async def get(
+        self, session: AsyncSession, id: UUID, allow_deleted: bool = False
+    ) -> Organization | None:
+        conditions = [Organization.id == id]
+        if not allow_deleted:
+            conditions.append(Organization.deleted_at.is_(None))
+
+        conditions.append(Organization.blocked_at.is_(None))
+        query = sql.select(Organization).where(*conditions)
+        res = await session.execute(query)
+        return res.scalars().unique().one_or_none()
+
     async def get_by_platform(
         self, session: AsyncSession, platform: Platforms, external_id: int
     ) -> Organization | None:
-        return await self.get_by(session, platform=platform, external_id=external_id)
+        # TODO: Also add deleted_at=None in a separate commit
+        return await self.get_by(
+            session,
+            platform=platform,
+            external_id=external_id,
+            blocked_at=None,
+        )
 
     async def get_by_name(
         self, session: AsyncSession, platform: Platforms, name: str
     ) -> Organization | None:
-        return await self.get_by(session, platform=platform, name=name)
+        # TODO: Also add deleted_at=None in a separate commit
+        return await self.get_by(session, platform=platform, name=name, blocked_at=None)
 
     async def get_by_custom_domain(
         self, session: AsyncSession, custom_domain: str
     ) -> Organization | None:
+        # TODO: Also add deleted_at=None in a separate commit
         query = sql.select(Organization).where(
-            Organization.custom_domain == custom_domain
+            Organization.custom_domain == custom_domain,
+            Organization.blocked_at.is_(None),
         )
         res = await session.execute(query)
         return res.scalars().unique().one_or_none()
@@ -78,6 +101,7 @@ class OrganizationService(ResourceServiceReader[Organization]):
             .join(UserOrganization)
             .where(
                 Organization.deleted_at.is_(None),
+                Organization.blocked_at.is_(None),
                 Organization.is_personal.is_(True),
                 UserOrganization.user_id == user_id,
                 UserOrganization.deleted_at.is_(None),

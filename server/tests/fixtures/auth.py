@@ -13,7 +13,13 @@ class AuthSubjectFixture:
         self,
         *,
         subject: Literal[
-            "anonymous", "user", "user_second", "organization", "organization_second"
+            "anonymous",
+            "user",
+            "user_second",
+            "user_blocked",
+            "organization",
+            "organization_second",
+            "organization_blocked",
         ] = "user",
         scopes: set[Scope] = {Scope.web_default},
         method: AuthMethod = AuthMethod.COOKIE,
@@ -37,8 +43,10 @@ def auth_subject(
     request: pytest.FixtureRequest,
     user: User,
     user_second: User,
+    user_blocked: User,
     organization: Organization,
     organization_second: Organization,
+    organization_blocked: Organization,
 ) -> AuthSubject[Subject]:
     """
     This fixture generates an AuthSubject instance used by the `client` fixture
@@ -53,8 +61,10 @@ def auth_subject(
         "anonymous": Anonymous(),
         "user": user,
         "user_second": user_second,
+        "user_blocked": user_blocked,
         "organization": organization,
         "organization_second": organization_second,
+        "organization_blocked": organization_blocked,
     }
     return AuthSubject(
         subjects_map[auth_subject_fixture.subject],

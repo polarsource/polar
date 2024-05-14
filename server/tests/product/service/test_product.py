@@ -16,26 +16,24 @@ from polar.models.benefit import BenefitType
 from polar.models.product import SubscriptionTierType
 from polar.models.product_price import ProductPriceRecurringInterval
 from polar.postgres import AsyncSession
-from polar.subscription.schemas import (
-    ExistingSubscriptionTierPrice,
-    SubscriptionTierCreate,
-    SubscriptionTierPriceCreate,
-    SubscriptionTierUpdate,
+from polar.product.schemas import (
+    ExistingProductPrice,
+    ProductCreate,
+    ProductPriceCreate,
+    ProductUpdate,
 )
-from polar.subscription.service.subscription_tier import (
+from polar.product.service.product import (
     BenefitDoesNotExist,
     BenefitIsNotSelectable,
     FreeTierIsNotArchivable,
 )
-from polar.subscription.service.subscription_tier import (
-    subscription_tier as subscription_tier_service,
-)
+from polar.product.service.product import product as product_service
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
-    add_subscription_benefits,
+    add_product_benefits,
     create_benefit,
-    create_subscription_tier,
+    create_product,
 )
 
 S = TypeVar("S", bound=Subject)
@@ -57,7 +55,7 @@ def authz(session: AsyncSession) -> Authz:
 
 @pytest.fixture
 def enqueue_job_mock(mocker: MockerFixture) -> AsyncMock:
-    return mocker.patch("polar.subscription.service.subscription_tier.enqueue_job")
+    return mocker.patch("polar.product.service.product.enqueue_job")
 
 
 @pytest.mark.asyncio
@@ -66,56 +64,56 @@ class TestSearch:
         self,
         auth_subject: AuthSubject[Anonymous],
         session: AsyncSession,
-        subscription_tiers: list[Product],
+        products: list[Product],
     ) -> None:
         # then
         session.expunge_all()
 
-        results, count = await subscription_tier_service.search(
+        results, count = await product_service.search(
             session, auth_subject, pagination=PaginationParams(1, 10)
         )
 
         assert count == 4
         assert len(results) == 4
-        assert results[0].id == subscription_tiers[0].id
-        assert results[1].id == subscription_tiers[1].id
-        assert results[2].id == subscription_tiers[2].id
-        assert results[3].id == subscription_tiers[3].id
+        assert results[0].id == products[0].id
+        assert results[1].id == products[1].id
+        assert results[2].id == products[2].id
+        assert results[3].id == products[3].id
 
     @pytest.mark.auth
     async def test_user(
         self,
         auth_subject: AuthSubject[User],
         session: AsyncSession,
-        subscription_tiers: list[Product],
+        products: list[Product],
         user: User,
     ) -> None:
         # then
         session.expunge_all()
 
-        results, count = await subscription_tier_service.search(
+        results, count = await product_service.search(
             session, auth_subject, pagination=PaginationParams(1, 10)
         )
 
         assert count == 4
         assert len(results) == 4
-        assert results[0].id == subscription_tiers[0].id
-        assert results[1].id == subscription_tiers[1].id
-        assert results[2].id == subscription_tiers[2].id
-        assert results[3].id == subscription_tiers[3].id
+        assert results[0].id == products[0].id
+        assert results[1].id == products[1].id
+        assert results[2].id == products[2].id
+        assert results[3].id == products[3].id
 
     @pytest.mark.auth
     async def test_user_organization(
         self,
         auth_subject: AuthSubject[User],
         session: AsyncSession,
-        subscription_tiers: list[Product],
+        products: list[Product],
         user_organization: UserOrganization,
     ) -> None:
         # then
         session.expunge_all()
 
-        results, count = await subscription_tier_service.search(
+        results, count = await product_service.search(
             session, auth_subject, pagination=PaginationParams(1, 10)
         )
 
@@ -127,12 +125,12 @@ class TestSearch:
         self,
         auth_subject: AuthSubject[Organization],
         session: AsyncSession,
-        subscription_tiers: list[Product],
+        products: list[Product],
     ) -> None:
         # then
         session.expunge_all()
 
-        results, count = await subscription_tier_service.search(
+        results, count = await product_service.search(
             session, auth_subject, pagination=PaginationParams(1, 10)
         )
 
@@ -147,19 +145,19 @@ class TestSearch:
         save_fixture: SaveFixture,
         organization: Organization,
     ) -> None:
-        individual_subscription_tier = await create_subscription_tier(
+        individual_product = await create_product(
             save_fixture,
             type=SubscriptionTierType.individual,
             organization=organization,
         )
-        await create_subscription_tier(
+        await create_product(
             save_fixture, type=SubscriptionTierType.business, organization=organization
         )
 
         # then
         session.expunge_all()
 
-        results, count = await subscription_tier_service.search(
+        results, count = await product_service.search(
             session,
             auth_subject,
             type=SubscriptionTierType.individual,
@@ -168,7 +166,7 @@ class TestSearch:
 
         assert count == 1
         assert len(results) == 1
-        assert results[0].id == individual_subscription_tier.id
+        assert results[0].id == individual_product.id
 
     @pytest.mark.auth
     async def test_filter_organization(
@@ -176,15 +174,15 @@ class TestSearch:
         auth_subject: AuthSubject[User],
         session: AsyncSession,
         organization: Organization,
-        subscription_tiers: list[Product],
+        products: list[Product],
         subscription_tier_free: Product,
-        subscription_tier: Product,
-        subscription_tier_second: Product,
+        product: Product,
+        product_second: Product,
     ) -> None:
         # then
         session.expunge_all()
 
-        results, count = await subscription_tier_service.search(
+        results, count = await product_service.search(
             session,
             auth_subject,
             organization=organization,
@@ -194,8 +192,8 @@ class TestSearch:
         assert count == 3
         assert len(results) == 3
         assert results[0].id == subscription_tier_free.id
-        assert results[1].id == subscription_tier.id
-        assert results[2].id == subscription_tier_second.id
+        assert results[1].id == product.id
+        assert results[2].id == product_second.id
 
     async def test_filter_include_archived(
         self,
@@ -205,7 +203,7 @@ class TestSearch:
         organization: Organization,
         user_organization: UserOrganization,
     ) -> None:
-        archived_subscription_tier = await create_subscription_tier(
+        archived_product = await create_product(
             save_fixture, organization=organization, is_archived=True
         )
 
@@ -213,7 +211,7 @@ class TestSearch:
         session.expunge_all()
 
         # Anonymous
-        results, count = await subscription_tier_service.search(
+        results, count = await product_service.search(
             session,
             get_auth_subject(Anonymous()),
             include_archived=False,
@@ -221,7 +219,7 @@ class TestSearch:
         )
         assert count == 0
         assert len(results) == 0
-        results, count = await subscription_tier_service.search(
+        results, count = await product_service.search(
             session,
             get_auth_subject(Anonymous()),
             include_archived=True,
@@ -232,7 +230,7 @@ class TestSearch:
 
         # User
         auth_subject = get_auth_subject(user)
-        results, count = await subscription_tier_service.search(
+        results, count = await product_service.search(
             session,
             auth_subject,
             include_archived=False,
@@ -240,7 +238,7 @@ class TestSearch:
         )
         assert count == 0
         assert len(results) == 0
-        results, count = await subscription_tier_service.search(
+        results, count = await product_service.search(
             session,
             auth_subject,
             include_archived=True,
@@ -248,7 +246,7 @@ class TestSearch:
         )
         assert count == 1
         assert len(results) == 1
-        assert results[0].id == archived_subscription_tier.id
+        assert results[0].id == archived_product.id
 
     async def test_filter_include_archived_authed_non_member(
         self,
@@ -257,7 +255,7 @@ class TestSearch:
         user: User,
         organization: Organization,
     ) -> None:
-        archived_subscription_tier = await create_subscription_tier(
+        archived_product = await create_product(
             save_fixture, organization=organization, is_archived=True
         )
 
@@ -266,7 +264,7 @@ class TestSearch:
 
         # User
         auth_subject = get_auth_subject(user)
-        results, count = await subscription_tier_service.search(
+        results, count = await product_service.search(
             session,
             auth_subject,
             include_archived=False,
@@ -274,7 +272,7 @@ class TestSearch:
         )
         assert count == 0
         assert len(results) == 0
-        results, count = await subscription_tier_service.search(
+        results, count = await product_service.search(
             session,
             auth_subject,
             include_archived=True,
@@ -298,19 +296,19 @@ class TestSearch:
                 await create_benefit(save_fixture, organization=organization)
             )
 
-        tiers = []
+        products = []
         for _ in range(10):
-            tiers.append(
-                await create_subscription_tier(
+            products.append(
+                await create_product(
                     save_fixture,
                     organization=organization,
                 )
             )
 
-        # and some archived tiers
+        # and some archived products
         for _ in range(10):
-            tiers.append(
-                await create_subscription_tier(
+            products.append(
+                await create_product(
                     save_fixture,
                     organization=organization,
                     is_archived=True,
@@ -318,10 +316,10 @@ class TestSearch:
             )
 
         # test that benefits doesn't affect pagination
-        for t in tiers:
-            await add_subscription_benefits(
+        for p in products:
+            await add_product_benefits(
                 save_fixture,
-                subscription_tier=t,
+                product=p,
                 benefits=benefits,
             )
 
@@ -329,14 +327,14 @@ class TestSearch:
         session.expunge_all()
 
         # unauthenticated
-        results, count = await subscription_tier_service.search(
+        results, count = await product_service.search(
             session,
             get_auth_subject(Anonymous()),
             pagination=PaginationParams(1, 8),  # page 1, limit 8
         )
         assert 10 == count
         assert 8 == len(results)
-        results, count = await subscription_tier_service.search(
+        results, count = await product_service.search(
             session,
             get_auth_subject(Anonymous()),
             pagination=PaginationParams(2, 8),  # page 2, limit 8
@@ -346,7 +344,7 @@ class TestSearch:
 
         # authed, can see archived
         auth_subject = get_auth_subject(user)
-        results, count = await subscription_tier_service.search(
+        results, count = await product_service.search(
             session,
             auth_subject,
             pagination=PaginationParams(1, 8),  # page 1, limit 8
@@ -354,7 +352,7 @@ class TestSearch:
         )
         assert 20 == count
         assert 8 == len(results)
-        results, count = await subscription_tier_service.search(
+        results, count = await product_service.search(
             session,
             auth_subject,
             pagination=PaginationParams(2, 8),  # page 2, limit 8
@@ -362,7 +360,7 @@ class TestSearch:
         )
         assert 20 == count
         assert 8 == len(results)
-        results, count = await subscription_tier_service.search(
+        results, count = await product_service.search(
             session,
             auth_subject,
             pagination=PaginationParams(3, 8),  # page 3, limit 8
@@ -386,10 +384,10 @@ class TestSearch:
                 await create_benefit(save_fixture, organization=organization)
             )
 
-        tiers = []
+        products = []
         for _ in range(3):
-            tiers.append(
-                await create_subscription_tier(
+            products.append(
+                await create_product(
                     save_fixture,
                     organization=organization,
                     prices=[
@@ -399,10 +397,10 @@ class TestSearch:
                 )
             )
 
-        # # and some archived tiers
+        # # and some archived products
         for _ in range(4):
-            tiers.append(
-                await create_subscription_tier(
+            products.append(
+                await create_product(
                     save_fixture,
                     organization=organization,
                     is_archived=True,
@@ -414,10 +412,10 @@ class TestSearch:
             )
 
         # test that benefits doesn't affect pagination
-        for t in tiers:
-            await add_subscription_benefits(
+        for t in products:
+            await add_product_benefits(
                 save_fixture,
-                subscription_tier=t,
+                product=t,
                 benefits=benefits,
             )
 
@@ -425,7 +423,7 @@ class TestSearch:
         session.expunge_all()
 
         # unauthenticated
-        results, count = await subscription_tier_service.search(
+        results, count = await product_service.search(
             session,
             get_auth_subject(Anonymous()),
             pagination=PaginationParams(1, 8),
@@ -436,7 +434,7 @@ class TestSearch:
 
         # authed, can see private and archived
         auth_subject = get_auth_subject(user)
-        results, count = await subscription_tier_service.search(
+        results, count = await product_service.search(
             session,
             auth_subject,
             pagination=PaginationParams(1, 8),  # page 1, limit 8
@@ -454,86 +452,86 @@ class TestGetById:
         self,
         auth_subject: AuthSubject[Anonymous],
         session: AsyncSession,
-        subscription_tier: Product,
+        product: Product,
     ) -> None:
         # then
         session.expunge_all()
 
-        not_existing_subscription_tier = await subscription_tier_service.get_by_id(
+        not_existing_product = await product_service.get_by_id(
             session, auth_subject, uuid.uuid4()
         )
-        assert not_existing_subscription_tier is None
+        assert not_existing_product is None
 
-        accessible_subscription_tier = await subscription_tier_service.get_by_id(
-            session, auth_subject, subscription_tier.id
+        accessible_product = await product_service.get_by_id(
+            session, auth_subject, product.id
         )
-        assert accessible_subscription_tier is not None
-        assert accessible_subscription_tier.id == subscription_tier.id
+        assert accessible_product is not None
+        assert accessible_product.id == product.id
 
     @pytest.mark.auth
     async def test_user(
         self,
         auth_subject: AuthSubject[User],
         session: AsyncSession,
-        subscription_tier: Product,
+        product: Product,
     ) -> None:
         # then
         session.expunge_all()
 
-        not_existing_subscription_tier = await subscription_tier_service.get_by_id(
+        not_existing_product = await product_service.get_by_id(
             session, auth_subject, uuid.uuid4()
         )
-        assert not_existing_subscription_tier is None
+        assert not_existing_product is None
 
-        accessible_subscription_tier = await subscription_tier_service.get_by_id(
-            session, auth_subject, subscription_tier.id
+        accessible_product = await product_service.get_by_id(
+            session, auth_subject, product.id
         )
-        assert accessible_subscription_tier is not None
-        assert accessible_subscription_tier.id == subscription_tier.id
+        assert accessible_product is not None
+        assert accessible_product.id == product.id
 
     @pytest.mark.auth
     async def test_user_organization(
         self,
         auth_subject: AuthSubject[User],
         session: AsyncSession,
-        subscription_tier: Product,
+        product: Product,
         user: User,
         user_organization: UserOrganization,
     ) -> None:
         # then
         session.expunge_all()
 
-        not_existing_subscription_tier = await subscription_tier_service.get_by_id(
+        not_existing_product = await product_service.get_by_id(
             session, auth_subject, uuid.uuid4()
         )
-        assert not_existing_subscription_tier is None
+        assert not_existing_product is None
 
-        accessible_subscription_tier = await subscription_tier_service.get_by_id(
-            session, auth_subject, subscription_tier.id
+        accessible_product = await product_service.get_by_id(
+            session, auth_subject, product.id
         )
-        assert accessible_subscription_tier is not None
-        assert accessible_subscription_tier.id == subscription_tier.id
+        assert accessible_product is not None
+        assert accessible_product.id == product.id
 
     @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
     async def test_organization(
         self,
         auth_subject: AuthSubject[Organization],
         session: AsyncSession,
-        subscription_tier: Product,
+        product: Product,
     ) -> None:
         # then
         session.expunge_all()
 
-        not_existing_subscription_tier = await subscription_tier_service.get_by_id(
+        not_existing_product = await product_service.get_by_id(
             session, auth_subject, uuid.uuid4()
         )
-        assert not_existing_subscription_tier is None
+        assert not_existing_product is None
 
-        accessible_subscription_tier = await subscription_tier_service.get_by_id(
-            session, auth_subject, subscription_tier.id
+        accessible_product = await product_service.get_by_id(
+            session, auth_subject, product.id
         )
-        assert accessible_subscription_tier is not None
-        assert accessible_subscription_tier.id == subscription_tier.id
+        assert accessible_product is not None
+        assert accessible_product.id == product.id
 
 
 @pytest.mark.asyncio
@@ -542,12 +540,12 @@ class TestUserCreate:
     async def test_user_not_existing_organization(
         self, auth_subject: AuthSubject[User], session: AsyncSession, authz: Authz
     ) -> None:
-        create_schema = SubscriptionTierCreate(
+        create_schema = ProductCreate(
             type=SubscriptionTierType.individual,
-            name="Subscription Tier",
+            name="Product",
             organization_id=uuid.uuid4(),
             prices=[
-                SubscriptionTierPriceCreate(
+                ProductPriceCreate(
                     recurring_interval=ProductPriceRecurringInterval.month,
                     price_amount=1000,
                     price_currency="usd",
@@ -559,7 +557,7 @@ class TestUserCreate:
         session.expunge_all()
 
         with pytest.raises(PolarRequestValidationError):
-            await subscription_tier_service.user_create(
+            await product_service.user_create(
                 session, authz, create_schema, auth_subject
             )
 
@@ -571,12 +569,12 @@ class TestUserCreate:
         authz: Authz,
         organization: Organization,
     ) -> None:
-        create_schema = SubscriptionTierCreate(
+        create_schema = ProductCreate(
             type=SubscriptionTierType.individual,
-            name="Subscription Tier",
+            name="Product",
             organization_id=organization.id,
             prices=[
-                SubscriptionTierPriceCreate(
+                ProductPriceCreate(
                     recurring_interval=ProductPriceRecurringInterval.month,
                     price_amount=1000,
                     price_currency="usd",
@@ -588,7 +586,7 @@ class TestUserCreate:
         session.expunge_all()
 
         with pytest.raises(NotPermitted):
-            await subscription_tier_service.user_create(
+            await product_service.user_create(
                 session, authz, create_schema, auth_subject
             )
 
@@ -610,12 +608,12 @@ class TestUserCreate:
         )
         create_price_for_product_mock.return_value = SimpleNamespace(id="PRICE_ID")
 
-        create_schema = SubscriptionTierCreate(
+        create_schema = ProductCreate(
             type=SubscriptionTierType.individual,
-            name="Subscription Tier",
+            name="Product",
             organization_id=organization.id,
             prices=[
-                SubscriptionTierPriceCreate(
+                ProductPriceCreate(
                     recurring_interval=ProductPriceRecurringInterval.month,
                     price_amount=1000,
                     price_currency="usd",
@@ -626,17 +624,17 @@ class TestUserCreate:
         # then
         session.expunge_all()
 
-        subscription_tier = await subscription_tier_service.user_create(
+        product = await product_service.user_create(
             session, authz, create_schema, auth_subject
         )
-        assert subscription_tier.organization_id == organization.id
+        assert product.organization_id == organization.id
 
         create_product_mock.assert_called_once()
         create_price_for_product_mock.assert_called_once()
-        assert subscription_tier.stripe_product_id == "PRODUCT_ID"
+        assert product.stripe_product_id == "PRODUCT_ID"
 
-        assert len(subscription_tier.prices) == 1
-        assert subscription_tier.prices[0].stripe_price_id == "PRICE_ID"
+        assert len(product.prices) == 1
+        assert product.prices[0].stripe_price_id == "PRICE_ID"
 
     @pytest.mark.auth
     async def test_user_valid_highlighted(
@@ -649,10 +647,10 @@ class TestUserCreate:
         user_organization_admin: UserOrganization,
         stripe_service_mock: MagicMock,
     ) -> None:
-        highlighted_subscription_tier = await create_subscription_tier(
+        highlighted_product = await create_product(
             save_fixture, organization=organization, is_highlighted=True
         )
-        await create_subscription_tier(
+        await create_product(
             save_fixture, organization=organization, is_highlighted=False
         )
 
@@ -663,13 +661,13 @@ class TestUserCreate:
         )
         create_price_for_product_mock.return_value = SimpleNamespace(id="PRICE_ID")
 
-        create_schema = SubscriptionTierCreate(
+        create_schema = ProductCreate(
             type=SubscriptionTierType.individual,
-            name="Subscription Tier",
+            name="Product",
             organization_id=organization.id,
             is_highlighted=True,
             prices=[
-                SubscriptionTierPriceCreate(
+                ProductPriceCreate(
                     recurring_interval=ProductPriceRecurringInterval.month,
                     price_amount=1000,
                     price_currency="usd",
@@ -680,16 +678,16 @@ class TestUserCreate:
         # then
         session.expunge_all()
 
-        subscription_tier = await subscription_tier_service.user_create(
+        product = await product_service.user_create(
             session, authz, create_schema, auth_subject
         )
-        assert subscription_tier.is_highlighted
+        assert product.is_highlighted
 
-        updated_highlighted_subscription_tier = await subscription_tier_service.get(
-            session, highlighted_subscription_tier.id
+        updated_highlighted_product = await product_service.get(
+            session, highlighted_product.id
         )
-        assert updated_highlighted_subscription_tier is not None
-        assert not updated_highlighted_subscription_tier.is_highlighted
+        assert updated_highlighted_product is not None
+        assert not updated_highlighted_product.is_highlighted
 
     @pytest.mark.auth
     async def test_user_empty_description(
@@ -708,13 +706,13 @@ class TestUserCreate:
         )
         create_price_for_product_mock.return_value = SimpleNamespace(id="PRICE_ID")
 
-        create_schema = SubscriptionTierCreate(
+        create_schema = ProductCreate(
             type=SubscriptionTierType.individual,
-            name="Subscription Tier",
+            name="Product",
             description="",
             organization_id=organization.id,
             prices=[
-                SubscriptionTierPriceCreate(
+                ProductPriceCreate(
                     recurring_interval=ProductPriceRecurringInterval.month,
                     price_amount=1000,
                     price_currency="usd",
@@ -725,10 +723,10 @@ class TestUserCreate:
         # then
         session.expunge_all()
 
-        subscription_tier = await subscription_tier_service.user_create(
+        product = await product_service.user_create(
             session, authz, create_schema, auth_subject
         )
-        assert subscription_tier.description is None
+        assert product.description is None
 
     @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
     async def test_organization_set_organization_id(
@@ -738,12 +736,12 @@ class TestUserCreate:
         authz: Authz,
         organization: Organization,
     ) -> None:
-        create_schema = SubscriptionTierCreate(
+        create_schema = ProductCreate(
             type=SubscriptionTierType.individual,
-            name="Subscription Tier",
+            name="Product",
             organization_id=organization.id,
             prices=[
-                SubscriptionTierPriceCreate(
+                ProductPriceCreate(
                     recurring_interval=ProductPriceRecurringInterval.month,
                     price_amount=1000,
                     price_currency="usd",
@@ -755,7 +753,7 @@ class TestUserCreate:
         session.expunge_all()
 
         with pytest.raises(PolarRequestValidationError):
-            await subscription_tier_service.user_create(
+            await product_service.user_create(
                 session, authz, create_schema, auth_subject
             )
 
@@ -776,11 +774,11 @@ class TestUserCreate:
         )
         create_price_for_product_mock.return_value = SimpleNamespace(id="PRICE_ID")
 
-        create_schema = SubscriptionTierCreate(
+        create_schema = ProductCreate(
             type=SubscriptionTierType.individual,
-            name="Subscription Tier",
+            name="Product",
             prices=[
-                SubscriptionTierPriceCreate(
+                ProductPriceCreate(
                     recurring_interval=ProductPriceRecurringInterval.month,
                     price_amount=1000,
                     price_currency="usd",
@@ -791,37 +789,35 @@ class TestUserCreate:
         # then
         session.expunge_all()
 
-        subscription_tier = await subscription_tier_service.user_create(
+        product = await product_service.user_create(
             session, authz, create_schema, auth_subject
         )
-        assert subscription_tier.organization_id == organization.id
+        assert product.organization_id == organization.id
 
 
 @pytest.mark.asyncio
 class TestUserUpdate:
     @pytest.mark.auth
-    async def test_not_writable_subscription_tier(
+    async def test_not_writable_product(
         self,
         auth_subject: AuthSubject[User],
         session: AsyncSession,
         authz: Authz,
-        subscription_tier: Product,
+        product: Product,
     ) -> None:
         # then
         session.expunge_all()
 
         # load
-        subscription_tier_organization_loaded = await subscription_tier_service.get(
-            session, subscription_tier.id
-        )
-        assert subscription_tier_organization_loaded
+        product_organization_loaded = await product_service.get(session, product.id)
+        assert product_organization_loaded
 
-        update_schema = SubscriptionTierUpdate(name="Subscription Tier Update")
+        update_schema = ProductUpdate(name="Product Update")
         with pytest.raises(NotPermitted):
-            await subscription_tier_service.user_update(
+            await product_service.user_update(
                 session,
                 authz,
-                subscription_tier_organization_loaded,
+                product_organization_loaded,
                 update_schema,
                 auth_subject,
             )
@@ -835,7 +831,7 @@ class TestUserUpdate:
         session: AsyncSession,
         authz: Authz,
         auth_subject: AuthSubject[User | Organization],
-        subscription_tier: Product,
+        product: Product,
         organization: Organization,
         user_organization_admin: UserOrganization,
         stripe_service_mock: MagicMock,
@@ -846,24 +842,22 @@ class TestUserUpdate:
         session.expunge_all()
 
         # load
-        subscription_tier_organization_loaded = await subscription_tier_service.get(
-            session, subscription_tier.id
-        )
-        assert subscription_tier_organization_loaded
+        product_organization_loaded = await product_service.get(session, product.id)
+        assert product_organization_loaded
 
-        update_schema = SubscriptionTierUpdate(name="Subscription Tier Update")
-        updated_subscription_tier = await subscription_tier_service.user_update(
+        update_schema = ProductUpdate(name="Product Update")
+        updated_product = await product_service.user_update(
             session,
             authz,
-            subscription_tier_organization_loaded,
+            product_organization_loaded,
             update_schema,
             auth_subject,
         )
-        assert updated_subscription_tier.name == "Subscription Tier Update"
+        assert updated_product.name == "Product Update"
 
         update_product_mock.assert_called_once_with(
-            updated_subscription_tier.stripe_product_id,
-            name=f"{organization.name} - Subscription Tier Update",
+            updated_product.stripe_product_id,
+            name=f"{organization.name} - Product Update",
         )
 
     @pytest.mark.auth(
@@ -875,7 +869,7 @@ class TestUserUpdate:
         session: AsyncSession,
         authz: Authz,
         auth_subject: AuthSubject[User | Organization],
-        subscription_tier: Product,
+        product: Product,
         user_organization_admin: UserOrganization,
         stripe_service_mock: MagicMock,
     ) -> None:
@@ -885,23 +879,21 @@ class TestUserUpdate:
         session.expunge_all()
 
         # load
-        subscription_tier_organization_loaded = await subscription_tier_service.get(
-            session, subscription_tier.id
-        )
-        assert subscription_tier_organization_loaded
+        product_organization_loaded = await product_service.get(session, product.id)
+        assert product_organization_loaded
 
-        update_schema = SubscriptionTierUpdate(description="Description update")
-        updated_subscription_tier = await subscription_tier_service.user_update(
+        update_schema = ProductUpdate(description="Description update")
+        updated_product = await product_service.user_update(
             session,
             authz,
-            subscription_tier_organization_loaded,
+            product_organization_loaded,
             update_schema,
             auth_subject,
         )
-        assert updated_subscription_tier.description == "Description update"
+        assert updated_product.description == "Description update"
 
         update_product_mock.assert_called_once_with(
-            updated_subscription_tier.stripe_product_id,
+            updated_product.stripe_product_id,
             description="Description update",
         )
 
@@ -914,7 +906,7 @@ class TestUserUpdate:
         session: AsyncSession,
         authz: Authz,
         auth_subject: AuthSubject[User | Organization],
-        subscription_tier: Product,
+        product: Product,
         user_organization_admin: UserOrganization,
         stripe_service_mock: MagicMock,
     ) -> None:
@@ -924,20 +916,18 @@ class TestUserUpdate:
         session.expunge_all()
 
         # load
-        subscription_tier_organization_loaded = await subscription_tier_service.get(
-            session, subscription_tier.id
-        )
-        assert subscription_tier_organization_loaded
+        product_organization_loaded = await product_service.get(session, product.id)
+        assert product_organization_loaded
 
-        update_schema = SubscriptionTierUpdate(description="")
-        updated_subscription_tier = await subscription_tier_service.user_update(
+        update_schema = ProductUpdate(description="")
+        updated_product = await product_service.user_update(
             session,
             authz,
-            subscription_tier_organization_loaded,
+            product_organization_loaded,
             update_schema,
             auth_subject,
         )
-        assert updated_subscription_tier.description == subscription_tier.description
+        assert updated_product.description == product.description
 
         update_product_mock.assert_not_called()
 
@@ -950,7 +940,7 @@ class TestUserUpdate:
         session: AsyncSession,
         authz: Authz,
         auth_subject: AuthSubject[User | Organization],
-        subscription_tier: Product,
+        product: Product,
         user_organization_admin: UserOrganization,
         stripe_service_mock: MagicMock,
     ) -> None:
@@ -963,42 +953,35 @@ class TestUserUpdate:
         session.expunge_all()
 
         # load
-        subscription_tier_organization_loaded = await subscription_tier_service.get(
-            session, subscription_tier.id
-        )
-        assert subscription_tier_organization_loaded
+        product_organization_loaded = await product_service.get(session, product.id)
+        assert product_organization_loaded
 
-        update_schema = SubscriptionTierUpdate(
+        update_schema = ProductUpdate(
             prices=[
-                ExistingSubscriptionTierPrice(
-                    id=subscription_tier_organization_loaded.prices[0].id
-                ),
-                SubscriptionTierPriceCreate(
+                ExistingProductPrice(id=product_organization_loaded.prices[0].id),
+                ProductPriceCreate(
                     recurring_interval=ProductPriceRecurringInterval.year,
                     price_amount=12000,
                     price_currency="usd",
                 ),
             ]
         )
-        updated_subscription_tier = await subscription_tier_service.user_update(
+        updated_product = await product_service.user_update(
             session,
             authz,
-            subscription_tier_organization_loaded,
+            product_organization_loaded,
             update_schema,
             auth_subject,
         )
 
         create_price_for_product_mock.assert_called_once()
 
-        assert len(updated_subscription_tier.prices) == 2
-        assert (
-            updated_subscription_tier.prices[0].id
-            == subscription_tier_organization_loaded.prices[0].id
-        )
+        assert len(updated_product.prices) == 2
+        assert updated_product.prices[0].id == product_organization_loaded.prices[0].id
 
-        assert updated_subscription_tier.prices[1].recurring_interval == "year"
-        assert updated_subscription_tier.prices[1].price_amount == 12000
-        assert updated_subscription_tier.prices[1].stripe_price_id == "NEW_PRICE_ID"
+        assert updated_product.prices[1].recurring_interval == "year"
+        assert updated_product.prices[1].price_amount == 12000
+        assert updated_product.prices[1].stripe_price_id == "NEW_PRICE_ID"
 
     @pytest.mark.auth(
         AuthSubjectFixture(subject="user"),
@@ -1009,7 +992,7 @@ class TestUserUpdate:
         session: AsyncSession,
         authz: Authz,
         auth_subject: AuthSubject[User | Organization],
-        subscription_tier: Product,
+        product: Product,
         user_organization_admin: UserOrganization,
         stripe_service_mock: MagicMock,
     ) -> None:
@@ -1019,30 +1002,28 @@ class TestUserUpdate:
         create_price_for_product_mock.return_value = SimpleNamespace(id="NEW_PRICE_ID")
         archive_price_mock: MagicMock = stripe_service_mock.archive_price
 
-        deleted_price_id = subscription_tier.prices[0].stripe_price_id
+        deleted_price_id = product.prices[0].stripe_price_id
 
         # then
         session.expunge_all()
 
         # load
-        subscription_tier_organization_loaded = await subscription_tier_service.get(
-            session, subscription_tier.id
-        )
-        assert subscription_tier_organization_loaded
+        product_organization_loaded = await product_service.get(session, product.id)
+        assert product_organization_loaded
 
-        update_schema = SubscriptionTierUpdate(
+        update_schema = ProductUpdate(
             prices=[
-                SubscriptionTierPriceCreate(
+                ProductPriceCreate(
                     recurring_interval=ProductPriceRecurringInterval.year,
                     price_amount=12000,
                     price_currency="usd",
                 ),
             ]
         )
-        updated_subscription_tier = await subscription_tier_service.user_update(
+        updated_product = await product_service.user_update(
             session,
             authz,
-            subscription_tier_organization_loaded,
+            product_organization_loaded,
             update_schema,
             auth_subject,
         )
@@ -1050,10 +1031,10 @@ class TestUserUpdate:
         create_price_for_product_mock.assert_called_once()
         archive_price_mock.assert_called_once_with(deleted_price_id)
 
-        assert len(updated_subscription_tier.prices) == 1
-        assert updated_subscription_tier.prices[0].recurring_interval == "year"
-        assert updated_subscription_tier.prices[0].price_amount == 12000
-        assert updated_subscription_tier.prices[0].stripe_price_id == "NEW_PRICE_ID"
+        assert len(updated_product.prices) == 1
+        assert updated_product.prices[0].recurring_interval == "year"
+        assert updated_product.prices[0].price_amount == 12000
+        assert updated_product.prices[0].stripe_price_id == "NEW_PRICE_ID"
 
     @pytest.mark.auth(
         AuthSubjectFixture(subject="user"),
@@ -1066,11 +1047,11 @@ class TestUserUpdate:
         authz: Authz,
         auth_subject: AuthSubject[User | Organization],
         organization: Organization,
-        subscription_tier: Product,
+        product: Product,
         user_organization_admin: UserOrganization,
         stripe_service_mock: MagicMock,
     ) -> None:
-        highlighted_subscription_tier = await create_subscription_tier(
+        highlighted_product = await create_product(
             save_fixture, organization=organization, is_highlighted=True
         )
 
@@ -1083,31 +1064,29 @@ class TestUserUpdate:
         session.expunge_all()
 
         # load
-        subscription_tier_organization_loaded = await subscription_tier_service.get(
-            session, subscription_tier.id
-        )
-        assert subscription_tier_organization_loaded
+        product_organization_loaded = await product_service.get(session, product.id)
+        assert product_organization_loaded
 
-        update_schema = SubscriptionTierUpdate(is_highlighted=True)
-        updated_subscription_tier = await subscription_tier_service.user_update(
+        update_schema = ProductUpdate(is_highlighted=True)
+        updated_product = await product_service.user_update(
             session,
             authz,
-            subscription_tier_organization_loaded,
+            product_organization_loaded,
             update_schema,
             auth_subject,
         )
 
-        assert updated_subscription_tier.is_highlighted
+        assert updated_product.is_highlighted
 
-        updated_highlighted_subscription_tier = await subscription_tier_service.get(
-            session, highlighted_subscription_tier.id
+        updated_highlighted_product = await product_service.get(
+            session, highlighted_product.id
         )
-        assert updated_highlighted_subscription_tier is not None
-        assert not updated_highlighted_subscription_tier.is_highlighted
+        assert updated_highlighted_product is not None
+        assert not updated_highlighted_product.is_highlighted
 
 
 @pytest.mark.asyncio
-class TestCreateFree:
+class TestCreateFreeTier:
     async def test_already_exists(
         self,
         session: AsyncSession,
@@ -1118,7 +1097,7 @@ class TestCreateFree:
         # then
         session.expunge_all()
 
-        subscription_tier = await subscription_tier_service.create_free(
+        subscription_tier = await product_service.create_free_tier(
             session, benefits=[], organization=organization
         )
 
@@ -1139,7 +1118,7 @@ class TestCreateFree:
         # then
         session.expunge_all()
 
-        free_subscription_tier = await subscription_tier_service.create_free(
+        free_subscription_tier = await product_service.create_free_tier(
             session,
             benefits=[benefit_organization],
             organization=organization,
@@ -1160,25 +1139,23 @@ class TestCreateFree:
 @pytest.mark.asyncio
 class TestUpdateBenefits:
     @pytest.mark.auth
-    async def test_not_writable_subscription_tier(
+    async def test_not_writable_product(
         self,
         auth_subject: AuthSubject[User],
         session: AsyncSession,
         authz: Authz,
-        subscription_tier: Product,
+        product: Product,
     ) -> None:
         # then
         session.expunge_all()
 
         # load
-        subscription_tier_organization_loaded = await subscription_tier_service.get(
-            session, subscription_tier.id
-        )
-        assert subscription_tier_organization_loaded
+        product_organization_loaded = await product_service.get(session, product.id)
+        assert product_organization_loaded
 
         with pytest.raises(NotPermitted):
-            await subscription_tier_service.update_benefits(
-                session, authz, subscription_tier_organization_loaded, [], auth_subject
+            await product_service.update_benefits(
+                session, authz, product_organization_loaded, [], auth_subject
             )
 
     @pytest.mark.auth(
@@ -1192,12 +1169,12 @@ class TestUpdateBenefits:
         authz: Authz,
         auth_subject: AuthSubject[User | Organization],
         user_organization_admin: UserOrganization,
-        subscription_tier: Product,
+        product: Product,
         benefits: list[Benefit],
     ) -> None:
-        subscription_tier = await add_subscription_benefits(
+        product = await add_product_benefits(
             save_fixture,
-            subscription_tier=subscription_tier,
+            product=product,
             benefits=benefits,
         )
 
@@ -1205,25 +1182,21 @@ class TestUpdateBenefits:
         session.expunge_all()
 
         # load
-        subscription_tier_organization_loaded = await subscription_tier_service.get(
-            session, subscription_tier.id
-        )
-        assert subscription_tier_organization_loaded
+        product_organization_loaded = await product_service.get(session, product.id)
+        assert product_organization_loaded
 
         with pytest.raises(BenefitDoesNotExist):
-            await subscription_tier_service.update_benefits(
+            await product_service.update_benefits(
                 session,
                 authz,
-                subscription_tier_organization_loaded,
+                product_organization_loaded,
                 [uuid.uuid4()],
                 auth_subject,
             )
 
-        await session.refresh(subscription_tier_organization_loaded)
+        await session.refresh(product_organization_loaded)
 
-        assert len(subscription_tier_organization_loaded.product_benefits) == len(
-            benefits
-        )
+        assert len(product_organization_loaded.product_benefits) == len(benefits)
 
     @pytest.mark.auth(
         AuthSubjectFixture(subject="user"),
@@ -1236,45 +1209,40 @@ class TestUpdateBenefits:
         authz: Authz,
         auth_subject: AuthSubject[User | Organization],
         user_organization_admin: UserOrganization,
-        subscription_tier: Product,
+        product: Product,
         benefits: list[Benefit],
     ) -> None:
         # then
         session.expunge_all()
 
         # load
-        subscription_tier_organization_loaded = await subscription_tier_service.get(
-            session, subscription_tier.id
-        )
-        assert subscription_tier_organization_loaded
+        product_organization_loaded = await product_service.get(session, product.id)
+        assert product_organization_loaded
 
         (
-            subscription_tier,
+            product,
             added,
             deleted,
-        ) = await subscription_tier_service.update_benefits(
+        ) = await product_service.update_benefits(
             session,
             authz,
-            subscription_tier_organization_loaded,
+            product_organization_loaded,
             [benefit.id for benefit in benefits],
             auth_subject,
         )
         await session.flush()
 
-        assert len(subscription_tier.product_benefits) == len(benefits)
-        for (
-            i,
-            subscription_tier_benefit,
-        ) in enumerate(subscription_tier.product_benefits):
-            assert subscription_tier_benefit.order == i
-            assert benefits[i].id == subscription_tier_benefit.benefit_id
+        assert len(product.product_benefits) == len(benefits)
+        for i, product_benefit in enumerate(product.product_benefits):
+            assert product_benefit.order == i
+            assert benefits[i].id == product_benefit.benefit_id
 
         assert len(added) == len(benefits)
         assert len(deleted) == 0
 
         enqueue_job_mock.assert_called_once_with(
             "subscription.subscription.update_subscription_tier_benefits_grants",
-            subscription_tier.id,
+            product.id,
         )
 
     @pytest.mark.auth(
@@ -1288,45 +1256,40 @@ class TestUpdateBenefits:
         authz: Authz,
         auth_subject: AuthSubject[User | Organization],
         user_organization_admin: UserOrganization,
-        subscription_tier: Product,
+        product: Product,
         benefits: list[Benefit],
     ) -> None:
         # then
         session.expunge_all()
 
         # load
-        subscription_tier_organization_loaded = await subscription_tier_service.get(
-            session, subscription_tier.id
-        )
-        assert subscription_tier_organization_loaded
+        product_organization_loaded = await product_service.get(session, product.id)
+        assert product_organization_loaded
 
         (
-            subscription_tier,
+            product,
             added,
             deleted,
-        ) = await subscription_tier_service.update_benefits(
+        ) = await product_service.update_benefits(
             session,
             authz,
-            subscription_tier_organization_loaded,
+            product_organization_loaded,
             [benefit.id for benefit in benefits[::-1]],
             auth_subject,
         )
         await session.flush()
 
-        assert len(subscription_tier.product_benefits) == len(benefits)
-        for (
-            i,
-            subscription_tier_benefit,
-        ) in enumerate(subscription_tier.product_benefits):
-            assert subscription_tier_benefit.order == i
-            assert benefits[-i - 1].id == subscription_tier_benefit.benefit_id
+        assert len(product.product_benefits) == len(benefits)
+        for i, product_benefit in enumerate(product.product_benefits):
+            assert product_benefit.order == i
+            assert benefits[-i - 1].id == product_benefit.benefit_id
 
         assert len(added) == len(benefits)
         assert len(deleted) == 0
 
         enqueue_job_mock.assert_called_once_with(
             "subscription.subscription.update_subscription_tier_benefits_grants",
-            subscription_tier.id,
+            product.id,
         )
 
     @pytest.mark.auth(
@@ -1341,12 +1304,12 @@ class TestUpdateBenefits:
         authz: Authz,
         auth_subject: AuthSubject[User | Organization],
         user_organization_admin: UserOrganization,
-        subscription_tier: Product,
+        product: Product,
         benefits: list[Benefit],
     ) -> None:
-        subscription_tier = await add_subscription_benefits(
+        product = await add_product_benefits(
             save_fixture,
-            subscription_tier=subscription_tier,
+            product=product,
             benefits=benefits,
         )
 
@@ -1354,27 +1317,25 @@ class TestUpdateBenefits:
         session.expunge_all()
 
         # load
-        subscription_tier_organization_loaded = await subscription_tier_service.get(
-            session, subscription_tier.id
-        )
-        assert subscription_tier_organization_loaded
+        product_organization_loaded = await product_service.get(session, product.id)
+        assert product_organization_loaded
 
         (
-            subscription_tier,
+            product,
             added,
             deleted,
-        ) = await subscription_tier_service.update_benefits(
-            session, authz, subscription_tier_organization_loaded, [], auth_subject
+        ) = await product_service.update_benefits(
+            session, authz, product_organization_loaded, [], auth_subject
         )
         await session.flush()
 
-        assert len(subscription_tier.product_benefits) == 0
+        assert len(product.product_benefits) == 0
         assert len(added) == 0
         assert len(deleted) == len(benefits)
 
         enqueue_job_mock.assert_called_once_with(
             "subscription.subscription.update_subscription_tier_benefits_grants",
-            subscription_tier.id,
+            product.id,
         )
 
     @pytest.mark.auth(
@@ -1389,12 +1350,12 @@ class TestUpdateBenefits:
         authz: Authz,
         auth_subject: AuthSubject[User | Organization],
         user_organization_admin: UserOrganization,
-        subscription_tier: Product,
+        product: Product,
         benefits: list[Benefit],
     ) -> None:
-        subscription_tier = await add_subscription_benefits(
+        product = await add_product_benefits(
             save_fixture,
-            subscription_tier=subscription_tier,
+            product=product,
             benefits=benefits,
         )
 
@@ -1402,38 +1363,33 @@ class TestUpdateBenefits:
         session.expunge_all()
 
         # load
-        subscription_tier_organization_loaded = await subscription_tier_service.get(
-            session, subscription_tier.id
-        )
-        assert subscription_tier_organization_loaded
+        product_organization_loaded = await product_service.get(session, product.id)
+        assert product_organization_loaded
 
         (
-            subscription_tier,
+            product,
             added,
             deleted,
-        ) = await subscription_tier_service.update_benefits(
+        ) = await product_service.update_benefits(
             session,
             authz,
-            subscription_tier_organization_loaded,
+            product_organization_loaded,
             [benefit.id for benefit in benefits[::-1]],
             auth_subject,
         )
         await session.flush()
 
-        assert len(subscription_tier.product_benefits) == len(benefits)
-        for (
-            i,
-            subscription_tier_benefit,
-        ) in enumerate(subscription_tier.product_benefits):
-            assert subscription_tier_benefit.order == i
-            assert benefits[-i - 1].id == subscription_tier_benefit.benefit_id
+        assert len(product.product_benefits) == len(benefits)
+        for i, product_benefit in enumerate(product.product_benefits):
+            assert product_benefit.order == i
+            assert benefits[-i - 1].id == product_benefit.benefit_id
 
         assert len(added) == 0
         assert len(deleted) == 0
 
         enqueue_job_mock.assert_called_once_with(
             "subscription.subscription.update_subscription_tier_benefits_grants",
-            subscription_tier.id,
+            product.id,
         )
 
     @pytest.mark.auth(
@@ -1448,7 +1404,7 @@ class TestUpdateBenefits:
         auth_subject: AuthSubject[User | Organization],
         user_organization_admin: UserOrganization,
         organization: Organization,
-        subscription_tier: Product,
+        product: Product,
     ) -> None:
         not_selectable_benefit = await create_benefit(
             save_fixture,
@@ -1462,16 +1418,14 @@ class TestUpdateBenefits:
         session.expunge_all()
 
         # load
-        subscription_tier_organization_loaded = await subscription_tier_service.get(
-            session, subscription_tier.id
-        )
-        assert subscription_tier_organization_loaded
+        product_organization_loaded = await product_service.get(session, product.id)
+        assert product_organization_loaded
 
         with pytest.raises(BenefitIsNotSelectable):
-            await subscription_tier_service.update_benefits(
+            await product_service.update_benefits(
                 session,
                 authz,
-                subscription_tier_organization_loaded,
+                product_organization_loaded,
                 [not_selectable_benefit.id],
                 auth_subject,
             )
@@ -1488,7 +1442,7 @@ class TestUpdateBenefits:
         auth_subject: AuthSubject[User | Organization],
         user_organization_admin: UserOrganization,
         organization: Organization,
-        subscription_tier: Product,
+        product: Product,
     ) -> None:
         not_selectable_benefit = await create_benefit(
             save_fixture,
@@ -1498,9 +1452,9 @@ class TestUpdateBenefits:
             selectable=False,
         )
 
-        subscription_tier = await add_subscription_benefits(
+        product = await add_product_benefits(
             save_fixture,
-            subscription_tier=subscription_tier,
+            product=product,
             benefits=[not_selectable_benefit],
         )
 
@@ -1508,16 +1462,14 @@ class TestUpdateBenefits:
         session.expunge_all()
 
         # load
-        subscription_tier_organization_loaded = await subscription_tier_service.get(
-            session, subscription_tier.id
-        )
-        assert subscription_tier_organization_loaded
+        product_organization_loaded = await product_service.get(session, product.id)
+        assert product_organization_loaded
 
         with pytest.raises(BenefitIsNotSelectable):
-            await subscription_tier_service.update_benefits(
+            await product_service.update_benefits(
                 session,
                 authz,
-                subscription_tier_organization_loaded,
+                product_organization_loaded,
                 [],
                 auth_subject,
             )
@@ -1535,7 +1487,7 @@ class TestUpdateBenefits:
         auth_subject: AuthSubject[User | Organization],
         user_organization_admin: UserOrganization,
         organization: Organization,
-        subscription_tier: Product,
+        product: Product,
     ) -> None:
         not_selectable_benefit = await create_benefit(
             save_fixture,
@@ -1551,9 +1503,9 @@ class TestUpdateBenefits:
             organization=organization,
             description="SELECTABLE",
         )
-        subscription_tier = await add_subscription_benefits(
+        product = await add_product_benefits(
             save_fixture,
-            subscription_tier=subscription_tier,
+            product=product,
             benefits=[not_selectable_benefit],
         )
 
@@ -1561,19 +1513,17 @@ class TestUpdateBenefits:
         session.expunge_all()
 
         # load
-        subscription_tier_organization_loaded = await subscription_tier_service.get(
-            session, subscription_tier.id
-        )
-        assert subscription_tier_organization_loaded
+        product_organization_loaded = await product_service.get(session, product.id)
+        assert product_organization_loaded
 
         (
             _,
             added,
             deleted,
-        ) = await subscription_tier_service.update_benefits(
+        ) = await product_service.update_benefits(
             session,
             authz,
-            subscription_tier_organization_loaded,
+            product_organization_loaded,
             [not_selectable_benefit.id, selectable_benefit.id],
             auth_subject,
         )
@@ -1583,32 +1533,30 @@ class TestUpdateBenefits:
 
         enqueue_job_mock.assert_called_once_with(
             "subscription.subscription.update_subscription_tier_benefits_grants",
-            subscription_tier.id,
+            product.id,
         )
 
 
 @pytest.mark.asyncio
 class TestArchive:
     @pytest.mark.auth
-    async def test_not_writable_subscription_tier(
+    async def test_not_writable_product(
         self,
         auth_subject: AuthSubject[User],
         session: AsyncSession,
         authz: Authz,
-        subscription_tier: Product,
+        product: Product,
     ) -> None:
         # then
         session.expunge_all()
 
         # load
-        subscription_tier_organization_loaded = await subscription_tier_service.get(
-            session, subscription_tier.id
-        )
-        assert subscription_tier_organization_loaded
+        product_organization_loaded = await product_service.get(session, product.id)
+        assert product_organization_loaded
 
         with pytest.raises(NotPermitted):
-            await subscription_tier_service.archive(
-                session, authz, subscription_tier_organization_loaded, auth_subject
+            await product_service.archive(
+                session, authz, product_organization_loaded, auth_subject
             )
 
     @pytest.mark.auth(
@@ -1627,13 +1575,13 @@ class TestArchive:
         session.expunge_all()
 
         # load
-        subscription_tier_free_loaded = await subscription_tier_service.get(
+        subscription_tier_free_loaded = await product_service.get(
             session, subscription_tier_free.id
         )
         assert subscription_tier_free_loaded
 
         with pytest.raises(FreeTierIsNotArchivable):
-            await subscription_tier_service.archive(
+            await product_service.archive(
                 session, authz, subscription_tier_free_loaded, auth_subject
             )
 
@@ -1646,7 +1594,7 @@ class TestArchive:
         session: AsyncSession,
         authz: Authz,
         auth_subject: AuthSubject[User | Organization],
-        subscription_tier: Product,
+        product: Product,
         user_organization_admin: UserOrganization,
         stripe_service_mock: MagicMock,
     ) -> None:
@@ -1656,17 +1604,13 @@ class TestArchive:
         session.expunge_all()
 
         # load
-        subscription_tier_organization_loaded = await subscription_tier_service.get(
-            session, subscription_tier.id
-        )
-        assert subscription_tier_organization_loaded
+        product_organization_loaded = await product_service.get(session, product.id)
+        assert product_organization_loaded
 
-        updated_subscription_tier = await subscription_tier_service.archive(
-            session, authz, subscription_tier_organization_loaded, auth_subject
+        updated_product = await product_service.archive(
+            session, authz, product_organization_loaded, auth_subject
         )
 
-        archive_product_mock.assert_called_once_with(
-            subscription_tier.stripe_product_id
-        )
+        archive_product_mock.assert_called_once_with(product.stripe_product_id)
 
-        assert updated_subscription_tier.is_archived
+        assert updated_product.is_archived

@@ -14,14 +14,14 @@ from polar.models import (
 )
 from polar.models.donation import Donation
 from polar.models.pledge import PledgeType
+from polar.models.product_price import ProductPrice
 from polar.models.transaction import PaymentProcessor, TransactionType
-from polar.subscription.schemas import SubscriptionTierPrice
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     create_donation,
     create_pledge,
+    create_product,
     create_subscription,
-    create_subscription_tier,
 )
 
 
@@ -37,7 +37,7 @@ async def create_transaction(
     pledge: Pledge | None = None,
     issue_reward: IssueReward | None = None,
     subscription: Subscription | None = None,
-    subscription_tier_price: SubscriptionTierPrice | None = None,
+    subscription_tier_price: ProductPrice | None = None,
     payout_transaction: Transaction | None = None,
     donation: Donation | None = None,
 ) -> Transaction:
@@ -134,12 +134,8 @@ async def transaction_issue_reward(
 async def transaction_subscription(
     save_fixture: SaveFixture, organization: Organization, user: User
 ) -> Subscription:
-    subscription_tier = await create_subscription_tier(
-        save_fixture, organization=organization
-    )
-    return await create_subscription(
-        save_fixture, subscription_tier=subscription_tier, user=user
-    )
+    subscription_tier = await create_product(save_fixture, organization=organization)
+    return await create_subscription(save_fixture, product=subscription_tier, user=user)
 
 
 @pytest_asyncio.fixture

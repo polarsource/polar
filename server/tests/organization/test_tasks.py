@@ -12,9 +12,9 @@ from polar.organization.tasks import (
     OrganizationDoesNotExist,
     organization_post_install,
 )
-from polar.subscription.service.subscription_tier import SubscriptionTierService
-from polar.subscription.service.subscription_tier import (
-    subscription_tier as subscription_tier_service,
+from polar.product.service.product import ProductService
+from polar.product.service.product import (
+    product as product_service,
 )
 from polar.worker import JobContext, PolarWorkerContext
 
@@ -57,9 +57,9 @@ class TestOrganizationPostInstall:
         )
         get_or_create_articles_benefits_mock.return_value = (benefit, benefit)
         create_free_mock = mocker.patch.object(
-            subscription_tier_service,
+            product_service,
             "create_free",
-            spec=SubscriptionTierService.create_free,
+            spec=ProductService.create_free_tier,
         )
 
         # then

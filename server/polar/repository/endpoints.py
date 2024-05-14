@@ -10,8 +10,8 @@ from polar.exceptions import ResourceNotFound, Unauthorized
 from polar.kit.pagination import ListResource, Pagination
 from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession, get_db_session
-from polar.subscription.service.subscription_tier import (
-    subscription_tier as subscription_tier_service,
+from polar.product.service.product import (
+    product as product_service,
 )
 from polar.tags.api import Tags
 
@@ -216,9 +216,7 @@ async def update(
         # validate highlighted subscriptions
         if update.profile_settings.highlighted_subscription_tiers is not None:
             for tier_id in update.profile_settings.highlighted_subscription_tiers:
-                tier = await subscription_tier_service.get_by_id(
-                    session, auth_subject, tier_id
-                )
+                tier = await product_service.get_by_id(session, auth_subject, tier_id)
                 if not tier or tier.organization_id != repo.organization_id:
                     raise ResourceNotFound()
 

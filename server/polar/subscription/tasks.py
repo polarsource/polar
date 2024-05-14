@@ -10,8 +10,10 @@ from polar.logging import Logger
 from polar.organization.service import organization as organization_service
 from polar.worker import AsyncSessionMaker, JobContext, PolarWorkerContext, task
 
+from ..product.service.product import (
+    product as product_service,
+)
 from .service.subscription import subscription as subscription_service
-from .service.subscription_tier import subscription_tier as subscription_tier_service
 from .service.subscription_tier_price import (
     subscription_tier_price as subscription_tier_price_service,
 )
@@ -55,9 +57,7 @@ async def subscription_update_subscription_tier_benefits_grants(
     ctx: JobContext, subscription_tier_id: uuid.UUID, polar_context: PolarWorkerContext
 ) -> None:
     async with AsyncSessionMaker(ctx) as session:
-        subscription_tier = await subscription_tier_service.get(
-            session, subscription_tier_id
-        )
+        subscription_tier = await product_service.get(session, subscription_tier_id)
         if subscription_tier is None:
             raise SubscriptionTierDoesNotExist(subscription_tier_id)
 
@@ -86,7 +86,7 @@ async def subscription_discord_notification(
         )
         assert price is not None
 
-        tier = await subscription_tier_service.get(session, subscription.product_id)
+        tier = await product_service.get(session, subscription.product_id)
         if not tier:
             raise SubscriptionDoesNotExist(subscription_id)
 

@@ -52,10 +52,10 @@ from polar.user.service import user as user_service
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
-    add_subscription_benefits,
+    add_product_benefits,
     create_active_subscription,
+    create_product_price,
     create_subscription,
-    create_subscription_tier_price,
     create_user,
 )
 from tests.transaction.conftest import create_transaction
@@ -197,7 +197,7 @@ class TestCreateFreeSubscription:
     ) -> None:
         await create_active_subscription(
             save_fixture,
-            subscription_tier=subscription_tier_free,
+            product=subscription_tier_free,
             user=user,
             stripe_subscription_id=None,
         )
@@ -226,7 +226,7 @@ class TestCreateFreeSubscription:
     ) -> None:
         await create_active_subscription(
             save_fixture,
-            subscription_tier=subscription_tier_free,
+            product=subscription_tier_free,
             user=user,
             stripe_subscription_id=None,
         )
@@ -336,7 +336,7 @@ class TestCreateArbitrarySubscription:
     ) -> None:
         await create_active_subscription(
             save_fixture,
-            subscription_tier=subscription_tier_free,
+            product=subscription_tier_free,
             user=user,
             stripe_subscription_id=None,
         )
@@ -505,7 +505,7 @@ class TestCreateSubscriptionFromStripe:
 
         existing_subscription = await create_active_subscription(
             save_fixture,
-            subscription_tier=subscription_tier_free,
+            product=subscription_tier_free,
             user=user,
         )
 
@@ -605,7 +605,7 @@ class TestUpdateSubscriptionFromStripe:
         )
         subscription = await create_subscription(
             save_fixture,
-            subscription_tier=subscription_tier,
+            product=subscription_tier,
             user=user,
             stripe_subscription_id=stripe_subscription.id,
         )
@@ -637,7 +637,7 @@ class TestUpdateSubscriptionFromStripe:
         )
         subscription = await create_subscription(
             save_fixture,
-            subscription_tier=subscription_tier,
+            product=subscription_tier,
             price=price,
             user=user,
             stripe_subscription_id=stripe_subscription.id,
@@ -797,9 +797,9 @@ class TestEnqueueBenefitsGrants:
             "polar.subscription.service.subscription.enqueue_job"
         )
 
-        subscription_tier = await add_subscription_benefits(
+        subscription_tier = await add_product_benefits(
             save_fixture,
-            subscription_tier=subscription_tier,
+            product=subscription_tier,
             benefits=benefits,
         )
         subscription.status = status
@@ -828,9 +828,9 @@ class TestEnqueueBenefitsGrants:
             "polar.subscription.service.subscription.enqueue_job"
         )
 
-        subscription_tier = await add_subscription_benefits(
+        subscription_tier = await add_product_benefits(
             save_fixture,
-            subscription_tier=subscription_tier,
+            product=subscription_tier,
             benefits=benefits,
         )
         subscription.status = status
@@ -874,9 +874,9 @@ class TestEnqueueBenefitsGrants:
             "polar.subscription.service.subscription.enqueue_job"
         )
 
-        subscription_tier = await add_subscription_benefits(
+        subscription_tier = await add_product_benefits(
             save_fixture,
-            subscription_tier=subscription_tier,
+            product=subscription_tier,
             benefits=benefits,
         )
         subscription.status = status
@@ -920,9 +920,9 @@ class TestEnqueueBenefitsGrants:
         grant.set_granted()
         await save_fixture(grant)
 
-        subscription_tier = await add_subscription_benefits(
+        subscription_tier = await add_product_benefits(
             save_fixture,
-            subscription_tier=subscription_tier,
+            product=subscription_tier,
             benefits=benefits[1:],
         )
         subscription.status = SubscriptionStatus.active
@@ -954,9 +954,9 @@ class TestEnqueueBenefitsGrants:
             "polar.subscription.service.subscription.enqueue_job"
         )
 
-        subscription_tier = await add_subscription_benefits(
+        subscription_tier = await add_product_benefits(
             save_fixture,
-            subscription_tier=subscription_tier,
+            product=subscription_tier,
             benefits=benefits,
         )
         subscription_organization.status = SubscriptionStatus.active
@@ -1004,14 +1004,14 @@ class TestUpdateSubscriptionTierBenefitsGrants:
             "polar.subscription.service.subscription.enqueue_job"
         )
         subscription_1 = await create_subscription(
-            save_fixture, subscription_tier=subscription_tier, user=user
+            save_fixture, product=subscription_tier, user=user
         )
         subscription_2 = await create_subscription(
-            save_fixture, subscription_tier=subscription_tier, user=user
+            save_fixture, product=subscription_tier, user=user
         )
         await create_subscription(
             save_fixture,
-            subscription_tier=subscription_tier_second,
+            product=subscription_tier_second,
             user=user,
         )
 
@@ -1051,19 +1051,17 @@ class TestUpdateOrganizationBenefitsGrants:
         )
         subscription_1 = await create_subscription(
             save_fixture,
-            subscription_tier=subscription_tier,
+            product=subscription_tier,
             user=user,
             organization=organization_second,
         )
         subscription_2 = await create_subscription(
             save_fixture,
-            subscription_tier=subscription_tier_second,
+            product=subscription_tier_second,
             user=user,
             organization=organization_second,
         )
-        await create_subscription(
-            save_fixture, subscription_tier=subscription_tier, user=user
-        )
+        await create_subscription(save_fixture, product=subscription_tier, user=user)
 
         # then
         session.expunge_all()
@@ -1104,14 +1102,14 @@ class TestSearch:
         """
         await create_active_subscription(
             save_fixture,
-            subscription_tier=subscription_tier,
+            product=subscription_tier,
             user=user,
             started_at=datetime(2023, 1, 1),
             ended_at=datetime(2023, 6, 15),
         )
         await create_active_subscription(
             save_fixture,
-            subscription_tier=subscription_tier,
+            product=subscription_tier,
             user=user_second,
             started_at=datetime(2023, 1, 1),
             ended_at=datetime(2023, 6, 15),
@@ -1143,7 +1141,7 @@ class TestSearch:
     ) -> None:
         await create_active_subscription(
             save_fixture,
-            subscription_tier=subscription_tier,
+            product=subscription_tier,
             user=user_second,
             started_at=datetime(2023, 1, 1),
             ended_at=datetime(2023, 6, 15),
@@ -1176,7 +1174,7 @@ class TestSearch:
     ) -> None:
         await create_active_subscription(
             save_fixture,
-            subscription_tier=subscription_tier,
+            product=subscription_tier,
             user=user_second,
             started_at=datetime(2023, 1, 1),
             ended_at=datetime(2023, 6, 15),
@@ -1207,7 +1205,7 @@ class TestSearch:
     ) -> None:
         await create_active_subscription(
             save_fixture,
-            subscription_tier=subscription_tier,
+            product=subscription_tier,
             user=user_second,
             started_at=datetime(2023, 1, 1),
             ended_at=datetime(2023, 6, 15),
@@ -1241,14 +1239,14 @@ class TestSearchSubscribed:
     ) -> None:
         await create_active_subscription(
             save_fixture,
-            subscription_tier=subscription_tier,
+            product=subscription_tier,
             user=user,
             started_at=datetime(2023, 1, 1),
             ended_at=datetime(2023, 6, 15),
         )
         await create_active_subscription(
             save_fixture,
-            subscription_tier=subscription_tier,
+            product=subscription_tier,
             user=user_second,
             started_at=datetime(2023, 1, 1),
             ended_at=datetime(2023, 6, 15),
@@ -1307,7 +1305,7 @@ class TestUpgradeSubscription:
     ) -> None:
         subscription = await create_subscription(
             save_fixture,
-            subscription_tier=subscription_tier_free,
+            product=subscription_tier_free,
             user=user,
         )
 
@@ -1465,7 +1463,7 @@ class TestCancelSubscription:
     ) -> None:
         subscription = await create_subscription(
             save_fixture,
-            subscription_tier=subscription_tier,
+            product=subscription_tier,
             user=user,
             status=SubscriptionStatus.canceled,
         )
@@ -1497,7 +1495,7 @@ class TestCancelSubscription:
         user: User,
     ) -> None:
         subscription = await create_active_subscription(
-            save_fixture, subscription_tier=subscription_tier, user=user
+            save_fixture, product=subscription_tier, user=user
         )
         subscription.cancel_at_period_end = True
         await save_fixture(subscription)
@@ -1530,7 +1528,7 @@ class TestCancelSubscription:
     ) -> None:
         subscription = await create_active_subscription(
             save_fixture,
-            subscription_tier=subscription_tier,
+            product=subscription_tier,
             user=user,
             stripe_subscription_id=None,
         )
@@ -1569,7 +1567,7 @@ class TestCancelSubscription:
     ) -> None:
         subscription = await create_active_subscription(
             save_fixture,
-            subscription_tier=subscription_tier,
+            product=subscription_tier,
             user=user,
         )
 
@@ -1649,7 +1647,7 @@ class TestGetStatisticsPeriods:
     ) -> None:
         await create_active_subscription(
             save_fixture,
-            subscription_tier=subscription_tier,
+            product=subscription_tier,
             user=user_second,
             started_at=datetime(2023, 1, 1),
             ended_at=datetime(2023, 6, 15),
@@ -1687,7 +1685,7 @@ class TestGetStatisticsPeriods:
     ) -> None:
         subscription = await create_active_subscription(
             save_fixture,
-            subscription_tier=subscription_tier,
+            product=subscription_tier,
             user=user_second,
             started_at=datetime(2023, 1, 1),
             ended_at=datetime(2023, 6, 15),
@@ -1736,7 +1734,7 @@ class TestGetStatisticsPeriods:
     ) -> None:
         subscription = await create_active_subscription(
             save_fixture,
-            subscription_tier=subscription_tier,
+            product=subscription_tier,
             user=user_second,
             started_at=datetime(2023, 1, 1),
             ended_at=datetime(2023, 6, 15),
@@ -1801,7 +1799,7 @@ class TestGetStatisticsPeriods:
 
         subscription = await create_active_subscription(
             save_fixture,
-            subscription_tier=subscription_tier,
+            product=subscription_tier,
             user=user_second,
             started_at=datetime(2023, 1, 1),
             ended_at=datetime(2023, 6, 15),
@@ -1851,7 +1849,7 @@ class TestGetStatisticsPeriods:
     ) -> None:
         subscription = await create_active_subscription(
             save_fixture,
-            subscription_tier=subscription_tier,
+            product=subscription_tier,
             user=user_second,
             started_at=datetime(2023, 1, 1),
             ended_at=datetime(2023, 6, 15),
@@ -1898,7 +1896,7 @@ class TestGetStatisticsPeriods:
     ) -> None:
         subscription_organization = await create_active_subscription(
             save_fixture,
-            subscription_tier=subscription_tier,
+            product=subscription_tier,
             user=user_second,
             started_at=datetime(2023, 1, 1),
             ended_at=datetime(2023, 6, 15),
@@ -1914,7 +1912,7 @@ class TestGetStatisticsPeriods:
         )
         subscription_organization_second = await create_active_subscription(
             save_fixture,
-            subscription_tier=subscription_tier_second,
+            product=subscription_tier_second,
             user=user_second,
             started_at=datetime(2023, 1, 1),
             ended_at=datetime(2023, 6, 15),
@@ -1966,7 +1964,7 @@ class TestGetStatisticsPeriods:
     ) -> None:
         subscription = await create_active_subscription(
             save_fixture,
-            subscription_tier=subscription_tier,
+            product=subscription_tier,
             user=user_second,
             started_at=datetime(2023, 1, 1),
         )
@@ -1981,7 +1979,7 @@ class TestGetStatisticsPeriods:
         )
         await create_active_subscription(
             save_fixture,
-            subscription_tier=subscription_tier_free,
+            product=subscription_tier_free,
             user=user,
             started_at=datetime(2023, 1, 1),
         )
@@ -2018,21 +2016,21 @@ class TestGetStatisticsPeriods:
     ) -> None:
         await create_subscription(
             save_fixture,
-            subscription_tier=subscription_tier_free,
+            product=subscription_tier_free,
             user=user_second,
             started_at=datetime(2023, 1, 1, 0, 0, 0),
             ended_at=datetime(2023, 1, 1, 1, 0, 0),
         )
         await create_subscription(
             save_fixture,
-            subscription_tier=subscription_tier_free,
+            product=subscription_tier_free,
             user=user_second,
             started_at=datetime(2023, 1, 1, 2, 0, 0),
             ended_at=datetime(2023, 1, 1, 3, 0, 0),
         )
         await create_active_subscription(
             save_fixture,
-            subscription_tier=subscription_tier_free,
+            product=subscription_tier_free,
             user=user_second,
             started_at=datetime(2023, 1, 1, 4, 0, 0),
         )
@@ -2066,15 +2064,15 @@ class TestGetStatisticsPeriods:
         user_organization: UserOrganization,
         subscription_tier: Product,
     ) -> None:
-        price = await create_subscription_tier_price(
+        price = await create_product_price(
             save_fixture,
-            subscription_tier=subscription_tier,
+            product=subscription_tier,
             amount=12000,
             recurring_interval=ProductPriceRecurringInterval.year,
         )
         subscription = await create_active_subscription(
             save_fixture,
-            subscription_tier=subscription_tier,
+            product=subscription_tier,
             price=price,
             user=user_second,
             started_at=datetime(2023, 1, 1, tzinfo=UTC),

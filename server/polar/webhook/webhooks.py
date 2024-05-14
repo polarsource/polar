@@ -14,8 +14,8 @@ from polar.models.subscription import Subscription
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.organization.schemas import Organization as OrganizationSchema
 from polar.pledge.schemas import Pledge as PledgeSchema
+from polar.product.schemas import Product as ProductSchema
 from polar.subscription.schemas import Subscription as SubscriptionSchema
-from polar.subscription.schemas import SubscriptionTier as SubscriptionTierSchema
 
 WebhookTypeObject = Union[  # noqa: UP007
     tuple[Literal[WebhookEventType.subscription_created], Subscription],
@@ -61,7 +61,7 @@ async def subscription_updated(body: WebhookSubscriptionUpdatedPayload) -> None:
 
 class WebhookSubscriptionTierCreatedPayload(Schema):
     type: Literal[WebhookEventType.subscription_tier_created]
-    data: SubscriptionTierSchema
+    data: ProductSchema
 
 
 @app.webhooks.post(
@@ -76,7 +76,7 @@ async def subscription_tier_created(
 
 class WebhookSubscriptionTierUpdatedPayload(Schema):
     type: Literal[WebhookEventType.subscription_tier_updated]
-    data: SubscriptionTierSchema
+    data: ProductSchema
 
 
 @app.webhooks.post(

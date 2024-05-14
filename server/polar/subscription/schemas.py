@@ -1,100 +1,16 @@
 import uuid
 from datetime import date, datetime
-from typing import Literal, Self
+from typing import Self
 
 import stripe as stripe_lib
 from pydantic import UUID4, AnyHttpUrl, Field
 
-from polar.benefit.schemas import BenefitPublic, BenefitSubscriber
 from polar.enums import Platforms
-from polar.kit.schemas import EmailStrDNS, EmptyStrToNone, Schema, TimestampedSchema
+from polar.kit.schemas import EmailStrDNS, Schema, TimestampedSchema
 from polar.models.product import Product as SubscriptionTierModel
-from polar.models.product import SubscriptionTierType
-from polar.models.product_price import (
-    ProductPrice as SubscriptionTierPriceModel,
-)
-from polar.models.product_price import ProductPriceRecurringInterval
+from polar.models.product_price import ProductPrice as ProductPriceModel
 from polar.models.subscription import SubscriptionStatus
-
-TIER_NAME_MIN_LENGTH = 3
-TIER_NAME_MAX_LENGTH = 24
-TIER_DESCRIPTION_MAX_LENGTH = 240
-
-# SubscriptionTier
-
-# Ref: https://stripe.com/docs/api/payment_intents/object#payment_intent_object-amount
-MAXIMUM_PRICE_AMOUNT = 99999999
-
-
-class SubscriptionTierPriceCreate(Schema):
-    recurring_interval: ProductPriceRecurringInterval
-    price_amount: int = Field(..., gt=0, le=MAXIMUM_PRICE_AMOUNT)
-    price_currency: str = Field("usd", pattern="usd")
-
-
-class SubscriptionTierCreate(Schema):
-    type: Literal[
-        SubscriptionTierType.individual,
-        SubscriptionTierType.business,
-    ]
-    name: str = Field(
-        ..., min_length=TIER_NAME_MIN_LENGTH, max_length=TIER_NAME_MAX_LENGTH
-    )
-    description: EmptyStrToNone = Field(
-        default=None, max_length=TIER_DESCRIPTION_MAX_LENGTH
-    )
-    is_highlighted: bool = False
-    prices: list[SubscriptionTierPriceCreate] = Field(..., min_length=1)
-    organization_id: UUID4 | None = None
-
-
-class ExistingSubscriptionTierPrice(Schema):
-    id: UUID4
-
-
-class SubscriptionTierUpdate(Schema):
-    name: str | None = Field(
-        default=None, min_length=TIER_NAME_MIN_LENGTH, max_length=TIER_NAME_MAX_LENGTH
-    )
-    description: EmptyStrToNone = Field(
-        default=None, max_length=TIER_DESCRIPTION_MAX_LENGTH
-    )
-    is_highlighted: bool | None = None
-    prices: list[ExistingSubscriptionTierPrice | SubscriptionTierPriceCreate] | None = (
-        Field(default=None)
-    )
-
-
-class SubscriptionTierBenefitsUpdate(Schema):
-    benefits: list[UUID4]
-
-
-class SubscriptionTierPrice(TimestampedSchema):
-    id: UUID4
-    recurring_interval: ProductPriceRecurringInterval
-    price_amount: int
-    price_currency: str
-    is_archived: bool
-
-
-class SubscriptionTierBase(TimestampedSchema):
-    id: UUID4
-    type: SubscriptionTierType
-    name: str
-    description: str | None = None
-    is_highlighted: bool
-    is_archived: bool
-    organization_id: UUID4
-    prices: list[SubscriptionTierPrice]
-
-
-class SubscriptionTier(SubscriptionTierBase):
-    benefits: list[BenefitPublic] = Field(title="BenefitPublic")
-
-
-class SubscriptionTierSubscriber(SubscriptionTierBase):
-    benefits: list[BenefitSubscriber] = Field(title="BenefitSubscriber")
-
+from polar.product.schemas import Product, ProductPrice, ProductSubscriber
 
 # SubscribeSession
 
@@ -147,8 +63,8 @@ class SubscribeSession(Schema):
     customer_email: str | None = None
     customer_name: str | None = None
     organization_subscriber_id: UUID4 | None = None
-    subscription_tier: SubscriptionTier
-    price: SubscriptionTierPrice
+    subscription_tier: Product
+    price: ProductPrice
     organization_name: str
 
     @classmethod
@@ -156,7 +72,7 @@ class SubscribeSession(Schema):
         cls,
         checkout_session: stripe_lib.checkout.Session,
         subscription_tier: SubscriptionTierModel,
-        price: SubscriptionTierPriceModel,
+        price: ProductPriceModel,
     ) -> Self:
         organization_subscriber_id: uuid.UUID | None = None
         if checkout_session.metadata:
@@ -220,14 +136,14 @@ class SubscriptionBase(TimestampedSchema):
 class Subscription(SubscriptionBase):
     user: SubscriptionUser
     organization: SubscriptionOrganization | None = None
-    subscription_tier: SubscriptionTier
-    price: SubscriptionTierPrice | None = None
+    subscription_tier: Product
+    price: ProductPrice | None = None
 
 
 class SubscriptionSubscriber(SubscriptionBase):
-    subscription_tier: SubscriptionTierSubscriber
+    subscription_tier: ProductSubscriber
     organization: SubscriptionOrganization | None = None
-    price: SubscriptionTierPrice | None = None
+    price: ProductPrice | None = None
 
 
 class FreeSubscriptionCreate(Schema):
@@ -260,8 +176,8 @@ class SubscriptionsImported(Schema):
 class SubscriptionSummary(Schema):
     user: SubscriptionPublicUser
     organization: SubscriptionOrganization | None = None
-    subscription_tier: SubscriptionTier
-    price: SubscriptionTierPrice | None = None
+    subscription_tier: Product
+    price: ProductPrice | None = None
 
 
 class SubscriptionsStatisticsPeriod(Schema):

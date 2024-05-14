@@ -19,10 +19,10 @@ from polar.models.subscription import SubscriptionStatus
 from polar.postgres import AsyncSession
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
-    add_subscription_benefits,
+    add_product_benefits,
     create_active_subscription,
     create_organization,
-    create_subscription_tier,
+    create_product,
 )
 
 
@@ -65,9 +65,9 @@ class TestSearchSubscriptionTiers:
         subscription_tier: Product,
         benefits: list[Benefit],
     ) -> None:
-        subscription_tier = await add_subscription_benefits(
+        subscription_tier = await add_product_benefits(
             save_fixture,
-            subscription_tier=subscription_tier,
+            product=subscription_tier,
             benefits=benefits,
         )
 
@@ -131,9 +131,9 @@ class TestLookupSubscriptionTier:
         subscription_tier: Product,
         benefits: list[Benefit],
     ) -> None:
-        subscription_tier = await add_subscription_benefits(
+        subscription_tier = await add_product_benefits(
             save_fixture,
-            subscription_tier=subscription_tier,
+            product=subscription_tier,
             benefits=benefits,
         )
 
@@ -630,7 +630,7 @@ class TestSearchSubscriptions:
     ) -> None:
         await create_active_subscription(
             save_fixture,
-            subscription_tier=subscription_tier,
+            product=subscription_tier,
             user=user,
             started_at=datetime(2023, 1, 1),
             ended_at=datetime(2023, 6, 15),
@@ -682,7 +682,7 @@ class TestSearchSubscribedSubscriptions:
     ) -> None:
         await create_active_subscription(
             save_fixture,
-            subscription_tier=subscription_tier,
+            product=subscription_tier,
             user=user,
             started_at=datetime(2023, 1, 1),
             ended_at=datetime(2023, 6, 15),
@@ -720,7 +720,7 @@ class TestSearchSubscribedSubscriptions:
 
         await create_active_subscription(
             save_fixture,
-            subscription_tier=subscription_tier,
+            product=subscription_tier,
             user=user,
             started_at=datetime(2023, 1, 1),
             ended_at=datetime(2023, 6, 15),
@@ -746,7 +746,7 @@ class TestSearchSubscribedSubscriptions:
     ) -> None:
         await create_active_subscription(
             save_fixture,
-            subscription_tier=subscription_tier,
+            product=subscription_tier,
             user=user,
             started_at=datetime(2023, 1, 1),
             ended_at=datetime(2023, 6, 15),
@@ -755,10 +755,10 @@ class TestSearchSubscribedSubscriptions:
         # subscribe to multiple orgs
         for _ in range(3):
             org1 = await create_organization(save_fixture)
-            sub1 = await create_subscription_tier(save_fixture, organization=org1)
+            sub1 = await create_product(save_fixture, organization=org1)
             await create_active_subscription(
                 save_fixture,
-                subscription_tier=sub1,
+                product=sub1,
                 user=user,
                 started_at=datetime(2023, 1, 1),
                 ended_at=datetime(2023, 6, 15),
@@ -925,7 +925,7 @@ class TestSearchSubscriptionsSummary:
     ) -> None:
         await create_active_subscription(
             save_fixture,
-            subscription_tier=subscription_tier,
+            product=subscription_tier,
             user=user,
             started_at=datetime(2023, 1, 1),
             ended_at=datetime(2023, 6, 15),

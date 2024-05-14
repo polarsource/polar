@@ -461,19 +461,19 @@ async def open_collective_account(save_fixture: SaveFixture, user: User) -> Acco
     return account
 
 
-async def create_subscription_tier(
+async def create_product(
     save_fixture: SaveFixture,
     *,
     type: SubscriptionTierType = SubscriptionTierType.individual,
     organization: Organization,
-    name: str = "Subscription Tier",
+    name: str = "Product",
     is_highlighted: bool = False,
     is_archived: bool = False,
     prices: list[tuple[int, ProductPriceRecurringInterval]] = [
         (1000, ProductPriceRecurringInterval.month)
     ],
 ) -> Product:
-    subscription_tier = Product(
+    product = Product(
         type=type,
         name=name,
         description="Description",
@@ -487,23 +487,23 @@ async def create_subscription_tier(
     )
 
     for price, interval in prices:
-        subscription_tier_price = await create_subscription_tier_price(
+        product_price = await create_product_price(
             save_fixture,
-            subscription_tier=subscription_tier,
+            product=product,
             amount=price,
             recurring_interval=interval,
         )
-        subscription_tier.prices.append(subscription_tier_price)
-        subscription_tier.all_prices.append(subscription_tier_price)
+        product.prices.append(product_price)
+        product.all_prices.append(product_price)
 
-    await save_fixture(subscription_tier)
-    return subscription_tier
+    await save_fixture(product)
+    return product
 
 
-async def create_subscription_tier_price(
+async def create_product_price(
     save_fixture: SaveFixture,
     *,
-    subscription_tier: Product,
+    product: Product,
     recurring_interval: ProductPriceRecurringInterval = ProductPriceRecurringInterval.month,
     amount: int = 1000,
 ) -> ProductPrice:
@@ -512,7 +512,7 @@ async def create_subscription_tier_price(
         price_currency="usd",
         recurring_interval=recurring_interval,
         stripe_price_id=rstr("PRICE_ID"),
-        product=subscription_tier,
+        product=product,
     )
     await save_fixture(price)
     return price
@@ -542,29 +542,29 @@ async def create_benefit(
     return benefit
 
 
-async def add_subscription_benefits(
+async def add_product_benefits(
     save_fixture: SaveFixture,
     *,
-    subscription_tier: Product,
+    product: Product,
     benefits: list[Benefit],
 ) -> Product:
-    subscription_tier.product_benefits = []
+    product.product_benefits = []
     for order, benefit in enumerate(benefits):
-        subscription_tier_benefit = ProductBenefit(
-            product_id=subscription_tier.id,
+        product_benefit = ProductBenefit(
+            product_id=product.id,
             benefit_id=benefit.id,
             order=order,
         )
 
-        subscription_tier.product_benefits.append(subscription_tier_benefit)
-    await save_fixture(subscription_tier)
-    return subscription_tier
+        product.product_benefits.append(product_benefit)
+    await save_fixture(product)
+    return product
 
 
 async def create_subscription(
     save_fixture: SaveFixture,
     *,
-    subscription_tier: Product,
+    product: Product,
     price: ProductPrice | None = None,
     user: User,
     organization: Organization | None = None,
@@ -584,11 +584,11 @@ async def create_subscription(
         ended_at=ended_at,
         user_id=user.id,
         organization_id=organization.id if organization is not None else None,
-        product_id=subscription_tier.id,
+        product_id=product.id,
         price=price
         if price is not None
-        else subscription_tier.prices[0]
-        if subscription_tier.prices
+        else product.prices[0]
+        if product.prices
         else None,
     )
     await save_fixture(subscription)
@@ -598,7 +598,7 @@ async def create_subscription(
 async def create_active_subscription(
     save_fixture: SaveFixture,
     *,
-    subscription_tier: Product,
+    product: Product,
     price: ProductPrice | None = None,
     user: User,
     organization: Organization | None = None,
@@ -608,7 +608,7 @@ async def create_active_subscription(
 ) -> Subscription:
     return await create_subscription(
         save_fixture,
-        subscription_tier=subscription_tier,
+        product=product,
         price=price,
         user=user,
         organization=organization,
@@ -623,7 +623,7 @@ async def create_active_subscription(
 async def subscription_tier_free(
     save_fixture: SaveFixture, organization: Organization
 ) -> Product:
-    return await create_subscription_tier(
+    return await create_product(
         save_fixture,
         type=SubscriptionTierType.free,
         organization=organization,
@@ -632,40 +632,36 @@ async def subscription_tier_free(
 
 
 @pytest_asyncio.fixture
-async def subscription_tier(
-    save_fixture: SaveFixture, organization: Organization
-) -> Product:
-    return await create_subscription_tier(save_fixture, organization=organization)
+async def product(save_fixture: SaveFixture, organization: Organization) -> Product:
+    return await create_product(save_fixture, organization=organization)
 
 
 @pytest_asyncio.fixture
-async def subscription_tier_second(
+async def product_second(
     save_fixture: SaveFixture, organization: Organization
 ) -> Product:
-    return await create_subscription_tier(save_fixture, organization=organization)
+    return await create_product(save_fixture, organization=organization)
 
 
 @pytest_asyncio.fixture
-async def subscription_tier_organization_second(
+async def product_organization_second(
     save_fixture: SaveFixture, second_organization: Organization
 ) -> Product:
-    return await create_subscription_tier(
-        save_fixture, organization=second_organization
-    )
+    return await create_product(save_fixture, organization=second_organization)
 
 
 @pytest_asyncio.fixture
-async def subscription_tiers(
-    subscription_tier: Product,
-    subscription_tier_second: Product,
+async def products(
     subscription_tier_free: Product,
-    subscription_tier_organization_second: Product,
+    product: Product,
+    product_second: Product,
+    product_organization_second: Product,
 ) -> list[Product]:
     return [
         subscription_tier_free,
-        subscription_tier,
-        subscription_tier_second,
-        subscription_tier_organization_second,
+        product,
+        product_second,
+        product_organization_second,
     ]
 
 
@@ -756,24 +752,22 @@ async def organization_second_members(
 @pytest_asyncio.fixture
 async def subscription(
     save_fixture: SaveFixture,
-    subscription_tier: Product,
+    product: Product,
     user: User,
 ) -> Subscription:
-    return await create_subscription(
-        save_fixture, subscription_tier=subscription_tier, user=user
-    )
+    return await create_subscription(save_fixture, product=product, user=user)
 
 
 @pytest_asyncio.fixture
 async def subscription_organization(
     save_fixture: SaveFixture,
-    subscription_tier: Product,
+    product: Product,
     organization_second: Organization,
     user_second: User,
 ) -> Subscription:
     return await create_subscription(
         save_fixture,
-        subscription_tier=subscription_tier,
+        product=product,
         user=user_second,
         organization=organization_second,
     )

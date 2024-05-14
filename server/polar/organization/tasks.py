@@ -5,8 +5,8 @@ from polar.benefit.service.benefit import benefit as benefit_service
 from polar.exceptions import PolarTaskError
 from polar.held_balance.service import held_balance as held_balance_service
 from polar.postgres import AsyncSession
-from polar.subscription.service.subscription_tier import (
-    subscription_tier as subscription_tier_service,
+from polar.product.service.product import (
+    product as product_service,
 )
 from polar.worker import AsyncSessionMaker, JobContext, PolarWorkerContext, task
 
@@ -54,7 +54,7 @@ async def organization_post_creation_actions(
     ) = await benefit_service.get_or_create_articles_benefits(
         session, organization=organization
     )
-    await subscription_tier_service.create_free(
+    await product_service.create_free_tier(
         session, benefits=[public_articles], organization=organization
     )
 

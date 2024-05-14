@@ -21,7 +21,7 @@ from polar.transaction.service.payment import (
 )
 from polar.transaction.service.processor_fee import ProcessorFeeTransactionService
 from tests.fixtures.database import SaveFixture
-from tests.fixtures.random_objects import create_subscription, create_subscription_tier
+from tests.fixtures.random_objects import create_product, create_subscription
 
 
 def build_stripe_balance_transaction(
@@ -224,11 +224,11 @@ class TestCreatePayment:
         stripe_service_mock: MagicMock,
         create_payment_fees_mock: AsyncMock,
     ) -> None:
-        subscription_tier = await create_subscription_tier(
+        subscription_tier = await create_product(
             save_fixture, organization=organization
         )
         subscription = await create_subscription(
-            save_fixture, subscription_tier=subscription_tier, user=user
+            save_fixture, product=subscription_tier, user=user
         )
         stripe_invoice = build_stripe_invoice(
             subscription=subscription.stripe_subscription_id

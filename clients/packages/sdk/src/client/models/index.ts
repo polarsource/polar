@@ -6482,10 +6482,10 @@ export interface OAuth2Client {
     response_types?: Array<OAuth2ClientResponseTypesEnum>;
     /**
      * 
-     * @type {Array<Scope>}
+     * @type {string}
      * @memberof OAuth2Client
      */
-    scope?: Array<Scope>;
+    scope?: string;
     /**
      * 
      * @type {string}
@@ -6559,7 +6559,9 @@ export interface OAuth2Client {
  * @export
  */
 export const OAuth2ClientTokenEndpointAuthMethodEnum = {
-    CLIENT_SECRET_POST: 'client_secret_post'
+    CLIENT_SECRET_BASIC: 'client_secret_basic',
+    CLIENT_SECRET_POST: 'client_secret_post',
+    NONE: 'none'
 } as const;
 export type OAuth2ClientTokenEndpointAuthMethodEnum = typeof OAuth2ClientTokenEndpointAuthMethodEnum[keyof typeof OAuth2ClientTokenEndpointAuthMethodEnum];
 
@@ -6612,10 +6614,10 @@ export interface OAuth2ClientConfiguration {
     response_types?: Array<OAuth2ClientConfigurationResponseTypesEnum>;
     /**
      * 
-     * @type {Array<Scope>}
+     * @type {string}
      * @memberof OAuth2ClientConfiguration
      */
-    scope?: Array<Scope>;
+    scope?: string;
     /**
      * 
      * @type {string}
@@ -6653,7 +6655,9 @@ export interface OAuth2ClientConfiguration {
  * @export
  */
 export const OAuth2ClientConfigurationTokenEndpointAuthMethodEnum = {
-    CLIENT_SECRET_POST: 'client_secret_post'
+    CLIENT_SECRET_BASIC: 'client_secret_basic',
+    CLIENT_SECRET_POST: 'client_secret_post',
+    NONE: 'none'
 } as const;
 export type OAuth2ClientConfigurationTokenEndpointAuthMethodEnum = typeof OAuth2ClientConfigurationTokenEndpointAuthMethodEnum[keyof typeof OAuth2ClientConfigurationTokenEndpointAuthMethodEnum];
 
@@ -6706,10 +6710,10 @@ export interface OAuth2ClientConfigurationUpdate {
     response_types?: Array<OAuth2ClientConfigurationUpdateResponseTypesEnum>;
     /**
      * 
-     * @type {Array<Scope>}
+     * @type {string}
      * @memberof OAuth2ClientConfigurationUpdate
      */
-    scope?: Array<Scope>;
+    scope?: string;
     /**
      * 
      * @type {string}
@@ -6753,7 +6757,9 @@ export interface OAuth2ClientConfigurationUpdate {
  * @export
  */
 export const OAuth2ClientConfigurationUpdateTokenEndpointAuthMethodEnum = {
-    CLIENT_SECRET_POST: 'client_secret_post'
+    CLIENT_SECRET_BASIC: 'client_secret_basic',
+    CLIENT_SECRET_POST: 'client_secret_post',
+    NONE: 'none'
 } as const;
 export type OAuth2ClientConfigurationUpdateTokenEndpointAuthMethodEnum = typeof OAuth2ClientConfigurationUpdateTokenEndpointAuthMethodEnum[keyof typeof OAuth2ClientConfigurationUpdateTokenEndpointAuthMethodEnum];
 

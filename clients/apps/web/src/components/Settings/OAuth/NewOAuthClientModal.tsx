@@ -16,8 +16,9 @@ import {
 } from './OAuthForm'
 
 export interface EnhancedOAuth2ClientConfiguration
-  extends Omit<OAuth2ClientConfiguration, 'redirect_uris'> {
+  extends Omit<OAuth2ClientConfiguration, 'redirect_uris' | 'scope'> {
   redirect_uris: { uri: string }[]
+  scope: string[]
 }
 
 interface NewOAuthClientModalProps {
@@ -32,7 +33,7 @@ export const NewOAuthClientModal = ({
   const form = useForm<EnhancedOAuth2ClientConfiguration>({
     defaultValues: {
       redirect_uris: [{ uri: '' }],
-      token_endpoint_auth_method: 'client_secret_post',
+      scope: [],
     },
   })
 
@@ -50,6 +51,7 @@ export const NewOAuthClientModal = ({
         .mutateAsync({
           ...form,
           redirect_uris: form.redirect_uris.map(({ uri }) => uri),
+          scope: form.scope.join(' '),
         })
         .finally(() => setIsCreating(false))
       setCreated(res)

@@ -1,11 +1,12 @@
 import { InlineModalHeader } from '@/components/Modal/InlineModal'
 import { useCreateOAuth2Client } from '@/hooks/queries/oauth'
-import { OAuth2ClientConfiguration } from '@polar-sh/sdk'
+import { OAuth2Client, OAuth2ClientConfiguration } from '@polar-sh/sdk'
 import Button from 'polarkit/components/ui/atoms/button'
 import { Form } from 'polarkit/components/ui/form'
 import { useCallback, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import {
+  FieldClientURI,
   FieldLogo,
   FieldName,
   FieldPrivacy,
@@ -20,10 +21,12 @@ export interface EnhancedOAuth2ClientConfiguration
 }
 
 interface NewOAuthClientModalProps {
+  onSuccess: (client: OAuth2Client) => void
   hideModal: () => void
 }
 
 export const NewOAuthClientModal = ({
+  onSuccess,
   hideModal,
 }: NewOAuthClientModalProps) => {
   const form = useForm<EnhancedOAuth2ClientConfiguration>({
@@ -35,7 +38,7 @@ export const NewOAuthClientModal = ({
 
   const { handleSubmit } = form
 
-  const [created, setCreated] = useState<EnhancedOAuth2ClientConfiguration>()
+  const [created, setCreated] = useState<OAuth2Client>()
   const [isCreating, setIsCreating] = useState(false)
 
   const createOAuth2Client = useCreateOAuth2Client()
@@ -51,12 +54,13 @@ export const NewOAuthClientModal = ({
         .finally(() => setIsCreating(false))
       setCreated(res)
       hideModal()
+      onSuccess(res)
     },
-    [hideModal, createOAuth2Client, setCreated, setIsCreating],
+    [hideModal, createOAuth2Client, setCreated, setIsCreating, onSuccess],
   )
 
   return (
-    <div className="flex flex-col">
+    <div className="flex flex-col overflow-y-auto">
       <InlineModalHeader hide={hideModal}>
         <div className="flex items-center justify-between gap-2">
           <h2 className="text-xl">New OAuth App</h2>
@@ -72,6 +76,7 @@ export const NewOAuthClientModal = ({
             <FieldLogo />
             <FieldRedirectURIs />
             <FieldScopes />
+            <FieldClientURI />
             <FieldTOS />
             <FieldPrivacy />
 

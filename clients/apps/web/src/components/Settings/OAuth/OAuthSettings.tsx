@@ -78,7 +78,12 @@ export const OAuthSettings = () => {
         isShown={isNewOAuthClientModalShown}
         hide={hideNewOAuthClientModal}
         modalContent={
-          <NewOAuthClientModal hideModal={hideNewOAuthClientModal} />
+          <NewOAuthClientModal
+            onSuccess={(client) => {
+              router.replace(`/settings?oauthClient=${client.client_id}`)
+            }}
+            hideModal={hideNewOAuthClientModal}
+          />
         }
       />
       <InlineModal

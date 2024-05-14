@@ -6,6 +6,9 @@ import { Form } from 'polarkit/components/ui/form'
 import { useCallback, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import {
+  FieldClientID,
+  FieldClientSecret,
+  FieldClientURI,
   FieldLogo,
   FieldName,
   FieldPrivacy,
@@ -37,8 +40,7 @@ export const EditOAuthClientModal = ({
 
   const { handleSubmit } = form
 
-  const [created, setCreated] =
-    useState<EnhancedOAuth2ClientConfigurationUpdate>()
+  const [updated, setUpdated] = useState<OAuth2ClientConfigurationUpdate>()
   const [isUpdating, setIsUpdating] = useState(false)
 
   const createOAuth2Client = useEditOAuth2Client()
@@ -55,14 +57,14 @@ export const EditOAuthClientModal = ({
           },
         })
         .finally(() => setIsUpdating(false))
-      setCreated(res)
+      setUpdated(res)
       hideModal()
     },
-    [hideModal, createOAuth2Client, setCreated, setIsUpdating, client],
+    [hideModal, createOAuth2Client, setUpdated, setIsUpdating, client],
   )
 
   return (
-    <div className="flex flex-col">
+    <div className="flex flex-col overflow-y-auto">
       <InlineModalHeader hide={hideModal}>
         <div className="flex items-center justify-between gap-2">
           <h2 className="text-xl">Edit OAuth App</h2>
@@ -75,16 +77,19 @@ export const EditOAuthClientModal = ({
             className="max-w-[700px] space-y-8"
           >
             <FieldName />
+            <FieldClientID clientId={client.client_id} />
+            <FieldClientSecret clientSecret={client.client_secret} />
             <FieldLogo />
             <FieldRedirectURIs />
             <FieldScopes />
+            <FieldClientURI />
             <FieldTOS />
             <FieldPrivacy />
 
             <Button
               type="submit"
               loading={isUpdating}
-              disabled={Boolean(created)}
+              disabled={Boolean(updated)}
             >
               Update
             </Button>

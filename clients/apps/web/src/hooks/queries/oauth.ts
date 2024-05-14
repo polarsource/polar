@@ -1,5 +1,6 @@
 import { api, queryClient } from '@/utils/api'
 import {
+  OAuth2Client,
   OAuth2ClientConfiguration,
   Oauth2ApiListOauth2ClientsRequest,
   Oauth2ApiOauth2ConfigurePutRequest,
@@ -17,7 +18,7 @@ export const useCreateOAuth2Client = () =>
     mutationFn: (config: OAuth2ClientConfiguration) =>
       api.oauth2.oauth2Register({
         oAuth2ClientConfiguration: config,
-      }),
+      }) as Promise<OAuth2Client>,
     onSuccess(_data, _variables, _context) {
       queryClient.invalidateQueries({
         queryKey: ['oauth2Clients'],

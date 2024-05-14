@@ -5049,6 +5049,25 @@ export interface ListResourceIssueFunding {
 /**
  * 
  * @export
+ * @interface ListResourceOAuth2Client
+ */
+export interface ListResourceOAuth2Client {
+    /**
+     * 
+     * @type {Array<OAuth2Client>}
+     * @memberof ListResourceOAuth2Client
+     */
+    items?: Array<OAuth2Client>;
+    /**
+     * 
+     * @type {Pagination}
+     * @memberof ListResourceOAuth2Client
+     */
+    pagination: Pagination;
+}
+/**
+ * 
+ * @export
  * @interface ListResourceOrganization
  */
 export interface ListResourceOrganization {
@@ -6434,6 +6453,136 @@ export interface NotificationsMarkRead {
 /**
  * 
  * @export
+ * @interface OAuth2Client
+ */
+export interface OAuth2Client {
+    /**
+     * 
+     * @type {Array<string>}
+     * @memberof OAuth2Client
+     */
+    redirect_uris: Array<string>;
+    /**
+     * 
+     * @type {string}
+     * @memberof OAuth2Client
+     */
+    token_endpoint_auth_method?: OAuth2ClientTokenEndpointAuthMethodEnum;
+    /**
+     * 
+     * @type {Array<string>}
+     * @memberof OAuth2Client
+     */
+    grant_types?: Array<OAuth2ClientGrantTypesEnum>;
+    /**
+     * 
+     * @type {Array<string>}
+     * @memberof OAuth2Client
+     */
+    response_types?: Array<OAuth2ClientResponseTypesEnum>;
+    /**
+     * 
+     * @type {Array<Scope>}
+     * @memberof OAuth2Client
+     */
+    scope?: Array<Scope>;
+    /**
+     * 
+     * @type {string}
+     * @memberof OAuth2Client
+     */
+    client_name: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof OAuth2Client
+     */
+    client_uri?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof OAuth2Client
+     */
+    logo_uri?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof OAuth2Client
+     */
+    tos_uri?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof OAuth2Client
+     */
+    policy_uri?: string;
+    /**
+     * Creation timestamp of the object.
+     * @type {string}
+     * @memberof OAuth2Client
+     */
+    created_at: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof OAuth2Client
+     */
+    modified_at?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof OAuth2Client
+     */
+    client_id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof OAuth2Client
+     */
+    client_secret: string;
+    /**
+     * 
+     * @type {number}
+     * @memberof OAuth2Client
+     */
+    client_id_issued_at: number;
+    /**
+     * 
+     * @type {number}
+     * @memberof OAuth2Client
+     */
+    client_secret_expires_at: number;
+}
+
+
+/**
+ * @export
+ */
+export const OAuth2ClientTokenEndpointAuthMethodEnum = {
+    CLIENT_SECRET_POST: 'client_secret_post'
+} as const;
+export type OAuth2ClientTokenEndpointAuthMethodEnum = typeof OAuth2ClientTokenEndpointAuthMethodEnum[keyof typeof OAuth2ClientTokenEndpointAuthMethodEnum];
+
+/**
+ * @export
+ */
+export const OAuth2ClientGrantTypesEnum = {
+    AUTHORIZATION_CODE: 'authorization_code',
+    REFRESH_TOKEN: 'refresh_token'
+} as const;
+export type OAuth2ClientGrantTypesEnum = typeof OAuth2ClientGrantTypesEnum[keyof typeof OAuth2ClientGrantTypesEnum];
+
+/**
+ * @export
+ */
+export const OAuth2ClientResponseTypesEnum = {
+    CODE: 'code'
+} as const;
+export type OAuth2ClientResponseTypesEnum = typeof OAuth2ClientResponseTypesEnum[keyof typeof OAuth2ClientResponseTypesEnum];
+
+/**
+ * 
+ * @export
  * @interface OAuth2ClientConfiguration
  */
 export interface OAuth2ClientConfiguration {
@@ -6643,12 +6792,6 @@ export interface OAuth2ClientPublic {
      * @memberof OAuth2ClientPublic
      */
     modified_at?: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof OAuth2ClientPublic
-     */
-    id: string;
     /**
      * 
      * @type {string}
@@ -8647,10 +8790,8 @@ export const Scope = {
     BACKERSUBSCRIPTIONSWRITE: 'backer:subscriptions:write',
     CREATORBENEFITSREAD: 'creator:benefits:read',
     CREATORBENEFITSWRITE: 'creator:benefits:write',
-    CREATORWEBHOOKSREAD: 'creator:webhooks:read',
-    CREATORWEBHOOKSWRITE: 'creator:webhooks:write',
-    BACKERWEBHOOKSREAD: 'backer:webhooks:read',
-    BACKERWEBHOOKSWRITE: 'backer:webhooks:write'
+    WEBHOOKSREAD: 'webhooks:read',
+    WEBHOOKSWRITE: 'webhooks:write'
 } as const;
 export type Scope = typeof Scope[keyof typeof Scope];
 

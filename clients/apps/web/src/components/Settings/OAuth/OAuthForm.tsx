@@ -1,7 +1,5 @@
-import { OAuth2ClientConfiguration } from '@polar-sh/sdk'
 import Button from 'polarkit/components/ui/atoms/button'
 import Input from 'polarkit/components/ui/atoms/input'
-import { Checkbox } from 'polarkit/components/ui/checkbox'
 import {
   FormControl,
   FormField,
@@ -10,35 +8,30 @@ import {
   FormMessage,
 } from 'polarkit/components/ui/form'
 
-import Link from 'next/link'
-import { useFormContext } from 'react-hook-form'
+import ImageUpload from '@/components/Form/ImageUpload'
+import { AddOutlined, ClearOutlined } from '@mui/icons-material'
+import { Scope } from '@polar-sh/sdk'
+import { Checkbox } from 'polarkit/components/ui/checkbox'
+import { useFieldArray, useFormContext } from 'react-hook-form'
+import { EnhancedOAuth2ClientConfiguration } from './NewOAuthClientModal'
 
-export const FieldUrl = () => {
-  const { control } = useFormContext<OAuth2ClientConfiguration>()
+export const FieldName = () => {
+  const { control } = useFormContext<EnhancedOAuth2ClientConfiguration>()
 
   return (
     <FormField
       control={control}
-      name=""
+      name="client_name"
       rules={{
         required: 'This field is required',
-        validate: (value) => {
-          if (!value) {
-            return false
-          }
-          if (!value.startsWith('https://')) {
-            return false
-          }
-          return true
-        },
       }}
       render={({ field }) => (
-        <FormItem className="flex flex-col gap-1">
+        <FormItem className="flex flex-col gap-4">
           <div className="flex flex-row items-center justify-between">
-            <FormLabel>URL</FormLabel>
+            <FormLabel>Application Name</FormLabel>
           </div>
           <FormControl>
-            <Input {...field} placeholder="https://..." />
+            <Input {...field} placeholder="My OAuth Application" />
           </FormControl>
           <FormMessage />
         </FormItem>
@@ -47,120 +40,161 @@ export const FieldUrl = () => {
   )
 }
 
-export const FieldSecret = ({ isUpdate }: { isUpdate: boolean }) => {
-  const form = useFormContext<CreateOrUpdate>()
-
-  const generateSecret = (e: React.MouseEvent<HTMLButtonElement>) => {
-    e.stopPropagation()
-    e.preventDefault()
-    const id = window.crypto.randomUUID()
-    form.setValue('secret', id.replaceAll('-', ''))
-  }
+export const FieldLogo = () => {
+  const { control } = useFormContext<EnhancedOAuth2ClientConfiguration>()
 
   return (
     <FormField
-      control={form.control}
-      name="secret"
-      rules={
-        isUpdate
-          ? undefined
-          : {
-              required: 'This field is required',
-            }
-      }
-      render={({ field }) => {
-        return (
-          <FormItem className="flex flex-col gap-1">
-            <div className="flex flex-row items-center justify-between">
-              <FormLabel>Secret</FormLabel>
-            </div>
-            <div className="flex flex-row items-center gap-2">
-              <FormControl>
-                <Input
-                  {...field}
-                  placeholder={
-                    isUpdate
-                      ? 'Changing the secret will override your existing signing key...'
-                      : undefined
-                  }
-                />
-              </FormControl>
-              <Button onClick={generateSecret} variant="secondary">
-                Generate
-              </Button>
-            </div>
-            <div className="text-xs text-gray-500">
-              Polar will sign all webhook payloads with this secret (following
-              the{' '}
-              <a
-                href="https://www.standardwebhooks.com/"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="font-medium"
-              >
-                Standard OAuths
-              </a>{' '}
-              specification) so that you can validate that the request is coming
-              from us.
-            </div>
-            <FormMessage />
-          </FormItem>
-        )
-      }}
+      control={control}
+      name="logo_uri"
+      render={({ field }) => (
+        <FormItem className="flex flex-col gap-4">
+          <div className="flex flex-col gap-y-2">
+            <FormLabel>Logotype</FormLabel>
+          </div>
+          <FormControl>
+            <ImageUpload
+              height={200}
+              width={200}
+              onUploaded={field.onChange}
+              validate={(img) => {
+                return img.width / img.height !== 1
+                  ? 'Image should have a ratio of 1:1'
+                  : undefined
+              }}
+            />
+          </FormControl>
+          <FormMessage />
+        </FormItem>
+      )}
     />
   )
 }
 
-export const FieldEvents = () => {
-  const form = useFormContext<CreateOrUpdate>()
+export const FieldRedirectURIs = () => {
+  const { control, setValue } =
+    useFormContext<EnhancedOAuth2ClientConfiguration>()
+
+  const { fields, append, remove } = useFieldArray({
+    control,
+    name: 'redirect_uris',
+    rules: {
+      minLength: 1,
+    },
+  })
+
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-col gap-y-4">
+      <div className="flex flex-row items-center justify-between gap-x-4">
+        <FormLabel>Redirect URIs</FormLabel>
+        <Button
+          className="aspect-square w-8"
+          size="icon"
+          variant="secondary"
+          onClick={(e) => {
+            e.preventDefault()
+
+            append({ uri: 'https://' })
+          }}
+        >
+          <AddOutlined fontSize="inherit" />
+        </Button>
+      </div>
+      <div className="flex flex-col gap-y-2">
+        {fields.map(({ id }, index) => (
+          <FormField
+            key={id}
+            control={control}
+            name={`redirect_uris.${index}.uri`}
+            rules={{
+              required: 'This field is required',
+            }}
+            render={({ field }) => {
+              return (
+                <FormItem>
+                  <FormControl>
+                    <div className="flex flex-row items-center gap-2">
+                      <Input
+                        name={field.name}
+                        value={field.value}
+                        placeholder="https://"
+                        onChange={(e) => {
+                          field.onChange(e.target.value)
+                          setValue(`redirect_uris.${index}.uri`, e.target.value)
+                        }}
+                      />
+                      {index !== 0 && (
+                        <Button
+                          className={
+                            'border-none bg-transparent text-[16px] opacity-50 transition-opacity hover:opacity-100 dark:bg-transparent'
+                          }
+                          size="icon"
+                          variant="secondary"
+                          type="button"
+                          onClick={() => remove(index)}
+                        >
+                          <ClearOutlined fontSize="inherit" />
+                        </Button>
+                      )}
+                    </div>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )
+            }}
+          />
+        ))}
+      </div>
+    </div>
+  )
+}
+
+export const FieldScopes = () => {
+  const form = useFormContext<EnhancedOAuth2ClientConfiguration>()
+
+  return (
+    <div className="flex flex-col gap-6">
       <h2 className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-        Events
+        Scopes
       </h2>
 
-      {Object.values(OAuthEventType).map((event) => (
-        <FormField
-          key={event}
-          control={form.control}
-          name="events"
-          render={({ field }) => {
-            const docsKey = event.replaceAll('.', '_')
-
-            // Example: https://api.polar.sh/docs#/webhooks/subscription_tier_updatedsubscription_tier_updated_post
-            // yes, docsKey is repeated twice
-            const href = `https://api.polar.sh/docs#/webhooks/${docsKey}${docsKey}_post`
-
-            return (
-              <FormItem className="flex flex-row items-center space-x-3 space-y-0">
-                <FormControl>
-                  <Checkbox
-                    defaultChecked={field.value && field.value.includes(event)}
-                    onCheckedChange={(checked) => {
-                      if (checked) {
-                        field.onChange([...(field.value || []), event])
-                      } else {
-                        field.onChange(
-                          (field.value || []).filter((v) => v !== event),
-                        )
-                      }
-                    }}
-                  />
-                </FormControl>
-                <FormLabel className="text-sm leading-none">{event}</FormLabel>
-                <Link
-                  className="text-xs text-blue-400"
-                  href={href}
-                  target="_blank"
-                >
-                  Schema
-                </Link>
-                <FormMessage />
-              </FormItem>
-            )
-          }}
-        />
-      ))}
+      <div className="flex flex-col gap-2">
+        {Object.values(Scope)
+          .filter((scope) => !['admin', 'web_default'].includes(scope))
+          .map((scope) => (
+            <FormField
+              key={scope}
+              control={form.control}
+              name="scope"
+              render={({ field }) => {
+                return (
+                  <FormItem className="flex flex-row items-center space-x-3 space-y-0">
+                    <FormControl>
+                      <Checkbox
+                        defaultChecked={
+                          field.value && field.value.includes(scope)
+                        }
+                        onCheckedChange={(checked) => {
+                          if (checked) {
+                            field.onChange([...(field.value || []), scope])
+                          } else {
+                            field.onChange(
+                              (field.value || []).filter((v) => v !== scope),
+                            )
+                          }
+                        }}
+                      />
+                    </FormControl>
+                    <FormLabel className="text-sm leading-none">
+                      {scope}
+                    </FormLabel>
+                    <FormMessage />
+                  </FormItem>
+                )
+              }}
+            />
+          ))}
+      </div>
     </div>
   )
 }

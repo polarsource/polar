@@ -1,13 +1,14 @@
 import { api, queryClient } from '@/utils/api'
-import { OAuth2ClientConfiguration } from '@polar-sh/sdk'
+import {
+  OAuth2ClientConfiguration,
+  Oauth2ApiListOauth2ClientsRequest,
+} from '@polar-sh/sdk'
 import { useMutation, useQuery } from '@tanstack/react-query'
 
-export const useOAuth2Clients = () =>
+export const useOAuth2Clients = (options?: Oauth2ApiListOauth2ClientsRequest) =>
   useQuery({
     queryKey: ['oauth2Clients'],
-    queryFn: async () => ({
-      items: [],
-    }),
+    queryFn: async () => api.oauth2.listOauth2Clients(options),
   })
 
 export const useCreateOAuth2Client = () =>

@@ -2,10 +2,10 @@ import uuid
 
 from polar.config import settings
 from polar.exceptions import PolarTaskError
-from polar.subscription.service.subscription import subscription as subscription_service
-from polar.subscription.service.subscription_tier import (
-    subscription_tier as subscription_tier_service,
+from polar.product.service.product import (
+    product as product_service,
 )
+from polar.subscription.service.subscription import subscription as subscription_service
 from polar.worker import AsyncSessionMaker, JobContext, PolarWorkerContext, task
 
 from .service import user as user_service
@@ -34,7 +34,7 @@ async def user_on_after_signup(
             raise UserDoesNotExist(user_id)
 
         if settings.AUTO_SUBSCRIBE_SUBSCRIPTION_TIER_ID is not None:
-            auto_subscribe_subscription_tier = await subscription_tier_service.get(
+            auto_subscribe_subscription_tier = await product_service.get(
                 session, settings.AUTO_SUBSCRIBE_SUBSCRIPTION_TIER_ID
             )
             if auto_subscribe_subscription_tier is not None:

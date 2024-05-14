@@ -9,6 +9,9 @@ from polar.authz.service import Authz
 from polar.exceptions import NotPermitted, ResourceNotFound, Unauthorized
 from polar.models import Organization, Product, ProductPrice, User
 from polar.postgres import AsyncSession
+from polar.product.service.product import (
+    product as product_service,
+)
 from polar.subscription.service.subscribe_session import (
     AlreadySubscribed,
     ArchivedSubscriptionTier,
@@ -17,13 +20,10 @@ from polar.subscription.service.subscribe_session import (
 from polar.subscription.service.subscribe_session import (
     subscribe_session as subscribe_session_service,
 )
-from polar.subscription.service.subscription_tier import (
-    subscription_tier as subscription_tier_service,
-)
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
-    add_subscription_benefits,
+    add_product_benefits,
     create_active_subscription,
     create_benefit,
 )
@@ -48,7 +48,7 @@ class TestCreateSubscribeSession:
 
         # create_subscribe_session calls .refresh() which requires the objects to be from the same session
         # re-load the tier without any relationships
-        subscription_tier_free_loaded = await subscription_tier_service.get(
+        subscription_tier_free_loaded = await product_service.get(
             session, subscription_tier_free.id
         )
         assert subscription_tier_free_loaded
@@ -78,7 +78,7 @@ class TestCreateSubscribeSession:
         session.expunge_all()
 
         # load
-        subscription_tier_organization_loaded = await subscription_tier_service.get(
+        subscription_tier_organization_loaded = await product_service.get(
             session, subscription_tier.id
         )
         assert subscription_tier_organization_loaded
@@ -105,14 +105,14 @@ class TestCreateSubscribeSession:
         user: User,
     ) -> None:
         subscription = await create_active_subscription(
-            save_fixture, subscription_tier=subscription_tier, user=user
+            save_fixture, product=subscription_tier, user=user
         )
 
         # then
         session.expunge_all()
 
         # load
-        subscription_tier_organization_loaded = await subscription_tier_service.get(
+        subscription_tier_organization_loaded = await product_service.get(
             session, subscription_tier.id
         )
         assert subscription_tier_organization_loaded
@@ -151,7 +151,7 @@ class TestCreateSubscribeSession:
         session.expunge_all()
 
         # load
-        subscription_tier_organization_loaded = await subscription_tier_service.get(
+        subscription_tier_organization_loaded = await product_service.get(
             session, subscription_tier.id
         )
         assert subscription_tier_organization_loaded
@@ -213,7 +213,7 @@ class TestCreateSubscribeSession:
         session.expunge_all()
 
         # load
-        subscription_tier_organization_loaded = await subscription_tier_service.get(
+        subscription_tier_organization_loaded = await product_service.get(
             session, subscription_tier.id
         )
         assert subscription_tier_organization_loaded
@@ -278,7 +278,7 @@ class TestCreateSubscribeSession:
         session.expunge_all()
 
         # load
-        subscription_tier_organization_loaded = await subscription_tier_service.get(
+        subscription_tier_organization_loaded = await product_service.get(
             session, subscription_tier.id
         )
         assert subscription_tier_organization_loaded
@@ -340,7 +340,7 @@ class TestCreateSubscribeSession:
         session.expunge_all()
 
         # load
-        subscription_tier_organization_loaded = await subscription_tier_service.get(
+        subscription_tier_organization_loaded = await product_service.get(
             session, subscription_tier.id
         )
         assert subscription_tier_organization_loaded
@@ -390,9 +390,9 @@ class TestCreateSubscribeSession:
         applicable_tax_benefit = await create_benefit(
             save_fixture, is_tax_applicable=True, organization=organization
         )
-        subscription_tier = await add_subscription_benefits(
+        subscription_tier = await add_product_benefits(
             save_fixture,
-            subscription_tier=subscription_tier,
+            product=subscription_tier,
             benefits=[applicable_tax_benefit],
         )
 
@@ -411,7 +411,7 @@ class TestCreateSubscribeSession:
         session.expunge_all()
 
         # load
-        subscription_tier_organization_loaded = await subscription_tier_service.get(
+        subscription_tier_organization_loaded = await product_service.get(
             session, subscription_tier.id
         )
         assert subscription_tier_organization_loaded
@@ -460,7 +460,7 @@ class TestCreateSubscribeSession:
     ) -> None:
         free_subscription = await create_active_subscription(
             save_fixture,
-            subscription_tier=subscription_tier_free,
+            product=subscription_tier_free,
             user=user,
         )
 
@@ -481,7 +481,7 @@ class TestCreateSubscribeSession:
         session.expunge_all()
 
         # load
-        subscription_tier_organization_loaded = await subscription_tier_service.get(
+        subscription_tier_organization_loaded = await product_service.get(
             session, subscription_tier.id
         )
         assert subscription_tier_organization_loaded
@@ -528,7 +528,7 @@ class TestCreateSubscribeSession:
         session.expunge_all()
 
         # load
-        subscription_tier_organization_loaded = await subscription_tier_service.get(
+        subscription_tier_organization_loaded = await product_service.get(
             session, subscription_tier.id
         )
         assert subscription_tier_organization_loaded
@@ -560,7 +560,7 @@ class TestCreateSubscribeSession:
         session.expunge_all()
 
         # load
-        subscription_tier_organization_loaded = await subscription_tier_service.get(
+        subscription_tier_organization_loaded = await product_service.get(
             session, subscription_tier.id
         )
         assert subscription_tier_organization_loaded
@@ -608,7 +608,7 @@ class TestCreateSubscribeSession:
         session.expunge_all()
 
         # load
-        subscription_tier_organization_loaded = await subscription_tier_service.get(
+        subscription_tier_organization_loaded = await product_service.get(
             session, subscription_tier.id
         )
         assert subscription_tier_organization_loaded

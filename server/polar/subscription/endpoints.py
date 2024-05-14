@@ -24,9 +24,14 @@ from polar.organization.dependencies import (
 )
 from polar.postgres import AsyncSession, get_db_session
 from polar.posthog import posthog
+from polar.product.schemas import Product as ProductSchema
+from polar.product.schemas import ProductBenefitsUpdate, ProductCreate, ProductUpdate
 from polar.tags.api import Tags
 from polar.user.service import user as user_service
 
+from ..product.service.product import (
+    product as product_service,
+)
 from . import auth
 from .schemas import (
     FreeSubscriptionCreate,
@@ -37,17 +42,12 @@ from .schemas import (
     SubscriptionsStatistics,
     SubscriptionSubscriber,
     SubscriptionSummary,
-    SubscriptionTierBenefitsUpdate,
-    SubscriptionTierCreate,
-    SubscriptionTierUpdate,
     SubscriptionUpgrade,
 )
 from .schemas import Subscription as SubscriptionSchema
-from .schemas import SubscriptionTier as SubscriptionTierSchema
 from .service.subscribe_session import subscribe_session as subscribe_session_service
 from .service.subscription import AlreadySubscribed, SearchSortProperty
 from .service.subscription import subscription as subscription_service
-from .service.subscription_tier import subscription_tier as subscription_tier_service
 
 log = structlog.get_logger()
 
@@ -56,7 +56,7 @@ router = APIRouter(prefix="/subscriptions", tags=["subscriptions"])
 
 @router.get(
     "/tiers/search",
-    response_model=ListResource[SubscriptionTierSchema],
+    response_model=ListResource[ProductSchema],
     tags=[Tags.PUBLIC],
 )
 async def search_subscription_tiers(
@@ -66,8 +66,8 @@ async def search_subscription_tiers(
     include_archived: bool = Query(False),
     type: SubscriptionTierType | None = Query(None),
     session: AsyncSession = Depends(get_db_session),
-) -> ListResource[SubscriptionTierSchema]:
-    results, count = await subscription_tier_service.search(
+) -> ListResource[ProductSchema]:
+    results, count = await product_service.search(
         session,
         auth_subject,
         type=type,
@@ -77,7 +77,7 @@ async def search_subscription_tiers(
     )
 
     return ListResource.from_paginated_results(
-        [SubscriptionTierSchema.model_validate(result) for result in results],
+        [ProductSchema.model_validate(result) for result in results],
         count,
         pagination,
     )
@@ -85,7 +85,7 @@ async def search_subscription_tiers(
 
 @router.get(
     "/tiers/lookup",
-    response_model=SubscriptionTierSchema,
+    response_model=ProductSchema,
     tags=[Tags.PUBLIC],
 )
 async def lookup_subscription_tier(
@@ -93,7 +93,7 @@ async def lookup_subscription_tier(
     auth_subject: auth.CreatorSubscriptionsReadOrAnonymous,
     session: AsyncSession = Depends(get_db_session),
 ) -> Product:
-    subscription_tier = await subscription_tier_service.get_by_id(
+    subscription_tier = await product_service.get_by_id(
         session, auth_subject, subscription_tier_id
     )
 
@@ -105,32 +105,30 @@ async def lookup_subscription_tier(
 
 @router.post(
     "/tiers/",
-    response_model=SubscriptionTierSchema,
+    response_model=ProductSchema,
     status_code=201,
     tags=[Tags.PUBLIC],
 )
 async def create_subscription_tier(
-    subscription_tier_create: SubscriptionTierCreate,
+    subscription_tier_create: ProductCreate,
     auth_subject: auth.CreatorSubscriptionsWrite,
     authz: Authz = Depends(Authz.authz),
     session: AsyncSession = Depends(get_db_session),
 ) -> Product:
-    return await subscription_tier_service.user_create(
+    return await product_service.user_create(
         session, authz, subscription_tier_create, auth_subject
     )
 
 
-@router.post("/tiers/{id}", response_model=SubscriptionTierSchema, tags=[Tags.PUBLIC])
+@router.post("/tiers/{id}", response_model=ProductSchema, tags=[Tags.PUBLIC])
 async def update_subscription_tier(
     id: UUID4,
-    subscription_tier_update: SubscriptionTierUpdate,
+    subscription_tier_update: ProductUpdate,
     auth_subject: auth.CreatorSubscriptionsWrite,
     authz: Authz = Depends(Authz.authz),
     session: AsyncSession = Depends(get_db_session),
 ) -> Product:
-    subscription_tier = await subscription_tier_service.get_by_id(
-        session, auth_subject, id
-    )
+    subscription_tier = await product_service.get_by_id(session, auth_subject, id)
 
     if subscription_tier is None:
         raise ResourceNotFound()
@@ -150,7 +148,7 @@ async def update_subscription_tier(
         {"subscription_tier_id": subscription_tier.id},
     )
 
-    return await subscription_tier_service.user_update(
+    return await product_service.user_update(
         session,
         authz,
         subscription_tier,
@@ -159,18 +157,14 @@ async def update_subscription_tier(
     )
 
 
-@router.post(
-    "/tiers/{id}/archive", response_model=SubscriptionTierSchema, tags=[Tags.PUBLIC]
-)
+@router.post("/tiers/{id}/archive", response_model=ProductSchema, tags=[Tags.PUBLIC])
 async def archive_subscription_tier(
     id: UUID4,
     auth_subject: auth.CreatorSubscriptionsWrite,
     authz: Authz = Depends(Authz.authz),
     session: AsyncSession = Depends(get_db_session),
 ) -> Product:
-    subscription_tier = await subscription_tier_service.get_by_id(
-        session, auth_subject, id
-    )
+    subscription_tier = await product_service.get_by_id(session, auth_subject, id)
 
     if subscription_tier is None:
         raise ResourceNotFound()
@@ -183,24 +177,20 @@ async def archive_subscription_tier(
         {"subscription_tier_id": subscription_tier.id},
     )
 
-    return await subscription_tier_service.archive(
+    return await product_service.archive(
         session, authz, subscription_tier, auth_subject
     )
 
 
-@router.post(
-    "/tiers/{id}/benefits", response_model=SubscriptionTierSchema, tags=[Tags.PUBLIC]
-)
+@router.post("/tiers/{id}/benefits", response_model=ProductSchema, tags=[Tags.PUBLIC])
 async def update_subscription_tier_benefits(
     id: UUID4,
-    benefits_update: SubscriptionTierBenefitsUpdate,
+    benefits_update: ProductBenefitsUpdate,
     auth_subject: auth.CreatorSubscriptionsWrite,
     authz: Authz = Depends(Authz.authz),
     session: AsyncSession = Depends(get_db_session),
 ) -> Product:
-    subscription_tier = await subscription_tier_service.get_by_id(
-        session, auth_subject, id
-    )
+    subscription_tier = await product_service.get_by_id(session, auth_subject, id)
 
     if subscription_tier is None:
         raise ResourceNotFound()
@@ -213,7 +203,7 @@ async def update_subscription_tier_benefits(
         {"subscription_tier_id": subscription_tier.id},
     )
 
-    subscription_tier, _, _ = await subscription_tier_service.update_benefits(
+    subscription_tier, _, _ = await product_service.update_benefits(
         session,
         authz,
         subscription_tier,
@@ -235,7 +225,7 @@ async def create_subscribe_session(
     authz: Authz = Depends(Authz.authz),
     session: AsyncSession = Depends(get_db_session),
 ) -> SubscribeSession:
-    subscription_tier = await subscription_tier_service.get_by_id(
+    subscription_tier = await product_service.get_by_id(
         session, auth_subject, session_create.tier_id
     )
 
@@ -434,9 +424,7 @@ async def create_email_subscription(
         raise Unauthorized()
 
     # find free tier
-    free_tier = await subscription_tier_service.get_free(
-        session, organization=organization
-    )
+    free_tier = await product_service.get_free(session, organization=organization)
     if free_tier is None:
         raise ResourceNotFound("No free tier found")
 
@@ -471,9 +459,7 @@ async def subscriptions_import(
     session: AsyncSession = Depends(get_db_session),
 ) -> SubscriptionsImported:
     # find free tier
-    free_tier = await subscription_tier_service.get_free(
-        session, organization=organization
-    )
+    free_tier = await product_service.get_free(session, organization=organization)
     if free_tier is None:
         raise ResourceNotFound("No free tier found")
 

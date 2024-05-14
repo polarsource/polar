@@ -89,12 +89,14 @@ from polar.webhook.webhooks import WebhookTypeObject
 from polar.webhook_notifications.service import webhook_notifications_service
 from polar.worker import enqueue_job
 
+from ...product.service.product import (
+    product as product_service,
+)
 from ..schemas import (
     FreeSubscriptionCreate,
     SubscriptionsStatisticsPeriod,
     SubscriptionUpgrade,
 )
-from .subscription_tier import subscription_tier as subscription_tier_service
 from .subscription_tier_price import (
     subscription_tier_price as subscription_tier_price_service,
 )
@@ -476,7 +478,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         auth_subject: AuthSubject[User | Anonymous],
         signup_type: UserSignupType = UserSignupType.backer,
     ) -> Subscription:
-        subscription_tier = await subscription_tier_service.get(
+        subscription_tier = await product_service.get(
             session, free_subscription_create.tier_id
         )
 
@@ -721,9 +723,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
                 await webhook_service.send(session, target=subscribing_user, we=event)
 
         # subscribed to org
-        if tier := await subscription_tier_service.get_loaded(
-            session, subscription.product_id
-        ):
+        if tier := await product_service.get_loaded(session, subscription.product_id):
             if subscribed_to_org := await organization_service.get(
                 session, tier.organization_id
             ):
@@ -800,7 +800,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
             raise SubscriptionDoesNotExist(stripe_subscription_id)
 
         await session.refresh(subscription, {"subscription_tier", "price"})
-        account = await subscription_tier_service.get_managing_organization_account(
+        account = await product_service.get_managing_organization_account(
             session, subscription.product
         )
 
@@ -864,9 +864,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
     async def enqueue_benefits_grants(
         self, session: AsyncSession, subscription: Subscription
     ) -> None:
-        subscription_tier = await subscription_tier_service.get(
-            session, subscription.product_id
-        )
+        subscription_tier = await product_service.get(session, subscription.product_id)
         assert subscription_tier is not None
 
         if subscription.is_incomplete():
@@ -975,7 +973,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         if subscription.product.type == SubscriptionTierType.free:
             raise FreeSubscriptionUpgrade(subscription)
 
-        new_subscription_tier = await subscription_tier_service.get_by_id(
+        new_subscription_tier = await product_service.get_by_id(
             session, auth_subject, subscription_upgrade.subscription_tier_id
         )
 

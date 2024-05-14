@@ -34,31 +34,27 @@ from polar.webhook.service import webhook as webhook_service
 from polar.webhook.webhooks import WebhookTypeObject
 from polar.worker import enqueue_job
 
-from ..schemas import (
-    ExistingSubscriptionTierPrice,
-    SubscriptionTierCreate,
-    SubscriptionTierUpdate,
-)
+from ..schemas import ExistingProductPrice, ProductCreate, ProductUpdate
 
 
-class SubscriptionTierError(PolarError): ...
+class ProductError(PolarError): ...
 
 
-class BenefitDoesNotExist(SubscriptionTierError):
+class BenefitDoesNotExist(ProductError):
     def __init__(self, benefit_id: uuid.UUID) -> None:
         self.benefit_id = benefit_id
         message = f"Benefit with id {benefit_id} does not exist."
         super().__init__(message, 422)
 
 
-class BenefitIsNotSelectable(SubscriptionTierError):
+class BenefitIsNotSelectable(ProductError):
     def __init__(self, benefit_id: uuid.UUID) -> None:
         self.benefit_id = benefit_id
         message = f"Benefit with id {benefit_id} cannot be added or removed."
         super().__init__(message, 422)
 
 
-class FreeTierIsNotArchivable(SubscriptionTierError):
+class FreeTierIsNotArchivable(ProductError):
     def __init__(self, subscription_tier_id: uuid.UUID) -> None:
         self.subscription_tier_id = subscription_tier_id
         message = "The Free Subscription Tier is not archivable"
@@ -68,9 +64,7 @@ class FreeTierIsNotArchivable(SubscriptionTierError):
 T = TypeVar("T", bound=tuple[Any])
 
 
-class SubscriptionTierService(
-    ResourceService[Product, SubscriptionTierCreate, SubscriptionTierUpdate]
-):
+class ProductService(ResourceService[Product, ProductCreate, ProductUpdate]):
     async def search(
         self,
         session: AsyncSession,
@@ -81,10 +75,8 @@ class SubscriptionTierService(
         include_archived: bool = False,
         pagination: PaginationParams,
     ) -> tuple[Sequence[Product], int]:
-        inner_statement = self._get_readable_subscription_tier_ids_statement(
-            auth_subject
-        )
-        count_statement = self._get_readable_subscription_tier_statement(
+        inner_statement = self._get_readable_product_ids_statement(auth_subject)
+        count_statement = self._get_readable_product_statement(
             auth_subject
         ).with_only_columns(func.count(Product.id))
 
@@ -119,7 +111,7 @@ class SubscriptionTierService(
         offset = limit * (page - 1)
         inner_statement = inner_statement.offset(offset).limit(limit)
 
-        # given a list of tiers, join in more data
+        # given a list of product, join in more data
         outer_statement = (
             select(Product)
             .where(Product.id.in_(inner_statement))
@@ -147,7 +139,7 @@ class SubscriptionTierService(
         self, session: AsyncSession, auth_subject: AuthSubject[Subject], id: uuid.UUID
     ) -> Product | None:
         statement = (
-            self._get_readable_subscription_tier_statement(auth_subject)
+            self._get_readable_product_statement(auth_subject)
             .where(Product.id == id, Product.deleted_at.is_(None))
             .options(contains_eager(Product.organization))
             .limit(1)
@@ -187,7 +179,7 @@ class SubscriptionTierService(
         self,
         session: AsyncSession,
         authz: Authz,
-        create_schema: SubscriptionTierCreate,
+        create_schema: ProductCreate,
         auth_subject: AuthSubject[User | Organization],
     ) -> Product:
         subject = auth_subject.subject
@@ -203,30 +195,30 @@ class SubscriptionTierService(
                 session, type=create_schema.type, organization_id=organization.id
             )
 
-        subscription_tier = Product(
+        product = Product(
             organization=organization,
             prices=[],
             product_benefits=[],
             **create_schema.model_dump(exclude={"organization_id", "prices"}),
         )
-        session.add(subscription_tier)
+        session.add(product)
         await session.flush()
-        assert subscription_tier.id is not None
+        assert product.id is not None
 
-        metadata: dict[str, str] = {"subscription_tier_id": str(subscription_tier.id)}
+        metadata: dict[str, str] = {"product_id": str(product.id)}
         metadata["organization_id"] = str(organization.id)
         metadata["organization_name"] = organization.name
 
-        product = stripe_service.create_product(
-            subscription_tier.get_stripe_name(),
-            description=subscription_tier.description,
+        stripe_product = stripe_service.create_product(
+            product.get_stripe_name(),
+            description=product.description,
             metadata=metadata,
         )
-        subscription_tier.stripe_product_id = product.id
+        product.stripe_product_id = stripe_product.id
 
         for price_create in create_schema.prices:
             stripe_price = stripe_service.create_price_for_product(
-                product.id,
+                stripe_product.id,
                 price_create.price_amount,
                 price_create.price_currency,
                 price_create.recurring_interval.as_literal(),
@@ -234,67 +226,62 @@ class SubscriptionTierService(
             price = ProductPrice(
                 **price_create.model_dump(),
                 stripe_price_id=stripe_price.id,
-                product=subscription_tier,
+                product=product,
             )
             session.add(price)
 
         await session.flush()
-        await session.refresh(subscription_tier, {"prices"})
+        await session.refresh(product, {"prices"})
 
-        await self._after_tier_created(session, subscription_tier)
+        await self._after_product_created(session, product)
 
-        return subscription_tier
+        return product
 
     async def user_update(
         self,
         session: AsyncSession,
         authz: Authz,
-        subscription_tier: Product,
-        update_schema: SubscriptionTierUpdate,
+        product: Product,
+        update_schema: ProductUpdate,
         auth_subject: AuthSubject[User | Organization],
     ) -> Product:
-        subscription_tier = await self.with_organization(session, subscription_tier)
+        product = await self.with_organization(session, product)
         subject = auth_subject.subject
 
-        if not await authz.can(subject, AccessType.write, subscription_tier):
+        if not await authz.can(subject, AccessType.write, product):
             raise NotPermitted()
 
         product_update: ProductUpdateKwargs = {}
-        if (
-            update_schema.name is not None
-            and update_schema.name != subscription_tier.name
-        ):
-            subscription_tier.name = update_schema.name
-            product_update["name"] = subscription_tier.get_stripe_name()
+        if update_schema.name is not None and update_schema.name != product.name:
+            product.name = update_schema.name
+            product_update["name"] = product.get_stripe_name()
         if (
             update_schema.description is not None
-            and update_schema.description != subscription_tier.description
+            and update_schema.description != product.description
         ):
-            subscription_tier.description = update_schema.description
+            product.description = update_schema.description
             product_update["description"] = update_schema.description
 
-        if product_update and subscription_tier.stripe_product_id is not None:
-            stripe_service.update_product(
-                subscription_tier.stripe_product_id, **product_update
-            )
+        if product_update and product.stripe_product_id is not None:
+            stripe_service.update_product(product.stripe_product_id, **product_update)
 
         existing_prices: set[ProductPrice] = set()
         added_prices: list[ProductPrice] = []
         if (
-            subscription_tier.type != SubscriptionTierType.free
+            product.type != SubscriptionTierType.free
             and update_schema.prices is not None
         ):
             for price_update in update_schema.prices:
-                if isinstance(price_update, ExistingSubscriptionTierPrice):
-                    existing_price = subscription_tier.get_price(price_update.id)
+                if isinstance(price_update, ExistingProductPrice):
+                    existing_price = product.get_price(price_update.id)
                     # TODO: we might want to check if the price actually exists
                     if existing_price is not None:
                         existing_prices.add(existing_price)
                     continue
 
-                assert subscription_tier.stripe_product_id is not None
+                assert product.stripe_product_id is not None
                 stripe_price = stripe_service.create_price_for_product(
-                    subscription_tier.stripe_product_id,
+                    product.stripe_product_id,
                     price_update.price_amount,
                     price_update.price_currency,
                     price_update.recurring_interval.as_literal(),
@@ -302,18 +289,18 @@ class SubscriptionTierService(
                 price = ProductPrice(
                     **price_update.model_dump(),
                     stripe_price_id=stripe_price.id,
-                    subscription_tier=subscription_tier,
+                    product=product,
                 )
                 session.add(price)
                 added_prices.append(price)
 
-            deleted_prices = set(subscription_tier.prices) - existing_prices
+            deleted_prices = set(product.prices) - existing_prices
             updated_prices = list(existing_prices) + added_prices
             if deleted_prices:
-                # Make sure to set Stripe's default price to the a non-archived price
-                assert subscription_tier.stripe_product_id is not None
+                # Make sure to set Stripe's default price to a non-archived price
+                assert product.stripe_product_id is not None
                 stripe_service.update_product(
-                    subscription_tier.stripe_product_id,
+                    product.stripe_product_id,
                     default_price=updated_prices[0].stripe_price_id,
                 )
                 for deleted_price in deleted_prices:
@@ -324,24 +311,24 @@ class SubscriptionTierService(
         if update_schema.is_highlighted:
             await self._disable_other_highlights(
                 session,
-                type=subscription_tier.type,
-                organization_id=subscription_tier.organization_id,
+                type=product.type,
+                organization_id=product.organization_id,
             )
 
         for attr, value in update_schema.model_dump(
             exclude_unset=True, exclude_none=True, exclude={"prices"}
         ).items():
-            setattr(subscription_tier, attr, value)
+            setattr(product, attr, value)
 
-        session.add(subscription_tier)
+        session.add(product)
         await session.flush()
-        await session.refresh(subscription_tier, {"prices"})
+        await session.refresh(product, {"prices"})
 
-        await self._after_tier_updated(session, subscription_tier)
+        await self._after_product_updated(session, product)
 
-        return subscription_tier
+        return product
 
-    async def create_free(
+    async def create_free_tier(
         self,
         session: AsyncSession,
         benefits: list[Benefit],
@@ -379,7 +366,7 @@ class SubscriptionTierService(
             free_subscription_tier.id,
         )
 
-        await self._after_tier_created(session, free_subscription_tier)
+        await self._after_product_created(session, free_subscription_tier)
 
         return free_subscription_tier
 
@@ -387,22 +374,22 @@ class SubscriptionTierService(
         self,
         session: AsyncSession,
         authz: Authz,
-        subscription_tier: Product,
+        product: Product,
         benefits: list[uuid.UUID],
         auth_subject: AuthSubject[User | Organization],
     ) -> tuple[Product, set[Benefit], set[Benefit]]:
-        subscription_tier = await self.with_organization(session, subscription_tier)
+        product = await self.with_organization(session, product)
 
         subject = auth_subject.subject
-        if not await authz.can(subject, AccessType.write, subscription_tier):
+        if not await authz.can(subject, AccessType.write, product):
             raise NotPermitted()
 
-        previous_benefits = set(subscription_tier.benefits)
+        previous_benefits = set(product.benefits)
         new_benefits: set[Benefit] = set()
 
         nested = await session.begin_nested()
 
-        subscription_tier.product_benefits = []
+        product.product_benefits = []
         await session.flush()
 
         for order, benefit_id in enumerate(benefits):
@@ -413,7 +400,7 @@ class SubscriptionTierService(
             if not benefit.selectable and benefit not in previous_benefits:
                 raise BenefitIsNotSelectable(benefit_id)
             new_benefits.add(benefit)
-            subscription_tier.product_benefits.append(
+            product.product_benefits.append(
                 ProductBenefit(benefit=benefit, order=order)
             )
 
@@ -424,67 +411,61 @@ class SubscriptionTierService(
             if not deleted_benefit.selectable:
                 raise BenefitIsNotSelectable(deleted_benefit.id)
 
-        session.add(subscription_tier)
+        session.add(product)
 
         enqueue_job(
             "subscription.subscription.update_subscription_tier_benefits_grants",
-            subscription_tier.id,
+            product.id,
         )
 
-        await self._after_tier_updated(session, subscription_tier)
+        await self._after_product_updated(session, product)
 
-        return subscription_tier, added_benefits, deleted_benefits
+        return product, added_benefits, deleted_benefits
 
     async def archive(
         self,
         session: AsyncSession,
         authz: Authz,
-        subscription_tier: Product,
+        product: Product,
         auth_subject: AuthSubject[User | Organization],
     ) -> Product:
-        subscription_tier = await self.with_organization(session, subscription_tier)
-        if not await authz.can(
-            auth_subject.subject, AccessType.write, subscription_tier
-        ):
+        product = await self.with_organization(session, product)
+        if not await authz.can(auth_subject.subject, AccessType.write, product):
             raise NotPermitted()
 
-        if subscription_tier.type == SubscriptionTierType.free:
-            raise FreeTierIsNotArchivable(subscription_tier.id)
+        if product.type == SubscriptionTierType.free:
+            raise FreeTierIsNotArchivable(product.id)
 
-        if subscription_tier.stripe_product_id is not None:
-            stripe_service.archive_product(subscription_tier.stripe_product_id)
+        if product.stripe_product_id is not None:
+            stripe_service.archive_product(product.stripe_product_id)
 
-        subscription_tier.is_archived = True
-        session.add(subscription_tier)
+        product.is_archived = True
+        session.add(product)
 
-        await self._after_tier_updated(session, subscription_tier)
+        await self._after_product_updated(session, product)
 
-        return subscription_tier
+        return product
 
     async def with_organization(
-        self, session: AsyncSession, subscription_tier: Product
+        self, session: AsyncSession, product: Product
     ) -> Product:
         try:
-            subscription_tier.organization
+            product.organization
         except InvalidRequestError:
-            await session.refresh(subscription_tier, {"organization"})
-        return subscription_tier
+            await session.refresh(product, {"organization"})
+        return product
 
-    def _get_readable_subscription_tier_ids_statement(
+    def _get_readable_product_ids_statement(
         self, auth_subject: AuthSubject[Subject]
     ) -> Select[tuple[uuid.UUID]]:
-        return self._apply_readable_subscription_tier_statement(
-            auth_subject, select(Product.id)
-        )
+        return self._apply_readable_product_statement(auth_subject, select(Product.id))
 
-    def _get_readable_subscription_tier_statement(
+    def _get_readable_product_statement(
         self, auth_subject: AuthSubject[Subject]
     ) -> Select[tuple[Product]]:
-        return self._apply_readable_subscription_tier_statement(
-            auth_subject, select(Product)
-        )
+        return self._apply_readable_product_statement(auth_subject, select(Product))
 
-    def _apply_readable_subscription_tier_statement(
+    def _apply_readable_product_statement(
         self, auth_subject: AuthSubject[Subject], selector: Select[T]
     ) -> Select[T]:
         stmt = selector.join(Product.organization).where(
@@ -495,7 +476,7 @@ class SubscriptionTierService(
 
         if is_user(auth_subject):
             user = auth_subject.subject
-            # Direct tier's organization member
+            # Direct product's organization member
             stmt = stmt.join(
                 UserOrganization,
                 onclause=and_(
@@ -505,7 +486,7 @@ class SubscriptionTierService(
                 ),
                 full=True,
             ).where(
-                # Can see archived tiers if they are a member of the tier's organization
+                # Can see archived products if they are a member of the products's org
                 or_(
                     Product.is_archived.is_(False),
                     UserOrganization.user_id == user.id,
@@ -523,10 +504,10 @@ class SubscriptionTierService(
         return stmt
 
     async def get_managing_organization_account(
-        self, session: AsyncSession, subscription_tier: Product
+        self, session: AsyncSession, product: Product
     ) -> Account | None:
         return await account_service.get_by_organization_id(
-            session, subscription_tier.organization_id
+            session, product.organization_id
         )
 
     async def _disable_other_highlights(
@@ -547,26 +528,30 @@ class SubscriptionTierService(
 
         await session.execute(statement)
 
-    async def _after_tier_created(self, session: AsyncSession, tier: Product) -> None:
+    async def _after_product_created(
+        self, session: AsyncSession, product: Product
+    ) -> None:
         await self._send_webhook(
-            session, tier, WebhookEventType.subscription_tier_created
+            session, product, WebhookEventType.subscription_tier_created
         )
 
-    async def _after_tier_updated(self, session: AsyncSession, tier: Product) -> None:
+    async def _after_product_updated(
+        self, session: AsyncSession, product: Product
+    ) -> None:
         await self._send_webhook(
-            session, tier, WebhookEventType.subscription_tier_updated
+            session, product, WebhookEventType.subscription_tier_updated
         )
 
     async def _send_webhook(
         self,
         session: AsyncSession,
-        tier: Product,
+        product: Product,
         event_type: Literal[WebhookEventType.subscription_tier_created]
         | Literal[WebhookEventType.subscription_tier_updated],
     ) -> None:
         # load full tier with relations
-        full_tier = await self.get_loaded(session, tier.id, allow_deleted=True)
-        assert full_tier
+        full_product = await self.get_loaded(session, product.id, allow_deleted=True)
+        assert full_product
 
         # mypy 1.9 is does not allow us to do
         #    event = (event_type, subscription)
@@ -574,14 +559,14 @@ class SubscriptionTierService(
         event: WebhookTypeObject | None = None
         match event_type:
             case WebhookEventType.subscription_tier_created:
-                event = (event_type, full_tier)
+                event = (event_type, full_product)
             case WebhookEventType.subscription_tier_updated:
-                event = (event_type, full_tier)
+                event = (event_type, full_product)
 
         if managing_org := await organization_service.get(
-            session, tier.organization_id
+            session, product.organization_id
         ):
             await webhook_service.send(session, target=managing_org, we=event)
 
 
-subscription_tier = SubscriptionTierService(Product)
+product = ProductService(Product)

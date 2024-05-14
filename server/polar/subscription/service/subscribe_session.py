@@ -10,9 +10,11 @@ from polar.models.organization import Organization
 from polar.models.product import SubscriptionTierType
 from polar.organization.service import organization as organization_service
 
+from ...product.service.product import (
+    product as product_service,
+)
 from ..schemas import SubscribeSession
 from .subscription import subscription as subscription_service
-from .subscription_tier import subscription_tier as subscription_tier_service
 
 
 class SubscribeSessionError(PolarError): ...
@@ -57,7 +59,7 @@ class SubscribeSessionService:
         customer_email: str | None = None,
         organization_id: uuid.UUID | None = None,
     ) -> SubscribeSession:
-        subscription_tier = await subscription_tier_service.with_organization(
+        subscription_tier = await product_service.with_organization(
             session, subscription_tier
         )
 
@@ -158,14 +160,14 @@ class SubscribeSessionService:
         except KeyError:
             raise ResourceNotFound()
 
-        subscription_tier = await subscription_tier_service.get(
+        subscription_tier = await product_service.get(
             session, uuid.UUID(subscription_tier_id)
         )
 
         if subscription_tier is None:
             raise ResourceNotFound()
 
-        subscription_tier = await subscription_tier_service.with_organization(
+        subscription_tier = await product_service.with_organization(
             session, subscription_tier
         )
 

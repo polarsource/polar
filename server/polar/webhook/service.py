@@ -25,8 +25,8 @@ from polar.models.webhook_event import WebhookEvent
 from polar.organization.resolver import get_payload_organization
 from polar.organization.schemas import Organization as OrganizationSchema
 from polar.pledge.schemas import Pledge as PledgeSchema
+from polar.product.schemas import Product as ProductSchema
 from polar.subscription.schemas import Subscription as SubscriptionSchema
-from polar.subscription.schemas import SubscriptionTier as SubscriptionTierSchema
 from polar.webhook.schemas import WebhookEndpointCreate, WebhookEndpointUpdate
 from polar.worker import enqueue_job
 
@@ -259,12 +259,12 @@ class WebhookService:
             case WebhookEventType.subscription_tier_created:
                 payload = WebhookSubscriptionTierCreatedPayload(
                     type=we[0],
-                    data=SubscriptionTierSchema.model_validate(we[1]),
+                    data=ProductSchema.model_validate(we[1]),
                 )
             case WebhookEventType.subscription_tier_updated:
                 payload = WebhookSubscriptionTierUpdatedPayload(
                     type=we[0],
-                    data=SubscriptionTierSchema.model_validate(we[1]),
+                    data=ProductSchema.model_validate(we[1]),
                 )
             case WebhookEventType.pledge_created:
                 # mypy is not able to deduce this by itself

@@ -30,7 +30,7 @@ from polar.models.donation import Donation
 from polar.models.issue import Issue
 from polar.models.pledge import Pledge, PledgeState, PledgeType
 from polar.models.product import SubscriptionTierType
-from polar.models.product_price import ProductPriceRecurringInterval
+from polar.models.product_price import ProductPriceRecurringInterval, ProductPriceType
 from polar.models.pull_request import PullRequest
 from polar.models.subscription import SubscriptionStatus
 from polar.models.user import OAuthAccount, OAuthPlatform
@@ -504,12 +504,14 @@ async def create_product_price(
     save_fixture: SaveFixture,
     *,
     product: Product,
+    type: ProductPriceType = ProductPriceType.recurring,
     recurring_interval: ProductPriceRecurringInterval = ProductPriceRecurringInterval.month,
     amount: int = 1000,
 ) -> ProductPrice:
     price = ProductPrice(
         price_amount=amount,
         price_currency="usd",
+        type=type,
         recurring_interval=recurring_interval,
         stripe_price_id=rstr("PRICE_ID"),
         product=product,

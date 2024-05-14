@@ -14,12 +14,12 @@ from polar.kit.pagination import PaginationParams
 from polar.models import Benefit, Organization, Product, User, UserOrganization
 from polar.models.benefit import BenefitType
 from polar.models.product import SubscriptionTierType
-from polar.models.product_price import ProductPriceRecurringInterval
+from polar.models.product_price import ProductPriceRecurringInterval, ProductPriceType
 from polar.postgres import AsyncSession
 from polar.product.schemas import (
     ExistingProductPrice,
     ProductCreate,
-    ProductPriceCreate,
+    ProductPriceRecurringCreate,
     ProductUpdate,
 )
 from polar.product.service.product import (
@@ -545,7 +545,8 @@ class TestUserCreate:
             name="Product",
             organization_id=uuid.uuid4(),
             prices=[
-                ProductPriceCreate(
+                ProductPriceRecurringCreate(
+                    type=ProductPriceType.recurring,
                     recurring_interval=ProductPriceRecurringInterval.month,
                     price_amount=1000,
                     price_currency="usd",
@@ -574,7 +575,8 @@ class TestUserCreate:
             name="Product",
             organization_id=organization.id,
             prices=[
-                ProductPriceCreate(
+                ProductPriceRecurringCreate(
+                    type=ProductPriceType.recurring,
                     recurring_interval=ProductPriceRecurringInterval.month,
                     price_amount=1000,
                     price_currency="usd",
@@ -613,7 +615,8 @@ class TestUserCreate:
             name="Product",
             organization_id=organization.id,
             prices=[
-                ProductPriceCreate(
+                ProductPriceRecurringCreate(
+                    type=ProductPriceType.recurring,
                     recurring_interval=ProductPriceRecurringInterval.month,
                     price_amount=1000,
                     price_currency="usd",
@@ -667,7 +670,8 @@ class TestUserCreate:
             organization_id=organization.id,
             is_highlighted=True,
             prices=[
-                ProductPriceCreate(
+                ProductPriceRecurringCreate(
+                    type=ProductPriceType.recurring,
                     recurring_interval=ProductPriceRecurringInterval.month,
                     price_amount=1000,
                     price_currency="usd",
@@ -712,7 +716,8 @@ class TestUserCreate:
             description="",
             organization_id=organization.id,
             prices=[
-                ProductPriceCreate(
+                ProductPriceRecurringCreate(
+                    type=ProductPriceType.recurring,
                     recurring_interval=ProductPriceRecurringInterval.month,
                     price_amount=1000,
                     price_currency="usd",
@@ -741,7 +746,8 @@ class TestUserCreate:
             name="Product",
             organization_id=organization.id,
             prices=[
-                ProductPriceCreate(
+                ProductPriceRecurringCreate(
+                    type=ProductPriceType.recurring,
                     recurring_interval=ProductPriceRecurringInterval.month,
                     price_amount=1000,
                     price_currency="usd",
@@ -778,7 +784,8 @@ class TestUserCreate:
             type=SubscriptionTierType.individual,
             name="Product",
             prices=[
-                ProductPriceCreate(
+                ProductPriceRecurringCreate(
+                    type=ProductPriceType.recurring,
                     recurring_interval=ProductPriceRecurringInterval.month,
                     price_amount=1000,
                     price_currency="usd",
@@ -959,7 +966,8 @@ class TestUserUpdate:
         update_schema = ProductUpdate(
             prices=[
                 ExistingProductPrice(id=product_organization_loaded.prices[0].id),
-                ProductPriceCreate(
+                ProductPriceRecurringCreate(
+                    type=ProductPriceType.recurring,
                     recurring_interval=ProductPriceRecurringInterval.year,
                     price_amount=12000,
                     price_currency="usd",
@@ -1013,7 +1021,8 @@ class TestUserUpdate:
 
         update_schema = ProductUpdate(
             prices=[
-                ProductPriceCreate(
+                ProductPriceRecurringCreate(
+                    type=ProductPriceType.recurring,
                     recurring_interval=ProductPriceRecurringInterval.year,
                     price_amount=12000,
                     price_currency="usd",

@@ -41,7 +41,10 @@ def _load_production_environment(
             environment_group = item["envGroup"]
             if environment_group["name"] not in ENVIRONMENT_GROUPS:
                 continue
-            for environment_variable in environment_group["envVars"]:
+            response = client.get(f"/env-groups/{environment_group['id']}")
+            response.raise_for_status()
+            environment_group_data = response.json()
+            for environment_variable in environment_group_data["envVars"]:
                 environment_variables[environment_variable["key"]] = (
                     environment_variable["value"]
                 )

@@ -67,6 +67,11 @@ class Authz:
     async def can(
         self, subject: Subject, accessType: AccessType, object: Object
     ) -> bool:
+        # Check blocked subjects
+        blocked_at = getattr(subject, "blocked_at", None)
+        if blocked_at is not None:
+            return False
+
         # Anoymous users can only read
         if (isinstance(subject, Anonymous)) and accessType != AccessType.read:
             return False

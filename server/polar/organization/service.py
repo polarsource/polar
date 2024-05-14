@@ -99,6 +99,7 @@ class OrganizationService(ResourceServiceReader[Organization]):
                 UserOrganization.user_id == user_id,
                 UserOrganization.deleted_at.is_(None),
                 Organization.deleted_at.is_(None),
+                Organization.blocked_at.is_(None),
             )
         )
 

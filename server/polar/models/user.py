@@ -132,6 +132,13 @@ class User(RecordModel):
         String, nullable=True, default=None, unique=True
     )
 
+    # Time of blocking traffic/activity for given user
+    blocked_at: Mapped[datetime | None] = mapped_column(
+        TIMESTAMP(timezone=True),
+        nullable=True,
+        default=None,
+    )
+
     def get_oauth_account(self, platform: OAuthPlatform) -> OAuthAccount | None:
         return next(
             (

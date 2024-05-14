@@ -253,6 +253,25 @@ class TestOAuth2ConfigurePut:
         assert json["client_name"] == "Test Client Updated"
         assert json["redirect_uris"] == ["https://example.com/callback"]
 
+    @pytest.mark.auth
+    async def test_user_valid(
+        self, client: AsyncClient, oauth2_client: OAuth2Client
+    ) -> None:
+        response = await client.put(
+            f"/api/v1/oauth2/register/{oauth2_client.client_id}",
+            json={
+                "client_id": oauth2_client.client_id,
+                "client_name": "Test Client Updated",
+                "redirect_uris": ["https://example.com/callback"],
+            },
+        )
+
+        assert response.status_code == 200
+        json = response.json()
+        assert json["client_id"] == oauth2_client.client_id
+        assert json["client_name"] == "Test Client Updated"
+        assert json["redirect_uris"] == ["https://example.com/callback"]
+
 
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
@@ -265,6 +284,16 @@ class TestOAuth2ConfigureDelete:
             headers={
                 "Authorization": f"Bearer {oauth2_client.registration_access_token}"
             },
+        )
+
+        assert response.status_code == 204
+
+    @pytest.mark.auth
+    async def test_user_valid(
+        self, client: AsyncClient, oauth2_client: OAuth2Client
+    ) -> None:
+        response = await client.delete(
+            f"/api/v1/oauth2/register/{oauth2_client.client_id}"
         )
 
         assert response.status_code == 204

@@ -23,7 +23,10 @@ class OAuth2ClientService(ResourceServiceReader[OAuth2Client]):
     ) -> tuple[Sequence[OAuth2Client], int]:
         statement = (
             select(OAuth2Client)
-            .where(OAuth2Client.user_id == auth_subject.subject.id)
+            .where(
+                OAuth2Client.user_id == auth_subject.subject.id,
+                OAuth2Client.deleted_at.is_(None),
+            )
             .order_by(OAuth2Client.created_at.desc())
         )
         return await paginate(session, statement, pagination=pagination)

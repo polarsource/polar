@@ -94,3 +94,17 @@ class TestListOAuth2Clients:
         json = response.json()
         assert len(json["items"]) == 1
         assert json["items"][0]["client_id"] == oauth2_client.client_id
+
+    @pytest.mark.auth
+    async def test_deleted(
+        self, client: AsyncClient, session: AsyncSession, oauth2_client: OAuth2Client
+    ) -> None:
+        oauth2_client.set_deleted_at()
+        session.add(oauth2_client)
+        await session.flush()
+
+        response = await client.get("/api/v1/oauth2/")
+
+        assert response.status_code == 200
+        json = response.json()
+        assert len(json["items"]) == 0

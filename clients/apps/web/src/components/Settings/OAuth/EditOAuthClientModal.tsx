@@ -1,7 +1,14 @@
+import { ConfirmModal } from '@/components/Modal/ConfirmModal'
 import { InlineModalHeader } from '@/components/Modal/InlineModal'
-import { useEditOAuth2Client } from '@/hooks/queries/oauth'
+import { useModal } from '@/components/Modal/useModal'
+import {
+  useDeleteOAuthClient,
+  useEditOAuth2Client,
+} from '@/hooks/queries/oauth'
 import { OAuth2Client, OAuth2ClientConfigurationUpdate } from '@polar-sh/sdk'
+import { useRouter } from 'next/navigation'
 import Button from 'polarkit/components/ui/atoms/button'
+import { ShadowBoxOnMd } from 'polarkit/components/ui/atoms/shadowbox'
 import { Form } from 'polarkit/components/ui/form'
 import { useCallback, useState } from 'react'
 import { useForm } from 'react-hook-form'
@@ -32,6 +39,14 @@ export const EditOAuthClientModal = ({
   client,
   hideModal,
 }: EditOAuthClientModalProps) => {
+  const router = useRouter()
+
+  const {
+    hide: hideDeleteModal,
+    isShown: isArchiveModalShown,
+    show: showArchiveModal,
+  } = useModal()
+
   const form = useForm<EnhancedOAuth2ClientConfigurationUpdate>({
     defaultValues: {
       ...client,
@@ -66,6 +81,15 @@ export const EditOAuthClientModal = ({
     [hideModal, createOAuth2Client, setUpdated, setIsUpdating, client],
   )
 
+  const deleteOAuthClient = useDeleteOAuthClient()
+
+  const handleDeleteOAuthClient = useCallback(async () => {
+    await deleteOAuthClient.mutateAsync(client.client_id)
+    hideDeleteModal()
+    hideModal()
+    router.push(`/settings`)
+  }, [hideDeleteModal, router, hideModal, client, deleteOAuthClient])
+
   return (
     <div className="flex flex-col overflow-y-auto">
       <InlineModalHeader hide={hideModal}>
@@ -88,6 +112,42 @@ export const EditOAuthClientModal = ({
             <FieldClientURI />
             <FieldTOS />
             <FieldPrivacy />
+
+            <ShadowBoxOnMd className="flex flex-col gap-y-8 md:bg-gray-100">
+              <div className="flex flex-row items-start justify-between">
+                <div className="flex flex-col gap-y-1">
+                  <h3 className="dark:text-polar-50 font-medium text-gray-950">
+                    Delete OAuth Application
+                  </h3>
+                  <p className="dark:text-polar-500 text-sm text-gray-500">
+                    This action will delete the OAuth Application configuration
+                    permanently
+                  </p>
+                </div>
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={(e) => {
+                    e.preventDefault()
+                    e.stopPropagation()
+                    showArchiveModal()
+                  }}
+                >
+                  Delete
+                </Button>
+              </div>
+              <ConfirmModal
+                title="Delete OAuth Application"
+                description={
+                  'This action will delete the OAuth Application configuration permentnly. Are you sure?'
+                }
+                destructiveText="Delete"
+                onConfirm={handleDeleteOAuthClient}
+                isShown={isArchiveModalShown}
+                hide={hideDeleteModal}
+                destructive
+              />
+            </ShadowBoxOnMd>
 
             <Button
               type="submit"

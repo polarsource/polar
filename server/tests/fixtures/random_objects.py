@@ -56,7 +56,7 @@ async def second_organization(save_fixture: SaveFixture) -> Organization:
     return await create_organization(save_fixture)
 
 
-@pytest_asyncio.fixture(scope="function")
+@pytest_asyncio.fixture()
 async def organization_blocked(save_fixture: SaveFixture) -> Organization:
     organization = Organization(
         platform=Platforms.github,
@@ -237,7 +237,7 @@ async def user_second(save_fixture: SaveFixture) -> User:
     return user
 
 
-@pytest_asyncio.fixture(scope="function")
+@pytest_asyncio.fixture()
 async def user_blocked(save_fixture: SaveFixture) -> User:
     user = User(
         id=uuid.uuid4(),
@@ -430,7 +430,7 @@ async def user_organization_second(
     return user_organization
 
 
-@pytest_asyncio.fixture(scope="function")
+@pytest_asyncio.fixture()
 async def user_organization_blocked(
     save_fixture: SaveFixture,
     organization_blocked: Organization,

@@ -11,6 +11,7 @@ import { Section, SectionDescription } from '@/components/Settings/Section'
 import WebhookNotificationSettings from '@/components/Settings/Webhook/WebhookNotificationSettings'
 import WebhookSettings from '@/components/Settings/Webhook/WebhookSettings'
 import { useListAdminOrganizations } from '@/hooks/queries'
+import { Separator } from 'polarkit/components/ui/separator'
 
 export default function Page() {
   const orgs = useListAdminOrganizations()
@@ -19,79 +20,88 @@ export default function Page() {
 
   return (
     <div className="relative z-0">
-      <div className="dark:divide-polar-700 mb-24 flex flex-col gap-y-4">
-        <Section>
-          <SectionDescription title="General" description="" />
-          <GeneralSettings />
-        </Section>
+      <div className="mb-24 flex flex-col gap-y-8">
+        <div className="flex flex-col gap-y-4">
+          <Section>
+            <SectionDescription title="General" description="" />
+            <GeneralSettings />
+          </Section>
 
-        <Section>
-          <SectionDescription
-            title="Connected Apps"
-            description="Manage connection to apps"
-          />
-          <ConnectedAppSettings />
-        </Section>
+          <Section>
+            <SectionDescription
+              title="Connected Apps"
+              description="Manage connection to apps"
+            />
+            <ConnectedAppSettings />
+          </Section>
 
-        <Section>
-          <SectionDescription title="Payment methods" />
-          <PaymentMethodSettings />
-        </Section>
+          <Section>
+            <SectionDescription title="Payment methods" />
+            <PaymentMethodSettings />
+          </Section>
 
-        <Section>
-          <SectionDescription
-            title="Signin connections"
-            description="Connect external accounts for authenticating to Polar."
-          />
-          <AuthenticationSettings />
-        </Section>
+          <Section>
+            <SectionDescription
+              title="Signin connections"
+              description="Connect external accounts for authenticating to Polar."
+            />
+            <AuthenticationSettings />
+          </Section>
 
-        <Section>
-          <SectionDescription
-            title="Email notifications"
-            description="Polar will send emails for the notifications enabled below."
-          />
-          <NotificationSettings />
-        </Section>
+          <Section>
+            <SectionDescription
+              title="Email notifications"
+              description="Polar will send emails for the notifications enabled below."
+            />
+            <NotificationSettings />
+          </Section>
+        </div>
 
-        <Section>
-          <SectionDescription
-            title="Access Tokens"
-            description="Manage access tokens which can be used to authenticate you with the Polar SDK."
-          />
-          <AccessTokensSettings />
-        </Section>
+        <div className="flex flex-col gap-y-6">
+          <h2 className="text-xl">Developer Settings</h2>
+          <Separator className="dark:bg-polar-600" />
+        </div>
 
-        {org ? (
-          <>
-            <Section>
-              <SectionDescription
-                title="Discord + Slack Notifications"
-                description={`Send a incoming webhook to Discord or Slack when ${org.name} gets a new pledge, subscription or donation.`}
-              />
+        <div className="flex flex-col gap-y-4">
+          <Section>
+            <SectionDescription
+              title="Access Tokens"
+              description="Manage access tokens which can be used to authenticate you with the Polar SDK."
+            />
+            <AccessTokensSettings />
+          </Section>
 
-              <WebhookNotificationSettings org={org} />
-            </Section>
+          {org ? (
+            <>
+              <Section>
+                <SectionDescription
+                  title="Discord + Slack Notifications"
+                  description={`Send a incoming webhook to Discord or Slack when ${org.name} gets a new pledge, subscription or donation.`}
+                />
 
-            <Section>
-              <SectionDescription
-                title="Webhooks"
-                description={`Configure and send webhooks to custom URLs.`}
-              />
+                <WebhookNotificationSettings org={org} />
+              </Section>
 
-              <WebhookSettings org={org} />
-            </Section>
-          </>
-        ) : null}
+              <Section>
+                <SectionDescription
+                  title="Webhooks"
+                  description={`Configure and send webhooks to custom URLs.`}
+                />
 
-        <Section>
-          <SectionDescription
-            title="OAuth Applications"
-            description="Your configured OAuth Applications."
-          />
+                <WebhookSettings org={org} />
+              </Section>
+            </>
+          ) : null}
 
-          <OAuthSettings />
-        </Section>
+          <Section>
+            <SectionDescription
+              title="OAuth Applications"
+              description="Your configured OAuth Applications."
+            />
+
+            <OAuthSettings />
+          </Section>
+        </div>
       </div>
     </div>
   )

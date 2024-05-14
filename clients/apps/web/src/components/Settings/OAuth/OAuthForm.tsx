@@ -40,6 +40,38 @@ export const FieldName = () => {
   )
 }
 
+export const FieldClientID = ({ clientId }: { clientId: string }) => {
+  return (
+    <FormItem className="flex flex-col gap-4">
+      <div className="flex flex-row items-center justify-between">
+        <FormLabel>Client ID</FormLabel>
+      </div>
+      <FormControl>
+        <Input value={clientId} placeholder="Client ID" readOnly />
+      </FormControl>
+      <FormMessage />
+    </FormItem>
+  )
+}
+
+export const FieldClientSecret = ({
+  clientSecret,
+}: {
+  clientSecret: string
+}) => {
+  return (
+    <FormItem className="flex flex-col gap-4">
+      <div className="flex flex-row items-center justify-between">
+        <FormLabel>Client Secret</FormLabel>
+      </div>
+      <FormControl>
+        <Input value={clientSecret} placeholder="Client Secret" readOnly />
+      </FormControl>
+      <FormMessage />
+    </FormItem>
+  )
+}
+
 export const FieldLogo = () => {
   const { control } = useFormContext<EnhancedOAuth2ClientConfiguration>()
 
@@ -57,6 +89,7 @@ export const FieldLogo = () => {
               height={200}
               width={200}
               onUploaded={field.onChange}
+              defaultValue={field.value}
               validate={(img) => {
                 return img.width / img.height !== 1
                   ? 'Image should have a ratio of 1:1'
@@ -196,6 +229,31 @@ export const FieldScopes = () => {
           ))}
       </div>
     </div>
+  )
+}
+
+export const FieldClientURI = () => {
+  const { control } = useFormContext<EnhancedOAuth2ClientConfiguration>()
+
+  return (
+    <FormField
+      control={control}
+      name="client_uri"
+      rules={{
+        required: 'A URL to your homepage is required',
+      }}
+      render={({ field }) => (
+        <FormItem className="flex flex-col gap-4">
+          <div className="flex flex-row items-center justify-between">
+            <FormLabel>Homepage URL</FormLabel>
+          </div>
+          <FormControl>
+            <Input {...field} placeholder="https://" />
+          </FormControl>
+          <FormMessage />
+        </FormItem>
+      )}
+    />
   )
 }
 

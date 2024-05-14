@@ -34,7 +34,7 @@ async def test_get_users_me_no_auth(client: AsyncClient) -> None:
 @pytest.mark.auth(AuthSubjectFixture(subject="user_blocked"))
 async def test_get_users_me_blocked(user_blocked: User, client: AsyncClient) -> None:
     response = await client.get("/api/v1/users/me")
-    assert response.status_code == 401
+    assert response.status_code == 403
 
 
 @pytest.mark.asyncio
@@ -89,7 +89,7 @@ async def test_blocked_user_set_preferences(client: AsyncClient) -> None:
         },
     )
 
-    assert response.status_code == 401
+    assert response.status_code == 403
 
 
 @pytest.mark.asyncio
@@ -124,4 +124,4 @@ async def test_blocked_user_set_account(
         },
     )
 
-    assert response.status_code == 401
+    assert response.status_code == 403

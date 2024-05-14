@@ -500,7 +500,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
             )
 
         return await self.create_arbitrary_subscription(
-            session, user=user, subscription_tier=subscription_tier
+            session, user=user, product=subscription_tier
         )
 
     async def create_arbitrary_subscription(
@@ -508,16 +508,16 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         session: AsyncSession,
         *,
         user: User,
-        subscription_tier: Product,
+        product: Product,
         price: ProductPrice | None = None,
     ) -> Subscription:
         existing_subscriptions = await self.get_active_user_subscriptions(
-            session, user, organization_id=subscription_tier.organization_id
+            session, user, organization_id=product.organization_id
         )
         if len(existing_subscriptions) > 0:
             raise AlreadySubscribed(
                 user_id=user.id,
-                organization_id=subscription_tier.organization_id,
+                organization_id=product.organization_id,
             )
 
         start = utc_now()
@@ -528,7 +528,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
             started_at=start,
             user=user,
             organization=None,
-            product=subscription_tier,
+            product=product,
             price=price,
         )
         session.add(subscription)
@@ -791,7 +791,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         if subscription is None:
             raise SubscriptionDoesNotExist(stripe_subscription_id)
 
-        await session.refresh(subscription, {"subscription_tier", "price"})
+        await session.refresh(subscription, {"product", "price"})
         account = await product_service.get_managing_organization_account(
             session, subscription.product
         )
@@ -959,7 +959,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
             raise NotPermitted()
 
         await session.refresh(
-            subscription, {"subscription_tier", "user", "organization", "price"}
+            subscription, {"product", "user", "organization", "price"}
         )
 
         if subscription.product.type == SubscriptionTierType.free:
@@ -1010,7 +1010,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         auth_subject: AuthSubject[User],
     ) -> Subscription:
         await session.refresh(
-            subscription, {"subscription_tier", "user", "organization", "price"}
+            subscription, {"product", "user", "organization", "price"}
         )
 
         if not await authz.can(auth_subject.subject, AccessType.write, subscription):
@@ -1186,7 +1186,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         if subscription.price_id is None:
             return
 
-        await session.refresh(subscription, {"subscription_tier", "price"})
+        await session.refresh(subscription, {"product", "price"})
         assert subscription.price is not None
 
         webhooks = await webhook_notifications_service.search(

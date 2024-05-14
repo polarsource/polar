@@ -172,7 +172,7 @@ class TestCreateFreeSubscription:
         self,
         auth_subject: AuthSubject[User],
         session: AsyncSession,
-        subscription_tier: Product,
+        product: Product,
         user: User,
     ) -> None:
         # then
@@ -182,7 +182,7 @@ class TestCreateFreeSubscription:
             await subscription_service.create_free_subscription(
                 session,
                 free_subscription_create=FreeSubscriptionCreate(
-                    tier_id=subscription_tier.id, customer_email=None
+                    tier_id=product.id, customer_email=None
                 ),
                 auth_subject=auth_subject,
             )
@@ -348,7 +348,7 @@ class TestCreateArbitrarySubscription:
             await subscription_service.create_arbitrary_subscription(
                 session,
                 user=user,
-                subscription_tier=subscription_tier_free,
+                product=subscription_tier_free,
             )
 
     async def test_valid(
@@ -368,7 +368,7 @@ class TestCreateArbitrarySubscription:
         subscription = await subscription_service.create_arbitrary_subscription(
             session,
             user=user,
-            subscription_tier=subscription_tier_free,
+            product=subscription_tier_free,
         )
 
         assert subscription.product_id == subscription_tier_free.id
@@ -396,15 +396,15 @@ class TestCreateSubscriptionFromStripe:
         self,
         session: AsyncSession,
         stripe_service_mock: MagicMock,
-        subscription_tier: Product,
+        product: Product,
     ) -> None:
         stripe_customer = construct_stripe_customer()
         get_customer_mock = stripe_service_mock.get_customer
         get_customer_mock.return_value = stripe_customer
 
-        assert subscription_tier.stripe_product_id is not None
+        assert product.stripe_product_id is not None
         stripe_subscription = construct_stripe_subscription(
-            price_id=subscription_tier.prices[0].stripe_price_id
+            price_id=product.prices[0].stripe_price_id
         )
 
         # then
@@ -415,7 +415,7 @@ class TestCreateSubscriptionFromStripe:
         )
 
         assert subscription.stripe_subscription_id == stripe_subscription.id
-        assert subscription.product_id == subscription_tier.id
+        assert subscription.product_id == product.id
 
         user = await user_service.get(session, subscription.user_id)
         assert user is not None
@@ -426,16 +426,16 @@ class TestCreateSubscriptionFromStripe:
         self,
         session: AsyncSession,
         stripe_service_mock: MagicMock,
-        subscription_tier: Product,
+        product: Product,
         user: User,
     ) -> None:
         stripe_customer = construct_stripe_customer()
         get_customer_mock = stripe_service_mock.get_customer
         get_customer_mock.return_value = stripe_customer
 
-        assert subscription_tier.stripe_product_id is not None
+        assert product.stripe_product_id is not None
         stripe_subscription = construct_stripe_subscription(
-            user=user, price_id=subscription_tier.prices[0].stripe_price_id
+            user=user, price_id=product.prices[0].stripe_price_id
         )
 
         # then
@@ -446,7 +446,7 @@ class TestCreateSubscriptionFromStripe:
         )
 
         assert subscription.stripe_subscription_id == stripe_subscription.id
-        assert subscription.product_id == subscription_tier.id
+        assert subscription.product_id == product.id
 
         assert subscription.user_id == user.id
 
@@ -460,17 +460,17 @@ class TestCreateSubscriptionFromStripe:
         self,
         session: AsyncSession,
         stripe_service_mock: MagicMock,
-        subscription_tier: Product,
+        product: Product,
         user: User,
     ) -> None:
         stripe_customer = construct_stripe_customer()
         get_customer_mock = stripe_service_mock.get_customer
         get_customer_mock.return_value = stripe_customer
 
-        assert subscription_tier.stripe_product_id is not None
+        assert product.stripe_product_id is not None
         stripe_subscription = construct_stripe_subscription(
             user=user,
-            price_id=subscription_tier.prices[0].stripe_price_id,
+            price_id=product.prices[0].stripe_price_id,
             status=SubscriptionStatus.active,
         )
 
@@ -496,7 +496,7 @@ class TestCreateSubscriptionFromStripe:
         save_fixture: SaveFixture,
         stripe_service_mock: MagicMock,
         subscription_tier_free: Product,
-        subscription_tier: Product,
+        product: Product,
         user: User,
     ) -> None:
         stripe_customer = construct_stripe_customer()
@@ -509,10 +509,10 @@ class TestCreateSubscriptionFromStripe:
             user=user,
         )
 
-        assert subscription_tier.stripe_product_id is not None
+        assert product.stripe_product_id is not None
         stripe_subscription = construct_stripe_subscription(
             user=user,
-            price_id=subscription_tier.prices[0].stripe_price_id,
+            price_id=product.prices[0].stripe_price_id,
             status=SubscriptionStatus.active,
             metadata={"subscription_id": str(existing_subscription.id)},
         )
@@ -526,7 +526,7 @@ class TestCreateSubscriptionFromStripe:
 
         assert subscription.status == SubscriptionStatus.active
         assert subscription.id == existing_subscription.id
-        assert subscription.product_id == subscription_tier.id
+        assert subscription.product_id == product.id
         assert subscription.started_at == existing_subscription.started_at
 
         # load user
@@ -539,7 +539,7 @@ class TestCreateSubscriptionFromStripe:
         self,
         session: AsyncSession,
         stripe_service_mock: MagicMock,
-        subscription_tier: Product,
+        product: Product,
         user: User,
         organization: Organization,
     ) -> None:
@@ -547,11 +547,11 @@ class TestCreateSubscriptionFromStripe:
         get_customer_mock = stripe_service_mock.get_customer
         get_customer_mock.return_value = stripe_customer
 
-        assert subscription_tier.stripe_product_id is not None
+        assert product.stripe_product_id is not None
         stripe_subscription = construct_stripe_subscription(
             user=user,
             organization=organization,
-            price_id=subscription_tier.prices[0].stripe_price_id,
+            price_id=product.prices[0].stripe_price_id,
         )
 
         # then
@@ -562,7 +562,7 @@ class TestCreateSubscriptionFromStripe:
         )
 
         assert subscription.stripe_subscription_id == stripe_subscription.id
-        assert subscription.product_id == subscription_tier.id
+        assert subscription.product_id == product.id
 
         assert subscription.user_id == user.id
         assert subscription.organization_id == organization.id
@@ -597,7 +597,7 @@ class TestUpdateSubscriptionFromStripe:
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
-        subscription_tier: Product,
+        product: Product,
         user: User,
     ) -> None:
         stripe_subscription = construct_stripe_subscription(
@@ -605,7 +605,7 @@ class TestUpdateSubscriptionFromStripe:
         )
         subscription = await create_subscription(
             save_fixture,
-            product=subscription_tier,
+            product=product,
             user=user,
             stripe_subscription_id=stripe_subscription.id,
         )
@@ -624,20 +624,20 @@ class TestUpdateSubscriptionFromStripe:
         mocker: MockerFixture,
         session: AsyncSession,
         save_fixture: SaveFixture,
-        subscription_tier: Product,
+        product: Product,
         user: User,
     ) -> None:
         enqueue_job_mock = mocker.patch(
             "polar.subscription.service.subscription.enqueue_job"
         )
 
-        price = subscription_tier.prices[0]
+        price = product.prices[0]
         stripe_subscription = construct_stripe_subscription(
             status=SubscriptionStatus.active, price_id=price.stripe_price_id
         )
         subscription = await create_subscription(
             save_fixture,
-            product=subscription_tier,
+            product=product,
             price=price,
             user=user,
             stripe_subscription_id=stripe_subscription.id,
@@ -681,7 +681,7 @@ class TestTransferSubscriptionPaidInvoice:
         session: AsyncSession,
         save_fixture: SaveFixture,
         subscription: Subscription,
-        subscription_tier: Product,
+        product: Product,
     ) -> None:
         stripe_invoice = construct_stripe_invoice(
             subscription_id=subscription.stripe_subscription_id
@@ -708,7 +708,7 @@ class TestTransferSubscriptionPaidInvoice:
 
         held_balance = await held_balance_service.get_by(
             session,
-            organization_id=subscription_tier.organization_id,
+            organization_id=product.organization_id,
         )
         assert held_balance is not None
 
@@ -789,7 +789,7 @@ class TestEnqueueBenefitsGrants:
         mocker: MockerFixture,
         session: AsyncSession,
         save_fixture: SaveFixture,
-        subscription_tier: Product,
+        product: Product,
         benefits: list[Benefit],
         subscription: Subscription,
     ) -> None:
@@ -797,9 +797,9 @@ class TestEnqueueBenefitsGrants:
             "polar.subscription.service.subscription.enqueue_job"
         )
 
-        subscription_tier = await add_product_benefits(
+        product = await add_product_benefits(
             save_fixture,
-            product=subscription_tier,
+            product=product,
             benefits=benefits,
         )
         subscription.status = status
@@ -820,7 +820,7 @@ class TestEnqueueBenefitsGrants:
         mocker: MockerFixture,
         session: AsyncSession,
         save_fixture: SaveFixture,
-        subscription_tier: Product,
+        product: Product,
         benefits: list[Benefit],
         subscription: Subscription,
     ) -> None:
@@ -828,9 +828,9 @@ class TestEnqueueBenefitsGrants:
             "polar.subscription.service.subscription.enqueue_job"
         )
 
-        subscription_tier = await add_product_benefits(
+        product = await add_product_benefits(
             save_fixture,
-            product=subscription_tier,
+            product=product,
             benefits=benefits,
         )
         subscription.status = status
@@ -866,7 +866,7 @@ class TestEnqueueBenefitsGrants:
         mocker: MockerFixture,
         session: AsyncSession,
         save_fixture: SaveFixture,
-        subscription_tier: Product,
+        product: Product,
         benefits: list[Benefit],
         subscription: Subscription,
     ) -> None:
@@ -874,9 +874,9 @@ class TestEnqueueBenefitsGrants:
             "polar.subscription.service.subscription.enqueue_job"
         )
 
-        subscription_tier = await add_product_benefits(
+        product = await add_product_benefits(
             save_fixture,
-            product=subscription_tier,
+            product=product,
             benefits=benefits,
         )
         subscription.status = status
@@ -903,7 +903,7 @@ class TestEnqueueBenefitsGrants:
         mocker: MockerFixture,
         session: AsyncSession,
         save_fixture: SaveFixture,
-        subscription_tier: Product,
+        product: Product,
         benefits: list[Benefit],
         subscription: Subscription,
         user: User,
@@ -920,9 +920,9 @@ class TestEnqueueBenefitsGrants:
         grant.set_granted()
         await save_fixture(grant)
 
-        subscription_tier = await add_product_benefits(
+        product = await add_product_benefits(
             save_fixture,
-            product=subscription_tier,
+            product=product,
             benefits=benefits[1:],
         )
         subscription.status = SubscriptionStatus.active
@@ -944,7 +944,7 @@ class TestEnqueueBenefitsGrants:
         mocker: MockerFixture,
         session: AsyncSession,
         save_fixture: SaveFixture,
-        subscription_tier: Product,
+        product: Product,
         benefits: list[Benefit],
         subscription_organization: Subscription,
         organization_second_admin: User,
@@ -954,9 +954,9 @@ class TestEnqueueBenefitsGrants:
             "polar.subscription.service.subscription.enqueue_job"
         )
 
-        subscription_tier = await add_product_benefits(
+        product = await add_product_benefits(
             save_fixture,
-            product=subscription_tier,
+            product=product,
             benefits=benefits,
         )
         subscription_organization.status = SubscriptionStatus.active
@@ -997,30 +997,28 @@ class TestUpdateProductBenefitsGrants:
         save_fixture: SaveFixture,
         mocker: MockerFixture,
         user: User,
-        subscription_tier: Product,
-        subscription_tier_second: Product,
+        product: Product,
+        product_second: Product,
     ) -> None:
         enqueue_job_mock = mocker.patch(
             "polar.subscription.service.subscription.enqueue_job"
         )
         subscription_1 = await create_subscription(
-            save_fixture, product=subscription_tier, user=user
+            save_fixture, product=product, user=user
         )
         subscription_2 = await create_subscription(
-            save_fixture, product=subscription_tier, user=user
+            save_fixture, product=product, user=user
         )
         await create_subscription(
             save_fixture,
-            product=subscription_tier_second,
+            product=product_second,
             user=user,
         )
 
         # then
         session.expunge_all()
 
-        await subscription_service.update_product_benefits_grants(
-            session, subscription_tier
-        )
+        await subscription_service.update_product_benefits_grants(session, product)
 
         assert enqueue_job_mock.call_count == 2
 
@@ -1043,25 +1041,25 @@ class TestUpdateOrganizationBenefitsGrants:
         mocker: MockerFixture,
         user: User,
         organization_second: Organization,
-        subscription_tier: Product,
-        subscription_tier_second: Product,
+        product: Product,
+        product_second: Product,
     ) -> None:
         enqueue_job_mock = mocker.patch(
             "polar.subscription.service.subscription.enqueue_job"
         )
         subscription_1 = await create_subscription(
             save_fixture,
-            product=subscription_tier,
+            product=product,
             user=user,
             organization=organization_second,
         )
         subscription_2 = await create_subscription(
             save_fixture,
-            product=subscription_tier_second,
+            product=product_second,
             user=user,
             organization=organization_second,
         )
-        await create_subscription(save_fixture, product=subscription_tier, user=user)
+        await create_subscription(save_fixture, product=product, user=user)
 
         # then
         session.expunge_all()
@@ -1093,7 +1091,7 @@ class TestSearch:
         organization: Organization,
         user: User,
         user_second: User,
-        subscription_tier: Product,
+        product: Product,
     ) -> None:
         """
         Checks that own subscriptions are not returned by this method.
@@ -1102,14 +1100,14 @@ class TestSearch:
         """
         await create_active_subscription(
             save_fixture,
-            product=subscription_tier,
+            product=product,
             user=user,
             started_at=datetime(2023, 1, 1),
             ended_at=datetime(2023, 6, 15),
         )
         await create_active_subscription(
             save_fixture,
-            product=subscription_tier,
+            product=product,
             user=user_second,
             started_at=datetime(2023, 1, 1),
             ended_at=datetime(2023, 6, 15),
@@ -1137,11 +1135,11 @@ class TestSearch:
         organization: Organization,
         user: User,
         user_second: User,
-        subscription_tier: Product,
+        product: Product,
     ) -> None:
         await create_active_subscription(
             save_fixture,
-            product=subscription_tier,
+            product=product,
             user=user_second,
             started_at=datetime(2023, 1, 1),
             ended_at=datetime(2023, 6, 15),
@@ -1170,11 +1168,11 @@ class TestSearch:
         user: User,
         user_second: User,
         user_organization: UserOrganization,
-        subscription_tier: Product,
+        product: Product,
     ) -> None:
         await create_active_subscription(
             save_fixture,
-            product=subscription_tier,
+            product=product,
             user=user_second,
             started_at=datetime(2023, 1, 1),
             ended_at=datetime(2023, 6, 15),
@@ -1201,11 +1199,11 @@ class TestSearch:
         save_fixture: SaveFixture,
         organization: Organization,
         user_second: User,
-        subscription_tier: Product,
+        product: Product,
     ) -> None:
         await create_active_subscription(
             save_fixture,
-            product=subscription_tier,
+            product=product,
             user=user_second,
             started_at=datetime(2023, 1, 1),
             ended_at=datetime(2023, 6, 15),
@@ -1235,18 +1233,18 @@ class TestSearchSubscribed:
         save_fixture: SaveFixture,
         user: User,
         user_second: User,
-        subscription_tier: Product,
+        product: Product,
     ) -> None:
         await create_active_subscription(
             save_fixture,
-            product=subscription_tier,
+            product=product,
             user=user,
             started_at=datetime(2023, 1, 1),
             ended_at=datetime(2023, 6, 15),
         )
         await create_active_subscription(
             save_fixture,
-            product=subscription_tier,
+            product=product,
             user=user_second,
             started_at=datetime(2023, 1, 1),
             ended_at=datetime(2023, 6, 15),
@@ -1361,7 +1359,7 @@ class TestUpgradeSubscription:
         session: AsyncSession,
         authz: Authz,
         subscription: Subscription,
-        subscription_tier_organization_second: Product,
+        product_organization_second: Product,
         user: User,
     ) -> None:
         # then
@@ -1376,8 +1374,8 @@ class TestUpgradeSubscription:
                 session,
                 subscription=subscription_loaded,
                 subscription_upgrade=SubscriptionUpgrade(
-                    subscription_tier_id=subscription_tier_organization_second.id,
-                    price_id=subscription_tier_organization_second.prices[0].id,
+                    subscription_tier_id=product_organization_second.id,
+                    price_id=product_organization_second.prices[0].id,
                 ),
                 authz=authz,
                 auth_subject=auth_subject,
@@ -1391,8 +1389,8 @@ class TestUpgradeSubscription:
         stripe_service_mock: MagicMock,
         authz: Authz,
         subscription: Subscription,
-        subscription_tier: Product,
-        subscription_tier_second: Product,
+        product: Product,
+        product_second: Product,
         user: User,
     ) -> None:
         # then
@@ -1406,21 +1404,21 @@ class TestUpgradeSubscription:
             session,
             subscription=subscription_loaded,
             subscription_upgrade=SubscriptionUpgrade(
-                subscription_tier_id=subscription_tier_second.id,
-                price_id=subscription_tier_second.prices[0].id,
+                subscription_tier_id=product_second.id,
+                price_id=product_second.prices[0].id,
             ),
             authz=authz,
             auth_subject=auth_subject,
         )
         await session.flush()
 
-        assert updated_subscription.product_id == subscription_tier_second.id
-        assert updated_subscription.price == subscription_tier_second.prices[0]
+        assert updated_subscription.product_id == product_second.id
+        assert updated_subscription.price == product_second.prices[0]
 
         stripe_service_mock.update_subscription_price.assert_called_once_with(
             subscription.stripe_subscription_id,
-            old_price=subscription_tier.prices[0].stripe_price_id,
-            new_price=subscription_tier_second.prices[0].stripe_price_id,
+            old_price=product.prices[0].stripe_price_id,
+            new_price=product_second.prices[0].stripe_price_id,
         )
 
 
@@ -1458,12 +1456,12 @@ class TestCancelSubscription:
         save_fixture: SaveFixture,
         authz: Authz,
         subscription: Subscription,
-        subscription_tier: Product,
+        product: Product,
         user: User,
     ) -> None:
         subscription = await create_subscription(
             save_fixture,
-            product=subscription_tier,
+            product=product,
             user=user,
             status=SubscriptionStatus.canceled,
         )
@@ -1491,11 +1489,11 @@ class TestCancelSubscription:
         save_fixture: SaveFixture,
         authz: Authz,
         subscription: Subscription,
-        subscription_tier: Product,
+        product: Product,
         user: User,
     ) -> None:
         subscription = await create_active_subscription(
-            save_fixture, product=subscription_tier, user=user
+            save_fixture, product=product, user=user
         )
         subscription.cancel_at_period_end = True
         await save_fixture(subscription)
@@ -1523,12 +1521,12 @@ class TestCancelSubscription:
         save_fixture: SaveFixture,
         stripe_service_mock: MagicMock,
         authz: Authz,
-        subscription_tier: Product,
+        product: Product,
         user: User,
     ) -> None:
         subscription = await create_active_subscription(
             save_fixture,
-            product=subscription_tier,
+            product=product,
             user=user,
             stripe_subscription_id=None,
         )
@@ -1562,12 +1560,12 @@ class TestCancelSubscription:
         save_fixture: SaveFixture,
         stripe_service_mock: MagicMock,
         authz: Authz,
-        subscription_tier: Product,
+        product: Product,
         user: User,
     ) -> None:
         subscription = await create_active_subscription(
             save_fixture,
-            product=subscription_tier,
+            product=product,
             user=user,
         )
 
@@ -1643,11 +1641,11 @@ class TestGetStatisticsPeriods:
         organization: Organization,
         user: User,
         user_second: User,
-        subscription_tier: Product,
+        product: Product,
     ) -> None:
         await create_active_subscription(
             save_fixture,
-            product=subscription_tier,
+            product=product,
             user=user_second,
             started_at=datetime(2023, 1, 1),
             ended_at=datetime(2023, 6, 15),
@@ -1681,16 +1679,16 @@ class TestGetStatisticsPeriods:
         user: User,
         user_second: User,
         user_organization: UserOrganization,
-        subscription_tier: Product,
+        product: Product,
     ) -> None:
         subscription = await create_active_subscription(
             save_fixture,
-            product=subscription_tier,
+            product=product,
             user=user_second,
             started_at=datetime(2023, 1, 1),
             ended_at=datetime(2023, 6, 15),
         )
-        price = subscription_tier.prices[0].price_amount
+        price = product.prices[0].price_amount
         balances = await create_subscription_balances(
             save_fixture,
             gross_amount=price,
@@ -1730,16 +1728,16 @@ class TestGetStatisticsPeriods:
         organization: Organization,
         organization_account: Account,
         user_second: User,
-        subscription_tier: Product,
+        product: Product,
     ) -> None:
         subscription = await create_active_subscription(
             save_fixture,
-            product=subscription_tier,
+            product=product,
             user=user_second,
             started_at=datetime(2023, 1, 1),
             ended_at=datetime(2023, 6, 15),
         )
-        price = subscription_tier.prices[0].price_amount
+        price = product.prices[0].price_amount
         balances = await create_subscription_balances(
             save_fixture,
             gross_amount=price,
@@ -1781,7 +1779,7 @@ class TestGetStatisticsPeriods:
         user: User,
         user_second: User,
         user_organization: UserOrganization,
-        subscription_tier: Product,
+        product: Product,
     ) -> None:
         user2 = await create_user(save_fixture)
         user2_organization = UserOrganization(
@@ -1799,12 +1797,12 @@ class TestGetStatisticsPeriods:
 
         subscription = await create_active_subscription(
             save_fixture,
-            product=subscription_tier,
+            product=product,
             user=user_second,
             started_at=datetime(2023, 1, 1),
             ended_at=datetime(2023, 6, 15),
         )
-        price = subscription_tier.prices[0].price_amount
+        price = product.prices[0].price_amount
         balances = await create_subscription_balances(
             save_fixture,
             gross_amount=price,
@@ -1845,16 +1843,16 @@ class TestGetStatisticsPeriods:
         user: User,
         user_second: User,
         user_organization: UserOrganization,
-        subscription_tier: Product,
+        product: Product,
     ) -> None:
         subscription = await create_active_subscription(
             save_fixture,
-            product=subscription_tier,
+            product=product,
             user=user_second,
             started_at=datetime(2023, 1, 1),
             ended_at=datetime(2023, 6, 15),
         )
-        price = subscription_tier.prices[0].price_amount
+        price = product.prices[0].price_amount
         await create_subscription_balances(
             save_fixture,
             gross_amount=price,
@@ -1891,17 +1889,17 @@ class TestGetStatisticsPeriods:
         user: User,
         user_second: User,
         user_organization: UserOrganization,
-        subscription_tier: Product,
-        subscription_tier_second: Product,
+        product: Product,
+        product_second: Product,
     ) -> None:
         subscription_organization = await create_active_subscription(
             save_fixture,
-            product=subscription_tier,
+            product=product,
             user=user_second,
             started_at=datetime(2023, 1, 1),
             ended_at=datetime(2023, 6, 15),
         )
-        price_organization = subscription_tier.prices[0].price_amount
+        price_organization = product.prices[0].price_amount
         balances_organization = await create_subscription_balances(
             save_fixture,
             gross_amount=price_organization,
@@ -1912,12 +1910,12 @@ class TestGetStatisticsPeriods:
         )
         subscription_organization_second = await create_active_subscription(
             save_fixture,
-            product=subscription_tier_second,
+            product=product_second,
             user=user_second,
             started_at=datetime(2023, 1, 1),
             ended_at=datetime(2023, 6, 15),
         )
-        price_organization_second = subscription_tier_second.prices[0].price_amount
+        price_organization_second = product_second.prices[0].price_amount
         balances_organization_second = await create_subscription_balances(
             save_fixture,
             gross_amount=price_organization_second,
@@ -1935,7 +1933,7 @@ class TestGetStatisticsPeriods:
             auth_subject,
             start_date=date(2023, 1, 1),
             end_date=date(2023, 12, 31),
-            subscription_tier_id=subscription_tier.id,
+            subscription_tier_id=product.id,
         )
 
         assert len(results) == 12
@@ -1959,16 +1957,16 @@ class TestGetStatisticsPeriods:
         user: User,
         user_second: User,
         user_organization: UserOrganization,
-        subscription_tier: Product,
+        product: Product,
         subscription_tier_free: Product,
     ) -> None:
         subscription = await create_active_subscription(
             save_fixture,
-            product=subscription_tier,
+            product=product,
             user=user_second,
             started_at=datetime(2023, 1, 1),
         )
-        price = subscription_tier.prices[0].price_amount
+        price = product.prices[0].price_amount
         balances = await create_subscription_balances(
             save_fixture,
             gross_amount=price,
@@ -2062,17 +2060,17 @@ class TestGetStatisticsPeriods:
         user: User,
         user_second: User,
         user_organization: UserOrganization,
-        subscription_tier: Product,
+        product: Product,
     ) -> None:
         price = await create_product_price(
             save_fixture,
-            product=subscription_tier,
+            product=product,
             amount=12000,
             recurring_interval=ProductPriceRecurringInterval.year,
         )
         subscription = await create_active_subscription(
             save_fixture,
-            product=subscription_tier,
+            product=product,
             price=price,
             user=user_second,
             started_at=datetime(2023, 1, 1, tzinfo=UTC),

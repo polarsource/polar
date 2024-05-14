@@ -243,7 +243,7 @@ async def test_update_repository_profile_settings_featured_organizations(
 async def test_update_repository_profile_settings_highlighted_subscription_tiers(
     client: AsyncClient,
     user_organization: UserOrganization,  # makes User a member of Organization
-    subscription_tier: Product,
+    product: Product,
     repository: Repository,
     session: AsyncSession,
     save_fixture: SaveFixture,
@@ -260,7 +260,7 @@ async def test_update_repository_profile_settings_highlighted_subscription_tiers
         json={
             "profile_settings": {
                 "highlighted_subscription_tiers": [
-                    str(subscription_tier.id),
+                    str(product.id),
                 ],
             }
         },
@@ -269,7 +269,7 @@ async def test_update_repository_profile_settings_highlighted_subscription_tiers
     assert response.status_code == 200
     assert response.json()["id"] == str(repository.id)
     assert response.json()["profile_settings"]["highlighted_subscription_tiers"] == [
-        str(subscription_tier.id)
+        str(product.id)
     ]
 
     # unset highlighted_subscription_tiers
@@ -293,10 +293,10 @@ async def test_update_repository_profile_settings_highlighted_subscription_tiers
             json={
                 "profile_settings": {
                     "highlighted_subscription_tiers": [
-                        str(subscription_tier.id),
-                        str(subscription_tier.id),
-                        str(subscription_tier.id),
-                        str(subscription_tier.id),
+                        str(product.id),
+                        str(product.id),
+                        str(product.id),
+                        str(product.id),
                     ],
                 }
             },

@@ -271,7 +271,7 @@ async def create_email_subscription(
         session, subscription_create.email, signup_type=UserSignupType.imported
     )
     subscription = await subscription_service.create_arbitrary_subscription(
-        session, user=user, subscription_tier=free_tier
+        session, user=user, product=free_tier
     )
 
     posthog.auth_subject_event(
@@ -316,7 +316,7 @@ async def subscriptions_import(
                 session, email, signup_type=UserSignupType.imported
             )
             await subscription_service.create_arbitrary_subscription(
-                session, user=user, subscription_tier=free_tier
+                session, user=user, product=free_tier
             )
             count += 1
         except AlreadySubscribed:

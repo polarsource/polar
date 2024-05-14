@@ -58,7 +58,7 @@ class TestOrganizationPostInstall:
         get_or_create_articles_benefits_mock.return_value = (benefit, benefit)
         create_free_mock = mocker.patch.object(
             product_service,
-            "create_free",
+            "create_free_tier",
             spec=ProductService.create_free_tier,
         )
 

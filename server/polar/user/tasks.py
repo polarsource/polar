@@ -41,5 +41,5 @@ async def user_on_after_signup(
                 await subscription_service.create_arbitrary_subscription(
                     session,
                     user=user,
-                    subscription_tier=auto_subscribe_subscription_tier,
+                    product=auto_subscribe_subscription_tier,
                 )

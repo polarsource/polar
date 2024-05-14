@@ -230,6 +230,7 @@ class TestCreateProduct:
                 "organization_id": str(organization.id),
                 "prices": [
                     {
+                        "type": "recurring",
                         "recurring_interval": "month",
                         "price_amount": 1000,
                         "price_currency": "usd",
@@ -242,8 +243,25 @@ class TestCreateProduct:
         assert response.status_code == 422
 
     @pytest.mark.auth
+    @pytest.mark.parametrize(
+        "prices",
+        (
+            [
+                {
+                    "type": "recurring",
+                    "recurring_interval": "month",
+                    "price_amount": 1000,
+                    "price_currency": "usd",
+                }
+            ],
+            [
+                {"type": "one_time", "price_amount": 1000, "price_currency": "usd"},
+            ],
+        ),
+    )
     async def test_valid(
         self,
+        prices: list[dict[str, Any]],
         client: AsyncClient,
         organization: Organization,
         user_organization_admin: UserOrganization,
@@ -268,13 +286,7 @@ class TestCreateProduct:
                 "name": "Product",
                 "price_amount": 1000,
                 "organization_id": str(organization.id),
-                "prices": [
-                    {
-                        "recurring_interval": "month",
-                        "price_amount": 1000,
-                        "price_currency": "usd",
-                    }
-                ],
+                "prices": prices,
             },
         )
 

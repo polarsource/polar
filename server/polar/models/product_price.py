@@ -12,6 +12,14 @@ if TYPE_CHECKING:
     from polar.models import Product, Subscription
 
 
+class ProductPriceType(StrEnum):
+    one_time = "one_time"
+    recurring = "recurring"
+
+    def as_literal(self) -> Literal["one_time", "recurring"]:
+        return cast(Literal["one_time", "recurring"], self.value)
+
+
 class ProductPriceRecurringInterval(StrEnum):
     month = "month"
     year = "year"
@@ -23,8 +31,9 @@ class ProductPriceRecurringInterval(StrEnum):
 class ProductPrice(RecordModel):
     __tablename__ = "product_prices"
 
+    type: Mapped[ProductPriceType] = mapped_column(String, nullable=False, index=True)
     recurring_interval: Mapped[ProductPriceRecurringInterval] = mapped_column(
-        String, nullable=False, index=True
+        String, nullable=True, index=True
     )
     price_amount: Mapped[int] = mapped_column(Integer, nullable=False)
     price_currency: Mapped[str] = mapped_column(String(3), nullable=False)

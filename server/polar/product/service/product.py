@@ -34,7 +34,12 @@ from polar.webhook.service import webhook as webhook_service
 from polar.webhook.webhooks import WebhookTypeObject
 from polar.worker import enqueue_job
 
-from ..schemas import ExistingProductPrice, ProductCreate, ProductUpdate
+from ..schemas import (
+    ExistingProductPrice,
+    ProductCreate,
+    ProductPriceRecurringCreate,
+    ProductUpdate,
+)
 
 
 class ProductError(PolarError): ...
@@ -221,7 +226,9 @@ class ProductService(ResourceService[Product, ProductCreate, ProductUpdate]):
                 stripe_product.id,
                 price_create.price_amount,
                 price_create.price_currency,
-                price_create.recurring_interval.as_literal(),
+                price_create.recurring_interval.as_literal()
+                if isinstance(price_create, ProductPriceRecurringCreate)
+                else None,
             )
             price = ProductPrice(
                 **price_create.model_dump(),
@@ -284,7 +291,9 @@ class ProductService(ResourceService[Product, ProductCreate, ProductUpdate]):
                     product.stripe_product_id,
                     price_update.price_amount,
                     price_update.price_currency,
-                    price_update.recurring_interval.as_literal(),
+                    price_update.recurring_interval.as_literal()
+                    if isinstance(price_update, ProductPriceRecurringCreate)
+                    else None,
                 )
                 price = ProductPrice(
                     **price_update.model_dump(),

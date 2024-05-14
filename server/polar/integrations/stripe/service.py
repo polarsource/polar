@@ -354,16 +354,18 @@ class StripeService:
         product: str,
         price_amount: int,
         price_currency: str,
-        interval: Literal["day", "month", "week", "year"],
+        recurring_interval: Literal["day", "month", "week", "year"] | None,
         *,
         set_default: bool = False,
     ) -> stripe_lib.Price:
-        price = stripe_lib.Price.create(
-            currency=price_currency,
-            product=product,
-            unit_amount=price_amount,
-            recurring={"interval": interval},
-        )
+        params: stripe_lib.Price.CreateParams = {
+            "currency": price_currency,
+            "product": product,
+            "unit_amount": price_amount,
+        }
+        if recurring_interval is not None:
+            params["recurring"] = {"interval": recurring_interval}
+        price = stripe_lib.Price.create(**params)
         if set_default:
             stripe_lib.Product.modify(product, default_price=price.id)
         return price

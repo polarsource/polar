@@ -1,11 +1,11 @@
-from typing import Literal
+from typing import Annotated, Literal
 
-from pydantic import UUID4, Field
+from pydantic import UUID4, Discriminator, Field
 
 from polar.benefit.schemas import BenefitPublic, BenefitSubscriber
 from polar.kit.schemas import EmptyStrToNone, Schema, TimestampedSchema
 from polar.models.product import SubscriptionTierType
-from polar.models.product_price import ProductPriceRecurringInterval
+from polar.models.product_price import ProductPriceRecurringInterval, ProductPriceType
 
 PRODUCT_NAME_MIN_LENGTH = 3
 PRODUCT_NAME_MAX_LENGTH = 24
@@ -17,10 +17,22 @@ PRODUCT_DESCRIPTION_MAX_LENGTH = 240
 MAXIMUM_PRICE_AMOUNT = 99999999
 
 
-class ProductPriceCreate(Schema):
+class ProductPriceRecurringCreate(Schema):
+    type: Literal[ProductPriceType.recurring]
     recurring_interval: ProductPriceRecurringInterval
     price_amount: int = Field(..., gt=0, le=MAXIMUM_PRICE_AMOUNT)
     price_currency: str = Field("usd", pattern="usd")
+
+
+class ProductPriceOneTimeCreate(Schema):
+    type: Literal[ProductPriceType.one_time]
+    price_amount: int = Field(..., gt=0, le=MAXIMUM_PRICE_AMOUNT)
+    price_currency: str = Field("usd", pattern="usd")
+
+
+ProductPriceCreate = Annotated[
+    ProductPriceRecurringCreate | ProductPriceOneTimeCreate, Discriminator("type")
+]
 
 
 class ProductCreate(Schema):
@@ -62,7 +74,8 @@ class ProductBenefitsUpdate(Schema):
 
 class ProductPrice(TimestampedSchema):
     id: UUID4
-    recurring_interval: ProductPriceRecurringInterval
+    type: ProductPriceType
+    recurring_interval: ProductPriceRecurringInterval | None = None
     price_amount: int
     price_currency: str
     is_archived: bool

@@ -121,6 +121,12 @@ class Organization(Schema):
             o.feature_settings
         )
 
+        public_page_enabled = bool(
+            o.installation_id or o.created_from_user_maintainer_upgrade
+        )
+        if o.blocked_at is not None:
+            public_page_enabled = False
+
         return cls(
             id=o.id,
             platform=o.platform,
@@ -140,9 +146,7 @@ class Organization(Schema):
             account_id=o.account_id,
             has_app_installed=o.installation_id is not None,
             custom_domain=o.custom_domain,
-            public_page_enabled=True
-            if o.installation_id or o.created_from_user_maintainer_upgrade
-            else False,
+            public_page_enabled=public_page_enabled,
             donations_enabled=o.donations_enabled,
             public_donation_timestamps=o.public_donation_timestamps,
             profile_settings=profile_settings,

@@ -117,6 +117,13 @@ class Organization(RecordModel):
 
     onboarded_at: Mapped[datetime | None] = mapped_column(TIMESTAMP(timezone=True))
 
+    # Time of blocking traffic/activity to given organization
+    blocked_at: Mapped[datetime | None] = mapped_column(
+        TIMESTAMP(timezone=True),
+        nullable=True,
+        default=None,
+    )
+
     # If this organization was created from a GitHub User object, without installing
     # the Polar GitHub App.
     created_from_user_maintainer_upgrade: Mapped[Boolean] = mapped_column(

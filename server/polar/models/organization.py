@@ -1,5 +1,4 @@
 from datetime import datetime
-from enum import Enum
 from typing import Any
 from uuid import UUID
 
@@ -32,11 +31,6 @@ class NotInstalledOrganization(PolarError):
 
 
 class Organization(RecordModel):
-    class Status(Enum):
-        INACTIVE = "inactive"
-        ACTIVE = "active"
-        SUSPENDED = "suspended"
-
     __tablename__ = "organizations"
     __table_args__ = (
         UniqueConstraint("name"),

@@ -20,6 +20,9 @@ class Scope(StrEnum):
     backer_subscriptions_read = "backer:subscriptions:read"
     backer_subscriptions_write = "backer:subscriptions:write"
 
+    creator_products_read = "creator:products:read"
+    creator_products_write = "creator:products:write"
+
     creator_benefits_read = "creator:benefits:read"
     creator_benefits_write = "creator:benefits:write"
 

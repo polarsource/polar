@@ -24,6 +24,7 @@ from polar.organization.endpoints import router as organization_router
 from polar.payment_method.endpoints import router as payment_method_router
 from polar.personal_access_token.endpoints import router as pat_router
 from polar.pledge.endpoints import router as pledge_router
+from polar.product.endpoints import router as product_router
 from polar.pull_request.endpoints import router as pull_requests_router
 from polar.repository.endpoints import router as repository_router
 from polar.reward.endpoints import router as rewards_router
@@ -100,3 +101,5 @@ router.include_router(oauth2_router)
 router.include_router(benefits_router)
 # /webhooks
 router.include_router(webhook_router)
+# /products
+router.include_router(product_router)

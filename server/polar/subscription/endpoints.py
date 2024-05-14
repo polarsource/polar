@@ -11,12 +11,12 @@ from polar.auth.dependencies import WebUserOrAnonymous
 from polar.auth.models import is_user
 from polar.authz.service import AccessType, Authz
 from polar.enums import UserSignupType
-from polar.exceptions import BadRequest, ResourceNotFound, Unauthorized
+from polar.exceptions import ResourceNotFound, Unauthorized
 from polar.kit.csv import get_emails_from_csv, get_iterable_from_binary_io
 from polar.kit.pagination import ListResource, PaginationParams, PaginationParamsQuery
 from polar.kit.routing import APIRouter
 from polar.kit.sorting import Sorting, SortingGetter
-from polar.models import Product, Subscription
+from polar.models import Subscription
 from polar.models.product import SubscriptionTierType
 from polar.organization.dependencies import (
     ResolvedOptionalOrganization,
@@ -24,8 +24,6 @@ from polar.organization.dependencies import (
 )
 from polar.postgres import AsyncSession, get_db_session
 from polar.posthog import posthog
-from polar.product.schemas import Product as ProductSchema
-from polar.product.schemas import ProductBenefitsUpdate, ProductCreate, ProductUpdate
 from polar.tags.api import Tags
 from polar.user.service import user as user_service
 
@@ -52,165 +50,6 @@ from .service.subscription import subscription as subscription_service
 log = structlog.get_logger()
 
 router = APIRouter(prefix="/subscriptions", tags=["subscriptions"])
-
-
-@router.get(
-    "/tiers/search",
-    response_model=ListResource[ProductSchema],
-    tags=[Tags.PUBLIC],
-)
-async def search_subscription_tiers(
-    pagination: PaginationParamsQuery,
-    organization: ResolvedOrganization,
-    auth_subject: auth.CreatorSubscriptionsReadOrAnonymous,
-    include_archived: bool = Query(False),
-    type: SubscriptionTierType | None = Query(None),
-    session: AsyncSession = Depends(get_db_session),
-) -> ListResource[ProductSchema]:
-    results, count = await product_service.search(
-        session,
-        auth_subject,
-        type=type,
-        organization=organization,
-        include_archived=include_archived,
-        pagination=pagination,
-    )
-
-    return ListResource.from_paginated_results(
-        [ProductSchema.model_validate(result) for result in results],
-        count,
-        pagination,
-    )
-
-
-@router.get(
-    "/tiers/lookup",
-    response_model=ProductSchema,
-    tags=[Tags.PUBLIC],
-)
-async def lookup_subscription_tier(
-    subscription_tier_id: UUID4,
-    auth_subject: auth.CreatorSubscriptionsReadOrAnonymous,
-    session: AsyncSession = Depends(get_db_session),
-) -> Product:
-    subscription_tier = await product_service.get_by_id(
-        session, auth_subject, subscription_tier_id
-    )
-
-    if subscription_tier is None:
-        raise ResourceNotFound()
-
-    return subscription_tier
-
-
-@router.post(
-    "/tiers/",
-    response_model=ProductSchema,
-    status_code=201,
-    tags=[Tags.PUBLIC],
-)
-async def create_subscription_tier(
-    subscription_tier_create: ProductCreate,
-    auth_subject: auth.CreatorSubscriptionsWrite,
-    authz: Authz = Depends(Authz.authz),
-    session: AsyncSession = Depends(get_db_session),
-) -> Product:
-    return await product_service.user_create(
-        session, authz, subscription_tier_create, auth_subject
-    )
-
-
-@router.post("/tiers/{id}", response_model=ProductSchema, tags=[Tags.PUBLIC])
-async def update_subscription_tier(
-    id: UUID4,
-    subscription_tier_update: ProductUpdate,
-    auth_subject: auth.CreatorSubscriptionsWrite,
-    authz: Authz = Depends(Authz.authz),
-    session: AsyncSession = Depends(get_db_session),
-) -> Product:
-    subscription_tier = await product_service.get_by_id(session, auth_subject, id)
-
-    if subscription_tier is None:
-        raise ResourceNotFound()
-
-    if subscription_tier.type != SubscriptionTierType.free:
-        if (
-            subscription_tier_update.prices is not None
-            and len(subscription_tier_update.prices) < 1
-        ):
-            raise BadRequest("Paid tiers must have at least one price")
-
-    posthog.auth_subject_event(
-        auth_subject,
-        "subscriptions",
-        "tier",
-        "update",
-        {"subscription_tier_id": subscription_tier.id},
-    )
-
-    return await product_service.user_update(
-        session,
-        authz,
-        subscription_tier,
-        subscription_tier_update,
-        auth_subject,
-    )
-
-
-@router.post("/tiers/{id}/archive", response_model=ProductSchema, tags=[Tags.PUBLIC])
-async def archive_subscription_tier(
-    id: UUID4,
-    auth_subject: auth.CreatorSubscriptionsWrite,
-    authz: Authz = Depends(Authz.authz),
-    session: AsyncSession = Depends(get_db_session),
-) -> Product:
-    subscription_tier = await product_service.get_by_id(session, auth_subject, id)
-
-    if subscription_tier is None:
-        raise ResourceNotFound()
-
-    posthog.auth_subject_event(
-        auth_subject,
-        "subscriptions",
-        "tier",
-        "archive",
-        {"subscription_tier_id": subscription_tier.id},
-    )
-
-    return await product_service.archive(
-        session, authz, subscription_tier, auth_subject
-    )
-
-
-@router.post("/tiers/{id}/benefits", response_model=ProductSchema, tags=[Tags.PUBLIC])
-async def update_subscription_tier_benefits(
-    id: UUID4,
-    benefits_update: ProductBenefitsUpdate,
-    auth_subject: auth.CreatorSubscriptionsWrite,
-    authz: Authz = Depends(Authz.authz),
-    session: AsyncSession = Depends(get_db_session),
-) -> Product:
-    subscription_tier = await product_service.get_by_id(session, auth_subject, id)
-
-    if subscription_tier is None:
-        raise ResourceNotFound()
-
-    posthog.auth_subject_event(
-        auth_subject,
-        "subscriptions",
-        "tier_benefits",
-        "update",
-        {"subscription_tier_id": subscription_tier.id},
-    )
-
-    subscription_tier, _, _ = await product_service.update_benefits(
-        session,
-        authz,
-        subscription_tier,
-        benefits_update.benefits,
-        auth_subject,
-    )
-    return subscription_tier
 
 
 @router.post(

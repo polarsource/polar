@@ -59,15 +59,12 @@ class TransactionIssueReward(TimestampedSchema):
     share_thousands: int
 
 
-class TransactionSubscriptionTier(TimestampedSchema):
+class TransactionProduct(TimestampedSchema):
     id: UUID4
     type: SubscriptionTierType
     name: str
     organization_id: UUID4 | None = None
-    repository_id: UUID4 | None = None
-
     organization: TransactionOrganization | None = None
-    repository: TransactionRepository | None = None
 
 
 class TransactionSubscriptionPrice(TimestampedSchema):
@@ -81,7 +78,7 @@ class TransactionSubscriptionPrice(TimestampedSchema):
 class TransactionSubscription(TimestampedSchema):
     id: UUID4
     status: SubscriptionStatus
-    subscription_tier: TransactionSubscriptionTier
+    product: TransactionProduct
 
 
 class TransactionEmbedded(TimestampedSchema):

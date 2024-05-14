@@ -97,6 +97,11 @@ class _Authenticator:
             else:
                 raise Unauthorized()
 
+        # Blocked subjects
+        blocked_at = getattr(auth_subject.subject, "blocked_at", None)
+        if blocked_at is not None:
+            raise Unauthorized()
+
         # Not allowed subject
         subject_type = type(auth_subject.subject)
         if subject_type not in self.allowed_subjects:

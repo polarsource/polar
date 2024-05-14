@@ -38,6 +38,7 @@ class UserService(ResourceService[User, UserCreate, UserUpdate]):
         query = sql.select(User).where(
             func.lower(User.email) == email.lower(),
             User.deleted_at.is_(None),
+            User.blocked_at.is_(None),
         )
         res = await session.execute(query)
         return res.scalars().unique().one_or_none()
@@ -48,6 +49,7 @@ class UserService(ResourceService[User, UserCreate, UserUpdate]):
         query = sql.select(User).where(
             User.username == username,
             User.deleted_at.is_(None),
+            User.blocked_at.is_(None),
         )
         res = await session.execute(query)
         return res.scalars().unique().one_or_none()
@@ -58,6 +60,7 @@ class UserService(ResourceService[User, UserCreate, UserUpdate]):
         query = sql.select(User).where(
             User.stripe_customer_id == stripe_customer_id,
             User.deleted_at.is_(None),
+            User.blocked_at.is_(None),
         )
         res = await session.execute(query)
         return res.scalars().unique().one_or_none()

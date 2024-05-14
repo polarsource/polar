@@ -56,6 +56,25 @@ async def second_organization(save_fixture: SaveFixture) -> Organization:
     return await create_organization(save_fixture)
 
 
+@pytest_asyncio.fixture(scope="function")
+async def organization_blocked(save_fixture: SaveFixture) -> Organization:
+    organization = Organization(
+        platform=Platforms.github,
+        name=rstr("testorg"),
+        external_id=secrets.randbelow(100000),
+        avatar_url="https://avatars.githubusercontent.com/u/105373340?s=200&v=4",
+        is_personal=True,
+        installation_id=secrets.randbelow(100000),
+        installation_created_at=datetime.now(),
+        installation_updated_at=datetime.now(),
+        installation_suspended_at=None,
+        created_from_user_maintainer_upgrade=True,
+        blocked_at=utc_now(),
+    )
+    await save_fixture(organization)
+    return organization
+
+
 async def create_organization(save_fixture: SaveFixture) -> Organization:
     organization = Organization(
         platform=Platforms.github,
@@ -213,6 +232,19 @@ async def user_second(save_fixture: SaveFixture) -> User:
         username=rstr("DEPRECATED_testuser"),
         email=rstr("test") + "@example.com",
         avatar_url="https://avatars.githubusercontent.com/u/47952?v=4",
+    )
+    await save_fixture(user)
+    return user
+
+
+@pytest_asyncio.fixture(scope="function")
+async def user_blocked(save_fixture: SaveFixture) -> User:
+    user = User(
+        id=uuid.uuid4(),
+        username=rstr("DEPRECATED_testuser"),
+        email=rstr("test") + "@example.com",
+        avatar_url="https://avatars.githubusercontent.com/u/47952?v=4",
+        blocked_at=utc_now(),
     )
     await save_fixture(user)
     return user
@@ -393,6 +425,20 @@ async def user_organization_second(
     user_organization = UserOrganization(
         user_id=user_second.id,
         organization_id=organization.id,
+    )
+    await save_fixture(user_organization)
+    return user_organization
+
+
+@pytest_asyncio.fixture(scope="function")
+async def user_organization_blocked(
+    save_fixture: SaveFixture,
+    organization_blocked: Organization,
+    user: User,
+) -> UserOrganization:
+    user_organization = UserOrganization(
+        user_id=user.id,
+        organization_id=organization_blocked.id,
     )
     await save_fixture(user_organization)
     return user_organization

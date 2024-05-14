@@ -129,19 +129,19 @@ class SubscriptionBase(TimestampedSchema):
 
     user_id: UUID4
     organization_id: UUID4 | None = None
-    subscription_tier_id: UUID4
+    product_id: UUID4
     price_id: UUID4 | None = None
 
 
 class Subscription(SubscriptionBase):
     user: SubscriptionUser
     organization: SubscriptionOrganization | None = None
-    subscription_tier: Product
+    product: Product
     price: ProductPrice | None = None
 
 
 class SubscriptionSubscriber(SubscriptionBase):
-    subscription_tier: ProductSubscriber
+    product: ProductSubscriber
     organization: SubscriptionOrganization | None = None
     price: ProductPrice | None = None
 
@@ -176,7 +176,7 @@ class SubscriptionsImported(Schema):
 class SubscriptionSummary(Schema):
     user: SubscriptionPublicUser
     organization: SubscriptionOrganization | None = None
-    subscription_tier: Product
+    product: Product
     price: ProductPrice | None = None
 
 

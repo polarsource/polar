@@ -10,9 +10,6 @@ from polar.integrations.stripe.service import StripeService
 def stripe_service_mock(mocker: MockerFixture) -> MagicMock:
     mock = MagicMock(spec=StripeService)
     mocker.patch(
-        "polar.subscription.service.subscription_tier.stripe_service", new=mock
-    )
-    mocker.patch(
         "polar.subscription.service.subscribe_session.stripe_service", new=mock
     )
     mocker.patch("polar.subscription.service.subscription.stripe_service", new=mock)

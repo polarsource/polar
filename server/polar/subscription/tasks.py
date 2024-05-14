@@ -48,8 +48,8 @@ async def subscription_enqueue_benefits_grants(
         await subscription_service.enqueue_benefits_grants(session, subscription)
 
 
-@task("subscription.subscription.update_subscription_tier_benefits_grants")
-async def subscription_update_subscription_tier_benefits_grants(
+@task("subscription.subscription.update_product_benefits_grants")
+async def subscription_update_product_benefits_grants(
     ctx: JobContext, subscription_tier_id: uuid.UUID, polar_context: PolarWorkerContext
 ) -> None:
     async with AsyncSessionMaker(ctx) as session:
@@ -57,7 +57,7 @@ async def subscription_update_subscription_tier_benefits_grants(
         if subscription_tier is None:
             raise SubscriptionTierDoesNotExist(subscription_tier_id)
 
-        await subscription_service.update_subscription_tier_benefits_grants(
+        await subscription_service.update_product_benefits_grants(
             session, subscription_tier
         )
 

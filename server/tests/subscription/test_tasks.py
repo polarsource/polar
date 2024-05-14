@@ -11,7 +11,7 @@ from polar.subscription.tasks import (  # type: ignore[attr-defined]
     SubscriptionTierDoesNotExist,
     subscription_enqueue_benefits_grants,
     subscription_service,
-    subscription_update_subscription_tier_benefits_grants,
+    subscription_update_product_benefits_grants,
 )
 from polar.worker import JobContext, PolarWorkerContext
 
@@ -57,7 +57,7 @@ class TestSubscriptionEnqueueBenefitsGrants:
 
 
 @pytest.mark.asyncio
-class TestSubscriptionUpdateSubscriptionTierBenefitsGrants:
+class TestSubscriptionUpdateProductBenefitsGrants:
     async def test_not_existing_subscription_tier(
         self,
         job_context: JobContext,
@@ -68,7 +68,7 @@ class TestSubscriptionUpdateSubscriptionTierBenefitsGrants:
         session.expunge_all()
 
         with pytest.raises(SubscriptionTierDoesNotExist):
-            await subscription_update_subscription_tier_benefits_grants(
+            await subscription_update_product_benefits_grants(
                 job_context, uuid.uuid4(), polar_worker_context
             )
 
@@ -80,17 +80,17 @@ class TestSubscriptionUpdateSubscriptionTierBenefitsGrants:
         subscription_tier: Product,
         session: AsyncSession,
     ) -> None:
-        update_subscription_tier_benefits_grants_mock = mocker.patch.object(
+        update_product_benefits_grants_mock = mocker.patch.object(
             subscription_service,
-            "update_subscription_tier_benefits_grants",
-            spec=SubscriptionService.update_subscription_tier_benefits_grants,
+            "update_product_benefits_grants",
+            spec=SubscriptionService.update_product_benefits_grants,
         )
 
         # then
         session.expunge_all()
 
-        await subscription_update_subscription_tier_benefits_grants(
+        await subscription_update_product_benefits_grants(
             job_context, subscription_tier.id, polar_worker_context
         )
 
-        update_subscription_tier_benefits_grants_mock.assert_called_once()
+        update_product_benefits_grants_mock.assert_called_once()

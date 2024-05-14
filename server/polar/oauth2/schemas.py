@@ -12,7 +12,7 @@ from pydantic import (
     TypeAdapter,
 )
 
-from polar.auth.scope import RESERVED_SCOPES, Scope, scope_to_list
+from polar.auth.scope import SCOPES_SUPPORTED, Scope, scope_to_list
 from polar.enums import Platforms
 from polar.kit.schemas import Schema, TimestampedSchema
 
@@ -35,17 +35,20 @@ def _is_https_or_localhost(value: HttpUrl) -> HttpUrl:
 
 
 HttpsUrlOrLocalhost = Annotated[HttpUrl, AfterValidator(_is_https_or_localhost)]
+Scopes = Annotated[list[Scope], BeforeValidator(scope_to_list)]
 
 
 class OAuth2ClientConfiguration(Schema):
     redirect_uris: list[HttpsUrlOrLocalhost]
-    token_endpoint_auth_method: Literal["client_secret_post"] = "client_secret_post"
+    token_endpoint_auth_method: Literal[
+        "client_secret_basic", "client_secret_post", "none"
+    ] = "client_secret_post"
     grant_types: list[Literal["authorization_code", "refresh_token"]] = [
         "authorization_code",
         "refresh_token",
     ]
     response_types: list[Literal["code"]] = ["code"]
-    scope: list[Scope] = [s for s in Scope if s not in RESERVED_SCOPES]
+    scope: str = " ".join(SCOPES_SUPPORTED)
     client_name: str
     client_uri: str | None = None
     logo_uri: HttpUrl | None = None
@@ -71,9 +74,6 @@ class OAuth2ClientPublic(TimestampedSchema):
     logo_uri: str | None = None
     tos_uri: str | None = None
     policy_uri: str | None = None
-
-
-Scopes = Annotated[list[Scope], BeforeValidator(scope_to_list)]
 
 
 class AuthorizeUser(Schema):

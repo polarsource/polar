@@ -147,7 +147,11 @@ class TestOAuth2Register:
     async def test_valid(self, redirect_uri: str, client: AsyncClient) -> None:
         response = await client.post(
             "/api/v1/oauth2/register",
-            json={"client_name": "Test Client", "redirect_uris": [redirect_uri]},
+            json={
+                "client_name": "Test Client",
+                "redirect_uris": [redirect_uri],
+                "scope": "openid email",
+            },
         )
 
         assert response.status_code == 201
@@ -155,6 +159,7 @@ class TestOAuth2Register:
 
         assert "registration_access_token" in json
         assert json["token_endpoint_auth_method"] == "client_secret_post"
+        assert json["scope"] == "openid email"
 
 
 @pytest.mark.asyncio

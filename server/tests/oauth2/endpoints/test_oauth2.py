@@ -154,6 +154,7 @@ class TestOAuth2Register:
         json = response.json()
 
         assert "registration_access_token" in json
+        assert json["token_endpoint_auth_method"] == "client_secret_post"
 
 
 @pytest.mark.asyncio

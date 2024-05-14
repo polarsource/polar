@@ -118,11 +118,15 @@ async def session(
 SaveFixture = Callable[[Model], Coroutine[None, None, None]]
 
 
-@pytest_asyncio.fixture
-def save_fixture(session: AsyncSession) -> SaveFixture:
+def save_fixture_factory(session: AsyncSession) -> SaveFixture:
     async def _save_fixture(model: Model) -> None:
         session.add(model)
         await session.flush()
         session.expunge(model)
 
     return _save_fixture
+
+
+@pytest_asyncio.fixture
+def save_fixture(session: AsyncSession) -> SaveFixture:
+    return save_fixture_factory(session)

@@ -45,7 +45,7 @@ class BalanceTransactionService(BaseTransactionService):
         payment_transaction: Transaction | None = None,
         pledge: Pledge | None = None,
         subscription: Subscription | None = None,
-        subscription_tier_price: ProductPrice | None = None,
+        product_price: ProductPrice | None = None,
         issue_reward: IssueReward | None = None,
         platform_fee_type: PlatformFeeType | None = None,
         donation: Donation | None = None,
@@ -67,7 +67,7 @@ class BalanceTransactionService(BaseTransactionService):
             pledge=pledge,
             issue_reward=issue_reward,
             subscription=subscription,
-            product_price=subscription_tier_price,
+            product_price=product_price,
             payment_transaction=payment_transaction,
             platform_fee_type=platform_fee_type,
             donation=donation,
@@ -85,7 +85,7 @@ class BalanceTransactionService(BaseTransactionService):
             pledge=pledge,
             issue_reward=issue_reward,
             subscription=subscription,
-            product_price=subscription_tier_price,
+            product_price=product_price,
             payment_transaction=payment_transaction,
             platform_fee_type=platform_fee_type,
             donation=donation,
@@ -127,9 +127,7 @@ class BalanceTransactionService(BaseTransactionService):
             amount=amount,
             pledge=pledge,
             subscription=subscription,
-            subscription_tier_price=subscription.price
-            if subscription is not None
-            else None,
+            product_price=subscription.price if subscription is not None else None,
             issue_reward=issue_reward,
             donation=donation,
         )

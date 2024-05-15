@@ -34,7 +34,7 @@ async def create_payment_transaction(
     charge_id: str = "STRIPE_CHARGE_ID",
     pledge: Pledge | None = None,
     subscription: Subscription | None = None,
-    subscription_tier_price: ProductPrice | None = None,
+    product_price: ProductPrice | None = None,
     issue_reward: IssueReward | None = None,
 ) -> Transaction:
     transaction = Transaction(
@@ -48,8 +48,8 @@ async def create_payment_transaction(
         charge_id=charge_id,
         pledge=pledge,
         subscription=subscription,
-        product_price=subscription_tier_price
-        if subscription_tier_price
+        product_price=product_price
+        if product_price
         else subscription.price
         if subscription
         else None,

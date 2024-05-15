@@ -4,7 +4,7 @@ from polar.enums import Platforms
 from polar.kit.schemas import Schema, TimestampedSchema
 from polar.models.pledge import PledgeState
 from polar.models.product import SubscriptionTierType
-from polar.models.product_price import ProductPriceRecurringInterval
+from polar.models.product_price import ProductPriceRecurringInterval, ProductPriceType
 from polar.models.subscription import SubscriptionStatus
 from polar.models.transaction import PaymentProcessor, PlatformFeeType, TransactionType
 
@@ -67,8 +67,9 @@ class TransactionProduct(TimestampedSchema):
     organization: TransactionOrganization | None = None
 
 
-class TransactionSubscriptionPrice(TimestampedSchema):
+class TransactionProductPrice(TimestampedSchema):
     id: UUID4
+    type: ProductPriceType
     recurring_interval: ProductPriceRecurringInterval
     price_amount: int
     price_currency: str
@@ -96,7 +97,7 @@ class TransactionEmbedded(TimestampedSchema):
     pledge_id: UUID4 | None = None
     issue_reward_id: UUID4 | None = None
     subscription_id: UUID4 | None = None
-    subscription_tier_price_id: UUID4 | None = None
+    product_price_id: UUID4 | None = None
 
     payout_transaction_id: UUID4 | None = None
     incurred_by_transaction_id: UUID4 | None = None
@@ -106,7 +107,7 @@ class Transaction(TransactionEmbedded):
     pledge: TransactionPledge | None = None
     issue_reward: TransactionIssueReward | None = None
     subscription: TransactionSubscription | None = None
-    subscription_tier_price: TransactionSubscriptionPrice | None = None
+    product_price: TransactionProductPrice | None = None
     donation: TransactionDonation | None = None
 
     account_incurred_transactions: list[TransactionEmbedded]

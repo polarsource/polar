@@ -167,7 +167,7 @@ class DisputeTransactionService(BaseTransactionService):
                 amount=abs(outgoing.amount),
                 pledge=outgoing.pledge,
                 subscription=outgoing.subscription,
-                subscription_tier_price=outgoing.product_price,
+                product_price=outgoing.product_price,
                 issue_reward=outgoing.issue_reward,
             )
 

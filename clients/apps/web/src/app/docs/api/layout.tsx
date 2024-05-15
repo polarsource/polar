@@ -7,7 +7,7 @@ export default function Layout({ children }: PropsWithChildren) {
       <div className="flex w-full flex-col">
         <MDXContentWrapper>{children}</MDXContentWrapper>
       </div>
-      <div className="flex w-80 flex-col">Test</div>
+      <div className="flex w-72 flex-col">Test</div>
     </div>
   )
 }

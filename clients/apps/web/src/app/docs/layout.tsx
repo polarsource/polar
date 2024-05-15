@@ -2,27 +2,28 @@ import GithubLoginButton from '@/components/Auth/GithubLoginButton'
 import { BrandingMenu } from '@/components/Layout/Public/BrandingMenu'
 import {
   ApiOutlined,
-  BookmarkOutlined,
   DescriptionOutlined,
+  SpaceDashboardOutlined,
 } from '@mui/icons-material'
 import { UserSignupType } from '@polar-sh/sdk'
 import { Separator } from 'polarkit/components/ui/separator'
 import { PropsWithChildren } from 'react'
+import { Navigation } from './Navigation'
 import { NaviagtionItem } from './NavigationItem'
 
 export default async function Layout({ children }: PropsWithChildren) {
   return (
     <div className="flex w-full flex-col items-center gap-y-12">
-      <div className="flex h-fit w-full max-w-[100vw] flex-row justify-stretch gap-x-12 px-8 py-12 md:max-w-7xl md:px-12">
+      <div className="flex h-fit w-full max-w-[100vw] flex-row justify-stretch gap-x-12 px-8 py-12 md:max-w-[1460px] md:px-12">
         <div className="flex w-full flex-grow flex-col gap-y-12">
           <DocumentationPageTopbar />
           <Separator />
-          <div className="flex flex-row items-start">
-            <div className="flex w-80 flex-col">
+          <div className="flex flex-row items-start gap-x-24">
+            <div className="flex w-72 flex-col gap-y-12">
               <ul className="flex flex-col gap-y-2">
                 <li>
                   <NaviagtionItem
-                    icon={<DescriptionOutlined fontSize="inherit" />}
+                    icon={<SpaceDashboardOutlined fontSize="inherit" />}
                     href="/docs/overview"
                   >
                     Overview
@@ -38,13 +39,14 @@ export default async function Layout({ children }: PropsWithChildren) {
                 </li>
                 <li>
                   <NaviagtionItem
-                    icon={<BookmarkOutlined fontSize="inherit" />}
+                    icon={<DescriptionOutlined fontSize="inherit" />}
                     href="/docs/guides"
                   >
                     Guides
                   </NaviagtionItem>
                 </li>
               </ul>
+              <Navigation />
             </div>
             <div className="flex h-full w-full flex-col">{children}</div>
           </div>

@@ -180,6 +180,28 @@ const nextConfig = {
         permanent: false,
       },
 
+      // Docs redirects
+      {
+        source: '/docs',
+        destination: '/docs/overview',
+        permanent: false
+      },
+      {
+        source: '/docs/overview',
+        destination: '/docs/overview/introduction',
+        permanent: false
+      },
+      {
+        source: '/docs/api',
+        destination: '/docs/api/introduction',
+        permanent: false
+      },
+      {
+        source: '/docs/guides',
+        destination: '/docs/guides/overview',
+        permanent: false
+      },
+
       {
         source: '/dashboard',
         destination: '/login',

@@ -5,14 +5,13 @@ import Markdown from 'react-markdown'
 export default async function Home() {
   const polar = getServerSideAPI()
 
-  const [org, subscriptionTiers, articles] = await Promise.all([
-    polar.organizations.lookup({
-      organizationName: 'emilwidlund',
-      platform: Platforms.GITHUB,
-    }),
-    polar.subscriptions.searchSubscriptionTiers({
-      organizationName: 'emilwidlund',
-      platform: Platforms.GITHUB,
+  const org = await polar.organizations.lookup({
+    organizationName: 'emilwidlund',
+    platform: Platforms.GITHUB,
+  })
+  const [products, articles] = await Promise.all([
+    polar.products.listProducts({
+      organizationId: org.id,
     }),
     polar.articles.search({
       organizationName: 'emilwidlund',
@@ -55,7 +54,7 @@ export default async function Home() {
           </div>
         </div>
         <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-          {subscriptionTiers.items
+          {products.items
             ?.filter(({ type }) => type !== 'free')
             .slice(0, 3)
             .map((tier) => (

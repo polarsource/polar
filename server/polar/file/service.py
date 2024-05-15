@@ -4,7 +4,7 @@ from datetime import timedelta
 import structlog
 
 from polar.config import settings
-from polar.exceptions import PolarError, ResourceNotFound
+from polar.exceptions import BadRequest, PolarError, ResourceNotFound
 from polar.kit.services import ResourceService
 from polar.kit.utils import generate_uuid, utc_now
 from polar.models import Organization, User
@@ -64,6 +64,8 @@ class FileService(ResourceService[File, FileCreate, FileUpdate]):
                 Key=key,
                 ContentDisposition=get_disposition(create_schema.name),
                 ContentType=create_schema.mime_type,
+                ChecksumAlgorithm="SHA256",
+                ChecksumSHA256=create_schema.sha256.base64,
             ),
             ExpiresIn=expires_in,
         )
@@ -76,7 +78,9 @@ class FileService(ResourceService[File, FileCreate, FileUpdate]):
             presigned_at=utc_now(),
             presign_expiration=expires_in,
             presign_expires_at=presign_expires_at,
-            **create_schema.model_dump(),
+            sha256_base64=create_schema.sha256.base64,
+            sha256_hex=create_schema.sha256.hex,
+            **create_schema.model_dump(exclude={"sha256"}),
         )
         session.add(instance)
         await session.flush()
@@ -132,12 +136,17 @@ class FileService(ResourceService[File, FileCreate, FileUpdate]):
             log.error("aws.s3", file_id=file.id, key=file.key, error="No S3 metadata")
             raise FileNotFound(f"No S3 metadata exists for ID: {file.id}")
 
-        checksums = metadata.get("Checksums", {})
+        checksums = metadata.get("Checksum", {})
+        sha256_base64 = checksums.get("ChecksumSHA256")
+        if file.sha256_base64 and sha256_base64 != file.sha256_base64:
+            log.error("aws.s3", file_id=file.id, key=file.key, error="SHA256 missmatch")
+            raise BadRequest()
+
+        file.sha256_base64 = sha256_base64
         file.status = FileStatus.uploaded
         file.uploaded_at = metadata["LastModified"]
         file.etag = metadata.get("ETag")
         file.version_id = metadata.get("VersionId")
-        file.checksum_sha256 = checksums.get("ChecksumSHA256")
         # Update size from S3 or fallback on original size given by client
         file.size = metadata.get("ObjectSize", file.size)
 

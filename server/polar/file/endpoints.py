@@ -97,8 +97,9 @@ async def mark_uploaded(
     if not await authz.can(subject, AccessType.write, organization):
         raise NotPermitted()
 
-    return await file_service.mark_uploaded(
+    file = await file_service.mark_uploaded(
         session,
         organization=organization,
         file=file,
     )
+    return FileRead.from_db(file)

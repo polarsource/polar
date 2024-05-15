@@ -4768,6 +4768,12 @@ export interface FileCreate {
     mime_type: string;
     /**
      * 
+     * @type {SHA256Checksums}
+     * @memberof FileCreate
+     */
+    sha256: SHA256Checksums | null;
+    /**
+     * 
      * @type {string}
      * @memberof FileCreate
      */
@@ -4821,6 +4827,12 @@ export interface FilePresignedRead {
      * @memberof FilePresignedRead
      */
     size: number;
+    /**
+     * 
+     * @type {SHA256Checksums}
+     * @memberof FilePresignedRead
+     */
+    sha256: SHA256Checksums | null;
     /**
      * 
      * @type {string}
@@ -4912,6 +4924,12 @@ export interface FileRead {
      * @memberof FileRead
      */
     size: number;
+    /**
+     * 
+     * @type {SHA256Checksums}
+     * @memberof FileRead
+     */
+    sha256: SHA256Checksums | null;
     /**
      * 
      * @type {string}
@@ -10217,6 +10235,25 @@ export interface RewardsSummaryReceiver {
      * @memberof RewardsSummaryReceiver
      */
     avatar_url?: string;
+}
+/**
+ * 
+ * @export
+ * @interface SHA256Checksums
+ */
+export interface SHA256Checksums {
+    /**
+     * 
+     * @type {string}
+     * @memberof SHA256Checksums
+     */
+    base64: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof SHA256Checksums
+     */
+    hex: string | null;
 }
 
 /**

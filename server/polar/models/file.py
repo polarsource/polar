@@ -81,7 +81,8 @@ class File(RecordModel):
     )
 
     version_id: Mapped[str] = mapped_column(String, nullable=True)
-    checksum_sha256: Mapped[str] = mapped_column(String, nullable=True)
+    sha256_base64: Mapped[str] = mapped_column(String, nullable=True)
+    sha256_hex: Mapped[str] = mapped_column(String, nullable=True)
     etag: Mapped[str] = mapped_column(String, nullable=True)
 
     @hybrid_property

@@ -2,6 +2,7 @@ import uuid
 from collections.abc import Sequence
 from typing import Any, List, Literal, TypeVar  # noqa: UP035
 
+import stripe
 from sqlalchemy import Select, and_, case, or_, select, update
 from sqlalchemy.exc import InvalidRequestError
 from sqlalchemy.orm import contains_eager, joinedload
@@ -11,7 +12,6 @@ from polar.auth.models import AuthSubject, Subject, is_organization, is_user
 from polar.authz.service import AccessType, Authz
 from polar.benefit.service.benefit import benefit as benefit_service
 from polar.exceptions import NotPermitted, PolarError, PolarRequestValidationError
-from polar.integrations.stripe.service import ProductUpdateKwargs
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.pagination import PaginationParams, paginate
@@ -236,7 +236,7 @@ class ProductService(ResourceService[Product, ProductCreate, ProductUpdate]):
         if product.is_archived and update_schema.is_archived is False:
             product = await self._unarchive(product)
 
-        product_update: ProductUpdateKwargs = {}
+        product_update: stripe.Product.ModifyParams = {}
         if update_schema.name is not None and update_schema.name != product.name:
             product.name = update_schema.name
             product_update["name"] = product.get_stripe_name()

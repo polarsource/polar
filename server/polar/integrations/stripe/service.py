@@ -1,6 +1,6 @@
 import uuid
 from collections.abc import Iterator
-from typing import Literal, TypedDict, Unpack, cast
+from typing import Literal, Unpack, cast
 
 import stripe as stripe_lib
 
@@ -22,12 +22,6 @@ stripe_lib.api_key = settings.STRIPE_SECRET_KEY
 stripe_http_client = stripe_lib.HTTPXClient(allow_sync_methods=True)
 instrument_httpx(stripe_http_client._client)
 stripe_lib.default_http_client = stripe_http_client
-
-
-class ProductUpdateKwargs(TypedDict, total=False):
-    name: str
-    description: str
-    default_price: str
 
 
 class MissingOrganizationBillingEmail(PolarError):
@@ -371,7 +365,7 @@ class StripeService:
         return price
 
     def update_product(
-        self, product: str, **kwargs: Unpack[ProductUpdateKwargs]
+        self, product: str, **kwargs: Unpack[stripe_lib.Product.ModifyParams]
     ) -> stripe_lib.Product:
         return stripe_lib.Product.modify(product, **kwargs)
 

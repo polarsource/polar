@@ -8,6 +8,7 @@ import {
 import { UserSignupType } from '@polar-sh/sdk'
 import { Separator } from 'polarkit/components/ui/separator'
 import { PropsWithChildren } from 'react'
+import { twMerge } from 'tailwind-merge'
 import { Navigation } from './Navigation'
 import { NaviagtionItem } from './NavigationItem'
 
@@ -19,7 +20,7 @@ export default async function Layout({ children }: PropsWithChildren) {
           <DocumentationPageTopbar />
           <Separator />
           <div className="flex flex-row items-start gap-x-24">
-            <div className="flex w-52 flex-shrink-0 flex-col gap-y-12">
+            <div className="flex w-64 flex-shrink-0 flex-col gap-y-12">
               <ul className="flex flex-col gap-y-2">
                 <li>
                   <NaviagtionItem
@@ -57,19 +58,24 @@ export default async function Layout({ children }: PropsWithChildren) {
 }
 
 const DocumentationPageTopbar = () => {
+  const centerClsx =
+    'absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2'
+
   return (
     <div className="relative flex flex-row items-center justify-between bg-transparent">
       <h1 className="text-xl font-medium">Documentation</h1>
+
       <BrandingMenu
-        className="absolute left-1/2 top-1/2 hidden -translate-x-1/2 -translate-y-1/2 md:block"
+        className={twMerge('hidden md:block', centerClsx)}
         logoClassName="dark:text-white"
         size={50}
       />
       <BrandingMenu
-        className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 md:hidden"
+        className={twMerge('md:hidden', centerClsx)}
         logoClassName="dark:text-white"
         size={50}
       />
+
       <div className="flex flex-row items-center gap-x-6">
         <GithubLoginButton
           text="Create with Polar"

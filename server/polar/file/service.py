@@ -55,6 +55,13 @@ class FileService(ResourceService[File, FileCreate, FileUpdate]):
         # Each organization gets its own directory
         key = f"{organization.id}/{file_name}"
 
+        hex = None
+        base64 = None
+        checksums = create_schema.sha256
+        if checksums:
+            base64 = checksums.base64
+            hex = checksums.hex
+
         expires_in = settings.S3_FILES_PRESIGN_TTL
         presigned_at = utc_now()
         signed_post_url = s3_client.generate_presigned_url(
@@ -65,7 +72,7 @@ class FileService(ResourceService[File, FileCreate, FileUpdate]):
                 ContentDisposition=get_disposition(create_schema.name),
                 ContentType=create_schema.mime_type,
                 ChecksumAlgorithm="SHA256",
-                ChecksumSHA256=create_schema.sha256.base64,
+                ChecksumSHA256=base64,
             ),
             ExpiresIn=expires_in,
         )
@@ -78,8 +85,8 @@ class FileService(ResourceService[File, FileCreate, FileUpdate]):
             presigned_at=utc_now(),
             presign_expiration=expires_in,
             presign_expires_at=presign_expires_at,
-            sha256_base64=create_schema.sha256.base64,
-            sha256_hex=create_schema.sha256.hex,
+            sha256_base64=base64,
+            sha256_hex=hex,
             **create_schema.model_dump(exclude={"sha256"}),
         )
         session.add(instance)

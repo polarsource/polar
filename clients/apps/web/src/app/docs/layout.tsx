@@ -19,7 +19,7 @@ export default async function Layout({ children }: PropsWithChildren) {
           <DocumentationPageTopbar />
           <Separator />
           <div className="flex flex-row items-start gap-x-24">
-            <div className="flex w-72 flex-col gap-y-12">
+            <div className="flex w-52 flex-shrink-0 flex-col gap-y-12">
               <ul className="flex flex-col gap-y-2">
                 <li>
                   <NaviagtionItem

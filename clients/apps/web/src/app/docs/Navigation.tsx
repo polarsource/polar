@@ -1,11 +1,82 @@
 'use client'
 
+import { usePathname } from 'next/navigation'
 import { sections } from './APINavigation'
 import { NaviagtionItem } from './NavigationItem'
 
 export const Navigation = () => {
+  const pathname = usePathname()
+
+  const shouldRenderOverviewSections = pathname.includes('/docs/overview')
+  const shouldRenderAPISections = pathname.includes('/docs/api/')
+
   return (
     <div className="flex flex-col gap-y-8">
+      {shouldRenderOverviewSections && (
+        <>
+          <OverviewSections />
+          <FAQSections />
+        </>
+      )}
+      {shouldRenderAPISections && <APISections />}
+    </div>
+  )
+}
+
+const OverviewSections = () => {
+  return (
+    <>
+      <div className="flex flex-col gap-y-2">
+        <NaviagtionItem href="/docs/overview/introduction">
+          Introduction
+        </NaviagtionItem>
+        <NaviagtionItem href="/docs/overview/funding">
+          Issue Funding
+        </NaviagtionItem>
+        <NaviagtionItem href="/docs/overview/donations">
+          Donations
+        </NaviagtionItem>
+        <NaviagtionItem href="/docs/overview/benefits">Benefits</NaviagtionItem>
+        <NaviagtionItem href="/docs/overview/subscriptions">
+          Subscriptions
+        </NaviagtionItem>
+        <NaviagtionItem href="/docs/overview/newsletters">
+          Newsletters
+        </NaviagtionItem>
+        <NaviagtionItem href="/docs/overview/ads">Ads</NaviagtionItem>
+        <NaviagtionItem href="/docs/overview/payments-taxes">
+          Payments & Taxes
+        </NaviagtionItem>
+      </div>
+    </>
+  )
+}
+
+const FAQSections = () => {
+  return (
+    <div className="flex flex-col gap-y-4">
+      <h2 className="font-medium">FAQ</h2>
+      <div className="flex flex-col gap-y-2">
+        <NaviagtionItem href="/docs/overview/faq/overview">
+          Overview
+        </NaviagtionItem>
+        <NaviagtionItem href="/docs/overview/faq/for-maintainers">
+          For Maintainers
+        </NaviagtionItem>
+        <NaviagtionItem href="/docs/overview/faq/for-backers">
+          For Backers
+        </NaviagtionItem>
+        <NaviagtionItem href="/docs/overview/faq/for-contributors">
+          For Contributors
+        </NaviagtionItem>
+      </div>
+    </div>
+  )
+}
+
+const APISections = () => {
+  return (
+    <>
       {sections.map((section) => (
         <div key={section.name} className="flex flex-col gap-y-4">
           <h2 className="font-medium capitalize">{section.name}</h2>
@@ -27,6 +98,6 @@ export const Navigation = () => {
           </div>
         </div>
       ))}
-    </div>
+    </>
   )
 }

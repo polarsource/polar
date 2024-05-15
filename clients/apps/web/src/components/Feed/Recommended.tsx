@@ -1,9 +1,6 @@
 'use client'
 
 import { useListForYouIssues } from '@/hooks/queries'
-import { FavoriteBorderOutlined } from '@mui/icons-material'
-import Link from 'next/link'
-import Button from 'polarkit/components/ui/atoms/button'
 import { ShadowBoxOnMd } from 'polarkit/components/ui/atoms/shadowbox'
 import IssueListItem from '../Issues/IssueListItem'
 
@@ -43,19 +40,6 @@ const Recommended = () => {
                 showPledgeAction={true}
                 showLogo={true}
                 className="py-3"
-                right={
-                  <>
-                    <Link
-                      href={`/${issue.repository.organization.name}/${issue.repository.name}/issues/${issue.number}`}
-                      className="font-medium text-blue-500"
-                    >
-                      <Button variant="secondary" size="sm">
-                        <FavoriteBorderOutlined fontSize="inherit" />
-                        <span className="ml-1.5">Fund</span>
-                      </Button>
-                    </Link>
-                  </>
-                }
               />
             ))}
           </div>

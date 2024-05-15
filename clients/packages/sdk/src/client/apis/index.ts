@@ -22,6 +22,7 @@ export * from './OrganizationsApi';
 export * from './PaymentMethodsApi';
 export * from './PersonalAccessTokenApi';
 export * from './PledgesApi';
+export * from './ProductsApi';
 export * from './PullRequestsApi';
 export * from './RepositoriesApi';
 export * from './RewardsApi';

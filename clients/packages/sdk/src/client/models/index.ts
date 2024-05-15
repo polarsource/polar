@@ -4276,15 +4276,17 @@ export interface Entry {
     pledges?: Array<Pledge>;
 }
 /**
+ * A price that already exists for this product.
  * 
+ * Useful when updating a product if you want to keep an existing price.
  * @export
- * @interface ExistingSubscriptionTierPrice
+ * @interface ExistingProductPrice
  */
-export interface ExistingSubscriptionTierPrice {
+export interface ExistingProductPrice {
     /**
      * 
      * @type {string}
-     * @memberof ExistingSubscriptionTierPrice
+     * @memberof ExistingProductPrice
      */
     id: string;
 }
@@ -5163,6 +5165,25 @@ export interface ListResourcePledge {
 /**
  * 
  * @export
+ * @interface ListResourceProduct
+ */
+export interface ListResourceProduct {
+    /**
+     * 
+     * @type {Array<Product>}
+     * @memberof ListResourceProduct
+     */
+    items?: Array<Product>;
+    /**
+     * 
+     * @type {Pagination}
+     * @memberof ListResourceProduct
+     */
+    pagination: Pagination;
+}
+/**
+ * 
+ * @export
  * @interface ListResourcePublicDonation
  */
 export interface ListResourcePublicDonation {
@@ -5290,25 +5311,6 @@ export interface ListResourceSubscriptionSummary {
      * 
      * @type {Pagination}
      * @memberof ListResourceSubscriptionSummary
-     */
-    pagination: Pagination;
-}
-/**
- * 
- * @export
- * @interface ListResourceSubscriptionTier
- */
-export interface ListResourceSubscriptionTier {
-    /**
-     * 
-     * @type {Array<SubscriptionTier>}
-     * @memberof ListResourceSubscriptionTier
-     */
-    items?: Array<SubscriptionTier>;
-    /**
-     * 
-     * @type {Pagination}
-     * @memberof ListResourceSubscriptionTier
      */
     pagination: Pagination;
 }
@@ -8041,6 +8043,421 @@ export interface PostIssueComment {
     append_badge?: boolean;
 }
 /**
+ * @type PricesInner
+ * 
+ * @export
+ */
+export type PricesInner = { type: 'one_time' } & ProductPriceOneTimeCreate | { type: 'recurring' } & ProductPriceRecurringCreate;
+/**
+ * A product.
+ * @export
+ * @interface Product
+ */
+export interface Product {
+    /**
+     * Creation timestamp of the object.
+     * @type {string}
+     * @memberof Product
+     */
+    created_at: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof Product
+     */
+    modified_at?: string;
+    /**
+     * The ID of the product.
+     * @type {string}
+     * @memberof Product
+     */
+    id: string;
+    /**
+     * 
+     * @type {SubscriptionTierType}
+     * @memberof Product
+     */
+    type: SubscriptionTierType;
+    /**
+     * The name of the product.
+     * @type {string}
+     * @memberof Product
+     */
+    name: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof Product
+     */
+    description?: string;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof Product
+     */
+    is_highlighted: boolean;
+    /**
+     * Whether the product is archived and no longer available.
+     * @type {boolean}
+     * @memberof Product
+     */
+    is_archived: boolean;
+    /**
+     * The ID of the organization owning the product.
+     * @type {string}
+     * @memberof Product
+     */
+    organization_id: string;
+    /**
+     * List of available prices for this product.
+     * @type {Array<ProductPrice>}
+     * @memberof Product
+     */
+    prices: Array<ProductPrice>;
+    /**
+     * The benefits granted by the product.
+     * @type {Array<BenefitPublicInner>}
+     * @memberof Product
+     */
+    benefits: Array<BenefitPublicInner>;
+}
+/**
+ * Schema to update the benefits granted by a product.
+ * @export
+ * @interface ProductBenefitsUpdate
+ */
+export interface ProductBenefitsUpdate {
+    /**
+     * List of benefit IDs. Each one must be on the same organization as the product.
+     * @type {Array<string>}
+     * @memberof ProductBenefitsUpdate
+     */
+    benefits: Array<string>;
+}
+/**
+ * Schema to create a product.
+ * @export
+ * @interface ProductCreate
+ */
+export interface ProductCreate {
+    /**
+     * 
+     * @type {string}
+     * @memberof ProductCreate
+     */
+    type: ProductCreateTypeEnum;
+    /**
+     * The name of the product.
+     * @type {string}
+     * @memberof ProductCreate
+     */
+    name: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof ProductCreate
+     */
+    description?: string;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof ProductCreate
+     */
+    is_highlighted?: boolean;
+    /**
+     * List of available prices for this product.
+     * @type {Array<PricesInner>}
+     * @memberof ProductCreate
+     */
+    prices: Array<PricesInner>;
+    /**
+     * 
+     * @type {string}
+     * @memberof ProductCreate
+     */
+    organization_id?: string;
+}
+
+
+/**
+ * @export
+ */
+export const ProductCreateTypeEnum = {
+    INDIVIDUAL: 'individual',
+    BUSINESS: 'business'
+} as const;
+export type ProductCreateTypeEnum = typeof ProductCreateTypeEnum[keyof typeof ProductCreateTypeEnum];
+
+/**
+ * A price for a product.
+ * @export
+ * @interface ProductPrice
+ */
+export interface ProductPrice {
+    /**
+     * Creation timestamp of the object.
+     * @type {string}
+     * @memberof ProductPrice
+     */
+    created_at: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof ProductPrice
+     */
+    modified_at?: string;
+    /**
+     * The ID of the price.
+     * @type {string}
+     * @memberof ProductPrice
+     */
+    id: string;
+    /**
+     * The type of the price.
+     * @type {ProductPriceType}
+     * @memberof ProductPrice
+     */
+    type: ProductPriceType;
+    /**
+     * 
+     * @type {ProductPriceRecurringInterval}
+     * @memberof ProductPrice
+     */
+    recurring_interval?: ProductPriceRecurringInterval;
+    /**
+     * The price in cents.
+     * @type {number}
+     * @memberof ProductPrice
+     */
+    price_amount: number;
+    /**
+     * The currency.
+     * @type {string}
+     * @memberof ProductPrice
+     */
+    price_currency: string;
+    /**
+     * Whether the price is archived and no longer available.
+     * @type {boolean}
+     * @memberof ProductPrice
+     */
+    is_archived: boolean;
+}
+/**
+ * Schema to create a one-time product price.
+ * @export
+ * @interface ProductPriceOneTimeCreate
+ */
+export interface ProductPriceOneTimeCreate {
+    /**
+     * 
+     * @type {string}
+     * @memberof ProductPriceOneTimeCreate
+     */
+    type: ProductPriceOneTimeCreateTypeEnum;
+    /**
+     * The price in cents.
+     * @type {number}
+     * @memberof ProductPriceOneTimeCreate
+     */
+    price_amount: number;
+    /**
+     * The currency. Currently, only `usd` is supported.
+     * @type {string}
+     * @memberof ProductPriceOneTimeCreate
+     */
+    price_currency?: string;
+}
+
+
+/**
+ * @export
+ */
+export const ProductPriceOneTimeCreateTypeEnum = {
+    ONE_TIME: 'one_time'
+} as const;
+export type ProductPriceOneTimeCreateTypeEnum = typeof ProductPriceOneTimeCreateTypeEnum[keyof typeof ProductPriceOneTimeCreateTypeEnum];
+
+/**
+ * Schema to create a recurring product price, i.e. a subscription.
+ * @export
+ * @interface ProductPriceRecurringCreate
+ */
+export interface ProductPriceRecurringCreate {
+    /**
+     * 
+     * @type {string}
+     * @memberof ProductPriceRecurringCreate
+     */
+    type: ProductPriceRecurringCreateTypeEnum;
+    /**
+     * The recurring interval of the price.
+     * @type {ProductPriceRecurringInterval}
+     * @memberof ProductPriceRecurringCreate
+     */
+    recurring_interval: ProductPriceRecurringInterval;
+    /**
+     * The price in cents.
+     * @type {number}
+     * @memberof ProductPriceRecurringCreate
+     */
+    price_amount: number;
+    /**
+     * The currency. Currently, only `usd` is supported.
+     * @type {string}
+     * @memberof ProductPriceRecurringCreate
+     */
+    price_currency?: string;
+}
+
+
+/**
+ * @export
+ */
+export const ProductPriceRecurringCreateTypeEnum = {
+    RECURRING: 'recurring'
+} as const;
+export type ProductPriceRecurringCreateTypeEnum = typeof ProductPriceRecurringCreateTypeEnum[keyof typeof ProductPriceRecurringCreateTypeEnum];
+
+
+/**
+ * 
+ * @export
+ */
+export const ProductPriceRecurringInterval = {
+    MONTH: 'month',
+    YEAR: 'year'
+} as const;
+export type ProductPriceRecurringInterval = typeof ProductPriceRecurringInterval[keyof typeof ProductPriceRecurringInterval];
+
+
+/**
+ * 
+ * @export
+ */
+export const ProductPriceType = {
+    ONE_TIME: 'one_time',
+    RECURRING: 'recurring'
+} as const;
+export type ProductPriceType = typeof ProductPriceType[keyof typeof ProductPriceType];
+
+/**
+ * 
+ * @export
+ * @interface ProductSubscriber
+ */
+export interface ProductSubscriber {
+    /**
+     * Creation timestamp of the object.
+     * @type {string}
+     * @memberof ProductSubscriber
+     */
+    created_at: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof ProductSubscriber
+     */
+    modified_at?: string;
+    /**
+     * The ID of the product.
+     * @type {string}
+     * @memberof ProductSubscriber
+     */
+    id: string;
+    /**
+     * 
+     * @type {SubscriptionTierType}
+     * @memberof ProductSubscriber
+     */
+    type: SubscriptionTierType;
+    /**
+     * The name of the product.
+     * @type {string}
+     * @memberof ProductSubscriber
+     */
+    name: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof ProductSubscriber
+     */
+    description?: string;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof ProductSubscriber
+     */
+    is_highlighted: boolean;
+    /**
+     * Whether the product is archived and no longer available.
+     * @type {boolean}
+     * @memberof ProductSubscriber
+     */
+    is_archived: boolean;
+    /**
+     * The ID of the organization owning the product.
+     * @type {string}
+     * @memberof ProductSubscriber
+     */
+    organization_id: string;
+    /**
+     * List of available prices for this product.
+     * @type {Array<ProductPrice>}
+     * @memberof ProductSubscriber
+     */
+    prices: Array<ProductPrice>;
+    /**
+     * 
+     * @type {Array<BenefitSubscriberInner>}
+     * @memberof ProductSubscriber
+     */
+    benefits: Array<BenefitSubscriberInner>;
+}
+/**
+ * Schema to update a product.
+ * @export
+ * @interface ProductUpdate
+ */
+export interface ProductUpdate {
+    /**
+     * The name of the product.
+     * @type {string}
+     * @memberof ProductUpdate
+     */
+    name?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof ProductUpdate
+     */
+    description?: string;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof ProductUpdate
+     */
+    is_highlighted?: boolean;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof ProductUpdate
+     */
+    is_archived?: boolean;
+    /**
+     * 
+     * @type {Array<ProductUpdatePricesInner>}
+     * @memberof ProductUpdate
+     */
+    prices?: Array<ProductUpdatePricesInner>;
+}
+/**
+ * @type ProductUpdatePricesInner
+ * @export
+ */
+export type ProductUpdatePricesInner = ExistingProductPrice | PricesInner;
+
+/**
  * 
  * @export
  * @interface PublicDonation
@@ -8794,6 +9211,8 @@ export const Scope = {
     CREATORSUBSCRIPTIONSWRITE: 'creator:subscriptions:write',
     BACKERSUBSCRIPTIONSREAD: 'backer:subscriptions:read',
     BACKERSUBSCRIPTIONSWRITE: 'backer:subscriptions:write',
+    CREATORPRODUCTSREAD: 'creator:products:read',
+    CREATORPRODUCTSWRITE: 'creator:products:write',
     CREATORBENEFITSREAD: 'creator:benefits:read',
     CREATORBENEFITSWRITE: 'creator:benefits:write',
     WEBHOOKSREAD: 'webhooks:read',
@@ -8852,16 +9271,16 @@ export interface SubscribeSession {
     organization_subscriber_id?: string;
     /**
      * 
-     * @type {SubscriptionTier}
+     * @type {Product}
      * @memberof SubscribeSession
      */
-    subscription_tier: SubscriptionTier;
+    subscription_tier: Product;
     /**
      * 
-     * @type {SubscriptionTierPrice}
+     * @type {ProductPrice}
      * @memberof SubscribeSession
      */
-    price: SubscriptionTierPrice;
+    price: ProductPrice;
     /**
      * 
      * @type {string}
@@ -8983,7 +9402,7 @@ export interface Subscription {
      * @type {string}
      * @memberof Subscription
      */
-    subscription_tier_id: string;
+    product_id: string;
     /**
      * 
      * @type {string}
@@ -9004,16 +9423,16 @@ export interface Subscription {
     organization?: SubscriptionOrganization;
     /**
      * 
-     * @type {SubscriptionTier}
+     * @type {Product}
      * @memberof Subscription
      */
-    subscription_tier: SubscriptionTier;
+    product: Product;
     /**
      * 
-     * @type {SubscriptionTierPrice}
+     * @type {ProductPrice}
      * @memberof Subscription
      */
-    price?: SubscriptionTierPrice;
+    price?: ProductPrice;
 }
 /**
  * 
@@ -9171,7 +9590,7 @@ export interface SubscriptionSubscriber {
      * @type {string}
      * @memberof SubscriptionSubscriber
      */
-    subscription_tier_id: string;
+    product_id: string;
     /**
      * 
      * @type {string}
@@ -9180,10 +9599,10 @@ export interface SubscriptionSubscriber {
     price_id?: string;
     /**
      * 
-     * @type {SubscriptionTierSubscriber}
+     * @type {ProductSubscriber}
      * @memberof SubscriptionSubscriber
      */
-    subscription_tier: SubscriptionTierSubscriber;
+    product: ProductSubscriber;
     /**
      * 
      * @type {SubscriptionOrganization}
@@ -9192,10 +9611,10 @@ export interface SubscriptionSubscriber {
     organization?: SubscriptionOrganization;
     /**
      * 
-     * @type {SubscriptionTierPrice}
+     * @type {ProductPrice}
      * @memberof SubscriptionSubscriber
      */
-    price?: SubscriptionTierPrice;
+    price?: ProductPrice;
 }
 /**
  * 
@@ -9217,314 +9636,16 @@ export interface SubscriptionSummary {
     organization?: SubscriptionOrganization;
     /**
      * 
-     * @type {SubscriptionTier}
+     * @type {Product}
      * @memberof SubscriptionSummary
      */
-    subscription_tier: SubscriptionTier;
+    product: Product;
     /**
      * 
-     * @type {SubscriptionTierPrice}
+     * @type {ProductPrice}
      * @memberof SubscriptionSummary
      */
-    price?: SubscriptionTierPrice;
-}
-/**
- * 
- * @export
- * @interface SubscriptionTier
- */
-export interface SubscriptionTier {
-    /**
-     * Creation timestamp of the object.
-     * @type {string}
-     * @memberof SubscriptionTier
-     */
-    created_at: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionTier
-     */
-    modified_at?: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionTier
-     */
-    id: string;
-    /**
-     * 
-     * @type {SubscriptionTierType}
-     * @memberof SubscriptionTier
-     */
-    type: SubscriptionTierType;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionTier
-     */
-    name: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionTier
-     */
-    description?: string;
-    /**
-     * 
-     * @type {boolean}
-     * @memberof SubscriptionTier
-     */
-    is_highlighted: boolean;
-    /**
-     * 
-     * @type {boolean}
-     * @memberof SubscriptionTier
-     */
-    is_archived: boolean;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionTier
-     */
-    organization_id: string;
-    /**
-     * 
-     * @type {Array<SubscriptionTierPrice>}
-     * @memberof SubscriptionTier
-     */
-    prices: Array<SubscriptionTierPrice>;
-    /**
-     * 
-     * @type {Array<BenefitPublicInner>}
-     * @memberof SubscriptionTier
-     */
-    benefits: Array<BenefitPublicInner>;
-}
-/**
- * 
- * @export
- * @interface SubscriptionTierBenefitsUpdate
- */
-export interface SubscriptionTierBenefitsUpdate {
-    /**
-     * 
-     * @type {Array<string>}
-     * @memberof SubscriptionTierBenefitsUpdate
-     */
-    benefits: Array<string>;
-}
-/**
- * 
- * @export
- * @interface SubscriptionTierCreate
- */
-export interface SubscriptionTierCreate {
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionTierCreate
-     */
-    type: SubscriptionTierCreateTypeEnum;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionTierCreate
-     */
-    name: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionTierCreate
-     */
-    description?: string;
-    /**
-     * 
-     * @type {boolean}
-     * @memberof SubscriptionTierCreate
-     */
-    is_highlighted?: boolean;
-    /**
-     * 
-     * @type {Array<SubscriptionTierPriceCreate>}
-     * @memberof SubscriptionTierCreate
-     */
-    prices: Array<SubscriptionTierPriceCreate>;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionTierCreate
-     */
-    organization_id?: string;
-}
-
-
-/**
- * @export
- */
-export const SubscriptionTierCreateTypeEnum = {
-    INDIVIDUAL: 'individual',
-    BUSINESS: 'business'
-} as const;
-export type SubscriptionTierCreateTypeEnum = typeof SubscriptionTierCreateTypeEnum[keyof typeof SubscriptionTierCreateTypeEnum];
-
-/**
- * 
- * @export
- * @interface SubscriptionTierPrice
- */
-export interface SubscriptionTierPrice {
-    /**
-     * Creation timestamp of the object.
-     * @type {string}
-     * @memberof SubscriptionTierPrice
-     */
-    created_at: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionTierPrice
-     */
-    modified_at?: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionTierPrice
-     */
-    id: string;
-    /**
-     * 
-     * @type {SubscriptionTierPriceRecurringInterval}
-     * @memberof SubscriptionTierPrice
-     */
-    recurring_interval: SubscriptionTierPriceRecurringInterval;
-    /**
-     * 
-     * @type {number}
-     * @memberof SubscriptionTierPrice
-     */
-    price_amount: number;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionTierPrice
-     */
-    price_currency: string;
-    /**
-     * 
-     * @type {boolean}
-     * @memberof SubscriptionTierPrice
-     */
-    is_archived: boolean;
-}
-/**
- * 
- * @export
- * @interface SubscriptionTierPriceCreate
- */
-export interface SubscriptionTierPriceCreate {
-    /**
-     * 
-     * @type {SubscriptionTierPriceRecurringInterval}
-     * @memberof SubscriptionTierPriceCreate
-     */
-    recurring_interval: SubscriptionTierPriceRecurringInterval;
-    /**
-     * 
-     * @type {number}
-     * @memberof SubscriptionTierPriceCreate
-     */
-    price_amount: number;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionTierPriceCreate
-     */
-    price_currency?: string;
-}
-
-/**
- * 
- * @export
- */
-export const SubscriptionTierPriceRecurringInterval = {
-    MONTH: 'month',
-    YEAR: 'year'
-} as const;
-export type SubscriptionTierPriceRecurringInterval = typeof SubscriptionTierPriceRecurringInterval[keyof typeof SubscriptionTierPriceRecurringInterval];
-
-/**
- * 
- * @export
- * @interface SubscriptionTierSubscriber
- */
-export interface SubscriptionTierSubscriber {
-    /**
-     * Creation timestamp of the object.
-     * @type {string}
-     * @memberof SubscriptionTierSubscriber
-     */
-    created_at: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionTierSubscriber
-     */
-    modified_at?: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionTierSubscriber
-     */
-    id: string;
-    /**
-     * 
-     * @type {SubscriptionTierType}
-     * @memberof SubscriptionTierSubscriber
-     */
-    type: SubscriptionTierType;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionTierSubscriber
-     */
-    name: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionTierSubscriber
-     */
-    description?: string;
-    /**
-     * 
-     * @type {boolean}
-     * @memberof SubscriptionTierSubscriber
-     */
-    is_highlighted: boolean;
-    /**
-     * 
-     * @type {boolean}
-     * @memberof SubscriptionTierSubscriber
-     */
-    is_archived: boolean;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionTierSubscriber
-     */
-    organization_id: string;
-    /**
-     * 
-     * @type {Array<SubscriptionTierPrice>}
-     * @memberof SubscriptionTierSubscriber
-     */
-    prices: Array<SubscriptionTierPrice>;
-    /**
-     * 
-     * @type {Array<BenefitSubscriberInner>}
-     * @memberof SubscriptionTierSubscriber
-     */
-    benefits: Array<BenefitSubscriberInner>;
+    price?: ProductPrice;
 }
 
 /**
@@ -9537,43 +9658,6 @@ export const SubscriptionTierType = {
     BUSINESS: 'business'
 } as const;
 export type SubscriptionTierType = typeof SubscriptionTierType[keyof typeof SubscriptionTierType];
-
-/**
- * 
- * @export
- * @interface SubscriptionTierUpdate
- */
-export interface SubscriptionTierUpdate {
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionTierUpdate
-     */
-    name?: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionTierUpdate
-     */
-    description?: string;
-    /**
-     * 
-     * @type {boolean}
-     * @memberof SubscriptionTierUpdate
-     */
-    is_highlighted?: boolean;
-    /**
-     * 
-     * @type {Array<SubscriptionTierUpdatePricesInner>}
-     * @memberof SubscriptionTierUpdate
-     */
-    prices?: Array<SubscriptionTierUpdatePricesInner>;
-}
-/**
- * @type SubscriptionTierUpdatePricesInner
- * @export
- */
-export type SubscriptionTierUpdatePricesInner = ExistingSubscriptionTierPrice | SubscriptionTierPriceCreate;
 
 /**
  * 
@@ -10012,7 +10096,7 @@ export interface Transaction {
      * @type {string}
      * @memberof Transaction
      */
-    subscription_tier_price_id?: string;
+    product_price_id?: string;
     /**
      * 
      * @type {string}
@@ -10045,10 +10129,10 @@ export interface Transaction {
     subscription?: TransactionSubscription;
     /**
      * 
-     * @type {TransactionSubscriptionPrice}
+     * @type {TransactionProductPrice}
      * @memberof Transaction
      */
-    subscription_tier_price?: TransactionSubscriptionPrice;
+    product_price?: TransactionProductPrice;
     /**
      * 
      * @type {TransactionDonation}
@@ -10169,7 +10253,7 @@ export interface TransactionDetails {
      * @type {string}
      * @memberof TransactionDetails
      */
-    subscription_tier_price_id?: string;
+    product_price_id?: string;
     /**
      * 
      * @type {string}
@@ -10202,10 +10286,10 @@ export interface TransactionDetails {
     subscription?: TransactionSubscription;
     /**
      * 
-     * @type {TransactionSubscriptionPrice}
+     * @type {TransactionProductPrice}
      * @memberof TransactionDetails
      */
-    subscription_tier_price?: TransactionSubscriptionPrice;
+    product_price?: TransactionProductPrice;
     /**
      * 
      * @type {TransactionDonation}
@@ -10363,7 +10447,7 @@ export interface TransactionEmbedded {
      * @type {string}
      * @memberof TransactionEmbedded
      */
-    subscription_tier_price_id?: string;
+    product_price_id?: string;
     /**
      * 
      * @type {string}
@@ -10570,6 +10654,110 @@ export interface TransactionPledge {
 /**
  * 
  * @export
+ * @interface TransactionProduct
+ */
+export interface TransactionProduct {
+    /**
+     * Creation timestamp of the object.
+     * @type {string}
+     * @memberof TransactionProduct
+     */
+    created_at: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof TransactionProduct
+     */
+    modified_at?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof TransactionProduct
+     */
+    id: string;
+    /**
+     * 
+     * @type {SubscriptionTierType}
+     * @memberof TransactionProduct
+     */
+    type: SubscriptionTierType;
+    /**
+     * 
+     * @type {string}
+     * @memberof TransactionProduct
+     */
+    name: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof TransactionProduct
+     */
+    organization_id?: string;
+    /**
+     * 
+     * @type {TransactionOrganization}
+     * @memberof TransactionProduct
+     */
+    organization?: TransactionOrganization;
+}
+/**
+ * 
+ * @export
+ * @interface TransactionProductPrice
+ */
+export interface TransactionProductPrice {
+    /**
+     * Creation timestamp of the object.
+     * @type {string}
+     * @memberof TransactionProductPrice
+     */
+    created_at: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof TransactionProductPrice
+     */
+    modified_at?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof TransactionProductPrice
+     */
+    id: string;
+    /**
+     * 
+     * @type {ProductPriceType}
+     * @memberof TransactionProductPrice
+     */
+    type: ProductPriceType;
+    /**
+     * 
+     * @type {ProductPriceRecurringInterval}
+     * @memberof TransactionProductPrice
+     */
+    recurring_interval: ProductPriceRecurringInterval;
+    /**
+     * 
+     * @type {number}
+     * @memberof TransactionProductPrice
+     */
+    price_amount: number;
+    /**
+     * 
+     * @type {string}
+     * @memberof TransactionProductPrice
+     */
+    price_currency: string;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof TransactionProductPrice
+     */
+    is_archived: boolean;
+}
+/**
+ * 
+ * @export
  * @interface TransactionRepository
  */
 export interface TransactionRepository {
@@ -10642,120 +10830,10 @@ export interface TransactionSubscription {
     status: SubscriptionStatus;
     /**
      * 
-     * @type {TransactionSubscriptionTier}
+     * @type {TransactionProduct}
      * @memberof TransactionSubscription
      */
-    subscription_tier: TransactionSubscriptionTier;
-}
-/**
- * 
- * @export
- * @interface TransactionSubscriptionPrice
- */
-export interface TransactionSubscriptionPrice {
-    /**
-     * Creation timestamp of the object.
-     * @type {string}
-     * @memberof TransactionSubscriptionPrice
-     */
-    created_at: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof TransactionSubscriptionPrice
-     */
-    modified_at?: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof TransactionSubscriptionPrice
-     */
-    id: string;
-    /**
-     * 
-     * @type {SubscriptionTierPriceRecurringInterval}
-     * @memberof TransactionSubscriptionPrice
-     */
-    recurring_interval: SubscriptionTierPriceRecurringInterval;
-    /**
-     * 
-     * @type {number}
-     * @memberof TransactionSubscriptionPrice
-     */
-    price_amount: number;
-    /**
-     * 
-     * @type {string}
-     * @memberof TransactionSubscriptionPrice
-     */
-    price_currency: string;
-    /**
-     * 
-     * @type {boolean}
-     * @memberof TransactionSubscriptionPrice
-     */
-    is_archived: boolean;
-}
-/**
- * 
- * @export
- * @interface TransactionSubscriptionTier
- */
-export interface TransactionSubscriptionTier {
-    /**
-     * Creation timestamp of the object.
-     * @type {string}
-     * @memberof TransactionSubscriptionTier
-     */
-    created_at: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof TransactionSubscriptionTier
-     */
-    modified_at?: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof TransactionSubscriptionTier
-     */
-    id: string;
-    /**
-     * 
-     * @type {SubscriptionTierType}
-     * @memberof TransactionSubscriptionTier
-     */
-    type: SubscriptionTierType;
-    /**
-     * 
-     * @type {string}
-     * @memberof TransactionSubscriptionTier
-     */
-    name: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof TransactionSubscriptionTier
-     */
-    organization_id?: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof TransactionSubscriptionTier
-     */
-    repository_id?: string;
-    /**
-     * 
-     * @type {TransactionOrganization}
-     * @memberof TransactionSubscriptionTier
-     */
-    organization?: TransactionOrganization;
-    /**
-     * 
-     * @type {TransactionRepository}
-     * @memberof TransactionSubscriptionTier
-     */
-    repository?: TransactionRepository;
+    product: TransactionProduct;
 }
 
 /**
@@ -11380,8 +11458,8 @@ export interface WebhookEvent {
 export const WebhookEventType = {
     SUBSCRIPTION_CREATED: 'subscription.created',
     SUBSCRIPTION_UPDATED: 'subscription.updated',
-    SUBSCRIPTION_TIER_CREATED: 'subscription_tier.created',
-    SUBSCRIPTION_TIER_UPDATED: 'subscription_tier.updated',
+    PRODUCT_CREATED: 'product.created',
+    PRODUCT_UPDATED: 'product.updated',
     BENEFIT_CREATED: 'benefit.created',
     BENEFIT_UPDATED: 'benefit.updated',
     ORGANIZATION_UPDATED: 'organization.updated',
@@ -11578,6 +11656,64 @@ export type WebhookPledgeUpdatedPayloadTypeEnum = typeof WebhookPledgeUpdatedPay
 /**
  * 
  * @export
+ * @interface WebhookProductCreatedPayload
+ */
+export interface WebhookProductCreatedPayload {
+    /**
+     * 
+     * @type {string}
+     * @memberof WebhookProductCreatedPayload
+     */
+    type: WebhookProductCreatedPayloadTypeEnum;
+    /**
+     * 
+     * @type {Product}
+     * @memberof WebhookProductCreatedPayload
+     */
+    data: Product;
+}
+
+
+/**
+ * @export
+ */
+export const WebhookProductCreatedPayloadTypeEnum = {
+    PRODUCT_CREATED: 'product.created'
+} as const;
+export type WebhookProductCreatedPayloadTypeEnum = typeof WebhookProductCreatedPayloadTypeEnum[keyof typeof WebhookProductCreatedPayloadTypeEnum];
+
+/**
+ * 
+ * @export
+ * @interface WebhookProductUpdatedPayload
+ */
+export interface WebhookProductUpdatedPayload {
+    /**
+     * 
+     * @type {string}
+     * @memberof WebhookProductUpdatedPayload
+     */
+    type: WebhookProductUpdatedPayloadTypeEnum;
+    /**
+     * 
+     * @type {Product}
+     * @memberof WebhookProductUpdatedPayload
+     */
+    data: Product;
+}
+
+
+/**
+ * @export
+ */
+export const WebhookProductUpdatedPayloadTypeEnum = {
+    PRODUCT_UPDATED: 'product.updated'
+} as const;
+export type WebhookProductUpdatedPayloadTypeEnum = typeof WebhookProductUpdatedPayloadTypeEnum[keyof typeof WebhookProductUpdatedPayloadTypeEnum];
+
+/**
+ * 
+ * @export
  * @interface WebhookResponse
  */
 export interface WebhookResponse {
@@ -11628,64 +11764,6 @@ export const WebhookSubscriptionCreatedPayloadTypeEnum = {
     SUBSCRIPTION_CREATED: 'subscription.created'
 } as const;
 export type WebhookSubscriptionCreatedPayloadTypeEnum = typeof WebhookSubscriptionCreatedPayloadTypeEnum[keyof typeof WebhookSubscriptionCreatedPayloadTypeEnum];
-
-/**
- * 
- * @export
- * @interface WebhookSubscriptionTierCreatedPayload
- */
-export interface WebhookSubscriptionTierCreatedPayload {
-    /**
-     * 
-     * @type {string}
-     * @memberof WebhookSubscriptionTierCreatedPayload
-     */
-    type: WebhookSubscriptionTierCreatedPayloadTypeEnum;
-    /**
-     * 
-     * @type {SubscriptionTier}
-     * @memberof WebhookSubscriptionTierCreatedPayload
-     */
-    data: SubscriptionTier;
-}
-
-
-/**
- * @export
- */
-export const WebhookSubscriptionTierCreatedPayloadTypeEnum = {
-    SUBSCRIPTION_TIER_CREATED: 'subscription_tier.created'
-} as const;
-export type WebhookSubscriptionTierCreatedPayloadTypeEnum = typeof WebhookSubscriptionTierCreatedPayloadTypeEnum[keyof typeof WebhookSubscriptionTierCreatedPayloadTypeEnum];
-
-/**
- * 
- * @export
- * @interface WebhookSubscriptionTierUpdatedPayload
- */
-export interface WebhookSubscriptionTierUpdatedPayload {
-    /**
-     * 
-     * @type {string}
-     * @memberof WebhookSubscriptionTierUpdatedPayload
-     */
-    type: WebhookSubscriptionTierUpdatedPayloadTypeEnum;
-    /**
-     * 
-     * @type {SubscriptionTier}
-     * @memberof WebhookSubscriptionTierUpdatedPayload
-     */
-    data: SubscriptionTier;
-}
-
-
-/**
- * @export
- */
-export const WebhookSubscriptionTierUpdatedPayloadTypeEnum = {
-    SUBSCRIPTION_TIER_UPDATED: 'subscription_tier.updated'
-} as const;
-export type WebhookSubscriptionTierUpdatedPayloadTypeEnum = typeof WebhookSubscriptionTierUpdatedPayloadTypeEnum[keyof typeof WebhookSubscriptionTierUpdatedPayloadTypeEnum];
 
 /**
  * 

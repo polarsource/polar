@@ -21,10 +21,14 @@ import { twMerge } from 'tailwind-merge'
 
 export const BrandingMenu = ({
   logoVariant = 'icon',
+  size,
   className,
+  logoClassName,
 }: {
   logoVariant?: 'icon' | 'logotype'
+  size?: number
   className?: string
+  logoClassName?: string
 }) => {
   const brandingMenuRef = useRef<HTMLDivElement>(null)
 
@@ -54,11 +58,17 @@ export const BrandingMenu = ({
         <DropdownMenuTrigger onContextMenu={handleTriggerClick}>
           <Link href="/">
             {logoVariant === 'logotype' ? (
-              <LogoType className="-ml-2 md:ml-0" width={100} />
+              <LogoType
+                className={twMerge('-ml-2 md:ml-0', logoClassName)}
+                width={size ?? 100}
+              />
             ) : (
               <LogoIcon
-                className="text-blue-500 dark:text-blue-400"
-                size={42}
+                className={twMerge(
+                  'text-blue-500 dark:text-blue-400',
+                  logoClassName,
+                )}
+                size={size ?? 42}
               />
             )}
           </Link>

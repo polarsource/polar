@@ -72,6 +72,7 @@
     "react-is": "^18.2.0",
     "react-timeago": "^7.1.0",
     "react-use": "^17.4.0",
+    "rehype-slug": "^6.0.0",
     "rss": "^1.2.2",
     "sass": "^1.59.3",
     "satori": "^0.10.11",

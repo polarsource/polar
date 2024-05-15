@@ -1,4 +1,7 @@
-const createMDX = require('@next/mdx')
+import createMDX from '@next/mdx'
+import rehypeSlug from 'rehype-slug';
+import bundleAnalyzer from '@next/bundle-analyzer'
+import {withSentryConfig} from '@sentry/nextjs'
 
 const POLAR_AUTH_COOKIE_KEY = 'polar_session'
 
@@ -383,16 +386,20 @@ const nextConfig = {
   },
 }
 
-const withMDX = createMDX()
+const withMDX = createMDX({
+  options: {
+    rehypePlugins: [
+      rehypeSlug
+    ]
+  }
+})
 
-module.exports = withMDX(nextConfig)
+let conf = withMDX(nextConfig)
 
 // Injected content via Sentry wizard below
 
-const { withSentryConfig } = require('@sentry/nextjs')
-
-module.exports = withSentryConfig(
-  module.exports,
+conf = withSentryConfig(
+  conf,
   {
     // For all available options, see:
     // https://github.com/getsentry/sentry-webpack-plugin#options
@@ -425,8 +432,10 @@ module.exports = withSentryConfig(
 )
 
 if (process.env.ANALYZE === 'true') {
-  const withBundleAnalyzer = require('@next/bundle-analyzer')({
+  const withBundleAnalyzer = bundleAnalyzer({
     enabled: true,
   })
-  module.exports = withBundleAnalyzer(module.exports)
+  conf = withBundleAnalyzer(conf)
 }
+
+export default conf

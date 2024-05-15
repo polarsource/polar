@@ -1,15 +1,15 @@
-from fastapi import Depends, Query
+from typing import Annotated
+
+from fastapi import Depends, Path, Query
 from pydantic import UUID4
 
 from polar.authz.service import Authz
-from polar.exceptions import BadRequest, ResourceNotFound
+from polar.exceptions import NotPermitted, ResourceNotFound
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.routing import APIRouter
 from polar.models import Product
 from polar.models.product import SubscriptionTierType
-from polar.organization.dependencies import ResolvedOrganization
 from polar.postgres import AsyncSession, get_db_session
-from polar.posthog import posthog
 from polar.product.schemas import Product as ProductSchema
 from polar.product.schemas import ProductBenefitsUpdate, ProductCreate, ProductUpdate
 from polar.tags.api import Tags
@@ -19,26 +19,33 @@ from .service.product import product as product_service
 
 router = APIRouter(prefix="/products", tags=["products"])
 
+ProductID = Annotated[UUID4, Path(description="The product ID.")]
+ProductNotFound = {
+    "description": "Product not found.",
+    "model": ResourceNotFound.schema(),
+}
 
-@router.get(
-    "/search",
-    response_model=ListResource[ProductSchema],
-    tags=[Tags.PUBLIC],
-)
-async def search_products(
+
+@router.get("/", response_model=ListResource[ProductSchema], tags=[Tags.PUBLIC])
+async def list_products(
     pagination: PaginationParamsQuery,
-    organization: ResolvedOrganization,
     auth_subject: auth.CreatorProductsReadOrAnonymous,
-    include_archived: bool = Query(False),
+    organization_id: UUID4 | None = Query(
+        None, description="Filter by organization ID."
+    ),
+    include_archived: bool = Query(
+        False, description="Whether to include archived products."
+    ),
     type: SubscriptionTierType | None = Query(None),
     session: AsyncSession = Depends(get_db_session),
 ) -> ListResource[ProductSchema]:
-    results, count = await product_service.search(
+    """List products."""
+    results, count = await product_service.list(
         session,
         auth_subject,
-        type=type,
-        organization=organization,
+        organization_id=organization_id,
         include_archived=include_archived,
+        type=type,
         pagination=pagination,
     )
 
@@ -50,23 +57,23 @@ async def search_products(
 
 
 @router.get(
-    "/lookup",
+    "/{id}",
     response_model=ProductSchema,
     tags=[Tags.PUBLIC],
+    responses={404: ProductNotFound},
 )
-async def lookup_product(
-    product_id: UUID4,
+async def get_product(
+    id: ProductID,
     auth_subject: auth.CreatorProductsReadOrAnonymous,
     session: AsyncSession = Depends(get_db_session),
 ) -> Product:
-    subscription_tier = await product_service.get_by_id(
-        session, auth_subject, product_id
-    )
+    """Get a product by ID."""
+    product = await product_service.get_by_id(session, auth_subject, id)
 
-    if subscription_tier is None:
+    if product is None:
         raise ResourceNotFound()
 
-    return subscription_tier
+    return product
 
 
 @router.post(
@@ -74,6 +81,7 @@ async def lookup_product(
     response_model=ProductSchema,
     status_code=201,
     tags=[Tags.PUBLIC],
+    responses={201: {"description": "Product created."}},
 )
 async def create_product(
     product_create: ProductCreate,
@@ -81,35 +89,37 @@ async def create_product(
     authz: Authz = Depends(Authz.authz),
     session: AsyncSession = Depends(get_db_session),
 ) -> Product:
+    """Create a product."""
     return await product_service.user_create(
         session, authz, product_create, auth_subject
     )
 
 
-@router.post("/{id}", response_model=ProductSchema, tags=[Tags.PUBLIC])
+@router.patch(
+    "/{id}",
+    response_model=ProductSchema,
+    tags=[Tags.PUBLIC],
+    responses={
+        200: {"description": "Product updated."},
+        403: {
+            "description": "You don't have the permission to update this product.",
+            "model": NotPermitted.schema(),
+        },
+        404: ProductNotFound,
+    },
+)
 async def update_product(
-    id: UUID4,
+    id: ProductID,
     product_update: ProductUpdate,
     auth_subject: auth.CreatorProductsWrite,
     authz: Authz = Depends(Authz.authz),
     session: AsyncSession = Depends(get_db_session),
 ) -> Product:
+    """Update a product."""
     product = await product_service.get_by_id(session, auth_subject, id)
 
     if product is None:
         raise ResourceNotFound()
-
-    if product.type != SubscriptionTierType.free:
-        if product_update.prices is not None and len(product_update.prices) < 1:
-            raise BadRequest("Paid tiers must have at least one price")
-
-    posthog.auth_subject_event(
-        auth_subject,
-        "subscriptions",
-        "tier",
-        "update",
-        {"subscription_tier_id": product.id},
-    )
 
     return await product_service.user_update(
         session,
@@ -120,49 +130,31 @@ async def update_product(
     )
 
 
-@router.post("/{id}/archive", response_model=ProductSchema, tags=[Tags.PUBLIC])
-async def archive_product(
-    id: UUID4,
-    auth_subject: auth.CreatorProductsWrite,
-    authz: Authz = Depends(Authz.authz),
-    session: AsyncSession = Depends(get_db_session),
-) -> Product:
-    product = await product_service.get_by_id(session, auth_subject, id)
-
-    if product is None:
-        raise ResourceNotFound()
-
-    posthog.auth_subject_event(
-        auth_subject,
-        "subscriptions",
-        "tier",
-        "archive",
-        {"subscription_tier_id": product.id},
-    )
-
-    return await product_service.archive(session, authz, product, auth_subject)
-
-
-@router.post("/{id}/benefits", response_model=ProductSchema, tags=[Tags.PUBLIC])
+@router.post(
+    "/{id}/benefits",
+    response_model=ProductSchema,
+    tags=[Tags.PUBLIC],
+    responses={
+        200: {"description": "Product updated."},
+        403: {
+            "description": "You don't have the permission to update this product.",
+            "model": NotPermitted.schema(),
+        },
+        404: ProductNotFound,
+    },
+)
 async def update_product_benefits(
-    id: UUID4,
+    id: ProductID,
     benefits_update: ProductBenefitsUpdate,
     auth_subject: auth.CreatorProductsWrite,
     authz: Authz = Depends(Authz.authz),
     session: AsyncSession = Depends(get_db_session),
 ) -> Product:
+    """Update benefits granted by a product."""
     product = await product_service.get_by_id(session, auth_subject, id)
 
     if product is None:
         raise ResourceNotFound()
-
-    posthog.auth_subject_event(
-        auth_subject,
-        "subscriptions",
-        "tier_benefits",
-        "update",
-        {"subscription_tier_id": product.id},
-    )
 
     product, _, _ = await product_service.update_benefits(
         session,

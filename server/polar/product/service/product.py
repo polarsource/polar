@@ -1,8 +1,8 @@
 import uuid
 from collections.abc import Sequence
-from typing import Any, Literal, TypeVar
+from typing import Any, List, Literal, TypeVar  # noqa: UP035
 
-from sqlalchemy import Select, and_, case, func, or_, select, update
+from sqlalchemy import Select, and_, case, or_, select, update
 from sqlalchemy.exc import InvalidRequestError
 from sqlalchemy.orm import contains_eager, joinedload
 
@@ -10,11 +10,11 @@ from polar.account.service import account as account_service
 from polar.auth.models import AuthSubject, Subject, is_organization, is_user
 from polar.authz.service import AccessType, Authz
 from polar.benefit.service.benefit import benefit as benefit_service
-from polar.exceptions import NotPermitted, PolarError
+from polar.exceptions import NotPermitted, PolarError, PolarRequestValidationError
 from polar.integrations.stripe.service import ProductUpdateKwargs
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.kit.db.postgres import AsyncSession
-from polar.kit.pagination import PaginationParams
+from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.services import ResourceService
 from polar.models import (
     Account,
@@ -45,20 +45,6 @@ from ..schemas import (
 class ProductError(PolarError): ...
 
 
-class BenefitDoesNotExist(ProductError):
-    def __init__(self, benefit_id: uuid.UUID) -> None:
-        self.benefit_id = benefit_id
-        message = f"Benefit with id {benefit_id} does not exist."
-        super().__init__(message, 422)
-
-
-class BenefitIsNotSelectable(ProductError):
-    def __init__(self, benefit_id: uuid.UUID) -> None:
-        self.benefit_id = benefit_id
-        message = f"Benefit with id {benefit_id} cannot be added or removed."
-        super().__init__(message, 422)
-
-
 class FreeTierIsNotArchivable(ProductError):
     def __init__(self, subscription_tier_id: uuid.UUID) -> None:
         self.subscription_tier_id = subscription_tier_id
@@ -70,36 +56,41 @@ T = TypeVar("T", bound=tuple[Any])
 
 
 class ProductService(ResourceService[Product, ProductCreate, ProductUpdate]):
-    async def search(
+    async def list(
         self,
         session: AsyncSession,
         auth_subject: AuthSubject[Subject],
         *,
-        type: SubscriptionTierType | None = None,
-        organization: Organization | None = None,
+        organization_id: uuid.UUID | None = None,
         include_archived: bool = False,
+        type: SubscriptionTierType | None = None,
         pagination: PaginationParams,
     ) -> tuple[Sequence[Product], int]:
-        inner_statement = self._get_readable_product_ids_statement(auth_subject)
-        count_statement = self._get_readable_product_statement(
-            auth_subject
-        ).with_only_columns(func.count(Product.id))
+        statement = self._get_readable_product_statement(auth_subject).join(
+            ProductPrice,
+            onclause=(
+                ProductPrice.id
+                == select(ProductPrice)
+                .correlate(Product)
+                .with_only_columns(ProductPrice.id)
+                .where(ProductPrice.product_id == Product.id)
+                .order_by(ProductPrice.price_amount.asc())
+                .limit(1)
+                .scalar_subquery()
+            ),
+            isouter=True,
+        )
 
         if type is not None:
-            inner_statement = inner_statement.where(Product.type == type)
-            count_statement = count_statement.where(Product.type == type)
+            statement = statement.where(Product.type == type)
 
-        if organization is not None:
-            clauses = [Product.organization_id == organization.id]
-
-            inner_statement = inner_statement.where(*clauses)
-            count_statement = count_statement.where(*clauses)
+        if organization_id is not None:
+            statement = statement.where(Product.organization_id == organization_id)
 
         if not include_archived:
-            inner_statement = inner_statement.where(Product.is_archived.is_(False))
-            count_statement = count_statement.where(Product.is_archived.is_(False))
+            statement = statement.where(Product.is_archived.is_(False))
 
-        order_by_clauses = [
+        statement = statement.order_by(
             case(
                 (Product.type == SubscriptionTierType.free, 1),
                 (Product.type == SubscriptionTierType.individual, 2),
@@ -107,38 +98,9 @@ class ProductService(ResourceService[Product, ProductCreate, ProductUpdate]):
             ),
             ProductPrice.price_amount.asc(),
             Product.created_at,
-        ]
-
-        inner_statement = inner_statement.order_by(*order_by_clauses)
-
-        # paginate on inner query
-        page, limit = pagination
-        offset = limit * (page - 1)
-        inner_statement = inner_statement.offset(offset).limit(limit)
-
-        # given a list of product, join in more data
-        outer_statement = (
-            select(Product)
-            .where(Product.id.in_(inner_statement))
-            .join(Product.prices, isouter=True)
-            .options(contains_eager(Product.prices))
-            .order_by(*order_by_clauses)
-            .add_columns(count_statement.scalar_subquery())
         )
 
-        result = await session.execute(outer_statement)
-
-        results: list[Any] = []
-        count: int = 0
-        for row in result.unique().all():
-            (*queried_data, c) = row._tuple()
-            count = int(c)
-            if len(queried_data) == 1:
-                results.append(queried_data[0])
-            else:
-                results.append(queried_data)
-
-        return results, count
+        return await paginate(session, statement, pagination=pagination)
 
     async def get_by_id(
         self, session: AsyncSession, auth_subject: AuthSubject[Subject], id: uuid.UUID
@@ -258,6 +220,22 @@ class ProductService(ResourceService[Product, ProductCreate, ProductUpdate]):
         if not await authz.can(subject, AccessType.write, product):
             raise NotPermitted()
 
+        if product.type != SubscriptionTierType.free:
+            if update_schema.prices is not None and len(update_schema.prices) < 1:
+                raise PolarRequestValidationError(
+                    [
+                        {
+                            "type": "too_short",
+                            "loc": ("prices",),
+                            "msg": "At least one price is required.",
+                            "input": update_schema.prices,
+                        }
+                    ]
+                )
+
+        if product.is_archived and update_schema.is_archived is False:
+            product = await self._unarchive(product)
+
         product_update: ProductUpdateKwargs = {}
         if update_schema.name is not None and update_schema.name != product.name:
             product.name = update_schema.name
@@ -324,6 +302,9 @@ class ProductService(ResourceService[Product, ProductCreate, ProductUpdate]):
                 organization_id=product.organization_id,
             )
 
+        if update_schema.is_archived:
+            product = await self._archive(product)
+
         for attr, value in update_schema.model_dump(
             exclude_unset=True, exclude_none=True, exclude={"prices"}
         ).items():
@@ -340,7 +321,7 @@ class ProductService(ResourceService[Product, ProductCreate, ProductUpdate]):
     async def create_free_tier(
         self,
         session: AsyncSession,
-        benefits: list[Benefit],
+        benefits: List[Benefit],  # noqa: UP006
         organization: Organization,
     ) -> Product:
         free_subscription_tier = await self.get_free(session, organization=organization)
@@ -384,7 +365,7 @@ class ProductService(ResourceService[Product, ProductCreate, ProductUpdate]):
         session: AsyncSession,
         authz: Authz,
         product: Product,
-        benefits: list[uuid.UUID],
+        benefits: List[uuid.UUID],  # noqa: UP006
         auth_subject: AuthSubject[User | Organization],
     ) -> tuple[Product, set[Benefit], set[Benefit]]:
         product = await self.with_organization(session, product)
@@ -405,9 +386,27 @@ class ProductService(ResourceService[Product, ProductCreate, ProductUpdate]):
             benefit = await benefit_service.get_by_id(session, auth_subject, benefit_id)
             if benefit is None:
                 await nested.rollback()
-                raise BenefitDoesNotExist(benefit_id)
+                raise PolarRequestValidationError(
+                    [
+                        {
+                            "type": "value_error",
+                            "loc": ("benefits", order),
+                            "msg": "Benefit does not exist.",
+                            "input": benefit_id,
+                        }
+                    ]
+                )
             if not benefit.selectable and benefit not in previous_benefits:
-                raise BenefitIsNotSelectable(benefit_id)
+                raise PolarRequestValidationError(
+                    [
+                        {
+                            "type": "value_error",
+                            "loc": ("benefits", order),
+                            "msg": "Benefit is not selectable.",
+                            "input": benefit_id,
+                        }
+                    ]
+                )
             new_benefits.add(benefit)
             product.product_benefits.append(
                 ProductBenefit(benefit=benefit, order=order)
@@ -418,7 +417,16 @@ class ProductService(ResourceService[Product, ProductCreate, ProductUpdate]):
 
         for deleted_benefit in deleted_benefits:
             if not deleted_benefit.selectable:
-                raise BenefitIsNotSelectable(deleted_benefit.id)
+                raise PolarRequestValidationError(
+                    [
+                        {
+                            "type": "value_error",
+                            "loc": ("benefits",),
+                            "msg": "Benefit is not selectable.",
+                            "input": deleted_benefit.id,
+                        }
+                    ]
+                )
 
         session.add(product)
 
@@ -431,30 +439,6 @@ class ProductService(ResourceService[Product, ProductCreate, ProductUpdate]):
 
         return product, added_benefits, deleted_benefits
 
-    async def archive(
-        self,
-        session: AsyncSession,
-        authz: Authz,
-        product: Product,
-        auth_subject: AuthSubject[User | Organization],
-    ) -> Product:
-        product = await self.with_organization(session, product)
-        if not await authz.can(auth_subject.subject, AccessType.write, product):
-            raise NotPermitted()
-
-        if product.type == SubscriptionTierType.free:
-            raise FreeTierIsNotArchivable(product.id)
-
-        if product.stripe_product_id is not None:
-            stripe_service.archive_product(product.stripe_product_id)
-
-        product.is_archived = True
-        session.add(product)
-
-        await self._after_product_updated(session, product)
-
-        return product
-
     async def with_organization(
         self, session: AsyncSession, product: Product
     ) -> Product:
@@ -464,29 +448,42 @@ class ProductService(ResourceService[Product, ProductCreate, ProductUpdate]):
             await session.refresh(product, {"organization"})
         return product
 
-    def _get_readable_product_ids_statement(
-        self, auth_subject: AuthSubject[Subject]
-    ) -> Select[tuple[uuid.UUID]]:
-        return self._apply_readable_product_statement(auth_subject, select(Product.id))
+    async def _archive(self, product: Product) -> Product:
+        if product.type == SubscriptionTierType.free:
+            raise FreeTierIsNotArchivable(product.id)
+
+        if product.stripe_product_id is not None:
+            stripe_service.archive_product(product.stripe_product_id)
+
+        product.is_archived = True
+
+        return product
+
+    async def _unarchive(self, product: Product) -> Product:
+        if product.stripe_product_id is not None:
+            stripe_service.unarchive_product(product.stripe_product_id)
+
+        product.is_archived = False
+
+        return product
 
     def _get_readable_product_statement(
         self, auth_subject: AuthSubject[Subject]
     ) -> Select[tuple[Product]]:
-        return self._apply_readable_product_statement(auth_subject, select(Product))
-
-    def _apply_readable_product_statement(
-        self, auth_subject: AuthSubject[Subject], selector: Select[T]
-    ) -> Select[T]:
-        stmt = selector.join(Product.organization).where(
-            # Prevent to return `None` objects due to the full outer join
-            Product.id.is_not(None),
-            Product.deleted_at.is_(None),
+        statement = (
+            select(Product)
+            .join(Product.organization)
+            .where(
+                # Prevent to return `None` objects due to the full outer join
+                Product.id.is_not(None),
+                Product.deleted_at.is_(None),
+            )
         )
 
         if is_user(auth_subject):
             user = auth_subject.subject
             # Direct product's organization member
-            stmt = stmt.join(
+            statement = statement.join(
                 UserOrganization,
                 onclause=and_(
                     UserOrganization.organization_id == Product.organization_id,
@@ -503,14 +500,16 @@ class ProductService(ResourceService[Product, ProductCreate, ProductUpdate]):
             )
         # Organization
         elif is_organization(auth_subject):
-            stmt = stmt.where(Product.organization_id == auth_subject.subject.id)
+            statement = statement.where(
+                Product.organization_id == auth_subject.subject.id
+            )
         # Anonymous
         else:
-            stmt = stmt.where(
+            statement = statement.where(
                 Product.is_archived.is_(False),
             )
 
-        return stmt
+        return statement
 
     async def get_managing_organization_account(
         self, session: AsyncSession, product: Product

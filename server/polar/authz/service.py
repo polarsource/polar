@@ -502,11 +502,7 @@ class Authz:
         if subject.id != object.user_id:
             return False
 
-        status = object.status == FilePermissionStatus.granted.value
-        import pdb
-
-        pdb.set_trace()
-        return status
+        return object.status == FilePermissionStatus.granted.value
 
     #
     # WebhookEndpoint

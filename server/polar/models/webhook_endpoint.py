@@ -12,8 +12,8 @@ from polar.kit.extensions.sqlalchemy.types import PostgresUUID
 class WebhookEventType(StrEnum):
     subscription_created = "subscription.created"
     subscription_updated = "subscription.updated"
-    subscription_tier_created = "subscription_tier.created"
-    subscription_tier_updated = "subscription_tier.updated"
+    product_created = "product.created"
+    product_updated = "product.updated"
     benefit_created = "benefit.created"
     benefit_updated = "benefit.updated"
     organization_updated = "organization.updated"

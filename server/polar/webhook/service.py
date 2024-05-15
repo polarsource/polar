@@ -38,9 +38,9 @@ from .webhooks import (
     WebhookPayload,
     WebhookPledgeCreatedPayload,
     WebhookPledgeUpdatedPayload,
+    WebhookProductCreatedPayload,
+    WebhookProductUpdatedPayload,
     WebhookSubscriptionCreatedPayload,
-    WebhookSubscriptionTierCreatedPayload,
-    WebhookSubscriptionTierUpdatedPayload,
     WebhookSubscriptionUpdatedPayload,
     WebhookTypeObject,
 )
@@ -256,13 +256,13 @@ class WebhookService:
                     type=we[0],
                     data=SubscriptionSchema.model_validate(we[1]),
                 )
-            case WebhookEventType.subscription_tier_created:
-                payload = WebhookSubscriptionTierCreatedPayload(
+            case WebhookEventType.product_created:
+                payload = WebhookProductCreatedPayload(
                     type=we[0],
                     data=ProductSchema.model_validate(we[1]),
                 )
-            case WebhookEventType.subscription_tier_updated:
-                payload = WebhookSubscriptionTierUpdatedPayload(
+            case WebhookEventType.product_updated:
+                payload = WebhookProductUpdatedPayload(
                     type=we[0],
                     data=ProductSchema.model_validate(we[1]),
                 )

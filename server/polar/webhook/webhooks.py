@@ -20,8 +20,8 @@ from polar.subscription.schemas import Subscription as SubscriptionSchema
 WebhookTypeObject = Union[  # noqa: UP007
     tuple[Literal[WebhookEventType.subscription_created], Subscription],
     tuple[Literal[WebhookEventType.subscription_updated], Subscription],
-    tuple[Literal[WebhookEventType.subscription_tier_created], Product],
-    tuple[Literal[WebhookEventType.subscription_tier_updated], Product],
+    tuple[Literal[WebhookEventType.product_created], Product],
+    tuple[Literal[WebhookEventType.product_updated], Product],
     tuple[Literal[WebhookEventType.pledge_created], Pledge],
     tuple[Literal[WebhookEventType.pledge_updated], Pledge],
     tuple[Literal[WebhookEventType.donation_created], Donation],
@@ -59,32 +59,32 @@ async def subscription_updated(body: WebhookSubscriptionUpdatedPayload) -> None:
     return None
 
 
-class WebhookSubscriptionTierCreatedPayload(Schema):
-    type: Literal[WebhookEventType.subscription_tier_created]
+class WebhookProductCreatedPayload(Schema):
+    type: Literal[WebhookEventType.product_created]
     data: ProductSchema
 
 
 @app.webhooks.post(
-    WebhookEventType.subscription_tier_created.value,
-    description="Sent when a new subscription tier is created.",
+    WebhookEventType.product_created.value,
+    description="Sent when a new product is created.",
 )
-async def subscription_tier_created(
-    body: WebhookSubscriptionTierCreatedPayload,
+async def product_created(
+    body: WebhookProductCreatedPayload,
 ) -> None:
     return None
 
 
-class WebhookSubscriptionTierUpdatedPayload(Schema):
-    type: Literal[WebhookEventType.subscription_tier_updated]
+class WebhookProductUpdatedPayload(Schema):
+    type: Literal[WebhookEventType.product_updated]
     data: ProductSchema
 
 
 @app.webhooks.post(
-    WebhookEventType.subscription_tier_updated.value,
-    description="Sent when a new subscription tier is updated.",
+    WebhookEventType.product_updated.value,
+    description="Sent when a product is updated.",
 )
-async def subscription_tier_updated(
-    body: WebhookSubscriptionTierUpdatedPayload,
+async def product_updated(
+    body: WebhookProductUpdatedPayload,
 ) -> None:
     return None
 
@@ -170,8 +170,8 @@ async def benefit_updated(body: WebhookBenefitUpdatedPayload) -> None:
 WebhookPayload = Union[  # noqa: UP007
     WebhookSubscriptionCreatedPayload,
     WebhookSubscriptionUpdatedPayload,
-    WebhookSubscriptionTierCreatedPayload,
-    WebhookSubscriptionTierUpdatedPayload,
+    WebhookProductCreatedPayload,
+    WebhookProductUpdatedPayload,
     WebhookPledgeCreatedPayload,
     WebhookPledgeUpdatedPayload,
     WebhookDonationCreatedPayload,

@@ -539,23 +539,19 @@ class ProductService(ResourceService[Product, ProductCreate, ProductUpdate]):
     async def _after_product_created(
         self, session: AsyncSession, product: Product
     ) -> None:
-        await self._send_webhook(
-            session, product, WebhookEventType.subscription_tier_created
-        )
+        await self._send_webhook(session, product, WebhookEventType.product_created)
 
     async def _after_product_updated(
         self, session: AsyncSession, product: Product
     ) -> None:
-        await self._send_webhook(
-            session, product, WebhookEventType.subscription_tier_updated
-        )
+        await self._send_webhook(session, product, WebhookEventType.product_updated)
 
     async def _send_webhook(
         self,
         session: AsyncSession,
         product: Product,
-        event_type: Literal[WebhookEventType.subscription_tier_created]
-        | Literal[WebhookEventType.subscription_tier_updated],
+        event_type: Literal[WebhookEventType.product_created]
+        | Literal[WebhookEventType.product_updated],
     ) -> None:
         # load full tier with relations
         full_product = await self.get_loaded(session, product.id, allow_deleted=True)
@@ -566,9 +562,9 @@ class ProductService(ResourceService[Product, ProductCreate, ProductUpdate]):
         # directly, even if it could have...
         event: WebhookTypeObject | None = None
         match event_type:
-            case WebhookEventType.subscription_tier_created:
+            case WebhookEventType.product_created:
                 event = (event_type, full_product)
-            case WebhookEventType.subscription_tier_updated:
+            case WebhookEventType.product_updated:
                 event = (event_type, full_product)
 
         if managing_org := await organization_service.get(

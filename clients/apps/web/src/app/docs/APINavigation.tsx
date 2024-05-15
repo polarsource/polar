@@ -10,17 +10,56 @@ type FindMatchingPath<
   B extends SchemaPathKey = SchemaPathKey,
 > = B extends `${infer X}${A}${infer Y}`
   ? A extends string
-    ? {
-        name: string
-        path: `${X}${A}${Y}`
-        method: SchemaPathMethod<B>
-      }
+    ? SchemaPathMethods<B>[SchemaPathMethod<B>]
     : never
   : never
 
-interface Section<T extends string> {
+type APIMethod = 'get' | 'post' | 'put' | 'patch' | 'delete'
+interface Section {
   name: string
-  endpoints: FindMatchingPath<T>[]
+  endpoints: {
+    name: string
+    path: string
+    method: APIMethod
+  }[]
+}
+
+const extractEntries = <T extends {}>(obj: T) => {
+  return Object.entries(obj) as [keyof T, T[keyof T]][]
+}
+
+export const buildSections = (): Section[] => {
+  const sections = extractEntries(openapiSchema.paths).reduce<Section[]>(
+    (acc, [path, endpoints]) => {
+      const [ancestor] = path.replace('/api/v1/', '').split('/').filter(Boolean)
+
+      for (const [method, e] of extractEntries(endpoints)) {
+        const endpoint = e as FindMatchingPath<typeof path>
+
+        const matchingAncestor = acc.find(
+          (section) => section.name === ancestor.replaceAll('_', ' '),
+        )
+
+        if (!matchingAncestor) {
+          acc.push({
+            name: ancestor.replaceAll('_', ' '),
+            endpoints: [],
+          })
+        } else {
+          matchingAncestor.endpoints.push({
+            name: endpoint.summary,
+            path: path,
+            method: method as APIMethod,
+          })
+        }
+      }
+
+      return acc
+    },
+    [],
+  )
+
+  return sections
 }
 
 const benefits: Section<'/api/v1/benefits'> = {
@@ -49,6 +88,102 @@ const benefits: Section<'/api/v1/benefits'> = {
     {
       name: 'Search Benefits',
       path: '/api/v1/benefits/search',
+      method: 'get',
+    },
+  ],
+}
+
+const subsciptions: Section<'/api/v1/subscriptions'> = {
+  name: 'Subscriptions',
+  endpoints: [
+    {
+      name: 'Search Subscription Tiers',
+      path: '/api/v1/subscriptions/tiers/search',
+      method: 'get',
+    },
+    {
+      name: 'Lookup Subscription Tier',
+      path: '/api/v1/subscriptions/tiers/lookup',
+      method: 'get',
+    },
+    {
+      name: 'Create Subscription Tier',
+      path: '/api/v1/subscriptions/tiers/',
+      method: 'post',
+    },
+    {
+      name: 'Update Subscription Tier',
+      path: '/api/v1/subscriptions/tiers/{id}',
+      method: 'post',
+    },
+    {
+      name: 'Archive Subscription Tier',
+      path: '/api/v1/subscriptions/tiers/{id}/archive',
+      method: 'post',
+    },
+    {
+      name: 'Update Subscription Tier Benefits',
+      path: '/api/v1/subscriptions/tiers/{id}/benefits',
+      method: 'post',
+    },
+    {
+      name: 'Create Subscribe Session',
+      path: '/api/v1/subscriptions/subscribe-sessions/',
+      method: 'post',
+    },
+    {
+      name: 'Get Subscribe Session',
+      path: '/api/v1/subscriptions/subscribe-sessions/{id}',
+      method: 'get',
+    },
+    {
+      name: 'Get Subscriptions Statistics',
+      path: '/api/v1/subscriptions/subscriptions/statistics',
+      method: 'get',
+    },
+    {
+      name: 'Search Subscriptions',
+      path: '/api/v1/subscriptions/subscriptions/search',
+      method: 'get',
+    },
+    {
+      name: 'Search Subscribed Subscriptions',
+      path: '/api/v1/subscriptions/subscriptions/subscribed',
+      method: 'get',
+    },
+    {
+      name: 'Create Free Subscription',
+      path: '/api/v1/subscriptions/subscriptions/',
+      method: 'post',
+    },
+    {
+      name: 'Create Email Subscription',
+      path: '/api/v1/subscriptions/subscriptions/email',
+      method: 'post',
+    },
+    {
+      name: 'Import Subscriptions',
+      path: '/api/v1/subscriptions/subscriptions/import',
+      method: 'post',
+    },
+    {
+      name: 'Export Subscriptions',
+      path: '/api/v1/subscriptions/subscriptions/export',
+      method: 'get',
+    },
+    {
+      name: 'Upgrade Subscription',
+      path: '/api/v1/subscriptions/subscriptions/{id}',
+      method: 'post',
+    },
+    {
+      name: 'Cancel Subscription',
+      path: '/api/v1/subscriptions/subscriptions/{id}',
+      method: 'delete',
+    },
+    {
+      name: 'Search Subscriptions Summary',
+      path: '/api/v1/subscriptions/subscriptions/summary',
       method: 'get',
     },
   ],
@@ -143,10 +278,13 @@ const articles: Section<'/api/v1/articles'> = {
       path: '/api/v1/articles/receivers',
       method: 'get',
     },
+    {
+      name: 'Unsubscribe from Emails',
+      path: '/api/v1/articles/unsubscribe',
+      method: 'get',
+    },
   ],
 }
-
-type a = FindMatchingPath<'/api/v1/webhooks'>
 
 const webhooks: Section<'/api/v1/webhooks'> = {
   name: 'Webhooks',
@@ -189,4 +327,4 @@ const webhooks: Section<'/api/v1/webhooks'> = {
   ],
 }
 
-export const sections = [benefits, donations, articles, webhooks]
+export const sections = [benefits, subsciptions, donations, articles, webhooks]

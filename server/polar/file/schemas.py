@@ -90,6 +90,14 @@ class FilePresignedRead(FileRead):
                 },
             )
         )
+        if record.sha256_base64:
+            params["headers"].update(
+                {
+                    "x-amz-meta-sha256-base64": record.sha256_base64,
+                    "x-amz-meta-sha256-hex": record.sha256_hex,
+                }
+            )
+
         return cls(**params)
 
 

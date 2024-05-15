@@ -57,10 +57,15 @@ class FileService(ResourceService[File, FileCreate, FileUpdate]):
 
         hex = None
         base64 = None
+        metadata = {}
         checksums = create_schema.sha256
         if checksums:
             base64 = checksums.base64
             hex = checksums.hex
+            metadata = {
+                "sha256-hex": hex,
+                "sha256-base64": base64,
+            }
 
         expires_in = settings.S3_FILES_PRESIGN_TTL
         presigned_at = utc_now()
@@ -73,6 +78,7 @@ class FileService(ResourceService[File, FileCreate, FileUpdate]):
                 ContentType=create_schema.mime_type,
                 ChecksumAlgorithm="SHA256",
                 ChecksumSHA256=base64,
+                Metadata=metadata,
             ),
             ExpiresIn=expires_in,
         )

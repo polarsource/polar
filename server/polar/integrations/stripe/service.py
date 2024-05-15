@@ -378,6 +378,9 @@ class StripeService:
     def archive_product(self, id: str) -> stripe_lib.Product:
         return stripe_lib.Product.modify(id, active=False)
 
+    def unarchive_product(self, id: str) -> stripe_lib.Product:
+        return stripe_lib.Product.modify(id, active=True)
+
     def get_price(self, id: str) -> stripe_lib.Price:
         return stripe_lib.Price.retrieve(id)
 

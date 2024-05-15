@@ -21,27 +21,16 @@ from tests.fixtures.random_objects import (
 
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
-class TestSearchProducts:
-    async def test_not_existing_organization(self, client: AsyncClient) -> None:
-        response = await client.get(
-            "/api/v1/products/search",
-            params={"platform": "github", "organization_name": "not_existing"},
-        )
-
-        assert response.status_code == 422
-
-    async def test_anonymous_organization(
+class TestListProducts:
+    async def test_anonymous(
         self,
         client: AsyncClient,
         organization: Organization,
         products: list[Product],
     ) -> None:
         response = await client.get(
-            "/api/v1/products/search",
-            params={
-                "platform": organization.platform.value,
-                "organization_name": organization.name,
-            },
+            "/api/v1/products/",
+            params={"organization_id": str(organization.id)},
         )
 
         assert response.status_code == 200
@@ -68,11 +57,8 @@ class TestSearchProducts:
         session.expunge_all()
 
         response = await client.get(
-            "/api/v1/products/search",
-            params={
-                "platform": organization.platform.value,
-                "organization_name": organization.name,
-            },
+            "/api/v1/products/",
+            params={"organization_id": str(organization.id)},
         )
 
         assert response.status_code == 200
@@ -90,13 +76,10 @@ class TestSearchProducts:
 
 
 @pytest.mark.asyncio
-class TestLookupProduct:
+class TestGetProduct:
     @pytest.mark.http_auto_expunge
     async def test_not_existing(self, client: AsyncClient) -> None:
-        response = await client.get(
-            "/api/v1/products/lookup",
-            params={"product_id": str(uuid.uuid4())},
-        )
+        response = await client.get(f"/api/v1/products/{uuid.uuid4()}")
 
         assert response.status_code == 404
 
@@ -106,10 +89,7 @@ class TestLookupProduct:
         client: AsyncClient,
         product: Product,
     ) -> None:
-        response = await client.get(
-            "/api/v1/products/lookup",
-            params={"product_id": str(product.id)},
-        )
+        response = await client.get(f"/api/v1/products/{product.id}")
 
         assert response.status_code == 200
 
@@ -133,10 +113,7 @@ class TestLookupProduct:
         # then
         session.expunge_all()
 
-        response = await client.get(
-            "/api/v1/products/lookup",
-            params={"product_id": str(product.id)},
-        )
+        response = await client.get(f"/api/v1/products/{product.id}")
 
         assert response.status_code == 200
 
@@ -296,13 +273,8 @@ class TestCreateProduct:
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
 class TestUpdateProduct:
-    async def test_anonymous(
-        self,
-        client: AsyncClient,
-        product: Product,
-        session: AsyncSession,
-    ) -> None:
-        response = await client.post(
+    async def test_anonymous(self, client: AsyncClient, product: Product) -> None:
+        response = await client.patch(
             f"/api/v1/products/{product.id}",
             json={"name": "Updated Name"},
         )
@@ -310,12 +282,8 @@ class TestUpdateProduct:
         assert response.status_code == 401
 
     @pytest.mark.auth
-    async def test_not_existing(
-        self,
-        client: AsyncClient,
-        session: AsyncSession,
-    ) -> None:
-        response = await client.post(
+    async def test_not_existing(self, client: AsyncClient) -> None:
+        response = await client.patch(
             f"/api/v1/products/{uuid.uuid4()}",
             json={"name": "Updated Name"},
         )
@@ -347,7 +315,7 @@ class TestUpdateProduct:
         product: Product,
         user_organization_admin: UserOrganization,
     ) -> None:
-        response = await client.post(
+        response = await client.patch(
             f"/api/v1/products/{product.id}",
             json=payload,
         )
@@ -361,7 +329,7 @@ class TestUpdateProduct:
         product: Product,
         user_organization_admin: UserOrganization,
     ) -> None:
-        response = await client.post(
+        response = await client.patch(
             f"/api/v1/products/{product.id}",
             json={"name": "Updated Name"},
         )
@@ -370,32 +338,6 @@ class TestUpdateProduct:
 
         json = response.json()
         assert json["name"] == "Updated Name"
-
-    @pytest.mark.auth
-    async def test_paid_no_price(
-        self,
-        client: AsyncClient,
-        product: Product,
-        user_organization_admin: UserOrganization,
-    ) -> None:
-        response = await client.post(
-            f"/api/v1/products/{product.id}",
-            json={"prices": []},
-        )
-        assert response.status_code == 400
-
-    @pytest.mark.auth
-    async def test_free_tier_no_prices(
-        self,
-        client: AsyncClient,
-        subscription_tier_free: Product,
-        user_organization_admin: UserOrganization,
-    ) -> None:
-        response = await client.post(
-            f"/api/v1/products/{subscription_tier_free.id}",
-            json={"prices": []},
-        )
-        assert response.status_code == 200
 
 
 @pytest.mark.asyncio
@@ -435,36 +377,3 @@ class TestUpdateProductBenefits:
 
         json = response.json()
         assert len(json["benefits"]) == 1
-
-
-@pytest.mark.asyncio
-@pytest.mark.http_auto_expunge
-class TestArchiveProduct:
-    async def test_anonymous(
-        self,
-        client: AsyncClient,
-        product: Product,
-    ) -> None:
-        response = await client.post(f"/api/v1/products/{product.id}/archive")
-
-        assert response.status_code == 401
-
-    @pytest.mark.auth
-    async def test_not_existing(self, client: AsyncClient) -> None:
-        response = await client.post(f"/api/v1/products/{uuid.uuid4()}/archive")
-
-        assert response.status_code == 404
-
-    @pytest.mark.auth
-    async def test_valid(
-        self,
-        client: AsyncClient,
-        product: Product,
-        user_organization_admin: UserOrganization,
-    ) -> None:
-        response = await client.post(f"/api/v1/products/{product.id}/archive")
-
-        assert response.status_code == 200
-
-        json = response.json()
-        assert json["is_archived"]

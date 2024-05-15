@@ -22,11 +22,7 @@ from polar.product.schemas import (
     ProductPriceRecurringCreate,
     ProductUpdate,
 )
-from polar.product.service.product import (
-    BenefitDoesNotExist,
-    BenefitIsNotSelectable,
-    FreeTierIsNotArchivable,
-)
+from polar.product.service.product import FreeTierIsNotArchivable
 from polar.product.service.product import product as product_service
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
@@ -59,7 +55,7 @@ def enqueue_job_mock(mocker: MockerFixture) -> AsyncMock:
 
 
 @pytest.mark.asyncio
-class TestSearch:
+class TestList:
     async def test_anonymous(
         self,
         auth_subject: AuthSubject[Anonymous],
@@ -69,12 +65,13 @@ class TestSearch:
         # then
         session.expunge_all()
 
-        results, count = await product_service.search(
+        results, count = await product_service.list(
             session, auth_subject, pagination=PaginationParams(1, 10)
         )
 
         assert count == 4
         assert len(results) == 4
+
         assert results[0].id == products[0].id
         assert results[1].id == products[1].id
         assert results[2].id == products[2].id
@@ -91,7 +88,7 @@ class TestSearch:
         # then
         session.expunge_all()
 
-        results, count = await product_service.search(
+        results, count = await product_service.list(
             session, auth_subject, pagination=PaginationParams(1, 10)
         )
 
@@ -113,7 +110,7 @@ class TestSearch:
         # then
         session.expunge_all()
 
-        results, count = await product_service.search(
+        results, count = await product_service.list(
             session, auth_subject, pagination=PaginationParams(1, 10)
         )
 
@@ -130,7 +127,7 @@ class TestSearch:
         # then
         session.expunge_all()
 
-        results, count = await product_service.search(
+        results, count = await product_service.list(
             session, auth_subject, pagination=PaginationParams(1, 10)
         )
 
@@ -157,7 +154,7 @@ class TestSearch:
         # then
         session.expunge_all()
 
-        results, count = await product_service.search(
+        results, count = await product_service.list(
             session,
             auth_subject,
             type=SubscriptionTierType.individual,
@@ -182,10 +179,10 @@ class TestSearch:
         # then
         session.expunge_all()
 
-        results, count = await product_service.search(
+        results, count = await product_service.list(
             session,
             auth_subject,
-            organization=organization,
+            organization_id=organization.id,
             pagination=PaginationParams(1, 10),
         )
 
@@ -211,7 +208,7 @@ class TestSearch:
         session.expunge_all()
 
         # Anonymous
-        results, count = await product_service.search(
+        results, count = await product_service.list(
             session,
             get_auth_subject(Anonymous()),
             include_archived=False,
@@ -219,7 +216,7 @@ class TestSearch:
         )
         assert count == 0
         assert len(results) == 0
-        results, count = await product_service.search(
+        results, count = await product_service.list(
             session,
             get_auth_subject(Anonymous()),
             include_archived=True,
@@ -230,7 +227,7 @@ class TestSearch:
 
         # User
         auth_subject = get_auth_subject(user)
-        results, count = await product_service.search(
+        results, count = await product_service.list(
             session,
             auth_subject,
             include_archived=False,
@@ -238,7 +235,7 @@ class TestSearch:
         )
         assert count == 0
         assert len(results) == 0
-        results, count = await product_service.search(
+        results, count = await product_service.list(
             session,
             auth_subject,
             include_archived=True,
@@ -264,7 +261,7 @@ class TestSearch:
 
         # User
         auth_subject = get_auth_subject(user)
-        results, count = await product_service.search(
+        results, count = await product_service.list(
             session,
             auth_subject,
             include_archived=False,
@@ -272,7 +269,7 @@ class TestSearch:
         )
         assert count == 0
         assert len(results) == 0
-        results, count = await product_service.search(
+        results, count = await product_service.list(
             session,
             auth_subject,
             include_archived=True,
@@ -327,14 +324,14 @@ class TestSearch:
         session.expunge_all()
 
         # unauthenticated
-        results, count = await product_service.search(
+        results, count = await product_service.list(
             session,
             get_auth_subject(Anonymous()),
             pagination=PaginationParams(1, 8),  # page 1, limit 8
         )
         assert 10 == count
         assert 8 == len(results)
-        results, count = await product_service.search(
+        results, count = await product_service.list(
             session,
             get_auth_subject(Anonymous()),
             pagination=PaginationParams(2, 8),  # page 2, limit 8
@@ -344,7 +341,7 @@ class TestSearch:
 
         # authed, can see archived
         auth_subject = get_auth_subject(user)
-        results, count = await product_service.search(
+        results, count = await product_service.list(
             session,
             auth_subject,
             pagination=PaginationParams(1, 8),  # page 1, limit 8
@@ -352,7 +349,7 @@ class TestSearch:
         )
         assert 20 == count
         assert 8 == len(results)
-        results, count = await product_service.search(
+        results, count = await product_service.list(
             session,
             auth_subject,
             pagination=PaginationParams(2, 8),  # page 2, limit 8
@@ -360,7 +357,7 @@ class TestSearch:
         )
         assert 20 == count
         assert 8 == len(results)
-        results, count = await product_service.search(
+        results, count = await product_service.list(
             session,
             auth_subject,
             pagination=PaginationParams(3, 8),  # page 3, limit 8
@@ -423,23 +420,23 @@ class TestSearch:
         session.expunge_all()
 
         # unauthenticated
-        results, count = await product_service.search(
+        results, count = await product_service.list(
             session,
             get_auth_subject(Anonymous()),
             pagination=PaginationParams(1, 8),
-            organization=organization,
+            organization_id=organization.id,
         )
         assert 3 == count
         assert 3 == len(results)
 
         # authed, can see private and archived
         auth_subject = get_auth_subject(user)
-        results, count = await product_service.search(
+        results, count = await product_service.list(
             session,
             auth_subject,
             pagination=PaginationParams(1, 8),  # page 1, limit 8
             include_archived=True,
-            organization=organization,
+            organization_id=organization.id,
         )
 
         assert 7 == count
@@ -833,6 +830,35 @@ class TestUserUpdate:
         AuthSubjectFixture(subject="user"),
         AuthSubjectFixture(subject="organization"),
     )
+    async def test_no_price(
+        self,
+        auth_subject: AuthSubject[User],
+        session: AsyncSession,
+        authz: Authz,
+        product: Product,
+        user_organization_admin: UserOrganization,
+    ) -> None:
+        # then
+        session.expunge_all()
+
+        # load
+        product_organization_loaded = await product_service.get(session, product.id)
+        assert product_organization_loaded
+
+        update_schema = ProductUpdate(prices=[])
+        with pytest.raises(PolarRequestValidationError):
+            await product_service.user_update(
+                session,
+                authz,
+                product_organization_loaded,
+                update_schema,
+                auth_subject,
+            )
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="organization"),
+    )
     async def test_valid_name_change(
         self,
         session: AsyncSession,
@@ -1093,6 +1119,112 @@ class TestUserUpdate:
         assert updated_highlighted_product is not None
         assert not updated_highlighted_product.is_highlighted
 
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="organization"),
+    )
+    async def test_valid_archive(
+        self,
+        session: AsyncSession,
+        authz: Authz,
+        auth_subject: AuthSubject[User | Organization],
+        product: Product,
+        user_organization_admin: UserOrganization,
+        stripe_service_mock: MagicMock,
+    ) -> None:
+        archive_product_mock: MagicMock = stripe_service_mock.archive_product
+
+        # then
+        session.expunge_all()
+
+        # load
+        product_organization_loaded = await product_service.get(session, product.id)
+        assert product_organization_loaded
+
+        update_schema = ProductUpdate(is_archived=True)
+        updated_product = await product_service.user_update(
+            session,
+            authz,
+            product_organization_loaded,
+            update_schema,
+            auth_subject,
+        )
+
+        archive_product_mock.assert_called_once_with(product.stripe_product_id)
+
+        assert updated_product.is_archived
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="organization"),
+    )
+    async def test_archive_free_tier(
+        self,
+        session: AsyncSession,
+        authz: Authz,
+        auth_subject: AuthSubject[User | Organization],
+        subscription_tier_free: Product,
+        user_organization_admin: UserOrganization,
+    ) -> None:
+        # then
+        session.expunge_all()
+
+        # load
+        subscription_tier_free_loaded = await product_service.get(
+            session, subscription_tier_free.id
+        )
+        assert subscription_tier_free_loaded
+
+        update_schema = ProductUpdate(is_archived=True)
+
+        with pytest.raises(FreeTierIsNotArchivable):
+            await product_service.user_update(
+                session,
+                authz,
+                subscription_tier_free_loaded,
+                update_schema,
+                auth_subject,
+            )
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="organization"),
+    )
+    async def test_valid_unarchive(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        authz: Authz,
+        auth_subject: AuthSubject[User | Organization],
+        product: Product,
+        user_organization_admin: UserOrganization,
+        stripe_service_mock: MagicMock,
+    ) -> None:
+        product.is_archived = True
+        await save_fixture(product)
+
+        unarchive_product: MagicMock = stripe_service_mock.unarchive_product
+
+        # then
+        session.expunge_all()
+
+        # load
+        product_organization_loaded = await product_service.get(session, product.id)
+        assert product_organization_loaded
+
+        update_schema = ProductUpdate(is_archived=False)
+        updated_product = await product_service.user_update(
+            session,
+            authz,
+            product_organization_loaded,
+            update_schema,
+            auth_subject,
+        )
+
+        unarchive_product.assert_called_once_with(product.stripe_product_id)
+
+        assert not updated_product.is_archived
+
 
 @pytest.mark.asyncio
 class TestCreateFreeTier:
@@ -1194,7 +1326,7 @@ class TestUpdateBenefits:
         product_organization_loaded = await product_service.get(session, product.id)
         assert product_organization_loaded
 
-        with pytest.raises(BenefitDoesNotExist):
+        with pytest.raises(PolarRequestValidationError):
             await product_service.update_benefits(
                 session,
                 authz,
@@ -1430,7 +1562,7 @@ class TestUpdateBenefits:
         product_organization_loaded = await product_service.get(session, product.id)
         assert product_organization_loaded
 
-        with pytest.raises(BenefitIsNotSelectable):
+        with pytest.raises(PolarRequestValidationError):
             await product_service.update_benefits(
                 session,
                 authz,
@@ -1474,7 +1606,7 @@ class TestUpdateBenefits:
         product_organization_loaded = await product_service.get(session, product.id)
         assert product_organization_loaded
 
-        with pytest.raises(BenefitIsNotSelectable):
+        with pytest.raises(PolarRequestValidationError):
             await product_service.update_benefits(
                 session,
                 authz,
@@ -1544,82 +1676,3 @@ class TestUpdateBenefits:
             "subscription.subscription.update_product_benefits_grants",
             product.id,
         )
-
-
-@pytest.mark.asyncio
-class TestArchive:
-    @pytest.mark.auth
-    async def test_not_writable_product(
-        self,
-        auth_subject: AuthSubject[User],
-        session: AsyncSession,
-        authz: Authz,
-        product: Product,
-    ) -> None:
-        # then
-        session.expunge_all()
-
-        # load
-        product_organization_loaded = await product_service.get(session, product.id)
-        assert product_organization_loaded
-
-        with pytest.raises(NotPermitted):
-            await product_service.archive(
-                session, authz, product_organization_loaded, auth_subject
-            )
-
-    @pytest.mark.auth(
-        AuthSubjectFixture(subject="user"),
-        AuthSubjectFixture(subject="organization"),
-    )
-    async def test_free_tier(
-        self,
-        session: AsyncSession,
-        authz: Authz,
-        auth_subject: AuthSubject[User | Organization],
-        subscription_tier_free: Product,
-        user_organization_admin: UserOrganization,
-    ) -> None:
-        # then
-        session.expunge_all()
-
-        # load
-        subscription_tier_free_loaded = await product_service.get(
-            session, subscription_tier_free.id
-        )
-        assert subscription_tier_free_loaded
-
-        with pytest.raises(FreeTierIsNotArchivable):
-            await product_service.archive(
-                session, authz, subscription_tier_free_loaded, auth_subject
-            )
-
-    @pytest.mark.auth(
-        AuthSubjectFixture(subject="user"),
-        AuthSubjectFixture(subject="organization"),
-    )
-    async def test_valid(
-        self,
-        session: AsyncSession,
-        authz: Authz,
-        auth_subject: AuthSubject[User | Organization],
-        product: Product,
-        user_organization_admin: UserOrganization,
-        stripe_service_mock: MagicMock,
-    ) -> None:
-        archive_product_mock: MagicMock = stripe_service_mock.archive_product
-
-        # then
-        session.expunge_all()
-
-        # load
-        product_organization_loaded = await product_service.get(session, product.id)
-        assert product_organization_loaded
-
-        updated_product = await product_service.archive(
-            session, authz, product_organization_loaded, auth_subject
-        )
-
-        archive_product_mock.assert_called_once_with(product.stripe_product_id)
-
-        assert updated_product.is_archived

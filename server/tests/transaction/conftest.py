@@ -37,7 +37,7 @@ async def create_transaction(
     pledge: Pledge | None = None,
     issue_reward: IssueReward | None = None,
     subscription: Subscription | None = None,
-    subscription_tier_price: ProductPrice | None = None,
+    produce_price: ProductPrice | None = None,
     payout_transaction: Transaction | None = None,
     donation: Donation | None = None,
 ) -> Transaction:
@@ -55,8 +55,8 @@ async def create_transaction(
         pledge=pledge,
         issue_reward=issue_reward,
         subscription=subscription,
-        product_price=subscription_tier_price
-        if subscription_tier_price is not None
+        product_price=produce_price
+        if produce_price is not None
         else subscription.price
         if subscription is not None
         else None,

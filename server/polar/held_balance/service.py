@@ -71,7 +71,7 @@ class HeldBalanceService(ResourceServiceReader[HeldBalance]):
                 amount=held_balance.amount,
                 pledge=held_balance.pledge,
                 subscription=held_balance.subscription,
-                subscription_tier_price=held_balance.product_price,
+                product_price=held_balance.product_price,
                 issue_reward=held_balance.issue_reward,
                 donation=held_balance.donation,
             )

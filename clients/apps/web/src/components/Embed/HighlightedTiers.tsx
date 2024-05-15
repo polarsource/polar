@@ -1,9 +1,6 @@
 import LogoIcon from '@/components/Brand/LogoIcon'
 import { formatCurrencyAndAmount } from '@/utils/money'
-import {
-  SubscriptionTier,
-  SubscriptionTierPriceRecurringInterval,
-} from '@polar-sh/sdk'
+import { Product, ProductPriceRecurringInterval } from '@polar-sh/sdk'
 import {
   getRecurringBillingLabel,
   getSubscriptionColorByType,
@@ -16,8 +13,8 @@ const HighlightedTier = ({
   recurringInterval,
   darkmode,
 }: {
-  tier: SubscriptionTier
-  recurringInterval: SubscriptionTierPriceRecurringInterval
+  tier: Product
+  recurringInterval: ProductPriceRecurringInterval
   darkmode: boolean
 }) => {
   const audience = getSubscriptionTierAudience(tier.type)
@@ -25,9 +22,9 @@ const HighlightedTier = ({
   if (!price) {
     return null
   }
-  const recurringBillingLabel = getRecurringBillingLabel(
-    price.recurring_interval,
-  )
+  const recurringBillingLabel = price.recurring_interval
+    ? getRecurringBillingLabel(price.recurring_interval)
+    : ''
 
   return (
     <div
@@ -174,8 +171,8 @@ export const HighlightedTiers = ({
   darkmode,
 }: {
   label: string
-  tiers: SubscriptionTier[]
-  recurringInterval: SubscriptionTierPriceRecurringInterval
+  tiers: Product[]
+  recurringInterval: ProductPriceRecurringInterval
   darkmode: boolean
 }) => {
   return (

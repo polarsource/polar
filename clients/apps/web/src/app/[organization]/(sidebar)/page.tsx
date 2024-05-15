@@ -4,9 +4,9 @@ import {
   ListResourceArticle,
   ListResourceIssueFunding,
   ListResourceOrganization,
+  ListResourceProduct,
   ListResourcePublicDonation,
   ListResourceRepository,
-  ListResourceSubscriptionTier,
   Organization,
   Platforms,
   Repository,
@@ -112,37 +112,37 @@ export default async function Page({
   let organization: Organization | undefined
   let pinnedArticles: ListResourceArticle | undefined
   let articles: ListResourceArticle | undefined
-  let subscriptionTiers: ListResourceSubscriptionTier | undefined
+  let products: ListResourceProduct | undefined
   let repositories: ListResourceRepository | undefined
   let listAdminOrganizations: ListResourceOrganization | undefined
   let listIssueFunding: ListResourceIssueFunding | undefined
   let donations: ListResourcePublicDonation | undefined
 
   try {
+    organization = await api.organizations.lookup(
+      {
+        platform: Platforms.GITHUB,
+        organizationName: params.organization,
+      },
+      {
+        ...cacheConfig,
+        next: {
+          ...cacheConfig.next,
+          // Make it possible to revalidate the page when the organization is updated from client
+          tags: [`organization:${params.organization}`],
+        },
+      },
+    )
+
     const [
-      loadOrganization,
       loadArticles,
       loadPinnedArticles,
-      loadSubscriptionTiers,
+      loadProducts,
       loadRepositories,
       loadListAdminOrganizations,
       loadListIssueFunding,
       loadDonations,
     ] = await Promise.all([
-      api.organizations.lookup(
-        {
-          platform: Platforms.GITHUB,
-          organizationName: params.organization,
-        },
-        {
-          ...cacheConfig,
-          next: {
-            ...cacheConfig.next,
-            // Make it possible to revalidate the page when the organization is updated from client
-            tags: [`organization:${params.organization}`],
-          },
-        },
-      ),
       api.articles.search(
         {
           platform: Platforms.GITHUB,
@@ -161,16 +161,15 @@ export default async function Page({
         },
         cacheConfig,
       ),
-      api.subscriptions.searchSubscriptionTiers(
+      api.products.listProducts(
         {
-          platform: Platforms.GITHUB,
-          organizationName: params.organization,
+          organizationId: organization.id,
         },
         {
           ...cacheConfig,
           next: {
             ...cacheConfig.next,
-            tags: [`subscriptionTiers:${params.organization}`],
+            tags: [`products:${params.organization}`],
           },
         },
       ),
@@ -236,10 +235,9 @@ export default async function Page({
       ),
     ])
 
-    organization = loadOrganization
     articles = loadArticles
     pinnedArticles = loadPinnedArticles
-    subscriptionTiers = loadSubscriptionTiers
+    products = loadProducts
     repositories = loadRepositories
     listAdminOrganizations = loadListAdminOrganizations
     listIssueFunding = loadListIssueFunding
@@ -390,7 +388,7 @@ export default async function Page({
         repositories={sortedRepositories}
         featuredProjects={featuredProjects}
         featuredOrganizations={featuredOrganizations}
-        subscriptionTiers={subscriptionTiers?.items ?? []}
+        products={products?.items ?? []}
         adminOrganizations={listAdminOrganizations?.items ?? []}
         issues={listIssueFunding?.items ?? []}
         links={links}

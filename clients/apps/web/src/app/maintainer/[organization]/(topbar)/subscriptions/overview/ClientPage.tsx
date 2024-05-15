@@ -1,8 +1,8 @@
 'use client'
 
+import ProductPill from '@/components/Products/ProductPill'
 import { EnableSubscriptionsView } from '@/components/Subscriptions/EnableSubscriptionsView'
 import NoPayoutAccountTooltip from '@/components/Subscriptions/NoPayoutAccountTooltip'
-import SubscriptionTierPill from '@/components/Subscriptions/SubscriptionTierPill'
 import SubscriptionTiersSelect from '@/components/Subscriptions/SubscriptionTiersSelect'
 import {
   EarningsChart,
@@ -18,9 +18,9 @@ import {
   tiersTypeDisplayNames,
 } from '@/components/Subscriptions/utils'
 import {
+  useProducts,
   useSearchSubscriptions,
   useSubscriptionStatistics,
-  useSubscriptionTiers,
 } from '@/hooks/queries'
 import { Organization, SubscriptionTierType } from '@polar-sh/sdk'
 import { useRouter } from 'next/navigation'
@@ -74,10 +74,10 @@ const ClientPage: React.FC<SubscriptionsOverviewProps> = ({
   subscriptionTierId,
   subscriptionTierType,
 }) => {
-  const subscriptionTiers = useSubscriptionTiers(organization.name)
+  const products = useProducts(organization.id)
   const subscriptionTiersByType = useMemo(
-    () => getSubscriptionTiersByType(subscriptionTiers.data?.items ?? []),
-    [subscriptionTiers.data],
+    () => getSubscriptionTiersByType(products.data?.items ?? []),
+    [products.data],
   )
 
   const router = useRouter()
@@ -182,7 +182,7 @@ const ClientPage: React.FC<SubscriptionsOverviewProps> = ({
   const lastSubscriptions = lastSubscriptionsHook.data?.items ?? []
 
   const selectedSingleTier = subscriptionTierId
-    ? subscriptionTiers.data?.items?.find((t) => t.id === subscriptionTierId)
+    ? products.data?.items?.find((t) => t.id === subscriptionTierId)
     : undefined
 
   if (!organization.feature_settings?.subscriptions_enabled) {
@@ -359,8 +359,8 @@ const ClientPage: React.FC<SubscriptionsOverviewProps> = ({
                         </div>
                       </div>
                       <div>
-                        <SubscriptionTierPill
-                          subscriptionTier={subscription.subscription_tier}
+                        <ProductPill
+                          product={subscription.product}
                           price={subscription.price}
                         />
                       </div>

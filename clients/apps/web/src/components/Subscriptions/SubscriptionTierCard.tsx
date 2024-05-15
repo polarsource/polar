@@ -1,18 +1,15 @@
 'use client'
 
 import {
+  useProductAudience,
+  useProductPrice,
   useRecurringBillingLabel,
-  useSubscriptionTierAudience,
-  useSubscriptionTierPrice,
-} from '@/hooks/subscriptions'
+} from '@/hooks/products'
 import { formatCurrencyAndAmount } from '@/utils/money'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { DragIndicatorOutlined } from '@mui/icons-material'
-import {
-  SubscriptionTier,
-  SubscriptionTierPriceRecurringInterval,
-} from '@polar-sh/sdk'
+import { Product, ProductPriceRecurringInterval } from '@polar-sh/sdk'
 import {
   Card,
   CardContent,
@@ -28,13 +25,13 @@ import SubscriptionGroupIcon from './SubscriptionGroupIcon'
 import { getSubscriptionColorByType } from './utils'
 
 export interface SubscriptionTierCardProps {
-  subscriptionTier: Partial<SubscriptionTier>
+  subscriptionTier: Partial<Product>
   children?: React.ReactNode
   className?: string
   variant?: 'default' | 'small'
   isEditing?: boolean
   draggable?: ReturnType<typeof useSortable>
-  recurringInterval?: SubscriptionTierPriceRecurringInterval
+  recurringInterval?: ProductPriceRecurringInterval
 }
 
 const hexToRGBA = (hex: string, opacity: number): string => {
@@ -54,14 +51,14 @@ const SubscriptionTierCard: React.FC<SubscriptionTierCardProps> = ({
   variant = 'default',
   isEditing = false,
   draggable,
-  recurringInterval = SubscriptionTierPriceRecurringInterval.MONTH,
+  recurringInterval = ProductPriceRecurringInterval.MONTH,
 }) => {
   const containerRef = useRef<HTMLDivElement | null>(null)
   const subscriptionColor = getSubscriptionColorByType(subscriptionTier.type)
   const [shineActive, setShineActive] = useState(false)
 
-  const audience = useSubscriptionTierAudience(subscriptionTier.type)
-  const price = useSubscriptionTierPrice(subscriptionTier, recurringInterval)
+  const audience = useProductAudience(subscriptionTier.type)
+  const price = useProductPrice(subscriptionTier, recurringInterval)
   const recurringBillingLabel = useRecurringBillingLabel(
     price.recurring_interval,
   )

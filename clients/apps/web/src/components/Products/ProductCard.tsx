@@ -1,6 +1,6 @@
 'use client'
 
-import { Product } from '@/hooks/queries/products'
+import { Product } from '@/hooks/queries/dummy_products'
 import { getCentsInDollarString } from '@/utils/money'
 import { PanoramaOutlined } from '@mui/icons-material'
 import Markdown from 'markdown-to-jsx'

@@ -3,18 +3,18 @@
 import revalidate from '@/app/actions'
 import {
   useBenefits,
-  useCreateSubscriptionTier,
-  useSubscriptionTiers,
-  useUpdateSubscriptionTierBenefits,
+  useCreateProduct,
+  useProducts,
+  useUpdateProductBenefits,
 } from '@/hooks/queries'
 import { useStore } from '@/store'
 import { setValidationErrors } from '@/utils/api/errors'
 import {
   BenefitPublicInner,
   Organization,
+  ProductCreate,
+  ProductCreateTypeEnum,
   ResponseError,
-  SubscriptionTierCreate as SubscriptionTierCreateSchema,
-  SubscriptionTierCreateTypeEnum,
   ValidationError,
 } from '@polar-sh/sdk'
 import Button from 'polarkit/components/ui/atoms/button'
@@ -27,7 +27,7 @@ import SubscriptionTierBenefitsForm from './SubscriptionTierBenefitsForm'
 import SubscriptionTierForm from './SubscriptionTierForm'
 
 interface CreateSubscriptionTierModalProps {
-  type?: SubscriptionTierCreateTypeEnum
+  type?: ProductCreateTypeEnum
   organization: Organization
   hide: () => void
 }
@@ -54,7 +54,7 @@ const CreateSubscriptionTierModal: React.FC<
 export default CreateSubscriptionTierModal
 
 interface CreateSubscriptionTierModalContentProps {
-  type?: SubscriptionTierCreateTypeEnum
+  type?: ProductCreateTypeEnum
   organization: Organization
   organizationBenefits: BenefitPublicInner[]
   hide: () => void
@@ -64,7 +64,7 @@ const CreateSubscriptionTierModalContent: React.FC<
   CreateSubscriptionTierModalContentProps
 > = ({ type, organization, organizationBenefits, hide }) => {
   const {
-    formDrafts: { SubscriptionTierCreate: savedFormValues },
+    formDrafts: { ProductCreate: savedFormValues },
     saveDraft,
     clearDraft,
   } = useStore()
@@ -75,13 +75,13 @@ const CreateSubscriptionTierModalContent: React.FC<
   >(organizationBenefits.filter(isPremiumArticlesBenefit).map(({ id }) => id))
 
   const highlightedTiers =
-    useSubscriptionTiers(organization.name, 100).data?.items?.filter(
+    useProducts(organization.name, 100).data?.items?.filter(
       (tier) => tier.is_highlighted,
     ) ?? []
 
   const shouldBeHighlighted = highlightedTiers.length < 1
 
-  const form = useForm<SubscriptionTierCreateSchema>({
+  const form = useForm<ProductCreate>({
     defaultValues: {
       ...(type ? { type } : {}),
       ...(savedFormValues ? savedFormValues : {}),
@@ -89,6 +89,7 @@ const CreateSubscriptionTierModalContent: React.FC<
       is_highlighted: shouldBeHighlighted,
       prices: [
         {
+          type: 'recurring',
           recurring_interval: 'month',
           price_amount: undefined,
           price_currency: 'usd',
@@ -100,25 +101,25 @@ const CreateSubscriptionTierModalContent: React.FC<
 
   const newSubscriptionTier = watch()
 
-  const createSubscriptionTier = useCreateSubscriptionTier(organization.name)
-  const updateSubscriptionTierBenefits = useUpdateSubscriptionTierBenefits(
-    organization.name,
+  const createSubscriptionTier = useCreateProduct(organization.id)
+  const updateSubscriptionTierBenefits = useUpdateProductBenefits(
+    organization.id,
   )
 
   const onSubmit = useCallback(
-    async (subscriptionTierCreate: SubscriptionTierCreateSchema) => {
+    async (subscriptionTierCreate: ProductCreate) => {
       try {
         const tier = await createSubscriptionTier.mutateAsync(
           subscriptionTierCreate,
         )
         await updateSubscriptionTierBenefits.mutateAsync({
           id: tier.id,
-          subscriptionTierBenefitsUpdate: {
+          productBenefitsUpdate: {
             benefits: enabledBenefitIds,
           },
         })
 
-        clearDraft('SubscriptionTierCreate')
+        clearDraft('ProductCreate')
 
         revalidate(`subscriptionTiers:${organization.name}`)
 
@@ -170,7 +171,7 @@ const CreateSubscriptionTierModalContent: React.FC<
 
   useEffect(() => {
     const pagehideListener = () => {
-      saveDraft('SubscriptionTierCreate', newSubscriptionTier)
+      saveDraft('ProductCreate', newSubscriptionTier)
     }
     window.addEventListener('pagehide', pagehideListener)
     return () => window.removeEventListener('pagehide', pagehideListener)

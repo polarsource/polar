@@ -4,11 +4,14 @@ import {
   urlSearchFromObj,
 } from '@/components/Organization/filters'
 import { Link } from '@/components/Profile/LinksEditor/LinksEditor'
-import PageNotFound from '@/components/Shared/PageNotFound'
 import { getServerSideAPI } from '@/utils/api/serverside'
 import { CONFIG } from '@/utils/config'
 import { redirectToCanonicalDomain } from '@/utils/nav'
 import {
+  ListResourceArticle,
+  ListResourceIssueFunding,
+  ListResourceOrganization,
+  ListResourceProduct,
   Organization,
   Platforms,
   Repository,
@@ -108,14 +111,14 @@ export default async function Page({
   const api = getServerSideAPI()
   const filters = buildFundingFilters(urlSearchFromObj(searchParams))
 
-  const [
-    repository,
-    issuesFunding,
-    adminOrganizations,
-    subscriptionTiers,
-    posts,
-  ] = await Promise.all([
-    api.repositories.lookup(
+  let repository: Repository | undefined
+  let issuesFunding: ListResourceIssueFunding | undefined
+  let adminOrganizations: ListResourceOrganization | undefined
+  let products: ListResourceProduct | undefined
+  let posts: ListResourceArticle | undefined
+
+  try {
+    repository = await api.repositories.lookup(
       {
         platform: Platforms.GITHUB,
         organizationName: params.organization,
@@ -129,51 +132,50 @@ export default async function Page({
           tags: [`repository:${params.organization}/${params.repo}`],
         },
       },
-    ),
-    api.funding.search(
-      {
-        platform: Platforms.GITHUB,
-        organizationName: params.organization,
-        repositoryName: params.repo,
-        query: filters.q,
-        sorting: filters.sort,
-        badged: filters.badged,
-        limit: 20,
-        closed: filters.closed,
-        page: searchParams.page ? parseInt(searchParams.page) : 1,
-      },
-      cacheConfig,
-    ),
-    api.organizations
-      .list(
+    )
+    ;[issuesFunding, adminOrganizations, products, posts] = await Promise.all([
+      api.funding.search(
         {
-          isAdminOnly: true,
+          platform: Platforms.GITHUB,
+          organizationName: params.organization,
+          repositoryName: params.repo,
+          query: filters.q,
+          sorting: filters.sort,
+          badged: filters.badged,
+          limit: 20,
+          closed: filters.closed,
+          page: searchParams.page ? parseInt(searchParams.page) : 1,
         },
         cacheConfig,
-      )
-      .catch(() => {
-        // Handle unauthenticated
-        return undefined
-      }),
-    api.subscriptions.searchSubscriptionTiers(
-      {
-        organizationName: params.organization,
-        platform: Platforms.GITHUB,
-      },
-      cacheConfig,
-    ),
-    api.articles.search(
-      {
-        organizationName: params.organization,
-        platform: Platforms.GITHUB,
-        limit: 3,
-      },
-      cacheConfig,
-    ),
-  ])
-
-  if (repository === undefined) {
-    return <PageNotFound />
+      ),
+      api.organizations
+        .list(
+          {
+            isAdminOnly: true,
+          },
+          cacheConfig,
+        )
+        .catch(() => {
+          // Handle unauthenticated
+          return undefined
+        }),
+      api.products.listProducts(
+        {
+          organizationId: repository.organization.id,
+        },
+        cacheConfig,
+      ),
+      api.articles.search(
+        {
+          organizationName: params.organization,
+          platform: Platforms.GITHUB,
+          limit: 3,
+        },
+        cacheConfig,
+      ),
+    ])
+  } catch (e) {
+    notFound()
   }
 
   redirectToCanonicalDomain({
@@ -224,7 +226,7 @@ export default async function Page({
       repository={repository}
       issuesFunding={issuesFunding}
       featuredOrganizations={featuredOrganizations}
-      subscriptionTiers={subscriptionTiers?.items ?? []}
+      products={products?.items ?? []}
       adminOrganizations={adminOrganizations?.items ?? []}
       links={links}
       posts={posts?.items ?? []}

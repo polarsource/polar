@@ -2,7 +2,7 @@ import { useAuth } from '@/hooks'
 import {
   useCreateFreeSubscription,
   useListAdminOrganizations,
-  useSubscriptionTiers,
+  useProducts,
   useUserSubscriptions,
 } from '@/hooks/queries'
 import { AddOutlined } from '@mui/icons-material'
@@ -89,15 +89,14 @@ const FeaturedCreator = ({
 
   const createFreeSubscription = useCreateFreeSubscription()
 
-  const { data: { items: subscriptionTiers } = { items: [] } } =
-    useSubscriptionTiers(creator.name, 100)
+  const { data: { items: products } = { items: [] } } = useProducts(
+    creator.name,
+    100,
+  )
 
   const freeSubscriptionTier = useMemo(
-    () =>
-      subscriptionTiers?.find(
-        (tier) => tier.type === SubscriptionTierType.FREE,
-      ),
-    [subscriptionTiers],
+    () => products?.find((tier) => tier.type === SubscriptionTierType.FREE),
+    [products],
   )
 
   const canSubscribe = useMemo(

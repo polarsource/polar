@@ -3,7 +3,7 @@
 import { resolveBenefitIcon } from '@/components/Benefit/utils'
 import { previewOpts } from '@/components/Feed/Markdown/BrowserRender'
 import { Slideshow } from '@/components/Products/Slideshow'
-import { Product } from '@/hooks/queries/products'
+import { Product } from '@/hooks/queries/dummy_products'
 import { getCentsInDollarString } from '@/utils/money'
 import { Organization } from '@polar-sh/sdk'
 import Markdown from 'markdown-to-jsx'

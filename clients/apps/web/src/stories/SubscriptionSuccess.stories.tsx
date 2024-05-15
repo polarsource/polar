@@ -38,6 +38,7 @@ export const Default: Story = {
         is_archived: false,
         price_amount: 500,
         price_currency: 'usd',
+        type: 'recurring',
         recurring_interval: 'month',
       },
       subscription_tier: {
@@ -62,6 +63,7 @@ export const Default: Story = {
             is_archived: false,
             price_amount: 500,
             price_currency: 'usd',
+            type: 'recurring',
             recurring_interval: 'month',
           },
         ],

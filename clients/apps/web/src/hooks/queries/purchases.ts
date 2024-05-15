@@ -1,12 +1,12 @@
 import { queryClient } from '@/utils/api'
-import { SubscriptionTier } from '@polar-sh/sdk'
+import { Product } from '@polar-sh/sdk'
 import { useMutation, useQuery } from '@tanstack/react-query'
-import { Product, products } from './products'
+import { Product as DummyProduct, products } from './dummy_products'
 import { defaultRetry } from './retry'
 
 export interface Purchase {
   id: string
-  product: Product | SubscriptionTier
+  product: Product | DummyProduct
   created_at: string
   updated_at: string
 }

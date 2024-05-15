@@ -212,7 +212,7 @@ class SearchSortProperty(StrEnum):
     current_period_end = "current_period_end"
     price_amount = "price_amount"
     subscription_tier_type = "subscription_tier_type"
-    subscription_tier = "subscription_tier"
+    product = "product"
 
 
 class SubscriptionService(ResourceServiceReader[Subscription]):
@@ -303,7 +303,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
                 )
             if criterion == SearchSortProperty.subscription_tier_type:
                 order_by_clauses.append(clause_function(Product.type))
-            if criterion == SearchSortProperty.subscription_tier:
+            if criterion == SearchSortProperty.product:
                 order_by_clauses.append(clause_function(Product.name))
         statement = statement.order_by(*order_by_clauses)
 
@@ -384,7 +384,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
                 order_by_clauses.append(clause_function(ProductPrice.price_amount))
             if criterion == SearchSortProperty.subscription_tier_type:
                 order_by_clauses.append(clause_function(Product.type))
-            if criterion == SearchSortProperty.subscription_tier:
+            if criterion == SearchSortProperty.product:
                 order_by_clauses.append(clause_function(Product.name))
         statement = statement.order_by(*order_by_clauses)
 

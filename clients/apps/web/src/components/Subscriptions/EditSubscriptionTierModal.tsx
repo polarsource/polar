@@ -2,21 +2,20 @@
 
 import revalidate from '@/app/actions'
 import {
-  useArchiveSubscriptionTier,
   useBenefits,
+  useProduct,
   useSubscriptionStatistics,
-  useSubscriptionTier,
-  useUpdateSubscriptionTier,
-  useUpdateSubscriptionTierBenefits,
+  useUpdateProduct,
+  useUpdateProductBenefits,
 } from '@/hooks/queries'
 import { setValidationErrors } from '@/utils/api/errors'
 import {
   BenefitPublicInner,
   Organization,
+  Product,
+  ProductUpdate,
   ResponseError,
-  SubscriptionTier,
   SubscriptionTierType,
-  SubscriptionTierUpdate,
   ValidationError,
 } from '@polar-sh/sdk'
 import Button from 'polarkit/components/ui/atoms/button'
@@ -41,7 +40,7 @@ const SubscriptionTierEditModal: React.FC<SubscriptionTierEditModalProps> = ({
   tier,
   hide,
 }) => {
-  const subscriptionTier = useSubscriptionTier(tier)
+  const subscriptionTier = useProduct(tier)
   const organizationBenefits = useBenefits(organization.id)
 
   if (!subscriptionTier.data || !organizationBenefits.data) {
@@ -62,7 +61,7 @@ export default SubscriptionTierEditModal
 
 interface SubscriptionTierEditModalContentProps {
   organization: Organization
-  subscriptionTier: SubscriptionTier
+  subscriptionTier: Product
   organizationBenefits: BenefitPublicInner[]
   hide: () => void
 }
@@ -91,15 +90,15 @@ const SubscriptionTierEditModalContent = ({
     [subscriptionStatistics],
   )
 
-  const form = useForm<SubscriptionTierUpdate>({
+  const form = useForm<ProductUpdate>({
     defaultValues: subscriptionTier,
     shouldUnregister: true,
   })
   const { handleSubmit, setError } = form
 
-  const updateSubscriptionTier = useUpdateSubscriptionTier(organization.name)
-  const updateSubscriptionTierBenefits = useUpdateSubscriptionTierBenefits(
-    organization.name,
+  const updateSubscriptionTier = useUpdateProduct(organization.id)
+  const updateSubscriptionTierBenefits = useUpdateProductBenefits(
+    organization.id,
   )
 
   const {
@@ -109,15 +108,15 @@ const SubscriptionTierEditModalContent = ({
   } = useModal()
 
   const onSubmit = useCallback(
-    async (subscriptionTierUpdate: SubscriptionTierUpdate) => {
+    async (productUpdate: ProductUpdate) => {
       try {
         await updateSubscriptionTier.mutateAsync({
           id: subscriptionTier.id,
-          subscriptionTierUpdate,
+          productUpdate,
         })
         await updateSubscriptionTierBenefits.mutateAsync({
           id: subscriptionTier.id,
-          subscriptionTierBenefitsUpdate: {
+          productBenefitsUpdate: {
             benefits: enabledBenefitIds,
           },
         })
@@ -162,15 +161,16 @@ const SubscriptionTierEditModalContent = ({
     [setEnabledBenefitIds],
   )
 
-  const archiveSubscriptionTier = useArchiveSubscriptionTier(organization.name)
-
   const handleArchiveSubscriptionTier = useCallback(async () => {
-    await archiveSubscriptionTier.mutateAsync({ id: subscriptionTier.id })
+    await updateSubscriptionTier.mutateAsync({
+      id: subscriptionTier.id,
+      productUpdate: { is_archived: true },
+    })
 
     revalidate(`subscriptionTiers:${organization.name}`)
 
     hide()
-  }, [subscriptionTier, archiveSubscriptionTier, organization, hide])
+  }, [subscriptionTier, updateSubscriptionTier, organization, hide])
 
   const enabledBenefits = React.useMemo(
     () =>

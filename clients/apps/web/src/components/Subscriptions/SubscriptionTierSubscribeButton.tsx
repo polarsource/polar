@@ -8,9 +8,9 @@ import { api } from '@/utils/api'
 import { formatCurrencyAndAmount } from '@/utils/money'
 import {
   Organization,
-  SubscriptionTier,
-  SubscriptionTierPrice,
-  SubscriptionTierPriceRecurringInterval,
+  Product,
+  ProductPrice,
+  ProductPriceRecurringInterval,
   SubscriptionTierType,
   UserRead,
 } from '@polar-sh/sdk'
@@ -31,8 +31,8 @@ const buttonClasses =
   'grow transition-colors dark:hover:border-[--var-dark-border-color] dark:hover:bg-[--var-dark-border-color] dark:hover:text-[--var-dark-fg-color]'
 
 interface AnonymousSubscriptionTierSubscribeButtonProps {
-  subscriptionTier: SubscriptionTier
-  price: SubscriptionTierPrice
+  subscriptionTier: Product
+  price: ProductPrice
   subscribePath: string
   variant?: ButtonProps['variant']
 }
@@ -58,8 +58,8 @@ const AnonymousSubscriptionTierSubscribeButton: React.FC<
 
 interface AuthenticatedSubscriptionTierSubscribeButtonProps {
   user: UserRead
-  subscriptionTier: SubscriptionTier
-  price: SubscriptionTierPrice
+  subscriptionTier: Product
+  price: ProductPrice
   organization: Organization
   subscribePath: string
   variant?: ButtonProps['variant']
@@ -139,8 +139,7 @@ const AuthenticatedSubscriptionTierSubscribeButton: React.FC<
     () =>
       subscriptions &&
       subscriptions.some(
-        (subscription) =>
-          subscription.subscription_tier_id === subscriptionTier.id,
+        (subscription) => subscription.product_id === subscriptionTier.id,
       ),
     [subscriptions, subscriptionTier],
   )
@@ -172,8 +171,7 @@ const AuthenticatedSubscriptionTierSubscribeButton: React.FC<
     }
     if (
       upgradableSubscription &&
-      upgradableSubscription.subscription_tier.type ===
-        SubscriptionTierType.FREE
+      upgradableSubscription.product.type === SubscriptionTierType.FREE
     ) {
       router.push(
         `${subscribePath}?tier=${subscriptionTier.id}&price=${price.id}`,
@@ -202,8 +200,7 @@ const AuthenticatedSubscriptionTierSubscribeButton: React.FC<
   const onUpgrade = useCallback(() => {
     if (
       upgradableSubscription &&
-      upgradableSubscription.subscription_tier.type ===
-        SubscriptionTierType.FREE
+      upgradableSubscription.product.type === SubscriptionTierType.FREE
     ) {
       onUpgradeConfirm()
     } else {
@@ -325,8 +322,8 @@ const AuthenticatedSubscriptionTierSubscribeButton: React.FC<
 }
 
 interface SubscriptionTierSubscribeButtonProps {
-  subscriptionTier: SubscriptionTier
-  recurringInterval: SubscriptionTierPriceRecurringInterval
+  subscriptionTier: Product
+  recurringInterval: ProductPriceRecurringInterval
   organization: Organization
   subscribePath: string
   variant?: ButtonProps['variant']

@@ -42,11 +42,11 @@ const SubscriptionOrganizationItem = ({
   const [showCancelModal, setShowCancelModal] = useState(false)
   const [canceled, setCanceled] = useState(false)
   const { data: organization } = useOrganization(
-    subscription.subscription_tier.organization_id ?? '',
+    subscription.product.organization_id ?? '',
   )
 
   const canUnsubscribe = !canceled && !subscription.cancel_at_period_end
-  const isFreeTier = subscription.subscription_tier.type === 'free'
+  const isFreeTier = subscription.product.type === 'free'
 
   const cancelSubscription = useCallback(async () => {
     await api.subscriptions.cancelSubscription({ id: subscription.id })
@@ -68,7 +68,7 @@ const SubscriptionOrganizationItem = ({
         <div className="flex flex-col gap-y-1">
           <span className="w-full truncate text-sm">{organization?.name}</span>
           <span className="dark:text-polar-500 text-xs text-gray-500">
-            {subscription.subscription_tier.name}
+            {subscription.product.name}
           </span>
         </div>
       </Link>
@@ -103,7 +103,7 @@ const SubscriptionOrganizationItem = ({
       <ConfirmModal
         isShown={showCancelModal}
         hide={() => setShowCancelModal(false)}
-        title={`Unsubscribe from ${subscription.subscription_tier.name}?`}
+        title={`Unsubscribe from ${subscription.product.name}?`}
         description={
           isFreeTier
             ? `You won't have access to your benefits anymore.`

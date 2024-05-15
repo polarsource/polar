@@ -1,4 +1,4 @@
-import { products } from '@/hooks/queries/products'
+import { products } from '@/hooks/queries/dummy_products'
 import { getServerSideAPI } from '@/utils/api/serverside'
 import { redirectToCanonicalDomain } from '@/utils/nav'
 import { Organization, Platforms, ResponseError } from '@polar-sh/sdk'

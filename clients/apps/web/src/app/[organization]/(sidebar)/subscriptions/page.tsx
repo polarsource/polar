@@ -1,6 +1,11 @@
 import { getServerSideAPI } from '@/utils/api/serverside'
 import { redirectToCanonicalDomain } from '@/utils/nav'
-import { Organization, Platforms, ResponseError } from '@polar-sh/sdk'
+import {
+  ListResourceProduct,
+  Organization,
+  Platforms,
+  ResponseError,
+} from '@polar-sh/sdk'
 import type { Metadata } from 'next'
 import { headers } from 'next/headers'
 import { notFound } from 'next/navigation'
@@ -84,25 +89,25 @@ export default async function Page({
 }) {
   const api = getServerSideAPI()
 
-  const [organization, subscriptionTiers] = await Promise.all([
-    api.organizations.lookup(
+  let organization: Organization | undefined
+  let products: ListResourceProduct | undefined
+
+  try {
+    organization = await api.organizations.lookup(
       {
         platform: Platforms.GITHUB,
         organizationName: params.organization,
       },
       cacheConfig,
-    ),
-    api.subscriptions.searchSubscriptionTiers(
+    )
+    products = await api.products.listProducts(
       {
-        platform: Platforms.GITHUB,
-        organizationName: params.organization,
+        organizationId: organization.id,
         limit: 100,
       },
       cacheConfig,
-    ),
-  ])
-
-  if (!organization) {
+    )
+  } catch (e) {
     notFound()
   }
 
@@ -114,9 +119,6 @@ export default async function Page({
   })
 
   return (
-    <ClientPage
-      organization={organization}
-      subscriptionTiers={subscriptionTiers.items || []}
-    />
+    <ClientPage organization={organization} products={products.items || []} />
   )
 }

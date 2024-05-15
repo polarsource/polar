@@ -6,8 +6,8 @@ import { PublicPageOrganizationContextProvider } from '@/providers/organization'
 import { getServerSideAPI } from '@/utils/api/serverside'
 import {
   ListResourceOrganization,
+  ListResourceProduct,
   ListResourceSubscriptionSummary,
-  ListResourceSubscriptionTier,
   Organization,
   Platforms,
   UserRead,
@@ -35,12 +35,19 @@ export default async function Layout({
   let organization: Organization | undefined
   let subscriptionsSummary: ListResourceSubscriptionSummary | undefined
   let userAdminOrganizations: ListResourceOrganization | undefined
-  let subscriptionTiers: ListResourceSubscriptionTier | undefined
+  let products: ListResourceProduct | undefined
 
   try {
+    organization = await api.organizations.lookup(
+      {
+        platform: Platforms.GITHUB,
+        organizationName: params.organization,
+      },
+      cacheConfig,
+    )
+
     const [
       loadAuthenticatedUser,
-      loadOrganization,
       loadSubscriptionsSummary,
       loadUserAdminOrganizations,
       loadSubscriptionTiers,
@@ -49,13 +56,6 @@ export default async function Layout({
         // Handle unauthenticated
         return undefined
       }),
-      api.organizations.lookup(
-        {
-          platform: Platforms.GITHUB,
-          organizationName: params.organization,
-        },
-        cacheConfig,
-      ),
       api.subscriptions.searchSubscriptionsSummary(
         {
           organizationName: params.organization,
@@ -71,11 +71,10 @@ export default async function Layout({
           // Handle unauthenticated
           return undefined
         }),
-      api.subscriptions
-        .searchSubscriptionTiers(
+      api.products
+        .listProducts(
           {
-            platform: Platforms.GITHUB,
-            organizationName: params.organization,
+            organizationId: organization.id,
           },
           cacheConfig,
         )
@@ -87,10 +86,9 @@ export default async function Layout({
     ])
 
     authenticatedUser = loadAuthenticatedUser
-    organization = loadOrganization
     subscriptionsSummary = loadSubscriptionsSummary
     userAdminOrganizations = loadUserAdminOrganizations
-    subscriptionTiers = loadSubscriptionTiers
+    products = loadSubscriptionTiers
   } catch (e) {
     notFound()
   }
@@ -121,7 +119,7 @@ export default async function Layout({
               subscriptionsSummary={subscriptionsSummary}
               organization={organization}
               userAdminOrganizations={userAdminOrganizations?.items ?? []}
-              subscriptionTiers={subscriptionTiers?.items ?? []}
+              products={products?.items ?? []}
             />
           </div>
           <div className="flex h-full w-full flex-col gap-y-8 md:gap-y-16 md:py-12">

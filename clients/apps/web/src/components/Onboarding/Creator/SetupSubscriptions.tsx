@@ -1,15 +1,15 @@
 import SubscriptionTierCard from '@/components/Subscriptions/SubscriptionTierCard'
 import { useCurrentOrgAndRepoFromURL } from '@/hooks'
-import { useSubscriptionTiers } from '@/hooks/queries'
+import { useProducts } from '@/hooks/queries'
 import { ArrowForwardOutlined, Bolt } from '@mui/icons-material'
 import Link from 'next/link'
 import Button from 'polarkit/components/ui/atoms/button'
 
 export const SetupSubscriptions = () => {
   const { org } = useCurrentOrgAndRepoFromURL()
-  const { data: subscriptionTiers } = useSubscriptionTiers(org?.name ?? '')
+  const { data: products } = useProducts(org?.id ?? '')
 
-  const hasPaidSubscriptionTiers = subscriptionTiers?.items?.some(
+  const hasPaidSubscriptionTiers = products?.items?.some(
     (tier) => tier.type === 'individual' || tier.type === 'business',
   )
 
@@ -72,6 +72,7 @@ export const SetupSubscriptions = () => {
                   is_archived: false,
                   price_amount: 500,
                   price_currency: 'usd',
+                  type: 'recurring',
                   recurring_interval: 'month',
                 },
               ],
@@ -110,6 +111,7 @@ export const SetupSubscriptions = () => {
                   is_archived: false,
                   price_amount: 9900,
                   price_currency: 'usd',
+                  type: 'recurring',
                   recurring_interval: 'month',
                 },
               ],

@@ -1,7 +1,7 @@
 import {
+  Product,
+  ProductPriceRecurringInterval,
   SubscriptionStatus,
-  SubscriptionTier,
-  SubscriptionTierPriceRecurringInterval,
   SubscriptionTierType,
 } from '@polar-sh/sdk'
 
@@ -20,7 +20,7 @@ export const getSubscriptionColorByType = (
 }
 
 export type SubscriptionTiersByType = {
-  [key in SubscriptionTierType]: (SubscriptionTier & { type: key })[]
+  [key in SubscriptionTierType]: (Product & { type: key })[]
 }
 
 const defaultSubscriptionTiersByType: SubscriptionTiersByType = {
@@ -37,18 +37,15 @@ export const tiersTypeDisplayNames: {
   [SubscriptionTierType.BUSINESS]: 'Business',
 }
 
-export const getSubscriptionTiersByType = (tiers: SubscriptionTier[]) =>
-  tiers.reduce(
-    (acc: SubscriptionTiersByType, subscriptionTier: SubscriptionTier) => {
-      const entry = [...acc[subscriptionTier.type], subscriptionTier]
+export const getSubscriptionTiersByType = (tiers: Product[]) =>
+  tiers.reduce((acc: SubscriptionTiersByType, subscriptionTier: Product) => {
+    const entry = [...acc[subscriptionTier.type], subscriptionTier]
 
-      return {
-        ...acc,
-        [subscriptionTier.type]: entry,
-      }
-    },
-    defaultSubscriptionTiersByType,
-  ) ?? defaultSubscriptionTiersByType
+    return {
+      ...acc,
+      [subscriptionTier.type]: entry,
+    }
+  }, defaultSubscriptionTiersByType) ?? defaultSubscriptionTiersByType
 
 export const subscriptionStatusDisplayNames: {
   [key in SubscriptionStatus]: string
@@ -64,10 +61,10 @@ export const subscriptionStatusDisplayNames: {
 
 export const hasRecurringInterval =
   (
-    recurringInterval: SubscriptionTierPriceRecurringInterval,
+    recurringInterval: ProductPriceRecurringInterval,
     hideFree: boolean = false,
   ) =>
-  (subscriptionTier: SubscriptionTier) => {
+  (subscriptionTier: Product) => {
     if (subscriptionTier.type === SubscriptionTierType.FREE) {
       return !hideFree
     }
@@ -77,8 +74,8 @@ export const hasRecurringInterval =
   }
 
 export const getSubscriptionTierPrice = (
-  subscriptionTier: Partial<SubscriptionTier>,
-  recurringInterval: SubscriptionTierPriceRecurringInterval,
+  subscriptionTier: Partial<Product>,
+  recurringInterval: ProductPriceRecurringInterval,
 ) => {
   let price = subscriptionTier.prices?.find(
     (price) => price.recurring_interval === recurringInterval,
@@ -90,7 +87,7 @@ export const getSubscriptionTierPrice = (
       return {
         price_amount: 0,
         price_currency: 'usd',
-        recurring_interval: SubscriptionTierPriceRecurringInterval.MONTH,
+        recurring_interval: ProductPriceRecurringInterval.MONTH,
       }
     }
   }
@@ -98,12 +95,12 @@ export const getSubscriptionTierPrice = (
 }
 
 export const getRecurringBillingLabel = (
-  recurringInterval: SubscriptionTierPriceRecurringInterval,
+  recurringInterval: ProductPriceRecurringInterval,
 ) => {
   switch (recurringInterval) {
-    case SubscriptionTierPriceRecurringInterval.MONTH:
+    case ProductPriceRecurringInterval.MONTH:
       return '/mo'
-    case SubscriptionTierPriceRecurringInterval.YEAR:
+    case ProductPriceRecurringInterval.YEAR:
       return '/year'
   }
 }

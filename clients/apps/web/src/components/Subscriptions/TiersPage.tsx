@@ -1,8 +1,8 @@
 'use client'
 
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
-import { useSubscriptionTiers } from '@/hooks/queries'
-import { useRecurringInterval } from '@/hooks/subscriptions'
+import { useRecurringInterval } from '@/hooks/products'
+import { useProducts } from '@/hooks/queries'
 import { Add, Bolt } from '@mui/icons-material'
 import { Organization, SubscriptionTierType } from '@polar-sh/sdk'
 import Link from 'next/link'
@@ -22,7 +22,7 @@ interface TiersPageProps {
 }
 
 const TiersPage: React.FC<TiersPageProps> = ({ organization }) => {
-  const { data: subscriptionTiers } = useSubscriptionTiers(organization.name)
+  const { data: subscriptionTiers } = useProducts(organization.id)
   const [recurringInterval, setRecurringInterval, hasBothIntervals] =
     useRecurringInterval(subscriptionTiers?.items || [])
 

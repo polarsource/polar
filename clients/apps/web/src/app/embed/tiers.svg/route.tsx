@@ -1,9 +1,9 @@
 import { HighlightedTiers } from '@/components/Embed/HighlightedTiers'
 import { getServerURL } from '@/utils/api'
 import {
-  ListResourceSubscriptionTier,
-  SubscriptionTier,
-  SubscriptionTierPriceRecurringInterval,
+  ListResourceProduct,
+  Product,
+  ProductPriceRecurringInterval,
 } from '@polar-sh/sdk'
 const { default: satori } = require('satori')
 
@@ -12,13 +12,13 @@ export const runtime = 'edge'
 const getHighlightedSubscriptions = async (
   org: string,
   limit: number = 100,
-): Promise<SubscriptionTier[]> => {
+): Promise<Product[]> => {
   let url = `${getServerURL()}/api/v1/subscriptions/tiers/search?platform=github&organization_name=${org}&limit=${limit}`
 
   const response = await fetch(url, {
     method: 'GET',
   })
-  const data = (await response.json()) as ListResourceSubscriptionTier
+  const data = (await response.json()) as ListResourceProduct
   return (
     data.items?.filter((tier) => tier.is_highlighted || tier.type === 'free') ||
     []
@@ -27,8 +27,8 @@ const getHighlightedSubscriptions = async (
 
 const renderBadge = async (
   label: string,
-  subscriptionTiers: SubscriptionTier[],
-  recurringInterval: SubscriptionTierPriceRecurringInterval,
+  products: Product[],
+  recurringInterval: ProductPriceRecurringInterval,
   darkmode: boolean,
 ) => {
   const inter500 = await fetch(
@@ -42,7 +42,7 @@ const renderBadge = async (
   return await satori(
     <HighlightedTiers
       label={label}
-      tiers={subscriptionTiers}
+      tiers={products}
       recurringInterval={recurringInterval}
       darkmode={darkmode}
     />,
@@ -73,7 +73,7 @@ export async function GET(request: Request) {
     searchParams.get('label') ?? `Support ${org} with a subscription`
   const darkmode = searchParams.has('darkmode')
   const recurringInterval =
-    searchParams.get('interval') || SubscriptionTierPriceRecurringInterval.MONTH
+    searchParams.get('interval') || ProductPriceRecurringInterval.MONTH
 
   if (!org) {
     return new Response('No org provided', { status: 400 })
@@ -85,7 +85,7 @@ export async function GET(request: Request) {
     const svg = await renderBadge(
       label,
       highlightedTiers,
-      recurringInterval as SubscriptionTierPriceRecurringInterval,
+      recurringInterval as ProductPriceRecurringInterval,
       darkmode,
     )
 

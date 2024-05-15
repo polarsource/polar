@@ -1,8 +1,8 @@
-import { ArticleCreate, SubscriptionTierCreate } from '@polar-sh/sdk'
+import { ArticleCreate, ProductCreate } from '@polar-sh/sdk'
 import { StateCreator } from 'zustand'
 
 interface FormDrafts {
-  SubscriptionTierCreate?: SubscriptionTierCreate
+  ProductCreate?: ProductCreate
   ArticleCreate?: Pick<ArticleCreate, 'title' | 'body'>
 }
 

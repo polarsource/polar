@@ -1,15 +1,15 @@
 import SubscriptionGroupIcon from '@/components/Subscriptions/SubscriptionGroupIcon'
 import { CloseOutlined } from '@mui/icons-material'
-import { SubscriptionTier } from '@polar-sh/sdk'
+import { Product } from '@polar-sh/sdk'
 import Button from 'polarkit/components/ui/atoms/button'
 import { Checkbox } from 'polarkit/components/ui/checkbox'
 
 export interface SubscriptionTiersModalProps {
-  subscriptionTiers: SubscriptionTier[]
-  selectedSubscriptionTiers: SubscriptionTier[]
+  subscriptionTiers: Product[]
+  selectedSubscriptionTiers: Product[]
   hideModal: () => void
   setSubscriptionTiers: (
-    producer: (subscriptionTiers: SubscriptionTier[]) => SubscriptionTier[],
+    producer: (subscriptionTiers: Product[]) => Product[],
   ) => void
 }
 
@@ -19,13 +19,13 @@ export const SubscriptionTiersModal = ({
   hideModal,
   setSubscriptionTiers,
 }: SubscriptionTiersModalProps) => {
-  const addSubscriptionTier = (subscriptionTier: SubscriptionTier) => {
+  const addSubscriptionTier = (subscriptionTier: Product) => {
     setSubscriptionTiers((subscriptionTiers) =>
       [...subscriptionTiers, subscriptionTier].slice(-3),
     )
   }
 
-  const removeSubscriptionTier = (subscriptionTier: SubscriptionTier) => {
+  const removeSubscriptionTier = (subscriptionTier: Product) => {
     setSubscriptionTiers((subscriptionTiers) =>
       subscriptionTiers.filter((tier) => tier.id !== subscriptionTier.id),
     )
@@ -83,10 +83,10 @@ const SubscriptionTierRow = ({
   selectTier,
   deselectTier,
 }: {
-  subscriptionTier: SubscriptionTier
+  subscriptionTier: Product
   selected: boolean
-  selectTier: (subscriptionTiers: SubscriptionTier) => void
-  deselectTier: (subscriptionTier: SubscriptionTier) => void
+  selectTier: (subscriptionTiers: Product) => void
+  deselectTier: (subscriptionTier: Product) => void
 }) => {
   return (
     <div className="dark:hover:bg-polar-700 dark:text-polar-50 flex flex-row items-center justify-between gap-x-2 rounded-lg px-4 py-3 text-sm text-gray-950 hover:bg-gray-100">

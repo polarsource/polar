@@ -1,4 +1,4 @@
-import SubscriptionTierPill from '@/components/Subscriptions/SubscriptionTierPill'
+import ProductPill from '@/components/Products/ProductPill'
 import { useAuth } from '@/hooks'
 import {
   useGetOrganization,
@@ -8,7 +8,7 @@ import {
 } from '@/hooks/queries'
 import { api } from '@/utils/api'
 import { CloseOutlined } from '@mui/icons-material'
-import { Organization, Platforms, SubscriptionTier } from '@polar-sh/sdk'
+import { Organization, Platforms, Product } from '@polar-sh/sdk'
 import Avatar from 'polarkit/components/ui/atoms/avatar'
 import Button from 'polarkit/components/ui/atoms/button'
 import Input from 'polarkit/components/ui/atoms/input'
@@ -128,12 +128,11 @@ export const CreatorsModal = ({
                 <div className="flex flex-col">
                   {subscriptions.map((subscription) => (
                     <SubscriptionOrganization
-                      key={subscription.subscription_tier.id}
-                      subscriptionTier={subscription.subscription_tier}
+                      key={subscription.product.id}
+                      subscriptionTier={subscription.product}
                       selected={creators.some(
                         (creator) =>
-                          creator.id ===
-                          subscription.subscription_tier.organization_id,
+                          creator.id === subscription.product.organization_id,
                       )}
                       selectOrganization={setCreators}
                       deselectOrganization={removeCreator}
@@ -190,7 +189,7 @@ const SubscriptionOrganization = ({
   selectOrganization,
   deselectOrganization,
 }: {
-  subscriptionTier: SubscriptionTier
+  subscriptionTier: Product
   selected: boolean
   selectOrganization: (
     producer: (organizations: Organization[]) => Organization[],
@@ -216,7 +215,7 @@ const SubscriptionOrganization = ({
         <span>{organization.name}</span>
       </div>
       <div className="flex flex-row items-center gap-x-4">
-        <SubscriptionTierPill subscriptionTier={subscriptionTier} />
+        <ProductPill product={subscriptionTier} />
         <Checkbox
           checked={selected}
           onCheckedChange={(v) => {

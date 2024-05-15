@@ -3,7 +3,7 @@ import { redirectToCanonicalDomain } from '@/utils/nav'
 import {
   Issue,
   ListResourceOrganization,
-  ListResourceSubscriptionTier,
+  ListResourceProduct,
   Organization,
   Platforms,
 } from '@polar-sh/sdk'
@@ -88,61 +88,54 @@ export default async function Page({
 
   let organization: Organization | undefined
   let listAdminOrganizations: ListResourceOrganization | undefined
-  let subscriptionTiers: ListResourceSubscriptionTier | undefined
+  let products: ListResourceProduct | undefined
   let issue: Issue | undefined
 
   try {
-    const [
-      loadOrganization,
-      loadListAdminOrganizations,
-      loadSubscriptionTiers,
-      loadIssue,
-    ] = await Promise.all([
-      api.organizations.lookup(
-        {
-          platform: Platforms.GITHUB,
-          organizationName: params.organization,
-        },
-        {
-          cache: 'no-store',
-        },
-      ),
+    organization = await api.organizations.lookup(
+      {
+        platform: Platforms.GITHUB,
+        organizationName: params.organization,
+      },
+      {
+        cache: 'no-store',
+      },
+    )
+    const [loadListAdminOrganizations, loadSubscriptionTiers, loadIssue] =
+      await Promise.all([
+        api.organizations
+          .list(
+            {
+              isAdminOnly: true,
+            },
+            cacheConfig,
+          )
+          .catch(() => {
+            // Handle unauthenticated
+            return undefined
+          }),
 
-      api.organizations
-        .list(
+        api.products.listProducts(
           {
-            isAdminOnly: true,
+            organizationId: organization.id,
           },
-          cacheConfig,
-        )
-        .catch(() => {
-          // Handle unauthenticated
-          return undefined
-        }),
-
-      api.subscriptions.searchSubscriptionTiers(
-        {
-          platform: Platforms.GITHUB,
-          organizationName: params.organization,
-        },
-        {
-          ...cacheConfig,
-          next: {
-            ...cacheConfig.next,
-            tags: [`subscriptionTiers:${params.organization}`],
+          {
+            ...cacheConfig,
+            next: {
+              ...cacheConfig.next,
+              tags: [`subscriptionTiers:${params.organization}`],
+            },
           },
-        },
-      ),
+        ),
 
-      // Optional Issue Loading
-      issue_id
-        ? api.issues.get({ id: issue_id }, cacheConfig)
-        : Promise.resolve(undefined),
-    ])
+        // Optional Issue Loading
+        issue_id
+          ? api.issues.get({ id: issue_id }, cacheConfig)
+          : Promise.resolve(undefined),
+      ])
 
-    organization = loadOrganization
     listAdminOrganizations = loadListAdminOrganizations
-    subscriptionTiers = loadSubscriptionTiers
+    products = loadSubscriptionTiers
     issue = loadIssue
   } catch (e) {
     notFound()
@@ -168,7 +161,7 @@ export default async function Page({
     <ClientPage
       organization={organization}
       adminOrganizations={listAdminOrganizations?.items ?? []}
-      subscriptionTiers={subscriptionTiers?.items ?? []}
+      products={products?.items ?? []}
       defaultAmount={parseInt(amount ?? '2000')}
       issue={issue}
     />

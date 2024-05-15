@@ -4,7 +4,7 @@ import { firstImageUrlFromMarkdown } from '@/utils/markdown'
 import { redirectToCanonicalDomain } from '@/utils/nav'
 import {
   Article,
-  ListResourceSubscriptionTier,
+  ListResourceProduct,
   Platforms,
   ResponseError,
 } from '@polar-sh/sdk'
@@ -140,33 +140,27 @@ export default async function Page({
   const api = getServerSideAPI()
 
   let article: Article | undefined
-  let subscriptionTiers: ListResourceSubscriptionTier | undefined
+  let products: ListResourceProduct | undefined
 
   try {
-    ;[article, subscriptionTiers] = await Promise.all([
-      await api.articles.lookup(
-        {
-          platform: Platforms.GITHUB,
-          organizationName: params.organization,
-          slug: params.postSlug,
+    article = await api.articles.lookup(
+      {
+        platform: Platforms.GITHUB,
+        organizationName: params.organization,
+        slug: params.postSlug,
+      },
+      {
+        ...cacheConfig,
+        next: {
+          ...cacheConfig.next,
+          tags: [`articles:${params.organization}:${params.postSlug}`],
         },
-        {
-          ...cacheConfig,
-          next: {
-            ...cacheConfig.next,
-            tags: [`articles:${params.organization}:${params.postSlug}`],
-          },
-        },
-      ),
-
-      await api.subscriptions.searchSubscriptionTiers(
-        {
-          platform: Platforms.GITHUB,
-          organizationName: params.organization,
-        },
-        cacheConfig,
-      ),
-    ])
+      },
+    )
+    products = await api.products.listProducts(
+      { organizationId: article.organization.id },
+      cacheConfig,
+    )
   } catch (e) {
     if (e instanceof ResponseError && e.response.status === 404) {
       notFound()
@@ -217,10 +211,7 @@ export default async function Page({
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
-      <ClientPage
-        article={article}
-        subscriptionTiers={subscriptionTiers.items || []}
-      />
+      <ClientPage article={article} products={products.items || []} />
     </>
   )
 }

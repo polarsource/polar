@@ -40,7 +40,7 @@ export default function ClientPage() {
       ...(purchases?.items ?? []),
       ...(subscriptions?.items?.map((subscription) => ({
         id: subscription.id,
-        product: subscription.subscription_tier,
+        product: subscription.product,
         created_at: subscription.created_at,
         updated_at: new Date().toISOString(),
       })) ?? []),

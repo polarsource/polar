@@ -1,12 +1,8 @@
 import revalidate from '@/app/actions'
 import SubscriptionGroupIcon from '@/components/Subscriptions/SubscriptionGroupIcon'
-import { useUpdateSubscriptionTier } from '@/hooks/queries'
+import { useUpdateProduct } from '@/hooks/queries'
 import { AddOutlined, CloseOutlined } from '@mui/icons-material'
-import {
-  Organization,
-  SubscriptionTier,
-  SubscriptionTierType,
-} from '@polar-sh/sdk'
+import { Organization, Product, SubscriptionTierType } from '@polar-sh/sdk'
 import Link from 'next/link'
 import Button from 'polarkit/components/ui/atoms/button'
 import {
@@ -19,7 +15,7 @@ import {
 import { useCallback, useMemo } from 'react'
 
 export interface HighlightedTiersModalProps {
-  subscriptionTiers: SubscriptionTier[]
+  subscriptionTiers: Product[]
   organization: Organization
   hideModal: () => void
 }
@@ -29,20 +25,20 @@ export const HighlightedTiersModal = ({
   organization,
   hideModal,
 }: HighlightedTiersModalProps) => {
-  const updateSubscriptionMutation = useUpdateSubscriptionTier()
+  const updateProductMutation = useUpdateProduct()
 
   const selectSubscriptionTier = useCallback(
     async (id: string) => {
-      await updateSubscriptionMutation.mutateAsync({
+      await updateProductMutation.mutateAsync({
         id,
-        subscriptionTierUpdate: {
+        productUpdate: {
           is_highlighted: true,
         },
       })
 
       await revalidate(`subscriptionTiers:${organization.name}`)
     },
-    [updateSubscriptionMutation, organization],
+    [updateProductMutation, organization],
   )
 
   const individualTiers = useMemo(

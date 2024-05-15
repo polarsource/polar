@@ -11,7 +11,7 @@ import {
   ListResourceSubscriptionSummary,
   Organization,
   OrganizationProfileSettings,
-  SubscriptionTier,
+  Product,
   SubscriptionTierType,
 } from '@polar-sh/sdk'
 import Link from 'next/link'
@@ -34,14 +34,14 @@ interface OrganizationPublicSidebarProps {
   organization: Organization
   subscriptionsSummary: ListResourceSubscriptionSummary
   userAdminOrganizations: Organization[]
-  subscriptionTiers: SubscriptionTier[]
+  products: Product[]
 }
 
 export const OrganizationPublicSidebar = ({
   organization,
   subscriptionsSummary,
   userAdminOrganizations,
-  subscriptionTiers,
+  products,
 }: OrganizationPublicSidebarProps) => {
   const segment = useSelectedLayoutSegment()
 
@@ -51,7 +51,7 @@ export const OrganizationPublicSidebar = ({
     show: showRssModal,
   } = useModal()
 
-  const freeSubscriptionTier = subscriptionTiers.find(
+  const freeSubscriptionTier = products.find(
     (tier) => tier.type === SubscriptionTierType.FREE,
   )
 
@@ -172,7 +172,7 @@ export const OrganizationPublicSidebar = ({
             {freeSubscriptionTier && !isAdmin ? (
               <>
                 <FreeTierSubscribe
-                  subscriptionTier={freeSubscriptionTier}
+                  product={freeSubscriptionTier}
                   organization={organization}
                   upsellSubscriptions
                 />

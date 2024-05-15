@@ -1,7 +1,7 @@
 'use client'
 
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
-import { useSearchSubscriptions, useSubscriptionTiers } from '@/hooks/queries'
+import { useProducts, useSearchSubscriptions } from '@/hooks/queries'
 import { getServerURL } from '@/utils/api'
 import {
   DataTablePaginationState,
@@ -16,10 +16,10 @@ import {
 } from '@mui/icons-material'
 import {
   Organization,
+  Product,
+  ProductPrice,
   Subscription,
   SubscriptionStatus,
-  SubscriptionTier,
-  SubscriptionTierPrice,
   SubscriptionTierType,
 } from '@polar-sh/sdk'
 import { useRouter } from 'next/navigation'
@@ -34,11 +34,11 @@ import {
 import React, { useCallback, useMemo } from 'react'
 import { Modal } from '../Modal'
 import { useModal } from '../Modal/useModal'
+import ProductPriceLabel from '../Products/ProductPriceLabel'
 import AccountBanner from '../Transactions/AccountBanner'
 import AddSubscriberModal from './AddSubscriberModal'
 import ImportSubscribersModal from './ImportSubscribersModal'
 import SubscriptionStatusSelect from './SubscriptionStatusSelect'
-import SubscriptionTierPriceLabel from './SubscriptionTierPriceLabel'
 import SubscriptionTiersSelect from './SubscriptionTiersSelect'
 import {
   getSubscriptionTiersByType,
@@ -63,7 +63,7 @@ const SubscribersPage: React.FC<SubscribersPageProps> = ({
   subscriptionTierType,
   subscriptionStatus,
 }) => {
-  const subscriptionTiers = useSubscriptionTiers(organization.name)
+  const subscriptionTiers = useProducts(organization.id)
   const subscriptionTiersByType = useMemo(
     () => getSubscriptionTiersByType(subscriptionTiers.data?.items ?? []),
     [subscriptionTiers.data],
@@ -240,7 +240,7 @@ const SubscribersPage: React.FC<SubscribersPageProps> = ({
       },
     },
     {
-      accessorKey: 'subscription_tier.type',
+      accessorKey: 'product.type',
       id: 'subscription_tier_type',
       enableSorting: true,
       header: ({ column }) => (
@@ -250,14 +250,14 @@ const SubscribersPage: React.FC<SubscribersPageProps> = ({
         tiersTypeDisplayNames[props.getValue() as SubscriptionTierType],
     },
     {
-      accessorKey: 'subscription_tier',
-      id: 'subscription_tier',
+      accessorKey: 'product',
+      id: 'product',
       enableSorting: true,
       header: ({ column }) => (
         <DataTableColumnHeader column={column} title="Tier" />
       ),
       cell: (props) => {
-        const tier = props.getValue() as SubscriptionTier
+        const tier = props.getValue() as Product
         return (
           <>
             {tier.name}
@@ -278,17 +278,13 @@ const SubscribersPage: React.FC<SubscribersPageProps> = ({
         <DataTableColumnHeader column={column} title="Price" />
       ),
       cell: (props) => {
-        const price = props.getValue() as SubscriptionTierPrice | null
+        const price = props.getValue() as ProductPrice | null
 
         if (!price) {
           return '—'
         }
 
-        return (
-          <SubscriptionTierPriceLabel
-            price={props.getValue() as SubscriptionTierPrice}
-          />
-        )
+        return <ProductPriceLabel price={props.getValue() as ProductPrice} />
       },
     },
   ]

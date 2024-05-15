@@ -6,10 +6,10 @@ import {
   TransactionIssueReward,
   TransactionOrganization,
   TransactionPledge,
+  TransactionProduct,
+  TransactionProductPrice,
   TransactionRepository,
   TransactionSubscription,
-  TransactionSubscriptionPrice,
-  TransactionSubscriptionTier,
 } from '@polar-sh/sdk'
 import type { Meta, StoryObj } from '@storybook/react'
 import TransactionsList from './TransactionsList'
@@ -104,7 +104,7 @@ const txIssueReward: Transaction = {
   pledge,
 }
 
-const subscription_tier: TransactionSubscriptionTier = {
+const product: TransactionProduct = {
   created_at: '',
   id: '',
   type: 'free',
@@ -116,12 +116,13 @@ const subscription: TransactionSubscription = {
   created_at: '',
   id: '',
   status: 'incomplete',
-  subscription_tier,
+  product,
 }
 
-const subscription_tier_price: TransactionSubscriptionPrice = {
+const product_price: TransactionProductPrice = {
   created_at: '',
   id: '',
+  type: 'recurring',
   recurring_interval: 'month',
   price_amount: 4000,
   price_currency: 'USD',
@@ -131,7 +132,7 @@ const subscription_tier_price: TransactionSubscriptionPrice = {
 const txSubscription: Transaction = {
   ...tx,
   subscription,
-  subscription_tier_price,
+  product_price: product_price,
 }
 
 export const Default: Story = {

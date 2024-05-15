@@ -2,15 +2,15 @@ import { useAuth } from '@/hooks/auth'
 import { useSendMagicLink } from '@/hooks/magicLink'
 import {
   useCreateFreeSubscription,
-  useSubscriptionTiers,
+  useProducts,
   useUserSubscriptions,
 } from '@/hooks/queries'
 import { captureEvent } from '@/utils/posthog'
 import { CheckIcon } from '@heroicons/react/24/outline'
 import {
   Organization,
+  Product,
   SubscriptionSubscriber,
-  SubscriptionTier,
   SubscriptionTierType,
 } from '@polar-sh/sdk'
 import Link from 'next/link'
@@ -38,8 +38,10 @@ const SubscribeNowWithModal = ({
 
   const { currentUser } = useAuth()
 
-  const { data: { items: subscriptionTiers } = { items: [] } } =
-    useSubscriptionTiers(organization.name, 100)
+  const { data: { items: subscriptionTiers } = { items: [] } } = useProducts(
+    organization.id,
+    100,
+  )
 
   const freeSubscriptionTier = subscriptionTiers?.find(
     (tier) => tier.type === SubscriptionTierType.FREE,
@@ -178,17 +180,13 @@ const LoggedInSubscribeModalContent = ({
         {isSubscribed ? (
           <div className="flex flex-col items-center gap-y-4">
             {subscription ? (
-              <SubscriptionTierCelebration
-                type={subscription?.subscription_tier.type}
-              />
+              <SubscriptionTierCelebration type={subscription?.product.type} />
             ) : null}
 
             <p className="text-muted-foreground text-center">Thank you!</p>
             <p>
               You&apos;re subscribing to the{' '}
-              <span className="font-medium">
-                {subscription?.subscription_tier.name}
-              </span>{' '}
+              <span className="font-medium">{subscription?.product.name}</span>{' '}
               tier.
             </p>
             <Link
@@ -215,7 +213,7 @@ const AnonymousSubscribeModalContent = ({
   organization,
 }: {
   hide: () => void
-  freeSubscriptionTier: SubscriptionTier
+  freeSubscriptionTier: Product
   organization: Organization
 }) => {
   const router = useRouter()

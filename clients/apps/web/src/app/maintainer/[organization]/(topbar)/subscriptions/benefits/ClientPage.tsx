@@ -16,7 +16,7 @@ import {
   useAdvertisementDisplays,
   useBenefits,
   useDeleteBenefit,
-  useSubscriptionTiers,
+  useProducts,
 } from '@/hooks/queries'
 import { AddOutlined, MoreVertOutlined, WebOutlined } from '@mui/icons-material'
 import { BenefitPublicInner, BenefitType, Organization } from '@polar-sh/sdk'
@@ -43,10 +43,7 @@ const ClientPage = ({ organization }: { organization: Organization }) => {
     organization.id,
     100,
   )
-  const { data: subscriptionTiers } = useSubscriptionTiers(
-    organization.name,
-    100,
-  )
+  const { data: products } = useProducts(organization.id, 100)
   const searchParams = useSearchParams()
 
   const {
@@ -59,12 +56,12 @@ const ClientPage = ({ organization }: { organization: Organization }) => {
   const [createModalDefaultValues, setCreateModalDefaultValues] =
     useState<NewSubscriptionsModalParams>()
 
-  const benefitSubscriptionTiers = useMemo(
+  const benefitProducts = useMemo(
     () =>
-      subscriptionTiers?.items?.filter((tier) =>
-        tier.benefits.some((benefit) => benefit.id === selectedBenefit?.id),
+      products?.items?.filter((product) =>
+        product.benefits.some((benefit) => benefit.id === selectedBenefit?.id),
       ),
-    [subscriptionTiers, selectedBenefit],
+    [products, selectedBenefit],
   )
 
   useEffect(() => {
@@ -129,8 +126,8 @@ const ClientPage = ({ organization }: { organization: Organization }) => {
             <div className="flex flex-col gap-y-4">
               <h3 className="font-medium">Subscription Tiers</h3>
               <div className="flex flex-col gap-y-2">
-                {(benefitSubscriptionTiers?.length ?? 0) > 0 ? (
-                  benefitSubscriptionTiers?.map((tier) => (
+                {(benefitProducts?.length ?? 0) > 0 ? (
+                  benefitProducts?.map((tier) => (
                     <Link
                       key={tier.id}
                       href={`/maintainer/${organization.name}/subscriptions/tiers?tierId=${tier.id}`}
@@ -319,7 +316,7 @@ ${formattedDisplays}
     if (embedTextarea.current) {
       embedTextarea.current.style.height = `${embedTextarea.current.scrollHeight}px`
     }
-  }, [embedTextarea.current, code])
+  }, [embedTextarea, code])
 
   return (
     <>

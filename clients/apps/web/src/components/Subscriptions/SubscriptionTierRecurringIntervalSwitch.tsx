@@ -1,22 +1,21 @@
-import { SubscriptionTierPriceRecurringInterval } from '@polar-sh/sdk'
+import { ProductPriceRecurringInterval } from '@polar-sh/sdk'
 import Switch from 'polarkit/components/ui/atoms/switch'
 import React from 'react'
 
 interface SubscriptionTierRecurringIntervalSwitchProps {
-  recurringInterval: SubscriptionTierPriceRecurringInterval
-  onChange: (recurringInterval: SubscriptionTierPriceRecurringInterval) => void
+  recurringInterval: ProductPriceRecurringInterval
+  onChange: (recurringInterval: ProductPriceRecurringInterval) => void
 }
 
 const SubscriptionTierRecurringIntervalSwitch: React.FC<
   SubscriptionTierRecurringIntervalSwitchProps
 > = ({ recurringInterval, onChange }) => {
-  const checked =
-    recurringInterval === SubscriptionTierPriceRecurringInterval.YEAR
+  const checked = recurringInterval === ProductPriceRecurringInterval.YEAR
   const onCheckedChange = (checked: boolean) => {
     onChange(
       checked
-        ? SubscriptionTierPriceRecurringInterval.YEAR
-        : SubscriptionTierPriceRecurringInterval.MONTH,
+        ? ProductPriceRecurringInterval.YEAR
+        : ProductPriceRecurringInterval.MONTH,
     )
   }
 

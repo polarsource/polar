@@ -2,12 +2,12 @@ import revalidate from '@/app/actions'
 import { Modal } from '@/components/Modal'
 import { useModal } from '@/components/Modal/useModal'
 import SubscriptionTierRecurringIntervalSwitch from '@/components/Subscriptions/SubscriptionTierRecurringIntervalSwitch'
+import { useRecurringInterval } from '@/hooks/products'
 import { useUpdateProject } from '@/hooks/queries'
-import { useRecurringInterval } from '@/hooks/subscriptions'
 import { DndContext, DragOverlay, closestCenter } from '@dnd-kit/core'
 import { SortableContext, rectSortingStrategy } from '@dnd-kit/sortable'
 import { BoltOutlined } from '@mui/icons-material'
-import { Organization, Repository, SubscriptionTier } from '@polar-sh/sdk'
+import { Organization, Product, Repository } from '@polar-sh/sdk'
 import { ShadowBoxOnMd } from 'polarkit/components/ui/atoms/shadowbox'
 import { useDraggableEditorCallbacks } from '../Draggable/useDraggableEditorCallbacks'
 import { DraggableSubscriptionTierCard } from './DraggableSubscriptionTierCard'
@@ -16,7 +16,7 @@ import { SubscriptionTiersModal } from './SubscriptionTierModal'
 export interface SubscriptionTierEditorProps {
   organization: Organization
   repository: Repository
-  subscriptionTiers: SubscriptionTier[]
+  subscriptionTiers: Product[]
   disabled?: boolean
 }
 
@@ -43,7 +43,7 @@ export const SubscriptionTierEditor = ({
   } = useDraggableEditorCallbacks(
     repoHighlightedTiers
       .map((id) => subscriptionTiers.find((tier) => tier.id === id))
-      .filter((tier): tier is SubscriptionTier => !!tier),
+      .filter((tier): tier is Product => !!tier),
     (tiers) =>
       updateProjectMutation
         .mutateAsync({
@@ -128,7 +128,7 @@ export const SubscriptionTierEditor = ({
                   subscriptionTier={
                     highlightedTiers.find(
                       (tier) => tier.id === activeId,
-                    ) as SubscriptionTier
+                    ) as Product
                   }
                   recurringInterval={recurringInterval}
                 />

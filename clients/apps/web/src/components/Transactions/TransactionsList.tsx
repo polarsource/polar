@@ -24,16 +24,16 @@ import {
   ReactQueryLoading,
 } from 'polarkit/components/ui/atoms/datatable'
 import { useMemo } from 'react'
-import SubscriptionTierPill from '../Subscriptions/SubscriptionTierPill'
+import ProductPill from '../Products/ProductPill'
 
 const getTransactionMeta = (transaction: Transaction) => {
   if (transaction.subscription) {
     return {
       type: 'Subscription',
-      organization: transaction.subscription?.subscription_tier.organization,
+      organization: transaction.subscription?.product.organization,
       meta: {
-        subscription_tier: transaction.subscription.subscription_tier,
-        price: transaction.subscription_tier_price,
+        subscription_tier: transaction.subscription.product,
+        price: transaction.product_price,
       },
     }
   } else if (transaction.issue_reward) {
@@ -103,8 +103,8 @@ const TransactionMeta: React.FC<TransactionMetaProps> = ({ transaction }) => {
                     className=" text-blue-500 dark:text-blue-400"
                     href={`/${transactionMeta.meta.subscription_tier.organization?.name}/subscriptions`}
                   >
-                    <SubscriptionTierPill
-                      subscriptionTier={transactionMeta.meta.subscription_tier}
+                    <ProductPill
+                      product={transactionMeta.meta.subscription_tier}
                       price={transactionMeta.meta.price}
                     />
                   </Link>

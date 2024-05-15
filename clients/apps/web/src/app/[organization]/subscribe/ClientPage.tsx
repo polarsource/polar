@@ -5,10 +5,10 @@ import SubscriptionTierCard from '@/components/Subscriptions/SubscriptionTierCar
 import SubscriptionTierRecurringIntervalSwitch from '@/components/Subscriptions/SubscriptionTierRecurringIntervalSwitch'
 import SubscriptionTierSubscribeButton from '@/components/Subscriptions/SubscriptionTierSubscribeButton'
 import { hasRecurringInterval } from '@/components/Subscriptions/utils'
+import { useRecurringInterval } from '@/hooks/products'
 import { useListAdminOrganizations } from '@/hooks/queries'
-import { useRecurringInterval } from '@/hooks/subscriptions'
 import { organizationPageLink } from '@/utils/nav'
-import { ListResourceSubscriptionTier, Organization } from '@polar-sh/sdk'
+import { ListResourceProduct, Organization } from '@polar-sh/sdk'
 import Link from 'next/link'
 import Avatar from 'polarkit/components/ui/atoms/avatar'
 import Button from 'polarkit/components/ui/atoms/button'
@@ -17,10 +17,10 @@ import { twMerge } from 'tailwind-merge'
 
 export default function ClientPage({
   organization,
-  subscriptionTiers,
+  products,
 }: {
   organization: Organization
-  subscriptionTiers: ListResourceSubscriptionTier
+  products: ListResourceProduct
 }) {
   const [selectedTierIndex, selectTierIndex] = useState(0)
 
@@ -32,8 +32,8 @@ export default function ClientPage({
   )
 
   const highlightedTiers = useMemo(() => {
-    return subscriptionTiers.items?.filter((tier) => tier.is_highlighted) ?? []
-  }, [subscriptionTiers])
+    return products.items?.filter((tier) => tier.is_highlighted) ?? []
+  }, [products])
   const [recurringInterval, setRecurringInterval, hasBothIntervals] =
     useRecurringInterval(highlightedTiers)
 

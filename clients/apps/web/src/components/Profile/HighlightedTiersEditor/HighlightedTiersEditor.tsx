@@ -3,17 +3,18 @@ import { isPremiumArticlesBenefit } from '@/components/Benefit/utils'
 import { Modal } from '@/components/Modal'
 import { useModal } from '@/components/Modal/useModal'
 import SubscriptionTierCard from '@/components/Subscriptions/SubscriptionTierCard'
+import { useRecurringInterval } from '@/hooks/products'
 import {
   useBenefits,
-  useCreateSubscriptionTier,
-  useUpdateSubscriptionTierBenefits,
+  useCreateProduct,
+  useUpdateProductBenefits,
 } from '@/hooks/queries'
-import { useRecurringInterval } from '@/hooks/subscriptions'
 import { organizationPageLink } from '@/utils/nav'
 import { ArrowForward } from '@mui/icons-material'
 import {
   Organization,
-  SubscriptionTier,
+  Product,
+  ProductPriceRecurringCreate,
   SubscriptionTierType,
 } from '@polar-sh/sdk'
 import Link from 'next/link'
@@ -28,13 +29,13 @@ import { HighlightedTiersModal } from './HighlightedTiersModal'
 export interface HighlightedTiersEditorProps {
   organization: Organization
   adminOrganizations: Organization[]
-  subscriptionTiers: SubscriptionTier[]
+  products: Product[]
 }
 
 export const HighlightedTiersEditor = ({
   organization,
   adminOrganizations,
-  subscriptionTiers,
+  products,
 }: HighlightedTiersEditorProps) => {
   const { isShown: isModalShown, hide: hideModal, show: showModal } = useModal()
 
@@ -46,21 +47,20 @@ export const HighlightedTiersEditor = ({
   const shouldRenderSubscribeButton = !isAdmin
 
   const highlightedTiers = useMemo(
-    () =>
-      subscriptionTiers?.filter(({ is_highlighted }) => is_highlighted) ?? [],
-    [subscriptionTiers],
+    () => products?.filter(({ is_highlighted }) => is_highlighted) ?? [],
+    [products],
   )
   const [recurringInterval, setRecurringInterval, hasBothIntervals] =
     useRecurringInterval(highlightedTiers)
 
   const paidSubscriptionTiers = useMemo(
     () =>
-      subscriptionTiers?.filter(
+      products?.filter(
         ({ type }) =>
           type === SubscriptionTierType.INDIVIDUAL ||
           type === SubscriptionTierType.BUSINESS,
       ) ?? [],
-    [subscriptionTiers],
+    [products],
   )
 
   if (!isAdmin && highlightedTiers.length === 0) {
@@ -125,7 +125,7 @@ export const HighlightedTiersEditor = ({
                   <>
                     {tier.type === 'free' ? (
                       <FreeTierSubscribe
-                        subscriptionTier={tier}
+                        product={tier}
                         organization={organization}
                       />
                     ) : (
@@ -224,14 +224,16 @@ const HighlightedTiersEditorAuthenticatedEmptyState = ({
 }
 
 interface MockedBaselineTier {
-  subscriptionTier: SubscriptionTier
+  subscriptionTier: Product
   create: () => Promise<void>
 }
 
 const useCreateBaselineTier = (
   organization: Organization,
 ): MockedBaselineTier => {
-  const mockedBaselineTier: SubscriptionTier = useMemo(() => {
+  const mockedBaselineTier: Product & {
+    prices: ProductPriceRecurringCreate[]
+  } = useMemo(() => {
     return {
       id: '123',
       name: 'Supporter',
@@ -257,6 +259,7 @@ const useCreateBaselineTier = (
           is_archived: false,
           price_amount: 500,
           price_currency: 'usd',
+          type: 'recurring',
           recurring_interval: 'month',
         },
       ],
@@ -272,35 +275,27 @@ const useCreateBaselineTier = (
     isPremiumArticlesBenefit,
   )[0]
 
-  const updateTierBenefits = useUpdateSubscriptionTierBenefits(
-    organization.name,
-  )
+  const updateProductBenefits = useUpdateProductBenefits(organization.id)
 
-  const createTierMutation = useCreateSubscriptionTier(organization.name)
+  const createProductMutation = useCreateProduct(organization.id)
 
-  const createBaselineTier = useCallback(async () => {
+  const createBaselineProduct = useCallback(async () => {
     if (!premiumArticlesBenefit) {
       return
     }
 
-    const tier = await createTierMutation.mutateAsync({
+    const product = await createProductMutation.mutateAsync({
       name: mockedBaselineTier.name,
       description: mockedBaselineTier.description,
       type: SubscriptionTierType.INDIVIDUAL,
-      prices: [
-        {
-          price_amount: mockedBaselineTier.prices[0].price_amount,
-          price_currency: mockedBaselineTier.prices[0].price_currency,
-          recurring_interval: mockedBaselineTier.prices[0].recurring_interval,
-        },
-      ],
+      prices: mockedBaselineTier.prices,
       is_highlighted: true,
       organization_id: organization.id,
     })
 
-    await updateTierBenefits.mutateAsync({
-      id: tier.id,
-      subscriptionTierBenefitsUpdate: {
+    await updateProductBenefits.mutateAsync({
+      id: product.id,
+      productBenefitsUpdate: {
         benefits: [premiumArticlesBenefit.id],
       },
     })
@@ -308,14 +303,14 @@ const useCreateBaselineTier = (
     await revalidate(`subscriptionTiers:${organization.name}`)
   }, [
     organization,
-    createTierMutation,
+    createProductMutation,
     mockedBaselineTier,
     premiumArticlesBenefit,
-    updateTierBenefits,
+    updateProductBenefits,
   ])
 
   return {
     subscriptionTier: mockedBaselineTier,
-    create: createBaselineTier,
+    create: createBaselineProduct,
   }
 }

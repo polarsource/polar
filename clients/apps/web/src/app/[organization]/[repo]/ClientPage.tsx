@@ -23,9 +23,9 @@ import {
   Article,
   ListResourceIssueFunding,
   Organization,
+  Product,
   Repository,
   RepositoryProfileSettingsUpdate,
-  SubscriptionTier,
   SubscriptionTierType,
 } from '@polar-sh/sdk'
 import Link from 'next/link'
@@ -40,7 +40,7 @@ const ClientPage = ({
   issuesFunding,
   featuredOrganizations,
   adminOrganizations,
-  subscriptionTiers,
+  products,
   links,
   posts,
 }: {
@@ -49,7 +49,7 @@ const ClientPage = ({
   issuesFunding: ListResourceIssueFunding
   featuredOrganizations: Organization[]
   adminOrganizations: Organization[]
-  subscriptionTiers: SubscriptionTier[]
+  products: Product[]
   links: { opengraph: OgObject; url: string }[]
   posts: Article[]
 }) => {
@@ -97,7 +97,7 @@ const ClientPage = ({
     updateProfile({ links: links.map((l) => l.url) })
   }
 
-  const freeSubscriptionTier = subscriptionTiers.find(
+  const freeSubscriptionTier = products.find(
     (tier) => tier.type === SubscriptionTierType.FREE,
   )
 
@@ -130,7 +130,7 @@ const ClientPage = ({
               <SubscriptionTierEditor
                 organization={organization}
                 repository={repository}
-                subscriptionTiers={subscriptionTiers}
+                subscriptionTiers={products}
                 disabled={!isAdmin}
               />
             )}
@@ -253,7 +253,7 @@ const ClientPage = ({
               !isAdmin ? (
                 <>
                   <FreeTierSubscribe
-                    subscriptionTier={freeSubscriptionTier}
+                    product={freeSubscriptionTier}
                     organization={organization}
                     upsellSubscriptions
                   />

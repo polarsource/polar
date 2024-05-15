@@ -21,9 +21,9 @@ import {
   IssueFunding,
   Organization,
   OrganizationProfileSettings,
+  Product,
   PublicDonation,
   Repository,
-  SubscriptionTier,
 } from '@polar-sh/sdk'
 import Link from 'next/link'
 import Avatar from 'polarkit/components/ui/atoms/avatar'
@@ -35,7 +35,7 @@ import { twMerge } from 'tailwind-merge'
 const ClientPage = ({
   organization,
   posts,
-  subscriptionTiers,
+  products,
   featuredOrganizations,
   repositories,
   featuredProjects,
@@ -46,7 +46,7 @@ const ClientPage = ({
 }: {
   organization: Organization
   posts: Article[]
-  subscriptionTiers: SubscriptionTier[]
+  products: Product[]
   featuredOrganizations: Organization[]
   repositories: Repository[]
   featuredProjects: Repository[]
@@ -154,7 +154,7 @@ const ClientPage = ({
               <HighlightedTiersEditor
                 organization={organization}
                 adminOrganizations={adminOrganizations}
-                subscriptionTiers={subscriptionTiers}
+                products={products}
               />
             </div>
           )}
@@ -204,7 +204,7 @@ const ClientPage = ({
             <HighlightedTiersEditor
               organization={organization}
               adminOrganizations={adminOrganizations}
-              subscriptionTiers={subscriptionTiers}
+              products={products}
             />
           )}
 

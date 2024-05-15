@@ -7,17 +7,17 @@ import { useTrafficRecordPageView } from '@/utils/traffic'
 import { ArrowBackOutlined } from '@mui/icons-material'
 
 import { useListAllOrganizations, useUserSubscriptions } from '@/hooks/queries'
-import { Article, BenefitPublicInner, SubscriptionTier } from '@polar-sh/sdk'
+import { Article, BenefitPublicInner, Product } from '@polar-sh/sdk'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import Button from 'polarkit/components/ui/atoms/button'
 
 interface PostPageProps {
-  subscriptionTiers: SubscriptionTier[]
+  products: Product[]
   article: Article
 }
 
-export default function Page({ article, subscriptionTiers }: PostPageProps) {
+export default function Page({ article, products }: PostPageProps) {
   useTrafficRecordPageView({ article })
 
   const { currentUser } = useAuth()
@@ -37,15 +37,13 @@ export default function Page({ article, subscriptionTiers }: PostPageProps) {
   )
 
   const subscription = (userSubs.data?.items ?? []).find(
-    (s) => s.subscription_tier.organization_id === article.organization.id,
+    (s) => s.product.organization_id === article.organization.id,
   )
 
   const isSubscriber = subscription ? true : false
 
   const articleBenefits =
-    subscription?.subscription_tier.benefits.filter(
-      (b) => b.type === 'articles',
-    ) ?? []
+    subscription?.product.benefits.filter((b) => b.type === 'articles') ?? []
 
   const hasPaidArticlesBenefit = articleBenefits.some(
     (b) => 'paid_articles' in b.properties && b.properties['paid_articles'],
@@ -57,7 +55,7 @@ export default function Page({ article, subscriptionTiers }: PostPageProps) {
     'paid_articles' in b.properties &&
     b.properties['paid_articles']
 
-  const tierWithPaidArticlesBenefit = subscriptionTiers.find((t) =>
+  const tierWithPaidArticlesBenefit = products.find((t) =>
     t.benefits.some(isPaidBenefit),
   )
 

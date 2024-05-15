@@ -5,8 +5,8 @@ import ConfigureAdCampaigns from '@/components/Benefit/ads/ConfigureAdCampaigns'
 import { resolveBenefitIcon } from '@/components/Benefit/utils'
 import GitHubIcon from '@/components/Icons/GitHubIcon'
 import { ConfirmModal } from '@/components/Modal/ConfirmModal'
+import ProductPill from '@/components/Products/ProductPill'
 import { StaggerReveal } from '@/components/Shared/StaggerReveal'
-import SubscriptionTierPill from '@/components/Subscriptions/SubscriptionTierPill'
 import { useAuth } from '@/hooks'
 import { useOrganization } from '@/hooks/queries'
 import { api } from '@/utils/api'
@@ -103,13 +103,13 @@ const Subscription = ({
 }: SubscriptionOrganizationProps) => {
   const [expanded, setExpanded] = useState(false)
   const { data: org } = useOrganization(
-    subscription.subscription_tier.organization_id ?? '',
+    subscription.product.organization_id ?? '',
   )
   const [showCancelModal, setShowCancelModal] = useState(false)
   const router = useRouter()
 
   const canUnsubscribe = !subscription.cancel_at_period_end
-  const isFreeTier = subscription.subscription_tier.type === 'free'
+  const isFreeTier = subscription.product.type === 'free'
 
   const cancelSubscription = useCallback(async () => {
     await api.subscriptions.cancelSubscription({ id: subscription.id })
@@ -149,8 +149,8 @@ const Subscription = ({
             </Link>
             <div className="dark:text-polar-400 flex flex-row items-center gap-x-3 text-sm text-gray-500">
               <Link href={organizationPageLink(org, 'subscriptions')}>
-                <SubscriptionTierPill
-                  subscriptionTier={subscription.subscription_tier}
+                <ProductPill
+                  product={subscription.product}
                   price={subscription.price}
                 />
               </Link>
@@ -217,10 +217,10 @@ const Subscription = ({
         <div className="dark:bg-polar-900 flex flex-col gap-y-4 bg-white px-6 py-4">
           <h2 className="font-medium">Benefits</h2>
           <StaggerReveal
-            key={subscription.subscription_tier_id}
+            key={subscription.product_id}
             className="flex flex-col gap-y-2"
           >
-            {subscription.subscription_tier.benefits.map((benefit) => (
+            {subscription.product.benefits.map((benefit) => (
               <StaggerReveal.Child key={benefit.id}>
                 <BenefitRow
                   benefit={benefit}
@@ -235,7 +235,7 @@ const Subscription = ({
       <ConfirmModal
         isShown={showCancelModal}
         hide={() => setShowCancelModal(false)}
-        title={`Unsubscribe from ${subscription.subscription_tier.name}?`}
+        title={`Unsubscribe from ${subscription.product.name}?`}
         description={
           isFreeTier
             ? `You won't have access to your benefits anymore.`

@@ -2,7 +2,7 @@ import { DiscordIcon } from '@/components/Benefit/utils'
 import LogoIcon from '@/components/Brand/LogoIcon'
 import SubscriptionGroupIcon from '@/components/Subscriptions/SubscriptionGroupIcon'
 import { useCurrentOrgAndRepoFromURL } from '@/hooks'
-import { useOrganizationArticles, useSubscriptionTiers } from '@/hooks/queries'
+import { useOrganizationArticles, useProducts } from '@/hooks/queries'
 import { organizationPageLink } from '@/utils/nav'
 import {
   CloseOutlined,
@@ -32,8 +32,8 @@ export const useUpsellSteps = () => {
     Partial<OnboardingMap>
   >(JSON.parse(localStorage.getItem(ONBOARDING_MAP_KEY) ?? '{}'))
 
-  const { data: tiers, isPending: tiersPending } = useSubscriptionTiers(
-    currentOrg?.name ?? '',
+  const { data: products, isPending: tiersPending } = useProducts(
+    currentOrg?.id ?? '',
   )
   const { data: posts, isPending: articlesPending } = useOrganizationArticles({
     orgName: currentOrg?.name,
@@ -91,7 +91,7 @@ export const useUpsellSteps = () => {
     }
 
     const nonFreeTiers =
-      tiers?.items?.filter((tier) => tier.type !== 'free') ?? []
+      products?.items?.filter((tier) => tier.type !== 'free') ?? []
 
     if (
       nonFreeTiers.length === 0 &&
@@ -135,7 +135,7 @@ export const useUpsellSteps = () => {
     }
 
     setUpsellSteps(steps)
-  }, [currentOrg, onboardingCompletedMap, posts, tiers, handleDismiss])
+  }, [currentOrg, onboardingCompletedMap, posts, products, handleDismiss])
 
   if (tiersPending || articlesPending) {
     return []

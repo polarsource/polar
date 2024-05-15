@@ -5,28 +5,28 @@ import SubscriptionTierCard from '@/components/Subscriptions/SubscriptionTierCar
 import SubscriptionTierRecurringIntervalSwitch from '@/components/Subscriptions/SubscriptionTierRecurringIntervalSwitch'
 import SubscriptionTierSubscribeButton from '@/components/Subscriptions/SubscriptionTierSubscribeButton'
 import { hasRecurringInterval } from '@/components/Subscriptions/utils'
+import { useRecurringInterval } from '@/hooks/products'
 import { useListAdminOrganizations } from '@/hooks/queries'
-import { useRecurringInterval } from '@/hooks/subscriptions'
 import { organizationPageLink } from '@/utils/nav'
 import { useTrafficRecordPageView } from '@/utils/traffic'
-import { Organization, SubscriptionTier } from '@polar-sh/sdk'
+import { Organization, Product } from '@polar-sh/sdk'
 import { redirect } from 'next/navigation'
 import React, { useMemo } from 'react'
 
 interface OrganizationSubscriptionsPublicPageProps {
-  subscriptionTiers: SubscriptionTier[]
+  products: Product[]
   organization: Organization
 }
 
 const ClientPage: React.FC<OrganizationSubscriptionsPublicPageProps> = ({
-  subscriptionTiers,
+  products,
   organization,
 }) => {
   useTrafficRecordPageView({ organization })
 
   const orgs = useListAdminOrganizations()
   const [recurringInterval, setRecurringInterval, hasBothIntervals] =
-    useRecurringInterval(subscriptionTiers)
+    useRecurringInterval(products)
 
   const shouldRenderSubscribeButton = useMemo(
     () => !orgs.data?.items?.map((o) => o.id).includes(organization.id),
@@ -55,7 +55,7 @@ const ClientPage: React.FC<OrganizationSubscriptionsPublicPageProps> = ({
         </div>
       )}
       <div className="flex flex-row flex-wrap gap-8">
-        {subscriptionTiers
+        {products
           .filter(hasRecurringInterval(recurringInterval))
           .map((tier) => (
             <SubscriptionTierCard
@@ -67,7 +67,7 @@ const ClientPage: React.FC<OrganizationSubscriptionsPublicPageProps> = ({
               {shouldRenderSubscribeButton &&
                 (tier.type === 'free' ? (
                   <FreeTierSubscribe
-                    subscriptionTier={tier}
+                    product={tier}
                     organization={organization}
                   />
                 ) : (

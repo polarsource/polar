@@ -1,7 +1,7 @@
 import { getServerSideAPI } from '@/utils/api/serverside'
 import { redirectToCanonicalDomain } from '@/utils/nav'
 import {
-  ListResourceSubscriptionTier,
+  ListResourceProduct,
   Organization,
   Platforms,
   ResponseError,
@@ -95,28 +95,22 @@ export default async function Page({
   const api = getServerSideAPI()
 
   let organization: Organization | undefined
-  let subscriptionTiers: ListResourceSubscriptionTier | undefined
+  let products: ListResourceProduct | undefined
 
   try {
-    const [loadOrganization, loadSubscriptionTiers] = await Promise.all([
-      api.organizations.lookup(
-        {
-          platform: Platforms.GITHUB,
-          organizationName: params.organization,
-        },
-        cacheConfig,
-      ),
-      api.subscriptions.searchSubscriptionTiers(
-        {
-          platform: Platforms.GITHUB,
-          organizationName: params.organization,
-        },
-        cacheConfig,
-      ),
-    ])
-
-    organization = loadOrganization
-    subscriptionTiers = loadSubscriptionTiers
+    organization = await api.organizations.lookup(
+      {
+        platform: Platforms.GITHUB,
+        organizationName: params.organization,
+      },
+      cacheConfig,
+    )
+    products = await api.products.listProducts(
+      {
+        organizationId: organization.id,
+      },
+      cacheConfig,
+    )
   } catch (e) {
     notFound()
   }
@@ -128,10 +122,5 @@ export default async function Page({
     subPath: `/subscribe`,
   })
 
-  return (
-    <ClientPage
-      organization={organization}
-      subscriptionTiers={subscriptionTiers}
-    />
-  )
+  return <ClientPage organization={organization} products={products} />
 }

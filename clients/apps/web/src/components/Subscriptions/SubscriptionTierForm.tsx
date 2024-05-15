@@ -3,11 +3,11 @@
 import { ErrorMessage } from '@hookform/error-message'
 import { ClearOutlined } from '@mui/icons-material'
 import {
-  SubscriptionTierCreate,
-  SubscriptionTierPriceCreate,
-  SubscriptionTierPriceRecurringInterval,
+  ProductCreate,
+  PricesInner as ProductPriceCreate,
+  ProductPriceRecurringInterval,
+  ProductUpdate,
   SubscriptionTierType,
-  SubscriptionTierUpdate,
 } from '@polar-sh/sdk'
 import Button from 'polarkit/components/ui/atoms/button'
 import Input from 'polarkit/components/ui/atoms/input'
@@ -38,11 +38,7 @@ import SubscriptionGroupIcon from './SubscriptionGroupIcon'
 
 interface SubscriptionTierPriceItemProps {
   index: number
-  fieldArray: UseFieldArrayReturn<
-    SubscriptionTierCreate | SubscriptionTierUpdate,
-    'prices',
-    'id'
-  >
+  fieldArray: UseFieldArrayReturn<ProductCreate | ProductUpdate, 'prices', 'id'>
 }
 
 const SubscriptionTierPriceItem: React.FC<SubscriptionTierPriceItemProps> = ({
@@ -50,7 +46,7 @@ const SubscriptionTierPriceItem: React.FC<SubscriptionTierPriceItemProps> = ({
   fieldArray,
 }) => {
   const { control, register, watch, setValue } = useFormContext<
-    SubscriptionTierCreate | SubscriptionTierUpdate
+    ProductCreate | ProductUpdate
   >()
   const { remove } = fieldArray
   const recurringInterval = watch(`prices.${index}.recurring_interval`)
@@ -62,6 +58,7 @@ const SubscriptionTierPriceItem: React.FC<SubscriptionTierPriceItemProps> = ({
         {...register(`prices.${index}.recurring_interval`)}
       />
       <input type="hidden" {...register(`prices.${index}.id`)} />
+      <input type="hidden" {...register(`prices.${index}.type`)} />
       <FormField
         control={control}
         name={`prices.${index}.price_amount`}
@@ -83,11 +80,11 @@ const SubscriptionTierPriceItem: React.FC<SubscriptionTierPriceItemProps> = ({
                     postSlot={
                       <>
                         {recurringInterval ===
-                          SubscriptionTierPriceRecurringInterval.MONTH && (
+                          ProductPriceRecurringInterval.MONTH && (
                           <span>/mo</span>
                         )}
                         {recurringInterval ===
-                          SubscriptionTierPriceRecurringInterval.YEAR && (
+                          ProductPriceRecurringInterval.YEAR && (
                           <span>/year</span>
                         )}
                       </>
@@ -129,7 +126,7 @@ const SubscriptionTierForm: React.FC<SubscriptionTierFormProps> = ({
   const {
     control,
     formState: { errors },
-  } = useFormContext<SubscriptionTierCreate | SubscriptionTierUpdate>()
+  } = useFormContext<ProductCreate | ProductUpdate>()
 
   const pricesFieldArray = useFieldArray({
     control,
@@ -142,19 +139,19 @@ const SubscriptionTierForm: React.FC<SubscriptionTierFormProps> = ({
 
   const hasMonthlyPrice = useMemo(
     () =>
-      (prices as SubscriptionTierPriceCreate[]).some(
-        (price: SubscriptionTierPriceCreate) =>
-          price.recurring_interval ===
-          SubscriptionTierPriceRecurringInterval.MONTH,
+      (prices as ProductPriceCreate[]).some(
+        (price: ProductPriceCreate) =>
+          price.type === 'recurring' &&
+          price.recurring_interval === ProductPriceRecurringInterval.MONTH,
       ),
     [prices],
   )
   const hasYearlyPrice = useMemo(
     () =>
-      (prices as SubscriptionTierPriceCreate[]).some(
+      (prices as ProductPriceCreate[]).some(
         (price) =>
-          price.recurring_interval ===
-          SubscriptionTierPriceRecurringInterval.YEAR,
+          price.type === 'recurring' &&
+          price.recurring_interval === ProductPriceRecurringInterval.YEAR,
       ),
     [prices],
   )
@@ -248,9 +245,8 @@ const SubscriptionTierForm: React.FC<SubscriptionTierFormProps> = ({
                   type="button"
                   onClick={() =>
                     append({
-                      id: '',
-                      recurring_interval:
-                        SubscriptionTierPriceRecurringInterval.MONTH,
+                      type: 'recurring',
+                      recurring_interval: ProductPriceRecurringInterval.MONTH,
                       price_currency: 'usd',
                       price_amount: 0,
                     })
@@ -267,9 +263,8 @@ const SubscriptionTierForm: React.FC<SubscriptionTierFormProps> = ({
                   type="button"
                   onClick={() =>
                     append({
-                      id: '',
-                      recurring_interval:
-                        SubscriptionTierPriceRecurringInterval.YEAR,
+                      type: 'recurring',
+                      recurring_interval: ProductPriceRecurringInterval.YEAR,
                       price_currency: 'usd',
                       price_amount: 0,
                     })

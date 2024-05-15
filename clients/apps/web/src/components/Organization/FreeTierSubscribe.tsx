@@ -4,12 +4,12 @@ import { useAuth } from '@/hooks'
 import { useSendMagicLink } from '@/hooks/magicLink'
 import {
   useCreateFreeSubscription,
-  useSubscriptionTiers,
+  useProducts,
   useUserSubscriptions,
 } from '@/hooks/queries'
 import { organizationPageLink } from '@/utils/nav'
 import { ArrowForwardOutlined } from '@mui/icons-material'
-import { Organization, SubscriptionTier, UserRead } from '@polar-sh/sdk'
+import { Organization, Product, UserRead } from '@polar-sh/sdk'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import Button from 'polarkit/components/ui/atoms/button'
@@ -23,13 +23,13 @@ import SubscriptionTierCelebration from '../Subscriptions/SubscriptionTierCelebr
 
 interface AuthenticatedFreeTierSubscribeProps {
   organization: Organization
-  subscriptionTier: SubscriptionTier
+  product: Product
   user: UserRead
   upsellSubscriptions?: boolean
 }
 
 export const AuthenticatedFreeTierSubscribe = ({
-  subscriptionTier,
+  product,
   organization,
   user,
   upsellSubscriptions,
@@ -43,15 +43,15 @@ export const AuthenticatedFreeTierSubscribe = ({
   const subscription = data && data.items && data.items[0]
   const isSubscribed = subscription !== undefined
   const router = useRouter()
-  const orgSubscriptionTiers = useSubscriptionTiers(organization.name, 100)
-  const hasHighlightedSubscriptions = orgSubscriptionTiers.data?.items?.some(
+  const orgProducts = useProducts(organization.id, 100)
+  const hasHighlightedSubscriptions = orgProducts.data?.items?.some(
     (tier) => tier.is_highlighted,
   )
 
   const createFreeSubscription = useCreateFreeSubscription()
 
   const onSubscribeFree = async () => {
-    await createFreeSubscription.mutateAsync({ tier_id: subscriptionTier.id })
+    await createFreeSubscription.mutateAsync({ tier_id: product.id })
 
     if (upsellSubscriptions && hasHighlightedSubscriptions) {
       router.push(organizationPageLink(organization, 'subscribe'))
@@ -70,10 +70,10 @@ export const AuthenticatedFreeTierSubscribe = ({
                 variant="outline"
               >
                 <SubscriptionGroupIcon
-                  type={subscription?.subscription_tier.type}
+                  type={subscription?.product.type}
                   className="mr-2"
                 />
-                Subscribed to {subscription.subscription_tier.name}
+                Subscribed to {subscription.product.name}
               </Button>
             </Link>
           ) : (
@@ -97,19 +97,19 @@ export const AuthenticatedFreeTierSubscribe = ({
 
 interface AnonymousFreeTierSubscribeProps {
   organization: Organization
-  subscriptionTier: SubscriptionTier
+  product: Product
   upsellSubscriptions?: boolean
 }
 
 export const AnonymousFreeTierSubscribe = ({
   organization,
-  subscriptionTier,
+  product,
   upsellSubscriptions,
 }: AnonymousFreeTierSubscribeProps) => {
   const router = useRouter()
 
-  const orgSubscriptionTiers = useSubscriptionTiers(organization.name, 100)
-  const hasHighlightedSubscriptions = orgSubscriptionTiers.data?.items?.some(
+  const orgProducts = useProducts(organization.id, 100)
+  const hasHighlightedSubscriptions = orgProducts.data?.items?.some(
     (tier) => tier.is_highlighted,
   )
 
@@ -128,7 +128,7 @@ export const AnonymousFreeTierSubscribe = ({
         setSuccess(false)
 
         await createFreeSubscription.mutateAsync({
-          tier_id: subscriptionTier.id,
+          tier_id: product.id,
           customer_email: data.customer_email,
         })
 
@@ -148,7 +148,7 @@ export const AnonymousFreeTierSubscribe = ({
       },
       [
         createFreeSubscription,
-        subscriptionTier,
+        product,
         router,
         organization,
         upsellSubscriptions,
@@ -211,7 +211,7 @@ export const AnonymousFreeTierSubscribe = ({
           <div className="flex min-h-[240px] w-full flex-col items-center justify-center gap-y-6 px-16 py-10">
             {success && (
               <>
-                <SubscriptionTierCelebration type={subscriptionTier.type} />
+                <SubscriptionTierCelebration type={product.type} />
                 <p className="text-muted-foreground text-center">Thank you!</p>
                 <h2 className="text-center text-lg">
                   You&apos;re now subscribed to {organization.name}
@@ -235,13 +235,13 @@ export const AnonymousFreeTierSubscribe = ({
 }
 
 interface FreeTierSubscribeProps {
-  subscriptionTier: SubscriptionTier
+  product: Product
   organization: Organization
   upsellSubscriptions?: boolean
 }
 
 export const FreeTierSubscribe = ({
-  subscriptionTier,
+  product: product,
   organization,
   upsellSubscriptions,
 }: FreeTierSubscribeProps) => {
@@ -250,14 +250,14 @@ export const FreeTierSubscribe = ({
     <>
       {currentUser ? (
         <AuthenticatedFreeTierSubscribe
-          subscriptionTier={subscriptionTier}
+          product={product}
           organization={organization}
           user={currentUser}
           upsellSubscriptions={upsellSubscriptions}
         />
       ) : (
         <AnonymousFreeTierSubscribe
-          subscriptionTier={subscriptionTier}
+          product={product}
           organization={organization}
           upsellSubscriptions={upsellSubscriptions}
         />

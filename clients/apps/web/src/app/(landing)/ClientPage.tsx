@@ -19,7 +19,7 @@ import {
   TextSnippetOutlined,
   VolunteerActivismOutlined,
 } from '@mui/icons-material'
-import { SubscriptionTier, UserSignupType } from '@polar-sh/sdk'
+import { Product, UserSignupType } from '@polar-sh/sdk'
 import { motion, useScroll, useTransform } from 'framer-motion'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -181,7 +181,7 @@ const BenefitsUpsell = () => {
     >
       <div className="flex h-full max-h-[660px] w-full flex-row items-center justify-center gap-8 overflow-hidden border-b px-12 md:w-2/5 md:border-none">
         <motion.div className="flex flex-col gap-y-6" style={{ y: listY }}>
-          {MOCKED_SUBSCRIPTION_TIERS.map((tier) => (
+          {MOCKED_PRODUCTS.map((tier) => (
             <motion.div key={tier.id} className="w-[300px]">
               <SubscriptionTierCard
                 className="dark:ring-polar-700 h-full border-none ring-1 ring-gray-100"
@@ -601,7 +601,7 @@ const SignUpBanner = () => {
   )
 }
 
-const MOCKED_SUBSCRIPTION_TIERS: Partial<SubscriptionTier>[] = [
+const MOCKED_PRODUCTS: Partial<Product>[] = [
   {
     name: 'Follower',
     type: 'free',
@@ -630,6 +630,7 @@ const MOCKED_SUBSCRIPTION_TIERS: Partial<SubscriptionTier>[] = [
         created_at: new Date().toDateString(),
         price_amount: 1900,
         price_currency: 'usd',
+        type: 'recurring',
         recurring_interval: 'month',
         is_archived: false,
       },
@@ -675,6 +676,7 @@ const MOCKED_SUBSCRIPTION_TIERS: Partial<SubscriptionTier>[] = [
         created_at: new Date().toDateString(),
         price_amount: 299900,
         price_currency: 'usd',
+        type: 'recurring',
         recurring_interval: 'month',
         is_archived: false,
       },

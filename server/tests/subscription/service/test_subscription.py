@@ -10,7 +10,6 @@ from polar.auth.models import Anonymous, AuthSubject
 from polar.authz.service import Authz
 from polar.config import settings
 from polar.exceptions import NotPermitted, ResourceNotFound
-from polar.held_balance.service import held_balance as held_balance_service
 from polar.integrations.stripe.service import StripeService
 from polar.kit.pagination import PaginationParams
 from polar.models import (
@@ -42,12 +41,6 @@ from polar.subscription.service.subscription import (
     SubscriptionDoesNotExist,
 )
 from polar.subscription.service.subscription import subscription as subscription_service
-from polar.transaction.service.balance import (
-    BalanceTransactionService,
-)
-from polar.transaction.service.platform_fee import (
-    PlatformFeeTransactionService,
-)
 from polar.user.service import user as user_service
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
@@ -55,10 +48,10 @@ from tests.fixtures.random_objects import (
     add_product_benefits,
     create_active_subscription,
     create_product_price,
+    create_sale,
     create_subscription,
     create_user,
 )
-from tests.transaction.conftest import create_transaction
 
 
 def construct_stripe_subscription(
@@ -660,122 +653,6 @@ class TestUpdateSubscriptionFromStripe:
             "subscription.subscription.enqueue_benefits_grants",
             updated_subscription.id,
         )
-
-
-@pytest.mark.asyncio
-class TestTransferSubscriptionPaidInvoice:
-    async def test_not_existing_subscription(self, session: AsyncSession) -> None:
-        stripe_invoice = construct_stripe_invoice()
-
-        # then
-        session.expunge_all()
-
-        with pytest.raises(SubscriptionDoesNotExist):
-            await subscription_service.transfer_subscription_paid_invoice(
-                session, invoice=stripe_invoice
-            )
-
-    async def test_no_account(
-        self,
-        mocker: MockerFixture,
-        session: AsyncSession,
-        save_fixture: SaveFixture,
-        subscription: Subscription,
-        product: Product,
-    ) -> None:
-        stripe_invoice = construct_stripe_invoice(
-            subscription_id=subscription.stripe_subscription_id
-        )
-
-        stripe_service_mock = mocker.patch(
-            "polar.subscription.service.subscription.stripe_service", spec=StripeService
-        )
-
-        payment_transaction = await create_transaction(
-            save_fixture, type=TransactionType.payment, subscription=subscription
-        )
-        payment_transaction.charge_id = "CHARGE_ID"
-        await save_fixture(payment_transaction)
-
-        # then
-        session.expunge_all()
-
-        await subscription_service.transfer_subscription_paid_invoice(
-            session, invoice=stripe_invoice
-        )
-
-        stripe_service_mock.update_invoice.assert_not_called()
-
-        held_balance = await held_balance_service.get_by(
-            session,
-            organization_id=product.organization_id,
-        )
-        assert held_balance is not None
-
-        assert held_balance.subscription_id == subscription.id
-        assert held_balance.product_price_id == subscription.price_id
-
-    async def test_valid(
-        self,
-        mocker: MockerFixture,
-        session: AsyncSession,
-        subscription: Subscription,
-        organization_account: Account,
-    ) -> None:
-        stripe_invoice = construct_stripe_invoice(
-            subscription_id=subscription.stripe_subscription_id
-        )
-        invoice_total = stripe_invoice.total - (stripe_invoice.tax or 0)
-
-        transaction_service_mock = mocker.patch(
-            "polar.subscription.service.subscription.balance_transaction_service",
-            spec=BalanceTransactionService,
-        )
-        transaction_service_mock.create_balance_from_charge.return_value = (
-            Transaction(
-                type=TransactionType.balance,
-                amount=-invoice_total,
-                subscription_id=subscription.id,
-            ),
-            Transaction(
-                type=TransactionType.balance,
-                amount=invoice_total,
-                account_id=organization_account.id,
-                subscription_id=subscription.id,
-            ),
-        )
-
-        platform_fee_transaction_service_mock = mocker.patch(
-            "polar.subscription.service.subscription.platform_fee_transaction_service",
-            spec=PlatformFeeTransactionService,
-        )
-
-        # then
-        session.expunge_all()
-
-        await subscription_service.transfer_subscription_paid_invoice(
-            session, invoice=stripe_invoice
-        )
-
-        transaction_service_mock.create_balance_from_charge.assert_called_once()
-        assert (
-            transaction_service_mock.create_balance_from_charge.call_args[1][
-                "destination_account"
-            ].id
-            == organization_account.id
-        )
-        assert (
-            transaction_service_mock.create_balance_from_charge.call_args[1][
-                "charge_id"
-            ]
-            == stripe_invoice.charge
-        )
-        assert (
-            transaction_service_mock.create_balance_from_charge.call_args[1]["amount"]
-            == invoice_total
-        )
-
-        platform_fee_transaction_service_mock.create_fees_reversal_balances.assert_called_once()
 
 
 @pytest.mark.asyncio
@@ -1600,7 +1477,7 @@ def get_balances_sum(balances: list[Transaction]) -> int:
     return sum(balance.amount for balance in balances)
 
 
-async def create_subscription_balances(
+async def create_sale_subscription_balances(
     save_fixture: SaveFixture,
     *,
     gross_amount: int,
@@ -1613,6 +1490,12 @@ async def create_subscription_balances(
     net_amount = get_net_amount(gross_amount)
     transactions: list[Transaction] = []
     for month in range(start_month, end_month + 1):
+        sale = await create_sale(
+            save_fixture,
+            user=subscription.user,
+            product=subscription.product,
+            subscription=subscription,
+        )
         transaction = Transaction(
             created_at=datetime(year, month, 1, 0, 0, 0, 0, UTC),
             type=TransactionType.balance,
@@ -1623,7 +1506,7 @@ async def create_subscription_balances(
             account_amount=int(net_amount * 0.9),
             tax_amount=0,
             account=organization_account,
-            subscription=subscription,
+            sale=sale,
         )
         await save_fixture(transaction)
         transactions.append(transaction)
@@ -1689,7 +1572,7 @@ class TestGetStatisticsPeriods:
             ended_at=datetime(2023, 6, 15),
         )
         price = product.prices[0].price_amount
-        balances = await create_subscription_balances(
+        balances = await create_sale_subscription_balances(
             save_fixture,
             gross_amount=price,
             start_month=1,
@@ -1738,7 +1621,7 @@ class TestGetStatisticsPeriods:
             ended_at=datetime(2023, 6, 15),
         )
         price = product.prices[0].price_amount
-        balances = await create_subscription_balances(
+        balances = await create_sale_subscription_balances(
             save_fixture,
             gross_amount=price,
             start_month=1,
@@ -1803,7 +1686,7 @@ class TestGetStatisticsPeriods:
             ended_at=datetime(2023, 6, 15),
         )
         price = product.prices[0].price_amount
-        balances = await create_subscription_balances(
+        balances = await create_sale_subscription_balances(
             save_fixture,
             gross_amount=price,
             start_month=1,
@@ -1853,7 +1736,7 @@ class TestGetStatisticsPeriods:
             ended_at=datetime(2023, 6, 15),
         )
         price = product.prices[0].price_amount
-        await create_subscription_balances(
+        await create_sale_subscription_balances(
             save_fixture,
             gross_amount=price,
             start_month=1,
@@ -1900,7 +1783,7 @@ class TestGetStatisticsPeriods:
             ended_at=datetime(2023, 6, 15),
         )
         price_organization = product.prices[0].price_amount
-        balances_organization = await create_subscription_balances(
+        balances_organization = await create_sale_subscription_balances(
             save_fixture,
             gross_amount=price_organization,
             start_month=1,
@@ -1916,7 +1799,7 @@ class TestGetStatisticsPeriods:
             ended_at=datetime(2023, 6, 15),
         )
         price_organization_second = product_second.prices[0].price_amount
-        balances_organization_second = await create_subscription_balances(
+        balances_organization_second = await create_sale_subscription_balances(
             save_fixture,
             gross_amount=price_organization_second,
             start_month=1,
@@ -1967,7 +1850,7 @@ class TestGetStatisticsPeriods:
             started_at=datetime(2023, 1, 1),
         )
         price = product.prices[0].price_amount
-        balances = await create_subscription_balances(
+        balances = await create_sale_subscription_balances(
             save_fixture,
             gross_amount=price,
             start_month=1,
@@ -2075,7 +1958,7 @@ class TestGetStatisticsPeriods:
             user=user_second,
             started_at=datetime(2023, 1, 1, tzinfo=UTC),
         )
-        balances = await create_subscription_balances(
+        balances = await create_sale_subscription_balances(
             save_fixture,
             gross_amount=price.price_amount,
             start_month=1,

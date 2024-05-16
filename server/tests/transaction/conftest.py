@@ -8,19 +8,19 @@ from polar.models import (
     Organization,
     Pledge,
     Repository,
-    Subscription,
+    Sale,
     Transaction,
     User,
 )
 from polar.models.donation import Donation
 from polar.models.pledge import PledgeType
-from polar.models.product_price import ProductPrice
 from polar.models.transaction import PaymentProcessor, TransactionType
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     create_donation,
     create_pledge,
     create_product,
+    create_sale,
     create_subscription,
 )
 
@@ -36,8 +36,7 @@ async def create_transaction(
     account_currency: str = "eur",
     pledge: Pledge | None = None,
     issue_reward: IssueReward | None = None,
-    subscription: Subscription | None = None,
-    produce_price: ProductPrice | None = None,
+    sale: Sale | None = None,
     payout_transaction: Transaction | None = None,
     donation: Donation | None = None,
 ) -> Transaction:
@@ -54,12 +53,7 @@ async def create_transaction(
         payment_organization=payment_organization,
         pledge=pledge,
         issue_reward=issue_reward,
-        subscription=subscription,
-        product_price=produce_price
-        if produce_price is not None
-        else subscription.price
-        if subscription is not None
-        else None,
+        sale=sale,
         donation=donation,
         payout_transaction=payout_transaction,
     )
@@ -131,11 +125,14 @@ async def transaction_issue_reward(
 
 
 @pytest_asyncio.fixture
-async def transaction_subscription(
+async def transaction_sale_subscription(
     save_fixture: SaveFixture, organization: Organization, user: User
-) -> Subscription:
-    subscription_tier = await create_product(save_fixture, organization=organization)
-    return await create_subscription(save_fixture, product=subscription_tier, user=user)
+) -> Sale:
+    product = await create_product(save_fixture, organization=organization)
+    subscription = await create_subscription(save_fixture, product=product, user=user)
+    return await create_sale(
+        save_fixture, product=product, user=user, subscription=subscription
+    )
 
 
 @pytest_asyncio.fixture
@@ -177,7 +174,7 @@ async def account_transactions(
     account: Account,
     transaction_pledge: Pledge,
     transaction_issue_reward: IssueReward,
-    transaction_subscription: Subscription,
+    transaction_sale_subscription: Sale,
     transaction_donation_by_user: Donation,
     transaction_donation_by_organization: Donation,
     transaction_donation_on_behalf_of_organization: Donation,
@@ -196,7 +193,7 @@ async def account_transactions(
             type=TransactionType.balance,
             account_currency="usd",
             account=account,
-            subscription=transaction_subscription,
+            sale=transaction_sale_subscription,
         ),
         await create_transaction(
             save_fixture,

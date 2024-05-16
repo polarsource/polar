@@ -7,7 +7,6 @@ from sqlalchemy import Select, and_, case, or_, select, update
 from sqlalchemy.exc import InvalidRequestError
 from sqlalchemy.orm import contains_eager, joinedload
 
-from polar.account.service import account as account_service
 from polar.auth.models import AuthSubject, Subject, is_organization, is_user
 from polar.authz.service import AccessType, Authz
 from polar.benefit.service.benefit import benefit as benefit_service
@@ -17,7 +16,6 @@ from polar.kit.db.postgres import AsyncSession
 from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.services import ResourceService
 from polar.models import (
-    Account,
     Benefit,
     Organization,
     Product,
@@ -510,13 +508,6 @@ class ProductService(ResourceService[Product, ProductCreate, ProductUpdate]):
             )
 
         return statement
-
-    async def get_managing_organization_account(
-        self, session: AsyncSession, product: Product
-    ) -> Account | None:
-        return await account_service.get_by_organization_id(
-            session, product.organization_id
-        )
 
     async def _disable_other_highlights(
         self,

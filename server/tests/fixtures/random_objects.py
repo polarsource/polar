@@ -17,6 +17,7 @@ from polar.models import (
     ProductBenefit,
     ProductPrice,
     Repository,
+    Sale,
     Subscription,
     User,
     UserOrganization,
@@ -520,6 +521,35 @@ async def create_product_price(
     return price
 
 
+async def create_sale(
+    save_fixture: SaveFixture,
+    *,
+    product: Product,
+    user: User,
+    product_price: ProductPrice | None = None,
+    subscription: Subscription | None = None,
+    amount: int = 1000,
+    tax_amount: int = 0,
+    stripe_invoice_id: str = "INVOICE_ID",
+) -> Sale:
+    sale = Sale(
+        amount=amount,
+        tax_amount=tax_amount,
+        currency="usd",
+        stripe_invoice_id=stripe_invoice_id,
+        user=user,
+        product=product,
+        product_price=product_price
+        if product_price is not None
+        else product.prices[0]
+        if product.prices
+        else None,
+        subscription=subscription,
+    )
+    await save_fixture(sale)
+    return sale
+
+
 async def create_benefit(
     save_fixture: SaveFixture,
     *,
@@ -584,9 +614,9 @@ async def create_subscription(
         cancel_at_period_end=False,
         started_at=started_at,
         ended_at=ended_at,
-        user_id=user.id,
-        organization_id=organization.id if organization is not None else None,
-        product_id=product.id,
+        user=user,
+        organization=organization,
+        product=product,
         price=price
         if price is not None
         else product.prices[0]

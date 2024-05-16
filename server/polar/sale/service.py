@@ -1,0 +1,215 @@
+import stripe as stripe_lib
+
+from polar.account.service import account as account_service
+from polar.enums import UserSignupType
+from polar.exceptions import PolarError
+from polar.held_balance.service import held_balance as held_balance_service
+from polar.integrations.loops.service import loops as loops_service
+from polar.integrations.stripe.utils import get_expandable_id
+from polar.kit.db.postgres import AsyncSession
+from polar.kit.services import ResourceServiceReader
+from polar.models import HeldBalance, Sale, Subscription, User
+from polar.models.transaction import TransactionType
+from polar.notifications.notification import (
+    MaintainerCreateAccountNotificationPayload,
+    NotificationType,
+)
+from polar.notifications.service import PartialNotification
+from polar.notifications.service import notifications as notifications_service
+from polar.organization.service import organization as organization_service
+from polar.product.service.product_price import product_price as product_price_service
+from polar.subscription.service.subscription import subscription as subscription_service
+from polar.transaction.service.balance import PaymentTransactionForChargeDoesNotExist
+from polar.transaction.service.balance import (
+    balance_transaction as balance_transaction_service,
+)
+from polar.transaction.service.platform_fee import (
+    platform_fee_transaction as platform_fee_transaction_service,
+)
+from polar.user.service import user as user_service
+
+
+class SaleError(PolarError): ...
+
+
+class NotASaleInvoice(SaleError):
+    def __init__(self, invoice_id: str) -> None:
+        self.invoice_id = invoice_id
+        message = (
+            f"Received invoice {invoice_id} from Stripe, but it is not a sale."
+            " Check if it's an issue pledge."
+        )
+        super().__init__(message)
+
+
+class InvoiceWithNoOrMultipleLines(SaleError):
+    def __init__(self, invoice_id: str) -> None:
+        self.invoice_id = invoice_id
+        message = (
+            f"Received invoice {invoice_id} from Stripe " f"with no or multiple lines."
+        )
+        super().__init__(message)
+
+
+class ProductPriceDoesNotExist(SaleError):
+    def __init__(self, invoice_id: str, stripe_price_id: str) -> None:
+        self.invoice_id = invoice_id
+        self.stripe_price_id = stripe_price_id
+        message = (
+            f"Received invoice {invoice_id} from Stripe with price {stripe_price_id}, "
+            f"but no associated ProductPrice exists."
+        )
+        super().__init__(message)
+
+
+class SubscriptionDoesNotExist(SaleError):
+    def __init__(self, invoice_id: str, stripe_subscription_id: str) -> None:
+        self.invoice_id = invoice_id
+        self.stripe_subscription_id = stripe_subscription_id
+        message = (
+            f"Received invoice {invoice_id} from Stripe "
+            f"for subscription {stripe_subscription_id}, "
+            f"but no associated Subscription exists."
+        )
+        super().__init__(message)
+
+
+class SaleService(ResourceServiceReader[Sale]):
+    async def create_sale_from_stripe(
+        self, session: AsyncSession, *, invoice: stripe_lib.Invoice
+    ) -> Sale:
+        assert invoice.charge is not None
+        assert invoice.id is not None
+
+        if invoice.subscription is None:
+            raise NotASaleInvoice(invoice.id)
+
+        # Get price and product
+        if len(invoice.lines.data) != 1:
+            raise InvoiceWithNoOrMultipleLines(invoice.id)
+        line = invoice.lines.data[0]
+        assert line.price is not None
+        stripe_price_id = line.price.id
+        product_price = await product_price_service.get_by_stripe_price_id(
+            session, stripe_price_id
+        )
+        if product_price is None:
+            raise ProductPriceDoesNotExist(invoice.id, stripe_price_id)
+        product = product_price.product
+
+        user: User | None = None
+
+        # Get subscription if applicable
+        subscription: Subscription | None = None
+        if invoice.subscription is not None:
+            stripe_subscription_id = get_expandable_id(invoice.subscription)
+            subscription = await subscription_service.get_by_stripe_subscription_id(
+                session, stripe_subscription_id
+            )
+            if subscription is None:
+                raise SubscriptionDoesNotExist(invoice.id, stripe_subscription_id)
+            user = await user_service.get(session, subscription.user_id)
+
+        # Get or create customer user
+        assert invoice.customer is not None
+        stripe_customer_id = get_expandable_id(invoice.customer)
+        if user is None:
+            user = await user_service.get_by_stripe_customer_id(
+                session, stripe_customer_id
+            )
+            if user is None:
+                assert invoice.customer_email is not None
+                user = await user_service.get_by_email_or_signup(
+                    session, invoice.customer_email, signup_type=UserSignupType.backer
+                )
+
+        # Take the chance to update Stripe customer ID and email marketing
+        user.stripe_customer_id = stripe_customer_id
+        await loops_service.user_update(user, isBacker=True)
+        session.add(user)
+
+        # Create Sale
+        tax = invoice.tax or 0
+        sale = Sale(
+            amount=invoice.total - tax,
+            tax_amount=tax,
+            currency=invoice.currency,
+            stripe_invoice_id=invoice.id,
+            user=user,
+            product=product,
+            product_price=product_price,
+            subscription=subscription,
+        )
+        session.add(sale)
+
+        await self._create_sale_balance(
+            session, sale, charge_id=get_expandable_id(invoice.charge)
+        )
+
+        return sale
+
+    async def _create_sale_balance(
+        self, session: AsyncSession, sale: Sale, charge_id: str
+    ) -> None:
+        product = sale.product
+        account = await account_service.get_by_organization_id(
+            session, product.organization_id
+        )
+
+        transfer_amount = sale.amount
+
+        # Retrieve the payment transaction and link it to the sale
+        payment_transaction = await balance_transaction_service.get_by(
+            session, type=TransactionType.payment, charge_id=charge_id
+        )
+        if payment_transaction is None:
+            raise PaymentTransactionForChargeDoesNotExist(charge_id)
+        payment_transaction.sale = sale
+        session.add(payment_transaction)
+
+        # Prepare an held balance
+        # It'll be used if the account is not created yet
+        held_balance = HeldBalance(
+            amount=transfer_amount, sale=sale, payment_transaction=payment_transaction
+        )
+
+        # No account, create the held balance
+        if account is None:
+            managing_organization = await organization_service.get(
+                session, product.organization_id
+            )
+            assert managing_organization is not None
+            held_balance.organization_id = managing_organization.id
+            await held_balance_service.create(session, held_balance=held_balance)
+
+            await notifications_service.send_to_org_admins(
+                session=session,
+                org_id=managing_organization.id,
+                notif=PartialNotification(
+                    type=NotificationType.maintainer_create_account,
+                    payload=MaintainerCreateAccountNotificationPayload(
+                        organization_name=managing_organization.name,
+                        url=managing_organization.account_url,
+                    ),
+                ),
+            )
+
+            return
+
+        # Account created, create the balance immediately
+        balance_transactions = (
+            await balance_transaction_service.create_balance_from_charge(
+                session,
+                source_account=None,
+                destination_account=account,
+                charge_id=charge_id,
+                amount=transfer_amount,
+                sale=sale,
+            )
+        )
+        await platform_fee_transaction_service.create_fees_reversal_balances(
+            session, balance_transactions=balance_transactions
+        )
+
+
+sale = SaleService(Sale)

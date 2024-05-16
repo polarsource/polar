@@ -61,9 +61,9 @@ class TestSearch:
             if result.pledge is not None:
                 result.pledge.issue
             result.issue_reward
-            result.subscription
-            if result.subscription is not None:
-                result.subscription.product
+            result.sale
+            if result.sale is not None:
+                result.sale.product
 
     async def test_filter_type(
         self,
@@ -279,4 +279,4 @@ class TestLookup:
         # Check that relationships are eagerly loaded
         transaction.pledge
         transaction.issue_reward
-        transaction.subscription
+        transaction.sale

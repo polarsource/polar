@@ -7,14 +7,7 @@ from polar.integrations.stripe.service import stripe as stripe_service
 from polar.integrations.stripe.utils import get_expandable_id
 from polar.kit.utils import generate_uuid
 from polar.logging import Logger
-from polar.models import (
-    Account,
-    IssueReward,
-    Pledge,
-    ProductPrice,
-    Subscription,
-    Transaction,
-)
+from polar.models import Account, IssueReward, Pledge, Sale, Transaction
 from polar.models.donation import Donation
 from polar.models.transaction import PlatformFeeType, TransactionType
 from polar.postgres import AsyncSession
@@ -44,8 +37,7 @@ class BalanceTransactionService(BaseTransactionService):
         amount: int,
         payment_transaction: Transaction | None = None,
         pledge: Pledge | None = None,
-        subscription: Subscription | None = None,
-        product_price: ProductPrice | None = None,
+        sale: Sale | None = None,
         issue_reward: IssueReward | None = None,
         platform_fee_type: PlatformFeeType | None = None,
         donation: Donation | None = None,
@@ -66,8 +58,7 @@ class BalanceTransactionService(BaseTransactionService):
             balance_correlation_key=balance_correlation_key,
             pledge=pledge,
             issue_reward=issue_reward,
-            subscription=subscription,
-            product_price=product_price,
+            sale=sale,
             payment_transaction=payment_transaction,
             platform_fee_type=platform_fee_type,
             donation=donation,
@@ -84,8 +75,7 @@ class BalanceTransactionService(BaseTransactionService):
             balance_correlation_key=balance_correlation_key,
             pledge=pledge,
             issue_reward=issue_reward,
-            subscription=subscription,
-            product_price=product_price,
+            sale=sale,
             payment_transaction=payment_transaction,
             platform_fee_type=platform_fee_type,
             donation=donation,
@@ -109,7 +99,7 @@ class BalanceTransactionService(BaseTransactionService):
         charge_id: str,
         amount: int,
         pledge: Pledge | None = None,
-        subscription: Subscription | None = None,
+        sale: Sale | None = None,
         issue_reward: IssueReward | None = None,
         donation: Donation | None = None,
     ) -> tuple[Transaction, Transaction]:
@@ -126,8 +116,7 @@ class BalanceTransactionService(BaseTransactionService):
             payment_transaction=payment_transaction,
             amount=amount,
             pledge=pledge,
-            subscription=subscription,
-            product_price=subscription.price if subscription is not None else None,
+            sale=sale,
             issue_reward=issue_reward,
             donation=donation,
         )
@@ -141,7 +130,7 @@ class BalanceTransactionService(BaseTransactionService):
         payment_intent_id: str,
         amount: int,
         pledge: Pledge | None = None,
-        subscription: Subscription | None = None,
+        sale: Sale | None = None,
         issue_reward: IssueReward | None = None,
         donation: Donation | None = None,
     ) -> tuple[Transaction, Transaction]:
@@ -156,7 +145,7 @@ class BalanceTransactionService(BaseTransactionService):
             charge_id=charge_id,
             amount=amount,
             pledge=pledge,
-            subscription=subscription,
+            sale=sale,
             issue_reward=issue_reward,
             donation=donation,
         )
@@ -194,7 +183,7 @@ class BalanceTransactionService(BaseTransactionService):
             platform_fee_type=platform_fee_type,
             pledge_id=outgoing.pledge_id,
             issue_reward_id=outgoing.issue_reward_id,
-            subscription_id=outgoing.subscription_id,
+            sale_id=outgoing.sale_id,
             balance_reversal_transaction=incoming,
             incurred_by_transaction=outgoing_incurred_by,
         )
@@ -211,7 +200,7 @@ class BalanceTransactionService(BaseTransactionService):
             platform_fee_type=platform_fee_type,
             pledge_id=outgoing.pledge_id,
             issue_reward_id=outgoing.issue_reward_id,
-            subscription_id=outgoing.subscription_id,
+            sale_id=outgoing.sale_id,
             balance_reversal_transaction=outgoing,
             incurred_by_transaction=incoming_incurred_by,
         )

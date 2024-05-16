@@ -14,8 +14,7 @@ if TYPE_CHECKING:
         IssueReward,
         Organization,
         Pledge,
-        ProductPrice,
-        Subscription,
+        Sale,
         Transaction,
     )
 
@@ -89,34 +88,17 @@ class HeldBalance(RecordModel):
     def pledge(cls) -> Mapped["Pledge | None"]:
         return relationship("Pledge", lazy="raise")
 
-    subscription_id: Mapped[UUID | None] = mapped_column(
+    sale_id: Mapped[UUID | None] = mapped_column(
         PostgresUUID,
-        ForeignKey("subscriptions.id", ondelete="set null"),
+        ForeignKey("sales.id", ondelete="set null"),
         nullable=True,
         index=True,
     )
-    """ID of the `Subscription` related to this balance."""
+    """ID of the `Sale` related to this balance."""
 
     @declared_attr
-    def subscription(cls) -> Mapped["Subscription | None"]:
-        return relationship("Subscription", lazy="raise")
-
-    product_price_id: Mapped[UUID | None] = mapped_column(
-        PostgresUUID,
-        ForeignKey("product_prices.id", ondelete="set null"),
-        nullable=True,
-        index=True,
-    )
-    """
-    ID of the `ProductPrice` related to this balance.
-
-    Useful to keep track of the price at the time of the balance creation,
-    which might change if the product is updated.
-    """
-
-    @declared_attr
-    def product_price(cls) -> Mapped["ProductPrice | None"]:
-        return relationship("ProductPrice", lazy="raise")
+    def sale(cls) -> Mapped["Sale | None"]:
+        return relationship("Sale", lazy="raise")
 
     issue_reward_id: Mapped[UUID | None] = mapped_column(
         PostgresUUID,

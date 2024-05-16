@@ -13,6 +13,7 @@ from polar.integrations.stripe.schemas import (
     ProductType,
 )
 from polar.pledge.service import pledge as pledge_service
+from polar.sale.service import sale as sale_service
 from polar.subscription.service.subscription import SubscriptionDoesNotExist
 from polar.subscription.service.subscription import subscription as subscription_service
 from polar.transaction.service.balance import PaymentTransactionForChargeDoesNotExist
@@ -27,9 +28,6 @@ from polar.transaction.service.payment import (
 )
 from polar.transaction.service.payment import (
     PledgeDoesNotExist as PaymentTransactionPledgeDoesNotExist,
-)
-from polar.transaction.service.payment import (
-    SubscriptionDoesNotExist as PaymentTransactionSubscriptionDoesNotExist,
 )
 from polar.transaction.service.payment import (
     payment_transaction as payment_transaction_service,
@@ -139,7 +137,6 @@ async def charge_succeeded(
                 )
             except (
                 PaymentTransactionPledgeDoesNotExist,
-                PaymentTransactionSubscriptionDoesNotExist,
                 PaymentTransactionDonationDoesNotExist,
             ) as e:
                 # Retry because we might not have been able to handle other events
@@ -278,9 +275,7 @@ async def invoice_paid(
         async with AsyncSessionMaker(ctx) as session:
             invoice = stripe.Invoice.construct_from(event["data"]["object"], None)
             try:
-                await subscription_service.transfer_subscription_paid_invoice(
-                    session, invoice=invoice
-                )
+                await sale_service.create_sale_from_stripe(session, invoice=invoice)
             except (
                 SubscriptionDoesNotExist,
                 PaymentTransactionForChargeDoesNotExist,

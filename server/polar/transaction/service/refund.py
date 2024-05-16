@@ -77,8 +77,7 @@ class RefundTransactionService(BaseTransactionService):
                 payment_organization_id=payment_transaction.payment_organization_id,
                 pledge_id=payment_transaction.pledge_id,
                 issue_reward_id=payment_transaction.issue_reward_id,
-                subscription_id=payment_transaction.subscription_id,
-                product_price_id=payment_transaction.product_price_id,
+                sale_id=payment_transaction.sale_id,
             )
 
             # Compute and link fees

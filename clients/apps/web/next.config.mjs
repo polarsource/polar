@@ -196,7 +196,7 @@ const nextConfig = {
       },
       {
         source: '/docs/api',
-        destination: '/docs/api/introduction',
+        destination: '/docs/api-reference/introduction',
         permanent: false
       },
       {

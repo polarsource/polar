@@ -5,7 +5,6 @@ from polar.kit.schemas import Schema, TimestampedSchema
 from polar.models.pledge import PledgeState
 from polar.models.product import SubscriptionTierType
 from polar.models.product_price import ProductPriceRecurringInterval, ProductPriceType
-from polar.models.subscription import SubscriptionStatus
 from polar.models.transaction import PaymentProcessor, PlatformFeeType, TransactionType
 
 
@@ -76,10 +75,11 @@ class TransactionProductPrice(TimestampedSchema):
     is_archived: bool
 
 
-class TransactionSubscription(TimestampedSchema):
+class TransactionSale(TimestampedSchema):
     id: UUID4
-    status: SubscriptionStatus
     product: TransactionProduct
+    product_price: TransactionProductPrice
+    subscription_id: UUID4 | None = None
 
 
 class TransactionEmbedded(TimestampedSchema):
@@ -106,8 +106,7 @@ class TransactionEmbedded(TimestampedSchema):
 class Transaction(TransactionEmbedded):
     pledge: TransactionPledge | None = None
     issue_reward: TransactionIssueReward | None = None
-    subscription: TransactionSubscription | None = None
-    product_price: TransactionProductPrice | None = None
+    sale: TransactionSale | None = None
     donation: TransactionDonation | None = None
 
     account_incurred_transactions: list[TransactionEmbedded]

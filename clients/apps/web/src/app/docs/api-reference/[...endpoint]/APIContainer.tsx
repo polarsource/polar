@@ -18,7 +18,9 @@ const resolveSchema = (schemaName: string) => {
     ?.schemas?.[schemaName]
 }
 
-const requestBodyParameters = (endpointMethod: OpenAPIV3_1.OperationObject) => {
+export const requestBodyParameters = (
+  endpointMethod: OpenAPIV3_1.OperationObject,
+) => {
   if (endpointMethod.requestBody && !('content' in endpointMethod.requestBody))
     return undefined
 

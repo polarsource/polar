@@ -73,6 +73,7 @@
     "prismjs": "^1.29.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
+    "react-dropzone": "^14.2.3",
     "react-focus-lock": "^2.9.4",
     "react-hook-form": "^7.50.1",
     "react-intersection-observer": "^9.5.3",

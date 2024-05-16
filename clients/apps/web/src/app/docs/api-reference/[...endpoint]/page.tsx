@@ -3,6 +3,7 @@ import { OpenAPIV3_1 } from 'openapi-types'
 import { PropsWithChildren, useCallback, useMemo } from 'react'
 import { SchemaPathKey } from '../../APINavigation'
 import { APIContainer } from './APIContainer'
+import { ResponseContainer } from './ResponseContainer'
 
 export default function Page({
   params: { endpoint },
@@ -54,7 +55,7 @@ export default function Page({
               {endpointMethod.summary}
             </h1>
             <div className="flex flex-row items-center gap-x-4">
-              <span className="dark:bg-polar-700 rounded-sm bg-gray-200/50 px-2 py-1 font-mono text-xs font-normal uppercase">
+              <span className="dark:bg-polar-700 rounded-md bg-gray-200/50 px-2 py-1 font-mono text-xs font-normal uppercase">
                 {method}
               </span>
               <pre className="w-fit font-mono text-sm">/{apiEndpointPath}</pre>
@@ -74,12 +75,15 @@ export default function Page({
           )}
         </div>
       </div>
-      <div className="sticky top-12 flex w-96 flex-shrink-0 flex-col">
+      <div className="sticky top-12 flex w-96 flex-shrink-0 flex-col gap-y-8">
         <APIContainer
           endpoint={endpointMethod}
           method={method}
           path={apiEndpointPath}
         />
+        {endpointMethod.responses && (
+          <ResponseContainer responses={endpointMethod.responses} />
+        )}
       </div>
     </>
   )
@@ -120,7 +124,7 @@ const BodyParameters = ({
                 </span>
 
                 {requiredProperties.includes(key) && (
-                  <span className="dark:bg-polar-700 text-xxs rounded-sm bg-gray-100 px-2 py-1 font-mono font-normal capitalize">
+                  <span className="dark:bg-polar-700 text-xxs rounded-md bg-gray-100 px-2 py-1 font-mono font-normal capitalize">
                     Required
                   </span>
                 )}
@@ -157,7 +161,7 @@ const Parameters = ({
               <span className="dark:text-polar-200 font-mono text-sm text-gray-700">
                 {parameter.name}
               </span>
-              <span className="dark:bg-polar-700 text-xxs rounded-sm bg-gray-100 px-2 py-1 font-mono font-normal capitalize">
+              <span className="dark:bg-polar-700 text-xxs rounded-md bg-gray-100 px-2 py-1 font-mono font-normal capitalize">
                 {parameter.in} Parameter
               </span>
             </div>

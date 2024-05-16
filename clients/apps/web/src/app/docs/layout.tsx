@@ -1,27 +1,29 @@
-import GithubLoginButton from '@/components/Auth/GithubLoginButton'
 import { BrandingMenu } from '@/components/Layout/Public/BrandingMenu'
+import { getServerSideAPI } from '@/utils/api/serverside'
 import {
   ApiOutlined,
   DescriptionOutlined,
   SpaceDashboardOutlined,
 } from '@mui/icons-material'
-import { UserSignupType } from '@polar-sh/sdk'
+import { ListResourceOrganization, UserRead } from '@polar-sh/sdk'
+import { notFound } from 'next/navigation'
 import { Separator } from 'polarkit/components/ui/separator'
 import { PropsWithChildren } from 'react'
 import { twMerge } from 'tailwind-merge'
+import { PolarMenu } from '../[organization]/(sidebar)/LayoutPolarMenu'
 import { Navigation } from './Navigation'
 import { NaviagtionItem } from './NavigationItem'
 
 export default async function Layout({ children }: PropsWithChildren) {
   return (
     <div className="flex w-full flex-col items-center gap-y-12">
-      <div className="flex h-fit w-full max-w-[100vw] flex-row justify-stretch gap-x-12 px-8 py-12 md:max-w-[1460px] md:px-12">
+      <div className="flex h-fit w-full max-w-[100vw] flex-row justify-stretch gap-x-12 px-8 py-12 md:max-w-[1560px] md:px-12">
         <div className="flex w-full flex-grow flex-col gap-y-12">
           <DocumentationPageTopbar />
           <Separator />
-          <div className="flex flex-row items-start gap-x-24">
+          <div className="flex flex-row items-start gap-x-16">
             <div className="flex w-64 flex-shrink-0 flex-col gap-y-12">
-              <ul className="flex flex-col gap-y-2">
+              <ul className="flex flex-col">
                 <li>
                   <NaviagtionItem
                     icon={<SpaceDashboardOutlined fontSize="inherit" />}
@@ -47,6 +49,7 @@ export default async function Layout({ children }: PropsWithChildren) {
                   </NaviagtionItem>
                 </li>
               </ul>
+              <Separator />
               <Navigation />
             </div>
             <div className="flex h-full w-full flex-col">{children}</div>
@@ -57,7 +60,32 @@ export default async function Layout({ children }: PropsWithChildren) {
   )
 }
 
-const DocumentationPageTopbar = () => {
+const DocumentationPageTopbar = async () => {
+  const api = getServerSideAPI()
+  let authenticatedUser: UserRead | undefined
+  let userAdminOrganizations: ListResourceOrganization | undefined
+
+  try {
+    const [loadAuthenticatedUser, loadUserAdminOrganizations] =
+      await Promise.all([
+        api.users.getAuthenticated({ cache: 'no-store' }).catch(() => {
+          // Handle unauthenticated
+          return undefined
+        }),
+        // No caching, as we're expecting immediate updates to the response if the user converts to a maintainer
+        api.organizations
+          .list({ isAdminOnly: true }, { cache: 'no-store' })
+          .catch(() => {
+            // Handle unauthenticated
+            return undefined
+          }),
+      ])
+    authenticatedUser = loadAuthenticatedUser
+    userAdminOrganizations = loadUserAdminOrganizations
+  } catch (e) {
+    notFound()
+  }
+
   const centerClsx =
     'absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2'
 
@@ -77,10 +105,9 @@ const DocumentationPageTopbar = () => {
       />
 
       <div className="flex flex-row items-center gap-x-6">
-        <GithubLoginButton
-          text="Create with Polar"
-          returnTo="/maintainer"
-          userSignupType={UserSignupType.MAINTAINER}
+        <PolarMenu
+          authenticatedUser={authenticatedUser}
+          userAdminOrganizations={userAdminOrganizations?.items ?? []}
         />
       </div>
     </div>

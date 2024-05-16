@@ -17,7 +17,7 @@ export const PolarMenu = ({
 }: {
   authenticatedUser?: UserRead
   userAdminOrganizations: Organization[]
-  organization: Organization
+  organization?: Organization
 }) => {
   const pathname = usePathname()
   const loginReturnTo = pathname ?? '/feed'
@@ -42,7 +42,7 @@ export const PolarMenu = ({
     : `${CONFIG.FRONTEND_BASE_URL}/maintainer/${userAdminOrganizations?.[0]?.name}/overview`
 
   // Login through polar.sh with auth forwarding if on custom domain
-  const loginLink = currentOrg.custom_domain
+  const loginLink = currentOrg?.custom_domain
     ? `${CONFIG.FRONTEND_BASE_URL}/login?return_to=${loginReturnTo}&for_organization_id=${currentOrg.id}`
     : `${CONFIG.FRONTEND_BASE_URL}/login?return_to=${loginReturnTo}`
 

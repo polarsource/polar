@@ -53,8 +53,7 @@ class HeldBalanceService(ResourceServiceReader[HeldBalance]):
             .options(
                 joinedload(HeldBalance.payment_transaction),
                 joinedload(HeldBalance.pledge),
-                joinedload(HeldBalance.subscription),
-                joinedload(HeldBalance.product_price),
+                joinedload(HeldBalance.sale),
                 joinedload(HeldBalance.issue_reward),
                 joinedload(HeldBalance.donation),
             )
@@ -70,8 +69,7 @@ class HeldBalanceService(ResourceServiceReader[HeldBalance]):
                 payment_transaction=held_balance.payment_transaction,
                 amount=held_balance.amount,
                 pledge=held_balance.pledge,
-                subscription=held_balance.subscription,
-                product_price=held_balance.product_price,
+                sale=held_balance.sale,
                 issue_reward=held_balance.issue_reward,
                 donation=held_balance.donation,
             )

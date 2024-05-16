@@ -34,7 +34,6 @@ from polar.authz.service import AccessType, Authz
 from polar.config import settings
 from polar.enums import UserSignupType
 from polar.exceptions import NotPermitted, PolarError, ResourceNotFound
-from polar.held_balance.service import held_balance as held_balance_service
 from polar.integrations.loops.service import loops as loops_service
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.integrations.stripe.utils import get_expandable_id
@@ -46,12 +45,12 @@ from polar.kit.utils import utc_now
 from polar.models import (
     Benefit,
     BenefitGrant,
-    HeldBalance,
     OAuthAccount,
     Organization,
     Product,
     ProductBenefit,
     ProductPrice,
+    Sale,
     Subscription,
     Transaction,
     User,
@@ -64,22 +63,13 @@ from polar.models.transaction import TransactionType
 from polar.models.user import OAuthPlatform
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.notifications.notification import (
-    MaintainerCreateAccountNotificationPayload,
     MaintainerNewPaidSubscriptionNotificationPayload,
     NotificationType,
 )
 from polar.notifications.service import PartialNotification
-from polar.notifications.service import notifications as notification_service
 from polar.notifications.service import notifications as notifications_service
 from polar.organization.service import organization as organization_service
 from polar.posthog import posthog
-from polar.transaction.service.balance import PaymentTransactionForChargeDoesNotExist
-from polar.transaction.service.balance import (
-    balance_transaction as balance_transaction_service,
-)
-from polar.transaction.service.platform_fee import (
-    platform_fee_transaction as platform_fee_transaction_service,
-)
 from polar.user.service import user as user_service
 from polar.user_organization.service import (
     user_organization as user_organization_service,
@@ -773,86 +763,6 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
 
         return subscription
 
-    async def transfer_subscription_paid_invoice(
-        self,
-        session: AsyncSession,
-        *,
-        invoice: stripe_lib.Invoice,
-    ) -> None:
-        assert invoice.charge is not None
-
-        if invoice.subscription is None:
-            return
-
-        stripe_subscription_id = get_expandable_id(invoice.subscription)
-        subscription = await self.get_by_stripe_subscription_id(
-            session, stripe_subscription_id
-        )
-        if subscription is None:
-            raise SubscriptionDoesNotExist(stripe_subscription_id)
-
-        await session.refresh(subscription, {"product", "price"})
-        account = await product_service.get_managing_organization_account(
-            session, subscription.product
-        )
-
-        tax = invoice.tax or 0
-        transfer_amount = invoice.total - tax
-
-        charge_id = get_expandable_id(invoice.charge)
-
-        # Prepare an held balance
-        # It'll be used if the account is not created yet
-        payment_transaction = await balance_transaction_service.get_by(
-            session, type=TransactionType.payment, charge_id=charge_id
-        )
-        if payment_transaction is None:
-            raise PaymentTransactionForChargeDoesNotExist(charge_id)
-        held_balance = HeldBalance(
-            amount=transfer_amount,
-            subscription=subscription,
-            product_price=subscription.price,
-            payment_transaction=payment_transaction,
-        )
-
-        # No account, create the held balance
-        if account is None:
-            managing_organization = await organization_service.get(
-                session, subscription.product.organization_id
-            )
-            assert managing_organization is not None
-            held_balance.organization_id = managing_organization.id
-            await held_balance_service.create(session, held_balance=held_balance)
-
-            await notification_service.send_to_org_admins(
-                session=session,
-                org_id=managing_organization.id,
-                notif=PartialNotification(
-                    type=NotificationType.maintainer_create_account,
-                    payload=MaintainerCreateAccountNotificationPayload(
-                        organization_name=managing_organization.name,
-                        url=managing_organization.account_url,
-                    ),
-                ),
-            )
-
-            return
-
-        # Account created, create the balance immediately
-        balance_transactions = (
-            await balance_transaction_service.create_balance_from_charge(
-                session,
-                source_account=None,
-                destination_account=account,
-                charge_id=charge_id,
-                amount=transfer_amount,
-                subscription=subscription,
-            )
-        )
-        await platform_fee_transaction_service.create_fees_reversal_balances(
-            session, balance_transactions=balance_transactions
-        )
-
     async def enqueue_benefits_grants(
         self, session: AsyncSession, subscription: Subscription
     ) -> None:
@@ -1097,8 +1007,14 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
                 onclause=and_(
                     Transaction.type == TransactionType.balance,
                     Transaction.account_id.is_not(None),
-                    Transaction.subscription_id.in_(
-                        subscriptions_statement.with_only_columns(Subscription.id)
+                    Transaction.sale_id.in_(
+                        select(Sale.id).where(
+                            Sale.subscription_id.in_(
+                                subscriptions_statement.with_only_columns(
+                                    Subscription.id
+                                )
+                            )
+                        )
                     ),
                 ),
                 isouter=True,

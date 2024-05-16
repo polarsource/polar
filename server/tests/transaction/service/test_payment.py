@@ -13,7 +13,6 @@ from polar.models.transaction import PaymentProcessor, TransactionType
 from polar.postgres import AsyncSession
 from polar.transaction.service.payment import (  # type: ignore[attr-defined]
     PledgeDoesNotExist,
-    SubscriptionDoesNotExist,
     processor_fee_transaction_service,
 )
 from polar.transaction.service.payment import (
@@ -21,7 +20,6 @@ from polar.transaction.service.payment import (
 )
 from polar.transaction.service.processor_fee import ProcessorFeeTransactionService
 from tests.fixtures.database import SaveFixture
-from tests.fixtures.random_objects import create_product, create_subscription
 
 
 def build_stripe_balance_transaction(
@@ -199,71 +197,6 @@ class TestCreatePayment:
         assert transaction.payment_user is None
         assert transaction.payment_organization == organization
 
-    async def test_not_existing_subscription(
-        self, session: AsyncSession, stripe_service_mock: MagicMock
-    ) -> None:
-        stripe_invoice = build_stripe_invoice(subscription="NOT_EXISTING_SUBSCRIPTION")
-        stripe_charge = build_stripe_charge(invoice=stripe_invoice.id)
-
-        stripe_service_mock.get_invoice.return_value = stripe_invoice
-
-        # then
-        session.expunge_all()
-
-        with pytest.raises(SubscriptionDoesNotExist):
-            await payment_transaction_service.create_payment(
-                session, charge=stripe_charge
-            )
-
-    async def test_subscription(
-        self,
-        session: AsyncSession,
-        save_fixture: SaveFixture,
-        organization: Organization,
-        user: User,
-        stripe_service_mock: MagicMock,
-        create_payment_fees_mock: AsyncMock,
-    ) -> None:
-        subscription_tier = await create_product(
-            save_fixture, organization=organization
-        )
-        subscription = await create_subscription(
-            save_fixture, product=subscription_tier, user=user
-        )
-        stripe_invoice = build_stripe_invoice(
-            subscription=subscription.stripe_subscription_id
-        )
-        stripe_balance_transaction = build_stripe_balance_transaction()
-        stripe_charge = build_stripe_charge(
-            invoice=stripe_invoice.id, balance_transaction=stripe_balance_transaction.id
-        )
-
-        stripe_service_mock.get_invoice.return_value = stripe_invoice
-        stripe_service_mock.get_balance_transaction.return_value = (
-            stripe_balance_transaction
-        )
-
-        # then
-        session.expunge_all()
-
-        transaction = await payment_transaction_service.create_payment(
-            session, charge=stripe_charge
-        )
-
-        assert transaction.type == TransactionType.payment
-        assert transaction.processor == PaymentProcessor.stripe
-        assert transaction.currency == stripe_charge.currency
-        assert transaction.amount == stripe_charge.amount - (stripe_invoice.tax or 0)
-        assert transaction.tax_amount == stripe_invoice.tax
-        assert transaction.tax_country == "US"
-        assert transaction.tax_state == "NY"
-        assert transaction.charge_id == stripe_charge.id
-        assert transaction.subscription == subscription
-        assert transaction.product_price == subscription.price
-        assert transaction.pledge is None
-
-        create_payment_fees_mock.assert_awaited_once()
-
     async def test_not_existing_pledge(
         self, session: AsyncSession, pledge: Pledge, stripe_service_mock: MagicMock
     ) -> None:
@@ -321,7 +254,7 @@ class TestCreatePayment:
         assert transaction.amount == stripe_charge.amount
         assert transaction.charge_id == stripe_charge.id
         assert transaction.pledge == pledge
-        assert transaction.subscription is None
+        assert transaction.sale is None
 
         create_payment_fees_mock.assert_awaited_once()
 

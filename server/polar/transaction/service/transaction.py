@@ -16,7 +16,7 @@ from polar.models import (
     Issue,
     Pledge,
     Product,
-    Subscription,
+    Sale,
     Transaction,
     User,
 )
@@ -69,14 +69,11 @@ class TransactionService(BaseTransactionService):
             ),
             # IssueReward
             subqueryload(Transaction.issue_reward),
-            # Subscription
-            subqueryload(Transaction.subscription).options(
-                joinedload(Subscription.product).options(
-                    joinedload(Product.organization)
-                ),
+            # Sale
+            subqueryload(Transaction.sale).options(
+                joinedload(Sale.product).options(joinedload(Product.organization)),
+                joinedload(Sale.product_price),
             ),
-            # SubscriptionTierPrice
-            subqueryload(Transaction.product_price),
             # Donation
             subqueryload(Transaction.donation).options(
                 joinedload(Donation.to_organization),
@@ -130,9 +127,10 @@ class TransactionService(BaseTransactionService):
                 ),
                 # IssueReward
                 subqueryload(Transaction.issue_reward),
-                # Subscription
-                subqueryload(Transaction.subscription).options(
-                    joinedload(Subscription.product),
+                # Sale
+                subqueryload(Transaction.sale).options(
+                    joinedload(Sale.product).options(joinedload(Product.organization)),
+                    joinedload(Sale.product_price),
                 ),
                 # Donation
                 subqueryload(Transaction.donation).options(
@@ -141,8 +139,6 @@ class TransactionService(BaseTransactionService):
                     joinedload(Donation.by_organization),
                     joinedload(Donation.on_behalf_of_organization),
                 ),
-                # SubscriptionTierPrice
-                subqueryload(Transaction.product_price),
                 # Paid transactions (joining on itself)
                 subqueryload(Transaction.paid_transactions)
                 .subqueryload(Transaction.pledge)
@@ -155,16 +151,17 @@ class TransactionService(BaseTransactionService):
                     Transaction.issue_reward
                 ),
                 subqueryload(Transaction.paid_transactions)
-                .subqueryload(Transaction.subscription)
+                .subqueryload(Transaction.sale)
                 .options(
-                    joinedload(Subscription.product),
+                    joinedload(Sale.product),
+                    joinedload(Sale.product_price),
                 ),
                 subqueryload(Transaction.paid_transactions).subqueryload(
                     Transaction.account_incurred_transactions
                 ),
-                subqueryload(Transaction.paid_transactions).subqueryload(
-                    Transaction.product_price
-                ),
+                subqueryload(Transaction.paid_transactions)
+                .subqueryload(Transaction.sale)
+                .options(joinedload(Sale.product_price)),
                 subqueryload(Transaction.paid_transactions)
                 .subqueryload(Transaction.donation)
                 .options(

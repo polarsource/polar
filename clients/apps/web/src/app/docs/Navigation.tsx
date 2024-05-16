@@ -1,7 +1,7 @@
 'use client'
 
 import { usePathname } from 'next/navigation'
-import { buildSections } from './APINavigation'
+import { sections } from './APINavigation'
 import { NaviagtionItem } from './NavigationItem'
 
 export const Navigation = () => {
@@ -9,8 +9,6 @@ export const Navigation = () => {
 
   const shouldRenderOverviewSections = pathname.includes('/docs/overview')
   const shouldRenderAPISections = pathname.includes('/docs/api/')
-
-  console.log(buildSections())
 
   return (
     <div className="flex flex-col gap-y-8">
@@ -79,7 +77,7 @@ const FAQSections = () => {
 const APISections = () => {
   return (
     <>
-      {buildSections().map((section) => (
+      {sections.map((section) => (
         <div key={section.name} className="flex flex-col gap-y-4">
           <h2 className="font-medium capitalize">{section.name}</h2>
           <div className="flex flex-col gap-y-2">
@@ -87,11 +85,11 @@ const APISections = () => {
               <NaviagtionItem
                 key={endpoint.path + endpoint.method}
                 className="text-sm"
-                href={endpoint.path}
+                href={`/docs/api/${endpoint.path}/${endpoint.method}`}
               >
                 <div className="flex w-full flex-row items-center justify-between gap-x-4">
                   {endpoint.name}
-                  <span className="dark:bg-polar-700 rounded-sm bg-gray-500 px-1.5 py-0 font-mono text-[10px] font-normal uppercase">
+                  <span className="dark:bg-polar-700 rounded-sm bg-gray-200 px-1.5 py-0 font-mono text-[10px] font-normal uppercase">
                     {endpoint.method}
                   </span>
                 </div>

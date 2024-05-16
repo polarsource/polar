@@ -8,7 +8,7 @@ export const Navigation = () => {
   const pathname = usePathname()
 
   const shouldRenderOverviewSections = pathname.includes('/docs/overview')
-  const shouldRenderAPISections = pathname.includes('/docs/api/')
+  const shouldRenderAPISections = pathname.includes('/docs/api-reference/')
 
   return (
     <div className="flex flex-col gap-y-8">
@@ -85,11 +85,14 @@ const APISections = () => {
               <NaviagtionItem
                 key={endpoint.path + endpoint.method}
                 className="text-sm"
-                href={`/docs/api/${endpoint.path}/${endpoint.method}`}
+                href={`/docs/api-reference/${endpoint.path}/${endpoint.method}`}
+                active={(pathname) =>
+                  pathname.includes(`${endpoint.path}/${endpoint.method}`)
+                }
               >
                 <div className="flex w-full flex-row items-center justify-between gap-x-4">
                   {endpoint.name}
-                  <span className="dark:bg-polar-700 rounded-sm bg-gray-200 px-1.5 py-0 font-mono text-[10px] font-normal uppercase">
+                  <span className="dark:bg-polar-800 rounded-sm bg-gray-200 px-1.5 py-0 font-mono text-[10px] font-normal uppercase">
                     {endpoint.method}
                   </span>
                 </div>

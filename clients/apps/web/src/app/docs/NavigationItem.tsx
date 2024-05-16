@@ -9,19 +9,25 @@ export const NaviagtionItem = ({
   children,
   icon,
   className,
+  active,
   ...props
 }: PropsWithChildren<
-  LinkProps & { className?: string; icon?: JSX.Element }
+  LinkProps & {
+    className?: string
+    icon?: JSX.Element
+    active?(pathname: string): boolean
+  }
 >) => {
-  const pathname = usePathname()
-  const active = pathname.includes(props.href as string)
+  const pathname = decodeURIComponent(usePathname())
+  const fallbackActive =
+    active?.(pathname) ?? pathname.includes(props.href as string)
 
   return (
     <Link
       {...props}
       className={twMerge(
         'flex flex-row items-center gap-x-4 transition-colors hover:text-black dark:hover:text-white',
-        active
+        fallbackActive
           ? 'text-black dark:text-white'
           : 'dark:text-polar-500 text-gray-500',
         className,

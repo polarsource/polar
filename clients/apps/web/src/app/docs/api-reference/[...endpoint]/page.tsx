@@ -1,6 +1,6 @@
 import openapiSchema from '@polar-sh/sdk/openapi'
 import { OpenAPIV3_1 } from 'openapi-types'
-import { useCallback, useMemo } from 'react'
+import { PropsWithChildren, useCallback, useMemo } from 'react'
 import { SchemaPathKey } from '../../APINavigation'
 
 export default function Page({
@@ -66,9 +66,17 @@ const BodyParameters = ({
 }: {
   parameters: OpenAPIV3_1.SchemaObject
 }) => {
+  const requiredProperties = parameters.required ?? []
   const properties =
     'properties' in parameters
-      ? Object.entries(parameters.properties ?? {})
+      ? Object.entries(parameters.properties ?? {}).sort(([keyA], [keyB]) =>
+          requiredProperties.includes(keyA) ===
+          requiredProperties.includes(keyB)
+            ? 0
+            : requiredProperties.includes(keyA)
+              ? -1
+              : 1,
+        )
       : []
 
   return (
@@ -81,10 +89,7 @@ const BodyParameters = ({
             key: string,
             property: OpenAPIV3_1.SchemaObject,
           ]) => (
-            <div
-              key={key}
-              className="dark:bg-polar-900 flex flex-col gap-y-4 rounded-3xl bg-gray-100 p-8"
-            >
+            <ParameterItem key={key}>
               <span className="dark:text-polar-200 text-sm text-gray-700">
                 {key}
               </span>
@@ -92,7 +97,7 @@ const BodyParameters = ({
                 <span className="text-lg font-medium text-black dark:text-white">
                   {property.title}
                 </span>
-                {property.required && (
+                {requiredProperties.includes(key) && (
                   <span className="dark:bg-polar-700 rounded-sm bg-gray-200 px-2 py-1 font-mono text-xs font-normal capitalize">
                     Required
                   </span>
@@ -101,7 +106,7 @@ const BodyParameters = ({
               <p className="dark:text-polar-300 text-sm text-gray-600">
                 {property.description}
               </p>
-            </div>
+            </ParameterItem>
           ),
         )}
       </div>
@@ -120,10 +125,7 @@ const Parameters = ({
 
       <div className="flex flex-col gap-y-4">
         {parameters.map((parameter, index) => (
-          <div
-            key={index}
-            className="dark:bg-polar-900 flex flex-col gap-y-4 rounded-3xl bg-gray-100 p-8"
-          >
+          <ParameterItem key={index}>
             <span className="dark:text-polar-200 text-sm text-gray-700">
               {parameter.schema &&
                 'title' in parameter.schema &&
@@ -140,9 +142,17 @@ const Parameters = ({
             <p className="dark:text-polar-300 text-sm text-gray-600">
               {parameter.description}
             </p>
-          </div>
+          </ParameterItem>
         ))}
       </div>
+    </div>
+  )
+}
+
+const ParameterItem = ({ children }: PropsWithChildren) => {
+  return (
+    <div className="dark:bg-polar-900 flex flex-col gap-y-4 rounded-3xl bg-gray-100 p-8">
+      {children}
     </div>
   )
 }

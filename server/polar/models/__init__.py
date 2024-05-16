@@ -28,6 +28,7 @@ from .product_benefit import ProductBenefit
 from .product_price import ProductPrice
 from .pull_request import PullRequest
 from .repository import Repository
+from .sale import Sale
 from .subscription import Subscription
 from .traffic import Traffic
 from .transaction import Transaction
@@ -67,6 +68,7 @@ __all__ = [
     "PledgeTransaction",
     "PullRequest",
     "Repository",
+    "Sale",
     "Subscription",
     "Product",
     "ProductBenefit",

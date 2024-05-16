@@ -69,6 +69,9 @@ module.exports = {
       fontFamily: {
         sans: ['var(--font-inter)', ...defaultTheme.fontFamily.sans],
       },
+      fontSize: {
+        xxs: '0.65rem'
+      },
       colors: {
         blue: {
           DEFAULT: '#0062FF',

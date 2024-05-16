@@ -26,7 +26,7 @@ export const Navigation = () => {
 const OverviewSections = () => {
   return (
     <>
-      <div className="flex flex-col gap-y-2">
+      <div className="flex flex-col">
         <NaviagtionItem href="/docs/overview/introduction">
           Introduction
         </NaviagtionItem>
@@ -56,7 +56,7 @@ const FAQSections = () => {
   return (
     <div className="flex flex-col gap-y-4">
       <h2 className="font-medium">FAQ</h2>
-      <div className="flex flex-col gap-y-2">
+      <div className="flex flex-col">
         <NaviagtionItem href="/docs/overview/faq/overview">
           Overview
         </NaviagtionItem>
@@ -80,7 +80,7 @@ const APISections = () => {
       {sections.map((section) => (
         <div key={section.name} className="flex flex-col gap-y-4">
           <h2 className="font-medium capitalize">{section.name}</h2>
-          <div className="flex flex-col gap-y-2">
+          <div className="flex flex-col">
             {section.endpoints.map((endpoint) => (
               <NaviagtionItem
                 key={endpoint.path + endpoint.method}
@@ -92,7 +92,7 @@ const APISections = () => {
               >
                 <div className="flex w-full flex-row items-center justify-between gap-x-4">
                   {endpoint.name}
-                  <span className="dark:bg-polar-800 rounded-sm bg-gray-200 px-1.5 py-0 font-mono text-[10px] font-normal uppercase">
+                  <span className="dark:bg-polar-800 rounded-sm bg-gray-200/50 px-1.5 py-0 font-mono text-[10px] font-normal uppercase">
                     {endpoint.method}
                   </span>
                 </div>

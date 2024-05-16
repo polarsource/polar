@@ -3,7 +3,7 @@ import { MDXContentWrapper } from '../MDXContentWrapper'
 
 export default function Layout({ children }: PropsWithChildren) {
   return (
-    <div className="flex flex-row items-start gap-x-24">
+    <div className="flex flex-row items-start gap-x-16">
       <div className="flex w-full flex-shrink flex-col">
         <MDXContentWrapper>{children}</MDXContentWrapper>
       </div>

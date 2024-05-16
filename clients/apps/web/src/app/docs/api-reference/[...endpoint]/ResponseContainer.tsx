@@ -1,4 +1,3 @@
-import openapiSchema from '@polar-sh/sdk/openapi'
 import { OpenAPIV3_1 } from 'openapi-types'
 import {
   Tabs,
@@ -6,18 +5,6 @@ import {
   TabsList,
   TabsTrigger,
 } from 'polarkit/components/ui/atoms/tabs'
-
-export const resolveSchema = (schemaName: string) => {
-  return (openapiSchema as unknown as OpenAPIV3_1.Document).components
-    ?.schemas?.[schemaName]
-}
-
-export const getResponseSchema = (response: OpenAPIV3_1.ResponseObject) => {
-  return resolveSchema(
-    // @ts-ignore
-    response.content?.['application/json'].schema?.['$ref'].split('/').pop(),
-  )
-}
 
 export const ResponseContainer = ({
   responses,
@@ -49,8 +36,7 @@ export const ResponseContainer = ({
           <TabsContent key={statusCode} value={statusCode} className="p-2 py-0">
             <pre className="dark:text-polar-50 max-h-72 select-text overflow-auto p-4 font-mono text-xs leading-normal text-gray-900">
               {JSON.stringify(
-                getResponseSchema(response as OpenAPIV3_1.ResponseObject)
-                  ?.properties,
+                response.content?.['application/json'].schema,
                 null,
                 2,
               )}

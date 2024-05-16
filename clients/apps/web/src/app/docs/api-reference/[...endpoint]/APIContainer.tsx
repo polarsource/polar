@@ -2,7 +2,6 @@
 
 import { CONFIG } from '@/utils/config'
 import { ContentPasteOutlined } from '@mui/icons-material'
-import openapiSchema from '@polar-sh/sdk/openapi'
 import { OpenAPIV3_1 } from 'openapi-types'
 import Button from 'polarkit/components/ui/atoms/button'
 import {
@@ -13,23 +12,13 @@ import {
 } from 'polarkit/components/ui/atoms/tabs'
 import { useCallback, useMemo } from 'react'
 
-const resolveSchema = (schemaName: string) => {
-  return (openapiSchema as unknown as OpenAPIV3_1.Document).components
-    ?.schemas?.[schemaName]
-}
-
 export const requestBodyParameters = (
   endpointMethod: OpenAPIV3_1.OperationObject,
 ) => {
   if (endpointMethod.requestBody && !('content' in endpointMethod.requestBody))
     return undefined
 
-  return resolveSchema(
-    // @ts-ignore
-    endpointMethod.requestBody?.content['application/json'].schema?.['$ref']
-      .split('/')
-      .pop(),
-  )
+  return endpointMethod.requestBody?.content['application/json'].schema
 }
 
 export const APIContainer = ({
@@ -49,8 +38,13 @@ export const APIContainer = ({
       url: string,
       endpoint: OpenAPIV3_1.OperationObject,
     ) => {
-      const requiredBodyParameters = requestBodyParameters(endpoint)?.properties
-        ? Object.entries(requestBodyParameters(endpoint)?.properties ?? {})
+      const requiredBodyParameters = endpoint.requestBody?.content?.[
+        'application/json'
+      ].schema.properties
+        ? Object.entries(
+            endpoint.requestBody?.content?.['application/json'].schema
+              .properties ?? {},
+          )
             .map(([key]) => ({
               [key]: `<${key}>`,
             }))

@@ -1,6 +1,6 @@
 import openapiSchema from '@polar-sh/sdk/openapi'
 import { OpenAPIV3_1 } from 'openapi-types'
-import { PropsWithChildren, useCallback, useMemo } from 'react'
+import { PropsWithChildren, useMemo } from 'react'
 import { SchemaPathKey } from '../../APINavigation'
 import { APIContainer } from './APIContainer'
 import { ResponseContainer } from './ResponseContainer'
@@ -19,25 +19,14 @@ export default function Page({
     method
   ] as OpenAPIV3_1.OperationObject
 
-  const resolveSchema = useCallback((schemaName: string) => {
-    return (openapiSchema as unknown as OpenAPIV3_1.Document).components
-      ?.schemas?.[schemaName]
-  }, [])
-
   const requestBodyParameters = useMemo(() => {
     if (
       endpointMethod.requestBody &&
       !('content' in endpointMethod.requestBody)
     )
       return undefined
-
-    return resolveSchema(
-      // @ts-ignore
-      endpointMethod.requestBody?.content['application/json'].schema?.['$ref']
-        .split('/')
-        .pop(),
-    )
-  }, [endpointMethod, resolveSchema])
+    return endpointMethod.requestBody?.content['application/json'].schema
+  }, [endpointMethod])
 
   if (!endpointMethod) return null
 

@@ -10,7 +10,13 @@ from polar.postgres import AsyncSession, get_db_session
 from polar.tags.api import Tags
 
 from . import auth
-from .schemas import FileCreate, FilePresignedRead, FileRead
+from .schemas import (
+    FileCreate,
+    FilePresignedRead,
+    FileRead,
+    FileUpload,
+    FileUploadCompleted,
+)
 from .service import FileNotFound
 from .service import file as file_service
 from .service import file_permission as file_permission_service
@@ -43,7 +49,7 @@ async def get_file(
     if not (permission or await authz.can(subject, AccessType.read, permission)):
         raise NotPermitted()
 
-    ret = await file_service.generate_presigned_download_url(
+    ret = await file_service.generate_presigned_download(
         session,
         user=subject,
         file=file,
@@ -55,34 +61,35 @@ async def get_file(
 @router.post(
     "/",
     tags=[Tags.PUBLIC],
-    response_model=FilePresignedRead,
+    response_model=FileUpload,
 )
 async def create_file(
     file: FileCreate,
     auth_subject: auth.CreatorFilesWrite,
     authz: Authz = Depends(Authz.authz),
     session: AsyncSession = Depends(get_db_session),
-) -> FilePresignedRead:
+) -> FileUpload:
     subject = auth_subject.subject
 
     organization = await get_payload_organization(session, auth_subject, file)
     if not await authz.can(subject, AccessType.write, organization):
         raise NotPermitted()
 
-    return await file_service.generate_presigned_upload_url(
+    return await file_service.generate_presigned_upload(
         session,
         organization=organization,
         create_schema=file,
     )
 
 
-@router.post(
-    "/{file_id}/uploaded",
+@router.patch(
+    "/{file_id}",
     tags=[Tags.PUBLIC],
     response_model=FileRead,
 )
-async def mark_uploaded(
+async def complete_upload(
     file_id: UUID,
+    payload: FileUploadCompleted,
     auth_subject: auth.CreatorFilesWrite,
     authz: Authz = Depends(Authz.authz),
     session: AsyncSession = Depends(get_db_session),
@@ -97,9 +104,9 @@ async def mark_uploaded(
     if not await authz.can(subject, AccessType.write, organization):
         raise NotPermitted()
 
-    file = await file_service.mark_uploaded(
+    file = await file_service.complete_upload(
         session,
-        organization=organization,
         file=file,
+        payload=payload,
     )
     return FileRead.from_db(file)

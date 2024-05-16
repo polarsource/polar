@@ -134,7 +134,7 @@ class Settings(BaseSettings):
     AWS_REGION: str = "us-east-2"
     AWS_SIGNATURE_VERSION: str = "v4"
     S3_FILES_BUCKET_NAME: str = ""
-    S3_FILES_PRESIGN_TTL: int = 3600
+    S3_FILES_PRESIGN_TTL: int = 600  # 10 minutes
 
     # Application behaviours
     API_PAGINATION_MAX_LIMIT: int = 100

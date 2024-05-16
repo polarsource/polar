@@ -141,7 +141,7 @@ export default function ClientPage({
               onPaginationChange={setPagination}
               sorting={sorting}
               onSortingChange={setSorting}
-              isLoading={accountIsLoading || balancesHook}
+              isLoading={accountIsLoading || balancesHook.isLoading}
             />
           </TabsContent>
           <TabsContent value="payouts">
@@ -152,7 +152,7 @@ export default function ClientPage({
               onPaginationChange={setPagination}
               sorting={sorting}
               onSortingChange={setSorting}
-              isLoading={accountIsLoading || payoutsHooks}
+              isLoading={accountIsLoading || payoutsHooks.isLoading}
             />
           </TabsContent>
         </Tabs>

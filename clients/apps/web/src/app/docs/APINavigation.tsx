@@ -23,10 +23,12 @@ export interface APIParameter {
   in: 'query' | 'path' | 'header' | 'cookie'
   required: false
   schema: {
-    anyOf: {
+    anyOf?: {
       type: string
     }[]
     title: string
+    type?: string
+    format?: string
   }
 }
 export interface Section {

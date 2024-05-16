@@ -27,13 +27,13 @@ import { useMemo } from 'react'
 import ProductPill from '../Products/ProductPill'
 
 const getTransactionMeta = (transaction: Transaction) => {
-  if (transaction.subscription) {
+  if (transaction.sale) {
     return {
-      type: 'Subscription',
-      organization: transaction.subscription?.product.organization,
+      type: transaction.sale.subscription_id ? 'Subscription' : 'Purchase',
+      organization: transaction.sale.product.organization,
       meta: {
-        subscription_tier: transaction.subscription.product,
-        price: transaction.product_price,
+        product: transaction.sale.product,
+        price: transaction.sale.product_price,
       },
     }
   } else if (transaction.issue_reward) {
@@ -96,15 +96,15 @@ const TransactionMeta: React.FC<TransactionMetaProps> = ({ transaction }) => {
         {transactionMeta.meta && (
           <>
             <div>—</div>
-            {'subscription_tier' in transactionMeta.meta && (
+            {'product' in transactionMeta.meta && (
               <>
                 <div>
                   <Link
                     className=" text-blue-500 dark:text-blue-400"
-                    href={`/${transactionMeta.meta.subscription_tier.organization?.name}/subscriptions`}
+                    href={`/${transactionMeta.organization?.name}/subscriptions`}
                   >
                     <ProductPill
-                      product={transactionMeta.meta.subscription_tier}
+                      product={transactionMeta.meta.product}
                       price={transactionMeta.meta.price}
                     />
                   </Link>

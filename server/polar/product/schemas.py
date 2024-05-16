@@ -182,9 +182,6 @@ class ProductBase(TimestampedSchema):
     organization_id: UUID4 = Field(
         description="The ID of the organization owning the product."
     )
-    prices: list[ProductPrice] = Field(
-        description="List of available prices for this product."
-    )
 
 
 class Product(ProductBase):
@@ -192,10 +189,16 @@ class Product(ProductBase):
     A product.
     """
 
+    prices: list[ProductPrice] = Field(
+        description="List of available prices for this product."
+    )
     benefits: list[BenefitPublic] = Field(
         title="BenefitPublic", description="The benefits granted by the product."
     )
 
 
 class ProductSubscriber(ProductBase):
+    prices: list[ProductPrice] = Field(
+        description="List of available prices for this product."
+    )
     benefits: list[BenefitSubscriber] = Field(title="BenefitSubscriber")

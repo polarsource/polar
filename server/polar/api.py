@@ -28,6 +28,7 @@ from polar.product.endpoints import router as product_router
 from polar.pull_request.endpoints import router as pull_requests_router
 from polar.repository.endpoints import router as repository_router
 from polar.reward.endpoints import router as rewards_router
+from polar.sale.endpoints import router as sale_router
 from polar.subscription.endpoints import router as subscription_router
 from polar.traffic.endpoints import router as traffic_router
 from polar.transaction.endpoints import router as transaction_router
@@ -103,3 +104,5 @@ router.include_router(benefits_router)
 router.include_router(webhook_router)
 # /products
 router.include_router(product_router)
+# /sales
+router.include_router(sale_router)

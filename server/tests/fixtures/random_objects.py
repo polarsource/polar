@@ -677,9 +677,9 @@ async def product_second(
 
 @pytest_asyncio.fixture
 async def product_organization_second(
-    save_fixture: SaveFixture, second_organization: Organization
+    save_fixture: SaveFixture, organization_second: Organization
 ) -> Product:
-    return await create_product(save_fixture, organization=second_organization)
+    return await create_product(save_fixture, organization=organization_second)
 
 
 @pytest_asyncio.fixture

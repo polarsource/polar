@@ -1,14 +1,29 @@
+import uuid
+from collections.abc import Sequence
+
 import stripe as stripe_lib
+from sqlalchemy import Select, select
+from sqlalchemy.orm import contains_eager, joinedload
 
 from polar.account.service import account as account_service
+from polar.auth.models import AuthSubject, is_organization, is_user
 from polar.enums import UserSignupType
 from polar.exceptions import PolarError
 from polar.held_balance.service import held_balance as held_balance_service
 from polar.integrations.loops.service import loops as loops_service
 from polar.integrations.stripe.utils import get_expandable_id
 from polar.kit.db.postgres import AsyncSession
+from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.services import ResourceServiceReader
-from polar.models import HeldBalance, Sale, Subscription, User
+from polar.models import (
+    HeldBalance,
+    Organization,
+    Product,
+    Sale,
+    Subscription,
+    User,
+    UserOrganization,
+)
 from polar.models.transaction import TransactionType
 from polar.notifications.notification import (
     MaintainerCreateAccountNotificationPayload,
@@ -75,6 +90,27 @@ class SubscriptionDoesNotExist(SaleError):
 
 
 class SaleService(ResourceServiceReader[Sale]):
+    async def list(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        *,
+        organization_id: uuid.UUID | None = None,
+        pagination: PaginationParams,
+    ) -> tuple[Sequence[Sale], int]:
+        statement = self._get_readable_sale_statement(auth_subject)
+
+        statement = statement.options(
+            joinedload(Sale.user),
+            joinedload(Sale.product_price),
+            joinedload(Sale.subscription),
+        ).order_by(Sale.created_at.desc())
+
+        if organization_id is not None:
+            statement = statement.where(Product.organization_id == organization_id)
+
+        return await paginate(session, statement, pagination=pagination)
+
     async def create_sale_from_stripe(
         self, session: AsyncSession, *, invoice: stripe_lib.Invoice
     ) -> Sale:
@@ -210,6 +246,34 @@ class SaleService(ResourceServiceReader[Sale]):
         await platform_fee_transaction_service.create_fees_reversal_balances(
             session, balance_transactions=balance_transactions
         )
+
+    def _get_readable_sale_statement(
+        self, auth_subject: AuthSubject[User | Organization]
+    ) -> Select[tuple[Sale]]:
+        statement = (
+            select(Sale)
+            .where(Sale.deleted_at.is_(None))
+            .join(Sale.product)
+            .options(contains_eager(Sale.product))
+        )
+
+        if is_user(auth_subject):
+            user = auth_subject.subject
+            statement = statement.where(
+                Product.organization_id.in_(
+                    select(UserOrganization.organization_id).where(
+                        UserOrganization.user_id == user.id,
+                        UserOrganization.deleted_at.is_(None),
+                        UserOrganization.is_admin.is_(True),
+                    )
+                )
+            )
+        elif is_organization(auth_subject):
+            statement = statement.where(
+                Product.organization_id == auth_subject.subject.id,
+            )
+
+        return statement
 
 
 sale = SaleService(Sale)

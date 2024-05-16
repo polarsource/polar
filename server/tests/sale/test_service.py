@@ -2,9 +2,19 @@ import pytest
 import stripe as stripe_lib
 from pytest_mock import MockerFixture
 
+from polar.auth.models import AuthSubject
 from polar.held_balance.service import held_balance as held_balance_service
 from polar.kit.db.postgres import AsyncSession
-from polar.models import Account, Product, Subscription, Transaction
+from polar.kit.pagination import PaginationParams
+from polar.models import (
+    Account,
+    Product,
+    Subscription,
+    Transaction,
+    User,
+    UserOrganization,
+)
+from polar.models.organization import Organization
 from polar.models.transaction import TransactionType
 from polar.sale.service import (
     InvoiceWithNoOrMultipleLines,
@@ -17,7 +27,9 @@ from polar.transaction.service.payment import (
     payment_transaction as payment_transaction_service,
 )
 from polar.transaction.service.platform_fee import PlatformFeeTransactionService
+from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
+from tests.fixtures.random_objects import create_sale
 from tests.transaction.conftest import create_transaction
 
 
@@ -46,6 +58,142 @@ def construct_stripe_invoice(
         },
         None,
     )
+
+
+@pytest.mark.asyncio
+@pytest.mark.skip_db_asserts
+class TestList:
+    @pytest.mark.auth
+    async def test_user_not_organization_member(
+        self,
+        auth_subject: AuthSubject[User],
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product: Product,
+        user_second: User,
+    ) -> None:
+        await create_sale(save_fixture, product=product, user=user_second)
+
+        sales, count = await sale_service.list(
+            session, auth_subject, pagination=PaginationParams(1, 10)
+        )
+
+        assert count == 0
+        assert len(sales) == 0
+
+    @pytest.mark.auth
+    async def test_user_not_organization_admin(
+        self,
+        auth_subject: AuthSubject[User],
+        user_organization: UserOrganization,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product: Product,
+        user_second: User,
+    ) -> None:
+        await create_sale(save_fixture, product=product, user=user_second)
+
+        sales, count = await sale_service.list(
+            session, auth_subject, pagination=PaginationParams(1, 10)
+        )
+
+        assert count == 0
+        assert len(sales) == 0
+
+    @pytest.mark.auth
+    async def test_user_organization_admin(
+        self,
+        auth_subject: AuthSubject[User],
+        user_organization_admin: UserOrganization,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product: Product,
+        product_organization_second: Product,
+        user_second: User,
+    ) -> None:
+        sale = await create_sale(save_fixture, product=product, user=user_second)
+        await create_sale(
+            save_fixture, product=product_organization_second, user=user_second
+        )
+
+        sales, count = await sale_service.list(
+            session, auth_subject, pagination=PaginationParams(1, 10)
+        )
+
+        assert count == 1
+        assert len(sales) == 1
+        assert sales[0].id == sale.id
+
+    @pytest.mark.auth
+    async def test_user_organization_filter(
+        self,
+        auth_subject: AuthSubject[User],
+        user: User,
+        user_organization_admin: UserOrganization,
+        organization_second: Organization,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product: Product,
+        product_organization_second: Product,
+        user_second: User,
+    ) -> None:
+        user_organization_second_admin = UserOrganization(
+            user_id=user.id,
+            organization_id=organization_second.id,
+            is_admin=True,
+        )
+        await save_fixture(user_organization_second_admin)
+
+        sale_organization = await create_sale(
+            save_fixture, product=product, user=user_second
+        )
+        sale_organization_second = await create_sale(
+            save_fixture, product=product_organization_second, user=user_second
+        )
+
+        # No filter
+        sales, count = await sale_service.list(
+            session, auth_subject, pagination=PaginationParams(1, 10)
+        )
+        assert count == 2
+        assert len(sales) == 2
+        assert sales[0].id == sale_organization_second.id
+        assert sales[1].id == sale_organization.id
+
+        # Filter by organization
+        sales, count = await sale_service.list(
+            session,
+            auth_subject,
+            pagination=PaginationParams(1, 10),
+            organization_id=organization_second.id,
+        )
+
+        assert count == 1
+        assert len(sales) == 1
+        assert sales[0].id == sale_organization_second.id
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+    async def test_organization(
+        self,
+        auth_subject: AuthSubject[Organization],
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product: Product,
+        product_organization_second: Product,
+        user_second: User,
+    ) -> None:
+        sale = await create_sale(save_fixture, product=product, user=user_second)
+        await create_sale(
+            save_fixture, product=product_organization_second, user=user_second
+        )
+
+        sales, count = await sale_service.list(
+            session, auth_subject, pagination=PaginationParams(1, 10)
+        )
+
+        assert count == 1
+        assert len(sales) == 1
+        assert sales[0].id == sale.id
 
 
 @pytest.mark.asyncio

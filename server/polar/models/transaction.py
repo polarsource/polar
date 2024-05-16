@@ -3,12 +3,7 @@ from typing import TYPE_CHECKING
 from uuid import UUID
 
 from sqlalchemy import ForeignKey, Integer, String
-from sqlalchemy.orm import (
-    Mapped,
-    declared_attr,
-    mapped_column,
-    relationship,
-)
+from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.kit.db.models import RecordModel
 from polar.kit.extensions.sqlalchemy import PostgresUUID
@@ -20,8 +15,7 @@ if TYPE_CHECKING:
         IssueReward,
         Organization,
         Pledge,
-        ProductPrice,
-        Subscription,
+        Sale,
         User,
     )
 
@@ -300,34 +294,17 @@ class Transaction(RecordModel):
     def donation(cls) -> Mapped["Donation | None"]:
         return relationship("Donation", lazy="raise")
 
-    subscription_id: Mapped[UUID | None] = mapped_column(
+    sale_id: Mapped[UUID | None] = mapped_column(
         PostgresUUID,
-        ForeignKey("subscriptions.id", ondelete="set null"),
+        ForeignKey("sales.id", ondelete="set null"),
         nullable=True,
         index=True,
     )
-    """ID of the `Subscription` related to this transaction."""
+    """ID of the `Sale` related to this transaction."""
 
     @declared_attr
-    def subscription(cls) -> Mapped["Subscription | None"]:
-        return relationship("Subscription", lazy="raise")
-
-    product_price_id: Mapped[UUID | None] = mapped_column(
-        PostgresUUID,
-        ForeignKey("product_prices.id", ondelete="set null"),
-        nullable=True,
-        index=True,
-    )
-    """
-    ID of the `ProductPrice` related to this transaction.
-
-    Useful to keep track of the price at the time of the transaction,
-    which might change if the product is updated.
-    """
-
-    @declared_attr
-    def product_price(cls) -> Mapped["ProductPrice | None"]:
-        return relationship("ProductPrice", lazy="raise")
+    def sale(cls) -> Mapped["Sale | None"]:
+        return relationship("Sale", lazy="raise")
 
     issue_reward_id: Mapped[UUID | None] = mapped_column(
         PostgresUUID,

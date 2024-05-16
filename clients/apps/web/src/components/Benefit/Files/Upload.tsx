@@ -73,11 +73,11 @@ const getFileMultiparts = async (
 
   for (let i = 1; i <= chunkCount; i++) {
     const chunk_start = (i - 1) * CHUNK_SIZE
-    const chunk_end = i * CHUNK_SIZE
-    const chunk =
-      i < chunkCount
-        ? buffer.slice(chunk_start, chunk_end)
-        : buffer.slice(chunk_start)
+    let chunk_end = i * CHUNK_SIZE
+    if (chunk_end > file.size) {
+      chunk_end = file.size
+    }
+    const chunk = buffer.slice(chunk_start, chunk_end)
 
     const chunkSha256base64 = await getSha256Base64(chunk)
 

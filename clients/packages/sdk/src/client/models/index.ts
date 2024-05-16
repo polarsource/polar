@@ -10123,16 +10123,10 @@ export interface Transaction {
     issue_reward?: TransactionIssueReward;
     /**
      * 
-     * @type {TransactionSubscription}
+     * @type {TransactionSale}
      * @memberof Transaction
      */
-    subscription?: TransactionSubscription;
-    /**
-     * 
-     * @type {TransactionProductPrice}
-     * @memberof Transaction
-     */
-    product_price?: TransactionProductPrice;
+    sale?: TransactionSale;
     /**
      * 
      * @type {TransactionDonation}
@@ -10280,16 +10274,10 @@ export interface TransactionDetails {
     issue_reward?: TransactionIssueReward;
     /**
      * 
-     * @type {TransactionSubscription}
+     * @type {TransactionSale}
      * @memberof TransactionDetails
      */
-    subscription?: TransactionSubscription;
-    /**
-     * 
-     * @type {TransactionProductPrice}
-     * @memberof TransactionDetails
-     */
-    product_price?: TransactionProductPrice;
+    sale?: TransactionSale;
     /**
      * 
      * @type {TransactionDonation}
@@ -10801,39 +10789,45 @@ export interface TransactionRepository {
 /**
  * 
  * @export
- * @interface TransactionSubscription
+ * @interface TransactionSale
  */
-export interface TransactionSubscription {
+export interface TransactionSale {
     /**
      * Creation timestamp of the object.
      * @type {string}
-     * @memberof TransactionSubscription
+     * @memberof TransactionSale
      */
     created_at: string;
     /**
      * 
      * @type {string}
-     * @memberof TransactionSubscription
+     * @memberof TransactionSale
      */
     modified_at?: string;
     /**
      * 
      * @type {string}
-     * @memberof TransactionSubscription
+     * @memberof TransactionSale
      */
     id: string;
     /**
      * 
-     * @type {SubscriptionStatus}
-     * @memberof TransactionSubscription
-     */
-    status: SubscriptionStatus;
-    /**
-     * 
      * @type {TransactionProduct}
-     * @memberof TransactionSubscription
+     * @memberof TransactionSale
      */
     product: TransactionProduct;
+    /**
+     * 
+     * @type {TransactionProductPrice}
+     * @memberof TransactionSale
+     */
+    product_price: TransactionProductPrice;
+    /**
+     * 
+     * @type {string}
+     * @memberof TransactionSale
+     */
+    subscription_id?: string;
 }
 
 /**

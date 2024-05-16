@@ -27,11 +27,6 @@ if TYPE_CHECKING:
     )
 
 
-class FileStatus(StrEnum):
-    awaiting_upload = "awaiting_upload"
-    uploaded = "uploaded"
-
-
 class FileExtension(StrEnum):
     jpg = "jpg"
     jpeg = "jpeg"
@@ -56,11 +51,14 @@ class File(RecordModel):
     name: Mapped[str] = mapped_column(String, nullable=False)
     extension: Mapped[FileExtension] = mapped_column(String, nullable=False)
     version: Mapped[str] = mapped_column(String, nullable=True)
-    key: Mapped[str] = mapped_column(String, nullable=False)
+    path: Mapped[str] = mapped_column(String, nullable=False)
     mime_type: Mapped[str] = mapped_column(String, nullable=False)
     size: Mapped[int] = mapped_column(Integer, nullable=False)
 
-    status: Mapped[FileStatus] = mapped_column(String, nullable=False)
+    upload_id: Mapped[str] = mapped_column(
+        String,
+        nullable=True,
+    )
 
     presigned_at: Mapped[datetime] = mapped_column(
         TIMESTAMP(timezone=True),
@@ -68,31 +66,19 @@ class File(RecordModel):
         default=utc_now,
     )
 
-    presign_expiration: Mapped[int] = mapped_column(Integer, nullable=False)
-
-    presign_expires_at: Mapped[datetime] = mapped_column(
-        TIMESTAMP(timezone=True),
-        nullable=False,
-    )
-
     uploaded_at: Mapped[datetime] = mapped_column(
         TIMESTAMP(timezone=True),
         nullable=True,
     )
 
-    version_id: Mapped[str] = mapped_column(String, nullable=True)
+    s3_version_id: Mapped[str] = mapped_column(String, nullable=True)
     sha256_base64: Mapped[str] = mapped_column(String, nullable=True)
     sha256_hex: Mapped[str] = mapped_column(String, nullable=True)
     etag: Mapped[str] = mapped_column(String, nullable=True)
 
     @hybrid_property
     def uploaded(self) -> bool:
-        return self.status == FileStatus.uploaded
-
-    def mark_uploaded(self) -> None:
-        self.status = FileStatus.uploaded
-        # TODO: Get this from S3?
-        self.uploaded_at = utc_now()
+        return self.uploaded_at is not None
 
 
-__all__ = ("File", "FileStatus", "FileExtension")
+__all__ = ("File", "FileExtension")

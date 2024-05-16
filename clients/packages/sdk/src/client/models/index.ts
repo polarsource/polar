@@ -4756,28 +4756,85 @@ export interface FileCreate {
     name: string;
     /**
      * 
-     * @type {number}
-     * @memberof FileCreate
-     */
-    size: number;
-    /**
-     * 
      * @type {string}
      * @memberof FileCreate
      */
     mime_type: string;
     /**
      * 
-     * @type {SHA256Checksums}
+     * @type {number}
      * @memberof FileCreate
      */
-    sha256: SHA256Checksums | null;
+    size: number;
+    /**
+     * 
+     * @type {FileCreateChecksum}
+     * @memberof FileCreate
+     */
+    checksum: FileCreateChecksum | null;
+    /**
+     * 
+     * @type {FileCreateMultipart}
+     * @memberof FileCreate
+     */
+    upload: FileCreateMultipart;
+}
+/**
+ * 
+ * @export
+ * @interface FileCreateChecksum
+ */
+export interface FileCreateChecksum {
     /**
      * 
      * @type {string}
-     * @memberof FileCreate
+     * @memberof FileCreateChecksum
      */
-    version?: string;
+    sha256_base64: string;
+}
+/**
+ * 
+ * @export
+ * @interface FileCreateMultipart
+ */
+export interface FileCreateMultipart {
+    /**
+     * 
+     * @type {Array<FileCreatePart>}
+     * @memberof FileCreateMultipart
+     */
+    parts: Array<FileCreatePart>;
+}
+/**
+ * 
+ * @export
+ * @interface FileCreatePart
+ */
+export interface FileCreatePart {
+    /**
+     * 
+     * @type {number}
+     * @memberof FileCreatePart
+     */
+    number: number;
+    /**
+     * 
+     * @type {number}
+     * @memberof FileCreatePart
+     */
+    chunk_start: number;
+    /**
+     * 
+     * @type {number}
+     * @memberof FileCreatePart
+     */
+    chunk_end: number;
+    /**
+     * 
+     * @type {FileCreateChecksum}
+     * @memberof FileCreatePart
+     */
+    checksum: FileCreateChecksum | null;
 }
 /**
  * 
@@ -4814,12 +4871,6 @@ export interface FilePresignedRead {
      * @type {string}
      * @memberof FilePresignedRead
      */
-    version?: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof FilePresignedRead
-     */
     mime_type: string;
     /**
      * 
@@ -4829,16 +4880,10 @@ export interface FilePresignedRead {
     size: number;
     /**
      * 
-     * @type {SHA256Checksums}
+     * @type {FileReadChecksum}
      * @memberof FilePresignedRead
      */
-    sha256: SHA256Checksums | null;
-    /**
-     * 
-     * @type {string}
-     * @memberof FilePresignedRead
-     */
-    status: string;
+    checksum: FileReadChecksum;
     /**
      * 
      * @type {string}
@@ -4851,12 +4896,6 @@ export interface FilePresignedRead {
      * @memberof FilePresignedRead
      */
     created_at: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof FilePresignedRead
-     */
-    modified_at?: string;
     /**
      * 
      * @type {string}
@@ -4911,12 +4950,6 @@ export interface FileRead {
      * @type {string}
      * @memberof FileRead
      */
-    version?: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof FileRead
-     */
     mime_type: string;
     /**
      * 
@@ -4926,16 +4959,10 @@ export interface FileRead {
     size: number;
     /**
      * 
-     * @type {SHA256Checksums}
+     * @type {FileReadChecksum}
      * @memberof FileRead
      */
-    sha256: SHA256Checksums | null;
-    /**
-     * 
-     * @type {string}
-     * @memberof FileRead
-     */
-    status: string;
+    checksum: FileReadChecksum;
     /**
      * 
      * @type {string}
@@ -4948,12 +4975,236 @@ export interface FileRead {
      * @memberof FileRead
      */
     created_at: string;
+}
+/**
+ * 
+ * @export
+ * @interface FileReadChecksum
+ */
+export interface FileReadChecksum {
     /**
      * 
      * @type {string}
-     * @memberof FileRead
+     * @memberof FileReadChecksum
      */
-    modified_at?: string;
+    etag?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof FileReadChecksum
+     */
+    sha256_base64: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof FileReadChecksum
+     */
+    sha256_hex: string | null;
+}
+/**
+ * 
+ * @export
+ * @interface FileUpload
+ */
+export interface FileUpload {
+    /**
+     * 
+     * @type {string}
+     * @memberof FileUpload
+     */
+    id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof FileUpload
+     */
+    organization_id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof FileUpload
+     */
+    name: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof FileUpload
+     */
+    extension: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof FileUpload
+     */
+    mime_type: string;
+    /**
+     * 
+     * @type {number}
+     * @memberof FileUpload
+     */
+    size: number;
+    /**
+     * 
+     * @type {FileReadChecksum}
+     * @memberof FileUpload
+     */
+    checksum: FileReadChecksum;
+    /**
+     * 
+     * @type {string}
+     * @memberof FileUpload
+     */
+    uploaded_at?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof FileUpload
+     */
+    created_at: string;
+    /**
+     * 
+     * @type {FileUploadMultipart}
+     * @memberof FileUpload
+     */
+    upload: FileUploadMultipart;
+}
+/**
+ * 
+ * @export
+ * @interface FileUploadCompleted
+ */
+export interface FileUploadCompleted {
+    /**
+     * 
+     * @type {FileUploadCompletedMultipart}
+     * @memberof FileUploadCompleted
+     */
+    upload: FileUploadCompletedMultipart;
+}
+/**
+ * 
+ * @export
+ * @interface FileUploadCompletedChecksum
+ */
+export interface FileUploadCompletedChecksum {
+    /**
+     * 
+     * @type {string}
+     * @memberof FileUploadCompletedChecksum
+     */
+    etag: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof FileUploadCompletedChecksum
+     */
+    sha256_base64?: string;
+}
+/**
+ * 
+ * @export
+ * @interface FileUploadCompletedMultipart
+ */
+export interface FileUploadCompletedMultipart {
+    /**
+     * 
+     * @type {string}
+     * @memberof FileUploadCompletedMultipart
+     */
+    id: string;
+    /**
+     * 
+     * @type {Array<FileUploadCompletedPart>}
+     * @memberof FileUploadCompletedMultipart
+     */
+    parts: Array<FileUploadCompletedPart>;
+}
+/**
+ * 
+ * @export
+ * @interface FileUploadCompletedPart
+ */
+export interface FileUploadCompletedPart {
+    /**
+     * 
+     * @type {number}
+     * @memberof FileUploadCompletedPart
+     */
+    number: number;
+    /**
+     * 
+     * @type {FileUploadCompletedChecksum}
+     * @memberof FileUploadCompletedPart
+     */
+    checksum: FileUploadCompletedChecksum;
+}
+/**
+ * 
+ * @export
+ * @interface FileUploadMultipart
+ */
+export interface FileUploadMultipart {
+    /**
+     * 
+     * @type {string}
+     * @memberof FileUploadMultipart
+     */
+    id: string;
+    /**
+     * 
+     * @type {Array<FileUploadPart>}
+     * @memberof FileUploadMultipart
+     */
+    parts: Array<FileUploadPart>;
+}
+/**
+ * 
+ * @export
+ * @interface FileUploadPart
+ */
+export interface FileUploadPart {
+    /**
+     * 
+     * @type {number}
+     * @memberof FileUploadPart
+     */
+    number: number;
+    /**
+     * 
+     * @type {number}
+     * @memberof FileUploadPart
+     */
+    chunk_start: number;
+    /**
+     * 
+     * @type {number}
+     * @memberof FileUploadPart
+     */
+    chunk_end: number;
+    /**
+     * 
+     * @type {FileCreateChecksum}
+     * @memberof FileUploadPart
+     */
+    checksum: FileCreateChecksum | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof FileUploadPart
+     */
+    url: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof FileUploadPart
+     */
+    expires_at: string;
+    /**
+     * 
+     * @type {{ [key: string]: string; }}
+     * @memberof FileUploadPart
+     */
+    headers?: { [key: string]: string; };
 }
 /**
  * 
@@ -10235,25 +10486,6 @@ export interface RewardsSummaryReceiver {
      * @memberof RewardsSummaryReceiver
      */
     avatar_url?: string;
-}
-/**
- * 
- * @export
- * @interface SHA256Checksums
- */
-export interface SHA256Checksums {
-    /**
-     * 
-     * @type {string}
-     * @memberof SHA256Checksums
-     */
-    base64: string | null;
-    /**
-     * 
-     * @type {string}
-     * @memberof SHA256Checksums
-     */
-    hex: string | null;
 }
 
 /**

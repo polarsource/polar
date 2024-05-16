@@ -1,24 +1,29 @@
+import base64
 import mimetypes
 from datetime import timedelta
 
 import structlog
 
 from polar.config import settings
-from polar.exceptions import BadRequest, PolarError, ResourceNotFound
+from polar.exceptions import PolarError, ResourceNotFound
 from polar.kit.services import ResourceService
 from polar.kit.utils import generate_uuid, utc_now
 from polar.models import Organization, User
-from polar.models.file import File, FileStatus
+from polar.models.file import File
 from polar.models.file_permission import FilePermission, FilePermissionStatus
 from polar.postgres import AsyncSession, sql
 
 from .client import s3_client
 from .schemas import (
     FileCreate,
+    FileCreatePart,
     FilePermissionCreate,
     FilePermissionUpdate,
     FilePresignedRead,
     FileUpdate,
+    FileUpload,
+    FileUploadCompleted,
+    FileUploadPart,
     get_disposition,
 )
 
@@ -38,74 +43,117 @@ class FileNotFound(ResourceNotFound):
 
 
 class FileService(ResourceService[File, FileCreate, FileUpdate]):
-    async def generate_presigned_upload_url(
+    async def generate_presigned_upload(
         self,
         session: AsyncSession,
         *,
         organization: Organization,
         create_schema: FileCreate,
-    ) -> FilePresignedRead:
+    ) -> FileUpload:
         file_uuid = generate_uuid()
         # TODO: Move this to schema validation
         extension = mimetypes.guess_extension(create_schema.mime_type)
         if not extension:
             raise UnsupportedFile("Cannot determine file extension")
 
-        file_name = f"{file_uuid}{extension}"
+        filename = f"{file_uuid}{extension}"
         # Each organization gets its own directory
-        key = f"{organization.id}/{file_name}"
+        path = f"{organization.id}/{filename}"
 
-        hex = None
-        base64 = None
         metadata = {}
-        checksums = create_schema.sha256
-        if checksums:
-            base64 = checksums.base64
-            hex = checksums.hex
+        sha256_hex = None
+        sha256_base64 = None
+        checksum = create_schema.checksum
+        if checksum and checksum.sha256_base64:
+            sha256_base64 = checksum.sha256_base64
+            sha256_hex = base64.b64decode(sha256_base64).hex()
             metadata = {
-                "sha256-hex": hex,
-                "sha256-base64": base64,
+                "file-sha256-hex": sha256_hex,
+                "file-sha256-base64": sha256_base64,
             }
 
-        expires_in = settings.S3_FILES_PRESIGN_TTL
-        presigned_at = utc_now()
-        signed_post_url = s3_client.generate_presigned_url(
-            "put_object",
-            Params=dict(
-                Bucket=settings.S3_FILES_BUCKET_NAME,
-                Key=key,
-                ContentDisposition=get_disposition(create_schema.name),
-                ContentType=create_schema.mime_type,
-                ChecksumAlgorithm="SHA256",
-                ChecksumSHA256=base64,
-                Metadata=metadata,
-            ),
-            ExpiresIn=expires_in,
+        multipart_upload = s3_client.create_multipart_upload(
+            Bucket=settings.S3_FILES_BUCKET_NAME,
+            Key=path,
+            ContentDisposition=get_disposition(create_schema.name),
+            ContentType=create_schema.mime_type,
+            ChecksumAlgorithm="SHA256",
+            Metadata=metadata,
         )
-        presign_expires_at = presigned_at + timedelta(seconds=expires_in)
+        multipart_upload_id = multipart_upload.get("UploadId")
+        if not multipart_upload_id:
+            log.error(
+                "aws.s3",
+                organization_id=organization.id,
+                filename=filename,
+                mime_type=create_schema.mime_type,
+                size=create_schema.size,
+                error="No upload ID returned from S3",
+            )
+            raise FileError("No upload ID returned from S3")
 
         instance = File(
-            key=key,
+            upload_id=multipart_upload_id,
+            path=path,
             extension=extension[1:],
-            status=FileStatus.awaiting_upload,
             presigned_at=utc_now(),
-            presign_expiration=expires_in,
-            presign_expires_at=presign_expires_at,
-            sha256_base64=base64,
-            sha256_hex=hex,
-            **create_schema.model_dump(exclude={"sha256"}),
+            sha256_base64=sha256_base64,
+            sha256_hex=sha256_hex,
+            **create_schema.model_dump(exclude={"checksum", "upload"}),
         )
         session.add(instance)
         await session.flush()
         assert instance.id is not None
 
-        return FilePresignedRead.from_presign(
-            instance,
-            url=signed_post_url,
-            expires_at=presign_expires_at,
+        parts = await self.generate_presigned_upload_parts(
+            file=instance,
+            parts=create_schema.upload.parts,
+            upload_id=multipart_upload_id,
         )
 
-    async def generate_presigned_download_url(
+        return FileUpload.from_presign(
+            instance,
+            upload_id=multipart_upload_id,
+            parts=parts,
+        )
+
+    async def generate_presigned_upload_parts(
+        self,
+        *,
+        file: File,
+        parts: list[FileCreatePart],
+        upload_id: str,
+    ) -> list[FileUploadPart]:
+        ret = []
+        expires_in = settings.S3_FILES_PRESIGN_TTL
+        presigned_at = utc_now()
+        for part in parts:
+            signed_post_url = s3_client.generate_presigned_url(
+                "upload_part",
+                Params=dict(
+                    UploadId=upload_id,
+                    Bucket=settings.S3_FILES_BUCKET_NAME,
+                    Key=file.path,
+                    **part.get_s3_arguments(),
+                ),
+                ExpiresIn=expires_in,
+            )
+            presign_expires_at = presigned_at + timedelta(seconds=expires_in)
+            headers = FileUploadPart.generate_headers(part.checksum)
+            ret.append(
+                FileUploadPart(
+                    number=part.number,
+                    chunk_start=part.chunk_start,
+                    chunk_end=part.chunk_end,
+                    checksum=part.checksum,
+                    url=signed_post_url,
+                    expires_at=presign_expires_at,
+                    headers=headers,
+                )
+            )
+        return ret
+
+    async def generate_presigned_download(
         self, session: AsyncSession, *, user: User, file: File
     ) -> FilePresignedRead:
         expires_in = settings.S3_FILES_PRESIGN_TTL
@@ -114,7 +162,7 @@ class FileService(ResourceService[File, FileCreate, FileUpdate]):
             "get_object",
             Params=dict(
                 Bucket=settings.S3_FILES_BUCKET_NAME,
-                Key=file.key,
+                Key=file.path,
                 ResponseContentDisposition=get_disposition(file.name),
                 ResponseContentType=file.mime_type,
             ),
@@ -128,40 +176,22 @@ class FileService(ResourceService[File, FileCreate, FileUpdate]):
             expires_at=presign_expires_at,
         )
 
-    async def mark_uploaded(
+    async def complete_upload(
         self,
         session: AsyncSession,
         *,
-        organization: Organization,
         file: File,
+        payload: FileUploadCompleted,
     ) -> File:
-        metadata = s3_client.get_object_attributes(
+        response = s3_client.complete_multipart_upload(
             Bucket=settings.S3_FILES_BUCKET_NAME,
-            Key=file.key,
-            # VersionId=file.version,
-            ObjectAttributes=[
-                "ETag",
-                "Checksum",
-                "ObjectSize",
-            ],
+            Key=file.path,
+            **payload.get_s3_arguments(),
         )
-        if not metadata:
-            log.error("aws.s3", file_id=file.id, key=file.key, error="No S3 metadata")
-            raise FileNotFound(f"No S3 metadata exists for ID: {file.id}")
 
-        checksums = metadata.get("Checksum", {})
-        sha256_base64 = checksums.get("ChecksumSHA256")
-        if file.sha256_base64 and sha256_base64 != file.sha256_base64:
-            log.error("aws.s3", file_id=file.id, key=file.key, error="SHA256 missmatch")
-            raise BadRequest()
-
-        file.sha256_base64 = sha256_base64
-        file.status = FileStatus.uploaded
-        file.uploaded_at = metadata["LastModified"]
-        file.etag = metadata.get("ETag")
-        file.version_id = metadata.get("VersionId")
-        # Update size from S3 or fallback on original size given by client
-        file.size = metadata.get("ObjectSize", file.size)
+        file.etag = response.get("ETag")
+        file.s3_version_id = response.get("VersionId")
+        file.uploaded_at = utc_now()
 
         session.add(file)
         await session.flush()

@@ -32,12 +32,6 @@ const OverviewSections = () => {
   return (
     <>
       <div className="flex flex-col">
-        <NaviagtionItem href="/docs/overview/introduction">
-          Introduction
-        </NaviagtionItem>
-        <NaviagtionItem href="/docs/overview/funding">
-          Issue Funding
-        </NaviagtionItem>
         <NaviagtionItem href="/docs/overview/donations">
           Donations
         </NaviagtionItem>
@@ -52,6 +46,27 @@ const OverviewSections = () => {
         <NaviagtionItem href="/docs/overview/payments-taxes">
           Payments & Taxes
         </NaviagtionItem>
+      </div>
+
+      <div className="flex flex-col gap-y-4">
+        <h2 className="font-medium">Issue Funding</h2>
+        <div className="flex flex-col">
+          <NaviagtionItem href="/docs/overview/issue-funding/overview">
+            Overview
+          </NaviagtionItem>
+          <NaviagtionItem href="/docs/overview/issue-funding/getting-started">
+            Getting Started
+          </NaviagtionItem>
+          <NaviagtionItem href="/docs/overview/issue-funding/workflow">
+            Workflow
+          </NaviagtionItem>
+          <NaviagtionItem href="/docs/overview/issue-funding/promote">
+            Promote
+          </NaviagtionItem>
+          <NaviagtionItem href="/docs/overview/issue-funding/reward-contributors">
+            Reward Contributors
+          </NaviagtionItem>
+        </div>
       </div>
     </>
   )

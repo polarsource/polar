@@ -48,7 +48,7 @@ export const TableOfContents = () => {
               className={twMerge(
                 'dark:text-polar-500 text-gray-500 transition-colors duration-200 ease-in-out hover:text-black dark:hover:text-white',
               )}
-              // style={{ marginLeft: `${item.level - 1}em` }}
+              style={{ marginLeft: `${item.level - 1}em` }}
             >
               {item.text}
             </li>

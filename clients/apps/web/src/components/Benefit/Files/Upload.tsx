@@ -13,14 +13,18 @@ interface UploadProperties {
   organization: Organization
   file: File
   buffer: ArrayBuffer
-  onSuccess: (response: FileRead) => void
+  onFileCreate: (response: FileUpload) => void
+  onFileUploadProgress: (file: FileUpload, uploaded: number) => void
+  onFileUploaded: (response: FileRead) => void
 }
 
 export const upload = async ({
   organization,
   file,
   buffer,
-  onSuccess,
+  onFileCreate,
+  onFileUploadProgress,
+  onFileUploaded,
 }: UploadProperties) => {
   const parts = await getFileMultiparts(file, buffer)
 
@@ -28,9 +32,18 @@ export const upload = async ({
   const upload = createFileResponse?.upload
   if (!upload) return
 
-  const uploadedParts = await uploadFileMultiparts(file, buffer, upload.parts)
+  onFileCreate(createFileResponse)
 
-  await completeUpload(createFileResponse, uploadedParts, onSuccess)
+  const uploadedParts = await uploadFileMultiparts({
+    file,
+    buffer,
+    parts: upload.parts,
+    onProgress: (uploaded: number) => {
+      onFileUploadProgress(createFileResponse, uploaded)
+    },
+  })
+
+  await completeUpload(createFileResponse, uploadedParts, onFileUploaded)
 }
 
 const CHUNK_SIZE = 10000000 // 10MB
@@ -41,7 +54,7 @@ const getSha256Base64 = async (buffer: ArrayBuffer) => {
   return sha256base64
 }
 
-const createFile = async (
+export const createFile = async (
   organization: Organization,
   file: File,
   buffer: ArrayBuffer,
@@ -94,12 +107,19 @@ const getFileMultiparts = async (
   return parts
 }
 
-const uploadFileMultiparts = async (
-  file: File,
-  buffer: ArrayBuffer,
-  parts: Array<FileUploadPart>,
-): Promise<FileUploadCompletedPart[]> => {
+const uploadFileMultiparts = async ({
+  file,
+  buffer,
+  parts,
+  onProgress,
+}: {
+  file: File
+  buffer: ArrayBuffer
+  parts: Array<FileUploadPart>
+  onProgress: (uploaded: number) => void
+}): Promise<FileUploadCompletedPart[]> => {
   const ret = []
+  let uploaded = 0
   const partCount = parts.length
   /**
    * Unfortunately, we need to do this sequentially vs. in paralell since we
@@ -108,31 +128,76 @@ const uploadFileMultiparts = async (
    */
   for (let i = 0; i < partCount; i++) {
     const part = parts[i]
-    const data = buffer.slice(part.chunk_start, part.chunk_end)
-    let blob = new Blob([data], { type: file.type })
-
-    const response = await fetch(part.url, {
-      method: 'PUT',
-      headers: part.headers,
-      body: blob,
-    })
-    const etag = response.headers.get('ETag')
-    if (!etag) {
-      throw new Error('ETag not found in response')
-    }
-
-    const completed: FileUploadCompletedPart = {
-      number: part.number,
-      checksum: {
-        etag: etag,
+    const completed = await uploadFilePart({
+      file,
+      buffer,
+      part,
+      onProgress: (chunk_uploaded) => {
+        onProgress(uploaded + chunk_uploaded)
       },
-    }
-    if (part.checksum?.sha256_base64) {
-      completed.checksum.sha256_base64 = part.checksum.sha256_base64
-    }
+    })
+    uploaded += part.chunk_end - part.chunk_start
+    onProgress(uploaded)
     ret.push(completed)
   }
+
   return ret
+}
+
+const uploadFilePart = async ({
+  file,
+  buffer,
+  part,
+  onProgress,
+}: {
+  file: File
+  buffer: ArrayBuffer
+  part: FileUploadPart
+  onProgress: (uploaded: number) => void
+}): Promise<FileUploadCompletedPart> => {
+  const data = buffer.slice(part.chunk_start, part.chunk_end)
+  let blob = new Blob([data], { type: file.type })
+
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest()
+
+    xhr.onreadystatechange = () => {
+      if (xhr.readyState === 4) {
+        if (xhr.status === 200) {
+          const etag = xhr.getResponseHeader('ETag')
+          if (!etag) {
+            reject(new Error('ETag not found in response'))
+            return
+          }
+          const completed: FileUploadCompletedPart = {
+            number: part.number,
+            checksum: {
+              etag: etag,
+            },
+          }
+          if (part.checksum?.sha256_base64) {
+            completed.checksum.sha256_base64 = part.checksum.sha256_base64
+          }
+          resolve(completed)
+        } else {
+          reject(new Error('Failed to upload part'))
+        }
+      }
+    }
+
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable) {
+        onProgress(e.loaded)
+      }
+    }
+
+    xhr.open('PUT', part.url, true)
+    for (const [header, value] of Object.entries(part.headers)) {
+      xhr.setRequestHeader(header, value)
+    }
+
+    xhr.send(blob)
+  })
 }
 
 const completeUpload = async (

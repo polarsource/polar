@@ -13,12 +13,19 @@ import {
 import { useCallback, useMemo } from 'react'
 
 export const requestBodyParameters = (
-  endpointMethod: OpenAPIV3_1.OperationObject,
+  endpoint: OpenAPIV3_1.OperationObject,
 ) => {
-  if (endpointMethod.requestBody && !('content' in endpointMethod.requestBody))
-    return undefined
-
-  return endpointMethod.requestBody?.content['application/json'].schema
+  return (
+    endpoint.requestBody &&
+    'content' in endpoint.requestBody &&
+    endpoint.requestBody.content &&
+    'application/json' in endpoint.requestBody.content &&
+    endpoint.requestBody.content['application/json'] &&
+    'schema' in endpoint.requestBody.content['application/json'] &&
+    endpoint.requestBody.content['application/json'].schema &&
+    'properties' in endpoint.requestBody.content['application/json'].schema &&
+    endpoint.requestBody.content['application/json'].schema.properties
+  )
 }
 
 export const APIContainer = ({
@@ -38,13 +45,9 @@ export const APIContainer = ({
       url: string,
       endpoint: OpenAPIV3_1.OperationObject,
     ) => {
-      const requiredBodyParameters = endpoint.requestBody?.content?.[
-        'application/json'
-      ].schema.properties
-        ? Object.entries(
-            endpoint.requestBody?.content?.['application/json'].schema
-              .properties ?? {},
-          )
+      const requestParameters = requestBodyParameters(endpoint)
+      const requiredBodyParameters = requestParameters
+        ? Object.entries(requestParameters)
             .map(([key]) => ({
               [key]: `<${key}>`,
             }))

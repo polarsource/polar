@@ -13,6 +13,7 @@ from polar.integrations.stripe.schemas import (
     ProductType,
 )
 from polar.pledge.service import pledge as pledge_service
+from polar.sale.service import NotASaleInvoice
 from polar.sale.service import sale as sale_service
 from polar.subscription.service.subscription import SubscriptionDoesNotExist
 from polar.subscription.service.subscription import subscription as subscription_service
@@ -287,6 +288,9 @@ async def invoice_paid(
                     raise Retry(DELAY ** ctx["job_try"]) from e
                 else:
                     raise
+            except NotASaleInvoice:
+                # Ignore invoices that are not for sales (e.g. for pledges)
+                return
 
 
 @task("stripe.webhook.payout.paid")

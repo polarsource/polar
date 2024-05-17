@@ -36,7 +36,7 @@ export const ResponseContainer = ({
           <TabsContent key={statusCode} value={statusCode} className="p-2 py-0">
             <pre className="dark:text-polar-50 max-h-72 select-text overflow-auto p-4 font-mono text-xs leading-normal text-gray-900">
               {JSON.stringify(
-                response.content?.['application/json'].schema,
+                response.content?.['application/json'].schema.properties,
                 null,
                 2,
               )}

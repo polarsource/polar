@@ -8,6 +8,7 @@ from polar.tags.api import Tags
 
 from . import auth
 from .schemas import Sale as SaleSchema
+from .schemas import SalesStatistics
 from .service import sale as sale_service
 
 router = APIRouter(prefix="/sales", tags=["sales"])
@@ -35,3 +36,22 @@ async def list_sales(
         count,
         pagination,
     )
+
+
+@router.get("/statistics", response_model=SalesStatistics, tags=[Tags.PUBLIC])
+async def get_sales_statistics(
+    auth_subject: auth.SalesRead,
+    organization_id: UUID4 | None = Query(
+        None, description="Filter by organization ID."
+    ),
+    product_id: UUID4 | None = Query(None, description="Filter by product ID."),
+    session: AsyncSession = Depends(get_db_session),
+) -> SalesStatistics:
+    """Get monthly data about your sales and earnings."""
+    periods = await sale_service.get_statistics_periods(
+        session,
+        auth_subject,
+        organization_id=organization_id,
+        product_id=product_id,
+    )
+    return SalesStatistics(periods=periods)

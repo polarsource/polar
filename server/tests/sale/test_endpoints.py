@@ -62,3 +62,37 @@ class TestListSales:
 
         json = response.json()
         assert json["pagination"]["total_count"] == len(sales)
+
+
+@pytest.mark.asyncio
+@pytest.mark.http_auto_expunge
+class TesGetSalesStatistics:
+    async def test_anonymous(self, client: AsyncClient) -> None:
+        response = await client.get("/api/v1/sales/statistics")
+
+        assert response.status_code == 401
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(scopes={Scope.web_default}),
+        AuthSubjectFixture(scopes={Scope.creator_sales_read}),
+    )
+    async def test_user_valid(
+        self, client: AsyncClient, user_organization_admin: UserOrganization
+    ) -> None:
+        response = await client.get("/api/v1/sales/statistics")
+
+        assert response.status_code == 200
+
+        json = response.json()
+        assert len(json["periods"]) == 12
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="organization", scopes={Scope.creator_sales_read}),
+    )
+    async def test_organization(self, client: AsyncClient) -> None:
+        response = await client.get("/api/v1/sales/statistics")
+
+        assert response.status_code == 200
+
+        json = response.json()
+        assert len(json["periods"]) == 12

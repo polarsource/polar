@@ -1,3 +1,6 @@
+from collections.abc import Sequence
+from datetime import date
+
 from pydantic import UUID4
 
 from polar.kit.schemas import Schema, TimestampedSchema
@@ -39,3 +42,15 @@ class Sale(SaleBase):
     product: SaleProduct
     product_price: SaleProductPrice
     subscription: SaleSubscription | None = None
+
+
+class SalesStatisticsPeriod(Schema):
+    date: date
+    sales: int
+    earnings: int
+    expected_sales: int
+    expected_earnings: int
+
+
+class SalesStatistics(Schema):
+    periods: Sequence[SalesStatisticsPeriod]

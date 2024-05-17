@@ -531,8 +531,10 @@ async def create_sale(
     amount: int = 1000,
     tax_amount: int = 0,
     stripe_invoice_id: str = "INVOICE_ID",
+    created_at: datetime | None = None,
 ) -> Sale:
     sale = Sale(
+        created_at=created_at or utc_now(),
         amount=amount,
         tax_amount=tax_amount,
         currency="usd",
@@ -603,14 +605,20 @@ async def create_subscription(
     status: SubscriptionStatus = SubscriptionStatus.incomplete,
     started_at: datetime | None = None,
     ended_at: datetime | None = None,
+    current_period_start: datetime | None = None,
+    current_period_end: datetime | None = None,
     stripe_subscription_id: str | None = "SUBSCRIPTION_ID",
 ) -> Subscription:
     now = datetime.now(UTC)
     subscription = Subscription(
         stripe_subscription_id=stripe_subscription_id,
         status=status,
-        current_period_start=now,
-        current_period_end=now + timedelta(days=30),
+        current_period_start=now
+        if current_period_start is None
+        else current_period_start,
+        current_period_end=(now + timedelta(days=30))
+        if current_period_end is None
+        else current_period_end,
         cancel_at_period_end=False,
         started_at=started_at,
         ended_at=ended_at,

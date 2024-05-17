@@ -36,20 +36,23 @@ export const TableOfContents = () => {
     }
   }, [pathname])
 
+  if (!toc.length) return null
+
   return (
     <nav className="flex w-full flex-col gap-y-4">
       <h3 className="text-black dark:text-white">Table of Contents</h3>
       <ul className="flex flex-col gap-y-2 text-sm">
         {toc.map((item) => (
-          <li
-            key={item.id}
-            className={twMerge(
-              'dark:text-polar-500 text-gray-500 transition-colors duration-200 ease-in-out hover:text-black dark:hover:text-white',
-            )}
-            // style={{ marginLeft: `${item.level - 1}em` }}
-          >
-            <a href={`#${item.id}`}>{item.text}</a>
-          </li>
+          <a key={item.id} href={`#${item.id}`}>
+            <li
+              className={twMerge(
+                'dark:text-polar-500 text-gray-500 transition-colors duration-200 ease-in-out hover:text-black dark:hover:text-white',
+              )}
+              // style={{ marginLeft: `${item.level - 1}em` }}
+            >
+              {item.text}
+            </li>
+          </a>
         ))}
       </ul>
     </nav>

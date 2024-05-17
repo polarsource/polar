@@ -18,7 +18,12 @@ export const Navigation = () => {
           <FAQSections />
         </>
       )}
-      {shouldRenderAPISections && <APISections />}
+      {shouldRenderAPISections && (
+        <>
+          <APISections />
+          <APIReferenceSections />
+        </>
+      )}
     </div>
   )
 }
@@ -75,6 +80,19 @@ const FAQSections = () => {
 }
 
 const APISections = () => {
+  return (
+    <div className="flex flex-col">
+      <NaviagtionItem href="/docs/api-reference/introduction">
+        Introduction
+      </NaviagtionItem>
+      <NaviagtionItem href="/docs/api-reference/github-actions">
+        GitHub Actions
+      </NaviagtionItem>
+    </div>
+  )
+}
+
+const APIReferenceSections = () => {
   return (
     <>
       {sections.map((section) => (

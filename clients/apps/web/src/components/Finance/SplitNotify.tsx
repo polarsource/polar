@@ -39,7 +39,7 @@ const SplitNotify = (props: {
 
   const defaultMessage = `Thank you ${concatUsernames} for contributing to close this issue! ⭐
 
-The rewards from this issue, totalling $${getCentsInDollarString(
+The rewards from this issue, totaling $${getCentsInDollarString(
     totalPledgedAmount,
     false,
     true,

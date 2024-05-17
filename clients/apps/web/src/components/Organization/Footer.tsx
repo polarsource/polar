@@ -103,7 +103,7 @@ export default Footer
 const FooterLink = (props: PropsWithChildren<LinkProps>) => {
   return (
     <Link
-      className="dark:text-polar-500 dark:hover:text-polar-50 flex flex-row items-center gap-x-1 text-gray-500 transition-colors hover:text-gray-50"
+      className="dark:text-polar-500 dark:hover:text-polar-50 flex flex-row items-center gap-x-1 text-gray-500 transition-colors hover:text-gray-300"
       {...props}
     >
       {props.children}

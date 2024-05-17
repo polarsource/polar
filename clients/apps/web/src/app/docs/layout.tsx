@@ -1,4 +1,5 @@
 import { BrandingMenu } from '@/components/Layout/Public/BrandingMenu'
+import Footer from '@/components/Organization/Footer'
 import { getServerSideAPI } from '@/utils/api/serverside'
 import {
   ApiOutlined,
@@ -21,8 +22,8 @@ export default async function Layout({ children }: PropsWithChildren) {
         <div className="flex w-full flex-grow flex-col gap-y-12">
           <DocumentationPageTopbar />
           <Separator />
-          <div className="flex flex-row items-start gap-x-16">
-            <div className="flex w-64 flex-shrink-0 flex-col gap-y-12">
+          <div className="flex flex-row items-start gap-x-16 pb-24">
+            <div className="flex w-60 flex-shrink-0 flex-col gap-y-12">
               <ul className="flex flex-col">
                 <li>
                   <NaviagtionItem
@@ -56,6 +57,7 @@ export default async function Layout({ children }: PropsWithChildren) {
           </div>
         </div>
       </div>
+      <Footer showUpsellFooter={false} wide />
     </div>
   )
 }

@@ -1,7 +1,7 @@
 from collections.abc import Sequence
 from datetime import date
 
-from pydantic import UUID4
+from pydantic import UUID4, Field
 
 from polar.kit.schemas import Schema, TimestampedSchema
 from polar.product.schemas import ProductBase, ProductPrice
@@ -54,3 +54,9 @@ class SalesStatisticsPeriod(Schema):
 
 class SalesStatistics(Schema):
     periods: Sequence[SalesStatisticsPeriod]
+
+
+class SaleInvoice(Schema):
+    """Sale's invoice data."""
+
+    url: str = Field(..., description="The URL to the invoice.")

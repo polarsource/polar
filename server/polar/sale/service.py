@@ -11,6 +11,7 @@ from polar.enums import UserSignupType
 from polar.exceptions import PolarError
 from polar.held_balance.service import held_balance as held_balance_service
 from polar.integrations.loops.service import loops as loops_service
+from polar.integrations.stripe.service import stripe as stripe_service
 from polar.integrations.stripe.utils import get_expandable_id
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.pagination import PaginationParams, paginate
@@ -91,6 +92,13 @@ class SubscriptionDoesNotExist(SaleError):
         super().__init__(message)
 
 
+class InvoiceNotAvailable(SaleError):
+    def __init__(self, sale: Sale) -> None:
+        self.sale = sale
+        message = "The invoice is not available for this sale."
+        super().__init__(message, 404)
+
+
 class SaleService(ResourceServiceReader[Sale]):
     async def list(
         self,
@@ -112,6 +120,36 @@ class SaleService(ResourceServiceReader[Sale]):
             statement = statement.where(Product.organization_id == organization_id)
 
         return await paginate(session, statement, pagination=pagination)
+
+    async def get_by_id(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        id: uuid.UUID,
+    ) -> Sale | None:
+        statement = (
+            self._get_readable_sale_statement(auth_subject)
+            .where(Sale.id == id)
+            .options(
+                joinedload(Sale.user),
+                joinedload(Sale.product_price),
+                joinedload(Sale.subscription),
+            )
+        )
+
+        result = await session.execute(statement)
+        return result.scalar_one_or_none()
+
+    async def get_sale_invoice_url(self, sale: Sale) -> str:
+        if sale.stripe_invoice_id is None:
+            raise InvoiceNotAvailable(sale)
+
+        stripe_invoice = stripe_service.get_invoice(sale.stripe_invoice_id)
+
+        if stripe_invoice.hosted_invoice_url is None:
+            raise InvoiceNotAvailable(sale)
+
+        return stripe_invoice.hosted_invoice_url
 
     async def get_statistics_periods(
         self,

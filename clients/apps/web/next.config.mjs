@@ -190,11 +190,6 @@ const nextConfig = {
         permanent: false
       },
       {
-        source: '/docs/overview',
-        destination: '/docs/overview/introduction',
-        permanent: false
-      },
-      {
         source: '/docs/api',
         destination: '/docs/api-reference/introduction',
         permanent: false

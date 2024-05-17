@@ -2,7 +2,7 @@ import uuid
 from collections.abc import Sequence
 
 import stripe as stripe_lib
-from sqlalchemy import Select, select
+from sqlalchemy import Select, and_, func, select, text
 from sqlalchemy.orm import contains_eager, joinedload
 
 from polar.account.service import account as account_service
@@ -19,6 +19,7 @@ from polar.models import (
     HeldBalance,
     Organization,
     Product,
+    ProductPrice,
     Sale,
     Subscription,
     User,
@@ -33,6 +34,7 @@ from polar.notifications.service import PartialNotification
 from polar.notifications.service import notifications as notifications_service
 from polar.organization.service import organization as organization_service
 from polar.product.service.product_price import product_price as product_price_service
+from polar.sale.schemas import SalesStatisticsPeriod
 from polar.subscription.service.subscription import subscription as subscription_service
 from polar.transaction.service.balance import PaymentTransactionForChargeDoesNotExist
 from polar.transaction.service.balance import (
@@ -110,6 +112,100 @@ class SaleService(ResourceServiceReader[Sale]):
             statement = statement.where(Product.organization_id == organization_id)
 
         return await paginate(session, statement, pagination=pagination)
+
+    async def get_statistics_periods(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        *,
+        organization_id: uuid.UUID | None = None,
+        product_id: uuid.UUID | None = None,
+    ) -> Sequence[SalesStatisticsPeriod]:
+        sale_statement = self._get_readable_sale_statement(auth_subject)
+        subscription_statement = self._get_readable_subscription_statement(auth_subject)
+
+        if organization_id is not None:
+            sale_statement = sale_statement.where(
+                Product.organization_id == organization_id
+            )
+            subscription_statement = subscription_statement.where(
+                Product.organization_id == organization_id
+            )
+
+        if product_id is not None:
+            sale_statement = sale_statement.where(Product.id == product_id)
+            subscription_statement = subscription_statement.where(
+                Product.id == product_id
+            )
+
+        statistics_periods: list[SalesStatisticsPeriod] = []
+
+        # Effective Sales data
+        date_column = func.generate_series(
+            text("current_date - interval '11 month'"),
+            text("current_date"),
+            text("'1 month'::interval"),
+        ).column_valued("date")
+        sales_data_statement = (
+            select(
+                func.count(Sale.id).label("sales"),
+                func.coalesce(func.sum(Sale.amount).label("earnings"), 0),
+                func.date_trunc("month", date_column),
+            )
+            .join(
+                Sale,
+                onclause=and_(
+                    func.date_trunc("month", Sale.created_at)
+                    == func.date_trunc("month", date_column),
+                    Sale.id.in_(sale_statement.with_only_columns(Sale.id)),
+                ),
+                isouter=True,
+            )
+            .group_by(date_column)
+            .order_by(date_column)
+        )
+
+        sales_data = await session.execute(sales_data_statement)
+        for sales, earnings, date in sales_data.all():
+            statistics_periods.append(
+                SalesStatisticsPeriod(
+                    date=date,
+                    sales=sales,
+                    earnings=earnings,
+                    expected_sales=0,
+                    expected_earnings=0,
+                )
+            )
+
+        # Add expected sales data by looking at active subscriptions renewal date
+        current_date_column = text("current_date")
+        expected_statement = (
+            select(
+                func.count(Subscription.id).label("sales"),
+                func.coalesce(func.sum(ProductPrice.price_amount).label("earnings"), 0),
+            )
+            .add_columns(
+                func.date_trunc("month", current_date_column),
+                current_date_column,
+            )
+            .join(Subscription.price)
+            .where(
+                Subscription.active.is_(True),
+                Subscription.current_period_end > current_date_column,
+                func.date_trunc("month", Subscription.current_period_end)
+                == func.date_trunc("month", current_date_column),
+                Subscription.id.in_(
+                    subscription_statement.with_only_columns(Subscription.id)
+                ),
+            )
+        )
+
+        expected_result = await session.execute(expected_statement)
+        expected_sales, expected_earnings, date, _ = expected_result.one()
+        statistics_periods[-1].expected_sales = expected_sales
+        statistics_periods[-1].expected_earnings = expected_earnings
+
+        return statistics_periods
 
     async def create_sale_from_stripe(
         self, session: AsyncSession, *, invoice: stripe_lib.Invoice
@@ -255,6 +351,34 @@ class SaleService(ResourceServiceReader[Sale]):
             .where(Sale.deleted_at.is_(None))
             .join(Sale.product)
             .options(contains_eager(Sale.product))
+        )
+
+        if is_user(auth_subject):
+            user = auth_subject.subject
+            statement = statement.where(
+                Product.organization_id.in_(
+                    select(UserOrganization.organization_id).where(
+                        UserOrganization.user_id == user.id,
+                        UserOrganization.deleted_at.is_(None),
+                        UserOrganization.is_admin.is_(True),
+                    )
+                )
+            )
+        elif is_organization(auth_subject):
+            statement = statement.where(
+                Product.organization_id == auth_subject.subject.id,
+            )
+
+        return statement
+
+    def _get_readable_subscription_statement(
+        self, auth_subject: AuthSubject[User | Organization]
+    ) -> Select[tuple[Subscription]]:
+        statement = (
+            select(Subscription)
+            .where(Subscription.deleted_at.is_(None))
+            .join(Subscription.product)
+            .options(contains_eager(Subscription.product))
         )
 
         if is_user(auth_subject):

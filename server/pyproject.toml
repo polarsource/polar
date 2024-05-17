@@ -76,6 +76,7 @@ respx = "^0.21.1"
 pytest-cov = "^5.0.0"
 types-python-slugify = "^8.0.0.3"
 types-requests = "^2.31.0.10"
+python-dateutil = "^2.9.0.post0"
 
 [tool.taskipy.tasks]
 api = { cmd = "task verify_github_app && env AUTHLIB_INSECURE_TRANSPORT=true  uvicorn polar.app:app --reload --workers 1 --host 127.0.0.1 --port 8000", help = "run api service" }

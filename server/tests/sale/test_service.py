@@ -1,21 +1,29 @@
+from collections.abc import Sequence
+from datetime import UTC, datetime, timedelta
+
 import pytest
 import stripe as stripe_lib
+from dateutil.relativedelta import relativedelta
 from pytest_mock import MockerFixture
 
 from polar.auth.models import AuthSubject
 from polar.held_balance.service import held_balance as held_balance_service
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.pagination import PaginationParams
+from polar.kit.utils import utc_now
 from polar.models import (
     Account,
     Product,
+    Sale,
     Subscription,
     Transaction,
     User,
     UserOrganization,
 )
 from polar.models.organization import Organization
+from polar.models.subscription import SubscriptionStatus
 from polar.models.transaction import TransactionType
+from polar.sale.schemas import SalesStatisticsPeriod
 from polar.sale.service import (
     InvoiceWithNoOrMultipleLines,
     NotASaleInvoice,
@@ -29,7 +37,7 @@ from polar.transaction.service.payment import (
 from polar.transaction.service.platform_fee import PlatformFeeTransactionService
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
-from tests.fixtures.random_objects import create_sale
+from tests.fixtures.random_objects import create_sale, create_subscription, create_user
 from tests.transaction.conftest import create_transaction
 
 
@@ -194,6 +202,389 @@ class TestList:
         assert count == 1
         assert len(sales) == 1
         assert sales[0].id == sale.id
+
+
+MonthlySales = list[tuple[int, int]]
+
+
+async def create_sales(
+    save_fixture: SaveFixture,
+    *,
+    product: Product,
+    user: User,
+    monthly_sales: MonthlySales,
+) -> list[Sale]:
+    assert len(monthly_sales) == 12, "12 months are required"
+    sales: list[Sale] = []
+
+    now = utc_now().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    eleven_months_ago = now - relativedelta(months=11)
+    current = eleven_months_ago
+    i = 0
+
+    while current <= now:
+        amount, sales_count = monthly_sales[i]
+        for _ in range(sales_count):
+            sale = await create_sale(
+                save_fixture,
+                product=product,
+                user=user,
+                amount=int(amount / sales_count),
+                created_at=current.replace(tzinfo=UTC),
+            )
+            await save_fixture(sale)
+            sales.append(sale)
+        i += 1
+        current += relativedelta(months=1)
+
+    return sales
+
+
+SubscriptionFixture = tuple[SubscriptionStatus, datetime]
+
+
+async def create_subscriptions(
+    save_fixture: SaveFixture,
+    *,
+    product: Product,
+    user: User,
+    subscriptions: list[SubscriptionFixture],
+) -> list[Subscription]:
+    return [
+        await create_subscription(
+            save_fixture,
+            product=product,
+            user=user,
+            status=status,
+            current_period_end=current_period_end,
+        )
+        for status, current_period_end in subscriptions
+    ]
+
+
+def _merge_monthly_sales(*monthly_sales: MonthlySales) -> MonthlySales:
+    return [
+        (sum(sales[0] for sales in month), sum(sales[1] for sales in month))
+        for month in zip(*monthly_sales)
+    ]
+
+
+def _statistics_periods_assertions(
+    periods: Sequence[SalesStatisticsPeriod],
+    monthly_sales: MonthlySales,
+    subscriptions: list[Subscription],
+) -> None:
+    assert len(periods) == 12
+
+    for i, period in enumerate(periods):
+        amount, sales_count = monthly_sales[i]
+        assert period.sales == sales_count
+        assert period.earnings == amount
+
+        if i < 11:
+            assert period.expected_sales == 0
+            assert period.expected_earnings == 0
+        else:
+            now = utc_now()
+            end_of_period = period.date + relativedelta(months=1)
+            end_of_period_datetime = datetime(
+                end_of_period.year,
+                end_of_period.month,
+                end_of_period.day,
+                0,
+                0,
+                0,
+                0,
+                UTC,
+            )
+
+            relevant_subscriptions = [
+                subscription
+                for subscription in subscriptions
+                if subscription.active
+                and now <= subscription.current_period_end <= end_of_period_datetime
+            ]
+            assert period.expected_sales == len(relevant_subscriptions)
+            assert period.expected_earnings == sum(
+                subscription.price.price_amount
+                for subscription in relevant_subscriptions
+                if subscription.price
+            )
+
+
+@pytest.mark.asyncio
+@pytest.mark.skip_db_asserts
+class TestGetStatisticsPeriods:
+    @pytest.mark.auth
+    async def test_user_not_organization_member(
+        self,
+        auth_subject: AuthSubject[User],
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product: Product,
+        user_second: User,
+    ) -> None:
+        monthly_sales = [
+            (1000, 1),
+            (1000, 1),
+            (1000, 1),
+            (1000, 1),
+            (1000, 1),
+            (1000, 1),
+            (0, 0),
+            (0, 0),
+            (0, 0),
+            (0, 0),
+            (0, 0),
+            (500, 1),
+        ]
+        await create_sales(
+            save_fixture, product=product, user=user_second, monthly_sales=monthly_sales
+        )
+        subscription_fixtures = [
+            (SubscriptionStatus.active, utc_now() + timedelta(minutes=1)),
+            (SubscriptionStatus.active, utc_now() + timedelta(days=30)),
+            (SubscriptionStatus.canceled, utc_now() + timedelta(minutes=1)),
+        ]
+        await create_subscriptions(
+            save_fixture,
+            product=product,
+            user=user_second,
+            subscriptions=subscription_fixtures,
+        )
+
+        periods = await sale_service.get_statistics_periods(session, auth_subject)
+
+        _statistics_periods_assertions(periods, [(0, 0)] * 12, [])
+
+    @pytest.mark.auth
+    async def test_user_organization_admin(
+        self,
+        auth_subject: AuthSubject[User],
+        user_organization_admin: UserOrganization,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product: Product,
+        user_second: User,
+    ) -> None:
+        monthly_sales = [
+            (1000, 1),
+            (1000, 1),
+            (1000, 1),
+            (1000, 1),
+            (1000, 1),
+            (1000, 1),
+            (0, 0),
+            (0, 0),
+            (0, 0),
+            (0, 0),
+            (0, 0),
+            (500, 1),
+        ]
+        await create_sales(
+            save_fixture, product=product, user=user_second, monthly_sales=monthly_sales
+        )
+        subscription_fixtures = [
+            (SubscriptionStatus.active, utc_now() + timedelta(minutes=1)),
+            (SubscriptionStatus.active, utc_now() + timedelta(days=30)),
+            (SubscriptionStatus.canceled, utc_now() + timedelta(minutes=1)),
+        ]
+        subscriptions = await create_subscriptions(
+            save_fixture,
+            product=product,
+            user=user_second,
+            subscriptions=subscription_fixtures,
+        )
+
+        periods = await sale_service.get_statistics_periods(session, auth_subject)
+
+        _statistics_periods_assertions(periods, monthly_sales, subscriptions)
+
+    @pytest.mark.auth
+    async def test_user_multiple_users_organization(
+        self,
+        auth_subject: AuthSubject[User],
+        user_organization_admin: UserOrganization,
+        organization: Organization,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product: Product,
+        user_second: User,
+    ) -> None:
+        user2 = await create_user(save_fixture)
+        user2_organization = UserOrganization(
+            user_id=user2.id,
+            organization_id=organization.id,
+        )
+        await save_fixture(user2_organization)
+
+        user3 = await create_user(save_fixture)
+        user3_organization = UserOrganization(
+            user_id=user3.id,
+            organization_id=organization.id,
+        )
+        await save_fixture(user3_organization)
+
+        monthly_sales = [
+            (1000, 1),
+            (1000, 1),
+            (1000, 1),
+            (1000, 1),
+            (1000, 1),
+            (1000, 1),
+            (0, 0),
+            (0, 0),
+            (0, 0),
+            (0, 0),
+            (0, 0),
+            (500, 1),
+        ]
+        await create_sales(
+            save_fixture, product=product, user=user_second, monthly_sales=monthly_sales
+        )
+        subscription_fixtures = [
+            (SubscriptionStatus.active, utc_now() + timedelta(minutes=1)),
+            (SubscriptionStatus.active, utc_now() + timedelta(days=30)),
+            (SubscriptionStatus.canceled, utc_now() + timedelta(minutes=1)),
+        ]
+        subscriptions = await create_subscriptions(
+            save_fixture,
+            product=product,
+            user=user_second,
+            subscriptions=subscription_fixtures,
+        )
+
+        periods = await sale_service.get_statistics_periods(session, auth_subject)
+
+        _statistics_periods_assertions(periods, monthly_sales, subscriptions)
+
+    @pytest.mark.auth
+    async def test_user_filters(
+        self,
+        auth_subject: AuthSubject[User],
+        user: User,
+        user_organization_admin: UserOrganization,
+        organization: Organization,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product: Product,
+        organization_second: Organization,
+        product_organization_second: Product,
+        user_second: User,
+    ) -> None:
+        user_organization_second = UserOrganization(
+            user_id=user.id, organization_id=organization_second.id, is_admin=True
+        )
+        await save_fixture(user_organization_second)
+
+        monthly_sales = [
+            (1000, 1),
+            (1000, 1),
+            (1000, 1),
+            (1000, 1),
+            (1000, 1),
+            (1000, 1),
+            (0, 0),
+            (0, 0),
+            (0, 0),
+            (0, 0),
+            (0, 0),
+            (500, 1),
+        ]
+        await create_sales(
+            save_fixture, product=product, user=user_second, monthly_sales=monthly_sales
+        )
+        await create_sales(
+            save_fixture,
+            product=product_organization_second,
+            user=user_second,
+            monthly_sales=monthly_sales,
+        )
+
+        subscription_fixtures = [
+            (SubscriptionStatus.active, utc_now() + timedelta(minutes=1)),
+            (SubscriptionStatus.active, utc_now() + timedelta(days=30)),
+            (SubscriptionStatus.canceled, utc_now() + timedelta(minutes=1)),
+        ]
+        subscriptions_organization = await create_subscriptions(
+            save_fixture,
+            product=product,
+            user=user_second,
+            subscriptions=subscription_fixtures,
+        )
+        subscriptions_organization_second = await create_subscriptions(
+            save_fixture,
+            product=product_organization_second,
+            user=user_second,
+            subscriptions=subscription_fixtures,
+        )
+
+        # No filter
+        periods = await sale_service.get_statistics_periods(session, auth_subject)
+        _statistics_periods_assertions(
+            periods,
+            _merge_monthly_sales(monthly_sales, monthly_sales),
+            [*subscriptions_organization, *subscriptions_organization_second],
+        )
+
+        # Organization filter
+        periods = await sale_service.get_statistics_periods(
+            session, auth_subject, organization_id=organization_second.id
+        )
+        _statistics_periods_assertions(
+            periods, monthly_sales, subscriptions_organization
+        )
+
+        # Product filter
+        periods = await sale_service.get_statistics_periods(
+            session, auth_subject, product_id=product.id
+        )
+        _statistics_periods_assertions(
+            periods, monthly_sales, subscriptions_organization
+        )
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+    async def test_organization(
+        self,
+        auth_subject: AuthSubject[User],
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product: Product,
+        user_second: User,
+    ) -> None:
+        monthly_sales = [
+            (1000, 1),
+            (1000, 1),
+            (1000, 1),
+            (1000, 1),
+            (1000, 1),
+            (1000, 1),
+            (0, 0),
+            (0, 0),
+            (0, 0),
+            (0, 0),
+            (0, 0),
+            (0, 0),
+        ]
+        await create_sales(
+            save_fixture, product=product, user=user_second, monthly_sales=monthly_sales
+        )
+
+        subscription_fixtures = [
+            (SubscriptionStatus.active, utc_now() + timedelta(minutes=1)),
+            (SubscriptionStatus.active, utc_now() + timedelta(days=30)),
+            (SubscriptionStatus.canceled, utc_now() + timedelta(minutes=1)),
+        ]
+        subscriptions = await create_subscriptions(
+            save_fixture,
+            product=product,
+            user=user_second,
+            subscriptions=subscription_fixtures,
+        )
+
+        periods = await sale_service.get_statistics_periods(session, auth_subject)
+
+        _statistics_periods_assertions(periods, monthly_sales, subscriptions)
 
 
 @pytest.mark.asyncio

@@ -46,7 +46,7 @@ const defaultCommandContextValue: CommandContextValue = {
 const CommandContext = createContext(defaultCommandContextValue)
 
 interface CommandContextProviderProps {
-  organization: Organization
+  organization?: Organization
   hideCommandPalette: () => void
 }
 
@@ -61,10 +61,13 @@ export const CommandContextProvider = ({
 
   const scopeKey = useMemo(() => scopeKeys[scopeKeys.length - 1], [scopeKeys])
 
-  const scopes = useScopes(organization, {
-    setScopeKeys,
-    hideCommandPalette,
-  })
+  const scopes = useScopes(
+    {
+      setScopeKeys,
+      hideCommandPalette,
+    },
+    organization,
+  )
 
   const scope = useMemo(
     () => scopes.find((scope) => scope.name === scopeKey),

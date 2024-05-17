@@ -6,7 +6,7 @@ import { CommandContextValue } from './useCommands'
 
 export type ScopeContext = {
   router: AppRouterInstance
-  organization: Organization
+  organization?: Organization
 } & Pick<CommandContextValue, 'setScopeKeys' | 'hideCommandPalette'>
 
 export enum ScopeType {

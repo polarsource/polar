@@ -17,7 +17,7 @@ import { APIContainer } from './containers/APIContainer'
 import { GlobalContainer } from './containers/GlobalContainer'
 
 export interface CommandPaletteProps {
-  organization: Organization
+  organization?: Organization
   hide: () => void
 }
 
@@ -80,6 +80,8 @@ const CommandPaletteContainer = () => {
     if (scopeCandidate) {
       setScopeKeys(['global', scopeCandidate.name])
     }
+
+    // Intentioally omitting dependencies to only run on mount
   }, [])
 
   const container = useMemo(() => {

@@ -5,8 +5,8 @@ import { SCOPES, ScopeContext } from './scopes'
 import { CommandContextValue } from './useCommands'
 
 export const useScopes = (
-  organization: Organization,
   utils: Pick<CommandContextValue, 'setScopeKeys' | 'hideCommandPalette'>,
+  organization?: Organization,
 ) => {
   const router = useRouter()
 
@@ -16,6 +16,8 @@ export const useScopes = (
       organization,
       ...utils,
     }),
+
+    // Intentionally omitting `utils` from the dependencies
     [router, organization],
   )
 

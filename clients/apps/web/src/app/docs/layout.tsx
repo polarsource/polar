@@ -14,6 +14,7 @@ import { twMerge } from 'tailwind-merge'
 import { PolarMenu } from '../[organization]/(sidebar)/LayoutPolarMenu'
 import { Navigation } from './Navigation'
 import { NaviagtionItem } from './NavigationItem'
+import { SearchPalette } from './SearchPalette'
 
 export default async function Layout({ children }: PropsWithChildren) {
   return (
@@ -58,6 +59,7 @@ export default async function Layout({ children }: PropsWithChildren) {
         </div>
       </div>
       <Footer showUpsellFooter={false} wide />
+      <SearchPalette />
     </div>
   )
 }

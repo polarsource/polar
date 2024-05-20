@@ -8,7 +8,7 @@ import {
   useMemo,
   useState,
 } from 'react'
-import searchIndex from '../index/searchIndex.json'
+import lunrSearchIndex from '../index/searchIndex.json'
 import { Command } from './commands'
 import { SCOPES, Scope, ScopeKey, ScopeType } from './scopes'
 import { useScopes } from './useScopes'
@@ -61,14 +61,9 @@ export const CommandContextProvider = ({
   const [selectedCommand, setSelectedCommand] = useState<Command>()
   const [input, setInput] = useState('')
 
-  useMemo(() => {
-    const idx = lunr.Index.load(searchIndex)
-    console.log(
-      idx.query((q) =>
-        q.term(input, { wildcard: lunr.Query.wildcard.TRAILING }),
-      ),
-    )
-  }, [input])
+  const searchIndex: lunr.Index = useMemo(() => {
+    return lunr.Index.load(lunrSearchIndex)
+  }, [])
 
   const scopeKey = useMemo(() => scopeKeys[scopeKeys.length - 1], [scopeKeys])
 
@@ -86,15 +81,28 @@ export const CommandContextProvider = ({
   )
 
   // Filter out commands based on input
-  const commands = useMemo(
-    () =>
+  const commands = useMemo(() => {
+    const searchCommands =
+      scope?.type === ScopeType.Global && input.length > 0
+        ? searchIndex
+            .query((q) =>
+              q.term(input, { wildcard: lunr.Query.wildcard.TRAILING }),
+            )
+            .map((result) => ({
+              name: result.ref,
+              description: 'Go to page',
+            }))
+        : []
+
+    const scopeCommands =
       scope?.commands.filter(
         (command) =>
           command.name.toLowerCase().includes(input.toLowerCase()) ||
           command.description.toLowerCase().includes(input.toLowerCase()),
-      ) ?? [],
-    [scope, input],
-  )
+      ) ?? []
+
+    return [...searchCommands, ...scopeCommands]
+  }, [scope, input, searchIndex])
 
   useEffect(() => {
     setSelectedCommand(commands[0])

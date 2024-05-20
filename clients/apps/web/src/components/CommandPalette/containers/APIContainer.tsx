@@ -7,7 +7,7 @@ import {
   TabsTrigger,
 } from 'polarkit/components/ui/atoms/tabs'
 import { useCallback } from 'react'
-import { CommandItem } from '../CommandPalette'
+import { CommandItem } from '../CommandItem'
 import { useCommands } from '../commands/useCommands'
 
 const triggerClassName = 'py-1'

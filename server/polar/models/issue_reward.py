@@ -1,3 +1,4 @@
+from decimal import Decimal
 from typing import TYPE_CHECKING
 from uuid import UUID
 
@@ -53,8 +54,13 @@ class IssueReward(RecordModel):
     def user(cls) -> Mapped[User]:
         return relationship(User, lazy="raise")
 
+    @property
+    def pct(self) -> Decimal:
+        # Use decimal to avoid binary floating point issues
+        return Decimal(self.share_thousands) / 1000
+
     def get_share_amount(self, pledge: "Pledge") -> int:
-        return round(pledge.amount * self.share_thousands / 1000)
+        return round(pledge.amount * self.pct)
 
     def get_rewarded(self) -> "Organization | User | None":
         if self.organization is not None:

@@ -6474,15 +6474,9 @@ export interface NotificationsMarkRead {
 /**
  * 
  * @export
- * @interface OAuth2ClientConfiguration
+ * @interface OAuth2Client
  */
-export interface OAuth2ClientConfiguration {
-    /**
-     * 
-     * @type {Array<string>}
-     * @memberof OAuth2ClientConfiguration
-     */
-    redirect_uris: Array<string>;
+export interface OAuth2Client {
     /**
      * 
      * @type {Array<string>}
@@ -6546,33 +6540,15 @@ export interface OAuth2ClientConfiguration {
     /**
      * Creation timestamp of the object.
      * @type {string}
-     * @memberof OAuth2ClientConfiguration
+     * @memberof OAuth2Client
      */
-    token_endpoint_auth_method?: OAuth2ClientConfigurationTokenEndpointAuthMethodEnum;
-    /**
-     * 
-     * @type {Array<string>}
-     * @memberof OAuth2ClientConfiguration
-     */
-    grant_types?: Array<OAuth2ClientConfigurationGrantTypesEnum>;
-    /**
-     * 
-     * @type {Array<string>}
-     * @memberof OAuth2ClientConfiguration
-     */
-    response_types?: Array<OAuth2ClientConfigurationResponseTypesEnum>;
-    /**
-     * 
-     * @type {Array<Scope>}
-     * @memberof OAuth2ClientConfiguration
-     */
-    scope?: Array<Scope>;
+    created_at: string;
     /**
      * 
      * @type {string}
-     * @memberof OAuth2ClientConfiguration
+     * @memberof OAuth2Client
      */
-    client_name: string;
+    modified_at?: string;
     /**
      * 
      * @type {string}
@@ -11259,7 +11235,7 @@ export interface TransactionSale {
      */
     product_price: TransactionProductPrice;
     /**
-     * Creation timestamp of the object.
+     * 
      * @type {string}
      * @memberof TransactionSale
      */

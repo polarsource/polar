@@ -1,19 +1,5 @@
 import openapiSchema from '@polar-sh/sdk/openapi'
-
-export type SchemaPaths = (typeof openapiSchema)['paths']
-export type SchemaPathKey = keyof SchemaPaths
-export type SchemaPathMethods<T extends SchemaPathKey> = SchemaPaths[T]
-export type SchemaPathMethod<T extends SchemaPathKey> =
-  keyof SchemaPathMethods<T>
-
-type FindMatchingPath<
-  A extends string,
-  B extends SchemaPathKey = SchemaPathKey,
-> = B extends `${infer X}${A}${infer Y}`
-  ? A extends string
-    ? SchemaPathMethods<B>[SchemaPathMethod<B>]
-    : never
-  : never
+import { OpenAPIV3_1 } from 'openapi-types'
 
 export type APIMethod = 'get' | 'post' | 'put' | 'patch' | 'delete'
 
@@ -45,49 +31,58 @@ const extractEntries = <T extends {}>(obj: T) => {
 }
 
 const buildSections = (): Section[] => {
-  const sections = extractEntries(openapiSchema.paths).reduce<Section[]>(
-    (acc, [path, endpoints]) => {
-      const [ancestor] = path.replace('/api/v1/', '').split('/').filter(Boolean)
+  const sections = extractEntries(
+    (openapiSchema as OpenAPIV3_1.Document).paths ?? {},
+  ).reduce<Section[]>((acc, [path, endpoints]) => {
+    if (!endpoints) return acc
 
-      switch (ancestor) {
-        case 'readyz':
-        case 'healthz':
-        case 'backoffice':
-        case '{platform}':
-          return acc
-      }
+    const [ancestor] = path.replace('/api/v1/', '').split('/').filter(Boolean)
 
-      for (const [method, e] of extractEntries(endpoints)) {
-        const endpoint = e as FindMatchingPath<typeof path>
+    switch (ancestor) {
+      case 'readyz':
+      case 'healthz':
+      case 'backoffice':
+      case '{platform}':
+        return acc
+    }
 
-        const matchingAncestor = acc.find(
-          (section) => section.name === ancestor.replaceAll('_', ' '),
+    for (const [method, endpoint] of extractEntries(endpoints)) {
+      const matchingAncestor = acc.find(
+        (section) => section.name === ancestor.replaceAll('_', ' '),
+      )
+
+      if (
+        !endpoint ||
+        !(
+          typeof endpoint === 'object' &&
+          'summary' in endpoint &&
+          typeof endpoint.summary === 'string'
         )
+      )
+        continue
 
-        if (!matchingAncestor) {
-          acc.push({
-            name: ancestor.replaceAll('_', ' '),
-            endpoints: [
-              {
-                name: endpoint.summary,
-                path: path,
-                method: method as APIMethod,
-              },
-            ],
-          })
-        } else {
-          matchingAncestor.endpoints.push({
-            name: endpoint.summary,
-            path: path,
-            method: method as APIMethod,
-          })
-        }
+      if (!matchingAncestor) {
+        acc.push({
+          name: ancestor.replaceAll('_', ' '),
+          endpoints: [
+            {
+              name: endpoint.summary,
+              path: path,
+              method: method as APIMethod,
+            },
+          ],
+        })
+      } else {
+        matchingAncestor.endpoints.push({
+          name: endpoint.summary,
+          path: path,
+          method: method as APIMethod,
+        })
       }
+    }
 
-      return acc
-    },
-    [],
-  )
+    return acc
+  }, [])
 
   return sections.sort((a, b) => a.name.localeCompare(b.name))
 }

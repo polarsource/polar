@@ -1,7 +1,6 @@
 import openapiSchema from '@polar-sh/sdk/openapi'
 import { OpenAPIV3_1 } from 'openapi-types'
 import { useMemo } from 'react'
-import { SchemaPathKey } from '../../APINavigation'
 import { APIContainer } from './APIContainer'
 import { BodyParameters } from './BodyParameters'
 import { Parameters } from './Parameters'
@@ -15,9 +14,9 @@ export default function Page({
   const [method] = endpoint.splice(-1)
   const apiEndpointPath = decodeURIComponent(endpoint.join('/'))
 
-  const apiEndpoint =
-    // @ts-ignore
-    openapiSchema.paths[`/${apiEndpointPath}` as SchemaPathKey]
+  const apiEndpoint = (openapiSchema as OpenAPIV3_1.Document).paths?.[
+    `/${apiEndpointPath}`
+  ]
 
   const endpointMethod = (apiEndpoint as OpenAPIV3_1.PathsObject)[
     method

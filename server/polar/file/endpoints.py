@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends
 from polar.authz.service import AccessType, Authz
 from polar.exceptions import NotPermitted
 from polar.organization.resolver import get_payload_organization
+from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession, get_db_session
 from polar.tags.api import Tags
 
@@ -46,7 +47,10 @@ async def get_file(
     permission = await file_permission_service.get_permission(
         session, user=subject, file=file
     )
-    if not (permission or await authz.can(subject, AccessType.read, permission)):
+    if not permission:
+        raise NotPermitted()
+
+    if not await authz.can(subject, AccessType.read, permission):
         raise NotPermitted()
 
     ret = await file_service.generate_presigned_download(
@@ -100,7 +104,10 @@ async def complete_upload(
     if not file:
         raise FileNotFound(f"No file exists with ID: {file_id}")
 
-    organization = await get_payload_organization(session, auth_subject, file)
+    organization = await organization_service.get(session, file.organization_id)
+    if not organization:
+        raise NotPermitted()
+
     if not await authz.can(subject, AccessType.write, organization):
         raise NotPermitted()
 

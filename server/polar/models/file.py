@@ -37,10 +37,10 @@ class FileExtension(StrEnum):
 class File(RecordModel):
     __tablename__ = "files"
 
-    organization_id: Mapped[UUID | None] = mapped_column(
+    organization_id: Mapped[UUID] = mapped_column(
         PostgresUUID,
         ForeignKey("organizations.id", ondelete="cascade"),
-        nullable=True,
+        nullable=False,
         index=True,
     )
 

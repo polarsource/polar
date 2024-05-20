@@ -63,7 +63,11 @@ export const CommandContextProvider = ({
 
   useMemo(() => {
     const idx = lunr.Index.load(searchIndex)
-    console.log(idx.search(input))
+    console.log(
+      idx.query((q) =>
+        q.term(input, { wildcard: lunr.Query.wildcard.TRAILING }),
+      ),
+    )
   }, [input])
 
   const scopeKey = useMemo(() => scopeKeys[scopeKeys.length - 1], [scopeKeys])

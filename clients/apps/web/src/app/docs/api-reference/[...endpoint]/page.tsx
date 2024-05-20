@@ -72,6 +72,7 @@ export default function Page({
           )}
 
           {requestBodyParameters && (
+            // @ts-ignore
             <BodyParameters parameters={requestBodyParameters} />
           )}
         </div>

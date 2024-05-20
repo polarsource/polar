@@ -34,13 +34,16 @@ export const ResponseContainer = ({
         </div>
 
         {Object.entries(responses).map(([statusCode, response]) => {
-          const properties =
+          const schema =
             'content' in response &&
             response.content?.['application/json'].schema &&
             'schema' in response.content['application/json'] &&
-            '$ref' in response.content['application/json'].schema &&
-            resolveReference(response.content['application/json'].schema)
-              .properties
+            '$ref' in response.content['application/json'].schema
+              ? resolveReference(response.content['application/json'].schema)
+              : undefined
+
+          const properties =
+            schema && 'properties' in schema ? schema.properties : undefined
 
           return (
             <TabsContent

@@ -25,7 +25,7 @@ class FilePermissionStatus(StrEnum):
 
 class FilePermission(RecordModel):
     __tablename__ = "file_permissions"
-    __table_args__ = (UniqueConstraint("user_id", "file_id"),)
+    __table_args__ = (UniqueConstraint("user_id", "file_id", "benefit_id"),)
 
     file_id: Mapped[UUID] = mapped_column(
         PostgresUUID, ForeignKey("files.id"), nullable=False, index=True
@@ -47,6 +47,13 @@ class FilePermission(RecordModel):
     @declared_attr
     def user(cls) -> Mapped[User]:
         return relationship("User", lazy="raise")
+
+    benefit_id: Mapped[UUID] = mapped_column(
+        PostgresUUID,
+        ForeignKey("benefits.id", ondelete="cascade"),
+        nullable=False,
+        index=True,
+    )
 
     downloaded: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
 

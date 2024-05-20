@@ -1,11 +1,14 @@
 import base64
 import mimetypes
-from datetime import timedelta
+from collections.abc import Sequence
+from datetime import datetime, timedelta
+from uuid import UUID
 
 import structlog
 
 from polar.config import settings
 from polar.exceptions import PolarError, ResourceNotFound
+from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.services import ResourceService
 from polar.kit.utils import generate_uuid, utc_now
 from polar.models import Organization, User
@@ -19,7 +22,6 @@ from .schemas import (
     FileCreatePart,
     FilePermissionCreate,
     FilePermissionUpdate,
-    FilePresignedRead,
     FileUpdate,
     FileUpload,
     FileUploadCompleted,
@@ -152,9 +154,7 @@ class FileService(ResourceService[File, FileCreate, FileUpdate]):
             )
         return ret
 
-    async def generate_presigned_download(
-        self, session: AsyncSession, *, user: User, file: File
-    ) -> FilePresignedRead:
+    async def generate_presigned_download(self, file: File) -> tuple[str, datetime]:
         expires_in = settings.S3_FILES_PRESIGN_TTL
         presigned_at = utc_now()
         signed_download_url = s3_client.generate_presigned_url(
@@ -169,11 +169,7 @@ class FileService(ResourceService[File, FileCreate, FileUpdate]):
         )
 
         presign_expires_at = presigned_at + timedelta(seconds=expires_in)
-        return FilePresignedRead.from_presign(
-            file,
-            url=signed_download_url,
-            expires_at=presign_expires_at,
-        )
+        return (signed_download_url, presign_expires_at)
 
     async def complete_upload(
         self,
@@ -210,7 +206,11 @@ class FilePermissionService(
         records = await self.upsert_many(
             session,
             create_schemas=[create_schema],
-            constraints=[FilePermission.file_id, FilePermission.user_id],
+            constraints=[
+                FilePermission.file_id,
+                FilePermission.user_id,
+                FilePermission.benefit_id,
+            ],
             mutable_keys={
                 "status",
             },
@@ -243,6 +243,34 @@ class FilePermissionService(
         session.add(permission)
         await session.flush()
         return permission
+
+    async def get_user_accessible_files(
+        self,
+        session: AsyncSession,
+        *,
+        user: User,
+        pagination: PaginationParams,
+        organization_id: UUID | None = None,
+        benefit_id: UUID | None = None,
+    ) -> tuple[Sequence[File], int]:
+        statement = (
+            sql.select(File)
+            .join(FilePermission)
+            .where(
+                FilePermission.user_id == user.id,
+                FilePermission.status == FilePermissionStatus.granted,
+                FilePermission.deleted_at.is_(None),
+                File.deleted_at.is_(None),
+            )
+        )
+
+        if organization_id:
+            statement = statement.where(File.organization_id == organization_id)
+
+        if benefit_id:
+            statement = statement.where(FilePermission.benefit_id == benefit_id)
+
+        return await paginate(session, statement, pagination=pagination)
 
 
 file = FileService(File)

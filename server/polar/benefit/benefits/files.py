@@ -140,6 +140,7 @@ class BenefitFilesService(BenefitServiceProtocol[BenefitFiles, BenefitFilesPrope
         create_schema = FilePermissionCreate(
             file_id=file.id,
             user_id=user.id,
+            benefit_id=benefit.id,
             status=FilePermissionStatus.granted,
         )
         return await file_permission_service.create_or_update(
@@ -163,6 +164,7 @@ class BenefitFilesService(BenefitServiceProtocol[BenefitFiles, BenefitFilesPrope
         create_schema = FilePermissionCreate(
             file_id=file.id,
             user_id=user.id,
+            benefit_id=benefit.id,
             status=FilePermissionStatus.revoked,
         )
         return await file_permission_service.create_or_update(

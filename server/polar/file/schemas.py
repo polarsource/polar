@@ -221,10 +221,15 @@ class FileUpdate(Schema):
 class FilePermissionCreate(Schema):
     file_id: UUID4
     user_id: UUID4
+    benefit_id: UUID4
     status: FilePermissionStatus
 
 
 class FilePermissionUpdate(Schema):
     file_id: UUID4
     user_id: UUID4
+    benefit_id: UUID4
     status: FilePermissionStatus
+
+
+class FileSubscriberRead(FilePresignedRead): ...

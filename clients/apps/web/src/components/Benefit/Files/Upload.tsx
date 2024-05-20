@@ -192,8 +192,10 @@ const uploadFilePart = async ({
     }
 
     xhr.open('PUT', part.url, true)
-    for (const [header, value] of Object.entries(part.headers)) {
-      xhr.setRequestHeader(header, value)
+    if (part.headers) {
+      for (const [header, value] of Object.entries(part.headers)) {
+        xhr.setRequestHeader(header, value)
+      }
     }
 
     xhr.send(blob)

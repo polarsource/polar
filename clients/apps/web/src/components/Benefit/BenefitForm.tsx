@@ -114,9 +114,7 @@ export const BenefitForm = ({
       {type === 'github_repository' && (
         <GitHubRepositoryBenefitForm update={update} />
       )}
-      {type === 'files' && (
-        <FilesBenefitForm organization={organization} update={update} />
-      )}
+      {type === 'files' && <FilesBenefitForm organization={organization} />}
     </>
   )
 }

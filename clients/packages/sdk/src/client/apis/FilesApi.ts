@@ -21,6 +21,7 @@ import type {
   FileUpload,
   FileUploadCompleted,
   HTTPValidationError,
+  ListResourceFileSubscriberRead,
 } from '../models/index';
 
 export interface FilesApiCompleteUploadRequest {
@@ -34,6 +35,13 @@ export interface FilesApiCreateFileRequest {
 
 export interface FilesApiGetFileRequest {
     fileId: string;
+}
+
+export interface FilesApiGetUserAccessibleFilesRequest {
+    organizationId?: string;
+    benefitId?: string;
+    page?: number;
+    limit?: number;
 }
 
 /**
@@ -174,6 +182,56 @@ export class FilesApi extends runtime.BaseAPI {
      */
     async getFile(requestParameters: FilesApiGetFileRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<FilePresignedRead> {
         const response = await this.getFileRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
+     * Get User Accessible Files
+     */
+    async getUserAccessibleFilesRaw(requestParameters: FilesApiGetUserAccessibleFilesRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListResourceFileSubscriberRead>> {
+        const queryParameters: any = {};
+
+        if (requestParameters['organizationId'] != null) {
+            queryParameters['organization_id'] = requestParameters['organizationId'];
+        }
+
+        if (requestParameters['benefitId'] != null) {
+            queryParameters['benefit_id'] = requestParameters['benefitId'];
+        }
+
+        if (requestParameters['page'] != null) {
+            queryParameters['page'] = requestParameters['page'];
+        }
+
+        if (requestParameters['limit'] != null) {
+            queryParameters['limit'] = requestParameters['limit'];
+        }
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("HTTPBearer", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+        const response = await this.request({
+            path: `/api/v1/files`,
+            method: 'GET',
+            headers: headerParameters,
+            query: queryParameters,
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse(response);
+    }
+
+    /**
+     * Get User Accessible Files
+     */
+    async getUserAccessibleFiles(requestParameters: FilesApiGetUserAccessibleFilesRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ListResourceFileSubscriberRead> {
+        const response = await this.getUserAccessibleFilesRaw(requestParameters, initOverrides);
         return await response.value();
     }
 

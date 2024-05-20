@@ -4990,6 +4990,97 @@ export interface FileRead {
 /**
  * 
  * @export
+ * @interface FileSubscriberRead
+ */
+export interface FileSubscriberRead {
+    /**
+     * 
+     * @type {string}
+     * @memberof FileSubscriberRead
+     */
+    id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof FileSubscriberRead
+     */
+    organization_id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof FileSubscriberRead
+     */
+    name: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof FileSubscriberRead
+     */
+    extension: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof FileSubscriberRead
+     */
+    mime_type: string;
+    /**
+     * 
+     * @type {number}
+     * @memberof FileSubscriberRead
+     */
+    size: number;
+    /**
+     * 
+     * @type {string}
+     * @memberof FileSubscriberRead
+     */
+    checksum_etag?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof FileSubscriberRead
+     */
+    checksum_sha256_base64: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof FileSubscriberRead
+     */
+    checksum_sha256_hex: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof FileSubscriberRead
+     */
+    uploaded_at?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof FileSubscriberRead
+     */
+    created_at: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof FileSubscriberRead
+     */
+    url: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof FileSubscriberRead
+     */
+    url_expires_at: string;
+    /**
+     * 
+     * @type {{ [key: string]: string; }}
+     * @memberof FileSubscriberRead
+     */
+    headers?: { [key: string]: string; };
+}
+/**
+ * 
+ * @export
  * @interface FileUpload
  */
 export interface FileUpload {
@@ -5801,6 +5892,25 @@ export interface ListResourceDonation {
      * 
      * @type {Pagination}
      * @memberof ListResourceDonation
+     */
+    pagination: Pagination;
+}
+/**
+ * 
+ * @export
+ * @interface ListResourceFileSubscriberRead
+ */
+export interface ListResourceFileSubscriberRead {
+    /**
+     * 
+     * @type {Array<FileSubscriberRead>}
+     * @memberof ListResourceFileSubscriberRead
+     */
+    items?: Array<FileSubscriberRead>;
+    /**
+     * 
+     * @type {Pagination}
+     * @memberof ListResourceFileSubscriberRead
      */
     pagination: Pagination;
 }

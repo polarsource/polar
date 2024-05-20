@@ -39,7 +39,7 @@ export const TableOfContents = () => {
   if (!toc.length) return null
 
   return (
-    <nav className="flex w-full flex-col gap-y-4">
+    <nav className="hidden w-full flex-col gap-y-4 md:flex">
       <h3 className="text-black dark:text-white">Table of Contents</h3>
       <ul className="flex flex-col gap-y-2 text-sm">
         {toc.map((item) => (

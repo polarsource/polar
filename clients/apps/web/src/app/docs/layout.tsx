@@ -1,58 +1,26 @@
 import { BrandingMenu } from '@/components/Layout/Public/BrandingMenu'
 import Footer from '@/components/Organization/Footer'
 import { getServerSideAPI } from '@/utils/api/serverside'
-import {
-  ApiOutlined,
-  DescriptionOutlined,
-  SpaceDashboardOutlined,
-} from '@mui/icons-material'
 import { ListResourceOrganization, UserRead } from '@polar-sh/sdk'
 import { notFound } from 'next/navigation'
 import { Separator } from 'polarkit/components/ui/separator'
 import { PropsWithChildren } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { PolarMenu } from '../[organization]/(sidebar)/LayoutPolarMenu'
-import { Navigation } from './Navigation'
-import { NaviagtionItem } from './NavigationItem'
+import { DocumentationPageSidebar, MobileNav } from './Navigation'
 import { SearchPalette } from './SearchPalette'
 
 export default async function Layout({ children }: PropsWithChildren) {
   return (
     <div className="flex w-full flex-col items-center gap-y-12">
       <div className="flex h-fit w-full max-w-[100vw] flex-row justify-stretch gap-x-12 px-8 py-12 md:max-w-[1560px] md:px-12">
-        <div className="flex w-full flex-grow flex-col gap-y-12">
+        <div className="flex w-full flex-grow flex-col gap-y-12 pt-12 md:pt-0">
           <DocumentationPageTopbar />
-          <Separator />
-          <div className="flex flex-row items-start gap-x-16 pb-24">
-            <div className="flex w-60 flex-shrink-0 flex-col gap-y-12">
-              <ul className="flex flex-col">
-                <li>
-                  <NaviagtionItem
-                    icon={<SpaceDashboardOutlined fontSize="inherit" />}
-                    href="/docs/overview"
-                  >
-                    Overview
-                  </NaviagtionItem>
-                </li>
-                <li>
-                  <NaviagtionItem
-                    icon={<ApiOutlined fontSize="inherit" />}
-                    href="/docs/api"
-                  >
-                    API Reference
-                  </NaviagtionItem>
-                </li>
-                <li>
-                  <NaviagtionItem
-                    icon={<DescriptionOutlined fontSize="inherit" />}
-                    href="/docs/guides"
-                  >
-                    Guides
-                  </NaviagtionItem>
-                </li>
-              </ul>
-              <Separator />
-              <Navigation />
+          <MobileNav />
+          <Separator className="hidden md:block" />
+          <div className="flex flex-col gap-x-16 gap-y-16 pb-24 md:flex-row md:items-start">
+            <div className="hidden md:block">
+              <DocumentationPageSidebar />
             </div>
             <div className="flex h-full w-full flex-col">{children}</div>
           </div>
@@ -94,7 +62,7 @@ const DocumentationPageTopbar = async () => {
     'absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2'
 
   return (
-    <div className="relative flex flex-row items-center justify-between bg-transparent">
+    <div className="relative hidden flex-row items-center justify-between bg-transparent md:flex">
       <h1 className="text-xl font-medium">Documentation</h1>
 
       <BrandingMenu

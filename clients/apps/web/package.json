@@ -4,14 +4,15 @@
   "private": true,
   "scripts": {
     "dev": "next dev --port 3000",
-    "build": "next build",
+    "build": "pnpm run docs:index && next build",
     "start": "next start",
     "lint": "next lint",
     "storybook": "storybook dev -p 6006 --no-open",
     "build-storybook": "storybook build",
     "chromatic": "chromatic --exit-zero-on-changes --exit-once-uploaded",
     "test": "DOTENV_CONFIG_PATH=.env.test jest",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "docs:index": "node scripts/buildSearchIndex.mjs"
   },
   "engines": {
     "node": ">= 18 <20"
@@ -54,7 +55,9 @@
     "date-fns": "^2.30.0",
     "eventemitter3": "^5.0.0",
     "framer-motion": "^10.17.8",
+    "github-slugger": "^2.0.0",
     "html-entities": "^2.4.0",
+    "lunr": "^2.3.9",
     "markdown-to-jsx": "^7.4.5",
     "mermaid": "^10.6.1",
     "next": "^14.1.0",
@@ -96,6 +99,7 @@
     "@testing-library/jest-dom": "^6.4.0",
     "@testing-library/react": "^14.2.0",
     "@types/jest": "^29.5.11",
+    "@types/lunr": "^2.3.7",
     "@types/node": "^20.5.7",
     "@types/pako": "^2.0.3",
     "@types/prismjs": "^1.26.3",
@@ -116,6 +120,8 @@
     "postcss": "^8.4.33",
     "prop-types": "^15.8.1",
     "react-test-renderer": "^18.2.0",
+    "remark": "^15.0.1",
+    "remark-mdx": "^3.0.1",
     "storybook": "^8.0.1",
     "storybook-addon-state": "^1.0.3",
     "tailwindcss": "^3.3.2",
@@ -123,7 +129,8 @@
     "ts-jest": "^29.1.1",
     "ts-node": "^10.9.1",
     "tsconfig": "workspace:*",
-    "typescript": "5.3.3"
+    "typescript": "5.3.3",
+    "unist-util-visit": "^5.0.0"
   },
   "nextBundleAnalysis": {
     "budget": 358400,

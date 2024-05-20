@@ -15,7 +15,7 @@ import { useCallback, useMemo } from 'react'
 export const requestBodyParameters = (
   endpoint: OpenAPIV3_1.OperationObject,
 ) => {
-  return (
+  const schema =
     endpoint.requestBody &&
     'content' in endpoint.requestBody &&
     endpoint.requestBody.content &&
@@ -23,9 +23,10 @@ export const requestBodyParameters = (
     endpoint.requestBody.content['application/json'] &&
     'schema' in endpoint.requestBody.content['application/json'] &&
     endpoint.requestBody.content['application/json'].schema &&
-    'properties' in endpoint.requestBody.content['application/json'].schema &&
-    endpoint.requestBody.content['application/json'].schema.properties
-  )
+    '$ref' in endpoint.requestBody.content['application/json'].schema &&
+    endpoint.requestBody.content['application/json'].schema.$ref
+
+  return schema ? schema.properties : undefined
 }
 
 export const APIContainer = ({

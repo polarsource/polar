@@ -1,10 +1,12 @@
 from uuid import UUID
 
 import structlog
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
+from pydantic import UUID4
 
 from polar.authz.service import AccessType, Authz
 from polar.exceptions import NotPermitted
+from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.organization.resolver import get_payload_organization
 from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession, get_db_session
@@ -15,6 +17,7 @@ from .schemas import (
     FileCreate,
     FilePresignedRead,
     FileRead,
+    FileSubscriberRead,
     FileUpload,
     FileUploadCompleted,
 )
@@ -25,6 +28,50 @@ from .service import file_permission as file_permission_service
 log = structlog.get_logger()
 
 router = APIRouter(prefix="/files", tags=["files"])
+
+
+@router.get(
+    "",
+    tags=[Tags.PUBLIC],
+    response_model=ListResource[FileSubscriberRead],
+)
+async def get_user_accessible_files(
+    auth_subject: auth.BackerFilesRead,
+    pagination: PaginationParamsQuery,
+    organization_id: UUID4 | None = Query(
+        None,
+        description=("Filter by organization files belong to. "),
+    ),
+    benefit_id: UUID4 | None = Query(
+        None,
+        description=("Filter by granted benefit. "),
+    ),
+    authz: Authz = Depends(Authz.authz),
+    session: AsyncSession = Depends(get_db_session),
+) -> ListResource[FileSubscriberRead]:
+    subject = auth_subject.subject
+
+    results, count = await file_permission_service.get_user_accessible_files(
+        session,
+        user=subject,
+        organization_id=organization_id,
+        benefit_id=benefit_id,
+        pagination=pagination,
+    )
+    if not results:
+        return ListResource.from_paginated_results([], 0, pagination)
+
+    items = []
+    for file in results:
+        url, expires_at = await file_service.generate_presigned_download(file)
+        item = FileSubscriberRead.from_presign(file, url=url, expires_at=expires_at)
+        items.append(item)
+
+    return ListResource.from_paginated_results(
+        items,
+        count,
+        pagination,
+    )
 
 
 @router.get(
@@ -53,13 +100,13 @@ async def get_file(
     if not await authz.can(subject, AccessType.read, permission):
         raise NotPermitted()
 
-    ret = await file_service.generate_presigned_download(
-        session,
-        user=subject,
-        file=file,
-    )
+    url, expires_at = await file_service.generate_presigned_download(file)
     await file_permission_service.increment_download_count(session, permission)
-    return ret
+    return FilePresignedRead.from_presign(
+        file,
+        url=url,
+        expires_at=expires_at,
+    )
 
 
 @router.post(

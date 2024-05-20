@@ -1,20 +1,17 @@
 import { api } from '@/utils/api'
-import { BenefitSubscriberInner, SubscriptionSubscriber } from '@polar-sh/sdk'
+import { BenefitFilesSubscriber } from '@polar-sh/sdk'
 
 const FilesSubscriberWidget = ({
   benefit,
-  subscription,
 }: {
-  benefit: BenefitSubscriberInner
-  subscription: SubscriptionSubscriber
+  benefit: BenefitFilesSubscriber
 }) => {
   const onDownload = async (fileId: string) => {
     const response = await api.files.getFile({
       fileId: fileId,
     })
-    console.log('response', response)
     if (response.url) {
-      window.location = response.url
+      window.location.href = response.url
     }
   }
 

@@ -334,7 +334,7 @@ const BenefitContextWidget = ({
       ) : null}
 
       {benefit.type === 'files' ? (
-        <FilesSubscriberWidget benefit={benefit} subscription={subscription} />
+        <FilesSubscriberWidget benefit={benefit} />
       ) : null}
 
       <Separator />

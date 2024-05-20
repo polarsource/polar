@@ -1,6 +1,5 @@
 'use client'
 
-import { useAuth } from '@/hooks'
 import {
   BenefitFilesCreate,
   FileRead,
@@ -187,19 +186,8 @@ interface FilesBenefitFormProps {
   update?: boolean
 }
 
-export const FilesBenefitForm = ({
-  organization,
-  update = false,
-}: FilesBenefitFormProps) => {
-  const {
-    control,
-    watch,
-    formState: { defaultValues },
-    getValues,
-    setValue,
-    setError,
-    clearErrors,
-  } = useFormContext<BenefitFilesCreate>()
+export const FilesBenefitForm = ({ organization }: FilesBenefitFormProps) => {
+  const { setValue } = useFormContext<BenefitFilesCreate>()
   /**
    * TODO
    *
@@ -207,10 +195,6 @@ export const FilesBenefitForm = ({
    * Update benefit file properties to include enabled: true/false
    * Sortable files
    */
-
-  const description = watch('description')
-
-  const { currentUser } = useAuth()
 
   const [files, setFilesState] = useState<BenefitFile[]>([])
 

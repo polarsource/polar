@@ -74,7 +74,7 @@ const FileUploadDetails = ({ file }: { file: BenefitFile }) => {
         </p>
         <p className="text-xs">
           <span className="font-medium">SHA-256:</span>{' '}
-          {file.checksum.sha256_hex}
+          {file.checksum_sha256_hex}
         </p>
       </div>
     </>

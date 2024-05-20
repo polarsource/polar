@@ -4768,29 +4768,16 @@ export interface FileCreate {
     size: number;
     /**
      * 
-     * @type {FileCreateChecksum}
+     * @type {string}
      * @memberof FileCreate
      */
-    checksum: FileCreateChecksum | null;
+    checksum_sha256_base64: string | null;
     /**
      * 
      * @type {FileCreateMultipart}
      * @memberof FileCreate
      */
     upload: FileCreateMultipart;
-}
-/**
- * 
- * @export
- * @interface FileCreateChecksum
- */
-export interface FileCreateChecksum {
-    /**
-     * 
-     * @type {string}
-     * @memberof FileCreateChecksum
-     */
-    sha256_base64: string;
 }
 /**
  * 
@@ -4831,10 +4818,10 @@ export interface FileCreatePart {
     chunk_end: number;
     /**
      * 
-     * @type {FileCreateChecksum}
+     * @type {string}
      * @memberof FileCreatePart
      */
-    checksum: FileCreateChecksum | null;
+    checksum_sha256_base64: string | null;
 }
 /**
  * 
@@ -4880,10 +4867,22 @@ export interface FilePresignedRead {
     size: number;
     /**
      * 
-     * @type {FileReadChecksum}
+     * @type {string}
      * @memberof FilePresignedRead
      */
-    checksum: FileReadChecksum;
+    checksum_etag?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof FilePresignedRead
+     */
+    checksum_sha256_base64: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof FilePresignedRead
+     */
+    checksum_sha256_hex: string | null;
     /**
      * 
      * @type {string}
@@ -4959,10 +4958,22 @@ export interface FileRead {
     size: number;
     /**
      * 
-     * @type {FileReadChecksum}
+     * @type {string}
      * @memberof FileRead
      */
-    checksum: FileReadChecksum;
+    checksum_etag?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof FileRead
+     */
+    checksum_sha256_base64: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof FileRead
+     */
+    checksum_sha256_hex: string | null;
     /**
      * 
      * @type {string}
@@ -4975,31 +4986,6 @@ export interface FileRead {
      * @memberof FileRead
      */
     created_at: string;
-}
-/**
- * 
- * @export
- * @interface FileReadChecksum
- */
-export interface FileReadChecksum {
-    /**
-     * 
-     * @type {string}
-     * @memberof FileReadChecksum
-     */
-    etag?: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof FileReadChecksum
-     */
-    sha256_base64: string | null;
-    /**
-     * 
-     * @type {string}
-     * @memberof FileReadChecksum
-     */
-    sha256_hex: string | null;
 }
 /**
  * 
@@ -5045,10 +5031,22 @@ export interface FileUpload {
     size: number;
     /**
      * 
-     * @type {FileReadChecksum}
+     * @type {string}
      * @memberof FileUpload
      */
-    checksum: FileReadChecksum;
+    checksum_etag?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof FileUpload
+     */
+    checksum_sha256_base64: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof FileUpload
+     */
+    checksum_sha256_hex: string | null;
     /**
      * 
      * @type {string}
@@ -5084,25 +5082,6 @@ export interface FileUploadCompleted {
 /**
  * 
  * @export
- * @interface FileUploadCompletedChecksum
- */
-export interface FileUploadCompletedChecksum {
-    /**
-     * 
-     * @type {string}
-     * @memberof FileUploadCompletedChecksum
-     */
-    etag: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof FileUploadCompletedChecksum
-     */
-    sha256_base64?: string;
-}
-/**
- * 
- * @export
  * @interface FileUploadCompletedMultipart
  */
 export interface FileUploadCompletedMultipart {
@@ -5133,10 +5112,16 @@ export interface FileUploadCompletedPart {
     number: number;
     /**
      * 
-     * @type {FileUploadCompletedChecksum}
+     * @type {string}
      * @memberof FileUploadCompletedPart
      */
-    checksum: FileUploadCompletedChecksum;
+    checksum_etag: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof FileUploadCompletedPart
+     */
+    checksum_sha256_base64?: string;
 }
 /**
  * 
@@ -5183,10 +5168,10 @@ export interface FileUploadPart {
     chunk_end: number;
     /**
      * 
-     * @type {FileCreateChecksum}
+     * @type {string}
      * @memberof FileUploadPart
      */
-    checksum: FileCreateChecksum | null;
+    checksum_sha256_base64: string | null;
     /**
      * 
      * @type {string}

@@ -1,4 +1,4 @@
-import { CommandItem } from '../CommandPalette'
+import { CommandItem } from '../CommandItem'
 import { useCommands } from '../commands/useCommands'
 
 export const GlobalContainer = () => {

@@ -4747,7 +4747,7 @@ export interface FileCreate {
      * @type {string}
      * @memberof FileCreate
      */
-    organization_id: string;
+    organization_id: string | null;
     /**
      * 
      * @type {string}

@@ -37,7 +37,7 @@ class FileCreateMultipart(Schema):
 
 
 class FileCreate(Schema):
-    organization_id: UUID4
+    organization_id: UUID4 | None
     name: str
     mime_type: str
     size: int

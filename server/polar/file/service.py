@@ -89,13 +89,16 @@ class FileService(ResourceService[File, FileCreate, FileUpdate]):
             raise FileError("No upload ID returned from S3")
 
         instance = File(
+            organization=organization,
             upload_id=multipart_upload_id,
             path=path,
             extension=extension[1:],
             presigned_at=utc_now(),
             sha256_base64=sha256_base64,
             sha256_hex=sha256_hex,
-            **create_schema.model_dump(exclude={"checksum_sha256_base64", "upload"}),
+            **create_schema.model_dump(
+                exclude={"checksum_sha256_base64", "upload", "organization_id"}
+            ),
         )
         session.add(instance)
         await session.flush()

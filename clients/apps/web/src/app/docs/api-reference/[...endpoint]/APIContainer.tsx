@@ -11,6 +11,7 @@ import {
   TabsTrigger,
 } from 'polarkit/components/ui/atoms/tabs'
 import { useCallback, useMemo } from 'react'
+import { resolveReference } from '../../APINavigation'
 
 export const requestBodyParameters = (
   endpoint: OpenAPIV3_1.OperationObject,
@@ -24,9 +25,9 @@ export const requestBodyParameters = (
     'schema' in endpoint.requestBody.content['application/json'] &&
     endpoint.requestBody.content['application/json'].schema &&
     '$ref' in endpoint.requestBody.content['application/json'].schema &&
-    endpoint.requestBody.content['application/json'].schema.$ref
+    resolveReference(endpoint.requestBody.content['application/json'].schema)
 
-  return schema ? schema.properties : undefined
+  return schema && 'properties' in schema ? schema.properties : undefined
 }
 
 export const APIContainer = ({

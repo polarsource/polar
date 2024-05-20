@@ -81,7 +81,7 @@ class BenefitFilesService(BenefitServiceProtocol[BenefitFiles, BenefitFilesPrope
         update: bool = False,
         attempt: int = 1,
     ) -> dict[str, Any]:
-        ret = dict(files=[])
+        ret: dict[str, Any] = dict(files=[])
         file_ids = benefit.properties.get("files", [])
         if not file_ids:
             return ret
@@ -135,7 +135,7 @@ class BenefitFilesService(BenefitServiceProtocol[BenefitFiles, BenefitFilesPrope
         file = await file_service.get(self.session, file_id)
         if not file:
             # TODO: How to deal with errors here?
-            return {}
+            return None
 
         create_schema = FilePermissionCreate(
             file_id=file.id,
@@ -158,12 +158,12 @@ class BenefitFilesService(BenefitServiceProtocol[BenefitFiles, BenefitFilesPrope
         file = await file_service.get(self.session, file_id)
         if not file:
             # TODO: How to deal with errors here?
-            return {}
+            return None
 
         create_schema = FilePermissionCreate(
             file_id=file.id,
             user_id=user.id,
-            status=FilePermissionStatus.revoke,
+            status=FilePermissionStatus.revoked,
         )
         return await file_permission_service.create_or_update(
             self.session, create_schema

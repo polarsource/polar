@@ -26,6 +26,7 @@ export * from './ProductsApi';
 export * from './PullRequestsApi';
 export * from './RepositoriesApi';
 export * from './RewardsApi';
+export * from './SalesApi';
 export * from './StreamApi';
 export * from './SubscriptionsApi';
 export * from './TrafficApi';

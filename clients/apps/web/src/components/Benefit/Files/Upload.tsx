@@ -66,9 +66,7 @@ export const createFile = async (
     name: file.name,
     size: file.size,
     mime_type: file.type,
-    checksum: {
-      sha256_base64: sha256base64,
-    },
+    checksum_sha256_base64: sha256base64,
     upload: { parts: parts },
   }
 
@@ -98,9 +96,7 @@ const getFileMultiparts = async (
       number: i,
       chunk_start: chunk_start,
       chunk_end: chunk_end,
-      checksum: {
-        sha256_base64: chunkSha256base64,
-      },
+      checksum_sha256_base64: chunkSha256base64,
     }
     parts.push(part)
   }
@@ -171,12 +167,10 @@ const uploadFilePart = async ({
           }
           const completed: FileUploadCompletedPart = {
             number: part.number,
-            checksum: {
-              etag: etag,
-            },
+            checksum_etag: etag,
           }
-          if (part.checksum?.sha256_base64) {
-            completed.checksum.sha256_base64 = part.checksum.sha256_base64
+          if (part.checksum_sha256_base64) {
+            completed.checksum_sha256_base64 = part.checksum_sha256_base64
           }
           resolve(completed)
         } else {

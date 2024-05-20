@@ -60,9 +60,8 @@ class FileService(ResourceService[File, FileCreate, FileUpdate]):
         metadata = {}
         sha256_hex = None
         sha256_base64 = None
-        checksum = create_schema.checksum
-        if checksum and checksum.sha256_base64:
-            sha256_base64 = checksum.sha256_base64
+        if create_schema.checksum_sha256_base64:
+            sha256_base64 = create_schema.checksum_sha256_base64
             sha256_hex = base64.b64decode(sha256_base64).hex()
             metadata = {
                 "file-sha256-hex": sha256_hex,
@@ -96,7 +95,7 @@ class FileService(ResourceService[File, FileCreate, FileUpdate]):
             presigned_at=utc_now(),
             sha256_base64=sha256_base64,
             sha256_hex=sha256_hex,
-            **create_schema.model_dump(exclude={"checksum", "upload"}),
+            **create_schema.model_dump(exclude={"checksum_sha256_base64", "upload"}),
         )
         session.add(instance)
         await session.flush()
@@ -136,13 +135,13 @@ class FileService(ResourceService[File, FileCreate, FileUpdate]):
                 ExpiresIn=expires_in,
             )
             presign_expires_at = presigned_at + timedelta(seconds=expires_in)
-            headers = FileUploadPart.generate_headers(part.checksum)
+            headers = FileUploadPart.generate_headers(part.checksum_sha256_base64)
             ret.append(
                 FileUploadPart(
                     number=part.number,
                     chunk_start=part.chunk_start,
                     chunk_end=part.chunk_end,
-                    checksum=part.checksum,
+                    checksum_sha256_base64=part.checksum_sha256_base64,
                     url=signed_post_url,
                     expires_at=presign_expires_at,
                     headers=headers,

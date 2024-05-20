@@ -10,34 +10,26 @@ from polar.models import File
 from polar.models.file_permission import FilePermissionStatus
 
 
-def get_disposition(filename: str):
+def get_disposition(filename: str) -> str:
     return f'attachment; filename="{filename}"'
-
-
-class FileCreateChecksum(Schema):
-    sha256_base64: str
 
 
 class FileCreatePart(Schema):
     number: int
     chunk_start: int
     chunk_end: int
-    checksum: FileCreateChecksum | None
+
+    checksum_sha256_base64: str | None
 
     def get_s3_arguments(self) -> dict[str, Any]:
-        ret = dict(
-            PartNumber=self.number,
-        )
-        if not self.checksum:
-            return ret
+        if not self.checksum_sha256_base64:
+            return dict(PartNumber=self.number)
 
-        ret.update(
-            dict(
-                ChecksumAlgorithm="SHA256",
-                ChecksumSHA256=self.checksum.sha256_base64,
-            )
+        return dict(
+            PartNumber=self.number,
+            ChecksumAlgorithm="SHA256",
+            ChecksumSHA256=self.checksum_sha256_base64,
         )
-        return ret
 
 
 class FileCreateMultipart(Schema):
@@ -49,15 +41,10 @@ class FileCreate(Schema):
     name: str
     mime_type: str
     size: int
-    checksum: FileCreateChecksum | None
+
+    checksum_sha256_base64: str | None
 
     upload: FileCreateMultipart
-
-
-class FileReadChecksum(Schema):
-    etag: str | None = None
-    sha256_base64: str | None
-    sha256_hex: str | None
 
 
 class FileRead(Schema):
@@ -68,7 +55,10 @@ class FileRead(Schema):
     extension: str
     mime_type: str
     size: int
-    checksum: FileReadChecksum
+
+    checksum_etag: str | None = None  # Provided by AWS S3
+    checksum_sha256_base64: str | None  # Provided by us
+    checksum_sha256_hex: str | None
 
     uploaded_at: datetime | None = None
     created_at: datetime
@@ -82,15 +72,15 @@ class FileRead(Schema):
             extension=record.extension,
             mime_type=record.mime_type,
             size=record.size,
+            checksum_etag=record.etag,
             uploaded_at=record.uploaded_at,
             created_at=record.created_at,
         )
         if record.sha256_base64 and record.sha256_hex:
-            sha256 = dict(
-                sha256_base64=record.sha256_base64,
-                sha256_hex=record.sha256_hex,
+            ret.update(
+                checksum_sha256_base64=record.sha256_base64,
+                checksum_sha256_hex=record.sha256_hex,
             )
-            ret["checksum"] = sha256
 
         return ret
 
@@ -107,12 +97,12 @@ class FileUploadPart(FileCreatePart):
     headers: dict[str, str] = {}
 
     @classmethod
-    def generate_headers(cls, checksum: FileCreateChecksum | None) -> dict[str, str]:
-        if not (checksum and checksum.sha256_base64):
+    def generate_headers(cls, sha256_base64: str | None) -> dict[str, str]:
+        if not sha256_base64:
             return {}
 
         return {
-            "x-amz-checksum-sha256": checksum.sha256_base64,
+            "x-amz-checksum-sha256": sha256_base64,
             "x-amz-sdk-checksum-algorithm": "SHA256",
         }
 
@@ -134,14 +124,10 @@ class FileUpload(FileRead):
         return cls(upload=upload, **params)
 
 
-class FileUploadCompletedChecksum(Schema):
-    etag: str
-    sha256_base64: str | None = None
-
-
 class FileUploadCompletedPart(Schema):
     number: int
-    checksum: FileUploadCompletedChecksum
+    checksum_etag: str
+    checksum_sha256_base64: str | None = None
 
 
 class FileUploadCompletedMultipart(Schema):
@@ -157,12 +143,12 @@ class FileUploadCompleted(Schema):
         checksum_validate = []
         for part in self.upload.parts:
             data = dict(
-                ETag=part.checksum.etag,
+                ETag=part.checksum_etag,
                 PartNumber=part.number,
             )
-            if part.checksum and part.checksum.sha256_base64:
-                data["ChecksumSHA256"] = part.checksum.sha256_base64
-                digest = base64.b64decode(part.checksum.sha256_base64)
+            if part.checksum_sha256_base64:
+                data["ChecksumSHA256"] = part.checksum_sha256_base64
+                digest = base64.b64decode(part.checksum_sha256_base64)
                 checksum_validate.append(digest)
 
             parts.append(data)

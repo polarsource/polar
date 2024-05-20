@@ -5,6 +5,7 @@ import {
   TabsList,
   TabsTrigger,
 } from 'polarkit/components/ui/atoms/tabs'
+import { resolveReference } from '../../APINavigation'
 
 export const ResponseContainer = ({
   responses,
@@ -36,8 +37,10 @@ export const ResponseContainer = ({
           const properties =
             'content' in response &&
             response.content?.['application/json'].schema &&
-            'properties' in response.content?.['application/json'].schema &&
-            response.content?.['application/json'].schema.properties
+            'schema' in response.content['application/json'] &&
+            '$ref' in response.content['application/json'].schema &&
+            resolveReference(response.content['application/json'].schema)
+              .properties
 
           return (
             <TabsContent
@@ -45,9 +48,11 @@ export const ResponseContainer = ({
               value={statusCode}
               className="p-2 py-0"
             >
-              <pre className="dark:text-polar-50 max-h-72 select-text overflow-auto p-4 font-mono text-xs leading-normal text-gray-900">
-                {JSON.stringify(properties, null, 2)}
-              </pre>
+              {properties ? (
+                <pre className="dark:text-polar-50 max-h-72 select-text overflow-auto p-4 font-mono text-xs leading-normal text-gray-900">
+                  {JSON.stringify(properties, null, 2)}
+                </pre>
+              ) : undefined}
             </TabsContent>
           )
         })}

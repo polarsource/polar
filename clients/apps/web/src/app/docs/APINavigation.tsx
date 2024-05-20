@@ -105,3 +105,12 @@ const buildSections = (): Section[] => {
 }
 
 export const sections = buildSections()
+
+export const resolveReference = (reference: OpenAPIV3_1.ReferenceObject) => {
+  const type = reference.$ref.replaceAll(
+    '#/components/schemas/',
+    '',
+  ) as keyof (typeof openapiSchema.components)['schemas']
+
+  return openapiSchema.components['schemas'][type]
+}

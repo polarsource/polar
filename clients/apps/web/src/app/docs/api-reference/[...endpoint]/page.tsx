@@ -1,7 +1,7 @@
 import openapiSchema from '@polar-sh/sdk/openapi'
 import { OpenAPIV3_1 } from 'openapi-types'
 import { useMemo } from 'react'
-import { SchemaPathMethod } from '../../APINavigation'
+import { SchemaPathMethod, resolveReference } from '../../APINavigation'
 import { APIContainer } from './APIContainer'
 import { BodyParameters } from './BodyParameters'
 import { Parameters } from './Parameters'
@@ -12,11 +12,11 @@ export default function Page({
 }: {
   params: { endpoint: string[] }
 }) {
-  const apiEndpointPath =
-    `/${decodeURIComponent(endpoint.join('/'))}` as keyof typeof openapiSchema.paths
   const [method] = endpoint.splice(-1) as [
     SchemaPathMethod<typeof apiEndpointPath>,
   ]
+  const apiEndpointPath =
+    `/${decodeURIComponent(endpoint.join('/'))}` as keyof typeof openapiSchema.paths
 
   const apiEndpoint = openapiSchema.paths[apiEndpointPath]
 
@@ -30,7 +30,14 @@ export default function Page({
       return undefined
     }
 
-    return endpointMethod.requestBody?.content['application/json'].schema
+    const schema =
+      endpointMethod.requestBody &&
+      'schema' in endpointMethod.requestBody.content['application/json'] &&
+      endpointMethod.requestBody.content['application/json'].schema &&
+      '$ref' in endpointMethod.requestBody.content['application/json'].schema &&
+      endpointMethod.requestBody.content['application/json'].schema
+
+    return schema ? resolveReference(schema) : undefined
   }, [endpointMethod])
 
   if (!endpointMethod) return null
@@ -52,7 +59,7 @@ export default function Page({
               <span className="dark:bg-polar-700 rounded-md bg-gray-200/50 px-2 py-1 font-mono text-xs font-normal uppercase">
                 {method}
               </span>
-              <pre className="w-fit font-mono text-sm">/{apiEndpointPath}</pre>
+              <pre className="w-fit font-mono text-sm">{apiEndpointPath}</pre>
             </div>
           </div>
 

@@ -15,11 +15,10 @@
   "scripts": {
     "download": "node scripts/generate-schema.js http://127.0.0.1:8000/openapi.json openapi/source.json openapi/updated.json",
     "generate": "pnpm download && ./generate",
-    "build": "tsup src/index.ts --format cjs,esm --dts && cp -r openapi dist && node scripts/dereference-schema.js dist/openapi/source.json",
+    "build": "tsup src/index.ts --format cjs,esm --dts && cp -r openapi dist",
     "prepublishOnly": "pnpm run build"
   },
   "devDependencies": {
-    "@stoplight/json-ref-resolver": "^3.1.6",
     "tsconfig": "workspace:*",
     "tsup": "^7.2.0",
     "typescript": "5.3.3"

@@ -21,10 +21,13 @@ const normalizeSchema = (schema) => {
         const pathItem = schema.paths[path]
         for (const method in pathItem) {
             const operation = pathItem[method]
+
             const doc = {
                 id: `${path}/${method}`,
                 title: operation.summary,
-                body: operation.description
+                body: operation.description,
+                path: path,
+                method
             }
 
             result.push(doc)
@@ -79,6 +82,15 @@ var idx = lunr(function () {
     this.ref('id')
     this.field('title')
     this.field('body')
+    this.field('path')
+    this.field('method')
+
+    this.pipeline.remove(lunr.stemmer)
+    this.pipeline.remove(lunr.trimmer)
+    this.pipeline.remove(lunr.stopWordFilter)
+    this.searchPipeline.remove(lunr.stemmer)
+    this.searchPipeline.remove(lunr.trimmer)
+    this.searchPipeline.remove(lunr.stopWordFilter)
 
     apiDocuments.forEach(function (doc) {
         this.add(doc)
@@ -87,6 +99,7 @@ var idx = lunr(function () {
     mdxDocuments.forEach(function (doc) {
         this.add(doc)
     }, this)
+
 })
 
 writeFile(indexOutputPath, JSON.stringify(idx), (err) => {

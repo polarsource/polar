@@ -1,35 +1,41 @@
-import { api } from '@/utils/api'
-import { BenefitFilesSubscriber } from '@polar-sh/sdk'
+import { BenefitFilesSubscriber, FileSubscriberRead } from '@polar-sh/sdk'
+
+import { useSubscriberAccessibleFiles } from '@/hooks/queries'
+
+const FileItem = ({ file }: { file: BenefitFilesSubscriber }) => {
+  return (
+    <a
+      onClick={(e) => {
+        e.preventDefault()
+        window.location.href = file.url
+      }}
+      className="text-blue-500 underline"
+    >
+      {file.name} ({file.size} bytes)
+    </a>
+  )
+}
 
 const FilesSubscriberWidget = ({
   benefit,
 }: {
   benefit: BenefitFilesSubscriber
 }) => {
-  const onDownload = async (fileId: string) => {
-    const response = await api.files.getFile({
-      fileId: fileId,
-    })
-    if (response.url) {
-      window.location.href = response.url
-    }
+  const fileQuery = useSubscriberAccessibleFiles()
+
+  const files: FileSubscriberRead[] = fileQuery.data?.items
+
+  if (fileQuery.isLoading) {
+    // TODO: Style me
+    return <div>Loading...</div>
   }
 
   return (
     <div>
-      <h1>Download widget goes here</h1>
       <ul>
-        {benefit.properties.files.map((fileId) => (
-          <li key={fileId}>
-            <a
-              onClick={(e) => {
-                e.preventDefault()
-                onDownload(fileId)
-              }}
-              className="text-blue-500 underline"
-            >
-              {fileId}
-            </a>
+        {files.map((file) => (
+          <li key={file.id}>
+            <FileItem file={file} />
           </li>
         ))}
       </ul>

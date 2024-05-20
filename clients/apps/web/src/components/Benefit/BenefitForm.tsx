@@ -1,5 +1,6 @@
 import { useDiscordGuild } from '@/hooks/queries'
 import { getBotDiscordAuthorizeURL } from '@/utils/auth'
+import { isFeatureEnabled } from '@/utils/feature-flags'
 import {
   BenefitAdsCreate,
   BenefitCreate,
@@ -370,7 +371,16 @@ const BenefitTypeSelect = ({}) => {
                 </SelectTrigger>
                 <SelectContent>
                   {Object.values(BenefitType)
-                    .filter((value) => value !== BenefitType.ARTICLES)
+                    .filter((value) => {
+                      switch (value) {
+                        case BenefitType.ARTICLES:
+                          return false
+                        case BenefitType.FILES:
+                          return isFeatureEnabled('benefit-files-create')
+                        default:
+                          return true
+                      }
+                    })
                     .map((value) => (
                       <SelectItem key={value} value={value}>
                         {benefitsDisplayNames[value]}

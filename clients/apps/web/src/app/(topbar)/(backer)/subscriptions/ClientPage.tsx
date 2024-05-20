@@ -11,9 +11,10 @@ import { StaggerReveal } from '@/components/Shared/StaggerReveal'
 import { useAuth } from '@/hooks'
 import { useOrganization, useUserBenefits } from '@/hooks/queries'
 import { api } from '@/utils/api'
+import { isFeatureEnabled } from '@/utils/feature-flags'
 import { organizationPageLink } from '@/utils/nav'
 import { BoltOutlined, MoreVertOutlined } from '@mui/icons-material'
-import { UserBenefit, UserSubscription } from '@polar-sh/sdk'
+import { BenefitType, UserBenefit, UserSubscription } from '@polar-sh/sdk'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { FormattedDateTime } from 'polarkit/components/ui/atoms'
@@ -226,21 +227,28 @@ const Subscription = ({
             key={subscription.product_id}
             className="flex flex-col gap-y-2"
           >
-            {benefits?.items?.map((benefit) => (
-              <StaggerReveal.Child key={benefit.id}>
-                <ListItem
-                  className={twMerge(
-                    'bg-gray-75 rounded-2xl dark:bg-gray-950',
-                    benefit.id === selectedBenefit?.id &&
-                      'dark:bg-polar-700 bg-blue-50/50',
-                  )}
-                  selected={benefit.id === selectedBenefit?.id}
-                  onSelect={() => onSelectBenefit(benefit)}
-                >
-                  <BenefitRow benefit={benefit} />
-                </ListItem>
-              </StaggerReveal.Child>
-            ))}
+            {benefits?.items
+              ?.filter((benefit) => {
+                if (benefit.type === BenefitType.FILES) {
+                  return isFeatureEnabled('benefit-files-download')
+                }
+                return true
+              })
+              .map((benefit) => (
+                <StaggerReveal.Child key={benefit.id}>
+                  <ListItem
+                    className={twMerge(
+                      'bg-gray-75 rounded-2xl dark:bg-gray-950',
+                      benefit.id === selectedBenefit?.id &&
+                        'dark:bg-polar-700 bg-blue-50/50',
+                    )}
+                    selected={benefit.id === selectedBenefit?.id}
+                    onSelect={() => onSelectBenefit(benefit)}
+                  >
+                    <BenefitRow benefit={benefit} />
+                  </ListItem>
+                </StaggerReveal.Child>
+              ))}
           </StaggerReveal>
         </div>
       )}

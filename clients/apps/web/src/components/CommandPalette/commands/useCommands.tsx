@@ -1,4 +1,5 @@
 import { Organization } from '@polar-sh/sdk'
+import lunr from 'lunr'
 import {
   PropsWithChildren,
   createContext,
@@ -7,6 +8,7 @@ import {
   useMemo,
   useState,
 } from 'react'
+import searchIndex from '../index/searchIndex.json'
 import { Command } from './commands'
 import { SCOPES, Scope, ScopeKey, ScopeType } from './scopes'
 import { useScopes } from './useScopes'
@@ -58,6 +60,11 @@ export const CommandContextProvider = ({
   const [scopeKeys, setScopeKeys] = useState<ScopeKey[]>(['global'])
   const [selectedCommand, setSelectedCommand] = useState<Command>()
   const [input, setInput] = useState('')
+
+  useMemo(() => {
+    const idx = lunr.Index.load(searchIndex)
+    console.log(idx.search(input))
+  }, [input])
 
   const scopeKey = useMemo(() => scopeKeys[scopeKeys.length - 1], [scopeKeys])
 

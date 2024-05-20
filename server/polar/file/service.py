@@ -30,16 +30,13 @@ from .schemas import (
 log = structlog.get_logger()
 
 
-class FileError(PolarError):
-    ...
+class FileError(PolarError): ...
 
 
-class UnsupportedFile(FileError):
-    ...
+class UnsupportedFile(FileError): ...
 
 
-class FileNotFound(ResourceNotFound):
-    ...
+class FileNotFound(ResourceNotFound): ...
 
 
 class FileService(ResourceService[File, FileCreate, FileUpdate]):

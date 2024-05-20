@@ -42,7 +42,7 @@ export default function Page({
 
   if (!endpointMethod) return null
 
-  const subHeader = apiEndpointPath.split('/')[2].replaceAll('_', ' ')
+  const subHeader = apiEndpointPath.split('/')[3].replaceAll('_', ' ')
 
   return (
     <>
@@ -77,7 +77,7 @@ export default function Page({
           )}
         </div>
       </div>
-      <div className="sticky top-12 flex w-96 flex-shrink-0 flex-col gap-y-8">
+      <div className="flex w-full flex-shrink-0 flex-col gap-y-8 md:sticky md:top-12 md:w-96">
         <APIContainer
           endpoint={endpointMethod}
           method={method}

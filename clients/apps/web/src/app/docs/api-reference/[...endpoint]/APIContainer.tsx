@@ -86,8 +86,8 @@ ${bodyParametersString}`
   return (
     <div className="dark:bg-polar-900 flex h-full w-full flex-col rounded-2xl bg-white shadow-sm">
       <Tabs defaultValue="curl">
-        <TabsList className="dark:border-polar-800 flex w-full flex-row items-center gap-x-4 rounded-none border-b border-gray-100 px-4 py-3 md:justify-between">
-          <div className="flex flex-row items-center">
+        <TabsList className="dark:border-polar-800 flex w-full flex-row items-center justify-between gap-x-4 rounded-none border-b border-gray-100 px-4 py-3">
+          <div className="flex flex-row items-center justify-between">
             <TabsTrigger className={triggerClassName} value="curl" size="small">
               cURL
             </TabsTrigger>

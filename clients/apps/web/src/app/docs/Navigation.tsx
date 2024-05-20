@@ -1,6 +1,16 @@
 'use client'
 
+import LogoIcon from '@/components/Brand/LogoIcon'
+import {
+  ApiOutlined,
+  CloseOutlined,
+  DescriptionOutlined,
+  ShortTextOutlined,
+  SpaceDashboardOutlined,
+} from '@mui/icons-material'
 import { usePathname } from 'next/navigation'
+import { Separator } from 'polarkit/components/ui/separator'
+import { useEffect, useState } from 'react'
 import { sections } from './APINavigation'
 import { NaviagtionItem } from './NavigationItem'
 
@@ -25,6 +35,79 @@ export const Navigation = () => {
         </>
       )}
     </div>
+  )
+}
+
+export const DocumentationPageSidebar = () => {
+  return (
+    <div className="flex w-full flex-shrink-0 flex-col gap-y-12 md:w-60">
+      <ul className="flex flex-col">
+        <li>
+          <NaviagtionItem
+            icon={<SpaceDashboardOutlined fontSize="inherit" />}
+            href="/docs/overview"
+          >
+            Overview
+          </NaviagtionItem>
+        </li>
+        <li>
+          <NaviagtionItem
+            icon={<ApiOutlined fontSize="inherit" />}
+            href="/docs/api"
+          >
+            API Reference
+          </NaviagtionItem>
+        </li>
+        <li>
+          <NaviagtionItem
+            icon={<DescriptionOutlined fontSize="inherit" />}
+            href="/docs/guides"
+          >
+            Guides
+          </NaviagtionItem>
+        </li>
+      </ul>
+      <Separator />
+      <Navigation />
+    </div>
+  )
+}
+
+export const MobileNav = () => {
+  const [mobileNavOpen, setMobileNavOpen] = useState(false)
+  const pathname = usePathname()
+
+  useEffect(() => {
+    setMobileNavOpen(false)
+  }, [pathname])
+
+  const header = (
+    <div className="dark:bg-polar-900 fixed left-0 right-0 top-0 z-50 flex flex-row items-center justify-between bg-white p-4">
+      <a href="/" className="flex flex-shrink-0 flex-row items-center gap-x-3">
+        <LogoIcon className="h-10 w-10 text-blue-500 dark:text-blue-400" />
+        <span className="font-medium">Documentation</span>
+      </a>
+
+      <div
+        className="dark:text-polar-200 flex flex-row items-center justify-center text-gray-700"
+        onClick={() => setMobileNavOpen((toggle) => !toggle)}
+      >
+        {mobileNavOpen ? <CloseOutlined /> : <ShortTextOutlined />}
+      </div>
+    </div>
+  )
+
+  return mobileNavOpen ? (
+    <div className="flex h-full flex-col">
+      <div className="dark:bg-polar-900 bg-gray-75 relative flex flex-row items-center justify-between">
+        {header}
+      </div>
+      <div className="z-10 flex h-full flex-col pt-8">
+        <DocumentationPageSidebar />
+      </div>
+    </div>
+  ) : (
+    header
   )
 }
 

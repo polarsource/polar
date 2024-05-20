@@ -32,17 +32,25 @@ export const ResponseContainer = ({
           </TabsList>
         </div>
 
-        {Object.entries(responses).map(([statusCode, response]) => (
-          <TabsContent key={statusCode} value={statusCode} className="p-2 py-0">
-            <pre className="dark:text-polar-50 max-h-72 select-text overflow-auto p-4 font-mono text-xs leading-normal text-gray-900">
-              {JSON.stringify(
-                response.content?.['application/json'].schema.properties,
-                null,
-                2,
-              )}
-            </pre>
-          </TabsContent>
-        ))}
+        {Object.entries(responses).map(([statusCode, response]) => {
+          const properties =
+            'content' in response &&
+            response.content?.['application/json'].schema &&
+            'properties' in response.content?.['application/json'].schema &&
+            response.content?.['application/json'].schema.properties
+
+          return (
+            <TabsContent
+              key={statusCode}
+              value={statusCode}
+              className="p-2 py-0"
+            >
+              <pre className="dark:text-polar-50 max-h-72 select-text overflow-auto p-4 font-mono text-xs leading-normal text-gray-900">
+                {JSON.stringify(properties, null, 2)}
+              </pre>
+            </TabsContent>
+          )
+        })}
       </Tabs>
     </div>
   )

@@ -6,6 +6,7 @@ export * from './ArticlesApi';
 export * from './AuthApi';
 export * from './BackofficeApi';
 export * from './BenefitsApi';
+export * from './CheckoutsApi';
 export * from './DashboardApi';
 export * from './DonationsApi';
 export * from './FundingApi';

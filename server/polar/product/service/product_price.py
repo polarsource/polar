@@ -1,3 +1,5 @@
+import uuid
+
 from sqlalchemy import select
 from sqlalchemy.orm import joinedload
 
@@ -11,6 +13,18 @@ class ProductPriceError(PolarError): ...
 
 
 class ProductPriceService(ResourceServiceReader[ProductPrice]):
+    async def get_by_id(
+        self, session: AsyncSession, id: uuid.UUID
+    ) -> ProductPrice | None:
+        statement = (
+            select(ProductPrice)
+            .where(ProductPrice.id == id)
+            .options(joinedload(ProductPrice.product))
+        )
+
+        result = await session.execute(statement)
+        return result.scalar_one_or_none()
+
     async def get_by_stripe_price_id(
         self, session: AsyncSession, stripe_price_id: str
     ) -> ProductPrice | None:

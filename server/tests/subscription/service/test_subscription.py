@@ -10,7 +10,6 @@ from polar.auth.models import Anonymous, AuthSubject
 from polar.authz.service import Authz
 from polar.config import settings
 from polar.exceptions import NotPermitted, ResourceNotFound
-from polar.integrations.stripe.service import StripeService
 from polar.kit.pagination import PaginationParams
 from polar.models import (
     Account,
@@ -126,14 +125,6 @@ def construct_stripe_invoice(
             "metadata": metadata,
         },
         None,
-    )
-
-
-@pytest.fixture(autouse=True)
-def stripe_service_mock(mocker: MockerFixture) -> MagicMock:
-    return mocker.patch(
-        "polar.subscription.service.subscription.stripe_service",
-        spec=StripeService,
     )
 
 

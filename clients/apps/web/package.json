@@ -3,8 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "pnpm run docs:index && next dev --port 3000",
-    "build": "pnpm run docs:index && next build",
+    "dev": "pnpm run docs:build && next dev --port 3000",
+    "build": "pnpm run docs:build && next build",
     "start": "next start",
     "lint": "next lint",
     "storybook": "storybook dev -p 6006 --no-open",
@@ -12,6 +12,8 @@
     "chromatic": "chromatic --exit-zero-on-changes --exit-once-uploaded",
     "test": "DOTENV_CONFIG_PATH=.env.test jest",
     "typecheck": "tsc --noEmit",
+    "docs:build": "pnpm run docs:metadata && pnpm run docs:index",
+    "docs:metadata": "node scripts/buildSearchMetadata.mjs",
     "docs:index": "node scripts/buildSearchIndex.mjs"
   },
   "engines": {

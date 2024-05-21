@@ -33,8 +33,6 @@ from ..product.service.product import (
 from . import auth
 from .schemas import (
     FreeSubscriptionCreate,
-    SubscribeSession,
-    SubscribeSessionCreate,
     SubscriptionCreateEmail,
     SubscriptionsImported,
     SubscriptionsStatistics,
@@ -43,69 +41,12 @@ from .schemas import (
     SubscriptionUpgrade,
 )
 from .schemas import Subscription as SubscriptionSchema
-from .service.subscribe_session import subscribe_session as subscribe_session_service
 from .service.subscription import AlreadySubscribed, SearchSortProperty
 from .service.subscription import subscription as subscription_service
 
 log = structlog.get_logger()
 
 router = APIRouter(prefix="/subscriptions", tags=["subscriptions"])
-
-
-@router.post(
-    "/subscribe-sessions/",
-    response_model=SubscribeSession,
-    status_code=201,
-    tags=[Tags.PUBLIC],
-)
-async def create_subscribe_session(
-    session_create: SubscribeSessionCreate,
-    auth_subject: WebUserOrAnonymous,
-    authz: Authz = Depends(Authz.authz),
-    session: AsyncSession = Depends(get_db_session),
-) -> SubscribeSession:
-    subscription_tier = await product_service.get_by_id(
-        session, auth_subject, session_create.tier_id
-    )
-
-    if subscription_tier is None:
-        raise ResourceNotFound()
-
-    price = subscription_tier.get_price(session_create.price_id)
-    if price is None:
-        raise ResourceNotFound()
-
-    if is_user(auth_subject):
-        posthog.auth_subject_event(
-            auth_subject,
-            "subscriptions",
-            "subscribe_session",
-            "create",
-            {"subscription_tier_id": subscription_tier.id},
-        )
-
-    return await subscribe_session_service.create_subscribe_session(
-        session,
-        subscription_tier,
-        price,
-        str(session_create.success_url),
-        auth_subject,
-        authz,
-        customer_email=session_create.customer_email,
-        organization_id=session_create.organization_subscriber_id,
-    )
-
-
-@router.get(
-    "/subscribe-sessions/{id}",
-    response_model=SubscribeSession,
-    tags=[Tags.PUBLIC],
-)
-async def get_subscribe_session(
-    id: str,
-    session: AsyncSession = Depends(get_db_session),
-) -> SubscribeSession:
-    return await subscribe_session_service.get_subscribe_session(session, id)
 
 
 @router.get(

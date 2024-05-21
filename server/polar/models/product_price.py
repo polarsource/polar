@@ -2,7 +2,8 @@ from enum import StrEnum
 from typing import TYPE_CHECKING, Literal, cast
 from uuid import UUID
 
-from sqlalchemy import Boolean, ForeignKey, Integer, String
+from sqlalchemy import Boolean, ColumnElement, ForeignKey, Integer, String, type_coerce
+from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.kit.db.models import RecordModel
@@ -54,3 +55,12 @@ class ProductPrice(RecordModel):
     @declared_attr
     def subscriptions(cls) -> Mapped[list["Subscription"]]:
         return relationship("Subscription", lazy="raise", back_populates="price")
+
+    @hybrid_property
+    def is_recurring(self) -> bool:
+        return self.type == ProductPriceType.recurring
+
+    @is_recurring.inplace.expression
+    @classmethod
+    def _is_recurring_expression(cls) -> ColumnElement[bool]:
+        return type_coerce(cls.type == ProductPriceType.recurring, Boolean)

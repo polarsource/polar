@@ -381,11 +381,12 @@ class StripeService:
     def archive_price(self, id: str) -> stripe_lib.Price:
         return stripe_lib.Price.modify(id, active=False)
 
-    def create_subscription_checkout_session(
+    def create_checkout_session(
         self,
         price: str,
         success_url: str,
         *,
+        is_subscription: bool,
         is_tax_applicable: bool,
         customer: str | None = None,
         customer_email: str | None = None,
@@ -400,19 +401,21 @@ class StripeService:
                     "quantity": 1,
                 },
             ],
-            "mode": "subscription",
+            "mode": "subscription" if is_subscription else "payment",
             "automatic_tax": {"enabled": is_tax_applicable},
             "tax_id_collection": {"enabled": is_tax_applicable},
-            "payment_method_collection": "if_required",
             "metadata": metadata or {},
         }
+        if is_subscription:
+            create_params["payment_method_collection"] = "if_required"
+            if subscription_metadata is not None:
+                create_params["subscription_data"] = {"metadata": subscription_metadata}
         if customer is not None:
             create_params["customer"] = customer
             create_params["customer_update"] = {"name": "auto", "address": "auto"}
         if customer_email is not None:
             create_params["customer_email"] = customer_email
-        if subscription_metadata is not None:
-            create_params["subscription_data"] = {"metadata": subscription_metadata}
+
         return stripe_lib.checkout.Session.create(**create_params)
 
     def get_checkout_session(self, id: str) -> stripe_lib.checkout.Session:

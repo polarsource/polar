@@ -45,7 +45,7 @@ const sitemap: Sitemap = {
 export const createAPICommands = (key: SitemapKey): Command[] => {
   const site = sitemap[key]
 
-  return site.map(({ path, methods }) => {
+  return site.map(({ path }) => {
     const name = path.split('/').slice(3).join(' ').replace('_', ' ')
     const description = path
 

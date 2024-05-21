@@ -6,31 +6,15 @@ import {
   TabsList,
   TabsTrigger,
 } from 'polarkit/components/ui/atoms/tabs'
-import { useCallback } from 'react'
 import { CommandItem } from '../CommandItem'
 import { useCommands } from '../commands/useCommands'
 
 const triggerClassName = 'py-1'
 
-const buildCurlCommand = (method: string = 'GET', url: string) => {
-  return `curl -X ${method} \\
-${url} \\
--H "Content-type: application/json" \\
--H "Accept: application/json" \\
--H "Authorization: Bearer <token>"`
-}
-
 export interface APIContainerProps {}
 
 export const APIContainer = ({}: APIContainerProps) => {
   const { commands, selectedCommand, setSelectedCommand } = useCommands()
-
-  const copyCodeToClipboard = useCallback(
-    (snippet: string) => () => {
-      navigator.clipboard.writeText(snippet)
-    },
-    [],
-  )
 
   return (
     <div className="flex h-[360px] flex-grow flex-row">

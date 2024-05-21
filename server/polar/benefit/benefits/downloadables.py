@@ -6,13 +6,13 @@ from uuid import UUID
 import structlog
 
 from polar.auth.models import AuthSubject
-from polar.file.schemas import FilePermissionCreate
+from polar.downloadable.schemas import DownloadableCreate
+from polar.downloadable.service import downloadable as downloadable_service
 from polar.file.service import file as file_service
-from polar.file.service import file_permission as file_permission_service
 from polar.logging import Logger
 from polar.models import Organization, User
-from polar.models.benefit import BenefitFiles, BenefitFilesProperties
-from polar.models.file_permission import FilePermission, FilePermissionStatus
+from polar.models.benefit import BenefitDownloadables, BenefitDownloadablesProperties
+from polar.models.downloadable import Downloadable, DownloadableStatus
 
 from .base import (
     BenefitServiceProtocol,
@@ -24,10 +24,12 @@ precondition_error_subject_template = ()
 precondition_error_body_template = """"""
 
 
-class BenefitFilesService(BenefitServiceProtocol[BenefitFiles, BenefitFilesProperties]):
+class BenefitDownloadablesService(
+    BenefitServiceProtocol[BenefitDownloadables, BenefitDownloadablesProperties]
+):
     async def grant(
         self,
-        benefit: BenefitFiles,
+        benefit: BenefitDownloadables,
         user: User,
         grant_properties: dict[str, Any],
         *,
@@ -45,7 +47,7 @@ class BenefitFilesService(BenefitServiceProtocol[BenefitFiles, BenefitFilesPrope
 
     async def revoke(
         self,
-        benefit: BenefitFiles,
+        benefit: BenefitDownloadables,
         user: User,
         grant_properties: dict[str, Any],
         *,
@@ -61,19 +63,19 @@ class BenefitFilesService(BenefitServiceProtocol[BenefitFiles, BenefitFilesPrope
 
     async def requires_update(
         self,
-        benefit: BenefitFiles,
-        previous_properties: BenefitFilesProperties,
+        benefit: BenefitDownloadables,
+        previous_properties: BenefitDownloadablesProperties,
     ) -> bool:
         return False
 
     async def validate_properties(
         self, auth_subject: AuthSubject[User | Organization], properties: dict[str, Any]
-    ) -> BenefitFilesProperties:
-        return cast(BenefitFilesProperties, properties)
+    ) -> BenefitDownloadablesProperties:
+        return cast(BenefitDownloadablesProperties, properties)
 
     async def iterate_files(
         self,
-        benefit: BenefitFiles,
+        benefit: BenefitDownloadables,
         user: User,
         grant_properties: dict[str, Any],
         *,
@@ -93,7 +95,7 @@ class BenefitFilesService(BenefitServiceProtocol[BenefitFiles, BenefitFilesPrope
         for file_id in file_ids:
             permission = None
             if action == "grant":
-                permission = await self.grant_file_permission(
+                permission = await self.grant_downloadable(
                     benefit=benefit,
                     user=user,
                     file_id=file_id,
@@ -101,7 +103,7 @@ class BenefitFilesService(BenefitServiceProtocol[BenefitFiles, BenefitFilesPrope
                     attempt=attempt,
                 )
             elif action == "revoke":
-                permission = await self.revoke_file_permission(
+                permission = await self.revoke_downloadable(
                     benefit=benefit,
                     user=user,
                     file_id=file_id,
@@ -115,58 +117,54 @@ class BenefitFilesService(BenefitServiceProtocol[BenefitFiles, BenefitFilesPrope
             ret["files"].append(
                 dict(
                     file_id=file_id,
-                    file_permission_id=str(permission.id),
+                    downloadable_id=str(permission.id),
                     status=permission.status,
                 )
             )
 
         return ret
 
-    async def grant_file_permission(
+    async def grant_downloadable(
         self,
-        benefit: BenefitFiles,
+        benefit: BenefitDownloadables,
         user: User,
         file_id: UUID,
         *,
         update: bool = False,
         attempt: int = 1,
-    ) -> FilePermission | None:
+    ) -> Downloadable | None:
         # TODO: Check if active?
         file = await file_service.get(self.session, file_id)
         if not file:
             # TODO: How to deal with errors here?
             return None
 
-        create_schema = FilePermissionCreate(
+        create_schema = DownloadableCreate(
             file_id=file.id,
             user_id=user.id,
             benefit_id=benefit.id,
-            status=FilePermissionStatus.granted,
+            status=DownloadableStatus.granted,
         )
-        return await file_permission_service.create_or_update(
-            self.session, create_schema
-        )
+        return await downloadable_service.create_or_update(self.session, create_schema)
 
-    async def revoke_file_permission(
+    async def revoke_downloadable(
         self,
-        benefit: BenefitFiles,
+        benefit: BenefitDownloadables,
         user: User,
         file_id: UUID,
         *,
         attempt: int = 1,
-    ) -> FilePermission | None:
+    ) -> Downloadable | None:
         # TODO: Check if active?
         file = await file_service.get(self.session, file_id)
         if not file:
             # TODO: How to deal with errors here?
             return None
 
-        create_schema = FilePermissionCreate(
+        create_schema = DownloadableCreate(
             file_id=file.id,
             user_id=user.id,
             benefit_id=benefit.id,
-            status=FilePermissionStatus.revoked,
+            status=DownloadableStatus.revoked,
         )
-        return await file_permission_service.create_or_update(
-            self.session, create_schema
-        )
+        return await downloadable_service.create_or_update(self.session, create_schema)

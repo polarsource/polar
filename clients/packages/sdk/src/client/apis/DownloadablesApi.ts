@@ -15,50 +15,41 @@
 
 import * as runtime from '../runtime';
 import type {
-  FileCreate,
-  FileRead,
-  FileUpload,
-  FileUploadCompleted,
+  DownloadableRead,
   HTTPValidationError,
+  ListResourceDownloadableRead,
 } from '../models/index';
 
-export interface FilesApiCompleteUploadRequest {
-    fileId: string;
-    fileUploadCompleted: FileUploadCompleted;
+export interface DownloadablesApiGetRequest {
+    id: string;
 }
 
-export interface FilesApiCreateFileRequest {
-    fileCreate: FileCreate;
+export interface DownloadablesApiListRequest {
+    organizationId?: string;
+    benefitId?: string;
+    page?: number;
+    limit?: number;
 }
 
 /**
  * 
  */
-export class FilesApi extends runtime.BaseAPI {
+export class DownloadablesApi extends runtime.BaseAPI {
 
     /**
-     * Complete Upload
+     * Get
      */
-    async completeUploadRaw(requestParameters: FilesApiCompleteUploadRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<FileRead>> {
-        if (requestParameters['fileId'] == null) {
+    async getRaw(requestParameters: DownloadablesApiGetRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<DownloadableRead>> {
+        if (requestParameters['id'] == null) {
             throw new runtime.RequiredError(
-                'fileId',
-                'Required parameter "fileId" was null or undefined when calling completeUpload().'
-            );
-        }
-
-        if (requestParameters['fileUploadCompleted'] == null) {
-            throw new runtime.RequiredError(
-                'fileUploadCompleted',
-                'Required parameter "fileUploadCompleted" was null or undefined when calling completeUpload().'
+                'id',
+                'Required parameter "id" was null or undefined when calling get().'
             );
         }
 
         const queryParameters: any = {};
 
         const headerParameters: runtime.HTTPHeaders = {};
-
-        headerParameters['Content-Type'] = 'application/json';
 
         if (this.configuration && this.configuration.accessToken) {
             const token = this.configuration.accessToken;
@@ -69,40 +60,46 @@ export class FilesApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/files/{file_id}`.replace(`{${"file_id"}}`, encodeURIComponent(String(requestParameters['fileId']))),
-            method: 'PATCH',
+            path: `/api/v1/downloadables/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
+            method: 'GET',
             headers: headerParameters,
             query: queryParameters,
-            body: requestParameters['fileUploadCompleted'],
         }, initOverrides);
 
         return new runtime.JSONApiResponse(response);
     }
 
     /**
-     * Complete Upload
+     * Get
      */
-    async completeUpload(requestParameters: FilesApiCompleteUploadRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<FileRead> {
-        const response = await this.completeUploadRaw(requestParameters, initOverrides);
+    async get(requestParameters: DownloadablesApiGetRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<DownloadableRead> {
+        const response = await this.getRaw(requestParameters, initOverrides);
         return await response.value();
     }
 
     /**
-     * Create File
+     * List
      */
-    async createFileRaw(requestParameters: FilesApiCreateFileRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<FileUpload>> {
-        if (requestParameters['fileCreate'] == null) {
-            throw new runtime.RequiredError(
-                'fileCreate',
-                'Required parameter "fileCreate" was null or undefined when calling createFile().'
-            );
-        }
-
+    async listRaw(requestParameters: DownloadablesApiListRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListResourceDownloadableRead>> {
         const queryParameters: any = {};
 
-        const headerParameters: runtime.HTTPHeaders = {};
+        if (requestParameters['organizationId'] != null) {
+            queryParameters['organization_id'] = requestParameters['organizationId'];
+        }
 
-        headerParameters['Content-Type'] = 'application/json';
+        if (requestParameters['benefitId'] != null) {
+            queryParameters['benefit_id'] = requestParameters['benefitId'];
+        }
+
+        if (requestParameters['page'] != null) {
+            queryParameters['page'] = requestParameters['page'];
+        }
+
+        if (requestParameters['limit'] != null) {
+            queryParameters['limit'] = requestParameters['limit'];
+        }
+
+        const headerParameters: runtime.HTTPHeaders = {};
 
         if (this.configuration && this.configuration.accessToken) {
             const token = this.configuration.accessToken;
@@ -113,21 +110,20 @@ export class FilesApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/files/`,
-            method: 'POST',
+            path: `/api/v1/downloadables`,
+            method: 'GET',
             headers: headerParameters,
             query: queryParameters,
-            body: requestParameters['fileCreate'],
         }, initOverrides);
 
         return new runtime.JSONApiResponse(response);
     }
 
     /**
-     * Create File
+     * List
      */
-    async createFile(requestParameters: FilesApiCreateFileRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<FileUpload> {
-        const response = await this.createFileRaw(requestParameters, initOverrides);
+    async list(requestParameters: DownloadablesApiListRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ListResourceDownloadableRead> {
+        const response = await this.listRaw(requestParameters, initOverrides);
         return await response.value();
     }
 

@@ -7,8 +7,8 @@ from .articles_subscription import ArticlesSubscription
 from .benefit import Benefit
 from .benefit_grant import BenefitGrant
 from .donation import Donation
+from .downloadable import Downloadable
 from .file import File
-from .file_permission import FilePermission
 from .held_balance import HeldBalance
 from .invites import Invite
 from .issue import Issue
@@ -86,5 +86,5 @@ __all__ = [
     "WebhookEvent",
     "WebhookNotification",
     "File",
-    "FilePermission",
+    "Downloadable",
 ]

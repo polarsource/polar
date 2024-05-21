@@ -7,11 +7,6 @@ from pydantic import UUID4
 
 from polar.kit.schemas import Schema
 from polar.models import File
-from polar.models.file_permission import FilePermissionStatus
-
-
-def get_disposition(filename: str) -> str:
-    return f'attachment; filename="{filename}"'
 
 
 class FileCreatePart(Schema):
@@ -181,55 +176,6 @@ class FileUploadCompleted(Schema):
         return ret
 
 
-class FilePresignedRead(FileRead):
-    url: str
-    url_expires_at: datetime
-
-    headers: dict[str, str] = {}
-
-    @classmethod
-    def from_presign(cls, record: File, url: str, expires_at: datetime) -> Self:
-        params = cls.prepare_dict_from_db(record)
-        params.update(
-            dict(
-                url=url,
-                url_expires_at=expires_at,
-                headers={
-                    "Content-Disposition": get_disposition(record.name),
-                    "Content-Type": record.mime_type,
-                    "x-amz-checksum-sha256": record.sha256_base64,
-                    "x-amz-sdk-checksum-algorithm": "SHA256",
-                },
-            )
-        )
-        if record.sha256_base64:
-            params["headers"].update(
-                {
-                    "x-amz-meta-sha256-base64": record.sha256_base64,
-                    "x-amz-meta-sha256-hex": record.sha256_hex,
-                }
-            )
-
-        return cls(**params)
-
-
 class FileUpdate(Schema):
     id: UUID4
     uploaded_at: datetime
-
-
-class FilePermissionCreate(Schema):
-    file_id: UUID4
-    user_id: UUID4
-    benefit_id: UUID4
-    status: FilePermissionStatus
-
-
-class FilePermissionUpdate(Schema):
-    file_id: UUID4
-    user_id: UUID4
-    benefit_id: UUID4
-    status: FilePermissionStatus
-
-
-class FileSubscriberRead(FilePresignedRead): ...

@@ -1,7 +1,7 @@
 'use client'
 
 import {
-  BenefitFilesCreate,
+  BenefitDownloadablesCreate,
   FileRead,
   FileUpload,
   Organization,
@@ -16,14 +16,14 @@ import { useFormContext } from 'react-hook-form'
 import { twMerge } from 'tailwind-merge'
 import { upload } from './Upload'
 
-interface BenefitFile extends FileRead {
+interface Downloadable extends FileRead {
   enabled: boolean
   isUploaded: boolean
   isUploading: boolean
   uploadedBytes: number
 }
 
-const buildBenefitFile = (file: FileRead): BenefitFile => {
+const buildDownloadable = (file: FileRead): Downloadable => {
   const uploaded = file.uploaded_at !== null
   return {
     ...file,
@@ -34,7 +34,7 @@ const buildBenefitFile = (file: FileRead): BenefitFile => {
   }
 }
 
-const FilePreview = ({ file }: { file: BenefitFile }) => {
+const FilePreview = ({ file }: { file: Downloadable }) => {
   return (
     <div className="h-14 w-14 rounded bg-gray-200 text-gray-600">
       <p className="font-semibold">.{file.extension}</p>
@@ -42,7 +42,7 @@ const FilePreview = ({ file }: { file: BenefitFile }) => {
   )
 }
 
-const FileUploadProgress = ({ file }: { file: BenefitFile }) => {
+const FileUploadProgress = ({ file }: { file: Downloadable }) => {
   const pct = Math.round((file.uploadedBytes / file.size) * 100)
   return (
     <>
@@ -65,7 +65,7 @@ const FileUploadProgress = ({ file }: { file: BenefitFile }) => {
   )
 }
 
-const FileUploadDetails = ({ file }: { file: BenefitFile }) => {
+const FileUploadDetails = ({ file }: { file: Downloadable }) => {
   return (
     <>
       <div className="text-gray-500">
@@ -85,9 +85,10 @@ const ManageFile = ({
   file,
   updateFile,
 }: {
-  file: BenefitFile
-  updateFile: (callback: (prev: BenefitFile) => BenefitFile) => void
+  file: Downloadable
+  updateFile: (callback: (prev: Downloadable) => Downloadable) => void
 }) => {
+  console.log('file to manage', file)
   const onToggleEnabled = (enabled: boolean) => {
     updateFile((prev) => {
       return {
@@ -124,14 +125,14 @@ const ManageFileView = ({
   files,
   updateFile,
 }: {
-  files: BenefitFile[]
+  files: Downloadable[]
   updateFile: (
     fileId: string,
-    callback: (prev: BenefitFile) => BenefitFile,
+    callback: (prev: Downloadable) => Downloadable,
   ) => void
 }) => {
   const getUpdateScopedFile = (fileId: string) => {
-    return (callback: (prev: BenefitFile) => BenefitFile) => {
+    return (callback: (prev: Downloadable) => Downloadable) => {
       updateFile(fileId, callback)
     }
   }
@@ -181,13 +182,15 @@ const DropzoneView = ({
   )
 }
 
-interface FilesBenefitFormProps {
+interface DownloadablesBenefitFormProps {
   organization: Organization
   update?: boolean
 }
 
-export const FilesBenefitForm = ({ organization }: FilesBenefitFormProps) => {
-  const { setValue } = useFormContext<BenefitFilesCreate>()
+export const DownloadablesBenefitForm = ({
+  organization,
+}: DownloadablesBenefitFormProps) => {
+  const { setValue } = useFormContext<BenefitDownloadablesCreate>()
   /**
    * TODO
    *
@@ -196,9 +199,9 @@ export const FilesBenefitForm = ({ organization }: FilesBenefitFormProps) => {
    * Sortable files
    */
 
-  const [files, setFilesState] = useState<BenefitFile[]>([])
+  const [files, setFilesState] = useState<Downloadable[]>([])
 
-  const setFormFiles = (files: BenefitFile[]) => {
+  const setFormFiles = (files: Downloadable[]) => {
     const property = []
     for (const file of files) {
       if (file.isUploaded) {
@@ -208,7 +211,7 @@ export const FilesBenefitForm = ({ organization }: FilesBenefitFormProps) => {
     setValue('properties.files', property)
   }
 
-  const setFiles = (callback: (prev: BenefitFile[]) => BenefitFile[]) => {
+  const setFiles = (callback: (prev: Downloadable[]) => Downloadable[]) => {
     setFilesState((prev) => {
       const updated = callback(prev)
       setFormFiles(updated)
@@ -218,7 +221,7 @@ export const FilesBenefitForm = ({ organization }: FilesBenefitFormProps) => {
 
   const updateFile = (
     fileId: string,
-    callback: (prev: BenefitFile) => BenefitFile,
+    callback: (prev: Downloadable) => Downloadable,
   ) => {
     setFiles((prev) => {
       return prev.map((f) => {
@@ -227,6 +230,14 @@ export const FilesBenefitForm = ({ organization }: FilesBenefitFormProps) => {
         }
         return callback(f)
       })
+    })
+  }
+
+  const onFileCreate = (response: FileUpload) => {
+    const newFile = buildDownloadable(response)
+    newFile.isUploading = true
+    setFiles((prev) => {
+      return [...prev, newFile]
     })
   }
 
@@ -239,14 +250,6 @@ export const FilesBenefitForm = ({ organization }: FilesBenefitFormProps) => {
         isUploading: false,
         uploadedBytes: response.size,
       }
-    })
-  }
-
-  const onFileCreate = (response: FileUpload) => {
-    const newFile = buildBenefitFile(response)
-    newFile.isUploading = true
-    setFiles((prev) => {
-      return [...prev, newFile]
     })
   }
 

@@ -133,7 +133,7 @@ export const HighlightedTiersEditor = ({
                         organization={organization}
                         subscriptionTier={tier}
                         recurringInterval={recurringInterval}
-                        subscribePath="/api/subscribe"
+                        checkoutPath="/api/checkout"
                       />
                     )}
                   </>

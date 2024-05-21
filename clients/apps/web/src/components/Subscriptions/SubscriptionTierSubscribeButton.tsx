@@ -1,9 +1,5 @@
 import { useAuth } from '@/hooks'
-import {
-  useListAllOrganizations,
-  useOrganizationSubscriptions,
-  useUserSubscriptions,
-} from '@/hooks/queries'
+import { useUserSubscriptions } from '@/hooks/queries'
 import { api } from '@/utils/api'
 import { formatCurrencyAndAmount } from '@/utils/money'
 import {
@@ -16,14 +12,7 @@ import {
 } from '@polar-sh/sdk'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import Avatar from 'polarkit/components/ui/atoms/avatar'
 import Button, { ButtonProps } from 'polarkit/components/ui/atoms/button'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTriggerBase,
-} from 'polarkit/components/ui/atoms/select'
 import { useCallback, useMemo, useState } from 'react'
 import { ConfirmModal } from '../Modal/ConfirmModal'
 
@@ -31,20 +20,16 @@ const buttonClasses =
   'grow transition-colors dark:hover:border-[--var-dark-border-color] dark:hover:bg-[--var-dark-border-color] dark:hover:text-[--var-dark-fg-color]'
 
 interface AnonymousSubscriptionTierSubscribeButtonProps {
-  subscriptionTier: Product
   price: ProductPrice
-  subscribePath: string
+  checkoutPath: string
   variant?: ButtonProps['variant']
 }
 
 const AnonymousSubscriptionTierSubscribeButton: React.FC<
   AnonymousSubscriptionTierSubscribeButtonProps
-> = ({ subscriptionTier, price, subscribePath, variant = 'outline' }) => {
+> = ({ price, checkoutPath, variant = 'outline' }) => {
   return (
-    <Link
-      className="w-full"
-      href={`${subscribePath}?tier=${subscriptionTier.id}&price=${price.id}`}
-    >
+    <Link className="w-full" href={`${checkoutPath}?price=${price.id}`}>
       <Button
         className={variant === 'outline' ? buttonClasses : ''}
         fullWidth
@@ -61,7 +46,7 @@ interface AuthenticatedSubscriptionTierSubscribeButtonProps {
   subscriptionTier: Product
   price: ProductPrice
   organization: Organization
-  subscribePath: string
+  checkoutPath: string
   variant?: ButtonProps['variant']
 }
 
@@ -72,42 +57,10 @@ const AuthenticatedSubscriptionTierSubscribeButton: React.FC<
   subscriptionTier,
   price,
   organization,
-  subscribePath,
+  checkoutPath,
   variant = 'outline',
 }) => {
   const router = useRouter()
-
-  const { data: organizationsList, isFetched: organizationsListFetched } =
-    useListAllOrganizations(true)
-
-  const organizations = useMemo(
-    () =>
-      organizationsList &&
-      organizationsList.items &&
-      organizationsList.items.filter(
-        (organization) => !organization.is_personal,
-      ),
-    [organizationsList],
-  )
-
-  const [selectedSubscriber, setSelectedSubscriber] = useState<
-    UserRead | Organization
-  >(user)
-
-  const isUserSelected = selectedSubscriber.id === user.id
-
-  const onSubscriberSelect = (id: string) => {
-    if (id === user.id) {
-      setSelectedSubscriber(user)
-    } else if (organizations) {
-      const organizationIndex = organizations.findIndex(
-        (organization) => organization.id === id,
-      )
-      if (organizationIndex > -1) {
-        setSelectedSubscriber(organizations[organizationIndex])
-      }
-    }
-  }
 
   const {
     data: userSubscriptionsList,
@@ -119,21 +72,7 @@ const AuthenticatedSubscriptionTierSubscribeButton: React.FC<
     10,
     organization.platform,
   )
-
-  const {
-    data: organizationSubscriptionsList,
-    refetch: refetchOrganizationSubscriptions,
-    isFetched: organizationSubscriptionsListFetched,
-  } = useOrganizationSubscriptions(
-    !isUserSelected ? selectedSubscriber.id : undefined,
-    organization.name,
-    10,
-    organization.platform,
-  )
-
-  const subscriptions = isUserSelected
-    ? userSubscriptionsList?.items
-    : organizationSubscriptionsList?.items
+  const subscriptions = userSubscriptionsList?.items
 
   const isSubscribed = useMemo(
     () =>
@@ -160,10 +99,7 @@ const AuthenticatedSubscriptionTierSubscribeButton: React.FC<
 
   const [showConfirmModal, setShowConfirmModal] = useState(false)
 
-  const fetched =
-    organizationsListFetched &&
-    (!isUserSelected || userSubscriptionsListFetched) &&
-    (isUserSelected || organizationSubscriptionsListFetched)
+  const fetched = userSubscriptionsListFetched
 
   const onUpgradeConfirm = useCallback(async () => {
     if (!upgradableSubscription) {
@@ -173,9 +109,7 @@ const AuthenticatedSubscriptionTierSubscribeButton: React.FC<
       upgradableSubscription &&
       upgradableSubscription.product.type === SubscriptionTierType.FREE
     ) {
-      router.push(
-        `${subscribePath}?tier=${subscriptionTier.id}&price=${price.id}`,
-      )
+      router.push(`${checkoutPath}?price=${price.id}`)
     } else {
       await api.subscriptions.upgradeSubscription({
         id: upgradableSubscription.id,
@@ -185,16 +119,14 @@ const AuthenticatedSubscriptionTierSubscribeButton: React.FC<
         },
       })
       refetchUserSubscriptions()
-      refetchOrganizationSubscriptions()
     }
   }, [
     upgradableSubscription,
     subscriptionTier,
     price,
     refetchUserSubscriptions,
-    refetchOrganizationSubscriptions,
     router,
-    subscribePath,
+    checkoutPath,
   ])
 
   const onUpgrade = useCallback(() => {
@@ -210,36 +142,6 @@ const AuthenticatedSubscriptionTierSubscribeButton: React.FC<
 
   return (
     <div className="flex w-full items-center gap-2">
-      {organizations && organizations.length > 0 && (
-        <Select onValueChange={onSubscriberSelect}>
-          <SelectTriggerBase>
-            <Avatar
-              className="h-8 w-8"
-              avatar_url={selectedSubscriber.avatar_url}
-              name={selectedSubscriber.id}
-            />
-          </SelectTriggerBase>
-          <SelectContent>
-            <SelectItem value={user.id}>
-              <div className="flex items-center gap-2">
-                <Avatar avatar_url={user.avatar_url} name={user.username} />
-                {user.username}
-              </div>
-            </SelectItem>
-            {organizations.map((organization) => (
-              <SelectItem value={organization.id} key={organization.id}>
-                <div className="flex items-center gap-2">
-                  <Avatar
-                    avatar_url={organization.avatar_url}
-                    name={organization.id}
-                  />
-                  {organization.name}
-                </div>
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      )}
       <div className="grow">
         {fetched ? (
           <>
@@ -289,15 +191,7 @@ const AuthenticatedSubscriptionTierSubscribeButton: React.FC<
               </>
             )}
             {!upgradableSubscription && !isSubscribed && (
-              <Link
-                href={`${subscribePath}?tier=${subscriptionTier.id}&price=${
-                  price.id
-                }${
-                  !isUserSelected
-                    ? `&organization_id=${selectedSubscriber.id}`
-                    : ''
-                }`}
-              >
+              <Link href={`${checkoutPath}?price=${price.id}`}>
                 <Button
                   className={variant === 'outline' ? buttonClasses : ''}
                   fullWidth
@@ -325,7 +219,7 @@ interface SubscriptionTierSubscribeButtonProps {
   subscriptionTier: Product
   recurringInterval: ProductPriceRecurringInterval
   organization: Organization
-  subscribePath: string
+  checkoutPath: string
   variant?: ButtonProps['variant']
 }
 
@@ -335,7 +229,7 @@ const SubscriptionTierSubscribeButton: React.FC<
   subscriptionTier,
   recurringInterval,
   organization,
-  subscribePath,
+  checkoutPath,
   variant,
 }) => {
   const { currentUser } = useAuth()
@@ -358,14 +252,13 @@ const SubscriptionTierSubscribeButton: React.FC<
           subscriptionTier={subscriptionTier}
           price={price}
           organization={organization}
-          subscribePath={subscribePath}
+          checkoutPath={checkoutPath}
           variant={variant}
         />
       ) : (
         <AnonymousSubscriptionTierSubscribeButton
-          subscriptionTier={subscriptionTier}
           price={price}
-          subscribePath={subscribePath}
+          checkoutPath={checkoutPath}
           variant={variant}
         />
       )}

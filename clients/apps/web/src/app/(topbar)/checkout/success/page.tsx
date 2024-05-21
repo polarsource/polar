@@ -1,7 +1,7 @@
-import SubscriptionSuccess from '@/components/Subscriptions/SubscriptionSuccess'
+import CheckoutSuccess from '@/components/Checkout/CheckoutSuccess'
 import { PublicPageOrganizationContextProvider } from '@/providers/organization'
 import { getServerSideAPI } from '@/utils/api/serverside'
-import { Organization, ResponseError, SubscribeSession } from '@polar-sh/sdk'
+import { Checkout, Organization, ResponseError } from '@polar-sh/sdk'
 import { notFound } from 'next/navigation'
 
 export default async function Page({
@@ -11,10 +11,10 @@ export default async function Page({
 }) {
   const api = getServerSideAPI()
 
-  let subscribeSession: SubscribeSession | undefined
+  let checkout: Checkout | undefined
 
   try {
-    subscribeSession = await api.subscriptions.getSubscribeSession({
+    checkout = await api.checkouts.getCheckout({
       id: searchParams.session_id,
     })
   } catch (e) {
@@ -25,18 +25,10 @@ export default async function Page({
     }
   }
 
-  if (!subscribeSession) {
-    notFound()
-  }
-
-  if (!subscribeSession.subscription_tier.organization_id) {
-    notFound()
-  }
-
   let organization: Organization | undefined
   try {
     organization = await api.organizations.get({
-      id: subscribeSession.subscription_tier.organization_id,
+      id: checkout.product.organization_id,
     })
   } catch (e) {
     if (e instanceof ResponseError && e.response.status === 404) {
@@ -46,13 +38,9 @@ export default async function Page({
     }
   }
 
-  if (!organization) {
-    notFound()
-  }
-
   return (
     <PublicPageOrganizationContextProvider organization={organization}>
-      <SubscriptionSuccess subscribeSession={subscribeSession} />
+      <CheckoutSuccess checkout={checkout} organization={organization} />
     </PublicPageOrganizationContextProvider>
   )
 }

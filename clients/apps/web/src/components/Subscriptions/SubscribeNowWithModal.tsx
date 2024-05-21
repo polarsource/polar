@@ -20,10 +20,10 @@ import Input from 'polarkit/components/ui/atoms/input'
 import { Form, FormField, FormMessage } from 'polarkit/components/ui/form'
 import { useCallback, useState } from 'react'
 import { SubmitHandler, useForm } from 'react-hook-form'
+import CheckoutCelebration from '../Checkout/CheckoutCelebration'
 import { CloseButton, Modal, ModalHeader } from '../Modal'
 import { useModal } from '../Modal/useModal'
 import Spinner from '../Shared/Spinner'
-import SubscriptionTierCelebration from './SubscriptionTierCelebration'
 
 const SubscribeNowWithModal = ({
   organization,
@@ -179,9 +179,7 @@ const LoggedInSubscribeModalContent = ({
 
         {isSubscribed ? (
           <div className="flex flex-col items-center gap-y-4">
-            {subscription ? (
-              <SubscriptionTierCelebration type={subscription?.product.type} />
-            ) : null}
+            {subscription ? <CheckoutCelebration /> : null}
 
             <p className="text-muted-foreground text-center">Thank you!</p>
             <p>
@@ -266,7 +264,7 @@ const AnonymousSubscribeModalContent = ({
         <div className="flex w-full flex-col items-center justify-center gap-y-6">
           <CloseButton hide={hide} className="absolute right-5 top-3" />
 
-          <SubscriptionTierCelebration type={freeSubscriptionTier.type} />
+          <CheckoutCelebration />
           <p className="text-muted-foreground text-center">Thank you!</p>
           <h2 className="text-center text-lg">
             You&apos;re now subscribed to {organization.name}

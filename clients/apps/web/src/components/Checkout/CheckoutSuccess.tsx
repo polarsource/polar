@@ -2,7 +2,7 @@
 
 import { useAuth } from '@/hooks'
 import { useSendMagicLink } from '@/hooks/magicLink'
-import { SubscribeSession } from '@polar-sh/sdk'
+import { Checkout, Organization } from '@polar-sh/sdk'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import Button from 'polarkit/components/ui/atoms/button'
@@ -15,17 +15,15 @@ import {
 } from 'polarkit/components/ui/atoms/card'
 import { useCallback, useState } from 'react'
 import { resolveBenefitIcon } from '../Benefit/utils'
-import SubscriptionTierCelebration from './SubscriptionTierCelebration'
+import CheckoutCelebration from './CheckoutCelebration'
 
-export const SubscriptionSuccess = (props: {
-  subscribeSession: SubscribeSession
+export const CheckoutSuccess = (props: {
+  checkout: Checkout
+  organization: Organization
 }) => {
   const {
-    subscribeSession: {
-      customer_email: email,
-      organization_name: organizationName,
-      subscription_tier: subscriptionTier,
-    },
+    checkout: { customer_email: email, product },
+    organization,
   } = props
   const router = useRouter()
   const { currentUser } = useAuth()
@@ -41,22 +39,22 @@ export const SubscriptionSuccess = (props: {
 
     setEmailSigninLoading(true)
     try {
-      sendMagicLink(email, `/${organizationName}`)
+      sendMagicLink(email, `/${organization.name}`)
     } catch (err) {
       // TODO: error handling
     } finally {
       setEmailSigninLoading(false)
     }
-  }, [email, router, organizationName, sendMagicLink])
+  }, [email, router, organization, sendMagicLink])
 
   return (
     <>
       <div className="mx-auto flex flex-col gap-16 p-4 md:mt-8 md:w-[768px] md:p-0">
         <div className="flex flex-col items-center justify-center gap-4 text-center">
-          <SubscriptionTierCelebration type={subscriptionTier.type} />
+          <CheckoutCelebration />
           <p className="text-muted-foreground">Thank you!</p>
           <h1 className="text-3xl">
-            You&apos;re now a {subscriptionTier.name} subscriber
+            Your purchase of {product.name} is complete
           </h1>
         </div>
 
@@ -64,15 +62,14 @@ export const SubscriptionSuccess = (props: {
           <Card className="w-full md:w-1/2">
             <CardHeader>
               <CardTitle className="text-xl font-medium">
-                Thank you for supporting {organizationName}!
+                Thank you for supporting {organization.name}!
               </CardTitle>
               <p className="text-muted-foreground text-sm">
-                You&apos;re now eligible for the benefits in the{' '}
-                {subscriptionTier.name} tier.
+                You&apos;re now eligible for the benefits of {product.name}.
               </p>
             </CardHeader>
             <CardContent className="flex flex-col gap-y-1">
-              {subscriptionTier.benefits.map((benefit) => (
+              {product.benefits.map((benefit) => (
                 <div
                   key={benefit.id}
                   className="flex flex-row items-start text-blue-500 dark:text-blue-400"
@@ -88,15 +85,15 @@ export const SubscriptionSuccess = (props: {
             </CardContent>
             <CardFooter className="flex justify-center">
               {currentUser && (
-                <Link className="grow" href={`/${organizationName}`}>
-                  <Button className="w-full">Go to {organizationName}</Button>
+                <Link className="grow" href={`/${organization.name}`}>
+                  <Button className="w-full">Go to {organization.name}</Button>
                 </Link>
               )}
               {!currentUser && (
                 <div className="flex flex-col gap-4">
                   <p className="text-muted-foreground text-sm">
                     You now have an account with Polar! Sign in now to manage
-                    your subscriptions and benefits.
+                    your purchases and benefits.
                   </p>
                   <Button
                     className="w-full"
@@ -116,4 +113,4 @@ export const SubscriptionSuccess = (props: {
   )
 }
 
-export default SubscriptionSuccess
+export default CheckoutSuccess

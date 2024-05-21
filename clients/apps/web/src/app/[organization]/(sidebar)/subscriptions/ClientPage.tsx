@@ -75,7 +75,7 @@ const ClientPage: React.FC<OrganizationSubscriptionsPublicPageProps> = ({
                     organization={organization}
                     recurringInterval={recurringInterval}
                     subscriptionTier={tier}
-                    subscribePath="/api/subscribe"
+                    checkoutPath="/api/checkout"
                   />
                 ))}
             </SubscriptionTierCard>

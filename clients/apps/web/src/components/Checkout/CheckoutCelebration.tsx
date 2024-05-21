@@ -1,23 +1,7 @@
-import { SubscriptionTierType } from '@polar-sh/sdk'
-import { useMemo } from 'react'
+interface CheckoutCelebrationProps {}
 
-interface SubscriptionTierCelebrationProps {
-  type: SubscriptionTierType
-}
-
-const SubscriptionTierCelebration: React.FC<
-  SubscriptionTierCelebrationProps
-> = ({ type }) => {
-  const [gradientColorStart, gradientColorEnd] = useMemo(() => {
-    switch (type) {
-      case SubscriptionTierType.FREE:
-        return ['#3381FF', '#0054DB']
-      case SubscriptionTierType.INDIVIDUAL:
-        return ['#65ebc0', '#29dea5']
-      case SubscriptionTierType.BUSINESS:
-        return ['#d2a1ff', '#9d4cff']
-    }
-  }, [type])
+const CheckoutCelebration: React.FC<CheckoutCelebrationProps> = () => {
+  const [gradientColorStart, gradientColorEnd] = ['#d2a1ff', '#9d4cff']
 
   return (
     <svg
@@ -125,4 +109,4 @@ const SubscriptionTierCelebration: React.FC<
   )
 }
 
-export default SubscriptionTierCelebration
+export default CheckoutCelebration

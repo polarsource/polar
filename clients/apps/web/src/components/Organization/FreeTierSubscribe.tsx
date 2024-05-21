@@ -17,9 +17,9 @@ import Input from 'polarkit/components/ui/atoms/input'
 import { Form, FormField, FormMessage } from 'polarkit/components/ui/form'
 import { useCallback, useState } from 'react'
 import { SubmitHandler, useForm } from 'react-hook-form'
+import CheckoutCelebration from '../Checkout/CheckoutCelebration'
 import { Modal } from '../Modal'
 import SubscriptionGroupIcon from '../Subscriptions/SubscriptionGroupIcon'
-import SubscriptionTierCelebration from '../Subscriptions/SubscriptionTierCelebration'
 
 interface AuthenticatedFreeTierSubscribeProps {
   organization: Organization
@@ -211,7 +211,7 @@ export const AnonymousFreeTierSubscribe = ({
           <div className="flex min-h-[240px] w-full flex-col items-center justify-center gap-y-6 px-16 py-10">
             {success && (
               <>
-                <SubscriptionTierCelebration type={product.type} />
+                <CheckoutCelebration />
                 <p className="text-muted-foreground text-center">Thank you!</p>
                 <h2 className="text-center text-lg">
                   You&apos;re now subscribed to {organization.name}

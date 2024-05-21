@@ -15,8 +15,7 @@ import { Command } from './commands'
 import { SCOPES, Scope, ScopeKey, ScopeType } from './scopes'
 import { useScopes } from './useScopes'
 
-console.log(lunrSearchMetadata)
-
+// @ts-ignore
 const searchMetadataLookup = new Map([
   ...lunrSearchMetadata.openapi.map((m) => [m.id, m]),
   ...lunrSearchMetadata.docs.map((m) => [m.id, m]),

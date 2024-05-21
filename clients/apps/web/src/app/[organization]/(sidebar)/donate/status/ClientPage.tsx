@@ -1,10 +1,10 @@
 'use client'
 
 import revalidate from '@/app/actions'
-import SubscriptionTierCelebration from '@/components/Subscriptions/SubscriptionTierCelebration'
+import CheckoutCelebration from '@/components/Checkout/CheckoutCelebration'
 import { useAuth } from '@/hooks/auth'
 import { useSendMagicLink } from '@/hooks/magicLink'
-import { Organization, SubscriptionTierType } from '@polar-sh/sdk'
+import { Organization } from '@polar-sh/sdk'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import Button from 'polarkit/components/ui/atoms/button'
@@ -54,7 +54,7 @@ const ClientPage = ({
     <>
       <div className="mx-auto flex flex-col gap-16 p-4 md:mt-8 md:w-[768px] md:p-0">
         <div className="flex flex-col items-center justify-center gap-4 text-center">
-          <SubscriptionTierCelebration type={SubscriptionTierType.INDIVIDUAL} />
+          <CheckoutCelebration />
           <p className="text-muted-foreground">Thank you!</p>
         </div>
 

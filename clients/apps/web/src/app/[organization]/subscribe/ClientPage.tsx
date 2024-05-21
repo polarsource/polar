@@ -109,7 +109,7 @@ export default function ClientPage({
               organization={organization}
               subscriptionTier={selectedTier}
               recurringInterval={recurringInterval}
-              subscribePath="/api/subscribe"
+              checkoutPath="/api/checkout"
               variant="default"
             />
           ))}

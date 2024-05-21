@@ -9,22 +9,16 @@ export async function GET(request: NextRequest) {
   const api = getServerSideAPI()
 
   const searchParams = request.nextUrl.searchParams
-  const subscriptionTierId = searchParams.get('tier') as string
   const priceId = searchParams.get('price') as string
-  const organizationId = searchParams.get('organization_id') as
-    | string
-    | undefined
 
   // Build success URL with custom domain support
   const host = requestHost(request)
-  const successURL = `${host.protocol}://${host.host}/subscribe/success?session_id={CHECKOUT_SESSION_ID}`
+  const successURL = `${host.protocol}://${host.host}/checkout/success?session_id={CHECKOUT_SESSION_ID}`
 
   try {
-    const { url } = await api.subscriptions.createSubscribeSession({
-      subscribeSessionCreate: {
-        tier_id: subscriptionTierId,
-        price_id: priceId,
-        organization_subscriber_id: organizationId,
+    const { url } = await api.checkouts.createCheckout({
+      checkoutCreate: {
+        product_price_id: priceId,
         success_url: successURL,
       },
     })

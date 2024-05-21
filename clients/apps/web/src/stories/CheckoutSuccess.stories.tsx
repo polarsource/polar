@@ -1,11 +1,11 @@
 import { PolarQueryClientProvider } from '@/app/providers'
-import SubscriptionSuccess from '@/components/Subscriptions/SubscriptionSuccess'
+import CheckoutSuccess from '@/components/Checkout/CheckoutSuccess'
 import { UserContextProvider } from '@/providers/auth'
+import { org } from '@/utils/testdata'
 import type { Meta, StoryObj } from '@storybook/react'
-
-const meta: Meta<typeof SubscriptionSuccess> = {
-  title: 'Organisms/SubscriptionSucess',
-  component: SubscriptionSuccess,
+const meta: Meta<typeof CheckoutSuccess> = {
+  title: 'Organisms/CheckoutSuccess',
+  component: CheckoutSuccess,
   tags: ['autodocs'],
   parameters: {
     nextjs: {
@@ -16,7 +16,7 @@ const meta: Meta<typeof SubscriptionSuccess> = {
     return (
       <UserContextProvider user={{}}>
         <PolarQueryClientProvider>
-          <SubscriptionSuccess {...args} />
+          <CheckoutSuccess {...args} />
         </PolarQueryClientProvider>
       </UserContextProvider>
     )
@@ -25,14 +25,14 @@ const meta: Meta<typeof SubscriptionSuccess> = {
 
 export default meta
 
-type Story = StoryObj<typeof SubscriptionSuccess>
+type Story = StoryObj<typeof CheckoutSuccess>
 
 export const Default: Story = {
   args: {
-    subscribeSession: {
+    organization: org,
+    checkout: {
       id: 'sub_1J5X2t2eZvKYlo2C2QqQ2Q2Q',
-      organization_name: 'Polar',
-      price: {
+      product_price: {
         id: '123',
         created_at: '2021-10-01T00:00:00Z',
         is_archived: false,
@@ -41,7 +41,7 @@ export const Default: Story = {
         type: 'recurring',
         recurring_interval: 'month',
       },
-      subscription_tier: {
+      product: {
         id: 'sub_tier_1J5X2t2eZvKYlo2C2QqQ2Q2Q',
         name: 'Free',
         type: 'free',

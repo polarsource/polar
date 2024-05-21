@@ -48,7 +48,7 @@ export const DraggableSubscriptionTierCard = ({
               organization={organization}
               subscriptionTier={subscriptionTier}
               recurringInterval={recurringInterval}
-              subscribePath="/api/subscribe"
+              checkoutPath="/api/checkout"
             />
           )}
         </>

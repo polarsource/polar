@@ -1,5 +1,6 @@
 import { Organization } from '@polar-sh/sdk'
 import lunr from 'lunr'
+import { useRouter } from 'next/navigation'
 import {
   PropsWithChildren,
   createContext,
@@ -55,6 +56,7 @@ export const CommandContextProvider = ({
   organization,
   hideCommandPalette,
 }: PropsWithChildren<CommandContextProviderProps>) => {
+  const router = useRouter()
   const [scopeKeys, setScopeKeys] = useState<ScopeKey[]>(['global'])
   const [selectedCommand, setSelectedCommand] = useState<Command>()
   const [input, setInput] = useState('')
@@ -87,8 +89,13 @@ export const CommandContextProvider = ({
               q.term(input, { wildcard: lunr.Query.wildcard.TRAILING }),
             )
             .map((result) => ({
-              name: result.ref,
+              name: result.ref.split('#').pop()?.replaceAll('-', ' ') ?? '',
               description: 'Go to page',
+              action: () => {
+                router.push(result.ref)
+
+                hideCommandPalette()
+              },
             }))
         : []
 
@@ -100,7 +107,7 @@ export const CommandContextProvider = ({
       ) ?? []
 
     return [...searchCommands, ...scopeCommands]
-  }, [scope, input, searchIndex])
+  }, [scope, input, searchIndex, router, hideCommandPalette])
 
   useEffect(() => {
     setSelectedCommand(commands[0])

@@ -10,9 +10,17 @@ import {
   useState,
 } from 'react'
 import lunrSearchIndex from '../index/searchIndex.json'
+import lunrSearchMetadata from '../index/searchMetadata.json'
 import { Command } from './commands'
 import { SCOPES, Scope, ScopeKey, ScopeType } from './scopes'
 import { useScopes } from './useScopes'
+
+console.log(lunrSearchMetadata)
+
+const searchMetadataLookup = new Map([
+  ...lunrSearchMetadata.openapi.map((m) => [m.id, m]),
+  ...lunrSearchMetadata.docs.map((m) => [m.id, m]),
+])
 
 export interface CommandContextValue {
   scopes: ReturnType<typeof SCOPES>
@@ -82,22 +90,22 @@ export const CommandContextProvider = ({
 
   // Filter out commands based on input
   const commands = useMemo(() => {
-    const searchCommands =
+    const searchResults =
       scope?.type === ScopeType.Global && input.length > 0
-        ? searchIndex
-            .query((q) =>
-              q.term(input, { wildcard: lunr.Query.wildcard.TRAILING }),
-            )
-            .map((result) => ({
-              name: result.ref.split('#').pop()?.replaceAll('-', ' ') ?? '',
-              description: 'Go to page',
-              action: () => {
-                router.push(result.ref)
-
-                hideCommandPalette()
-              },
-            }))
+        ? searchIndex.query((q) =>
+            q.term(input, { wildcard: lunr.Query.wildcard.TRAILING }),
+          )
         : []
+
+    const searchCommands = searchResults.map((result) => ({
+      name: searchMetadataLookup.get(result.ref)?.title ?? '',
+      description: 'Go to page',
+      action: () => {
+        router.push(result.ref)
+
+        hideCommandPalette()
+      },
+    }))
 
     const scopeCommands =
       scope?.commands.filter(

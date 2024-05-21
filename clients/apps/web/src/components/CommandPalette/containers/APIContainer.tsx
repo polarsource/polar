@@ -19,10 +19,10 @@ export const APIContainer = ({}: APIContainerProps) => {
   return (
     <div className="flex h-[360px] flex-grow flex-row">
       <div className="flex h-full w-72 flex-shrink-0 flex-col gap-y-1 overflow-y-scroll p-4">
-        {commands.map((command) => {
+        {commands.map((command, index) => {
           return (
             <CommandItem
-              key={command.name}
+              key={`${command.name}-${index}`}
               command={command.name}
               description={command.description}
               onClick={() => {

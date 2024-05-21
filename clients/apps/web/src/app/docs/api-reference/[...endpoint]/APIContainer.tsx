@@ -1,7 +1,8 @@
 'use client'
 
 import { CONFIG } from '@/utils/config'
-import { ContentPasteOutlined } from '@mui/icons-material'
+import { CheckOutlined, FileCopyOutlined } from '@mui/icons-material'
+import { AnimatePresence, motion } from 'framer-motion'
 import { OpenAPIV3_1 } from 'openapi-types'
 import Button from 'polarkit/components/ui/atoms/button'
 import {
@@ -10,7 +11,7 @@ import {
   TabsList,
   TabsTrigger,
 } from 'polarkit/components/ui/atoms/tabs'
-import { useCallback, useMemo } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { resolveReference } from '../../APINavigation'
 
 export const requestBodyParameters = (
@@ -39,6 +40,8 @@ export const APIContainer = ({
   path: string
   method: string
 }) => {
+  const [didCopy, setDidCopy] = useState(false)
+
   const triggerClassName = 'py-1'
 
   const buildCurlCommand = useCallback(
@@ -81,7 +84,12 @@ ${bodyParametersString}`
 
   const handleCopyToClipboard = useCallback(() => {
     copyCodeToClipboard(curlCommand)
-  }, [copyCodeToClipboard, curlCommand])
+    setDidCopy(true)
+
+    setTimeout(() => {
+      setDidCopy(false)
+    }, 2000)
+  }, [copyCodeToClipboard, curlCommand, setDidCopy])
 
   return (
     <div className="dark:bg-polar-900 flex h-full w-full flex-col rounded-2xl bg-white shadow-sm">
@@ -98,7 +106,27 @@ ${bodyParametersString}`
             size="icon"
             onClick={handleCopyToClipboard}
           >
-            <ContentPasteOutlined className="h-4 w-4" />
+            <AnimatePresence mode="popLayout">
+              {didCopy ? (
+                <motion.div
+                  key={0}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                >
+                  <CheckOutlined className="h-4 w-4" />
+                </motion.div>
+              ) : (
+                <motion.div
+                  key={1}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                >
+                  <FileCopyOutlined className="h-4 w-4" />
+                </motion.div>
+              )}
+            </AnimatePresence>
           </Button>
         </TabsList>
         <TabsContent value="curl" className="p-2 py-0">

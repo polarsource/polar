@@ -13,6 +13,10 @@ const require = createRequire(import.meta.url);
 
 const openapiSchema = require('@polar-sh/sdk/openapi')
 
+const {absolutePathToPage} = require('next/dist/shared/lib/page-path/absolute-path-to-page')
+const { PAGE_TYPES } = require('next/dist/lib/page-types');
+const { normalizeAppPath } = require('next/dist/shared/lib/router/utils/app-paths');
+
 const lunr = require('lunr')
 
 const normalizeSchema = (schema) => {
@@ -64,8 +68,11 @@ for (const filePath of walkSync(docsPath, mdxPredicate)) {
         .use(() => (tree) => {
             visit( tree, 'heading', (node) => {
                 visit(node, 'text', textNode => {
+                    const strippedFilePath = filePath.replace('page.mdx', '')
+                    const absolutePath = absolutePathToPage(strippedFilePath, {dir: 'src/app', keepIndex: false, pagesType: PAGE_TYPES.APP, extensions: ['mdx', 'md']})
+                    const path = normalizeAppPath(absolutePath)
                     mdxDocuments.push({
-                        id: `${filePath.replace('/page.mdx', '')}#${slugger.slug(textNode.value)}`,
+                        id: `${path}#${slugger.slug(textNode.value)}`,
                         title: textNode.value,
                         body: textNode.value
                     })

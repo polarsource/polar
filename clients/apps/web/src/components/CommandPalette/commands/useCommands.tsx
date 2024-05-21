@@ -34,14 +34,12 @@ const defaultCommandContextValue: CommandContextValue = {
   scopeKey: 'global',
   scope: { name: 'global', commands: [], type: ScopeType.Global },
   scopeKeys: [],
-  setScopeKeys: (
-    scopeKeys: ((scopeKeys: ScopeKey[]) => ScopeKey[]) | ScopeKey[],
-  ) => [],
+  setScopeKeys: () => [],
   commands: [],
   selectedCommand: { name: '', description: '' },
-  setSelectedCommand: (command: Command) => {},
+  setSelectedCommand: () => {},
   input: '',
-  setInput: (input: string) => {},
+  setInput: () => {},
   hideCommandPalette: () => {},
 }
 

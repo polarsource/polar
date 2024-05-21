@@ -97,6 +97,7 @@ export const CommandContextProvider = ({
         : []
 
     const searchCommands = searchResults.map((result) => ({
+      // @ts-ignore
       name: searchMetadataLookup.get(result.ref)?.title ?? '',
       description: 'Go to page',
       action: () => {

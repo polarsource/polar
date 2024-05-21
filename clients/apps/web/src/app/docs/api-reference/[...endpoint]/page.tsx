@@ -20,7 +20,16 @@ export default function Page({
 
   const apiEndpoint = openapiSchema.paths[apiEndpointPath]
 
-  const endpointMethod = apiEndpoint[method] as OpenAPIV3_1.OperationObject
+  // Try to fallback to endpoint with trailing slash if endpoint is a root resource
+  let endpointMethod: OpenAPIV3_1.OperationObject
+  try {
+    endpointMethod = apiEndpoint[method] as OpenAPIV3_1.OperationObject
+  } catch (e) {
+    endpointMethod =
+      openapiSchema.paths[
+        `${apiEndpointPath}/` as keyof typeof openapiSchema.paths
+      ][method]
+  }
 
   const requestBodyParameters = useMemo(() => {
     if (

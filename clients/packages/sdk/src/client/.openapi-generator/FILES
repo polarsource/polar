@@ -4,6 +4,7 @@ apis/ArticlesApi.ts
 apis/AuthApi.ts
 apis/BackofficeApi.ts
 apis/BenefitsApi.ts
+apis/CheckoutsApi.ts
 apis/DashboardApi.ts
 apis/DonationsApi.ts
 apis/FundingApi.ts

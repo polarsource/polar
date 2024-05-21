@@ -21,8 +21,6 @@ import type {
   ListResourceSubscriptionSubscriber,
   ListResourceSubscriptionSummary,
   Platforms,
-  SubscribeSession,
-  SubscribeSessionCreate,
   Subscription,
   SubscriptionCreateEmail,
   SubscriptionTierType,
@@ -43,14 +41,6 @@ export interface SubscriptionsApiCreateEmailSubscriptionRequest {
 
 export interface SubscriptionsApiCreateFreeSubscriptionRequest {
     freeSubscriptionCreate: FreeSubscriptionCreate;
-}
-
-export interface SubscriptionsApiCreateSubscribeSessionRequest {
-    subscribeSessionCreate: SubscribeSessionCreate;
-}
-
-export interface SubscriptionsApiGetSubscribeSessionRequest {
-    id: string;
 }
 
 export interface SubscriptionsApiGetSubscriptionsStatisticsRequest {
@@ -249,91 +239,6 @@ export class SubscriptionsApi extends runtime.BaseAPI {
      */
     async createFreeSubscription(requestParameters: SubscriptionsApiCreateFreeSubscriptionRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Subscription> {
         const response = await this.createFreeSubscriptionRaw(requestParameters, initOverrides);
-        return await response.value();
-    }
-
-    /**
-     * Create Subscribe Session
-     */
-    async createSubscribeSessionRaw(requestParameters: SubscriptionsApiCreateSubscribeSessionRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<SubscribeSession>> {
-        if (requestParameters['subscribeSessionCreate'] == null) {
-            throw new runtime.RequiredError(
-                'subscribeSessionCreate',
-                'Required parameter "subscribeSessionCreate" was null or undefined when calling createSubscribeSession().'
-            );
-        }
-
-        const queryParameters: any = {};
-
-        const headerParameters: runtime.HTTPHeaders = {};
-
-        headerParameters['Content-Type'] = 'application/json';
-
-        if (this.configuration && this.configuration.accessToken) {
-            const token = this.configuration.accessToken;
-            const tokenString = await token("HTTPBearer", []);
-
-            if (tokenString) {
-                headerParameters["Authorization"] = `Bearer ${tokenString}`;
-            }
-        }
-        const response = await this.request({
-            path: `/api/v1/subscriptions/subscribe-sessions/`,
-            method: 'POST',
-            headers: headerParameters,
-            query: queryParameters,
-            body: requestParameters['subscribeSessionCreate'],
-        }, initOverrides);
-
-        return new runtime.JSONApiResponse(response);
-    }
-
-    /**
-     * Create Subscribe Session
-     */
-    async createSubscribeSession(requestParameters: SubscriptionsApiCreateSubscribeSessionRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<SubscribeSession> {
-        const response = await this.createSubscribeSessionRaw(requestParameters, initOverrides);
-        return await response.value();
-    }
-
-    /**
-     * Get Subscribe Session
-     */
-    async getSubscribeSessionRaw(requestParameters: SubscriptionsApiGetSubscribeSessionRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<SubscribeSession>> {
-        if (requestParameters['id'] == null) {
-            throw new runtime.RequiredError(
-                'id',
-                'Required parameter "id" was null or undefined when calling getSubscribeSession().'
-            );
-        }
-
-        const queryParameters: any = {};
-
-        const headerParameters: runtime.HTTPHeaders = {};
-
-        if (this.configuration && this.configuration.accessToken) {
-            const token = this.configuration.accessToken;
-            const tokenString = await token("HTTPBearer", []);
-
-            if (tokenString) {
-                headerParameters["Authorization"] = `Bearer ${tokenString}`;
-            }
-        }
-        const response = await this.request({
-            path: `/api/v1/subscriptions/subscribe-sessions/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
-            method: 'GET',
-            headers: headerParameters,
-            query: queryParameters,
-        }, initOverrides);
-
-        return new runtime.JSONApiResponse(response);
-    }
-
-    /**
-     * Get Subscribe Session
-     */
-    async getSubscribeSession(requestParameters: SubscriptionsApiGetSubscribeSessionRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<SubscribeSession> {
-        const response = await this.getSubscribeSessionRaw(requestParameters, initOverrides);
         return await response.value();
     }
 

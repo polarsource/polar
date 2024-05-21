@@ -3530,6 +3530,74 @@ export interface Byline {
     avatar_url?: string;
 }
 /**
+ * A checkout session.
+ * @export
+ * @interface Checkout
+ */
+export interface Checkout {
+    /**
+     * The ID of the checkout.
+     * @type {string}
+     * @memberof Checkout
+     */
+    id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof Checkout
+     */
+    url?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof Checkout
+     */
+    customer_email?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof Checkout
+     */
+    customer_name?: string;
+    /**
+     * 
+     * @type {Product}
+     * @memberof Checkout
+     */
+    product: Product;
+    /**
+     * 
+     * @type {ProductPrice}
+     * @memberof Checkout
+     */
+    product_price: ProductPrice;
+}
+/**
+ * 
+ * @export
+ * @interface CheckoutCreate
+ */
+export interface CheckoutCreate {
+    /**
+     * ID of the product price to subscribe to.
+     * @type {string}
+     * @memberof CheckoutCreate
+     */
+    product_price_id: string;
+    /**
+     * URL where the customer will be redirected after a successful subscription. You can add the `session_id={CHECKOUT_SESSION_ID}` query parameter to retrieve the checkout session id.
+     * @type {string}
+     * @memberof CheckoutCreate
+     */
+    success_url: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof CheckoutCreate
+     */
+    customer_email?: string;
+}
+/**
  * 
  * @export
  * @interface ConfirmIssue
@@ -9645,98 +9713,6 @@ export const Status = {
 } as const;
 export type Status = typeof Status[keyof typeof Status];
 
-/**
- * 
- * @export
- * @interface SubscribeSession
- */
-export interface SubscribeSession {
-    /**
-     * ID of the subscribe session.
-     * @type {string}
-     * @memberof SubscribeSession
-     */
-    id: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscribeSession
-     */
-    url?: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscribeSession
-     */
-    customer_email?: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscribeSession
-     */
-    customer_name?: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscribeSession
-     */
-    organization_subscriber_id?: string;
-    /**
-     * 
-     * @type {Product}
-     * @memberof SubscribeSession
-     */
-    subscription_tier: Product;
-    /**
-     * 
-     * @type {ProductPrice}
-     * @memberof SubscribeSession
-     */
-    price: ProductPrice;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscribeSession
-     */
-    organization_name: string;
-}
-/**
- * 
- * @export
- * @interface SubscribeSessionCreate
- */
-export interface SubscribeSessionCreate {
-    /**
-     * ID of the Subscription Tier to subscribe to.
-     * @type {string}
-     * @memberof SubscribeSessionCreate
-     */
-    tier_id: string;
-    /**
-     * ID of the Subscription Tier Price to subscribe to.
-     * @type {string}
-     * @memberof SubscribeSessionCreate
-     */
-    price_id: string;
-    /**
-     * URL where the backer will be redirected after a successful subscription. You can add the `session_id={CHECKOUT_SESSION_ID}` query parameter to retrieve the subscribe session id.
-     * @type {string}
-     * @memberof SubscribeSessionCreate
-     */
-    success_url: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscribeSessionCreate
-     */
-    organization_subscriber_id?: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscribeSessionCreate
-     */
-    customer_email?: string;
-}
 /**
  * 
  * @export

@@ -470,8 +470,8 @@ async def create_product(
     name: str = "Product",
     is_highlighted: bool = False,
     is_archived: bool = False,
-    prices: list[tuple[int, ProductPriceRecurringInterval]] = [
-        (1000, ProductPriceRecurringInterval.month)
+    prices: list[tuple[int, ProductPriceType, ProductPriceRecurringInterval | None]] = [
+        (1000, ProductPriceType.recurring, ProductPriceRecurringInterval.month)
     ],
 ) -> Product:
     product = Product(
@@ -487,12 +487,13 @@ async def create_product(
         product_benefits=[],
     )
 
-    for price, interval in prices:
+    for price, price_type, recurring_interval in prices:
         product_price = await create_product_price(
             save_fixture,
             product=product,
             amount=price,
-            recurring_interval=interval,
+            type=price_type,
+            recurring_interval=recurring_interval,
         )
         product.prices.append(product_price)
         product.all_prices.append(product_price)
@@ -506,7 +507,8 @@ async def create_product_price(
     *,
     product: Product,
     type: ProductPriceType = ProductPriceType.recurring,
-    recurring_interval: ProductPriceRecurringInterval = ProductPriceRecurringInterval.month,
+    recurring_interval: ProductPriceRecurringInterval
+    | None = ProductPriceRecurringInterval.month,
     amount: int = 1000,
 ) -> ProductPrice:
     price = ProductPrice(

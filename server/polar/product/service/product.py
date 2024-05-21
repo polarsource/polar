@@ -61,6 +61,7 @@ class ProductService(ResourceService[Product, ProductCreate, ProductUpdate]):
         *,
         organization_id: uuid.UUID | None = None,
         include_archived: bool = False,
+        is_recurring: bool | None = None,
         type: SubscriptionTierType | None = None,
         pagination: PaginationParams,
     ) -> tuple[Sequence[Product], int]:
@@ -79,14 +80,17 @@ class ProductService(ResourceService[Product, ProductCreate, ProductUpdate]):
             isouter=True,
         )
 
-        if type is not None:
-            statement = statement.where(Product.type == type)
-
         if organization_id is not None:
             statement = statement.where(Product.organization_id == organization_id)
 
         if not include_archived:
             statement = statement.where(Product.is_archived.is_(False))
+
+        if is_recurring is not None:
+            statement = statement.where(Product.is_recurring.is_(is_recurring))
+
+        if type is not None:
+            statement = statement.where(Product.type == type)
 
         statement = statement.order_by(
             case(

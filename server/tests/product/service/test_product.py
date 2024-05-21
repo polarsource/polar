@@ -135,6 +135,53 @@ class TestList:
         assert len(results) == 3
 
     @pytest.mark.auth
+    async def test_filter_is_recurring(
+        self,
+        auth_subject: AuthSubject[User],
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        recurring_product = await create_product(
+            save_fixture,
+            type=SubscriptionTierType.individual,
+            organization=organization,
+        )
+        one_time_product = await create_product(
+            save_fixture,
+            type=SubscriptionTierType.individual,
+            organization=organization,
+            prices=[
+                (1000, ProductPriceType.one_time, None),
+            ],
+        )
+
+        # then
+        session.expunge_all()
+
+        results, count = await product_service.list(
+            session,
+            auth_subject,
+            is_recurring=True,
+            pagination=PaginationParams(1, 10),
+        )
+
+        assert count == 1
+        assert len(results) == 1
+        assert results[0].id == recurring_product.id
+
+        results, count = await product_service.list(
+            session,
+            auth_subject,
+            is_recurring=False,
+            pagination=PaginationParams(1, 10),
+        )
+
+        assert count == 1
+        assert len(results) == 1
+        assert results[0].id == one_time_product.id
+
+    @pytest.mark.auth
     async def test_filter_type(
         self,
         auth_subject: AuthSubject[User],
@@ -388,8 +435,16 @@ class TestList:
                     save_fixture,
                     organization=organization,
                     prices=[
-                        (1000, ProductPriceRecurringInterval.month),
-                        (2000, ProductPriceRecurringInterval.year),
+                        (
+                            1000,
+                            ProductPriceType.recurring,
+                            ProductPriceRecurringInterval.month,
+                        ),
+                        (
+                            2000,
+                            ProductPriceType.recurring,
+                            ProductPriceRecurringInterval.year,
+                        ),
                     ],
                 )
             )
@@ -402,8 +457,16 @@ class TestList:
                     organization=organization,
                     is_archived=True,
                     prices=[
-                        (1000, ProductPriceRecurringInterval.month),
-                        (2000, ProductPriceRecurringInterval.year),
+                        (
+                            1000,
+                            ProductPriceType.recurring,
+                            ProductPriceRecurringInterval.month,
+                        ),
+                        (
+                            2000,
+                            ProductPriceType.recurring,
+                            ProductPriceRecurringInterval.year,
+                        ),
                     ],
                 )
             )

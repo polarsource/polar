@@ -2,16 +2,20 @@ from enum import StrEnum
 from typing import TYPE_CHECKING, cast
 from uuid import UUID
 
-from sqlalchemy import Boolean, ForeignKey, Index, String, Text
+from sqlalchemy import Boolean, ColumnElement, ForeignKey, Index, String, Text, select
 from sqlalchemy.ext.associationproxy import AssociationProxy, association_proxy
+from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.kit.db.models import RecordModel
 from polar.kit.extensions.sqlalchemy import PostgresUUID
 from polar.models.benefit import BenefitArticles, BenefitType
+from polar.models.product_price import ProductPriceType
+
+from .product_price import ProductPrice
 
 if TYPE_CHECKING:
-    from polar.models import Benefit, Organization, ProductBenefit, ProductPrice
+    from polar.models import Benefit, Organization, ProductBenefit
 
 
 class SubscriptionTierType(StrEnum):
@@ -105,3 +109,16 @@ class Product(RecordModel):
             if price.id == id:
                 return price
         return None
+
+    @hybrid_property
+    def is_recurring(self) -> bool:
+        return all(price.is_recurring for price in self.prices)
+
+    @is_recurring.inplace.expression
+    @classmethod
+    def _is_recurring_expression(cls) -> ColumnElement[bool]:
+        return cls.id.not_in(
+            select(ProductPrice.product_id).where(
+                ProductPrice.type != ProductPriceType.recurring
+            )
+        )

@@ -1,10 +1,11 @@
 from typing import Annotated, Literal
 
-from pydantic import UUID4, Discriminator, Field
+from pydantic import UUID4, AfterValidator, Field
 
 from polar.benefit.schemas import BenefitPublic, BenefitSubscriber
 from polar.kit.schemas import (
     EmptyStrToNoneValidator,
+    MergeJSONSchema,
     Schema,
     TimestampedSchema,
 )
@@ -74,8 +75,39 @@ class ProductPriceOneTimeCreate(Schema):
     price_currency: PriceCurrency
 
 
-ProductPriceCreate = Annotated[
-    ProductPriceRecurringCreate | ProductPriceOneTimeCreate, Discriminator("type")
+def _check_intervals(
+    value: list[ProductPriceRecurringCreate],
+) -> list[ProductPriceRecurringCreate]:
+    intervals = {price.recurring_interval for price in value}
+    if len(intervals) != len(value):
+        raise ValueError("Only one price per interval is allowed.")
+    return value
+
+
+ProductPriceRecurringCreateList = Annotated[
+    list[ProductPriceRecurringCreate],
+    Field(min_length=1, max_length=2),
+    AfterValidator(_check_intervals),
+    MergeJSONSchema(
+        {
+            "title": "Recurring prices",
+            "description": (
+                "List of recurring prices. "
+                "Only one price per interval (one monthly and one yearly) is allowed."
+            ),
+        }
+    ),
+]
+
+ProductPriceOneTimeCreateList = Annotated[
+    list[ProductPriceOneTimeCreate],
+    Field(min_length=1, max_length=1),
+    MergeJSONSchema(
+        {
+            "title": "One-time price",
+            "description": "List with a single one-time price.",
+        }
+    ),
 ]
 
 
@@ -91,8 +123,8 @@ class ProductCreate(Schema):
     name: ProductName
     description: ProductDescription = None
     is_highlighted: bool = False
-    prices: list[ProductPriceCreate] = Field(
-        ..., min_length=1, description="List of available prices for this product."
+    prices: ProductPriceRecurringCreateList | ProductPriceOneTimeCreateList = Field(
+        ..., description="List of available prices for this product."
     )
     organization_id: UUID4 | None = Field(
         None,
@@ -130,7 +162,14 @@ class ProductUpdate(Schema):
             "and subscriptions will continue normally."
         ),
     )
-    prices: list[ExistingProductPrice | ProductPriceCreate] | None = Field(
+    prices: (
+        list[
+            ExistingProductPrice
+            | ProductPriceRecurringCreate
+            | ProductPriceOneTimeCreate
+        ]
+        | None
+    ) = Field(
         default=None,
         description=(
             "List of available prices for this product. "
@@ -175,6 +214,9 @@ class ProductBase(TimestampedSchema):
     type: SubscriptionTierType
     name: str = Field(description="The name of the product.")
     description: str | None = Field(None, description="The description of the product.")
+    is_recurring: bool = Field(
+        description="Whether the product is a subscription tier."
+    )
     is_highlighted: bool
     is_archived: bool = Field(
         description="Whether the product is archived and no longer available."

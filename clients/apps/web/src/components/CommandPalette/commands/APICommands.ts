@@ -4,7 +4,6 @@ import { Command } from './commands'
 type SchemaPaths = (typeof openapiSchema)['paths']
 type SchemaPathKey = keyof SchemaPaths
 type SchemaPathMethods<T extends SchemaPathKey> = SchemaPaths[T]
-type SchemaPathMethod<T extends SchemaPathKey> = keyof SchemaPathMethods<T>
 
 type FindMatchingPath<
   A extends string,

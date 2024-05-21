@@ -1,32 +1,25 @@
 import base64
 import mimetypes
-from collections.abc import Sequence
-from datetime import datetime, timedelta
-from uuid import UUID
+from datetime import timedelta
 
 import structlog
 
 from polar.config import settings
 from polar.exceptions import PolarError, ResourceNotFound
-from polar.kit.pagination import PaginationParams, paginate
+from polar.integrations.aws.s3 import S3Service
 from polar.kit.services import ResourceService
 from polar.kit.utils import generate_uuid, utc_now
-from polar.models import Organization, User
+from polar.models import Organization
 from polar.models.file import File
-from polar.models.file_permission import FilePermission, FilePermissionStatus
-from polar.postgres import AsyncSession, sql
+from polar.postgres import AsyncSession
 
-from .client import s3_client
 from .schemas import (
     FileCreate,
     FileCreatePart,
-    FilePermissionCreate,
-    FilePermissionUpdate,
     FileUpdate,
     FileUpload,
     FileUploadCompleted,
     FileUploadPart,
-    get_disposition,
 )
 
 log = structlog.get_logger()
@@ -70,10 +63,10 @@ class FileService(ResourceService[File, FileCreate, FileUpdate]):
                 "file-sha256-base64": sha256_base64,
             }
 
-        multipart_upload = s3_client.create_multipart_upload(
+        multipart_upload = S3Service.client.create_multipart_upload(
             Bucket=settings.S3_FILES_BUCKET_NAME,
             Key=path,
-            ContentDisposition=get_disposition(create_schema.name),
+            ContentDisposition=S3Service.downloadable_disposition(create_schema.name),
             ContentType=create_schema.mime_type,
             ChecksumAlgorithm="SHA256",
             Metadata=metadata,
@@ -129,7 +122,7 @@ class FileService(ResourceService[File, FileCreate, FileUpdate]):
         expires_in = settings.S3_FILES_PRESIGN_TTL
         presigned_at = utc_now()
         for part in parts:
-            signed_post_url = s3_client.generate_presigned_url(
+            signed_post_url = S3Service.client.generate_presigned_url(
                 "upload_part",
                 Params=dict(
                     UploadId=upload_id,
@@ -154,23 +147,6 @@ class FileService(ResourceService[File, FileCreate, FileUpdate]):
             )
         return ret
 
-    async def generate_presigned_download(self, file: File) -> tuple[str, datetime]:
-        expires_in = settings.S3_FILES_PRESIGN_TTL
-        presigned_at = utc_now()
-        signed_download_url = s3_client.generate_presigned_url(
-            "get_object",
-            Params=dict(
-                Bucket=settings.S3_FILES_BUCKET_NAME,
-                Key=file.path,
-                ResponseContentDisposition=get_disposition(file.name),
-                ResponseContentType=file.mime_type,
-            ),
-            ExpiresIn=expires_in,
-        )
-
-        presign_expires_at = presigned_at + timedelta(seconds=expires_in)
-        return (signed_download_url, presign_expires_at)
-
     async def complete_upload(
         self,
         session: AsyncSession,
@@ -178,7 +154,7 @@ class FileService(ResourceService[File, FileCreate, FileUpdate]):
         file: File,
         payload: FileUploadCompleted,
     ) -> File:
-        response = s3_client.complete_multipart_upload(
+        response = S3Service.client.complete_multipart_upload(
             Bucket=settings.S3_FILES_BUCKET_NAME,
             Key=file.path,
             **payload.get_s3_arguments(),
@@ -195,83 +171,4 @@ class FileService(ResourceService[File, FileCreate, FileUpdate]):
         return file
 
 
-class FilePermissionService(
-    ResourceService[FilePermission, FilePermissionCreate, FilePermissionUpdate]
-):
-    async def create_or_update(
-        self,
-        session: AsyncSession,
-        create_schema: FilePermissionCreate,
-    ) -> FilePermission:
-        records = await self.upsert_many(
-            session,
-            create_schemas=[create_schema],
-            constraints=[
-                FilePermission.file_id,
-                FilePermission.user_id,
-                FilePermission.benefit_id,
-            ],
-            mutable_keys={
-                "status",
-            },
-            autocommit=False,
-        )
-        await session.flush()
-        instance = records[0]
-        assert instance.id is not None
-        return instance
-
-    async def get_permission(
-        self, session: AsyncSession, *, user: User, file: File
-    ) -> FilePermission | None:
-        statement = sql.select(FilePermission).where(
-            FilePermission.user_id == user.id,
-            FilePermission.file_id == file.id,
-            FilePermission.status == FilePermissionStatus.granted,
-        )
-        res = await session.execute(statement)
-        record = res.scalars().one_or_none()
-        return record
-
-    async def increment_download_count(
-        self,
-        session: AsyncSession,
-        permission: FilePermission,
-    ) -> FilePermission:
-        permission.downloaded += 1
-        permission.latest_download_at = utc_now()
-        session.add(permission)
-        await session.flush()
-        return permission
-
-    async def get_user_accessible_files(
-        self,
-        session: AsyncSession,
-        *,
-        user: User,
-        pagination: PaginationParams,
-        organization_id: UUID | None = None,
-        benefit_id: UUID | None = None,
-    ) -> tuple[Sequence[File], int]:
-        statement = (
-            sql.select(File)
-            .join(FilePermission)
-            .where(
-                FilePermission.user_id == user.id,
-                FilePermission.status == FilePermissionStatus.granted,
-                FilePermission.deleted_at.is_(None),
-                File.deleted_at.is_(None),
-            )
-        )
-
-        if organization_id:
-            statement = statement.where(File.organization_id == organization_id)
-
-        if benefit_id:
-            statement = statement.where(FilePermission.benefit_id == benefit_id)
-
-        return await paginate(session, statement, pagination=pagination)
-
-
 file = FileService(File)
-file_permission = FilePermissionService(FilePermission)

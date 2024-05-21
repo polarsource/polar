@@ -1,6 +1,6 @@
-import { BenefitFilesSubscriber, FileSubscriberRead } from '@polar-sh/sdk'
+import { BenefitFilesSubscriber, DownloadableRead } from '@polar-sh/sdk'
 
-import { useSubscriberAccessibleFiles } from '@/hooks/queries'
+import { useDownloadables } from '@/hooks/queries'
 
 const FileItem = ({ file }: { file: BenefitFilesSubscriber }) => {
   return (
@@ -16,14 +16,14 @@ const FileItem = ({ file }: { file: BenefitFilesSubscriber }) => {
   )
 }
 
-const FilesSubscriberWidget = ({
+const DownloadablesSubscriberWidget = ({
   benefit,
 }: {
-  benefit: BenefitFilesSubscriber
+  benefit: BenefitDownloadablesSubscriber
 }) => {
-  const fileQuery = useSubscriberAccessibleFiles()
+  const fileQuery = useDownloadables()
 
-  const files: FileSubscriberRead[] = fileQuery.data?.items
+  const files: DownloadableRead[] = fileQuery.data?.items
 
   if (fileQuery.isLoading) {
     // TODO: Style me
@@ -43,4 +43,4 @@ const FilesSubscriberWidget = ({
   )
 }
 
-export default FilesSubscriberWidget
+export default DownloadablesSubscriberWidget

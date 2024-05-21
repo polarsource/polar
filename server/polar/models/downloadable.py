@@ -18,13 +18,13 @@ from .file import File
 from .user import User
 
 
-class FilePermissionStatus(StrEnum):
+class DownloadableStatus(StrEnum):
     granted = "granted"
     revoked = "revoked"
 
 
-class FilePermission(RecordModel):
-    __tablename__ = "file_permissions"
+class Downloadable(RecordModel):
+    __tablename__ = "downloadables"
     __table_args__ = (UniqueConstraint("user_id", "file_id", "benefit_id"),)
 
     file_id: Mapped[UUID] = mapped_column(
@@ -35,7 +35,7 @@ class FilePermission(RecordModel):
     def file(cls) -> Mapped[File]:
         return relationship(File, lazy="raise")
 
-    status: Mapped[FilePermissionStatus] = mapped_column(String, nullable=False)
+    status: Mapped[DownloadableStatus] = mapped_column(String, nullable=False)
 
     user_id: Mapped[UUID] = mapped_column(
         PostgresUUID,

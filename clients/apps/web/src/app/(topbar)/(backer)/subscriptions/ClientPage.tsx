@@ -1,7 +1,7 @@
 'use client'
 
 import { BenefitRow } from '@/components/Benefit/BenefitRow'
-import FilesSubscriberWidget from '@/components/Benefit/Files/SubscriberWidget'
+import DownloadablesSubscriberWidget from '@/components/Benefit/Downloadables/SubscriberWidget'
 import ConfigureAdCampaigns from '@/components/Benefit/ads/ConfigureAdCampaigns'
 import { resolveBenefitIcon } from '@/components/Benefit/utils'
 import GitHubIcon from '@/components/Icons/GitHubIcon'
@@ -341,8 +341,8 @@ const BenefitContextWidget = ({
         <ConfigureAdCampaigns benefit={benefit} subscription={subscription} />
       ) : null}
 
-      {benefit.type === 'files' ? (
-        <FilesSubscriberWidget benefit={benefit} />
+      {benefit.type === 'downloadables' ? (
+        <DownloadablesSubscriberWidget benefit={benefit} />
       ) : null}
 
       <Separator />

@@ -15,50 +15,41 @@
 
 import * as runtime from '../runtime';
 import type {
-  FileCreate,
-  FileRead,
-  FileUpload,
-  FileUploadCompleted,
+  FilePresignedRead,
   HTTPValidationError,
+  ListResourceFileSubscriberRead,
 } from '../models/index';
 
-export interface FilesApiCompleteUploadRequest {
+export interface DownloadsApiGetFileRequest {
     fileId: string;
-    fileUploadCompleted: FileUploadCompleted;
 }
 
-export interface FilesApiCreateFileRequest {
-    fileCreate: FileCreate;
+export interface DownloadsApiGetUserAccessibleFilesRequest {
+    organizationId?: string;
+    benefitId?: string;
+    page?: number;
+    limit?: number;
 }
 
 /**
  * 
  */
-export class FilesApi extends runtime.BaseAPI {
+export class DownloadsApi extends runtime.BaseAPI {
 
     /**
-     * Complete Upload
+     * Get File
      */
-    async completeUploadRaw(requestParameters: FilesApiCompleteUploadRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<FileRead>> {
+    async getFileRaw(requestParameters: DownloadsApiGetFileRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<FilePresignedRead>> {
         if (requestParameters['fileId'] == null) {
             throw new runtime.RequiredError(
                 'fileId',
-                'Required parameter "fileId" was null or undefined when calling completeUpload().'
-            );
-        }
-
-        if (requestParameters['fileUploadCompleted'] == null) {
-            throw new runtime.RequiredError(
-                'fileUploadCompleted',
-                'Required parameter "fileUploadCompleted" was null or undefined when calling completeUpload().'
+                'Required parameter "fileId" was null or undefined when calling getFile().'
             );
         }
 
         const queryParameters: any = {};
 
         const headerParameters: runtime.HTTPHeaders = {};
-
-        headerParameters['Content-Type'] = 'application/json';
 
         if (this.configuration && this.configuration.accessToken) {
             const token = this.configuration.accessToken;
@@ -69,40 +60,46 @@ export class FilesApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/files/{file_id}`.replace(`{${"file_id"}}`, encodeURIComponent(String(requestParameters['fileId']))),
-            method: 'PATCH',
+            path: `/api/v1/downloads/{file_id}`.replace(`{${"file_id"}}`, encodeURIComponent(String(requestParameters['fileId']))),
+            method: 'GET',
             headers: headerParameters,
             query: queryParameters,
-            body: requestParameters['fileUploadCompleted'],
         }, initOverrides);
 
         return new runtime.JSONApiResponse(response);
     }
 
     /**
-     * Complete Upload
+     * Get File
      */
-    async completeUpload(requestParameters: FilesApiCompleteUploadRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<FileRead> {
-        const response = await this.completeUploadRaw(requestParameters, initOverrides);
+    async getFile(requestParameters: DownloadsApiGetFileRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<FilePresignedRead> {
+        const response = await this.getFileRaw(requestParameters, initOverrides);
         return await response.value();
     }
 
     /**
-     * Create File
+     * Get User Accessible Files
      */
-    async createFileRaw(requestParameters: FilesApiCreateFileRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<FileUpload>> {
-        if (requestParameters['fileCreate'] == null) {
-            throw new runtime.RequiredError(
-                'fileCreate',
-                'Required parameter "fileCreate" was null or undefined when calling createFile().'
-            );
-        }
-
+    async getUserAccessibleFilesRaw(requestParameters: DownloadsApiGetUserAccessibleFilesRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListResourceFileSubscriberRead>> {
         const queryParameters: any = {};
 
-        const headerParameters: runtime.HTTPHeaders = {};
+        if (requestParameters['organizationId'] != null) {
+            queryParameters['organization_id'] = requestParameters['organizationId'];
+        }
 
-        headerParameters['Content-Type'] = 'application/json';
+        if (requestParameters['benefitId'] != null) {
+            queryParameters['benefit_id'] = requestParameters['benefitId'];
+        }
+
+        if (requestParameters['page'] != null) {
+            queryParameters['page'] = requestParameters['page'];
+        }
+
+        if (requestParameters['limit'] != null) {
+            queryParameters['limit'] = requestParameters['limit'];
+        }
+
+        const headerParameters: runtime.HTTPHeaders = {};
 
         if (this.configuration && this.configuration.accessToken) {
             const token = this.configuration.accessToken;
@@ -113,21 +110,20 @@ export class FilesApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/files/`,
-            method: 'POST',
+            path: `/api/v1/downloads`,
+            method: 'GET',
             headers: headerParameters,
             query: queryParameters,
-            body: requestParameters['fileCreate'],
         }, initOverrides);
 
         return new runtime.JSONApiResponse(response);
     }
 
     /**
-     * Create File
+     * Get User Accessible Files
      */
-    async createFile(requestParameters: FilesApiCreateFileRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<FileUpload> {
-        const response = await this.createFileRaw(requestParameters, initOverrides);
+    async getUserAccessibleFiles(requestParameters: DownloadsApiGetUserAccessibleFilesRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ListResourceFileSubscriberRead> {
+        const response = await this.getUserAccessibleFilesRaw(requestParameters, initOverrides);
         return await response.value();
     }
 

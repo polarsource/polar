@@ -14,6 +14,7 @@ from polar.integrations.stripe.schemas import (
 )
 from polar.pledge.service import pledge as pledge_service
 from polar.sale.service import NotASaleInvoice
+from polar.sale.service import SubscriptionDoesNotExist as SaleSubscriptionDoesNotExist
 from polar.sale.service import sale as sale_service
 from polar.subscription.service.subscription import SubscriptionDoesNotExist
 from polar.subscription.service.subscription import subscription as subscription_service
@@ -278,7 +279,7 @@ async def invoice_paid(
             try:
                 await sale_service.create_sale_from_stripe(session, invoice=invoice)
             except (
-                SubscriptionDoesNotExist,
+                SaleSubscriptionDoesNotExist,
                 PaymentTransactionForChargeDoesNotExist,
             ) as e:
                 # Retry because Stripe webhooks order is not guaranteed,

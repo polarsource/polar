@@ -1,8 +1,17 @@
+import dataclasses
 from datetime import datetime
-from typing import Annotated
+from typing import Annotated, Literal
 
-from pydantic import AfterValidator, BaseModel, ConfigDict, EmailStr, Field
-from pydantic_core import PydanticCustomError
+from pydantic import (
+    AfterValidator,
+    BaseModel,
+    ConfigDict,
+    EmailStr,
+    Field,
+    GetJsonSchemaHandler,
+)
+from pydantic.json_schema import JsonSchemaValue
+from pydantic_core import PydanticCustomError, core_schema
 
 from .email import EmailNotValidError, validate_email
 
@@ -45,3 +54,21 @@ def _validate_email_dns(email: str) -> str:
 
 
 EmailStrDNS = Annotated[EmailStr, AfterValidator(_validate_email_dns)]
+
+
+@dataclasses.dataclass(slots=True)
+class MergeJSONSchema:
+    json_schema: JsonSchemaValue
+    mode: Literal["validation", "serialization"] | None = None
+
+    def __get_pydantic_json_schema__(
+        self, core_schema: core_schema.CoreSchema, handler: GetJsonSchemaHandler
+    ) -> JsonSchemaValue:
+        mode = self.mode or handler.mode
+        json_schema = handler(core_schema)
+        if mode != handler.mode:
+            return json_schema
+        return {**json_schema, **self.json_schema}
+
+    def __hash__(self) -> int:
+        return hash(type(self.mode))

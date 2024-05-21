@@ -36,6 +36,14 @@ async def list_products(
     include_archived: bool = Query(
         False, description="Whether to include archived products."
     ),
+    is_recurring: bool | None = Query(
+        None,
+        description=(
+            "Filter on recurring products. "
+            "If `true`, only subscriptions tiers are returned. "
+            "If `false`, only one-time purchase products are returned. "
+        ),
+    ),
     type: SubscriptionTierType | None = Query(None),
     session: AsyncSession = Depends(get_db_session),
 ) -> ListResource[ProductSchema]:
@@ -45,6 +53,7 @@ async def list_products(
         auth_subject,
         organization_id=organization_id,
         include_archived=include_archived,
+        is_recurring=is_recurring,
         type=type,
         pagination=pagination,
     )

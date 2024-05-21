@@ -176,6 +176,43 @@ class TestCreateProduct:
                     "result in a very ugly output on the web page."
                 )
             },
+            # No price
+            {"prices": []},
+            # One recurring and one one-time prices
+            {
+                "prices": [
+                    {
+                        "type": "recurring",
+                        "recurring_interval": "month",
+                        "price_amount": 1000,
+                    },
+                    {"type": "one_time", "price_amount": 1000},
+                ]
+            },
+            # Three recurring prices
+            {
+                "prices": [
+                    {
+                        "type": "recurring",
+                        "recurring_interval": "month",
+                        "price_amount": 1000,
+                    }
+                    for _ in range(3)
+                ]
+            },
+            # Repeat the same interval
+            {
+                "prices": [
+                    {
+                        "type": "recurring",
+                        "recurring_interval": "month",
+                        "price_amount": 1000,
+                    }
+                    for _ in range(2)
+                ]
+            },
+            # Two one-time prices
+            {"prices": [{"type": "one_time", "price_amount": 1000} for _ in range(2)]},
         ],
     )
     @pytest.mark.auth

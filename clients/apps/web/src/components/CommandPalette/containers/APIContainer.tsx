@@ -57,11 +57,7 @@ ${url} \\
 ${bodyParametersString}`
 }
 
-const buildNodeJSCommand = (
-  method: string = 'GET',
-  url: string,
-  endpoint: OpenAPIV3_1.OperationObject,
-) => {
+const buildNodeJSCommand = (endpoint: OpenAPIV3_1.OperationObject) => {
   const [namespace, endpointName] = endpoint.operationId?.split(':') ?? ['', '']
 
   const snakeToCamel = (str: string) =>
@@ -111,8 +107,8 @@ export const APIContainer = ({
   )
 
   const nodeJSCommand = useMemo(
-    () => buildNodeJSCommand(method, `${CONFIG.BASE_URL}${path}`, operation),
-    [method, path, operation],
+    () => buildNodeJSCommand(operation),
+    [operation],
   )
 
   const handleCopyToClipboard = useCallback(() => {

@@ -2,10 +2,13 @@ import { Organization } from '@polar-sh/sdk'
 import { useRouter } from 'next/navigation'
 import { useMemo } from 'react'
 import { SCOPES, ScopeContext } from './scopes'
-import { CommandContextValue } from './useCommands'
+import { CommandPaletteContextValue } from './useCommands'
 
 export const useScopes = (
-  utils: Pick<CommandContextValue, 'setScopeKeys' | 'hideCommandPalette'>,
+  utils: Pick<
+    CommandPaletteContextValue,
+    'setScopeKeys' | 'hideCommandPalette'
+  >,
   organization?: Organization,
 ) => {
   const router = useRouter()

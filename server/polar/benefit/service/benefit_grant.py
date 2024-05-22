@@ -1,5 +1,5 @@
 from collections.abc import Sequence
-from typing import Unpack
+from typing import Literal, Unpack
 from uuid import UUID
 
 import structlog
@@ -11,7 +11,14 @@ from polar.exceptions import PolarError
 from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.services import ResourceServiceReader
 from polar.logging import Logger
-from polar.models import Benefit, BenefitGrant, OAuthAccount, User
+from polar.models import (
+    Benefit,
+    BenefitGrant,
+    OAuthAccount,
+    Product,
+    ProductBenefit,
+    User,
+)
 from polar.models.benefit import BenefitProperties, BenefitType
 from polar.models.benefit_grant import BenefitGrantScope
 from polar.models.user import OAuthPlatform
@@ -26,7 +33,7 @@ from polar.postgres import AsyncSession
 from polar.user.service import user as user_service
 from polar.worker import enqueue_job
 
-from .benefit_grant_scope import resolve_scope
+from .benefit_grant_scope import resolve_scope, scope_to_args
 
 log: Logger = structlog.get_logger()
 
@@ -178,6 +185,34 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
 
         return grant
 
+    async def enqueue_benefits_grants(
+        self,
+        session: AsyncSession,
+        task: Literal["grant", "revoke"],
+        user: User,
+        product: Product,
+        **scope: Unpack[BenefitGrantScope],
+    ) -> None:
+        # Get granted benefits that are not part of this product.
+        # It happens if the subscription has been upgraded/downgraded.
+        outdated_grants = await self._get_outdated_grants(session, product, **scope)
+
+        for benefit in product.benefits:
+            enqueue_job(
+                f"benefit.{task}",
+                user_id=user.id,
+                benefit_id=benefit.id,
+                **scope_to_args(scope),
+            )
+
+        for outdated_grant in outdated_grants:
+            enqueue_job(
+                "benefit.revoke",
+                user_id=user.id,
+                benefit_id=outdated_grant.benefit_id,
+                **scope_to_args(scope),
+            )
+
     async def enqueue_benefit_grant_updates(
         self,
         session: AsyncSession,
@@ -219,7 +254,7 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
                 attempt=attempt,
             )
         except BenefitPreconditionError as e:
-            scope = await resolve_scope(session, grant.get_scope())
+            scope = await resolve_scope(session, grant.scope)
             await self.handle_precondition_error(session, e, user, benefit, **scope)
             grant.granted_at = None
         else:
@@ -341,7 +376,7 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
                     "benefit.grant",
                     user_id=user.id,
                     benefit_id=grant.benefit_id,
-                    **grant.get_scope(),
+                    **grant.scope,
                 )
 
     async def get_by_benefit_and_scope(
@@ -351,17 +386,12 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
         benefit: Benefit,
         **scope: Unpack[BenefitGrantScope],
     ) -> BenefitGrant | None:
-        if scope == {}:
-            raise EmptyScopeError()
-
         statement = select(BenefitGrant).where(
             BenefitGrant.user_id == user.id,
             BenefitGrant.benefit_id == benefit.id,
             BenefitGrant.deleted_at.is_(None),
+            BenefitGrant.scope == scope,
         )
-
-        if subscription := scope.get("subscription"):
-            statement = statement.where(BenefitGrant.subscription_id == subscription.id)
 
         result = await session.execute(statement)
         return result.scalar_one_or_none()
@@ -391,6 +421,28 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
                 BenefitGrant.user_id == user.id,
                 Benefit.type == benefit_type,
             )
+        )
+
+        result = await session.execute(statement)
+        return result.scalars().all()
+
+    async def _get_outdated_grants(
+        self,
+        session: AsyncSession,
+        product: Product,
+        **scope: Unpack[BenefitGrantScope],
+    ) -> Sequence[BenefitGrant]:
+        product_benefits_statement = (
+            select(Benefit.id)
+            .join(ProductBenefit)
+            .where(ProductBenefit.product_id == product.id)
+        )
+
+        statement = select(BenefitGrant).where(
+            BenefitGrant.scope == scope,
+            BenefitGrant.benefit_id.not_in(product_benefits_statement),
+            BenefitGrant.is_granted.is_(True),
+            BenefitGrant.deleted_at.is_(None),
         )
 
         result = await session.execute(statement)

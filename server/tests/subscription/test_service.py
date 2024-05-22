@@ -14,7 +14,6 @@ from polar.kit.pagination import PaginationParams
 from polar.models import (
     Account,
     Benefit,
-    BenefitGrant,
     Organization,
     Product,
     Subscription,
@@ -252,7 +251,9 @@ class TestCreateFreeSubscription:
         session: AsyncSession,
         subscription_tier_free: Product,
     ) -> None:
-        enqueue_job_mock = mocker.patch("polar.subscription.service.enqueue_job")
+        enqueue_benefits_grants_mock = mocker.patch.object(
+            subscription_service, "enqueue_benefits_grants"
+        )
 
         # then
         session.expunge_all()
@@ -270,9 +271,7 @@ class TestCreateFreeSubscription:
         assert subscription.product_id == subscription_tier_free.id
         assert subscription.user.email == "backer@example.com"
 
-        enqueue_job_mock.assert_any_call(
-            "subscription.subscription.enqueue_benefits_grants", subscription.id
-        )
+        enqueue_benefits_grants_mock.assert_called_once()
 
     @pytest.mark.auth
     async def test_authenticated_user(
@@ -283,7 +282,9 @@ class TestCreateFreeSubscription:
         subscription_tier_free: Product,
         user: User,
     ) -> None:
-        enqueue_job_mock = mocker.patch("polar.subscription.service.enqueue_job")
+        enqueue_benefits_grants_mock = mocker.patch.object(
+            subscription_service, "enqueue_benefits_grants"
+        )
 
         # then
         session.expunge_all()
@@ -300,9 +301,7 @@ class TestCreateFreeSubscription:
         assert subscription.product_id == subscription_tier_free.id
         assert subscription.user_id == user.id
 
-        enqueue_job_mock.assert_any_call(
-            "subscription.subscription.enqueue_benefits_grants", subscription.id
-        )
+        enqueue_benefits_grants_mock.assert_called_once()
 
 
 @pytest.mark.asyncio
@@ -338,7 +337,9 @@ class TestCreateArbitrarySubscription:
         subscription_tier_free: Product,
         user: User,
     ) -> None:
-        enqueue_job_mock = mocker.patch("polar.subscription.service.enqueue_job")
+        enqueue_benefits_grants_mock = mocker.patch.object(
+            subscription_service, "enqueue_benefits_grants"
+        )
 
         # then
         session.expunge_all()
@@ -352,9 +353,7 @@ class TestCreateArbitrarySubscription:
         assert subscription.product_id == subscription_tier_free.id
         assert subscription.user_id == user.id
 
-        enqueue_job_mock.assert_any_call(
-            "subscription.subscription.enqueue_benefits_grants", subscription.id
-        )
+        enqueue_benefits_grants_mock.assert_called_once()
 
 
 @pytest.mark.asyncio
@@ -605,7 +604,9 @@ class TestUpdateSubscriptionFromStripe:
         product: Product,
         user: User,
     ) -> None:
-        enqueue_job_mock = mocker.patch("polar.subscription.service.enqueue_job")
+        enqueue_benefits_grants_mock = mocker.patch.object(
+            subscription_service, "enqueue_benefits_grants"
+        )
 
         price = product.prices[0]
         stripe_subscription = construct_stripe_subscription(
@@ -632,10 +633,7 @@ class TestUpdateSubscriptionFromStripe:
         assert updated_subscription.status == SubscriptionStatus.active
         assert updated_subscription.started_at is not None
 
-        enqueue_job_mock.assert_any_call(
-            "subscription.subscription.enqueue_benefits_grants",
-            updated_subscription.id,
-        )
+        enqueue_benefits_grants_mock.assert_called_once()
 
 
 @pytest.mark.asyncio
@@ -699,12 +697,12 @@ class TestEnqueueBenefitsGrants:
         enqueue_job_mock.assert_has_calls(
             [
                 call(
-                    "benefit.grant",
+                    "benefit.enqueue_benefits_grants",
+                    task="grant",
                     user_id=subscription.user_id,
-                    benefit_id=benefit.id,
+                    product_id=product.id,
                     subscription_id=subscription.id,
                 )
-                for benefit in benefits
             ]
         )
 
@@ -743,100 +741,14 @@ class TestEnqueueBenefitsGrants:
         enqueue_job_mock.assert_has_calls(
             [
                 call(
-                    "benefit.revoke",
+                    "benefit.enqueue_benefits_grants",
+                    task="revoke",
                     user_id=subscription.user_id,
-                    benefit_id=benefit.id,
+                    product_id=product.id,
                     subscription_id=subscription.id,
                 )
-                for benefit in benefits
             ]
         )
-
-    async def test_outdated_grants(
-        self,
-        mocker: MockerFixture,
-        session: AsyncSession,
-        save_fixture: SaveFixture,
-        product: Product,
-        benefits: list[Benefit],
-        subscription: Subscription,
-        user: User,
-    ) -> None:
-        enqueue_job_mock = mocker.patch("polar.subscription.service.enqueue_job")
-
-        grant = BenefitGrant(
-            subscription_id=subscription.id,
-            user_id=user.id,
-            benefit_id=benefits[0].id,
-        )
-        grant.set_granted()
-        await save_fixture(grant)
-
-        product = await add_product_benefits(
-            save_fixture,
-            product=product,
-            benefits=benefits[1:],
-        )
-        subscription.status = SubscriptionStatus.active
-
-        # then
-        session.expunge_all()
-
-        await subscription_service.enqueue_benefits_grants(session, subscription)
-
-        enqueue_job_mock.assert_any_call(
-            "benefit.revoke",
-            user_id=subscription.user_id,
-            benefit_id=benefits[0].id,
-            subscription_id=subscription.id,
-        )
-
-    async def test_subscription_organization(
-        self,
-        mocker: MockerFixture,
-        session: AsyncSession,
-        save_fixture: SaveFixture,
-        product: Product,
-        benefits: list[Benefit],
-        subscription_organization: Subscription,
-        organization_second_admin: User,
-        organization_second_members: list[User],
-    ) -> None:
-        enqueue_job_mock = mocker.patch("polar.subscription.service.enqueue_job")
-
-        product = await add_product_benefits(
-            save_fixture,
-            product=product,
-            benefits=benefits,
-        )
-        subscription_organization.status = SubscriptionStatus.active
-
-        # then
-        session.expunge_all()
-
-        await subscription_service.enqueue_benefits_grants(
-            session, subscription_organization
-        )
-
-        members_count = len(organization_second_members) + 1  # Members + admin
-        benefits_count = len(benefits) + 1  # Benefits + articles
-        assert enqueue_job_mock.call_count == members_count * benefits_count
-
-        for benefit in benefits:
-            enqueue_job_mock.assert_has_calls(
-                [
-                    call(
-                        "benefit.grant",
-                        user_id=user_id,
-                        benefit_id=benefit.id,
-                        subscription_id=subscription_organization.id,
-                    )
-                    for user_id in [
-                        organization_second_admin.id,
-                        *[member.id for member in organization_second_members],
-                    ]
-                ]
-            )
 
 
 @pytest.mark.asyncio
@@ -850,7 +762,10 @@ class TestUpdateProductBenefitsGrants:
         product: Product,
         product_second: Product,
     ) -> None:
-        enqueue_job_mock = mocker.patch("polar.subscription.service.enqueue_job")
+        enqueue_benefits_grants_mock = mocker.patch.object(
+            subscription_service, "enqueue_benefits_grants"
+        )
+
         subscription_1 = await create_subscription(
             save_fixture, product=product, user=user
         )
@@ -868,16 +783,9 @@ class TestUpdateProductBenefitsGrants:
 
         await subscription_service.update_product_benefits_grants(session, product)
 
-        assert enqueue_job_mock.call_count == 2
-
-        enqueue_job_mock.assert_any_call(
-            "subscription.subscription.enqueue_benefits_grants",
-            subscription_1.id,
-        )
-        enqueue_job_mock.assert_any_call(
-            "subscription.subscription.enqueue_benefits_grants",
-            subscription_2.id,
-        )
+        assert enqueue_benefits_grants_mock.call_count == 2
+        assert enqueue_benefits_grants_mock.call_args_list[0].args[1] == subscription_1
+        assert enqueue_benefits_grants_mock.call_args_list[1].args[1] == subscription_2
 
 
 @pytest.mark.asyncio
@@ -892,7 +800,10 @@ class TestUpdateOrganizationBenefitsGrants:
         product: Product,
         product_second: Product,
     ) -> None:
-        enqueue_job_mock = mocker.patch("polar.subscription.service.enqueue_job")
+        enqueue_benefits_grants_mock = mocker.patch.object(
+            subscription_service, "enqueue_benefits_grants"
+        )
+
         subscription_1 = await create_subscription(
             save_fixture,
             product=product,
@@ -914,16 +825,9 @@ class TestUpdateOrganizationBenefitsGrants:
             session, organization_second
         )
 
-        assert enqueue_job_mock.call_count == 2
-
-        enqueue_job_mock.assert_any_call(
-            "subscription.subscription.enqueue_benefits_grants",
-            subscription_1.id,
-        )
-        enqueue_job_mock.assert_any_call(
-            "subscription.subscription.enqueue_benefits_grants",
-            subscription_2.id,
-        )
+        assert enqueue_benefits_grants_mock.call_count == 2
+        assert enqueue_benefits_grants_mock.call_args_list[0].args[1] == subscription_1
+        assert enqueue_benefits_grants_mock.call_args_list[1].args[1] == subscription_2
 
 
 @pytest.mark.asyncio

@@ -1,5 +1,6 @@
 from collections.abc import Sequence
 from datetime import UTC, datetime, timedelta
+from unittest.mock import AsyncMock
 
 import pytest
 import stripe as stripe_lib
@@ -67,6 +68,11 @@ def construct_stripe_invoice(
         },
         None,
     )
+
+
+@pytest.fixture
+def enqueue_job_mock(mocker: MockerFixture) -> AsyncMock:
+    return mocker.patch("polar.sale.service.enqueue_job")
 
 
 @pytest.mark.asyncio
@@ -616,8 +622,9 @@ class TestCreateSaleFromStripe:
         with pytest.raises(ProductPriceDoesNotExist):
             await sale_service.create_sale_from_stripe(session, invoice=invoice)
 
-    async def test_no_account(
+    async def test_subscription_no_account(
         self,
+        enqueue_job_mock: AsyncMock,
         session: AsyncSession,
         save_fixture: SaveFixture,
         subscription: Subscription,
@@ -655,8 +662,11 @@ class TestCreateSaleFromStripe:
         assert updated_payment_transaction is not None
         assert updated_payment_transaction.sale_id == sale.id
 
-    async def test_with_account(
+        enqueue_job_mock.assert_not_called()
+
+    async def test_subscription_with_account(
         self,
+        enqueue_job_mock: AsyncMock,
         mocker: MockerFixture,
         session: AsyncSession,
         save_fixture: SaveFixture,
@@ -728,3 +738,63 @@ class TestCreateSaleFromStripe:
         )
         assert updated_payment_transaction is not None
         assert updated_payment_transaction.sale_id == sale.id
+
+        enqueue_job_mock.assert_not_called()
+
+    async def test_one_time_product(
+        self,
+        enqueue_job_mock: AsyncMock,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product_one_time: Product,
+        organization_account: Account,
+        user: User,
+    ) -> None:
+        invoice = construct_stripe_invoice(
+            lines=[product_one_time.prices[0].stripe_price_id], subscription_id=None
+        )
+        invoice_total = invoice.total - (invoice.tax or 0)
+
+        user.stripe_customer_id = "CUSTOMER_ID"
+        await save_fixture(user)
+
+        payment_transaction = await create_transaction(
+            save_fixture, type=TransactionType.payment
+        )
+        payment_transaction.charge_id = "CHARGE_ID"
+        await save_fixture(payment_transaction)
+
+        transaction_service_mock = mocker.patch(
+            "polar.sale.service.balance_transaction_service",
+            spec=BalanceTransactionService,
+        )
+        transaction_service_mock.get_by.return_value = payment_transaction
+        transaction_service_mock.create_balance_from_charge.return_value = (
+            Transaction(type=TransactionType.balance, amount=-invoice_total),
+            Transaction(
+                type=TransactionType.balance,
+                amount=invoice_total,
+                account_id=organization_account.id,
+            ),
+        )
+        mocker.patch(
+            "polar.sale.service.platform_fee_transaction_service",
+            spec=PlatformFeeTransactionService,
+        )
+
+        sale = await sale_service.create_sale_from_stripe(session, invoice=invoice)
+
+        assert sale.amount == invoice_total
+        assert sale.user.id == user.id
+        assert sale.product == product_one_time
+        assert sale.product_price == product_one_time.prices[0]
+        assert sale.subscription is None
+
+        enqueue_job_mock.assert_called_once_with(
+            "benefit.enqueue_benefits_grants",
+            task="grant",
+            user_id=user.id,
+            product_id=product_one_time.id,
+            sale_id=sale.id,
+        )

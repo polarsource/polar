@@ -1,3 +1,4 @@
+import { resolveOpenAPIEndpointMetadata } from '@/app/docs/api-reference/[...endpoint]/resolveOpenAPIEndpointMetadata'
 import { useCurrentOrgAndRepoFromURL } from '@/hooks'
 import { Organization } from '@polar-sh/sdk'
 import lunr from 'lunr'
@@ -17,7 +18,12 @@ import {
 } from 'react'
 import lunrSearchIndex from '../index/searchIndex.json'
 import lunrSearchMetadata from '../index/searchMetadata.json'
-import { Command, CommandType, DocumentationCommand } from './commands'
+import {
+  APICommand,
+  Command,
+  CommandType,
+  DocumentationCommand,
+} from './commands'
 import { SCOPES, Scope, ScopeKey, ScopeType } from './scopes'
 import { useScopes } from './useScopes'
 
@@ -112,18 +118,46 @@ export const CommandPaletteContextProvider = ({
           )
         : []
 
-    const searchCommands: DocumentationCommand[] = searchResults.map(
-      (result) => ({
-        // @ts-ignore
-        name: searchMetadataLookup.get(result.ref)?.title ?? '',
-        description: 'Go to page',
-        type: CommandType.Documentation,
-        action: () => {
-          router.push(result.ref)
+    const searchCommands = searchResults.map<DocumentationCommand | APICommand>(
+      (result) => {
+        const isAPIEntry = result.ref.includes('/api/v1/')
 
-          hideCommandPalette()
-        },
-      }),
+        if (isAPIEntry) {
+          const { operation, method, apiEndpointPath } =
+            resolveOpenAPIEndpointMetadata(
+              result.ref.replace('/docs/api-reference/', ''),
+            )
+
+          return {
+            id: `${operation.operationId}-${method}-${apiEndpointPath}`,
+            // @ts-ignore
+            name: operation.summary,
+            description: 'Explore API Endpoint',
+            type: CommandType.API,
+            operation: operation,
+            method: method,
+            endpointPath: apiEndpointPath,
+            action: () => {
+              router.push(result.ref)
+
+              hideCommandPalette()
+            },
+          }
+        } else {
+          return {
+            id: `doc-${result.ref}`,
+            // @ts-ignore
+            name: searchMetadataLookup.get(result.ref).title ?? '',
+            description: 'Open Document in Polar Documentation',
+            type: CommandType.Documentation,
+            action: () => {
+              router.push(result.ref)
+
+              hideCommandPalette()
+            },
+          }
+        }
+      },
     )
 
     const scopeCommands =
@@ -155,6 +189,8 @@ export const CommandPaletteContextProvider = ({
         const currentIndex = commands.indexOf(selectedCommand)
         if (currentIndex < commands.length - 1) {
           setSelectedCommand(commands[currentIndex + 1])
+        } else {
+          setSelectedCommand(commands[0])
         }
       } else if (e.key === 'ArrowUp') {
         e.preventDefault()
@@ -163,6 +199,8 @@ export const CommandPaletteContextProvider = ({
         const currentIndex = commands.indexOf(selectedCommand)
         if (currentIndex > 0) {
           setSelectedCommand(commands[currentIndex - 1])
+        } else {
+          setSelectedCommand(commands[commands.length - 1])
         }
       }
 

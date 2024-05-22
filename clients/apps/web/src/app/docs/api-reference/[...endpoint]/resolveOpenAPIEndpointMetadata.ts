@@ -3,11 +3,9 @@ import { OpenAPIV3_1 } from 'openapi-types'
 import { SchemaPathMethod } from '../../APINavigation'
 
 export const resolveOpenAPIEndpointMetadata = (endpoint: string) => {
-  const parts = endpoint.split('/')
+  const parts = endpoint.split('/').filter(Boolean)
 
-  const [method] = parts.splice(-1) as [
-    SchemaPathMethod<typeof apiEndpointPath>,
-  ]
+  const method = parts.pop() as SchemaPathMethod<typeof apiEndpointPath>
   const apiEndpointPath =
     `/${decodeURIComponent(parts.join('/'))}` as keyof typeof openapiSchema.paths
 

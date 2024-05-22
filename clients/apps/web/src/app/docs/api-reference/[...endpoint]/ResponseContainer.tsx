@@ -15,10 +15,10 @@ export const ResponseContainer = ({
   const triggerClassName = 'py-1'
 
   return (
-    <div className="dark:bg-polar-900 flex h-full w-full flex-col rounded-2xl bg-white shadow-sm">
+    <div className="dark:bg-polar-900 flex h-full w-full flex-col rounded-3xl bg-white shadow-sm">
       <Tabs defaultValue={Object.keys(responses)[0]}>
-        <div className="dark:border-polar-800 flex w-full flex-row items-center justify-between border-b border-gray-100 px-4">
-          <span className="text-xs text-black dark:text-white">Responses</span>
+        <div className="dark:border-polar-800 flex w-full flex-row items-center justify-between border-b border-gray-100 px-5 py-1">
+          <span className="text-sm text-black dark:text-white">Responses</span>
           <TabsList className="flex flex-row items-center rounded-none py-3">
             {Object.keys(responses).map((statusCode) => (
               <TabsTrigger

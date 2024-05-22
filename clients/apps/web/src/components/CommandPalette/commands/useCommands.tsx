@@ -17,7 +17,7 @@ import {
 } from 'react'
 import lunrSearchIndex from '../index/searchIndex.json'
 import lunrSearchMetadata from '../index/searchMetadata.json'
-import { Command, CommandType } from './commands'
+import { Command, CommandType, DocumentationCommand } from './commands'
 import { SCOPES, Scope, ScopeKey, ScopeType } from './scopes'
 import { useScopes } from './useScopes'
 
@@ -112,17 +112,19 @@ export const CommandPaletteContextProvider = ({
           )
         : []
 
-    const searchCommands = searchResults.map((result) => ({
-      // @ts-ignore
-      name: searchMetadataLookup.get(result.ref)?.title ?? '',
-      description: 'Go to page',
-      type: CommandType.Documentation,
-      action: () => {
-        router.push(result.ref)
+    const searchCommands: DocumentationCommand[] = searchResults.map(
+      (result) => ({
+        // @ts-ignore
+        name: searchMetadataLookup.get(result.ref)?.title ?? '',
+        description: 'Go to page',
+        type: CommandType.Documentation,
+        action: () => {
+          router.push(result.ref)
 
-        hideCommandPalette()
-      },
-    }))
+          hideCommandPalette()
+        },
+      }),
+    )
 
     const scopeCommands =
       scope?.commands.filter(

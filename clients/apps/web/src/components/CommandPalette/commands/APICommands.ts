@@ -50,6 +50,7 @@ export const createAPICommands = (key: SitemapKey): APICommand[] => {
     .map(({ path, methods }) => {
       return Object.entries(methods).map<APICommand>(([method, operation]) => {
         return {
+          id: `${key}-${path}-${method}`,
           name: operation.summary,
           description: path,
           type: 3,

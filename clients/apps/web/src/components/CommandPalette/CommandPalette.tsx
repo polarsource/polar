@@ -122,7 +122,7 @@ const APINavigator = () => {
   return (
     <div className="flex h-[360px] flex-grow flex-row">
       <div className="flex h-full w-72 flex-shrink-0 flex-col gap-y-1 overflow-y-scroll p-4">
-        {apiCommands.map((command, index) => {
+        {apiCommands.map((command) => {
           return (
             <CommandItem
               key={command.id}

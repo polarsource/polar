@@ -46,6 +46,7 @@ from polar.transaction.service.platform_fee import (
     platform_fee_transaction as platform_fee_transaction_service,
 )
 from polar.user.service import user as user_service
+from polar.worker import enqueue_job
 
 
 class SaleError(PolarError): ...
@@ -320,7 +321,34 @@ class SaleService(ResourceServiceReader[Sale]):
             session, sale, charge_id=get_expandable_id(invoice.charge)
         )
 
+        if sale.subscription is None:
+            enqueue_job(
+                "benefit.enqueue_benefits_grants",
+                task="grant",
+                user_id=user.id,
+                product_id=product.id,
+                sale_id=sale.id,
+            )
+
         return sale
+
+    async def update_product_benefits_grants(
+        self, session: AsyncSession, product: Product
+    ) -> None:
+        statement = select(Sale).where(
+            Sale.product_id == product.id,
+            Sale.deleted_at.is_(None),
+            Sale.subscription_id.is_(None),
+        )
+        sales = await session.stream_scalars(statement)
+        async for sale in sales:
+            enqueue_job(
+                "benefit.enqueue_benefits_grants",
+                task="grant",
+                user_id=sale.user_id,
+                product_id=product.id,
+                sale_id=sale.id,
+            )
 
     async def _create_sale_balance(
         self, session: AsyncSession, sale: Sale, charge_id: str

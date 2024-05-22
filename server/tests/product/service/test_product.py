@@ -1,7 +1,7 @@
 import uuid
 from types import SimpleNamespace
 from typing import TypeVar
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock, MagicMock, call
 
 import pytest
 from pytest_mock import MockerFixture
@@ -1444,9 +1444,14 @@ class TestUpdateBenefits:
         assert len(added) == len(benefits)
         assert len(deleted) == 0
 
-        enqueue_job_mock.assert_called_once_with(
-            "subscription.subscription.update_product_benefits_grants",
-            product.id,
+        enqueue_job_mock.assert_has_calls(
+            [
+                call(
+                    "subscription.subscription.update_product_benefits_grants",
+                    product.id,
+                ),
+                call("sale.update_product_benefits_grants", product.id),
+            ]
         )
 
     @pytest.mark.auth(
@@ -1491,9 +1496,14 @@ class TestUpdateBenefits:
         assert len(added) == len(benefits)
         assert len(deleted) == 0
 
-        enqueue_job_mock.assert_called_once_with(
-            "subscription.subscription.update_product_benefits_grants",
-            product.id,
+        enqueue_job_mock.assert_has_calls(
+            [
+                call(
+                    "subscription.subscription.update_product_benefits_grants",
+                    product.id,
+                ),
+                call("sale.update_product_benefits_grants", product.id),
+            ]
         )
 
     @pytest.mark.auth(
@@ -1537,9 +1547,14 @@ class TestUpdateBenefits:
         assert len(added) == 0
         assert len(deleted) == len(benefits)
 
-        enqueue_job_mock.assert_called_once_with(
-            "subscription.subscription.update_product_benefits_grants",
-            product.id,
+        enqueue_job_mock.assert_has_calls(
+            [
+                call(
+                    "subscription.subscription.update_product_benefits_grants",
+                    product.id,
+                ),
+                call("sale.update_product_benefits_grants", product.id),
+            ]
         )
 
     @pytest.mark.auth(
@@ -1591,9 +1606,14 @@ class TestUpdateBenefits:
         assert len(added) == 0
         assert len(deleted) == 0
 
-        enqueue_job_mock.assert_called_once_with(
-            "subscription.subscription.update_product_benefits_grants",
-            product.id,
+        enqueue_job_mock.assert_has_calls(
+            [
+                call(
+                    "subscription.subscription.update_product_benefits_grants",
+                    product.id,
+                ),
+                call("sale.update_product_benefits_grants", product.id),
+            ]
         )
 
     @pytest.mark.auth(
@@ -1735,7 +1755,12 @@ class TestUpdateBenefits:
         assert selectable_benefit.id in [a.id for a in added]
         assert len(deleted) == 0
 
-        enqueue_job_mock.assert_called_once_with(
-            "subscription.subscription.update_product_benefits_grants",
-            product.id,
+        enqueue_job_mock.assert_has_calls(
+            [
+                call(
+                    "subscription.subscription.update_product_benefits_grants",
+                    product.id,
+                ),
+                call("sale.update_product_benefits_grants", product.id),
+            ]
         )

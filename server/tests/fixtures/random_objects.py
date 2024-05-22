@@ -674,6 +674,17 @@ async def product(save_fixture: SaveFixture, organization: Organization) -> Prod
 
 
 @pytest_asyncio.fixture
+async def product_one_time(
+    save_fixture: SaveFixture, organization: Organization
+) -> Product:
+    return await create_product(
+        save_fixture,
+        organization=organization,
+        prices=[(1000, ProductPriceType.one_time, None)],
+    )
+
+
+@pytest_asyncio.fixture
 async def product_second(
     save_fixture: SaveFixture, organization: Organization
 ) -> Product:

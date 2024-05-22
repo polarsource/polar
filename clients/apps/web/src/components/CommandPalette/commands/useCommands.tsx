@@ -57,6 +57,7 @@ const defaultCommandPaletteContextValue: CommandPaletteContextValue = {
   setScopeKeys: () => [],
   commands: [],
   selectedCommand: {
+    id: '',
     name: '',
     description: '',
     type: CommandType.Action,
@@ -130,8 +131,7 @@ export const CommandPaletteContextProvider = ({
 
           return {
             id: `${operation.operationId}-${method}-${apiEndpointPath}`,
-            // @ts-ignore
-            name: operation.summary,
+            name: operation.summary ?? '',
             description: 'Explore API Endpoint',
             type: CommandType.API,
             operation: operation,

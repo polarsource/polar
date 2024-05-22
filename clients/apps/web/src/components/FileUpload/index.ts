@@ -9,7 +9,7 @@ import {
 
 import { useState } from 'react'
 import { useDropzone } from 'react-dropzone'
-import { upload } from './Upload'
+import { Upload } from './Upload'
 
 export interface FileObject extends FileRead {
   enabled: boolean
@@ -101,7 +101,7 @@ export const useFileUpload = ({
       reader.onload = async () => {
         const buffer = reader.result
         if (buffer instanceof ArrayBuffer) {
-          await upload({
+          const upload = new Upload({
             organization,
             file,
             buffer,
@@ -109,6 +109,7 @@ export const useFileUpload = ({
             onFileUploadProgress,
             onFileUploaded,
           })
+          await upload.run()
         }
       }
       reader.readAsArrayBuffer(file)

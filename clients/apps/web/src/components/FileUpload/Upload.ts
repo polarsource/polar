@@ -10,6 +10,8 @@ import {
   Organization,
 } from '@polar-sh/sdk'
 
+const CHUNK_SIZE = 10000000 // 10MB
+
 interface UploadProperties {
   organization: Organization
   service: FileServiceTypes
@@ -20,206 +22,187 @@ interface UploadProperties {
   onFileUploaded: (response: FileRead) => void
 }
 
-export const upload = async ({
-  organization,
-  service,
-  file,
-  buffer,
-  onFileCreate,
-  onFileUploadProgress,
-  onFileUploaded,
-}: UploadProperties) => {
-  const parts = await getFileMultiparts(file, buffer)
-
-  const createFileResponse = await createFile(
+export class Upload {
+  constructor({
     organization,
     service,
     file,
     buffer,
-    parts,
-  )
-  const upload = createFileResponse?.upload
-  if (!upload) return
-
-  onFileCreate(createFileResponse)
-
-  const uploadedParts = await uploadFileMultiparts({
-    file,
-    buffer,
-    parts: upload.parts,
-    onProgress: (uploaded: number) => {
-      onFileUploadProgress(createFileResponse, uploaded)
-    },
-  })
-
-  await completeUpload(createFileResponse, uploadedParts, onFileUploaded)
-}
-
-const CHUNK_SIZE = 10000000 // 10MB
-
-const getSha256Base64 = async (buffer: ArrayBuffer) => {
-  const sha256 = await crypto.subtle.digest('SHA-256', buffer)
-  const sha256base64 = btoa(String.fromCharCode(...new Uint8Array(sha256)))
-  return sha256base64
-}
-
-export const createFile = async (
-  organization: Organization,
-  service: FileServiceTypes,
-  file: File,
-  buffer: ArrayBuffer,
-  parts: Array<FileCreatePart>,
-): Promise<FileUpload> => {
-  const sha256base64 = await getSha256Base64(buffer)
-  const params: FileCreate = {
-    organization_id: organization.id,
-    service: service,
-    name: file.name,
-    size: file.size,
-    mime_type: file.type,
-    checksum_sha256_base64: sha256base64,
-    upload: { parts: parts },
+    onFileCreate,
+    onFileUploadProgress,
+    onFileUploaded,
+  }: UploadProperties) {
+    this.organization = organization
+    this.service = service
+    this.file = file
+    this.buffer = buffer
+    this.onFileCreate = onFileCreate
+    this.onFileUploadProgress = onFileUploadProgress
+    this.onFileUploaded = onFileUploaded
   }
 
-  return api.files.create({
-    fileCreate: params,
-  })
-}
-
-const getFileMultiparts = async (
-  file: File,
-  buffer: ArrayBuffer,
-): Promise<Array<FileCreatePart>> => {
-  const chunkCount = Math.floor(file.size / CHUNK_SIZE) + 1
-  const parts: Array<FileCreatePart> = []
-
-  for (let i = 1; i <= chunkCount; i++) {
-    const chunk_start = (i - 1) * CHUNK_SIZE
-    let chunk_end = i * CHUNK_SIZE
-    if (chunk_end > file.size) {
-      chunk_end = file.size
-    }
-    const chunk = buffer.slice(chunk_start, chunk_end)
-
-    const chunkSha256base64 = await getSha256Base64(chunk)
-
-    let part: FileCreatePart = {
-      number: i,
-      chunk_start: chunk_start,
-      chunk_end: chunk_end,
-      checksum_sha256_base64: chunkSha256base64,
-    }
-    parts.push(part)
+  async getSha256Base64(buffer: ArrayBuffer) {
+    const sha256 = await crypto.subtle.digest('SHA-256', buffer)
+    const sha256base64 = btoa(String.fromCharCode(...new Uint8Array(sha256)))
+    return sha256base64
   }
-  return parts
-}
 
-const uploadFileMultiparts = async ({
-  file,
-  buffer,
-  parts,
-  onProgress,
-}: {
-  file: File
-  buffer: ArrayBuffer
-  parts: Array<FileUploadPart>
-  onProgress: (uploaded: number) => void
-}): Promise<FileUploadCompletedPart[]> => {
-  const ret = []
-  let uploaded = 0
-  const partCount = parts.length
-  /**
-   * Unfortunately, we need to do this sequentially vs. in paralell since we
-   * do SHA-256 validations and AWS S3 would 400 if they receive requests in
-   * non-consecutive order according to their docs.
-   */
-  for (let i = 0; i < partCount; i++) {
-    const part = parts[i]
-    const completed = await uploadFilePart({
-      file,
-      buffer,
-      part,
-      onProgress: (chunk_uploaded) => {
-        onProgress(uploaded + chunk_uploaded)
-      },
+  async create(): Promise<FileUpload> {
+    const sha256base64 = await this.getSha256Base64(this.buffer)
+    const parts = await this.getMultiparts(this.file, this.buffer)
+    const params: FileCreate = {
+      organization_id: this.organization.id,
+      service: this.service,
+      name: this.file.name,
+      size: this.file.size,
+      mime_type: this.file.type,
+      checksum_sha256_base64: sha256base64,
+      upload: { parts: parts },
+    }
+
+    return api.files.create({
+      fileCreate: params,
     })
-    uploaded += part.chunk_end - part.chunk_start
-    onProgress(uploaded)
-    ret.push(completed)
   }
 
-  return ret
-}
+  async getMultiparts(): Promise<Array<FileCreatePart>> {
+    const chunkCount = Math.floor(this.file.size / CHUNK_SIZE) + 1
+    const parts: Array<FileCreatePart> = []
 
-const uploadFilePart = async ({
-  file,
-  buffer,
-  part,
-  onProgress,
-}: {
-  file: File
-  buffer: ArrayBuffer
-  part: FileUploadPart
-  onProgress: (uploaded: number) => void
-}): Promise<FileUploadCompletedPart> => {
-  const data = buffer.slice(part.chunk_start, part.chunk_end)
-  let blob = new Blob([data], { type: file.type })
+    for (let i = 1; i <= chunkCount; i++) {
+      const chunk_start = (i - 1) * CHUNK_SIZE
+      let chunk_end = i * CHUNK_SIZE
+      if (chunk_end > this.file.size) {
+        chunk_end = this.file.size
+      }
+      const chunk = this.buffer.slice(chunk_start, chunk_end)
 
-  return new Promise((resolve, reject) => {
-    const xhr = new XMLHttpRequest()
+      const chunkSha256base64 = await this.getSha256Base64(chunk)
 
-    xhr.onreadystatechange = () => {
-      if (xhr.readyState === 4) {
-        if (xhr.status === 200) {
-          const etag = xhr.getResponseHeader('ETag')
-          if (!etag) {
-            reject(new Error('ETag not found in response'))
-            return
+      let part: FileCreatePart = {
+        number: i,
+        chunk_start: chunk_start,
+        chunk_end: chunk_end,
+        checksum_sha256_base64: chunkSha256base64,
+      }
+      parts.push(part)
+    }
+    return parts
+  }
+
+  async uploadMultiparts({
+    parts,
+    onProgress,
+  }: {
+    parts: Array<FileUploadPart>
+    onProgress: (uploaded: number) => void
+  }): Promise<FileUploadCompletedPart[]> {
+    const ret = []
+    let uploaded = 0
+    const partCount = parts.length
+    /**
+     * Unfortunately, we need to do this sequentially vs. in paralell since we
+     * do SHA-256 validations and AWS S3 would 400 if they receive requests in
+     * non-consecutive order according to their docs.
+     */
+    for (let i = 0; i < partCount; i++) {
+      const part = parts[i]
+      const completed = await this.upload({
+        part,
+        onProgress: (chunk_uploaded) => {
+          onProgress(uploaded + chunk_uploaded)
+        },
+      })
+      uploaded += part.chunk_end - part.chunk_start
+      onProgress(uploaded)
+      ret.push(completed)
+    }
+
+    return ret
+  }
+
+  async upload({
+    part,
+    onProgress,
+  }: {
+    part: FileUploadPart
+    onProgress: (uploaded: number) => void
+  }): Promise<FileUploadCompletedPart> {
+    const data = this.buffer.slice(part.chunk_start, part.chunk_end)
+    let blob = new Blob([data], { type: this.file.type })
+
+    return new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest()
+
+      xhr.onreadystatechange = () => {
+        if (xhr.readyState === 4) {
+          if (xhr.status === 200) {
+            const etag = xhr.getResponseHeader('ETag')
+            if (!etag) {
+              reject(new Error('ETag not found in response'))
+              return
+            }
+            const completed: FileUploadCompletedPart = {
+              number: part.number,
+              checksum_etag: etag,
+            }
+            if (part.checksum_sha256_base64) {
+              completed.checksum_sha256_base64 = part.checksum_sha256_base64
+            }
+            resolve(completed)
+          } else {
+            reject(new Error('Failed to upload part'))
           }
-          const completed: FileUploadCompletedPart = {
-            number: part.number,
-            checksum_etag: etag,
-          }
-          if (part.checksum_sha256_base64) {
-            completed.checksum_sha256_base64 = part.checksum_sha256_base64
-          }
-          resolve(completed)
-        } else {
-          reject(new Error('Failed to upload part'))
         }
       }
-    }
 
-    xhr.upload.onprogress = (e) => {
-      if (e.lengthComputable) {
-        onProgress(e.loaded)
+      xhr.upload.onprogress = (e) => {
+        if (e.lengthComputable) {
+          onProgress(e.loaded)
+        }
       }
-    }
 
-    xhr.open('PUT', part.url, true)
-    if (part.headers) {
-      for (const [header, value] of Object.entries(part.headers)) {
-        xhr.setRequestHeader(header, value)
+      xhr.open('PUT', part.url, true)
+      if (part.headers) {
+        for (const [header, value] of Object.entries(part.headers)) {
+          xhr.setRequestHeader(header, value)
+        }
       }
-    }
 
-    xhr.send(blob)
-  })
-}
+      xhr.send(blob)
+    })
+  }
 
-const completeUpload = async (
-  createFileResponse: FileUpload,
-  uploadedParts: FileUploadCompletedPart[],
-  callback: (response: FileRead) => void,
-) => {
-  return api.files
-    .uploaded({
-      fileId: createFileResponse.id,
-      fileUploadCompleted: {
-        id: createFileResponse.upload.id,
-        path: createFileResponse.upload.path,
-        parts: uploadedParts,
+  async complete(
+    createFileResponse: FileUpload,
+    uploadedParts: FileUploadCompletedPart[],
+  ) {
+    return api.files
+      .uploaded({
+        fileId: createFileResponse.id,
+        fileUploadCompleted: {
+          id: createFileResponse.upload.id,
+          path: createFileResponse.upload.path,
+          parts: uploadedParts,
+        },
+      })
+      .then(this.onFileUploaded)
+  }
+
+  async run() {
+    const createFileResponse = await this.create()
+    const upload = createFileResponse?.upload
+    if (!upload) return
+
+    this.onFileCreate(createFileResponse)
+
+    const uploadedParts = await this.uploadMultiparts({
+      parts: upload.parts,
+      onProgress: (uploaded: number) => {
+        this.onFileUploadProgress(createFileResponse, uploaded)
       },
     })
-    .then(callback)
+
+    await this.complete(createFileResponse, uploadedParts)
+  }
 }

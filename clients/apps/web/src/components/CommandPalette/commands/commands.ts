@@ -2,6 +2,7 @@ import { Organization } from '@polar-sh/sdk'
 import { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime'
 import { Params } from 'next/dist/shared/lib/router/utils/route-matcher'
 import { ReadonlyURLSearchParams } from 'next/navigation'
+import { OpenAPIV3_1 } from 'openapi-types'
 import { API_SCOPES, ScopeContext } from './scopes'
 
 export type CommandContext = {
@@ -40,6 +41,9 @@ export interface DocumentationCommand extends BaseCommand {
 
 export interface APICommand extends BaseCommand {
   type: CommandType.API
+  operation: OpenAPIV3_1.OperationObject
+  method: OpenAPIV3_1.HttpMethods
+  endpointPath: string
 }
 
 export type Command =
@@ -54,10 +58,10 @@ export const GLOBAL_COMMANDS = ({
 }: ScopeContext): Command[] => {
   const orgSpecificCommands = organization ? organizationSpecificCommands : []
 
-  const apiCommands: APICommand[] = API_SCOPES.map((scope) => ({
+  const apiCommands: ShortcutCommand[] = API_SCOPES.map((scope) => ({
     name: `${scope.name.replace('api:', '')} API`,
     description: `View API documentation for ${scope.name.replace('api:', '')}`,
-    type: CommandType.API,
+    type: CommandType.Shortcut,
     action: () => {
       setScopeKeys(['global', scope.name])
     },

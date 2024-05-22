@@ -1,5 +1,6 @@
 import openapiSchema from '@polar-sh/sdk/openapi'
-import { APICommand, CommandType } from './commands'
+import { OpenAPIV3_1 } from 'openapi-types'
+import { APICommand } from './commands'
 
 type SchemaPaths = (typeof openapiSchema)['paths']
 type SchemaPathKey = keyof SchemaPaths
@@ -51,7 +52,10 @@ export const createAPICommands = (key: SitemapKey): APICommand[] => {
         return {
           name: operation.summary,
           description: path,
-          type: CommandType.API,
+          type: 3,
+          endpointPath: path,
+          method: method as OpenAPIV3_1.HttpMethods,
+          operation,
           action: ({ hidePalette, router }) => {
             hidePalette()
             router.push(`/docs/api-reference/${path}/${method}`)

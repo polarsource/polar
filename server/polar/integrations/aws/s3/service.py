@@ -49,7 +49,7 @@ class S3Service:
         file = S3File(
             id=file_uuid,
             organization_id=data.organization_id,
-            name=filename,
+            name=data.name,
             extension=extension,
             # Each organization gets its own directory
             path=f"{namespace}/{data.organization_id}/{filename}",

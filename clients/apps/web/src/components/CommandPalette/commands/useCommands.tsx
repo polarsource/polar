@@ -1,6 +1,12 @@
+import { useCurrentOrgAndRepoFromURL } from '@/hooks'
 import { Organization } from '@polar-sh/sdk'
 import lunr from 'lunr'
-import { useRouter } from 'next/navigation'
+import {
+  useParams,
+  usePathname,
+  useRouter,
+  useSearchParams,
+} from 'next/navigation'
 import {
   PropsWithChildren,
   createContext,
@@ -11,7 +17,7 @@ import {
 } from 'react'
 import lunrSearchIndex from '../index/searchIndex.json'
 import lunrSearchMetadata from '../index/searchMetadata.json'
-import { Command } from './commands'
+import { Command, CommandType } from './commands'
 import { SCOPES, Scope, ScopeKey, ScopeType } from './scopes'
 import { useScopes } from './useScopes'
 
@@ -21,7 +27,7 @@ const searchMetadataLookup = new Map([
   ...lunrSearchMetadata.docs.map((m) => [m.id, m]),
 ])
 
-export interface CommandContextValue {
+export interface CommandPaletteContextValue {
   scopes: ReturnType<typeof SCOPES>
   scopeKey: ScopeKey
   scope?: Scope
@@ -37,33 +43,43 @@ export interface CommandContextValue {
   hideCommandPalette: () => void
 }
 
-const defaultCommandContextValue: CommandContextValue = {
+const defaultCommandPaletteContextValue: CommandPaletteContextValue = {
   scopes: [] as any,
   scopeKey: 'global',
   scope: { name: 'global', commands: [], type: ScopeType.Global },
   scopeKeys: [],
   setScopeKeys: () => [],
   commands: [],
-  selectedCommand: { name: '', description: '' },
+  selectedCommand: {
+    name: '',
+    description: '',
+    type: CommandType.Action,
+    action: () => {},
+  },
   setSelectedCommand: () => {},
   input: '',
   setInput: () => {},
   hideCommandPalette: () => {},
 }
 
-const CommandContext = createContext(defaultCommandContextValue)
+const CommandPaletteContext = createContext(defaultCommandPaletteContextValue)
 
-interface CommandContextProviderProps {
+interface CommandPaletteContextProviderProps {
   organization?: Organization
   hideCommandPalette: () => void
 }
 
-export const CommandContextProvider = ({
+export const CommandPaletteContextProvider = ({
   children,
   organization,
   hideCommandPalette,
-}: PropsWithChildren<CommandContextProviderProps>) => {
+}: PropsWithChildren<CommandPaletteContextProviderProps>) => {
+  const params = useParams()
+  const searchParams = useSearchParams()
+  const pathname = usePathname()
   const router = useRouter()
+  const { org } = useCurrentOrgAndRepoFromURL()
+
   const [scopeKeys, setScopeKeys] = useState<ScopeKey[]>(['global'])
   const [selectedCommand, setSelectedCommand] = useState<Command>()
   const [input, setInput] = useState('')
@@ -100,6 +116,7 @@ export const CommandContextProvider = ({
       // @ts-ignore
       name: searchMetadataLookup.get(result.ref)?.title ?? '',
       description: 'Go to page',
+      type: CommandType.Documentation,
       action: () => {
         router.push(result.ref)
 
@@ -155,7 +172,14 @@ export const CommandContextProvider = ({
         e.preventDefault()
         e.stopPropagation()
 
-        selectedCommand.action()
+        selectedCommand.action({
+          hidePalette: hideCommandPalette,
+          router,
+          organization: org,
+          params,
+          searchParams,
+          pathname,
+        })
       }
 
       if (
@@ -184,10 +208,15 @@ export const CommandContextProvider = ({
     scopes,
     scopeKey,
     setScopeKeys,
+    router,
+    org,
+    params,
+    searchParams,
+    pathname,
   ])
 
   return (
-    <CommandContext.Provider
+    <CommandPaletteContext.Provider
       value={{
         scopes,
         scope,
@@ -203,8 +232,8 @@ export const CommandContextProvider = ({
       }}
     >
       {children}
-    </CommandContext.Provider>
+    </CommandPaletteContext.Provider>
   )
 }
 
-export const useCommands = () => useContext(CommandContext)
+export const useCommands = () => useContext(CommandPaletteContext)

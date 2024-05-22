@@ -1,5 +1,5 @@
 import openapiSchema from '@polar-sh/sdk/openapi'
-import { Command } from './commands'
+import { APICommand, CommandType } from './commands'
 
 type SchemaPaths = (typeof openapiSchema)['paths']
 type SchemaPathKey = keyof SchemaPaths
@@ -42,13 +42,22 @@ const sitemap: Sitemap = {
   funding: filterPath('/api/v1/funding'),
 }
 
-export const createAPICommands = (key: SitemapKey): Command[] => {
+export const createAPICommands = (key: SitemapKey): APICommand[] => {
   const site = sitemap[key]
 
-  return site.map(({ path }) => {
-    const name = path.split('/').slice(3).join(' ').replace('_', ' ')
-    const description = path
-
-    return { name, description }
-  })
+  return site
+    .map(({ path, methods }) => {
+      return Object.entries(methods).map<APICommand>(([method, operation]) => {
+        return {
+          name: operation.summary,
+          description: path,
+          type: CommandType.API,
+          action: ({ hidePalette, router }) => {
+            hidePalette()
+            router.push(`/docs/api-reference/${path}/${method}`)
+          },
+        }
+      })
+    })
+    .flat()
 }

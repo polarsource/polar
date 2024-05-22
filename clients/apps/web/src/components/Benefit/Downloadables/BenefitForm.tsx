@@ -8,6 +8,7 @@ import {
 
 import { FileUploadOutlined as FileUploadIcon } from '@mui/icons-material'
 
+import { useFiles } from '@/hooks/queries'
 import { Switch } from 'polarkit/components/ui/atoms'
 import { ReactElement } from 'react'
 import { useFormContext } from 'react-hook-form'
@@ -162,15 +163,15 @@ const DropzoneView = ({
   )
 }
 
-interface DownloadablesBenefitFormProps {
-  organization: Organization
-  update?: boolean
-}
-
-export const DownloadablesBenefitForm = ({
+const DownloadablesForm = ({
   organization,
-}: DownloadablesBenefitFormProps) => {
+  initialFiles,
+}: {
+  organization: Organization
+  initialFiles: FileObject[]
+}) => {
   const { setValue } = useFormContext<BenefitDownloadablesCreate>()
+
   /**
    * TODO
    *
@@ -200,6 +201,7 @@ export const DownloadablesBenefitForm = ({
     organization: organization,
     service: FileServiceTypes.DOWNLOADABLE,
     onFilesUpdated: setFormFiles,
+    initialFiles,
   })
 
   return (
@@ -212,4 +214,38 @@ export const DownloadablesBenefitForm = ({
       <ManageFileView files={files} updateFile={updateFile} />
     </>
   )
+}
+
+interface DownloadablesBenefitFormProps {
+  organization: Organization
+  update?: boolean
+}
+
+const DownloadablesEditForm = ({
+  organization,
+}: DownloadablesBenefitFormProps) => {
+  const { getValues } = useFormContext<BenefitDownloadablesCreate>()
+
+  const fileIds = getValues('properties.files')
+  const filesQuery = useFiles(organization.id, fileIds)
+
+  const files: FileRead[] = filesQuery.data?.items
+
+  if (filesQuery.isLoading) {
+    // TODO: Style me
+    return <div>Loading...</div>
+  }
+
+  return <DownloadablesForm organization={organization} initialFiles={files} />
+}
+
+export const DownloadablesBenefitForm = ({
+  organization,
+  update = false,
+}: DownloadablesBenefitFormProps) => {
+  if (!update) {
+    return <DownloadablesForm organization={organization} initialFiles={[]} />
+  }
+
+  return <DownloadablesEditForm organization={organization} />
 }

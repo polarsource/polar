@@ -1,16 +1,14 @@
 from collections.abc import Sequence
-from datetime import datetime
 from uuid import UUID
 
 import structlog
 from sqlalchemy.orm import contains_eager
 
 from polar.file.service import file as file_service
-from polar.file.service import s3_service
 from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.services import ResourceService
 from polar.kit.utils import utc_now
-from polar.models import User
+from polar.models import Benefit, User
 from polar.models.downloadable import Downloadable, DownloadableStatus
 from polar.models.file import File
 from polar.postgres import AsyncSession, sql
@@ -22,6 +20,31 @@ from .schemas import (
 )
 
 log = structlog.get_logger()
+
+
+class BenefitDownloadablesPagination:
+    def __init__(self, benefit: Benefit, pagination: PaginationParams) -> None:
+        self.benefit = benefit
+        self.pagination = pagination
+
+        self.files = self.get_active_files()
+        self.count = len(self.files)
+
+    def get_page_ids(self) -> list[str]:
+        page = self.pagination.page
+        limit = self.pagination.limit
+
+        floor = (page - 1) * limit
+        ceiling = page * limit
+        return self.files[floor:ceiling]
+
+    def get_active_files(self) -> list[str]:
+        files = self.benefit.properties.get("files", [])
+        if not files:
+            return []
+
+        # TODO: Allow disabling files in benefit and filter them here
+        return files
 
 
 class DownloadableService(
@@ -50,32 +73,23 @@ class DownloadableService(
         assert instance.id is not None
         return instance
 
-    async def get(
-        self, session: AsyncSession, id: UUID, allow_deleted: bool = False
-    ) -> Downloadable | None:
+    def get_query_for_user_accessibles(self, user: User) -> sql.Select:
         statement = (
             sql.select(Downloadable)
             .join(File)
             .options(contains_eager(Downloadable.file))
+            .options(contains_eager(Downloadable.benefit))
             .where(
-                Downloadable.id == id,
+                Downloadable.user_id == user.id,
+                Downloadable.status == DownloadableStatus.granted,
+                Downloadable.deleted_at.is_(None),
                 File.deleted_at.is_(None),
                 File.last_modified_at.is_not(None),
+                Benefit.deleted_at.is_(None),
             )
+            .order_by(Downloadable.created_at.desc())
         )
-        if not allow_deleted:
-            statement = statement.where(Downloadable.deleted_at.is_(None))
-
-        res = await session.execute(statement)
-        record = res.scalars().one_or_none()
-        return record
-
-    async def generate_presigned_download(self, file: File) -> tuple[str, datetime]:
-        return s3_service.generate_presigned_download_url(
-            path=file.path,
-            filename=file.name,
-            mime_type=file.mime_type,
-        )
+        return statement
 
     async def increment_download_count(
         self,
@@ -95,27 +109,72 @@ class DownloadableService(
         user: User,
         pagination: PaginationParams,
         organization_id: UUID | None = None,
-        benefit_id: UUID | None = None,
     ) -> tuple[Sequence[Downloadable], int]:
-        statement = (
-            sql.select(Downloadable)
-            .join(File)
-            .options(contains_eager(Downloadable.file))
-            .where(
-                Downloadable.user_id == user.id,
-                Downloadable.status == DownloadableStatus.granted,
-                Downloadable.deleted_at.is_(None),
-                File.deleted_at.is_(None),
-            )
-        )
+        statement = self.get_query_for_user_accessibles(user)
 
         if organization_id:
             statement = statement.where(File.organization_id == organization_id)
 
-        if benefit_id:
-            statement = statement.where(Downloadable.benefit_id == benefit_id)
-
         return await paginate(session, statement, pagination=pagination)
+
+    async def get_accessible_for_user_by_id(
+        self, session: AsyncSession, user: User, id: UUID
+    ) -> Downloadable | None:
+        statement = self.get_query_for_user_accessibles(user)
+        statement = statement.where(Downloadable.id == id)
+        res = await session.execute(statement)
+        record = res.scalars().one_or_none()
+        return record
+
+    async def get_accessible_for_user_by_file_ids(
+        self, session: AsyncSession, user: User, ids: list[str]
+    ) -> Sequence[Downloadable]:
+        statement = self.get_query_for_user_accessibles(user)
+        statement = statement.where(File.id.in_(ids))
+        res = await session.execute(statement)
+        record = res.scalars().all()
+        return record
+
+    async def get_accessible_for_user_by_benefit_id(
+        self,
+        session: AsyncSession,
+        user: User,
+        pagination: PaginationParams,
+        benefit_id: UUID,
+        organization_id: UUID | None = None,
+    ) -> tuple[Sequence[Downloadable], int]:
+        query = sql.select(Benefit).where(
+            Benefit.id == benefit_id, Benefit.deleted_at.is_(None)
+        )
+        if organization_id:
+            query = query.where(Benefit.organization_id == organization_id)
+
+        res = await session.execute(query)
+        benefit = res.scalars().unique().one_or_none()
+        if not benefit:
+            return ([], 0)
+
+        benefit_pagination = BenefitDownloadablesPagination(benefit, pagination)
+        file_ids = benefit_pagination.get_page_ids()
+
+        downloadables = await self.get_accessible_for_user_by_file_ids(
+            session, user, ids=file_ids
+        )
+        mapping = {
+            str(downloadable.file_id): downloadable for downloadable in downloadables
+        }
+
+        count = benefit_pagination.count
+        items = []
+        for file_id in file_ids:
+            downloadable = mapping.get(file_id, None)
+            if not downloadable:
+                count -= 1
+                continue
+
+            items.append(downloadable)
+
+        return (items, benefit_pagination.count)
 
     def generate_downloadable_schemas(
         self, downloadables: Sequence[Downloadable]

@@ -29,9 +29,14 @@ const buildFileObject = (file: FileRead): FileObject => {
   }
 }
 
+const buildFileObjects = (files: FileRead[]): FileObject[] => {
+  return files.map(buildFileObject)
+}
+
 interface FileUploadProps {
   service: FileServiceTypes
   organization: Organization
+  initialFiles: FileRead[]
   onFilesUpdated: (files: FileObject[]) => void
 }
 
@@ -39,8 +44,11 @@ export const useFileUpload = ({
   service,
   organization,
   onFilesUpdated,
+  initialFiles = [],
 }: FileUploadProps) => {
-  const [files, setFilesState] = useState<FileObject[]>([])
+  const [files, setFilesState] = useState<FileObject[]>(
+    buildFileObjects(initialFiles),
+  )
 
   const setFiles = (callback: (prev: FileObject[]) => FileObject[]) => {
     setFilesState((prev) => {

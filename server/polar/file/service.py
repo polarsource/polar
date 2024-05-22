@@ -1,14 +1,16 @@
 from collections.abc import Sequence
+from uuid import UUID
 
 import structlog
 
 from polar.config import settings
 from polar.exceptions import ResourceNotFound
 from polar.integrations.aws.s3 import S3FileError, S3Service, S3UnsupportedFile
+from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.services import ResourceService
 from polar.models import Organization
 from polar.models.file import File
-from polar.postgres import AsyncSession
+from polar.postgres import AsyncSession, sql
 
 from .schemas import (
     FileCreate,
@@ -84,6 +86,23 @@ class FileService(ResourceService[File, FileCreate, FileUpdate]):
         assert file.last_modified_at is not None
 
         return FileRead.from_db(file)
+
+    async def get_list(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+        pagination: PaginationParams,
+        ids: list[UUID] | None = None,
+    ) -> tuple[Sequence[File], int]:
+        statement = sql.select(File).where(
+            File.organization_id == organization.id,
+            File.last_modified_at.is_not(None),
+            File.deleted_at.is_(None),
+        )
+        if ids:
+            statement = statement.where(File.id.in_(ids))
+
+        return await paginate(session, statement, pagination=pagination)
 
     def generate_downloadable_schemas(
         self, files: Sequence[File]

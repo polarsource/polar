@@ -14,6 +14,7 @@ from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 from polar.kit.db.models import RecordModel
 from polar.kit.extensions.sqlalchemy import PostgresUUID
 
+from .benefit import Benefit
 from .file import File
 from .user import User
 
@@ -54,6 +55,10 @@ class Downloadable(RecordModel):
         nullable=False,
         index=True,
     )
+
+    @declared_attr
+    def benefit(cls) -> Mapped[Benefit]:
+        return relationship("Benefit", lazy="raise")
 
     downloaded: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
 

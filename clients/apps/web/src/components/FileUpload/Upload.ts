@@ -12,6 +12,7 @@ import {
 
 interface UploadProperties {
   organization: Organization
+  service: FileServiceTypes
   file: File
   buffer: ArrayBuffer
   onFileCreate: (response: FileUpload) => void
@@ -21,6 +22,7 @@ interface UploadProperties {
 
 export const upload = async ({
   organization,
+  service,
   file,
   buffer,
   onFileCreate,
@@ -29,7 +31,13 @@ export const upload = async ({
 }: UploadProperties) => {
   const parts = await getFileMultiparts(file, buffer)
 
-  const createFileResponse = await createFile(organization, file, buffer, parts)
+  const createFileResponse = await createFile(
+    organization,
+    service,
+    file,
+    buffer,
+    parts,
+  )
   const upload = createFileResponse?.upload
   if (!upload) return
 
@@ -57,6 +65,7 @@ const getSha256Base64 = async (buffer: ArrayBuffer) => {
 
 export const createFile = async (
   organization: Organization,
+  service: FileServiceTypes,
   file: File,
   buffer: ArrayBuffer,
   parts: Array<FileCreatePart>,
@@ -64,7 +73,7 @@ export const createFile = async (
   const sha256base64 = await getSha256Base64(buffer)
   const params: FileCreate = {
     organization_id: organization.id,
-    service: FileServiceTypes.DOWNLOADABLE,
+    service: service,
     name: file.name,
     size: file.size,
     mime_type: file.type,

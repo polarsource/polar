@@ -2,39 +2,20 @@
 
 import {
   BenefitDownloadablesCreate,
-  FileRead,
-  FileUpload,
+  FileServiceTypes,
   Organization,
 } from '@polar-sh/sdk'
 
 import { FileUploadOutlined as FileUploadIcon } from '@mui/icons-material'
 
 import { Switch } from 'polarkit/components/ui/atoms'
-import { ReactElement, useState } from 'react'
-import { useDropzone } from 'react-dropzone'
+import { ReactElement } from 'react'
 import { useFormContext } from 'react-hook-form'
 import { twMerge } from 'tailwind-merge'
-import { upload } from './Upload'
 
-interface Downloadable extends FileRead {
-  enabled: boolean
-  isUploaded: boolean
-  isUploading: boolean
-  uploadedBytes: number
-}
+import { FileObject, useFileUpload } from '@/components/FileUpload'
 
-const buildDownloadable = (file: FileRead): Downloadable => {
-  const uploaded = file.uploaded_at !== null
-  return {
-    ...file,
-    enabled: true,
-    isUploaded: uploaded,
-    isUploading: false,
-    uploadedBytes: uploaded ? file.size : 0,
-  }
-}
-
-const FilePreview = ({ file }: { file: Downloadable }) => {
+const FilePreview = ({ file }: { file: FileObject }) => {
   return (
     <div className="h-14 w-14 rounded bg-gray-200 text-gray-600">
       <p className="font-semibold">.{file.extension}</p>
@@ -42,7 +23,7 @@ const FilePreview = ({ file }: { file: Downloadable }) => {
   )
 }
 
-const FileUploadProgress = ({ file }: { file: Downloadable }) => {
+const FileUploadProgress = ({ file }: { file: FileObject }) => {
   const pct = Math.round((file.uploadedBytes / file.size) * 100)
   return (
     <>
@@ -65,7 +46,7 @@ const FileUploadProgress = ({ file }: { file: Downloadable }) => {
   )
 }
 
-const FileUploadDetails = ({ file }: { file: Downloadable }) => {
+const FileUploadDetails = ({ file }: { file: FileObject }) => {
   return (
     <>
       <div className="text-gray-500">
@@ -85,10 +66,9 @@ const ManageFile = ({
   file,
   updateFile,
 }: {
-  file: Downloadable
-  updateFile: (callback: (prev: Downloadable) => Downloadable) => void
+  file: FileObject
+  updateFile: (callback: (prev: FileObject) => FileObject) => void
 }) => {
-  console.log('file to manage', file)
   const onToggleEnabled = (enabled: boolean) => {
     updateFile((prev) => {
       return {
@@ -125,14 +105,14 @@ const ManageFileView = ({
   files,
   updateFile,
 }: {
-  files: Downloadable[]
+  files: FileObject[]
   updateFile: (
     fileId: string,
-    callback: (prev: Downloadable) => Downloadable,
+    callback: (prev: FileObject) => FileObject,
   ) => void
 }) => {
   const getUpdateScopedFile = (fileId: string) => {
-    return (callback: (prev: Downloadable) => Downloadable) => {
+    return (callback: (prev: FileObject) => FileObject) => {
       updateFile(fileId, callback)
     }
   }
@@ -199,9 +179,7 @@ export const DownloadablesBenefitForm = ({
    * Sortable files
    */
 
-  const [files, setFilesState] = useState<Downloadable[]>([])
-
-  const setFormFiles = (files: Downloadable[]) => {
+  const setFormFiles = (files: FileObject[]) => {
     const property = []
     for (const file of files) {
       if (file.isUploaded) {
@@ -211,79 +189,17 @@ export const DownloadablesBenefitForm = ({
     setValue('properties.files', property)
   }
 
-  const setFiles = (callback: (prev: Downloadable[]) => Downloadable[]) => {
-    setFilesState((prev) => {
-      const updated = callback(prev)
-      setFormFiles(updated)
-      return updated
-    })
-  }
-
-  const updateFile = (
-    fileId: string,
-    callback: (prev: Downloadable) => Downloadable,
-  ) => {
-    setFiles((prev) => {
-      return prev.map((f) => {
-        if (f.id !== fileId) {
-          return f
-        }
-        return callback(f)
-      })
-    })
-  }
-
-  const onFileCreate = (response: FileUpload) => {
-    const newFile = buildDownloadable(response)
-    newFile.isUploading = true
-    setFiles((prev) => {
-      return [...prev, newFile]
-    })
-  }
-
-  const onFileUploaded = (response: FileRead) => {
-    updateFile(response.id, (prev) => {
-      return {
-        ...prev,
-        ...response,
-        isUploaded: true,
-        isUploading: false,
-        uploadedBytes: response.size,
-      }
-    })
-  }
-
-  const onFileUploadProgress = (file: FileUpload, uploaded: number) => {
-    updateFile(file.id, (prev) => {
-      return {
-        ...prev,
-        uploadedBytes: uploaded,
-      }
-    })
-  }
-
-  const onDrop = (acceptedFiles: File[]) => {
-    for (const file of acceptedFiles) {
-      const reader = new FileReader()
-      reader.onload = async () => {
-        const buffer = reader.result
-        if (buffer instanceof ArrayBuffer) {
-          await upload({
-            organization,
-            file,
-            buffer,
-            onFileCreate,
-            onFileUploadProgress,
-            onFileUploaded,
-          })
-        }
-      }
-      reader.readAsArrayBuffer(file)
-    }
-  }
-
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({
-    onDrop,
+  const {
+    files,
+    setFiles,
+    updateFile,
+    getRootProps,
+    getInputProps,
+    isDragActive,
+  } = useFileUpload({
+    organization: organization,
+    service: FileServiceTypes.DOWNLOADABLE,
+    onFilesUpdated: setFormFiles,
   })
 
   return (

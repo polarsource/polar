@@ -50,7 +50,7 @@ class S3Service:
             id=file_uuid,
             organization_id=data.organization_id,
             name=data.name,
-            extension=extension,
+            extension=extension[1:],
             # Each organization gets its own directory
             path=f"{namespace}/{data.organization_id}/{filename}",
             mime_type=data.mime_type,

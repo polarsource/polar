@@ -410,6 +410,13 @@ class StripeService:
             create_params["payment_method_collection"] = "if_required"
             if subscription_metadata is not None:
                 create_params["subscription_data"] = {"metadata": subscription_metadata}
+        else:
+            create_params["invoice_creation"] = {
+                "enabled": True,
+                "invoice_data": {
+                    "metadata": metadata or {},
+                },
+            }
         if customer is not None:
             create_params["customer"] = customer
             create_params["customer_update"] = {"name": "auto", "address": "auto"}

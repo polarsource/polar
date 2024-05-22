@@ -6,6 +6,7 @@ import stripe as stripe_lib
 from polar.auth.models import Anonymous, AuthMethod, AuthSubject, is_user
 from polar.checkout.schemas import Checkout, CheckoutCreate
 from polar.exceptions import PolarError, PolarRequestValidationError, ResourceNotFound
+from polar.integrations.stripe.schemas import ProductType
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.models import Product, Subscription, User
 from polar.models.product import SubscriptionTierType
@@ -77,12 +78,10 @@ class CheckoutService:
         product = cast(Product, await product_service.get_loaded(session, product.id))
 
         metadata: dict[str, str] = {
+            "type": ProductType.product,
             "product_id": str(product.id),
             "product_price_id": str(price.id),
         }
-
-        if auth_subject.method == AuthMethod.COOKIE and is_user(auth_subject):
-            metadata["user_id"] = str(auth_subject.subject.id)
 
         if price.is_recurring:
             free_subscription_upgrade = await self._check_existing_subscriptions(
@@ -97,6 +96,7 @@ class CheckoutService:
         # the backer they bring from their own website.
         if is_user(auth_subject) and auth_subject.method == AuthMethod.COOKIE:
             user = auth_subject.subject
+            metadata["user_id"] = str(user.id)
             if user.stripe_customer_id is not None:
                 customer_options["customer"] = user.stripe_customer_id
             else:

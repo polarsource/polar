@@ -150,9 +150,7 @@ export const CommandPaletteContextProvider = ({
         e.preventDefault()
         e.stopPropagation()
 
-        const currentIndex = commands.findIndex(
-          (command) => command.name === selectedCommand.name,
-        )
+        const currentIndex = commands.indexOf(selectedCommand)
         if (currentIndex < commands.length - 1) {
           setSelectedCommand(commands[currentIndex + 1])
         }
@@ -160,9 +158,7 @@ export const CommandPaletteContextProvider = ({
         e.preventDefault()
         e.stopPropagation()
 
-        const currentIndex = commands.findIndex(
-          (command) => command.name === selectedCommand.name,
-        )
+        const currentIndex = commands.indexOf(selectedCommand)
         if (currentIndex > 0) {
           setSelectedCommand(commands[currentIndex - 1])
         }

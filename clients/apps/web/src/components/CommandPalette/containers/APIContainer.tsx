@@ -31,6 +31,62 @@ export const requestBodyParameters = (
   return schema && 'properties' in schema ? schema.properties : undefined
 }
 
+const buildCurlCommand = (
+  method: string = 'GET',
+  url: string,
+  endpoint: OpenAPIV3_1.OperationObject,
+) => {
+  const requestParameters = requestBodyParameters(endpoint)
+  const requiredBodyParameters = requestParameters
+    ? Object.entries(requestParameters)
+        .map(([key]) => ({
+          [key]: `<${key}>`,
+        }))
+        .reduce((acc, curr) => ({ ...acc, ...curr }), {})
+    : undefined
+
+  const bodyParametersString = requiredBodyParameters
+    ? `-d '${JSON.stringify(requiredBodyParameters, null, 2)}'`
+    : ''
+
+  return `curl -X ${method.toUpperCase()} \\
+${url} \\
+-H "Content-type: application/json" \\
+-H "Accept: application/json" \\
+-H "Authorization: Bearer <token>" \\
+${bodyParametersString}`
+}
+
+const buildNodeJSCommand = (
+  method: string = 'GET',
+  url: string,
+  endpoint: OpenAPIV3_1.OperationObject,
+) => {
+  const [namespace, endpointName] = endpoint.operationId?.split(':') ?? ['', '']
+
+  const snakeToCamel = (str: string) =>
+    str
+      .toLowerCase()
+      .replace(/([-_][a-z])/g, (group: string) =>
+        group.toUpperCase().replace('-', '').replace('_', ''),
+      )
+
+  return `import { PolarAPI, Configuration } from '@polar-sh/sdk';
+
+const polar = new PolarAPI(
+    new Configuration({
+        headers: {
+            'Authorization': 'Bearer <token>'
+        }
+    })
+);
+
+polar.${namespace}.${snakeToCamel(endpointName)}()
+  .then(console.log)
+  .catch(console.error);
+`
+}
+
 export const APIContainer = ({
   operation,
   path,
@@ -40,38 +96,10 @@ export const APIContainer = ({
   path: string
   method: string
 }) => {
+  const [currentTab, setCurrentTab] = useState<'curl' | 'nodejs'>()
   const [didCopy, setDidCopy] = useState(false)
 
   const triggerClassName = 'py-1'
-
-  const buildCurlCommand = useCallback(
-    (
-      method: string = 'GET',
-      url: string,
-      endpoint: OpenAPIV3_1.OperationObject,
-    ) => {
-      const requestParameters = requestBodyParameters(endpoint)
-      const requiredBodyParameters = requestParameters
-        ? Object.entries(requestParameters)
-            .map(([key]) => ({
-              [key]: `<${key}>`,
-            }))
-            .reduce((acc, curr) => ({ ...acc, ...curr }), {})
-        : undefined
-
-      const bodyParametersString = requiredBodyParameters
-        ? `-d '${JSON.stringify(requiredBodyParameters, null, 2)}'`
-        : ''
-
-      return `curl -X ${method.toUpperCase()} \\
-${url} \\
--H "Content-type: application/json" \\
--H "Accept: application/json" \\
--H "Authorization: Bearer <token>" \\
-${bodyParametersString}`
-    },
-    [],
-  )
 
   const copyCodeToClipboard = useCallback((snippet: string) => {
     navigator.clipboard.writeText(snippet)
@@ -79,25 +107,40 @@ ${bodyParametersString}`
 
   const curlCommand = useMemo(
     () => buildCurlCommand(method, `${CONFIG.BASE_URL}${path}`, operation),
-    [method, path, buildCurlCommand, operation],
+    [method, path, operation],
+  )
+
+  const nodeJSCommand = useMemo(
+    () => buildNodeJSCommand(method, `${CONFIG.BASE_URL}${path}`, operation),
+    [method, path, operation],
   )
 
   const handleCopyToClipboard = useCallback(() => {
-    copyCodeToClipboard(curlCommand)
+    copyCodeToClipboard(currentTab === 'curl' ? curlCommand : nodeJSCommand)
     setDidCopy(true)
 
     setTimeout(() => {
       setDidCopy(false)
     }, 2000)
-  }, [copyCodeToClipboard, curlCommand, setDidCopy])
+  }, [copyCodeToClipboard, curlCommand, nodeJSCommand, currentTab, setDidCopy])
 
   return (
     <div className="dark:bg-polar-900 flex h-full w-full flex-col rounded-2xl bg-white shadow-sm">
-      <Tabs defaultValue="curl">
+      <Tabs
+        defaultValue="curl"
+        onValueChange={(v) => setCurrentTab(v as 'curl' | 'nodejs')}
+      >
         <TabsList className="dark:border-polar-800 flex w-full flex-row items-center justify-between gap-x-4 rounded-none border-b border-gray-100 px-4 py-3">
-          <div className="flex w-full flex-row items-center justify-between">
+          <div className="flex w-full flex-row items-center">
             <TabsTrigger className={triggerClassName} value="curl" size="small">
               cURL
+            </TabsTrigger>
+            <TabsTrigger
+              className={triggerClassName}
+              value="nodejs"
+              size="small"
+            >
+              NodeJS
             </TabsTrigger>
           </div>
           <Button
@@ -132,6 +175,11 @@ ${bodyParametersString}`
         <TabsContent value="curl" className="p-2 py-0">
           <pre className="dark:text-polar-50 h-full select-text overflow-auto p-4 font-mono text-xs leading-normal text-gray-900">
             {curlCommand}
+          </pre>
+        </TabsContent>
+        <TabsContent value="nodejs" className="p-2 py-0">
+          <pre className="dark:text-polar-50 h-full select-text overflow-auto p-4 font-mono text-xs leading-normal text-gray-900">
+            {nodeJSCommand}
           </pre>
         </TabsContent>
       </Tabs>

@@ -1,4 +1,5 @@
-from unittest.mock import MagicMock
+from typing import Literal
+from unittest.mock import MagicMock, call
 
 import pytest
 from pytest_mock import MockerFixture
@@ -13,6 +14,7 @@ from polar.benefit.service.benefit_grant import (  # type: ignore[attr-defined]
 from polar.models import (
     Benefit,
     BenefitGrant,
+    Product,
     Subscription,
     User,
 )
@@ -23,6 +25,11 @@ from polar.notifications.service import NotificationsService
 from polar.postgres import AsyncSession
 from polar.subscription.service import subscription as subscription_service
 from tests.fixtures.database import SaveFixture
+from tests.fixtures.random_objects import (
+    add_product_benefits,
+    create_sale,
+    create_subscription,
+)
 
 
 @pytest.fixture(autouse=True)
@@ -216,6 +223,81 @@ class TestRevokeBenefit:
         assert updated_grant.id == grant.id
         assert updated_grant.is_revoked
         benefit_service_mock.revoke.assert_not_called()
+
+
+@pytest.mark.asyncio
+@pytest.mark.skip_db_asserts
+class TestEnqueueBenefitsGrants:
+    @pytest.mark.parametrize("task", ["grant", "revoke"])
+    async def test_subscription_scope(
+        self,
+        task: Literal["grant", "revoke"],
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        benefits: list[Benefit],
+        user: User,
+        subscription: Subscription,
+    ) -> None:
+        enqueue_job_mock = mocker.patch(
+            "polar.benefit.service.benefit_grant.enqueue_job"
+        )
+
+        product = await add_product_benefits(
+            save_fixture, product=product, benefits=benefits
+        )
+
+        await benefit_grant_service.enqueue_benefits_grants(
+            session, task, user, product, subscription=subscription
+        )
+
+        enqueue_job_mock.assert_has_calls(
+            [
+                call(
+                    f"benefit.{task}",
+                    user_id=subscription.user_id,
+                    benefit_id=benefit.id,
+                    subscription_id=subscription.id,
+                )
+                for benefit in benefits
+            ]
+        )
+
+    async def test_outdated_grants(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        benefits: list[Benefit],
+        subscription: Subscription,
+        user: User,
+    ) -> None:
+        enqueue_job_mock = mocker.patch(
+            "polar.benefit.service.benefit_grant.enqueue_job"
+        )
+
+        grant = BenefitGrant(
+            subscription_id=subscription.id, user_id=user.id, benefit_id=benefits[0].id
+        )
+        grant.set_granted()
+        await save_fixture(grant)
+
+        product = await add_product_benefits(
+            save_fixture, product=product, benefits=benefits[1:]
+        )
+
+        await benefit_grant_service.enqueue_benefits_grants(
+            session, "grant", user, product, subscription=subscription
+        )
+
+        enqueue_job_mock.assert_any_call(
+            "benefit.revoke",
+            user_id=subscription.user_id,
+            benefit_id=benefits[0].id,
+            subscription_id=subscription.id,
+        )
 
 
 @pytest.mark.asyncio
@@ -612,5 +694,65 @@ class TestEnqueueGrantsAfterPreconditionFulfilled:
             "benefit.grant",
             user_id=user.id,
             benefit_id=pending_grant.benefit_id,
-            **pending_grant.get_scope(),
+            **pending_grant.scope,
         )
+
+
+@pytest.mark.asyncio
+class TestGetByBenefitAndScope:
+    async def test_existing_grant_incorrect_scope(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        subscription: Subscription,
+        user: User,
+        product: Product,
+        benefit_organization: Benefit,
+    ) -> None:
+        grant = BenefitGrant(
+            subscription_id=subscription.id,
+            user_id=user.id,
+            benefit_id=benefit_organization.id,
+        )
+        await save_fixture(grant)
+
+        # then
+        session.expunge_all()
+
+        other_subscription = await create_subscription(
+            save_fixture, product=product, user=user
+        )
+        sale = await create_sale(save_fixture, product=product, user=user)
+
+        retrieved_grant = await benefit_grant_service.get_by_benefit_and_scope(
+            session,
+            user=user,
+            benefit=benefit_organization,
+            subscription=other_subscription,
+            sale=sale,
+        )
+        assert retrieved_grant is None
+
+    async def test_existing_grant_correct_scope(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        subscription: Subscription,
+        user: User,
+        benefit_organization: Benefit,
+    ) -> None:
+        grant = BenefitGrant(
+            subscription_id=subscription.id,
+            user_id=user.id,
+            benefit_id=benefit_organization.id,
+        )
+        await save_fixture(grant)
+
+        # then
+        session.expunge_all()
+
+        retrieved_grant = await benefit_grant_service.get_by_benefit_and_scope(
+            session, user=user, benefit=benefit_organization, subscription=subscription
+        )
+        assert retrieved_grant is not None
+        assert retrieved_grant.id == grant.id

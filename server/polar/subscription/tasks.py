@@ -36,18 +36,6 @@ class SubscriptionTierDoesNotExist(SubscriptionTaskError):
         super().__init__(message)
 
 
-@task("subscription.subscription.enqueue_benefits_grants")
-async def subscription_enqueue_benefits_grants(
-    ctx: JobContext, subscription_id: uuid.UUID, polar_context: PolarWorkerContext
-) -> None:
-    async with AsyncSessionMaker(ctx) as session:
-        subscription = await subscription_service.get(session, subscription_id)
-        if subscription is None:
-            raise SubscriptionDoesNotExist(subscription_id)
-
-        await subscription_service.enqueue_benefits_grants(session, subscription)
-
-
 @task("subscription.subscription.update_product_benefits_grants")
 async def subscription_update_product_benefits_grants(
     ctx: JobContext, subscription_tier_id: uuid.UUID, polar_context: PolarWorkerContext

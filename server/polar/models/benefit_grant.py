@@ -1,4 +1,3 @@
-import uuid
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any, TypedDict
 from uuid import UUID
@@ -9,25 +8,64 @@ from sqlalchemy import (
     ColumnElement,
     ForeignKey,
     UniqueConstraint,
+    and_,
     type_coerce,
 )
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.hybrid import hybrid_property
-from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
+from sqlalchemy.orm import (
+    CompositeProperty,
+    Mapped,
+    composite,
+    declared_attr,
+    mapped_column,
+    relationship,
+)
 
 from polar.kit.db.models import RecordModel
 from polar.kit.extensions.sqlalchemy import PostgresUUID
 
 if TYPE_CHECKING:
-    from polar.models import Benefit, Subscription, User
+    from polar.models import Benefit, Sale, Subscription, User
 
 
 class BenefitGrantScope(TypedDict, total=False):
     subscription: "Subscription"
+    sale: "Sale"
 
 
-class BenefitGrantScopeArgs(TypedDict, total=False):
-    subscription_id: uuid.UUID
+if TYPE_CHECKING:
+
+    class BenefitGrantScopeArgs(TypedDict, total=False):
+        subscription_id: UUID
+        sale_id: UUID
+
+else:
+
+    class BenefitGrantScopeArgs(dict):
+        def __init__(
+            self, subscription_id: UUID | None = None, sale_id: UUID | None = None
+        ) -> None:
+            d = {}
+            if subscription_id is not None:
+                d["subscription_id"] = subscription_id
+            if sale_id is not None:
+                d["sale_id"] = sale_id
+            super().__init__(d)
+
+        def __composite_values__(self) -> tuple[UUID | None, UUID | None]:
+            return self.get("subscription_id"), self.get("sale_id")
+
+
+class BenefitGrantScopeComparator(CompositeProperty.Comparator[BenefitGrantScopeArgs]):
+    def __eq__(self, other: Any) -> ColumnElement[bool]:  # type: ignore[override]
+        if not isinstance(other, dict) or other == {}:
+            raise ValueError("A non-empty dictionary scope must be provided.")
+        clauses = []
+        composite_columns = self.__clause_element__().columns
+        for key, value in other.items():
+            clauses.append(composite_columns[f"{key}_id"] == value.id)
+        return and_(*clauses)
 
 
 class BenefitGrant(RecordModel):
@@ -47,17 +85,6 @@ class BenefitGrant(RecordModel):
     properties: Mapped[dict[str, Any]] = mapped_column(
         "properties", JSONB, nullable=False, default=dict
     )
-
-    subscription_id: Mapped[UUID] = mapped_column(
-        PostgresUUID,
-        ForeignKey("subscriptions.id", ondelete="cascade"),
-        nullable=False,
-        index=True,
-    )
-
-    @declared_attr
-    def subscription(cls) -> Mapped["Subscription"]:
-        return relationship("Subscription", lazy="raise", back_populates="grants")
 
     user_id: Mapped[UUID] = mapped_column(
         PostgresUUID,
@@ -80,6 +107,32 @@ class BenefitGrant(RecordModel):
     @declared_attr
     def benefit(cls) -> Mapped["Benefit"]:
         return relationship("Benefit", lazy="raise")
+
+    subscription_id: Mapped[UUID | None] = mapped_column(
+        PostgresUUID,
+        ForeignKey("subscriptions.id", ondelete="cascade"),
+        nullable=True,
+        index=True,
+    )
+
+    @declared_attr
+    def subscription(cls) -> Mapped["Subscription | None"]:
+        return relationship("Subscription", lazy="raise", back_populates="grants")
+
+    sale_id: Mapped[UUID | None] = mapped_column(
+        PostgresUUID,
+        ForeignKey("sales.id", ondelete="cascade"),
+        nullable=True,
+        index=True,
+    )
+
+    @declared_attr
+    def sale(cls) -> Mapped["Sale | None"]:
+        return relationship("Sale", lazy="raise")
+
+    scope: Mapped[BenefitGrantScopeArgs] = composite(
+        "subscription_id", "sale_id", comparator_factory=BenefitGrantScopeComparator
+    )
 
     @hybrid_property
     def is_granted(self) -> bool:
@@ -106,9 +159,3 @@ class BenefitGrant(RecordModel):
     def set_revoked(self) -> None:
         self.granted_at = None
         self.revoked_at = datetime.now(UTC)
-
-    def get_scope(self) -> BenefitGrantScopeArgs:
-        scope: BenefitGrantScopeArgs = {}
-        if self.subscription_id:
-            scope["subscription_id"] = self.subscription_id
-        return scope

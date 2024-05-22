@@ -56,7 +56,6 @@ from polar.models import (
     User,
     UserOrganization,
 )
-from polar.models.benefit import BenefitType
 from polar.models.product import SubscriptionTierType
 from polar.models.subscription import SubscriptionStatus
 from polar.models.transaction import TransactionType
@@ -71,9 +70,6 @@ from polar.notifications.service import notifications as notifications_service
 from polar.organization.service import organization as organization_service
 from polar.posthog import posthog
 from polar.user.service import user as user_service
-from polar.user_organization.service import (
-    user_organization as user_organization_service,
-)
 from polar.webhook.service import webhook as webhook_service
 from polar.webhook.webhooks import WebhookTypeObject
 from polar.webhook_notifications.service import webhook_notifications_service
@@ -524,9 +520,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         session.add(subscription)
         await session.flush()
 
-        enqueue_job(
-            "subscription.subscription.enqueue_benefits_grants", subscription.id
-        )
+        await self.enqueue_benefits_grants(session, subscription)
 
         await self._after_subscription_created(session, subscription)
 
@@ -755,9 +749,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
                     {"subscription_id": subscription.id},
                 )
 
-        enqueue_job(
-            "subscription.subscription.enqueue_benefits_grants", subscription.id
-        )
+        await self.enqueue_benefits_grants(session, subscription)
 
         await self._after_subscription_updated(session, subscription)
 
@@ -766,82 +758,44 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
     async def enqueue_benefits_grants(
         self, session: AsyncSession, subscription: Subscription
     ) -> None:
-        subscription_tier = await product_service.get(session, subscription.product_id)
-        assert subscription_tier is not None
+        product = await product_service.get(session, subscription.product_id)
+        assert product is not None
 
         if subscription.is_incomplete():
             return
 
-        # Get granted benefits that are not part of this tier.
-        # It happens if the subscription has been upgraded/downgraded.
-        outdated_grants = await self._get_outdated_grants(
-            session, subscription, subscription_tier
+        task = "grant" if subscription.active else "revoke"
+        user_id = subscription.user_id
+
+        enqueue_job(
+            "benefit.enqueue_benefits_grants",
+            task=task,
+            user_id=user_id,
+            product_id=product.id,
+            subscription_id=subscription.id,
         )
 
-        # Grant to all members of the organization if any, or the user
-        users_ids: list[uuid.UUID] = []
-        if subscription.organization_id is not None:
-            members = await user_organization_service.list_by_org(
-                session, subscription.organization_id
+        # Special hard-coded logic to make sure
+        # we always at least subscribe to public articles
+        if product.get_articles_benefit() is None:
+            await session.refresh(product, {"organization"})
+            enqueue_job(
+                "benefit.force_free_articles",
+                task=task,
+                user_id=user_id,
+                organization_id=product.organization_id,
+                subscription_id=subscription.id,
             )
-            users_ids = [member.user_id for member in members]
-        else:
-            users_ids = [subscription.user_id]
-
-        task = "grant" if subscription.active else "revoke"
-        for benefit in subscription_tier.benefits:
-            # FIXME: Hack to prevent GitHub Repository benefit abuse
-            # Only enqueue it for the subscriber user.
-            # Remove this when we have proper per-seat support
-            if benefit.type == BenefitType.github_repository:
-                enqueue_job(
-                    f"benefit.{task}",
-                    subscription_id=subscription.id,
-                    user_id=subscription.user_id,
-                    benefit_id=benefit.id,
-                )
-            else:
-                for user_id in users_ids:
-                    enqueue_job(
-                        f"benefit.{task}",
-                        subscription_id=subscription.id,
-                        user_id=user_id,
-                        benefit_id=benefit.id,
-                    )
-
-        for user_id in users_ids:
-            for outdated_grant in outdated_grants:
-                enqueue_job(
-                    "benefit.revoke",
-                    user_id=user_id,
-                    benefit_id=outdated_grant.benefit_id,
-                    subscription_id=subscription.id,
-                )
-
-            # Special hard-coded logic to make sure
-            # we always at least subscribe to public articles
-            if subscription_tier.get_articles_benefit() is None:
-                await session.refresh(subscription_tier, {"organization"})
-                enqueue_job(
-                    "benefit.force_free_articles",
-                    task=task,
-                    user_id=user_id,
-                    organization_id=subscription_tier.organization_id,
-                    subscription_id=subscription.id,
-                )
 
     async def update_product_benefits_grants(
         self, session: AsyncSession, product: Product
     ) -> None:
         statement = select(Subscription).where(
-            Subscription.product_id == product.id,
-            Subscription.deleted_at.is_(None),
+            Subscription.product_id == product.id, Subscription.deleted_at.is_(None)
         )
         subscriptions = await session.stream_scalars(statement)
         async for subscription in subscriptions:
-            enqueue_job(
-                "subscription.subscription.enqueue_benefits_grants", subscription.id
-            )
+            await self.enqueue_benefits_grants(session, subscription)
 
     async def update_organization_benefits_grants(
         self, session: AsyncSession, organization: Organization
@@ -852,9 +806,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         )
         subscriptions = await session.stream_scalars(statement)
         async for subscription in subscriptions:
-            enqueue_job(
-                "subscription.subscription.enqueue_benefits_grants", subscription.id
-            )
+            await self.enqueue_benefits_grants(session, subscription)
 
     async def upgrade_subscription(
         self,
@@ -938,9 +890,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
 
             # free subscriptions end immediately (vs at end of billing period)
             # queue removal of grants
-            enqueue_job(
-                "subscription.subscription.enqueue_benefits_grants", subscription.id
-            )
+            await self.enqueue_benefits_grants(session, subscription)
 
         session.add(subscription)
 

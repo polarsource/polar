@@ -8,7 +8,7 @@ from polar.kit.db.models import RecordModel
 from polar.kit.extensions.sqlalchemy import PostgresUUID
 
 if TYPE_CHECKING:
-    from polar.models import Benefit
+    from polar.models import Benefit, Product
 
 
 class ProductBenefit(RecordModel):
@@ -26,6 +26,10 @@ class ProductBenefit(RecordModel):
         primary_key=True,
     )
     order: Mapped[int] = mapped_column(Integer, index=True, nullable=False)
+
+    @declared_attr
+    def product(cls) -> Mapped["Product"]:
+        return relationship("Product", lazy="raise")
 
     @declared_attr
     def benefit(cls) -> Mapped["Benefit"]:

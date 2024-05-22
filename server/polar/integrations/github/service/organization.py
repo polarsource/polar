@@ -187,16 +187,20 @@ class GithubOrganizationService(OrganizationService):
         if not user.avatar_url:
             raise InternalServerError("user has no avatar_url")
 
-        org = Organization(
-            platform=Platforms.github,
-            name=oauth.account_username,
-            avatar_url=user.avatar_url,
-            external_id=int(oauth.account_id),
-            is_personal=True,
-            created_from_user_maintainer_upgrade=True,
-        )
-        session.add(org)
-        await session.flush()
+        # The organization may already exist
+        # if it was synced from GitHub through issue funding
+        org = await self.get_by_name(session, Platforms.github, oauth.account_username)
+        if org is None:
+            org = Organization(
+                platform=Platforms.github,
+                name=oauth.account_username,
+                avatar_url=user.avatar_url,
+                external_id=int(oauth.account_id),
+                is_personal=True,
+                created_from_user_maintainer_upgrade=True,
+            )
+            session.add(org)
+            await session.flush()
 
         await organization_service.add_user(
             session, organization=org, user=user, is_admin=True

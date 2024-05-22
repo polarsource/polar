@@ -1,61 +1,27 @@
-import base64
-import hashlib
 from datetime import datetime
 from typing import Any, Self
 
 from pydantic import UUID4
 
+from polar.integrations.aws.s3.schemas import (
+    S3DownloadURL,
+    S3File,
+    S3FileCreate,
+    S3FileDownload,
+    S3FileUpload,
+    S3FileUploadCompleted,
+    get_downloadable_content_disposition,
+)
 from polar.kit.schemas import Schema
-from polar.models import File
+from polar.models.file import File, FileServiceTypes
 
 
-class FileCreatePart(Schema):
-    number: int
-    chunk_start: int
-    chunk_end: int
-
-    checksum_sha256_base64: str | None
-
-    def get_s3_arguments(self) -> dict[str, Any]:
-        if not self.checksum_sha256_base64:
-            return dict(PartNumber=self.number)
-
-        return dict(
-            PartNumber=self.number,
-            ChecksumAlgorithm="SHA256",
-            ChecksumSHA256=self.checksum_sha256_base64,
-        )
+class FileCreate(S3FileCreate):
+    service: FileServiceTypes = FileServiceTypes.downloadable
 
 
-class FileCreateMultipart(Schema):
-    parts: list[FileCreatePart]
-
-
-class FileCreate(Schema):
-    organization_id: UUID4 | None
-    name: str
-    mime_type: str
-    size: int
-
-    checksum_sha256_base64: str | None
-
-    upload: FileCreateMultipart
-
-
-class FileRead(Schema):
-    id: UUID4
-    organization_id: UUID4
-
-    name: str
-    extension: str
-    mime_type: str
-    size: int
-
-    checksum_etag: str | None = None  # Provided by AWS S3
-    checksum_sha256_base64: str | None  # Provided by us
-    checksum_sha256_hex: str | None
-
-    uploaded_at: datetime | None = None
+class FileRead(S3File):
+    service: FileServiceTypes
     created_at: datetime
 
     @staticmethod
@@ -65,16 +31,19 @@ class FileRead(Schema):
             organization_id=record.organization_id,
             name=record.name,
             extension=record.extension,
+            path=record.path,
             mime_type=record.mime_type,
             size=record.size,
-            checksum_etag=record.etag,
-            uploaded_at=record.uploaded_at,
+            service=record.service,
+            checksum_etag=record.checksum_etag,
+            last_modified_at=record.last_modified_at,
+            storage_version=record.storage_version,
             created_at=record.created_at,
         )
-        if record.sha256_base64 and record.sha256_hex:
+        if record.checksum_sha256_base64 and record.checksum_sha256_hex:
             ret.update(
-                checksum_sha256_base64=record.sha256_base64,
-                checksum_sha256_hex=record.sha256_hex,
+                checksum_sha256_base64=record.checksum_sha256_base64,
+                checksum_sha256_hex=record.checksum_sha256_hex,
             )
 
         return ret
@@ -85,97 +54,47 @@ class FileRead(Schema):
         return cls(**params)
 
 
-class FileUploadPart(FileCreatePart):
-    url: str
-    expires_at: datetime
+class FileUpload(S3FileUpload):
+    service: FileServiceTypes
 
-    headers: dict[str, str] = {}
+
+class FileUploadCompleted(S3FileUploadCompleted): ...
+
+
+class FileDownload(S3FileDownload):
+    service: FileServiceTypes
 
     @classmethod
-    def generate_headers(cls, sha256_base64: str | None) -> dict[str, str]:
-        if not sha256_base64:
-            return {}
-
-        return {
-            "x-amz-checksum-sha256": sha256_base64,
+    def from_db_presigned(cls, file: File, url: str, expires_at: datetime) -> Self:
+        download_headers = {
+            "Content-Disposition": get_downloadable_content_disposition(file.name),
+            "Content-Type": file.mime_type,
+            "x-amz-checksum-sha256": file.checksum_sha256_base64,
             "x-amz-sdk-checksum-algorithm": "SHA256",
         }
-
-
-class FileUploadMultipart(Schema):
-    id: str
-    parts: list[FileUploadPart]
-
-
-class FileUpload(FileRead):
-    upload: FileUploadMultipart
-
-    @classmethod
-    def from_presign(
-        cls, record: File, upload_id: str, parts: list[FileUploadPart]
-    ) -> Self:
-        params = cls.prepare_dict_from_db(record)
-        upload = FileUploadMultipart(id=upload_id, parts=parts)
-        return cls(upload=upload, **params)
-
-
-class FileUploadCompletedPart(Schema):
-    number: int
-    checksum_etag: str
-    checksum_sha256_base64: str | None = None
-
-
-class FileUploadCompletedMultipart(Schema):
-    id: str
-    parts: list[FileUploadCompletedPart]
-
-
-class FileUploadCompleted(Schema):
-    upload: FileUploadCompletedMultipart
-
-    def get_s3_arguments(self) -> dict[str, Any]:
-        parts = []
-        checksum_validate = []
-        for part in self.upload.parts:
-            data = dict(
-                ETag=part.checksum_etag,
-                PartNumber=part.number,
+        if file.checksum_sha256_base64:
+            download_headers.update(
+                {
+                    "x-amz-meta-sha256-base64": file.checksum_sha256_base64,
+                    "x-amz-meta-sha256-hex": file.checksum_sha256_hex,
+                }
             )
-            if part.checksum_sha256_base64:
-                data["ChecksumSHA256"] = part.checksum_sha256_base64
-                digest = base64.b64decode(part.checksum_sha256_base64)
-                checksum_validate.append(digest)
 
-            parts.append(data)
-
-        ret = dict(
-            UploadId=self.upload.id,
-            MultipartUpload=dict(
-                Parts=parts,
-            ),
+        file_dict = FileRead.prepare_dict_from_db(file)
+        return cls(
+            **file_dict,
+            download=S3DownloadURL(
+                url=url,
+                expires_at=expires_at,
+                headers=download_headers,
+            )
         )
-        if not checksum_validate:
-            return ret
-
-        # S3 SHA-256 BASE64 validation for multipart upload is special.
-        # It's not the same as SHA-256 BASE64 on the entire file contents.
-        #
-        # 1. Concatenates SHA-256 digests (not base64 encoded) from chunks
-        # 2. New SHA-256 digest of the concatenation
-        # 3. Base64 encode the new digest
-        #
-        # See: https://docs.aws.amazon.com/AmazonS3/latest/userguide/checking-object-integrity.html
-        # See: https://youtu.be/Te6s1VZPGfk?si=mnq2NizKJy_bM5-D&t=510
-        #
-        # We only use this for S3 validation. Our SHA-256 base64 & hexdigest in
-        # the database is for the entire file contents to support regular
-        # client-side validation post download.
-        concatenated = b"".join(checksum_validate)
-        digest = hashlib.sha256(concatenated).digest()
-        ret["ChecksumSHA256"] = base64.b64encode(digest).decode("utf-8")
-        return ret
 
 
 class FileUpdate(Schema):
     id: UUID4
-    uploaded_at: datetime
+    checksum_etag: str
+    last_modified_at: datetime
+    storage_version: str | None
+    checksum_sha256_base64: str | None
+    checksum_sha256_hex: str | None

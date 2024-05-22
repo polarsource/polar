@@ -1,17 +1,21 @@
-import { BenefitFilesSubscriber, DownloadableRead } from '@polar-sh/sdk'
+import { DownloadableRead } from '@polar-sh/sdk'
 
 import { useDownloadables } from '@/hooks/queries'
 
-const FileItem = ({ file }: { file: BenefitFilesSubscriber }) => {
+const DownloadableItem = ({
+  downloadable,
+}: {
+  downloadable: DownloadableRead
+}) => {
   return (
     <a
       onClick={(e) => {
         e.preventDefault()
-        window.location.href = file.url
+        window.location.href = downloadable.file.download.url
       }}
       className="text-blue-500 underline"
     >
-      {file.name} ({file.size} bytes)
+      {downloadable.file.name} ({downloadable.file.size} bytes)
     </a>
   )
 }
@@ -21,11 +25,11 @@ const DownloadablesSubscriberWidget = ({
 }: {
   benefit: BenefitDownloadablesSubscriber
 }) => {
-  const fileQuery = useDownloadables()
+  const downloadablesQuery = useDownloadables(benefit.id)
 
-  const files: DownloadableRead[] = fileQuery.data?.items
+  const downloadables: DownloadableRead[] = downloadablesQuery.data?.items
 
-  if (fileQuery.isLoading) {
+  if (downloadablesQuery.isLoading) {
     // TODO: Style me
     return <div>Loading...</div>
   }
@@ -33,9 +37,9 @@ const DownloadablesSubscriberWidget = ({
   return (
     <div>
       <ul>
-        {files.map((file) => (
-          <li key={file.id}>
-            <FileItem file={file} />
+        {downloadables.map((downloadable) => (
+          <li key={downloadable.id}>
+            <DownloadableItem downloadable={downloadable} />
           </li>
         ))}
       </ul>

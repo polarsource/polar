@@ -7245,8 +7245,8 @@
                             },
                             "description": "Filter by the type of purchase the customer made.",
                             "default": [
-                                "donation",
                                 "order",
+                                "donation",
                                 "subscription"
                             ],
                             "title": "Customer Types"
@@ -11527,8 +11527,8 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "creator:benefits:write",
-                            "creator:benefits:read"
+                            "creator:benefits:read",
+                            "creator:benefits:write"
                         ]
                     },
                     {
@@ -11747,8 +11747,8 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "creator:benefits:write",
-                            "creator:benefits:read"
+                            "creator:benefits:read",
+                            "creator:benefits:write"
                         ]
                     },
                     {
@@ -12043,8 +12043,8 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "creator:benefits:write",
-                            "creator:benefits:read"
+                            "creator:benefits:read",
+                            "creator:benefits:write"
                         ]
                     },
                     {
@@ -13757,8 +13757,8 @@
                 "tags": [
                     "files"
                 ],
-                "summary": "Create File",
-                "operationId": "files:create_file",
+                "summary": "Create",
+                "operationId": "files:create",
                 "requestBody": {
                     "content": {
                         "application/json": {
@@ -13809,13 +13809,13 @@
                 ]
             }
         },
-        "/api/v1/files/{file_id}": {
-            "patch": {
+        "/api/v1/files/{file_id}/uploaded": {
+            "post": {
                 "tags": [
                     "files"
                 ],
-                "summary": "Complete Upload",
-                "operationId": "files:complete_upload",
+                "summary": "Uploaded",
+                "operationId": "files:uploaded",
                 "security": [
                     {
                         "OpenIdConnect": []
@@ -19464,89 +19464,20 @@
                         "format": "uuid4",
                         "title": "Id"
                     },
-                    "organization_id": {
+                    "benefit_id": {
                         "type": "string",
                         "format": "uuid4",
-                        "title": "Organization Id"
+                        "title": "Benefit Id"
                     },
-                    "name": {
-                        "type": "string",
-                        "title": "Name"
-                    },
-                    "extension": {
-                        "type": "string",
-                        "title": "Extension"
-                    },
-                    "mime_type": {
-                        "type": "string",
-                        "title": "Mime Type"
-                    },
-                    "size": {
-                        "type": "integer",
-                        "title": "Size"
-                    },
-                    "checksum_etag": {
-                        "anyOf": [
-                            {
-                                "type": "string"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Checksum Etag"
-                    },
-                    "checksum_sha256_base64": {
-                        "anyOf": [
-                            {
-                                "type": "string"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Checksum Sha256 Base64"
-                    },
-                    "checksum_sha256_hex": {
-                        "anyOf": [
-                            {
-                                "type": "string"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Checksum Sha256 Hex"
-                    },
-                    "uploaded_at": {
-                        "anyOf": [
-                            {
-                                "type": "string",
-                                "format": "date-time"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Uploaded At"
-                    },
-                    "created_at": {
-                        "type": "string",
-                        "format": "date-time",
-                        "title": "Created At"
+                    "file": {
+                        "$ref": "#/components/schemas/FileDownload"
                     }
                 },
                 "type": "object",
                 "required": [
                     "id",
-                    "organization_id",
-                    "name",
-                    "extension",
-                    "mime_type",
-                    "size",
-                    "checksum_sha256_base64",
-                    "checksum_sha256_hex",
-                    "created_at"
+                    "benefit_id",
+                    "file"
                 ],
                 "title": "DownloadableRead"
             },
@@ -19783,7 +19714,15 @@
                         "title": "Checksum Sha256 Base64"
                     },
                     "upload": {
-                        "$ref": "#/components/schemas/FileCreateMultipart"
+                        "$ref": "#/components/schemas/S3FileCreateMultipart"
+                    },
+                    "service": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/FileServiceTypes"
+                            }
+                        ],
+                        "default": "downloadable"
                     }
                 },
                 "type": "object",
@@ -19797,35 +19736,59 @@
                 ],
                 "title": "FileCreate"
             },
-            "FileCreateMultipart": {
+            "FileDownload": {
                 "properties": {
-                    "parts": {
-                        "items": {
-                            "$ref": "#/components/schemas/FileCreatePart"
-                        },
-                        "type": "array",
-                        "title": "Parts"
-                    }
-                },
-                "type": "object",
-                "required": [
-                    "parts"
-                ],
-                "title": "FileCreateMultipart"
-            },
-            "FileCreatePart": {
-                "properties": {
-                    "number": {
-                        "type": "integer",
-                        "title": "Number"
+                    "id": {
+                        "type": "string",
+                        "format": "uuid4",
+                        "title": "Id"
                     },
-                    "chunk_start": {
-                        "type": "integer",
-                        "title": "Chunk Start"
+                    "organization_id": {
+                        "type": "string",
+                        "format": "uuid4",
+                        "title": "Organization Id"
                     },
-                    "chunk_end": {
+                    "name": {
+                        "type": "string",
+                        "title": "Name"
+                    },
+                    "extension": {
+                        "type": "string",
+                        "title": "Extension"
+                    },
+                    "path": {
+                        "type": "string",
+                        "title": "Path"
+                    },
+                    "mime_type": {
+                        "type": "string",
+                        "title": "Mime Type"
+                    },
+                    "size": {
                         "type": "integer",
-                        "title": "Chunk End"
+                        "title": "Size"
+                    },
+                    "storage_version": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Storage Version"
+                    },
+                    "checksum_etag": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Checksum Etag"
                     },
                     "checksum_sha256_base64": {
                         "anyOf": [
@@ -19837,16 +19800,50 @@
                             }
                         ],
                         "title": "Checksum Sha256 Base64"
+                    },
+                    "checksum_sha256_hex": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Checksum Sha256 Hex"
+                    },
+                    "last_modified_at": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "date-time"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Last Modified At"
+                    },
+                    "download": {
+                        "$ref": "#/components/schemas/S3DownloadURL"
+                    },
+                    "service": {
+                        "$ref": "#/components/schemas/FileServiceTypes"
                     }
                 },
                 "type": "object",
                 "required": [
-                    "number",
-                    "chunk_start",
-                    "chunk_end",
-                    "checksum_sha256_base64"
+                    "id",
+                    "organization_id",
+                    "name",
+                    "extension",
+                    "path",
+                    "mime_type",
+                    "size",
+                    "download",
+                    "service"
                 ],
-                "title": "FileCreatePart"
+                "title": "FileDownload"
             },
             "FileRead": {
                 "properties": {
@@ -19868,6 +19865,10 @@
                         "type": "string",
                         "title": "Extension"
                     },
+                    "path": {
+                        "type": "string",
+                        "title": "Path"
+                    },
                     "mime_type": {
                         "type": "string",
                         "title": "Mime Type"
@@ -19875,6 +19876,17 @@
                     "size": {
                         "type": "integer",
                         "title": "Size"
+                    },
+                    "storage_version": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Storage Version"
                     },
                     "checksum_etag": {
                         "anyOf": [
@@ -19909,7 +19921,7 @@
                         ],
                         "title": "Checksum Sha256 Hex"
                     },
-                    "uploaded_at": {
+                    "last_modified_at": {
                         "anyOf": [
                             {
                                 "type": "string",
@@ -19919,7 +19931,10 @@
                                 "type": "null"
                             }
                         ],
-                        "title": "Uploaded At"
+                        "title": "Last Modified At"
+                    },
+                    "service": {
+                        "$ref": "#/components/schemas/FileServiceTypes"
                     },
                     "created_at": {
                         "type": "string",
@@ -19933,13 +19948,21 @@
                     "organization_id",
                     "name",
                     "extension",
+                    "path",
                     "mime_type",
                     "size",
-                    "checksum_sha256_base64",
-                    "checksum_sha256_hex",
+                    "service",
                     "created_at"
                 ],
                 "title": "FileRead"
+            },
+            "FileServiceTypes": {
+                "type": "string",
+                "enum": [
+                    "downloadable"
+                ],
+                "const": "downloadable",
+                "title": "FileServiceTypes"
             },
             "FileUpload": {
                 "properties": {
@@ -19961,6 +19984,10 @@
                         "type": "string",
                         "title": "Extension"
                     },
+                    "path": {
+                        "type": "string",
+                        "title": "Path"
+                    },
                     "mime_type": {
                         "type": "string",
                         "title": "Mime Type"
@@ -19968,6 +19995,17 @@
                     "size": {
                         "type": "integer",
                         "title": "Size"
+                    },
+                    "storage_version": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Storage Version"
                     },
                     "checksum_etag": {
                         "anyOf": [
@@ -20002,7 +20040,7 @@
                         ],
                         "title": "Checksum Sha256 Hex"
                     },
-                    "uploaded_at": {
+                    "last_modified_at": {
                         "anyOf": [
                             {
                                 "type": "string",
@@ -20012,15 +20050,13 @@
                                 "type": "null"
                             }
                         ],
-                        "title": "Uploaded At"
-                    },
-                    "created_at": {
-                        "type": "string",
-                        "format": "date-time",
-                        "title": "Created At"
+                        "title": "Last Modified At"
                     },
                     "upload": {
-                        "$ref": "#/components/schemas/FileUploadMultipart"
+                        "$ref": "#/components/schemas/S3FileUploadMultipart"
+                    },
+                    "service": {
+                        "$ref": "#/components/schemas/FileServiceTypes"
                     }
                 },
                 "type": "object",
@@ -20029,151 +20065,39 @@
                     "organization_id",
                     "name",
                     "extension",
+                    "path",
                     "mime_type",
                     "size",
-                    "checksum_sha256_base64",
-                    "checksum_sha256_hex",
-                    "created_at",
-                    "upload"
+                    "upload",
+                    "service"
                 ],
                 "title": "FileUpload"
             },
             "FileUploadCompleted": {
                 "properties": {
-                    "upload": {
-                        "$ref": "#/components/schemas/FileUploadCompletedMultipart"
+                    "id": {
+                        "type": "string",
+                        "title": "Id"
+                    },
+                    "path": {
+                        "type": "string",
+                        "title": "Path"
+                    },
+                    "parts": {
+                        "items": {
+                            "$ref": "#/components/schemas/S3FileUploadCompletedPart"
+                        },
+                        "type": "array",
+                        "title": "Parts"
                     }
                 },
                 "type": "object",
                 "required": [
-                    "upload"
+                    "id",
+                    "path",
+                    "parts"
                 ],
                 "title": "FileUploadCompleted"
-            },
-            "FileUploadCompletedMultipart": {
-                "properties": {
-                    "id": {
-                        "type": "string",
-                        "title": "Id"
-                    },
-                    "parts": {
-                        "items": {
-                            "$ref": "#/components/schemas/FileUploadCompletedPart"
-                        },
-                        "type": "array",
-                        "title": "Parts"
-                    }
-                },
-                "type": "object",
-                "required": [
-                    "id",
-                    "parts"
-                ],
-                "title": "FileUploadCompletedMultipart"
-            },
-            "FileUploadCompletedPart": {
-                "properties": {
-                    "number": {
-                        "type": "integer",
-                        "title": "Number"
-                    },
-                    "checksum_etag": {
-                        "type": "string",
-                        "title": "Checksum Etag"
-                    },
-                    "checksum_sha256_base64": {
-                        "anyOf": [
-                            {
-                                "type": "string"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Checksum Sha256 Base64"
-                    }
-                },
-                "type": "object",
-                "required": [
-                    "number",
-                    "checksum_etag"
-                ],
-                "title": "FileUploadCompletedPart"
-            },
-            "FileUploadMultipart": {
-                "properties": {
-                    "id": {
-                        "type": "string",
-                        "title": "Id"
-                    },
-                    "parts": {
-                        "items": {
-                            "$ref": "#/components/schemas/FileUploadPart"
-                        },
-                        "type": "array",
-                        "title": "Parts"
-                    }
-                },
-                "type": "object",
-                "required": [
-                    "id",
-                    "parts"
-                ],
-                "title": "FileUploadMultipart"
-            },
-            "FileUploadPart": {
-                "properties": {
-                    "number": {
-                        "type": "integer",
-                        "title": "Number"
-                    },
-                    "chunk_start": {
-                        "type": "integer",
-                        "title": "Chunk Start"
-                    },
-                    "chunk_end": {
-                        "type": "integer",
-                        "title": "Chunk End"
-                    },
-                    "checksum_sha256_base64": {
-                        "anyOf": [
-                            {
-                                "type": "string"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Checksum Sha256 Base64"
-                    },
-                    "url": {
-                        "type": "string",
-                        "title": "Url"
-                    },
-                    "expires_at": {
-                        "type": "string",
-                        "format": "date-time",
-                        "title": "Expires At"
-                    },
-                    "headers": {
-                        "additionalProperties": {
-                            "type": "string"
-                        },
-                        "type": "object",
-                        "title": "Headers",
-                        "default": {}
-                    }
-                },
-                "type": "object",
-                "required": [
-                    "number",
-                    "chunk_start",
-                    "chunk_end",
-                    "checksum_sha256_base64",
-                    "url",
-                    "expires_at"
-                ],
-                "title": "FileUploadPart"
             },
             "FreeSubscriptionUpgrade": {
                 "properties": {
@@ -26800,6 +26724,193 @@
                     "name"
                 ],
                 "title": "RewardsSummaryReceiver"
+            },
+            "S3DownloadURL": {
+                "properties": {
+                    "url": {
+                        "type": "string",
+                        "title": "Url"
+                    },
+                    "headers": {
+                        "additionalProperties": {
+                            "type": "string"
+                        },
+                        "type": "object",
+                        "title": "Headers",
+                        "default": {}
+                    },
+                    "expires_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "title": "Expires At"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "url",
+                    "expires_at"
+                ],
+                "title": "S3DownloadURL"
+            },
+            "S3FileCreateMultipart": {
+                "properties": {
+                    "parts": {
+                        "items": {
+                            "$ref": "#/components/schemas/S3FileCreatePart"
+                        },
+                        "type": "array",
+                        "title": "Parts"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "parts"
+                ],
+                "title": "S3FileCreateMultipart"
+            },
+            "S3FileCreatePart": {
+                "properties": {
+                    "number": {
+                        "type": "integer",
+                        "title": "Number"
+                    },
+                    "chunk_start": {
+                        "type": "integer",
+                        "title": "Chunk Start"
+                    },
+                    "chunk_end": {
+                        "type": "integer",
+                        "title": "Chunk End"
+                    },
+                    "checksum_sha256_base64": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Checksum Sha256 Base64"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "number",
+                    "chunk_start",
+                    "chunk_end",
+                    "checksum_sha256_base64"
+                ],
+                "title": "S3FileCreatePart"
+            },
+            "S3FileUploadCompletedPart": {
+                "properties": {
+                    "number": {
+                        "type": "integer",
+                        "title": "Number"
+                    },
+                    "checksum_etag": {
+                        "type": "string",
+                        "title": "Checksum Etag"
+                    },
+                    "checksum_sha256_base64": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Checksum Sha256 Base64"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "number",
+                    "checksum_etag"
+                ],
+                "title": "S3FileUploadCompletedPart"
+            },
+            "S3FileUploadMultipart": {
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "title": "Id"
+                    },
+                    "path": {
+                        "type": "string",
+                        "title": "Path"
+                    },
+                    "parts": {
+                        "items": {
+                            "$ref": "#/components/schemas/S3FileUploadPart"
+                        },
+                        "type": "array",
+                        "title": "Parts"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "id",
+                    "path",
+                    "parts"
+                ],
+                "title": "S3FileUploadMultipart"
+            },
+            "S3FileUploadPart": {
+                "properties": {
+                    "number": {
+                        "type": "integer",
+                        "title": "Number"
+                    },
+                    "chunk_start": {
+                        "type": "integer",
+                        "title": "Chunk Start"
+                    },
+                    "chunk_end": {
+                        "type": "integer",
+                        "title": "Chunk End"
+                    },
+                    "checksum_sha256_base64": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Checksum Sha256 Base64"
+                    },
+                    "url": {
+                        "type": "string",
+                        "title": "Url"
+                    },
+                    "expires_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "title": "Expires At"
+                    },
+                    "headers": {
+                        "additionalProperties": {
+                            "type": "string"
+                        },
+                        "type": "object",
+                        "title": "Headers",
+                        "default": {}
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "number",
+                    "chunk_start",
+                    "chunk_end",
+                    "checksum_sha256_base64",
+                    "url",
+                    "expires_at"
+                ],
+                "title": "S3FileUploadPart"
             },
             "Scope": {
                 "type": "string",

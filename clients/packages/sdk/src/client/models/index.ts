@@ -4591,61 +4591,13 @@ export interface DownloadableRead {
      * @type {string}
      * @memberof DownloadableRead
      */
-    organization_id: string;
+    benefit_id: string;
     /**
      * 
-     * @type {string}
+     * @type {FileDownload}
      * @memberof DownloadableRead
      */
-    name: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof DownloadableRead
-     */
-    extension: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof DownloadableRead
-     */
-    mime_type: string;
-    /**
-     * 
-     * @type {number}
-     * @memberof DownloadableRead
-     */
-    size: number;
-    /**
-     * 
-     * @type {string}
-     * @memberof DownloadableRead
-     */
-    checksum_etag?: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof DownloadableRead
-     */
-    checksum_sha256_base64: string | null;
-    /**
-     * 
-     * @type {string}
-     * @memberof DownloadableRead
-     */
-    checksum_sha256_hex: string | null;
-    /**
-     * 
-     * @type {string}
-     * @memberof DownloadableRead
-     */
-    uploaded_at?: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof DownloadableRead
-     */
-    created_at: string;
+    file: FileDownload;
 }
 /**
  * 
@@ -4847,54 +4799,107 @@ export interface FileCreate {
     checksum_sha256_base64: string | null;
     /**
      * 
-     * @type {FileCreateMultipart}
+     * @type {S3FileCreateMultipart}
      * @memberof FileCreate
      */
-    upload: FileCreateMultipart;
+    upload: S3FileCreateMultipart;
+    /**
+     * 
+     * @type {FileServiceTypes}
+     * @memberof FileCreate
+     */
+    service?: FileServiceTypes;
 }
 /**
  * 
  * @export
- * @interface FileCreateMultipart
+ * @interface FileDownload
  */
-export interface FileCreateMultipart {
-    /**
-     * 
-     * @type {Array<FileCreatePart>}
-     * @memberof FileCreateMultipart
-     */
-    parts: Array<FileCreatePart>;
-}
-/**
- * 
- * @export
- * @interface FileCreatePart
- */
-export interface FileCreatePart {
-    /**
-     * 
-     * @type {number}
-     * @memberof FileCreatePart
-     */
-    number: number;
-    /**
-     * 
-     * @type {number}
-     * @memberof FileCreatePart
-     */
-    chunk_start: number;
-    /**
-     * 
-     * @type {number}
-     * @memberof FileCreatePart
-     */
-    chunk_end: number;
+export interface FileDownload {
     /**
      * 
      * @type {string}
-     * @memberof FileCreatePart
+     * @memberof FileDownload
      */
-    checksum_sha256_base64: string | null;
+    id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof FileDownload
+     */
+    organization_id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof FileDownload
+     */
+    name: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof FileDownload
+     */
+    extension: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof FileDownload
+     */
+    path: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof FileDownload
+     */
+    mime_type: string;
+    /**
+     * 
+     * @type {number}
+     * @memberof FileDownload
+     */
+    size: number;
+    /**
+     * 
+     * @type {string}
+     * @memberof FileDownload
+     */
+    storage_version?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof FileDownload
+     */
+    checksum_etag?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof FileDownload
+     */
+    checksum_sha256_base64?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof FileDownload
+     */
+    checksum_sha256_hex?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof FileDownload
+     */
+    last_modified_at?: string;
+    /**
+     * 
+     * @type {S3DownloadURL}
+     * @memberof FileDownload
+     */
+    download: S3DownloadURL;
+    /**
+     * 
+     * @type {FileServiceTypes}
+     * @memberof FileDownload
+     */
+    service: FileServiceTypes;
 }
 /**
  * 
@@ -4931,6 +4936,12 @@ export interface FileRead {
      * @type {string}
      * @memberof FileRead
      */
+    path: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof FileRead
+     */
     mime_type: string;
     /**
      * 
@@ -4943,25 +4954,37 @@ export interface FileRead {
      * @type {string}
      * @memberof FileRead
      */
+    storage_version?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof FileRead
+     */
     checksum_etag?: string;
     /**
      * 
      * @type {string}
      * @memberof FileRead
      */
-    checksum_sha256_base64: string | null;
+    checksum_sha256_base64?: string;
     /**
      * 
      * @type {string}
      * @memberof FileRead
      */
-    checksum_sha256_hex: string | null;
+    checksum_sha256_hex?: string;
     /**
      * 
      * @type {string}
      * @memberof FileRead
      */
-    uploaded_at?: string;
+    last_modified_at?: string;
+    /**
+     * 
+     * @type {FileServiceTypes}
+     * @memberof FileRead
+     */
+    service: FileServiceTypes;
     /**
      * 
      * @type {string}
@@ -4969,6 +4992,16 @@ export interface FileRead {
      */
     created_at: string;
 }
+
+/**
+ * 
+ * @export
+ */
+export const FileServiceTypes = {
+    DOWNLOADABLE: 'downloadable'
+} as const;
+export type FileServiceTypes = typeof FileServiceTypes[keyof typeof FileServiceTypes];
+
 /**
  * 
  * @export
@@ -5004,6 +5037,12 @@ export interface FileUpload {
      * @type {string}
      * @memberof FileUpload
      */
+    path: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof FileUpload
+     */
     mime_type: string;
     /**
      * 
@@ -5016,37 +5055,43 @@ export interface FileUpload {
      * @type {string}
      * @memberof FileUpload
      */
+    storage_version?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof FileUpload
+     */
     checksum_etag?: string;
     /**
      * 
      * @type {string}
      * @memberof FileUpload
      */
-    checksum_sha256_base64: string | null;
+    checksum_sha256_base64?: string;
     /**
      * 
      * @type {string}
      * @memberof FileUpload
      */
-    checksum_sha256_hex: string | null;
+    checksum_sha256_hex?: string;
     /**
      * 
      * @type {string}
      * @memberof FileUpload
      */
-    uploaded_at?: string;
+    last_modified_at?: string;
     /**
      * 
-     * @type {string}
+     * @type {S3FileUploadMultipart}
      * @memberof FileUpload
      */
-    created_at: string;
+    upload: S3FileUploadMultipart;
     /**
      * 
-     * @type {FileUploadMultipart}
+     * @type {FileServiceTypes}
      * @memberof FileUpload
      */
-    upload: FileUploadMultipart;
+    service: FileServiceTypes;
 }
 /**
  * 
@@ -5056,122 +5101,22 @@ export interface FileUpload {
 export interface FileUploadCompleted {
     /**
      * 
-     * @type {FileUploadCompletedMultipart}
+     * @type {string}
      * @memberof FileUploadCompleted
      */
-    upload: FileUploadCompletedMultipart;
-}
-/**
- * 
- * @export
- * @interface FileUploadCompletedMultipart
- */
-export interface FileUploadCompletedMultipart {
-    /**
-     * 
-     * @type {string}
-     * @memberof FileUploadCompletedMultipart
-     */
     id: string;
     /**
      * 
-     * @type {Array<FileUploadCompletedPart>}
-     * @memberof FileUploadCompletedMultipart
-     */
-    parts: Array<FileUploadCompletedPart>;
-}
-/**
- * 
- * @export
- * @interface FileUploadCompletedPart
- */
-export interface FileUploadCompletedPart {
-    /**
-     * 
-     * @type {number}
-     * @memberof FileUploadCompletedPart
-     */
-    number: number;
-    /**
-     * 
      * @type {string}
-     * @memberof FileUploadCompletedPart
+     * @memberof FileUploadCompleted
      */
-    checksum_etag: string;
+    path: string;
     /**
      * 
-     * @type {string}
-     * @memberof FileUploadCompletedPart
+     * @type {Array<S3FileUploadCompletedPart>}
+     * @memberof FileUploadCompleted
      */
-    checksum_sha256_base64?: string;
-}
-/**
- * 
- * @export
- * @interface FileUploadMultipart
- */
-export interface FileUploadMultipart {
-    /**
-     * 
-     * @type {string}
-     * @memberof FileUploadMultipart
-     */
-    id: string;
-    /**
-     * 
-     * @type {Array<FileUploadPart>}
-     * @memberof FileUploadMultipart
-     */
-    parts: Array<FileUploadPart>;
-}
-/**
- * 
- * @export
- * @interface FileUploadPart
- */
-export interface FileUploadPart {
-    /**
-     * 
-     * @type {number}
-     * @memberof FileUploadPart
-     */
-    number: number;
-    /**
-     * 
-     * @type {number}
-     * @memberof FileUploadPart
-     */
-    chunk_start: number;
-    /**
-     * 
-     * @type {number}
-     * @memberof FileUploadPart
-     */
-    chunk_end: number;
-    /**
-     * 
-     * @type {string}
-     * @memberof FileUploadPart
-     */
-    checksum_sha256_base64: string | null;
-    /**
-     * 
-     * @type {string}
-     * @memberof FileUploadPart
-     */
-    url: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof FileUploadPart
-     */
-    expires_at: string;
-    /**
-     * 
-     * @type {{ [key: string]: string; }}
-     * @memberof FileUploadPart
-     */
-    headers?: { [key: string]: string; };
+    parts: Array<S3FileUploadCompletedPart>;
 }
 /**
  * 
@@ -10472,6 +10417,174 @@ export interface RewardsSummaryReceiver {
      * @memberof RewardsSummaryReceiver
      */
     avatar_url?: string;
+}
+/**
+ * 
+ * @export
+ * @interface S3DownloadURL
+ */
+export interface S3DownloadURL {
+    /**
+     * 
+     * @type {string}
+     * @memberof S3DownloadURL
+     */
+    url: string;
+    /**
+     * 
+     * @type {{ [key: string]: string; }}
+     * @memberof S3DownloadURL
+     */
+    headers?: { [key: string]: string; };
+    /**
+     * 
+     * @type {string}
+     * @memberof S3DownloadURL
+     */
+    expires_at: string;
+}
+/**
+ * 
+ * @export
+ * @interface S3FileCreateMultipart
+ */
+export interface S3FileCreateMultipart {
+    /**
+     * 
+     * @type {Array<S3FileCreatePart>}
+     * @memberof S3FileCreateMultipart
+     */
+    parts: Array<S3FileCreatePart>;
+}
+/**
+ * 
+ * @export
+ * @interface S3FileCreatePart
+ */
+export interface S3FileCreatePart {
+    /**
+     * 
+     * @type {number}
+     * @memberof S3FileCreatePart
+     */
+    number: number;
+    /**
+     * 
+     * @type {number}
+     * @memberof S3FileCreatePart
+     */
+    chunk_start: number;
+    /**
+     * 
+     * @type {number}
+     * @memberof S3FileCreatePart
+     */
+    chunk_end: number;
+    /**
+     * 
+     * @type {string}
+     * @memberof S3FileCreatePart
+     */
+    checksum_sha256_base64: string | null;
+}
+/**
+ * 
+ * @export
+ * @interface S3FileUploadCompletedPart
+ */
+export interface S3FileUploadCompletedPart {
+    /**
+     * 
+     * @type {number}
+     * @memberof S3FileUploadCompletedPart
+     */
+    number: number;
+    /**
+     * 
+     * @type {string}
+     * @memberof S3FileUploadCompletedPart
+     */
+    checksum_etag: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof S3FileUploadCompletedPart
+     */
+    checksum_sha256_base64?: string;
+}
+/**
+ * 
+ * @export
+ * @interface S3FileUploadMultipart
+ */
+export interface S3FileUploadMultipart {
+    /**
+     * 
+     * @type {string}
+     * @memberof S3FileUploadMultipart
+     */
+    id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof S3FileUploadMultipart
+     */
+    path: string;
+    /**
+     * 
+     * @type {Array<S3FileUploadPart>}
+     * @memberof S3FileUploadMultipart
+     */
+    parts: Array<S3FileUploadPart>;
+}
+/**
+ * 
+ * @export
+ * @interface S3FileUploadPart
+ */
+export interface S3FileUploadPart {
+    /**
+     * 
+     * @type {number}
+     * @memberof S3FileUploadPart
+     */
+    number: number;
+    /**
+     * 
+     * @type {number}
+     * @memberof S3FileUploadPart
+     */
+    chunk_start: number;
+    /**
+     * 
+     * @type {number}
+     * @memberof S3FileUploadPart
+     */
+    chunk_end: number;
+    /**
+     * 
+     * @type {string}
+     * @memberof S3FileUploadPart
+     */
+    checksum_sha256_base64: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof S3FileUploadPart
+     */
+    url: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof S3FileUploadPart
+     */
+    expires_at: string;
+    /**
+     * 
+     * @type {{ [key: string]: string; }}
+     * @memberof S3FileUploadPart
+     */
+    headers?: { [key: string]: string; };
 }
 
 /**

@@ -133,6 +133,8 @@ class Settings(BaseSettings):
     AWS_SECRET_ACCESS_KEY: str = ""
     AWS_REGION: str = "us-east-2"
     AWS_SIGNATURE_VERSION: str = "v4"
+
+    # Downloadable files
     S3_FILES_BUCKET_NAME: str = ""
     S3_FILES_PRESIGN_TTL: int = 600  # 10 minutes
 

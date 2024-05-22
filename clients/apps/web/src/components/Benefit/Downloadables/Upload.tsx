@@ -3,6 +3,7 @@ import {
   FileCreate,
   FileCreatePart,
   FileRead,
+  FileServiceTypes,
   FileUpload,
   FileUploadCompletedPart,
   FileUploadPart,
@@ -63,6 +64,7 @@ export const createFile = async (
   const sha256base64 = await getSha256Base64(buffer)
   const params: FileCreate = {
     organization_id: organization.id,
+    service: FileServiceTypes.DOWNLOADABLE,
     name: file.name,
     size: file.size,
     mime_type: file.type,
@@ -70,7 +72,7 @@ export const createFile = async (
     upload: { parts: parts },
   }
 
-  return api.files.createFile({
+  return api.files.create({
     fileCreate: params,
   })
 }
@@ -202,13 +204,12 @@ const completeUpload = async (
   callback: (response: FileRead) => void,
 ) => {
   return api.files
-    .completeUpload({
+    .uploaded({
       fileId: createFileResponse.id,
       fileUploadCompleted: {
-        upload: {
-          id: createFileResponse.upload.id,
-          parts: uploadedParts,
-        },
+        id: createFileResponse.upload.id,
+        path: createFileResponse.upload.path,
+        parts: uploadedParts,
       },
     })
     .then(callback)

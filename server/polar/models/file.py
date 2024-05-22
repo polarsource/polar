@@ -19,7 +19,6 @@ from sqlalchemy.orm import (
 
 from polar.kit.db.models import RecordModel
 from polar.kit.extensions.sqlalchemy import PostgresUUID
-from polar.kit.utils import utc_now
 
 if TYPE_CHECKING:
     from polar.models import (
@@ -32,6 +31,10 @@ class FileExtension(StrEnum):
     jpeg = "jpeg"
     gif = "gif"
     png = "png"
+
+
+class FileServiceTypes(StrEnum):
+    downloadable = "downloadable"
 
 
 class File(RecordModel):
@@ -55,30 +58,21 @@ class File(RecordModel):
     mime_type: Mapped[str] = mapped_column(String, nullable=False)
     size: Mapped[int] = mapped_column(Integer, nullable=False)
 
-    upload_id: Mapped[str] = mapped_column(
-        String,
-        nullable=True,
-    )
+    service: Mapped[FileServiceTypes] = mapped_column(String, nullable=False)
 
-    presigned_at: Mapped[datetime] = mapped_column(
-        TIMESTAMP(timezone=True),
-        nullable=False,
-        default=utc_now,
-    )
-
-    uploaded_at: Mapped[datetime] = mapped_column(
+    last_modified_at: Mapped[datetime] = mapped_column(
         TIMESTAMP(timezone=True),
         nullable=True,
     )
 
-    s3_version_id: Mapped[str] = mapped_column(String, nullable=True)
-    sha256_base64: Mapped[str] = mapped_column(String, nullable=True)
-    sha256_hex: Mapped[str] = mapped_column(String, nullable=True)
-    etag: Mapped[str] = mapped_column(String, nullable=True)
+    storage_version: Mapped[str] = mapped_column(String, nullable=True)
+    checksum_etag: Mapped[str] = mapped_column(String, nullable=True)
+    checksum_sha256_base64: Mapped[str] = mapped_column(String, nullable=True)
+    checksum_sha256_hex: Mapped[str] = mapped_column(String, nullable=True)
 
     @hybrid_property
     def uploaded(self) -> bool:
-        return self.uploaded_at is not None
+        return bool(self.checksum_etag) and bool(self.last_modified_at)
 
 
 __all__ = ("File", "FileExtension")

@@ -42,24 +42,19 @@ async def list(
 ) -> ListResource[DownloadableRead]:
     subject = auth_subject.subject
 
-    results, count = await downloadable_service.get_user_accessible_files(
+    results, count = await downloadable_service.get_accessible_for_user(
         session,
         user=subject,
         organization_id=organization_id,
         benefit_id=benefit_id,
         pagination=pagination,
     )
+
     if not results:
         return ListResource.from_paginated_results([], 0, pagination)
 
-    items = []
-    for file in results:
-        url, expires_at = await downloadable_service.generate_presigned_download(file)
-        item = DownloadableRead.from_presign(file, url=url, expires_at=expires_at)
-        items.append(item)
-
     return ListResource.from_paginated_results(
-        items,
+        downloadable_service.generate_downloadable_schemas(results),
         count,
         pagination,
     )
@@ -85,12 +80,5 @@ async def get(
     if not await authz.can(subject, AccessType.read, downloadable):
         raise NotPermitted()
 
-    url, expires_at = await downloadable_service.generate_presigned_download(
-        downloadable.file
-    )
-    await downloadable_service.increment_download_count(session, downloadable)
-    return DownloadableRead.from_presign(
-        downloadable.file,
-        url=url,
-        expires_at=expires_at,
-    )
+    ret = downloadable_service.generate_downloadable_schema(downloadable)
+    return ret

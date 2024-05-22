@@ -9,5 +9,5 @@ from polar.integrations.stripe.service import StripeService
 @pytest.fixture(autouse=True)
 def stripe_service_mock(mocker: MockerFixture) -> MagicMock:
     mock = MagicMock(spec=StripeService)
-    mocker.patch("polar.subscription.service.subscription.stripe_service", new=mock)
+    mocker.patch("polar.subscription.service.stripe_service", new=mock)
     return mock

@@ -29,7 +29,7 @@ from polar.models.transaction import PaymentProcessor, TransactionType
 from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession
 from polar.subscription.schemas import FreeSubscriptionCreate, SubscriptionUpgrade
-from polar.subscription.service.subscription import (
+from polar.subscription.service import (
     AlreadyCanceledSubscription,
     AlreadySubscribed,
     AssociatedSubscriptionTierPriceDoesNotExist,
@@ -39,7 +39,7 @@ from polar.subscription.service.subscription import (
     RequiredCustomerEmail,
     SubscriptionDoesNotExist,
 )
-from polar.subscription.service.subscription import subscription as subscription_service
+from polar.subscription.service import subscription as subscription_service
 from polar.user.service import user as user_service
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
@@ -252,9 +252,7 @@ class TestCreateFreeSubscription:
         session: AsyncSession,
         subscription_tier_free: Product,
     ) -> None:
-        enqueue_job_mock = mocker.patch(
-            "polar.subscription.service.subscription.enqueue_job"
-        )
+        enqueue_job_mock = mocker.patch("polar.subscription.service.enqueue_job")
 
         # then
         session.expunge_all()
@@ -285,9 +283,7 @@ class TestCreateFreeSubscription:
         subscription_tier_free: Product,
         user: User,
     ) -> None:
-        enqueue_job_mock = mocker.patch(
-            "polar.subscription.service.subscription.enqueue_job"
-        )
+        enqueue_job_mock = mocker.patch("polar.subscription.service.enqueue_job")
 
         # then
         session.expunge_all()
@@ -342,9 +338,7 @@ class TestCreateArbitrarySubscription:
         subscription_tier_free: Product,
         user: User,
     ) -> None:
-        enqueue_job_mock = mocker.patch(
-            "polar.subscription.service.subscription.enqueue_job"
-        )
+        enqueue_job_mock = mocker.patch("polar.subscription.service.enqueue_job")
 
         # then
         session.expunge_all()
@@ -611,9 +605,7 @@ class TestUpdateSubscriptionFromStripe:
         product: Product,
         user: User,
     ) -> None:
-        enqueue_job_mock = mocker.patch(
-            "polar.subscription.service.subscription.enqueue_job"
-        )
+        enqueue_job_mock = mocker.patch("polar.subscription.service.enqueue_job")
 
         price = product.prices[0]
         stripe_subscription = construct_stripe_subscription(
@@ -661,9 +653,7 @@ class TestEnqueueBenefitsGrants:
         benefits: list[Benefit],
         subscription: Subscription,
     ) -> None:
-        enqueue_job_mock = mocker.patch(
-            "polar.subscription.service.subscription.enqueue_job"
-        )
+        enqueue_job_mock = mocker.patch("polar.subscription.service.enqueue_job")
 
         product = await add_product_benefits(
             save_fixture,
@@ -692,9 +682,7 @@ class TestEnqueueBenefitsGrants:
         benefits: list[Benefit],
         subscription: Subscription,
     ) -> None:
-        enqueue_job_mock = mocker.patch(
-            "polar.subscription.service.subscription.enqueue_job"
-        )
+        enqueue_job_mock = mocker.patch("polar.subscription.service.enqueue_job")
 
         product = await add_product_benefits(
             save_fixture,
@@ -738,9 +726,7 @@ class TestEnqueueBenefitsGrants:
         benefits: list[Benefit],
         subscription: Subscription,
     ) -> None:
-        enqueue_job_mock = mocker.patch(
-            "polar.subscription.service.subscription.enqueue_job"
-        )
+        enqueue_job_mock = mocker.patch("polar.subscription.service.enqueue_job")
 
         product = await add_product_benefits(
             save_fixture,
@@ -776,9 +762,7 @@ class TestEnqueueBenefitsGrants:
         subscription: Subscription,
         user: User,
     ) -> None:
-        enqueue_job_mock = mocker.patch(
-            "polar.subscription.service.subscription.enqueue_job"
-        )
+        enqueue_job_mock = mocker.patch("polar.subscription.service.enqueue_job")
 
         grant = BenefitGrant(
             subscription_id=subscription.id,
@@ -818,9 +802,7 @@ class TestEnqueueBenefitsGrants:
         organization_second_admin: User,
         organization_second_members: list[User],
     ) -> None:
-        enqueue_job_mock = mocker.patch(
-            "polar.subscription.service.subscription.enqueue_job"
-        )
+        enqueue_job_mock = mocker.patch("polar.subscription.service.enqueue_job")
 
         product = await add_product_benefits(
             save_fixture,
@@ -868,9 +850,7 @@ class TestUpdateProductBenefitsGrants:
         product: Product,
         product_second: Product,
     ) -> None:
-        enqueue_job_mock = mocker.patch(
-            "polar.subscription.service.subscription.enqueue_job"
-        )
+        enqueue_job_mock = mocker.patch("polar.subscription.service.enqueue_job")
         subscription_1 = await create_subscription(
             save_fixture, product=product, user=user
         )
@@ -912,9 +892,7 @@ class TestUpdateOrganizationBenefitsGrants:
         product: Product,
         product_second: Product,
     ) -> None:
-        enqueue_job_mock = mocker.patch(
-            "polar.subscription.service.subscription.enqueue_job"
-        )
+        enqueue_job_mock = mocker.patch("polar.subscription.service.enqueue_job")
         subscription_1 = await create_subscription(
             save_fixture,
             product=product,

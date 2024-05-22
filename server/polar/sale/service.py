@@ -37,7 +37,7 @@ from polar.notifications.service import notifications as notifications_service
 from polar.organization.service import organization as organization_service
 from polar.product.service.product_price import product_price as product_price_service
 from polar.sale.schemas import SalesStatisticsPeriod
-from polar.subscription.service.subscription import subscription as subscription_service
+from polar.subscription.service import subscription as subscription_service
 from polar.transaction.service.balance import PaymentTransactionForChargeDoesNotExist
 from polar.transaction.service.balance import (
     balance_transaction as balance_transaction_service,

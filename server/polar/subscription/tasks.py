@@ -12,7 +12,7 @@ from polar.worker import AsyncSessionMaker, JobContext, PolarWorkerContext, task
 
 from ..product.service.product import product as product_service
 from ..product.service.product_price import product_price as product_price_service
-from .service.subscription import subscription as subscription_service
+from .service import subscription as subscription_service
 
 log: Logger = structlog.get_logger()
 

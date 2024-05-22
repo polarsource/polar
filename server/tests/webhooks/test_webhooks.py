@@ -12,7 +12,7 @@ from polar.models.organization import Organization
 from polar.models.subscription import Subscription
 from polar.models.webhook_endpoint import WebhookEndpoint, WebhookEventType
 from polar.models.webhook_event import WebhookEvent
-from polar.subscription.service.subscription import subscription as subscription_service
+from polar.subscription.service import subscription as subscription_service
 from polar.webhook.service import webhook as webhook_service
 from polar.webhook.tasks import _webhook_event_send, allowed_url, webhook_event_send
 from polar.worker import JobContext, PolarWorkerContext

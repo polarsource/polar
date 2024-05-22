@@ -3,7 +3,7 @@ from datetime import datetime
 from uuid import UUID
 
 import structlog
-from sqlalchemy.orm import contains_eager, joinedload
+from sqlalchemy.orm import contains_eager
 
 from polar.file.service import file as file_service
 from polar.file.service import s3_service
@@ -56,7 +56,7 @@ class DownloadableService(
         statement = (
             sql.select(Downloadable)
             .join(File)
-            .options(joinedload(Downloadable.file))
+            .options(contains_eager(Downloadable.file))
             .where(
                 Downloadable.id == id,
                 File.deleted_at.is_(None),

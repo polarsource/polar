@@ -5,7 +5,7 @@ from polar.exceptions import PolarTaskError
 from polar.product.service.product import (
     product as product_service,
 )
-from polar.subscription.service.subscription import subscription as subscription_service
+from polar.subscription.service import subscription as subscription_service
 from polar.worker import AsyncSessionMaker, JobContext, PolarWorkerContext, task
 
 from .service import user as user_service

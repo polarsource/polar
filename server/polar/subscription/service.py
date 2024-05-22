@@ -79,9 +79,9 @@ from polar.webhook.webhooks import WebhookTypeObject
 from polar.webhook_notifications.service import webhook_notifications_service
 from polar.worker import enqueue_job
 
-from ...product.service.product import product as product_service
-from ...product.service.product_price import product_price as product_price_service
-from ..schemas import (
+from ..product.service.product import product as product_service
+from ..product.service.product_price import product_price as product_price_service
+from .schemas import (
     FreeSubscriptionCreate,
     SubscriptionsStatisticsPeriod,
     SubscriptionUpgrade,

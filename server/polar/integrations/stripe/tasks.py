@@ -16,8 +16,8 @@ from polar.pledge.service import pledge as pledge_service
 from polar.sale.service import NotASaleInvoice
 from polar.sale.service import SubscriptionDoesNotExist as SaleSubscriptionDoesNotExist
 from polar.sale.service import sale as sale_service
-from polar.subscription.service.subscription import SubscriptionDoesNotExist
-from polar.subscription.service.subscription import subscription as subscription_service
+from polar.subscription.service import SubscriptionDoesNotExist
+from polar.subscription.service import subscription as subscription_service
 from polar.transaction.service.balance import PaymentTransactionForChargeDoesNotExist
 from polar.transaction.service.dispute import (
     DisputeUnknownPaymentTransaction,

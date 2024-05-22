@@ -17,7 +17,7 @@ async def resolve_scope(
     session: AsyncSession, scope: BenefitGrantScopeArgs
 ) -> BenefitGrantScope:
     # Avoids a circular import :(
-    from polar.subscription.service.subscription import (
+    from polar.subscription.service import (
         subscription as subscription_service,
     )
 

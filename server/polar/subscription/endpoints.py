@@ -41,8 +41,8 @@ from .schemas import (
     SubscriptionUpgrade,
 )
 from .schemas import Subscription as SubscriptionSchema
-from .service.subscription import AlreadySubscribed, SearchSortProperty
-from .service.subscription import subscription as subscription_service
+from .service import AlreadySubscribed, SearchSortProperty
+from .service import subscription as subscription_service
 
 log = structlog.get_logger()
 

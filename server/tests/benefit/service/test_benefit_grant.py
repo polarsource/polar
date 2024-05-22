@@ -21,7 +21,7 @@ from polar.notifications.notification import (
 )
 from polar.notifications.service import NotificationsService
 from polar.postgres import AsyncSession
-from polar.subscription.service.subscription import subscription as subscription_service
+from polar.subscription.service import subscription as subscription_service
 from tests.fixtures.database import SaveFixture
 
 

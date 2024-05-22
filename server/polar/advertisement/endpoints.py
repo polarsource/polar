@@ -19,7 +19,7 @@ from polar.models.advertisement_campaign import (
 )
 from polar.models.user import User
 from polar.postgres import AsyncSession, get_db_session
-from polar.subscription.service.subscription import (
+from polar.subscription.service import (
     subscription as subscription_service,
 )
 from polar.tags.api import Tags

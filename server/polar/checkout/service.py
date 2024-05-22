@@ -13,7 +13,7 @@ from polar.models.product import SubscriptionTierType
 from polar.postgres import AsyncSession
 from polar.product.service.product import product as product_service
 from polar.product.service.product_price import product_price as product_price_service
-from polar.subscription.service.subscription import subscription as subscription_service
+from polar.subscription.service import subscription as subscription_service
 
 
 class CheckoutError(PolarError): ...

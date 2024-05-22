@@ -4,7 +4,7 @@ from polar.models.user import OAuthAccount
 from polar.models.user_organization import UserOrganization
 from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession, sql
-from polar.subscription.service.subscription import subscription as subscription_service
+from polar.subscription.service import subscription as subscription_service
 from polar.user_organization.service import (
     user_organization as user_organization_service,
 )

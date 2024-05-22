@@ -5,7 +5,7 @@ from pytest_mock import MockerFixture
 
 from polar.models import Product, Subscription
 from polar.postgres import AsyncSession
-from polar.subscription.service.subscription import SubscriptionService
+from polar.subscription.service import SubscriptionService
 from polar.subscription.tasks import (  # type: ignore[attr-defined]
     SubscriptionDoesNotExist,
     SubscriptionTierDoesNotExist,

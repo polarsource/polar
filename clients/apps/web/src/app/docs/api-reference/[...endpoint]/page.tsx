@@ -68,7 +68,7 @@ export default function Page({
       </div>
       <div className="flex w-full flex-shrink-0 flex-col gap-y-8 md:sticky md:top-12 md:w-96">
         <APIContainer
-          endpoint={operation}
+          operation={operation}
           method={method}
           path={apiEndpointPath}
         />

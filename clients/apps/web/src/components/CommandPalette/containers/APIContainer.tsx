@@ -32,11 +32,11 @@ export const requestBodyParameters = (
 }
 
 export const APIContainer = ({
-  endpoint,
+  operation,
   path,
   method,
 }: {
-  endpoint: OpenAPIV3_1.OperationObject
+  operation: OpenAPIV3_1.OperationObject
   path: string
   method: string
 }) => {
@@ -78,8 +78,8 @@ ${bodyParametersString}`
   }, [])
 
   const curlCommand = useMemo(
-    () => buildCurlCommand(method, `${CONFIG.BASE_URL}/${path}`, endpoint),
-    [method, path, buildCurlCommand, endpoint],
+    () => buildCurlCommand(method, `${CONFIG.BASE_URL}${path}`, operation),
+    [method, path, buildCurlCommand, operation],
   )
 
   const handleCopyToClipboard = useCallback(() => {
@@ -130,7 +130,7 @@ ${bodyParametersString}`
           </Button>
         </TabsList>
         <TabsContent value="curl" className="p-2 py-0">
-          <pre className="dark:text-polar-50 select-text overflow-auto p-4 font-mono text-xs leading-normal text-gray-900">
+          <pre className="dark:text-polar-50 h-full select-text overflow-auto p-4 font-mono text-xs leading-normal text-gray-900">
             {curlCommand}
           </pre>
         </TabsContent>

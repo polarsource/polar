@@ -5,8 +5,10 @@ import { Organization } from '@polar-sh/sdk'
 import { usePathname } from 'next/navigation'
 import { useCallback, useEffect, useMemo } from 'react'
 import { ScopeType } from './commands/scopes'
-import { CommandContextProvider, useCommands } from './commands/useCommands'
-import { APIContainer } from './containers/APIContainer'
+import {
+  CommandPaletteContextProvider,
+  useCommands,
+} from './commands/useCommands'
 import { GlobalContainer } from './containers/GlobalContainer'
 
 export interface CommandPaletteProps {
@@ -16,7 +18,7 @@ export interface CommandPaletteProps {
 
 export const CommandPalette = ({ organization, hide }: CommandPaletteProps) => {
   return (
-    <CommandContextProvider
+    <CommandPaletteContextProvider
       organization={organization}
       hideCommandPalette={hide}
     >
@@ -24,7 +26,7 @@ export const CommandPalette = ({ organization, hide }: CommandPaletteProps) => {
         <CommandPaletteInput />
         <CommandPaletteContainer />
       </div>
-    </CommandContextProvider>
+    </CommandPaletteContextProvider>
   )
 }
 
@@ -62,7 +64,7 @@ const CommandPaletteInput = () => {
 }
 
 const CommandPaletteContainer = () => {
-  const { scopes, scope, setScopeKeys } = useCommands()
+  const { selectedCommand, scopes, scope, setScopeKeys } = useCommands()
   const pathname = usePathname()
 
   useEffect(() => {
@@ -77,10 +79,15 @@ const CommandPaletteContainer = () => {
     // Intentioally omitting dependencies to only run on mount
   }, [])
 
+  const apiEndpoint = useMemo(() => {
+    console.log(selectedCommand)
+    return selectedCommand
+  }, [selectedCommand])
+
   const container = useMemo(() => {
     switch (scope?.name.split(':')[0]) {
       case 'api':
-        return <APIContainer />
+      // return <APIContainer />
       default:
         return <GlobalContainer />
     }

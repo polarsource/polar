@@ -20,10 +20,18 @@ import type {
   FileUpload,
   FileUploadCompleted,
   HTTPValidationError,
+  ListResourceFileRead,
 } from '../models/index';
 
 export interface FilesApiCreateRequest {
     fileCreate: FileCreate;
+}
+
+export interface FilesApiListRequest {
+    organizationId?: string;
+    ids?: Array<string>;
+    page?: number;
+    limit?: number;
 }
 
 export interface FilesApiUploadedRequest {
@@ -77,6 +85,56 @@ export class FilesApi extends runtime.BaseAPI {
      */
     async create(requestParameters: FilesApiCreateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<FileUpload> {
         const response = await this.createRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
+     * List
+     */
+    async listRaw(requestParameters: FilesApiListRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListResourceFileRead>> {
+        const queryParameters: any = {};
+
+        if (requestParameters['organizationId'] != null) {
+            queryParameters['organization_id'] = requestParameters['organizationId'];
+        }
+
+        if (requestParameters['ids'] != null) {
+            queryParameters['ids'] = requestParameters['ids'];
+        }
+
+        if (requestParameters['page'] != null) {
+            queryParameters['page'] = requestParameters['page'];
+        }
+
+        if (requestParameters['limit'] != null) {
+            queryParameters['limit'] = requestParameters['limit'];
+        }
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("HTTPBearer", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+        const response = await this.request({
+            path: `/api/v1/files`,
+            method: 'GET',
+            headers: headerParameters,
+            query: queryParameters,
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse(response);
+    }
+
+    /**
+     * List
+     */
+    async list(requestParameters: FilesApiListRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ListResourceFileRead> {
+        const response = await this.listRaw(requestParameters, initOverrides);
         return await response.value();
     }
 

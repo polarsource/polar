@@ -8,6 +8,7 @@ from pytest_mock import MockerFixture
 
 from polar.auth.models import AuthSubject
 from polar.held_balance.service import held_balance as held_balance_service
+from polar.integrations.stripe.schemas import ProductType
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.pagination import PaginationParams
 from polar.kit.utils import utc_now
@@ -590,8 +591,17 @@ class TestGetStatisticsPeriods:
 @pytest.mark.asyncio
 @pytest.mark.skip_db_asserts
 class TestCreateSaleFromStripe:
-    async def test_not_a_sale_invoice(self, session: AsyncSession) -> None:
-        invoice = construct_stripe_invoice(subscription_id=None)
+    @pytest.mark.parametrize(
+        "metadata",
+        [
+            {"type": ProductType.pledge},
+            {"type": ProductType.donation},
+        ],
+    )
+    async def test_not_a_sale_invoice(
+        self, metadata: dict[str, str], session: AsyncSession
+    ) -> None:
+        invoice = construct_stripe_invoice(metadata=metadata)
         with pytest.raises(NotASaleInvoice):
             await sale_service.create_sale_from_stripe(session, invoice=invoice)
 

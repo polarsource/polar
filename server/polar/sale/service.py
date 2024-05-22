@@ -11,6 +11,7 @@ from polar.enums import UserSignupType
 from polar.exceptions import PolarError
 from polar.held_balance.service import held_balance as held_balance_service
 from polar.integrations.loops.service import loops as loops_service
+from polar.integrations.stripe.schemas import ProductType
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.integrations.stripe.utils import get_expandable_id
 from polar.kit.db.postgres import AsyncSession
@@ -251,7 +252,10 @@ class SaleService(ResourceServiceReader[Sale]):
         assert invoice.charge is not None
         assert invoice.id is not None
 
-        if invoice.subscription is None:
+        if invoice.metadata and invoice.metadata.get("type") in {
+            ProductType.pledge,
+            ProductType.donation,
+        }:
             raise NotASaleInvoice(invoice.id)
 
         # Get price and product

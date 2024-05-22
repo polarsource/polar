@@ -19,6 +19,7 @@ class PaymentIntentSuccessWebhook(Schema):
 class ProductType(StrEnum):
     pledge = "pledge"
     donation = "donation"
+    product = "product"
 
 
 class PaymentIntentMetadata(Schema):

@@ -11,6 +11,7 @@ from polar.checkout.schemas import CheckoutCreate
 from polar.checkout.service import AlreadySubscribed
 from polar.checkout.service import checkout as checkout_service
 from polar.exceptions import PolarRequestValidationError, ResourceNotFound
+from polar.integrations.stripe.schemas import ProductType
 from polar.integrations.stripe.service import StripeService
 from polar.models import Organization, Product, User
 from polar.postgres import AsyncSession
@@ -133,10 +134,12 @@ class TestCreate:
             is_subscription=True,
             is_tax_applicable=False,
             metadata={
+                "type": ProductType.product,
                 "product_id": str(product.id),
                 "product_price_id": str(price.id),
             },
             subscription_metadata={
+                "type": ProductType.product,
                 "product_id": str(product.id),
                 "product_price_id": str(price.id),
             },
@@ -184,11 +187,13 @@ class TestCreate:
             is_tax_applicable=False,
             customer="STRIPE_CUSTOMER_ID",
             metadata={
+                "type": ProductType.product,
                 "product_id": str(product.id),
                 "product_price_id": str(price.id),
                 "user_id": str(user.id),
             },
             subscription_metadata={
+                "type": ProductType.product,
                 "product_id": str(product.id),
                 "product_price_id": str(price.id),
                 "user_id": str(user.id),
@@ -236,10 +241,12 @@ class TestCreate:
             is_subscription=True,
             is_tax_applicable=False,
             metadata={
+                "type": ProductType.product,
                 "product_id": str(product.id),
                 "product_price_id": str(price.id),
             },
             subscription_metadata={
+                "type": ProductType.product,
                 "product_id": str(product.id),
                 "product_price_id": str(price.id),
             },
@@ -289,10 +296,12 @@ class TestCreate:
             is_tax_applicable=False,
             customer_email="backer@example.com",
             metadata={
+                "type": ProductType.product,
                 "product_id": str(product.id),
                 "product_price_id": str(price.id),
             },
             subscription_metadata={
+                "type": ProductType.product,
                 "product_id": str(product.id),
                 "product_price_id": str(price.id),
             },
@@ -346,10 +355,12 @@ class TestCreate:
             is_subscription=True,
             is_tax_applicable=True,
             metadata={
+                "type": ProductType.product,
                 "product_id": str(product.id),
                 "product_price_id": str(price.id),
             },
             subscription_metadata={
+                "type": ProductType.product,
                 "product_id": str(product.id),
                 "product_price_id": str(price.id),
             },
@@ -398,12 +409,14 @@ class TestCreate:
             is_tax_applicable=False,
             customer="STRIPE_CUSTOMER_ID",
             metadata={
+                "type": ProductType.product,
                 "product_id": str(product.id),
                 "product_price_id": str(price.id),
                 "subscription_id": str(free_subscription.id),
                 "user_id": str(user.id),
             },
             subscription_metadata={
+                "type": ProductType.product,
                 "product_id": str(product.id),
                 "product_price_id": str(price.id),
                 "subscription_id": str(free_subscription.id),

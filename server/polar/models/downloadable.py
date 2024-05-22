@@ -57,7 +57,7 @@ class Downloadable(RecordModel):
 
     downloaded: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
 
-    latest_download_at: Mapped[datetime | None] = mapped_column(
+    last_downloaded_at: Mapped[datetime | None] = mapped_column(
         TIMESTAMP(timezone=True),
         nullable=True,
     )

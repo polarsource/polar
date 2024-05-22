@@ -83,7 +83,7 @@ class DownloadableService(
         downloadable: Downloadable,
     ) -> Downloadable:
         downloadable.downloaded += 1
-        downloadable.latest_download_at = utc_now()
+        downloadable.last_downloaded_at = utc_now()
         session.add(downloadable)
         await session.flush()
         return downloadable

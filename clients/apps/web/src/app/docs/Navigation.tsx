@@ -1,10 +1,12 @@
 'use client'
 
 import LogoIcon from '@/components/Brand/LogoIcon'
+import { useModal } from '@/components/Modal/useModal'
 import {
   ApiOutlined,
   CloseOutlined,
   DescriptionOutlined,
+  SearchOutlined,
   ShortTextOutlined,
   SpaceDashboardOutlined,
 } from '@mui/icons-material'
@@ -13,6 +15,7 @@ import { Separator } from 'polarkit/components/ui/separator'
 import { useEffect, useState } from 'react'
 import { sections } from './APINavigation'
 import { NaviagtionItem } from './NavigationItem'
+import { SearchPalette } from './SearchPalette'
 
 export const Navigation = () => {
   const pathname = usePathname()
@@ -39,8 +42,28 @@ export const Navigation = () => {
 }
 
 export const DocumentationPageSidebar = () => {
+  const { isShown, show, hide } = useModal()
+
   return (
     <div className="flex w-full flex-shrink-0 flex-col gap-y-12 md:w-60">
+      <div className="hidden flex-col gap-y-12 md:flex">
+        <div
+          className="dark:bg-polar-800 -mx-3 flex cursor-pointer flex-row items-center justify-between gap-x-4 rounded-xl bg-white py-2 pl-4 pr-2 shadow-sm"
+          role="button"
+          onClick={show}
+        >
+          <div className="flex flex-row items-center gap-x-2">
+            <SearchOutlined fontSize="inherit" />
+            <span className="dark:text-polar-500 text-sm text-gray-500">
+              Search
+            </span>
+          </div>
+          <div className="dark:border-polar-600 rounded-md bg-gray-100 px-2 py-1 text-xs tracking-wide dark:border dark:bg-transparent">
+            <span>⌘K</span>
+          </div>
+        </div>
+        <Separator />
+      </div>
       <ul className="flex flex-col">
         <li>
           <NaviagtionItem
@@ -69,6 +92,8 @@ export const DocumentationPageSidebar = () => {
       </ul>
       <Separator />
       <Navigation />
+
+      <SearchPalette isShown={isShown} show={show} hide={hide} />
     </div>
   )
 }

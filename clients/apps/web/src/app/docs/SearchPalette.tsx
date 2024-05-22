@@ -2,12 +2,15 @@
 
 import { CommandPalette } from '@/components/CommandPalette/CommandPalette'
 import { Modal } from '@/components/Modal'
-import { useModal } from '@/components/Modal/useModal'
 import { useEffect } from 'react'
 
-export const SearchPalette = () => {
-  const { isShown, show, hide } = useModal()
+export interface SearchPaletteProps {
+  isShown: boolean
+  show: () => void
+  hide: () => void
+}
 
+export const SearchPalette = ({ isShown, show, hide }: SearchPaletteProps) => {
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
       if (isShown) return

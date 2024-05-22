@@ -18,7 +18,7 @@ export const CommandItem = ({
   const ref = useRef<HTMLDivElement>(null)
 
   const handleSelect = useCallback(() => {
-    ref.current?.scrollIntoView({ behavior: 'auto', block: 'nearest' })
+    ref.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
   }, [])
 
   useEffect(() => {

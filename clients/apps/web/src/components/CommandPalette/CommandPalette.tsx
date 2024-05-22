@@ -111,7 +111,6 @@ const APINavigator = () => {
   const { org } = useCurrentOrgAndRepoFromURL()
 
   const apiEndpoint = useMemo(() => {
-    console.log(selectedCommand)
     return selectedCommand?.type === CommandType.API ? selectedCommand : null
   }, [selectedCommand])
 
@@ -126,7 +125,7 @@ const APINavigator = () => {
         {apiCommands.map((command, index) => {
           return (
             <CommandItem
-              key={`${command.name}-${index}`}
+              key={command.id}
               command={command.name}
               description={command.description}
               onClick={() => {

@@ -213,7 +213,6 @@ export async function GET(req: NextRequest) {
       return renderArticleOG(articleData)
     }
   } catch (error) {
-    console.log(error)
     return new Response(`Failed to generate article OG image`, {
       status: 500,
     })
@@ -275,7 +274,6 @@ export async function GET(req: NextRequest) {
       largeIssue,
     )
   } catch (error) {
-    console.log(error)
     return new Response(`Failed to generate the image`, {
       status: 500,
     })

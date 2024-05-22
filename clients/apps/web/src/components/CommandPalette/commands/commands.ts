@@ -22,6 +22,7 @@ export enum CommandType {
 }
 
 export interface BaseCommand {
+  id: string
   name: string
   description: string
   action: (context: CommandContext) => void
@@ -59,6 +60,7 @@ export const GLOBAL_COMMANDS = ({
   const orgSpecificCommands = organization ? organizationSpecificCommands : []
 
   const apiCommands: ShortcutCommand[] = API_SCOPES.map((scope) => ({
+    id: `scope-${scope.name}-${scope.type}`,
     name: `${scope.name.replace('api:', '')} API`,
     description: `View API documentation for ${scope.name.replace('api:', '')}`,
     type: CommandType.Shortcut,
@@ -72,6 +74,7 @@ export const GLOBAL_COMMANDS = ({
 
 const organizationSpecificCommands: Command[] = [
   {
+    id: 'go-to-public-page',
     name: 'Go to Public Page',
     description: 'Navigate to the public page',
     type: CommandType.Shortcut,

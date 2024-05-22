@@ -121,7 +121,7 @@ export const APIContainer = ({
   }, [copyCodeToClipboard, curlCommand, nodeJSCommand, currentTab, setDidCopy])
 
   return (
-    <div className="dark:bg-polar-900 flex h-full w-full flex-col rounded-2xl bg-white shadow-sm">
+    <div className="dark:bg-polar-900 flex h-full w-full flex-col rounded-3xl bg-white shadow-sm">
       <Tabs
         defaultValue="curl"
         onValueChange={(v) => setCurrentTab(v as 'curl' | 'nodejs')}

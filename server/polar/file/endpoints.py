@@ -30,7 +30,7 @@ router = APIRouter(prefix="/files", tags=["files"])
     tags=[Tags.PUBLIC],
     response_model=FileUpload,
 )
-async def create_file(
+async def create(
     file: FileCreate,
     auth_subject: auth.CreatorFilesWrite,
     authz: Authz = Depends(Authz.authz),
@@ -42,6 +42,7 @@ async def create_file(
     if not await authz.can(subject, AccessType.write, organization):
         raise NotPermitted()
 
+    file.organization_id = organization.id
     return await file_service.generate_presigned_upload(
         session,
         organization=organization,
@@ -49,14 +50,14 @@ async def create_file(
     )
 
 
-@router.patch(
-    "/{file_id}",
+@router.post(
+    "/{file_id}/uploaded",
     tags=[Tags.PUBLIC],
     response_model=FileRead,
 )
-async def complete_upload(
+async def uploaded(
     file_id: UUID,
-    payload: FileUploadCompleted,
+    completed_schema: FileUploadCompleted,
     auth_subject: auth.CreatorFilesWrite,
     authz: Authz = Depends(Authz.authz),
     session: AsyncSession = Depends(get_db_session),
@@ -74,9 +75,6 @@ async def complete_upload(
     if not await authz.can(subject, AccessType.write, organization):
         raise NotPermitted()
 
-    file = await file_service.complete_upload(
-        session,
-        file=file,
-        payload=payload,
+    return await file_service.complete_upload(
+        session, file=file, completed_schema=completed_schema
     )
-    return FileRead.from_db(file)

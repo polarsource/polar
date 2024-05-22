@@ -22,13 +22,13 @@ import type {
   HTTPValidationError,
 } from '../models/index';
 
-export interface FilesApiCompleteUploadRequest {
-    fileId: string;
-    fileUploadCompleted: FileUploadCompleted;
+export interface FilesApiCreateRequest {
+    fileCreate: FileCreate;
 }
 
-export interface FilesApiCreateFileRequest {
-    fileCreate: FileCreate;
+export interface FilesApiUploadedRequest {
+    fileId: string;
+    fileUploadCompleted: FileUploadCompleted;
 }
 
 /**
@@ -37,64 +37,13 @@ export interface FilesApiCreateFileRequest {
 export class FilesApi extends runtime.BaseAPI {
 
     /**
-     * Complete Upload
+     * Create
      */
-    async completeUploadRaw(requestParameters: FilesApiCompleteUploadRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<FileRead>> {
-        if (requestParameters['fileId'] == null) {
-            throw new runtime.RequiredError(
-                'fileId',
-                'Required parameter "fileId" was null or undefined when calling completeUpload().'
-            );
-        }
-
-        if (requestParameters['fileUploadCompleted'] == null) {
-            throw new runtime.RequiredError(
-                'fileUploadCompleted',
-                'Required parameter "fileUploadCompleted" was null or undefined when calling completeUpload().'
-            );
-        }
-
-        const queryParameters: any = {};
-
-        const headerParameters: runtime.HTTPHeaders = {};
-
-        headerParameters['Content-Type'] = 'application/json';
-
-        if (this.configuration && this.configuration.accessToken) {
-            const token = this.configuration.accessToken;
-            const tokenString = await token("HTTPBearer", []);
-
-            if (tokenString) {
-                headerParameters["Authorization"] = `Bearer ${tokenString}`;
-            }
-        }
-        const response = await this.request({
-            path: `/api/v1/files/{file_id}`.replace(`{${"file_id"}}`, encodeURIComponent(String(requestParameters['fileId']))),
-            method: 'PATCH',
-            headers: headerParameters,
-            query: queryParameters,
-            body: requestParameters['fileUploadCompleted'],
-        }, initOverrides);
-
-        return new runtime.JSONApiResponse(response);
-    }
-
-    /**
-     * Complete Upload
-     */
-    async completeUpload(requestParameters: FilesApiCompleteUploadRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<FileRead> {
-        const response = await this.completeUploadRaw(requestParameters, initOverrides);
-        return await response.value();
-    }
-
-    /**
-     * Create File
-     */
-    async createFileRaw(requestParameters: FilesApiCreateFileRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<FileUpload>> {
+    async createRaw(requestParameters: FilesApiCreateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<FileUpload>> {
         if (requestParameters['fileCreate'] == null) {
             throw new runtime.RequiredError(
                 'fileCreate',
-                'Required parameter "fileCreate" was null or undefined when calling createFile().'
+                'Required parameter "fileCreate" was null or undefined when calling create().'
             );
         }
 
@@ -124,10 +73,61 @@ export class FilesApi extends runtime.BaseAPI {
     }
 
     /**
-     * Create File
+     * Create
      */
-    async createFile(requestParameters: FilesApiCreateFileRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<FileUpload> {
-        const response = await this.createFileRaw(requestParameters, initOverrides);
+    async create(requestParameters: FilesApiCreateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<FileUpload> {
+        const response = await this.createRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
+     * Uploaded
+     */
+    async uploadedRaw(requestParameters: FilesApiUploadedRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<FileRead>> {
+        if (requestParameters['fileId'] == null) {
+            throw new runtime.RequiredError(
+                'fileId',
+                'Required parameter "fileId" was null or undefined when calling uploaded().'
+            );
+        }
+
+        if (requestParameters['fileUploadCompleted'] == null) {
+            throw new runtime.RequiredError(
+                'fileUploadCompleted',
+                'Required parameter "fileUploadCompleted" was null or undefined when calling uploaded().'
+            );
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        headerParameters['Content-Type'] = 'application/json';
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("HTTPBearer", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+        const response = await this.request({
+            path: `/api/v1/files/{file_id}/uploaded`.replace(`{${"file_id"}}`, encodeURIComponent(String(requestParameters['fileId']))),
+            method: 'POST',
+            headers: headerParameters,
+            query: queryParameters,
+            body: requestParameters['fileUploadCompleted'],
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse(response);
+    }
+
+    /**
+     * Uploaded
+     */
+    async uploaded(requestParameters: FilesApiUploadedRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<FileRead> {
+        const response = await this.uploadedRaw(requestParameters, initOverrides);
         return await response.value();
     }
 

@@ -1,9 +1,10 @@
 'use client'
 
-import { api } from '@/utils/api'
+import { useDeleteFile, usePatchFile } from '@/hooks/queries'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { DragIndicatorOutlined } from '@mui/icons-material'
+import { FileRead } from '@polar-sh/sdk'
 import { Switch } from 'polarkit/components/ui/atoms'
 import { Card } from 'polarkit/components/ui/atoms/card'
 import { twMerge } from 'tailwind-merge'
@@ -60,28 +61,33 @@ const FileUploadDetails = ({ file }: { file: FileObject }) => {
 export const FileListItem = ({
   file,
   updateFile,
+  removeFile,
   sortable,
 }: {
   file: FileObject
   updateFile: (callback: (prev: FileObject) => FileObject) => void
+  removeFile: () => void
   sortable?: ReturnType<typeof useSortable>
 }) => {
-  const onToggleEnabled = async (enabled: boolean) => {
-    const response = await api.files.update({
-      fileId: file.id,
-      filePatch: {
-        is_enabled: enabled,
-      },
-    })
-    if (!(response && response.id)) {
-      return
-    }
+  const patchFile = usePatchFile(file.id, (response: FileRead) => {
     updateFile((prev) => {
       return {
         ...prev,
         ...response,
       }
     })
+  })
+
+  const deleteFile = useDeleteFile(file.id, () => {
+    removeFile()
+  })
+
+  const onToggleEnabled = (enabled: boolean) => {
+    patchFile.mutateAsync({ enabled })
+  }
+
+  const onDelete = async () => {
+    deleteFile.mutateAsync()
   }
 
   const isUploading = file.isUploading
@@ -112,6 +118,15 @@ export const FileListItem = ({
       </div>
       {!isUploading && (
         <div className="flex w-14">
+          <a
+            href="#"
+            onClick={(e) => {
+              e.preventDefault()
+              onDelete()
+            }}
+          >
+            x
+          </a>
           <Switch checked={file.is_enabled} onCheckedChange={onToggleEnabled} />
           <span
             ref={sortable ? sortable.setDraggableNodeRef : undefined}
@@ -133,13 +148,20 @@ export const FileListItem = ({
 export const DraggableFileListItem = ({
   file,
   updateFile,
+  removeFile,
 }: {
   file: FileObject
   updateFile: (callback: (prev: FileObject) => FileObject) => void
+  removeFile: () => void
 }) => {
   const sortable = useSortable({ id: file.id })
 
   return (
-    <FileListItem file={file} updateFile={updateFile} sortable={sortable} />
+    <FileListItem
+      file={file}
+      updateFile={updateFile}
+      removeFile={removeFile}
+      sortable={sortable}
+    />
   )
 }

@@ -11,6 +11,7 @@ export const FileList = ({
   files,
   setFiles,
   updateFile,
+  removeFile,
 }: {
   files: FileObject[]
   setFiles: (callback: (prev: FileObject[]) => FileObject[]) => void
@@ -18,11 +19,16 @@ export const FileList = ({
     fileId: string,
     callback: (prev: FileObject) => FileObject,
   ) => void
+  removeFile: (fileId: string) => void
 }) => {
   const getUpdateScopedFile = (fileId: string) => {
     return (callback: (prev: FileObject) => FileObject) => {
       updateFile(fileId, callback)
     }
+  }
+
+  const getRemoveScopedFile = (fileId: string) => {
+    return () => removeFile(fileId)
   }
 
   const {
@@ -72,6 +78,7 @@ export const FileList = ({
                 key={file.id}
                 file={file}
                 updateFile={getUpdateScopedFile(file.id)}
+                removeFile={getRemoveScopedFile(file.id)}
               />
             ))}
           </div>
@@ -81,6 +88,7 @@ export const FileList = ({
                 <FileListItem
                   file={activeFile}
                   updateFile={getUpdateScopedFile(activeFile.id)}
+                  removeFile={getRemoveScopedFile(activeFile.id)}
                 />
               </>
             ) : null}

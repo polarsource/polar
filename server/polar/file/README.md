@@ -55,7 +55,9 @@ Name: Use the same name as the S3 bucket
                 "s3:GetObjectAttributes",
                 "s3:GetObject",
                 "s3:GetObjectVersion",
-                "s3:GetObjectVersionAttributes"
+                "s3:GetObjectVersionAttributes",
+                "s3:DeleteObject",
+                "s3:DeleteObjectVersion"
             ],
             "Resource": "arn:aws:s3:::<S3_BUCKET_NAME>/*"
         }

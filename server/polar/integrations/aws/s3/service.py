@@ -177,3 +177,7 @@ class S3Service:
 
         presign_expires_at = presign_from + timedelta(seconds=expires_in)
         return (signed_download_url, presign_expires_at)
+
+    def delete_file(self, path: str) -> bool:
+        deleted = self.client.delete_object(Bucket=self.bucket, Key=path)
+        return deleted.get("DeleteMarker", False)

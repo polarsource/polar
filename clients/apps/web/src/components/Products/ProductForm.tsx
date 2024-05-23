@@ -3,7 +3,7 @@
 import { ErrorMessage } from '@hookform/error-message'
 import { ClearOutlined } from '@mui/icons-material'
 import {
-  Prices,
+  PricesInner,
   ProductCreate,
   ProductPriceRecurringInterval,
   ProductPriceType,
@@ -143,7 +143,7 @@ const ProductForm: React.FC<ProductFormProps> = ({ update, isFreeTier }) => {
 
   const hasMonthlyPrice = useMemo(
     () =>
-      (prices as Prices).some(
+      (prices as PricesInner[]).some(
         (price) =>
           price.type === 'recurring' &&
           price.recurring_interval === ProductPriceRecurringInterval.MONTH,
@@ -152,7 +152,7 @@ const ProductForm: React.FC<ProductFormProps> = ({ update, isFreeTier }) => {
   )
   const hasYearlyPrice = useMemo(
     () =>
-      (prices as Prices).some(
+      (prices as PricesInner[]).some(
         (price) =>
           price.type === 'recurring' &&
           price.recurring_interval === ProductPriceRecurringInterval.YEAR,
@@ -224,40 +224,6 @@ const ProductForm: React.FC<ProductFormProps> = ({ update, isFreeTier }) => {
           </FormItem>
         )}
       />
-      {!update && (
-        <FormField
-          control={control}
-          name="type"
-          rules={{ required: 'This field is required' }}
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Type</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select a tier type" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {Object.entries(subscriptionTierTypes).map(
-                    ([type, pretty]) => (
-                      <SelectItem key={type} value={type}>
-                        <div className="flex items-center gap-2">
-                          <SubscriptionGroupIcon
-                            type={type as SubscriptionTierType}
-                          />
-                          {pretty}
-                        </div>
-                      </SelectItem>
-                    ),
-                  )}
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-      )}
       <FormField
         control={control}
         name="description"
@@ -388,7 +354,41 @@ const ProductForm: React.FC<ProductFormProps> = ({ update, isFreeTier }) => {
           </FormItem>
         )}
       /> */}
-      {!isFreeTier && (
+      {!update && pricingType === ProductPriceType.RECURRING && (
+        <FormField
+          control={control}
+          name="type"
+          rules={{ required: 'This field is required' }}
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Type</FormLabel>
+              <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a tier type" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {Object.entries(subscriptionTierTypes).map(
+                    ([type, pretty]) => (
+                      <SelectItem key={type} value={type}>
+                        <div className="flex items-center gap-2">
+                          <SubscriptionGroupIcon
+                            type={type as SubscriptionTierType}
+                          />
+                          {pretty}
+                        </div>
+                      </SelectItem>
+                    ),
+                  )}
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+      )}
+      {!isFreeTier && pricingType === ProductPriceType.RECURRING && (
         <FormField
           control={control}
           name="is_highlighted"

@@ -3,9 +3,9 @@ import { formatCurrencyAndAmount } from '@/utils/money'
 import { Product, ProductPriceRecurringInterval } from '@polar-sh/sdk'
 import {
   getRecurringBillingLabel,
+  getRecurringProductPrice,
   getSubscriptionColorByType,
   getSubscriptionTierAudience,
-  getSubscriptionTierPrice,
 } from '../Subscriptions/utils'
 
 const HighlightedTier = ({
@@ -18,7 +18,7 @@ const HighlightedTier = ({
   darkmode: boolean
 }) => {
   const audience = getSubscriptionTierAudience(tier.type)
-  const price = getSubscriptionTierPrice(tier, recurringInterval)
+  const price = getRecurringProductPrice(tier, recurringInterval)
   if (!price) {
     return null
   }

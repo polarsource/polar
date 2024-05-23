@@ -108,6 +108,7 @@ export default async function Page({
     products = await api.products.listProducts(
       {
         organizationId: organization.id,
+        isRecurring: true,
       },
       cacheConfig,
     )

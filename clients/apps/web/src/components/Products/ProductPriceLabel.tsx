@@ -1,5 +1,9 @@
 import { formatCurrencyAndAmount } from '@/utils/money'
-import { ProductPrice, ProductPriceRecurringInterval } from '@polar-sh/sdk'
+import {
+  ProductPrice,
+  ProductPriceRecurringInterval,
+  ProductPriceType,
+} from '@polar-sh/sdk'
 import { useMemo } from 'react'
 
 interface ProductPriceLabelProps {
@@ -7,17 +11,22 @@ interface ProductPriceLabelProps {
 }
 
 const ProductPriceLabel: React.FC<ProductPriceLabelProps> = ({ price }) => {
-  const { recurring_interval, price_amount, price_currency } = price
+  const { price_amount, price_currency } = price
   const intervalDisplay = useMemo(() => {
-    switch (recurring_interval) {
-      case ProductPriceRecurringInterval.MONTH:
-        return ' / mo'
-      case ProductPriceRecurringInterval.YEAR:
-        return ' / yr'
-      default:
+    switch (price.type) {
+      case ProductPriceType.ONE_TIME:
         return ''
+      case ProductPriceType.RECURRING:
+        switch (price.recurring_interval) {
+          case ProductPriceRecurringInterval.MONTH:
+            return ' / mo'
+          case ProductPriceRecurringInterval.YEAR:
+            return ' / yr'
+          default:
+            return ''
+        }
     }
-  }, [recurring_interval])
+  }, [price])
 
   return (
     <div>

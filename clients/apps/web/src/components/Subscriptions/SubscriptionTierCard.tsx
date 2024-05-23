@@ -2,8 +2,8 @@
 
 import {
   useProductAudience,
-  useProductPrice,
   useRecurringBillingLabel,
+  useRecurringProductPrice,
 } from '@/hooks/products'
 import { formatCurrencyAndAmount } from '@/utils/money'
 import { useSortable } from '@dnd-kit/sortable'
@@ -58,9 +58,9 @@ const SubscriptionTierCard: React.FC<SubscriptionTierCardProps> = ({
   const [shineActive, setShineActive] = useState(false)
 
   const audience = useProductAudience(subscriptionTier.type)
-  const price = useProductPrice(subscriptionTier, recurringInterval)
+  const price = useRecurringProductPrice(subscriptionTier, recurringInterval)
   const recurringBillingLabel = useRecurringBillingLabel(
-    price.recurring_interval,
+    price?.recurring_interval,
   )
 
   const style = {
@@ -178,16 +178,18 @@ const SubscriptionTierCard: React.FC<SubscriptionTierCardProps> = ({
           </div>
         </div>
         <div className="flex flex-col gap-y-8 text-[--var-fg-color] dark:text-[--var-dark-fg-color]">
-          <div className={variantStyles[variant]['priceLabel']}>
-            {formatCurrencyAndAmount(
-              price.price_amount,
-              price.price_currency,
-              0,
-            )}
-            <span className="dark:text-polar-500 ml-2 text-xl font-normal text-gray-500">
-              {recurringBillingLabel}
-            </span>
-          </div>
+          {price && (
+            <div className={variantStyles[variant]['priceLabel']}>
+              {formatCurrencyAndAmount(
+                price.price_amount,
+                price.price_currency,
+                0,
+              )}
+              <span className="dark:text-polar-500 ml-2 text-xl font-normal text-gray-500">
+                {recurringBillingLabel}
+              </span>
+            </div>
+          )}
           {subscriptionTier.description ? (
             <p
               className={twMerge(

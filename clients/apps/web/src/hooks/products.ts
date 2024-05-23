@@ -1,10 +1,11 @@
 import {
   getRecurringBillingLabel,
+  getRecurringProductPrice,
   getSubscriptionTierAudience,
-  getSubscriptionTierPrice,
 } from '@/components/Subscriptions/utils'
 import {
   Product,
+  ProductPriceRecurring,
   ProductPriceRecurringInterval,
   SubscriptionTierType,
 } from '@polar-sh/sdk'
@@ -21,6 +22,7 @@ export const useRecurringInterval = (
     return products.some((product) =>
       product.prices.some(
         (price) =>
+          price.type === 'recurring' &&
           price.recurring_interval === ProductPriceRecurringInterval.MONTH,
       ),
     )
@@ -29,6 +31,7 @@ export const useRecurringInterval = (
     return products.some((product) =>
       product.prices.some(
         (price) =>
+          price.type === 'recurring' &&
           price.recurring_interval === ProductPriceRecurringInterval.YEAR,
       ),
     )
@@ -50,12 +53,12 @@ export const useRecurringInterval = (
   return [recurringInterval, setRecurringInterval, hasBothIntervals]
 }
 
-export const useProductPrice = (
+export const useRecurringProductPrice = (
   product: Partial<Product>,
   recurringInterval: ProductPriceRecurringInterval,
-) => {
+): ProductPriceRecurring | undefined => {
   return useMemo(
-    () => getSubscriptionTierPrice(product, recurringInterval),
+    () => getRecurringProductPrice(product, recurringInterval),
     [product, recurringInterval],
   )
 }

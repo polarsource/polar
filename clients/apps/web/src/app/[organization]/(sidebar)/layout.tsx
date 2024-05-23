@@ -75,6 +75,7 @@ export default async function Layout({
         .listProducts(
           {
             organizationId: organization.id,
+            isRecurring: true,
           },
           cacheConfig,
         )

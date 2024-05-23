@@ -71,6 +71,7 @@ export const Default: Story = {
         created_at: '2021-10-08T11:17:14.000Z',
         is_archived: false,
         is_highlighted: false,
+        is_recurring: true,
         organization_id: '123',
       },
     },

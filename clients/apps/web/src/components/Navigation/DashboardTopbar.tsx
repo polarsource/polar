@@ -92,7 +92,7 @@ const DashboardTopbar = ({
               <SubNav items={currentRoute.subs ?? []} />
             ) : null}
           </div>
-          <div className="flex w-full flex-1 flex-row items-center justify-end gap-x-12 md:justify-end">
+          <div className="flex w-full flex-1 flex-row items-center justify-end gap-x-6 md:justify-end">
             {children}
             {org ? (
               <Link href={organizationPageLink(org)}>

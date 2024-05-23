@@ -10,6 +10,8 @@ import {
   BenefitPublicInner,
   Organization,
   ProductCreate,
+  ProductPriceRecurringInterval,
+  ProductPriceType,
   ResponseError,
   ValidationError,
 } from '@polar-sh/sdk'
@@ -24,12 +26,14 @@ import ProductForm from './ProductForm'
 
 export interface CreateProductModalProps {
   organization: Organization
+  productPriceType?: ProductPriceType
   hide: () => void
 }
 
 export const CreateProductModal = ({
-  hide,
   organization,
+  productPriceType,
+  hide,
 }: CreateProductModalProps) => {
   const benefits = useBenefits(organization.id)
   const organizationBenefits = useMemo(
@@ -52,13 +56,22 @@ export const CreateProductModal = ({
     defaultValues: {
       ...(savedFormValues ? savedFormValues : {}),
       organization_id: organization.id,
-      prices: [
-        {
-          type: 'one_time',
-          price_amount: undefined,
-          price_currency: 'usd',
-        },
-      ],
+      prices: (productPriceType === ProductPriceType.RECURRING
+        ? [
+            {
+              type: ProductPriceType.RECURRING,
+              recurring_interval: ProductPriceRecurringInterval.MONTH,
+              price_amount: undefined,
+              price_currency: 'usd',
+            },
+          ]
+        : [
+            {
+              type: ProductPriceType.ONE_TIME,
+              price_amount: undefined,
+              price_currency: 'usd',
+            },
+          ]) as any,
     },
   })
   const { handleSubmit, watch, setError } = form

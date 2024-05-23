@@ -2,6 +2,7 @@ import { useAuth } from '@/hooks'
 import {
   useCreateFreeSubscription,
   useListAdminOrganizations,
+  useOrganizationLookup,
   useProducts,
   useUserSubscriptions,
 } from '@/hooks/queries'
@@ -89,9 +90,12 @@ const FeaturedCreator = ({
 
   const createFreeSubscription = useCreateFreeSubscription()
 
-  const { data: { items: products } = { items: [] } } = useProducts(
+  const creatorOrganization = useOrganizationLookup(
     creator.name,
-    100,
+    Platforms.GITHUB,
+  )
+  const { data: { items: products } = { items: [] } } = useProducts(
+    creatorOrganization.data?.id,
   )
 
   const freeSubscriptionTier = useMemo(

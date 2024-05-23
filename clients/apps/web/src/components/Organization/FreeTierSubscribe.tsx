@@ -43,7 +43,7 @@ export const AuthenticatedFreeTierSubscribe = ({
   const subscription = data && data.items && data.items[0]
   const isSubscribed = subscription !== undefined
   const router = useRouter()
-  const orgProducts = useProducts(organization.id, 100)
+  const orgProducts = useProducts(organization.id)
   const hasHighlightedSubscriptions = orgProducts.data?.items?.some(
     (tier) => tier.is_highlighted,
   )
@@ -108,7 +108,7 @@ export const AnonymousFreeTierSubscribe = ({
 }: AnonymousFreeTierSubscribeProps) => {
   const router = useRouter()
 
-  const orgProducts = useProducts(organization.id, 100)
+  const orgProducts = useProducts(organization.id)
   const hasHighlightedSubscriptions = orgProducts.data?.items?.some(
     (tier) => tier.is_highlighted,
   )

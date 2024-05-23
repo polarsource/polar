@@ -37,6 +37,8 @@ export interface ProductsApiGetProductRequest {
 export interface ProductsApiListProductsRequest {
     organizationId?: string;
     includeArchived?: boolean;
+    isRecurring?: boolean;
+    benefitId?: string;
     type?: SubscriptionTierType;
     page?: number;
     limit?: number;
@@ -159,6 +161,14 @@ export class ProductsApi extends runtime.BaseAPI {
 
         if (requestParameters['includeArchived'] != null) {
             queryParameters['include_archived'] = requestParameters['includeArchived'];
+        }
+
+        if (requestParameters['isRecurring'] != null) {
+            queryParameters['is_recurring'] = requestParameters['isRecurring'];
+        }
+
+        if (requestParameters['benefitId'] != null) {
+            queryParameters['benefit_id'] = requestParameters['benefitId'];
         }
 
         if (requestParameters['type'] != null) {

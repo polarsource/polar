@@ -12,7 +12,7 @@ import {
   TabsTrigger,
 } from 'polarkit/components/ui/atoms/tabs'
 import { useCallback, useMemo, useState } from 'react'
-import { resolveReference } from '../../../app/docs/APINavigation'
+import { resolveReference } from '../../Documentation/APINavigation'
 
 export const requestBodyParameters = (
   endpoint: OpenAPIV3_1.OperationObject,

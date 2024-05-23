@@ -5,7 +5,7 @@ import {
   TabsList,
   TabsTrigger,
 } from 'polarkit/components/ui/atoms/tabs'
-import { resolveReference } from '../../APINavigation'
+import { resolveReference } from './APINavigation'
 
 export const ResponseContainer = ({
   responses,

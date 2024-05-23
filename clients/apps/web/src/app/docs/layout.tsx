@@ -6,8 +6,11 @@ import { notFound } from 'next/navigation'
 import { Separator } from 'polarkit/components/ui/separator'
 import { PropsWithChildren } from 'react'
 import { twMerge } from 'tailwind-merge'
+import {
+  DocumentationPageSidebar,
+  MobileNav,
+} from '../../components/Documentation/Navigation'
 import { PolarMenu } from '../[organization]/(sidebar)/LayoutPolarMenu'
-import { DocumentationPageSidebar, MobileNav } from './Navigation'
 
 export default async function Layout({ children }: PropsWithChildren) {
   return (

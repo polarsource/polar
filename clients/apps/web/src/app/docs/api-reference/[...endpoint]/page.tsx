@@ -1,11 +1,11 @@
 import { OpenAPIV3_1 } from 'openapi-types'
 import { useMemo } from 'react'
 import { APIContainer } from '../../../../components/CommandPalette/containers/APIContainer'
-import { resolveReference } from '../../APINavigation'
-import { BodyParameters } from './BodyParameters'
-import { Parameters } from './Parameters'
-import { ResponseContainer } from './ResponseContainer'
-import { resolveOpenAPIEndpointMetadata } from './resolveOpenAPIEndpointMetadata'
+import { resolveReference } from '../../../../components/Documentation/APINavigation'
+import { BodyParameters } from '../../../../components/Documentation/BodyParameters'
+import { Parameters } from '../../../../components/Documentation/Parameters'
+import { ResponseContainer } from '../../../../components/Documentation/ResponseContainer'
+import { resolveOpenAPIEndpointMetadata } from '../../../../components/Documentation/resolveOpenAPIEndpointMetadata'
 
 export default function Page({
   params: { endpoint },

@@ -1,4 +1,4 @@
-import { resolveOpenAPIEndpointMetadata } from '@/app/docs/api-reference/[...endpoint]/resolveOpenAPIEndpointMetadata'
+import { resolveOpenAPIEndpointMetadata } from '@/components/Documentation/resolveOpenAPIEndpointMetadata'
 import { useCurrentOrgAndRepoFromURL } from '@/hooks'
 import { Organization } from '@polar-sh/sdk'
 import lunr from 'lunr'

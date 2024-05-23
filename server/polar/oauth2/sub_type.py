@@ -49,7 +49,7 @@ class SubTypeModelMixin:
 
     @hybrid_property
     def sub(self) -> "User | Organization":
-        sub: "User | Organization | None" = None
+        sub: User | Organization | None = None
         if self.sub_type == SubType.user:
             sub = self.user
         elif self.sub_type == SubType.organization:

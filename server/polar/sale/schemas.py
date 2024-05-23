@@ -31,16 +31,13 @@ class SaleUser(Schema):
 class SaleProduct(ProductBase): ...
 
 
-class SaleProductPrice(ProductPrice): ...
-
-
 class SaleSubscription(SubscriptionBase): ...
 
 
 class Sale(SaleBase):
     user: SaleUser
     product: SaleProduct
-    product_price: SaleProductPrice
+    product_price: ProductPrice
     subscription: SaleSubscription | None = None
 
 

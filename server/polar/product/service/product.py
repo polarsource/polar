@@ -36,6 +36,7 @@ from ..schemas import (
     ExistingProductPrice,
     ProductCreate,
     ProductPriceRecurringCreate,
+    ProductRecurringCreate,
     ProductUpdate,
 )
 
@@ -159,7 +160,10 @@ class ProductService(ResourceService[Product, ProductCreate, ProductUpdate]):
         if not await authz.can(subject, AccessType.write, organization):
             raise NotPermitted()
 
-        if create_schema.is_highlighted:
+        if (
+            isinstance(create_schema, ProductRecurringCreate)
+            and create_schema.is_highlighted
+        ):
             await self._disable_other_highlights(
                 session, type=create_schema.type, organization_id=organization.id
             )
@@ -300,7 +304,7 @@ class ProductService(ResourceService[Product, ProductCreate, ProductUpdate]):
                     deleted_price.is_archived = True
                     session.add(deleted_price)
 
-        if update_schema.is_highlighted:
+        if update_schema.is_highlighted and product.type is not None:
             await self._disable_other_highlights(
                 session,
                 type=product.type,

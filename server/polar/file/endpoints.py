@@ -1,10 +1,10 @@
 import structlog
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends
 from pydantic import UUID4
 
 from polar.authz.service import AccessType, Authz
+from polar.benefit.benefits.downloadables.files import BenefitDownloadablesFiles
 from polar.exceptions import NotPermitted
-from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.models import Organization
 from polar.organization.resolver import get_payload_organization
 from polar.organization.service import organization as organization_service
@@ -24,47 +24,6 @@ from .service import file as file_service
 log = structlog.get_logger()
 
 router = APIRouter(prefix="/files", tags=["files"])
-
-
-@router.get(
-    "",
-    tags=[Tags.PUBLIC],
-    response_model=ListResource[FileRead],
-)
-async def list(
-    pagination: PaginationParamsQuery,
-    auth_subject: auth.CreatorFilesWrite,
-    organization_id: UUID4 | None = Query(
-        None,
-        description=("Filter by organization files belong to. "),
-    ),
-    ids: list[UUID4] | None = Query(
-        None,
-        description=("Filter by list of file IDs. "),
-    ),
-    authz: Authz = Depends(Authz.authz),
-    session: AsyncSession = Depends(get_db_session),
-) -> ListResource[FileRead]:
-    subject = auth_subject.subject
-
-    if not organization_id:
-        if not isinstance(subject, Organization):
-            raise NotPermitted()
-        organization_id = subject.id
-
-    organization = await organization_service.get(session, organization_id)
-    if not organization:
-        raise NotPermitted()
-
-    if not await authz.can(subject, AccessType.write, organization):
-        raise NotPermitted()
-
-    results, count = await file_service.get_list(
-        session, organization, pagination=pagination, ids=ids
-    )
-
-    schemas = [FileRead.from_db(result) for result in results]
-    return ListResource.from_paginated_results(schemas, count, pagination)
 
 
 @router.post(
@@ -120,3 +79,44 @@ async def uploaded(
     return await file_service.complete_upload(
         session, file=file, completed_schema=completed_schema
     )
+
+
+@router.get(
+    "/downloadables/{benefit_id}",
+    tags=[Tags.PUBLIC],
+    response_model=list[FileRead],
+)
+async def list_downloadables(
+    auth_subject: auth.CreatorFilesWrite,
+    benefit_id: UUID4,
+    organization_id: UUID4 | None = None,
+    authz: Authz = Depends(Authz.authz),
+    session: AsyncSession = Depends(get_db_session),
+) -> list[FileRead]:
+    subject = auth_subject.subject
+
+    if not organization_id:
+        if not isinstance(subject, Organization):
+            raise NotPermitted()
+        organization_id = subject.id
+
+    organization = await organization_service.get(session, organization_id)
+    if not organization:
+        raise NotPermitted()
+
+    if not await authz.can(subject, AccessType.write, organization):
+        raise NotPermitted()
+
+    benefit_files = BenefitDownloadablesFiles(session, benefit_id)
+    # Ensure accessed benefit belongs to organization admin
+    await benefit_files.ensure_organization_matches(organization.id)
+
+    file_ids = await benefit_files.get_file_ids()
+    if not file_ids:
+        return []
+
+    files = await file_service.get_by_ids(
+        session, organization_id=organization.id, ids=file_ids
+    )
+    mapping = {file.id: FileRead.from_db(file) for file in files}
+    return await benefit_files.sort_mapping(mapping)

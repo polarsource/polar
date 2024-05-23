@@ -9,125 +9,12 @@ import {
 import { FileUploadOutlined as FileUploadIcon } from '@mui/icons-material'
 
 import { useFiles } from '@/hooks/queries'
-import { Switch } from 'polarkit/components/ui/atoms'
 import { ReactElement } from 'react'
 import { useFormContext } from 'react-hook-form'
 import { twMerge } from 'tailwind-merge'
 
 import { FileObject, useFileUpload } from '@/components/FileUpload'
-
-const FilePreview = ({ file }: { file: FileObject }) => {
-  return (
-    <div className="h-14 w-14 rounded bg-gray-200 text-gray-600">
-      <p className="font-semibold">.{file.extension}</p>
-    </div>
-  )
-}
-
-const FileUploadProgress = ({ file }: { file: FileObject }) => {
-  const pct = Math.round((file.uploadedBytes / file.size) * 100)
-  return (
-    <>
-      <div className="flex w-full items-center space-x-4">
-        <div className="flex-grow">
-          <div className="h-2 w-full rounded bg-gray-100">
-            <div
-              className="h-2 rounded bg-blue-400"
-              style={{ width: `${pct}%` }}
-            >
-              &nbsp;
-            </div>
-          </div>
-        </div>
-        <div className="flex w-8">
-          <p className="text-sm">{pct}%</p>
-        </div>
-      </div>
-    </>
-  )
-}
-
-const FileUploadDetails = ({ file }: { file: FileObject }) => {
-  return (
-    <>
-      <div className="text-gray-500">
-        <p className="text-xs">
-          <span className="font-medium">Size:</span> {file.size}
-        </p>
-        <p className="text-xs">
-          <span className="font-medium">SHA-256:</span>{' '}
-          {file.checksum_sha256_hex}
-        </p>
-      </div>
-    </>
-  )
-}
-
-const ManageFile = ({
-  file,
-  updateFile,
-}: {
-  file: FileObject
-  updateFile: (callback: (prev: FileObject) => FileObject) => void
-}) => {
-  const onToggleEnabled = (enabled: boolean) => {
-    updateFile((prev) => {
-      return {
-        ...prev,
-        enabled,
-      }
-    })
-  }
-
-  const isUploading = file.isUploading
-
-  return (
-    <>
-      <div className="mb-4 flex items-center space-x-4">
-        <div className="flex w-14 text-center">
-          <FilePreview file={file} />
-        </div>
-        <div className="flex-grow text-gray-700">
-          <strong className="font-semibold">{file.name}</strong>
-          {!isUploading && <FileUploadDetails file={file} />}
-          {isUploading && <FileUploadProgress file={file} />}
-        </div>
-        {!isUploading && (
-          <div className="flex w-14">
-            <Switch checked={file.enabled} onCheckedChange={onToggleEnabled} />
-          </div>
-        )}
-      </div>
-    </>
-  )
-}
-
-const ManageFileView = ({
-  files,
-  updateFile,
-}: {
-  files: FileObject[]
-  updateFile: (
-    fileId: string,
-    callback: (prev: FileObject) => FileObject,
-  ) => void
-}) => {
-  const getUpdateScopedFile = (fileId: string) => {
-    return (callback: (prev: FileObject) => FileObject) => {
-      updateFile(fileId, callback)
-    }
-  }
-
-  return (
-    <ul>
-      {files.map((file) => (
-        <li key={file.id}>
-          <ManageFile file={file} updateFile={getUpdateScopedFile(file.id)} />
-        </li>
-      ))}
-    </ul>
-  )
-}
+import { FileList } from './FileList'
 
 const DropzoneView = ({
   isDragActive,
@@ -211,7 +98,7 @@ const DownloadablesForm = ({
           <input {...getInputProps()} />
         </DropzoneView>
       </div>
-      <ManageFileView files={files} updateFile={updateFile} />
+      <FileList files={files} setFiles={setFiles} updateFile={updateFile} />
     </>
   )
 }
@@ -226,10 +113,10 @@ const DownloadablesEditForm = ({
 }: DownloadablesBenefitFormProps) => {
   const { getValues } = useFormContext<BenefitDownloadablesCreate>()
 
-  const fileIds = getValues('properties.files')
-  const filesQuery = useFiles(organization.id, fileIds)
+  const benefitId = getValues('id')
+  const filesQuery = useFiles(organization.id, benefitId)
 
-  const files: FileRead[] = filesQuery.data?.items
+  const files: FileRead[] = filesQuery.data
 
   if (filesQuery.isLoading) {
     // TODO: Style me

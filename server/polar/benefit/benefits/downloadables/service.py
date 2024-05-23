@@ -14,7 +14,7 @@ from polar.models import Organization, User
 from polar.models.benefit import BenefitDownloadables, BenefitDownloadablesProperties
 from polar.models.downloadable import Downloadable, DownloadableStatus
 
-from .base import (
+from ..base import (
     BenefitServiceProtocol,
 )
 

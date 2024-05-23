@@ -9,6 +9,7 @@ import {
   useRouter,
   useSearchParams,
 } from 'next/navigation'
+import posthog from 'posthog-js'
 import { useCallback, useEffect, useMemo } from 'react'
 import { CommandItem } from './CommandItem'
 import { APICommand, CommandType } from './commands/commands'
@@ -26,6 +27,18 @@ export interface CommandPaletteProps {
 }
 
 export const CommandPalette = ({ organization, hide }: CommandPaletteProps) => {
+  useEffect(() => {
+    posthog.capture('Command Palette Invoked', {
+      'Page URL': window.location.href,
+    })
+
+    return () => {
+      posthog.capture('Command Palette Closed', {
+        'Page URL': window.location.href,
+      })
+    }
+  }, [])
+
   return (
     <CommandPaletteContextProvider
       organization={organization}

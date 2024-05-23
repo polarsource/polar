@@ -89,19 +89,17 @@ const ClientPage = ({ organization }: { organization: Organization }) => {
               <AddOutlined fontSize="inherit" />
             </Button>
           </div>
-          <ShadowBoxOnMd className="flex flex-col gap-y-6">
-            <div className="flex flex-col gap-y-2">
-              {benefits?.items?.map((benefit) => (
-                <BenefitRow
-                  organization={organization}
-                  benefit={benefit}
-                  selected={selectedBenefit?.id === benefit.id}
-                  handleSelectBenefit={handleSelectBenefit}
-                  key={benefit.id}
-                />
-              ))}
-            </div>
-          </ShadowBoxOnMd>
+          <div className="flex flex-col gap-y-2">
+            {benefits?.items?.map((benefit) => (
+              <BenefitRow
+                organization={organization}
+                benefit={benefit}
+                selected={selectedBenefit?.id === benefit.id}
+                handleSelectBenefit={handleSelectBenefit}
+                key={benefit.id}
+              />
+            ))}
+          </div>
           {benefitsIsFetched ? (
             <RecommendedBenefits
               existingBenefits={benefits?.items ?? []}
@@ -206,7 +204,7 @@ const BenefitRow = ({
   return (
     <div
       className={twMerge(
-        'dark:hover:bg-polar-700 dark:bg-polar-800 flex cursor-pointer flex-row justify-between gap-x-8 rounded-2xl bg-gray-100 px-4 py-3 transition-colors hover:bg-blue-50',
+        'dark:hover:bg-polar-700 dark:bg-polar-800 flex cursor-pointer flex-row justify-between gap-x-8 rounded-2xl bg-white px-4 py-3 transition-colors hover:bg-gray-50',
         selected &&
           'bg-blue-50 hover:bg-blue-100 dark:bg-blue-950 dark:hover:bg-blue-900',
       )}
@@ -383,9 +381,9 @@ const RecommendedBenefits = ({
   }
 
   return (
-    <div className="flex flex-col gap-y-2">
+    <div className="flex flex-col gap-y-4">
       <h2 className="text-md font-medium">Recommended benefits</h2>
-      <ShadowBoxOnMd className="flex flex-col gap-y-4">
+      <div className="flex flex-col gap-y-2">
         {!hasDiscord && (
           <BenefitSuggestionRow
             icon={<DiscordIcon />}
@@ -415,7 +413,7 @@ const RecommendedBenefits = ({
             Logo in README
           </BenefitSuggestionRow>
         )}
-      </ShadowBoxOnMd>
+      </div>
     </div>
   )
 }
@@ -431,7 +429,7 @@ const BenefitSuggestionRow = ({
 }) => {
   return (
     <div
-      className="dark:hover:bg-polar-700 dark:bg-polar-800 dark:text-polar-500 flex cursor-pointer flex-row justify-between gap-x-8 rounded-2xl bg-gray-100 p-5 text-gray-500 transition-colors hover:bg-blue-50 hover:text-blue-500 dark:hover:text-blue-400"
+      className="dark:hover:bg-polar-700 dark:bg-polar-800 dark:text-polar-500 flex cursor-pointer flex-row justify-between gap-x-8 rounded-2xl bg-white p-5 text-gray-500 transition-colors hover:bg-gray-50"
       onClick={onClick}
     >
       <div className="flex flex-row items-center gap-x-3">

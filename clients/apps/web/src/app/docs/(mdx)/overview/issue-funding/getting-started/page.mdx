@@ -1,3 +1,5 @@
+import BrowserCallout from '@/components/Feed/Markdown/Callout/BrowserCallout'
+
 # Setup a maintainer account with Polar
 
 ## Creating a new account
@@ -47,19 +49,22 @@ Once authorization has been granted, you will be redirect to GitHub again to
 [install the Polar GitHub app](#install-the-polar-github-app) on the
 repositories you want.
 
-> [!NOTE] What does 'Act on my behalf' mean?
-> This is a default notice from GitHub in all their OAuth
-> authentication flows. [See this ticket from the wider community asking GitHub to improve
-> the copy.](https://github.com/orgs/community/discussions/37117b)
+<BrowserCallout type="IMPORTANT">
+#### What does 'Act on my behalf' mean?
 
-> Rest assured, we do not do anything on your behalf without a delibrate action
-> performed by you via Polar for an explicit, clear & desired outcome by you.
+This is a default notice from GitHub in all their OAuth
+authentication flows. [See this ticket from the wider community asking GitHub to improve
+the copy.](https://github.com/orgs/community/discussions/37117b)
 
-> Specifically, we make it easy for you - as a maintainer - to comment on issues
-> you manage via Polar. In case you want to promote funding or notify
-> contributors about granted rewards via an in-line comment. No such comment
-> is automated, required or hard-coded (you can edit them freely in our UI) and they
-> require you to manually submit them each time.
+Rest assured, we do not do anything on your behalf without a delibrate action
+performed by you via Polar for an explicit, clear & desired outcome by you.
+
+Specifically, we make it easy for you - as a maintainer - to comment on issues
+you manage via Polar. In case you want to promote funding or notify
+contributors about granted rewards via an in-line comment. No such comment
+is automated, required or hard-coded (you can edit them freely in our UI) and they
+require you to manually submit them each time.
+</BrowserCallout>
 
 
 ## Upgrade an existing account
@@ -131,18 +136,21 @@ to.
   the future.
 - **Cons:** You sync a lot and more than might be needed or desired.
 
-!!! info "Private repositories & forks are synced too"
-    We sync all the repositories given during installation. Including private
-    repos & forks.
+<BrowserCallout type="NOTE">
+#### Private repositories & forks are synced too
 
-    However, we don't expose issues related to private repos except to those who
-    can access it on GitHub. It's supported to allow maintainers to connect
-    private repositories to try Polar with.
+We sync all the repositories given during installation. Including private
+repos & forks.
 
-    We also sync forks currently. Supporting cases where forks have superseded
-    the original within the community.
+However, we don't expose issues related to private repos except to those who
+can access it on GitHub. It's supported to allow maintainers to connect
+private repositories to try Polar with.
 
-    Both of the above are likely to be deprecated features in the future.
+We also sync forks currently. Supporting cases where forks have superseded
+the original within the community.
+
+Both of the above are likely to be deprecated features in the future.
+</BrowserCallout>
 
 #### Select Repositories
 
@@ -150,9 +158,13 @@ to.
 - **Pros:** Complete control. Gradual expansion. Great starting point.
 - **Cons:** You need to manually add repositories.
 
-!!! question "Can I change repositories later?"
-    Of course, you can always change repository access at any point in your GitHub
-    settings for the Polar app.
+
+<BrowserCallout type="NOTE">
+#### Can I change repositories later?
+
+Of course, you can always change repository access at any point in your GitHub
+settings for the Polar app.
+</BrowserCallout>
 
 
 ### Required permissions
@@ -242,12 +254,14 @@ The minimum amount required for funding by individual backers (default is `$20`)
 Enable & promote a default percentage split of the funding pool with potential
 contributors who help squash an issue.
 
-!!! tip "Feedback"
-    Missing something? We'd love to chat and improve the product based on your
-    feedback!
 
-    You can submit a feature request via GitHub (we're building open source).
-    You're also more than welcome to join our Discord. [Relevant links](/support/)
+<BrowserCallout type="TIP">
+**Missing something?** We'd love to chat and improve the product based on your
+feedback!
+
+You can submit a feature request via GitHub (we're building open source).
+You're also more than welcome to join our Discord. [Relevant links](/support/)
+</BrowserCallout>
 
 ### Embed Settings
 
@@ -277,17 +291,19 @@ with using rewards to distribute it across your contributors. Just like [tRPC](h
   explicitly confirm & trigger this action.
 
 
-!!! info "How GitHub issue ordering is affected by multiple updates"
-    Since we update the issues to embed the Polar Badge the issues will get an
-    updated `modified_at` timestamp.
+<BrowserCallout type="NOTE">
+#### How GitHub issue ordering is affected by multiple updates
+Since we update the issues to embed the Polar Badge the issues will get an
+updated `modified_at` timestamp.
 
-    By default, GitHub issues is sorted by `created_at` so it's not impacted
-    unless you specifically sort by `modified_at`.
+By default, GitHub issues is sorted by `created_at` so it's not impacted
+unless you specifically sort by `modified_at`.
 
-    However, when & if you select to badge all existing - open - issues, we do
-    so in a batch and in reverse chronological `modified_at` order. So that even
-    though we update them we do so in a way that should retain their previous order.
-    We cannot promise, however, that it will guaranteed.
+However, when & if you select to badge all existing - open - issues, we do
+so in a batch and in reverse chronological `modified_at` order. So that even
+though we update them we do so in a way that should retain their previous order.
+We cannot promise, however, that it will guaranteed.
+</BrowserCallout>
 
 
 ## Next Step

@@ -1,3 +1,5 @@
+import BrowserCallout from '@/components/Feed/Markdown/Callout/BrowserCallout'
+
 # Funding Workflow
 
 ## Review Backlog
@@ -86,7 +88,7 @@ within the badge.
 1. Enter a custom funding goal in USD
 2. Click `Update` to save your changes
 
-!!! info "GitHub caches the badge for ~30-90 seconds"
+"GitHub caches the badge for ~30-90 seconds"
     We set `no-cache` headers and GitHub does support this. However, their proxy CDN
     seems to have a minimal Cache TTL nonetheless, but it's very short-lived
     (with no headers it's cached for much longer).
@@ -137,11 +139,14 @@ This has a couple of benefits:
 2. An additional opportunity to capture impressions from new viewers (who might
    scroll quickly to the end)
 
-!!! info "Note: Comments on your behalf"
-    In case you submit a comment via the modal (optional), it will be posted on
-    your behalf. This is mentioned next to the `Post` action so it's never a
-    surprise. Additionally, GitHub will add the Polar logo in connection with
-    your avatar for the comment - indicating it was done via the Polar App.
+<BrowserCallout type="NOTE">
+#### Comments on your behalf
+    
+In case you submit a comment via the modal (optional), it will be posted on
+your behalf. This is mentioned next to the `Post` action so it's never a
+surprise. Additionally, GitHub will add the Polar logo in connection with
+your avatar for the comment - indicating it was done via the Polar App.
+</BrowserCallout>
 
 ##### Direct Link
 

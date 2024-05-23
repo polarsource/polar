@@ -24,7 +24,7 @@ const BrowserCallout: React.FC<CalloutProps> = ({ type, children }) => {
   return (
     <div
       className={twMerge(
-        'border-0 border-l-4 border-solid pl-4',
+        'border-0 border-l-4 border-solid pl-4 [&>*:nth-child(2)]:mt-2',
         CALLOUT_TYPE_BORDER_COLORS[type],
       )}
     >
@@ -34,7 +34,7 @@ const BrowserCallout: React.FC<CalloutProps> = ({ type, children }) => {
           CALLOUT_TYPE_TEXT_COLORS[type],
         )}
       >
-        <div>{CALLOUT_TYPE_ICON[type]}</div>
+        {CALLOUT_TYPE_ICON[type]}
         <div className="capitalize">{type.toLowerCase()}</div>
       </div>
       {children}

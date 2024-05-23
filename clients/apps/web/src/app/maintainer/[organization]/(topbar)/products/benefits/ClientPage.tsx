@@ -11,9 +11,9 @@ import { InlineModal } from '@/components/Modal/InlineModal'
 import { useModal } from '@/components/Modal/useModal'
 import {
   useAdvertisementDisplays,
+  useBenefitProducts,
   useBenefits,
   useDeleteBenefit,
-  useProducts,
 } from '@/hooks/queries'
 import { AddOutlined, MoreVertOutlined, WebOutlined } from '@mui/icons-material'
 import { BenefitPublicInner, BenefitType, Organization } from '@polar-sh/sdk'
@@ -29,7 +29,7 @@ import {
   DropdownMenuTrigger,
 } from 'polarkit/components/ui/dropdown-menu'
 import { Textarea } from 'polarkit/components/ui/textarea'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 const ClientPage = ({ organization }: { organization: Organization }) => {
@@ -40,7 +40,11 @@ const ClientPage = ({ organization }: { organization: Organization }) => {
     organization.id,
     100,
   )
-  const { data: products } = useProducts(organization.id, 100)
+  const { data: benefitProducts } = useBenefitProducts(
+    organization.id,
+    selectedBenefit?.id,
+    100,
+  )
   const searchParams = useSearchParams()
 
   const {
@@ -52,14 +56,6 @@ const ClientPage = ({ organization }: { organization: Organization }) => {
 
   const [createModalDefaultValues, setCreateModalDefaultValues] =
     useState<CreateBenefitModalParams>()
-
-  const benefitProducts = useMemo(
-    () =>
-      products?.items?.filter((product) =>
-        product.benefits.some((benefit) => benefit.id === selectedBenefit?.id),
-      ),
-    [products, selectedBenefit],
-  )
 
   useEffect(() => {
     setSelectedBenefit(benefits?.items?.[0])
@@ -115,21 +111,21 @@ const ClientPage = ({ organization }: { organization: Organization }) => {
             </div>
 
             <div className="flex flex-col gap-y-4">
-              <h3 className="font-medium">Subscription Tiers</h3>
+              <h3 className="font-medium">Products</h3>
               <div className="flex flex-col gap-y-2">
-                {(benefitProducts?.length ?? 0) > 0 ? (
-                  benefitProducts?.map((tier) => (
+                {benefitProducts?.items?.length ? (
+                  benefitProducts.items.map((product) => (
                     <Link
-                      key={tier.id}
-                      href={`/maintainer/${organization.name}/subscriptions/tiers?tierId=${tier.id}`}
+                      key={product.id}
+                      href={`/maintainer/${organization.name}/products/overview?product=${product.id}`}
                       className="dark:bg-polar-800 dark:hover:bg-polar-700 -mx-2 flex flex-row items-center gap-x-2 rounded-xl bg-gray-100 px-4 py-3 transition-colors hover:bg-blue-50 hover:text-blue-500"
                     >
-                      <span className="text-sm">{tier.name}</span>
+                      <span className="text-sm">{product.name}</span>
                     </Link>
                   ))
                 ) : (
                   <span className="text-sm text-gray-500">
-                    Benefit not tied to any subscription tier
+                    Benefit not tied to any product
                   </span>
                 )}
               </div>

@@ -1,6 +1,6 @@
 import { PropsWithChildren } from 'react'
-import { MDXContentWrapper } from '../MDXContentWrapper'
-import { TableOfContents } from '../TableOfContents'
+import { MDXContentWrapper } from '../../../components/Documentation/MDXContentWrapper'
+import { TableOfContents } from '../../../components/Documentation/TableOfContents'
 
 export default function Layout({ children }: PropsWithChildren) {
   return (

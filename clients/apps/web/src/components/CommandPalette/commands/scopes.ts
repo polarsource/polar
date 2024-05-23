@@ -22,11 +22,6 @@ export interface Scope<T extends ScopeType = ScopeType> {
 
 export const API_SCOPES = [
   {
-    name: 'api:issues',
-    type: ScopeType.Isolated,
-    commands: createAPICommands('issues'),
-  },
-  {
     name: 'api:donations',
     type: ScopeType.Isolated,
     commands: createAPICommands('donations'),
@@ -37,14 +32,44 @@ export const API_SCOPES = [
     commands: createAPICommands('subscriptions'),
   },
   {
-    name: 'api:posts',
+    name: 'api:benefits',
     type: ScopeType.Isolated,
-    commands: createAPICommands('posts'),
+    commands: createAPICommands('benefits'),
+  },
+  {
+    name: 'api:issues',
+    type: ScopeType.Isolated,
+    commands: createAPICommands('issues'),
+  },
+  {
+    name: 'api:newsletters',
+    type: ScopeType.Isolated,
+    commands: createAPICommands('newsletters'),
+  },
+  {
+    name: 'api:users',
+    type: ScopeType.Isolated,
+    commands: createAPICommands('users'),
+  },
+  {
+    name: 'api:accounts',
+    type: ScopeType.Isolated,
+    commands: createAPICommands('accounts'),
+  },
+  {
+    name: 'api:newsletters',
+    type: ScopeType.Isolated,
+    commands: createAPICommands('newsletters'),
   },
   {
     name: 'api:webhooks',
     type: ScopeType.Isolated,
     commands: createAPICommands('webhooks'),
+  },
+  {
+    name: 'api:OAuth',
+    type: ScopeType.Isolated,
+    commands: createAPICommands('oauth'),
   },
 ] as const
 

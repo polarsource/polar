@@ -137,7 +137,7 @@ const DashboardLayout = (props: PropsWithChildren<{ className?: string }>) => {
     return () => {
       window.removeEventListener('keydown', handleKeyPress)
     }
-  }, [isCommandPaletteShown])
+  }, [isCommandPaletteShown, showCommandPalette])
 
   return (
     <>

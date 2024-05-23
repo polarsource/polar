@@ -19,12 +19,16 @@ type FindMatchingPath<
   : never
 
 type Sitemap = {
-  posts: FindMatchingPath<'/api/v1/articles'>[]
+  newsletters: FindMatchingPath<'/api/v1/articles'>[]
   issues: FindMatchingPath<'/api/v1/issues'>[]
   donations: FindMatchingPath<'/api/v1/donations'>[]
   subscriptions: FindMatchingPath<'/api/v1/subscriptions'>[]
+  benefits: FindMatchingPath<'/api/v1/benefits'>[]
+  users: FindMatchingPath<'/api/v1/users'>[]
+  accounts: FindMatchingPath<'/api/v1/accounts'>[]
   webhooks: FindMatchingPath<'/api/v1/webhooks'>[]
   funding: FindMatchingPath<'/api/v1/funding'>[]
+  oauth: FindMatchingPath<'/api/v1/oauth'>[]
 }
 
 type SitemapKey = keyof typeof sitemap
@@ -35,12 +39,16 @@ const filterPath = <T extends string>(key: T) =>
     .map(([path, methods]) => ({ path, methods }) as FindMatchingPath<T>)
 
 const sitemap: Sitemap = {
-  posts: filterPath('/api/v1/articles'),
+  newsletters: filterPath('/api/v1/articles'),
   issues: filterPath('/api/v1/issues'),
   donations: filterPath('/api/v1/donations'),
   subscriptions: filterPath('/api/v1/subscriptions'),
+  benefits: filterPath('/api/v1/benefits'),
+  users: filterPath('/api/v1/users'),
+  accounts: filterPath('/api/v1/accounts'),
   webhooks: filterPath('/api/v1/webhooks'),
   funding: filterPath('/api/v1/funding'),
+  oauth: filterPath('/api/v1/oauth'),
 }
 
 export const createAPICommands = (key: SitemapKey): APICommand[] => {

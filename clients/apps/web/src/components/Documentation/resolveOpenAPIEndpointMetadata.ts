@@ -1,6 +1,6 @@
 import openapiSchema from '@polar-sh/sdk/openapi'
 import { OpenAPIV3_1 } from 'openapi-types'
-import { SchemaPathMethod } from '../../APINavigation'
+import { SchemaPathMethod } from './APINavigation'
 
 export const resolveOpenAPIEndpointMetadata = (endpoint: string) => {
   const parts = endpoint.split('/').filter(Boolean)

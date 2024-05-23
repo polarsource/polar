@@ -1,12 +1,12 @@
 'use client'
 
 import LogoIcon from '@/components/Brand/LogoIcon'
+import { CommandPaletteTrigger } from '@/components/CommandPalette/CommandPaletteTrigger'
 import { useModal } from '@/components/Modal/useModal'
 import {
   ApiOutlined,
   CloseOutlined,
   DescriptionOutlined,
-  SearchOutlined,
   ShortTextOutlined,
   SpaceDashboardOutlined,
 } from '@mui/icons-material'
@@ -47,21 +47,7 @@ export const DocumentationPageSidebar = () => {
   return (
     <div className="flex w-full flex-shrink-0 flex-col gap-y-12 md:w-60">
       <div className="hidden flex-col gap-y-12 md:flex">
-        <div
-          className="dark:bg-polar-800 -mx-3 flex cursor-pointer flex-row items-center justify-between gap-x-4 rounded-xl bg-white py-2 pl-4 pr-2 shadow-sm"
-          role="button"
-          onClick={show}
-        >
-          <div className="flex flex-row items-center gap-x-2">
-            <SearchOutlined fontSize="inherit" />
-            <span className="dark:text-polar-500 text-sm text-gray-500">
-              Search
-            </span>
-          </div>
-          <div className="dark:border-polar-600 rounded-md bg-gray-100 px-2 py-1 text-xs tracking-wide dark:border dark:bg-transparent">
-            <span>⌘K</span>
-          </div>
-        </div>
+        <CommandPaletteTrigger onClick={show} />
         <Separator />
       </div>
       <ul className="flex flex-col">

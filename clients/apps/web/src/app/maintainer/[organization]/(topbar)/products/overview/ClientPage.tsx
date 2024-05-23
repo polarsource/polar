@@ -7,7 +7,7 @@ import { CreateProductModal } from '@/components/Products/CreateProductModal'
 import { EditProductModal } from '@/components/Products/EditProductModal'
 import { ProductCard } from '@/components/Products/ProductCard'
 import { useCurrentOrgAndRepoFromURL } from '@/hooks'
-import { useProduct, useProducts } from '@/hooks/queries/dummy_products'
+import { useProduct, useProducts } from '@/hooks/queries/products'
 import { AddOutlined } from '@mui/icons-material'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
@@ -32,15 +32,17 @@ export default function ClientPage() {
   } = useModal()
 
   useEffect(() => {
-    if (searchParams.has('product')) {
+    if (searchParams?.has('product')) {
       showEditProductModal()
     } else {
       hideEditProductModal()
     }
   }, [searchParams, showEditProductModal, hideEditProductModal])
 
-  const { data: product } = useProduct(searchParams.get('product') ?? undefined)
-  const products = useProducts(org?.name)
+  const { data: product } = useProduct(
+    searchParams?.get('product') ?? undefined,
+  )
+  const products = useProducts(org?.id)
 
   return (
     <DashboardBody className="flex flex-col gap-8">
@@ -51,7 +53,7 @@ export default function ClientPage() {
         </Button>
       </div>
       <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        {products.data?.items.map((product) => (
+        {products.data?.items?.map((product) => (
           <Link
             key={product.id}
             href={`/maintainer/${org?.name}/products/overview?product=${product.id}`}
@@ -60,29 +62,37 @@ export default function ClientPage() {
           </Link>
         ))}
       </div>
-      <InlineModal
-        isShown={isCreateProductModalShown}
-        hide={hideCreateProductModal}
-        modalContent={<CreateProductModal hide={hideCreateProductModal} />}
-      />
-      <InlineModal
-        isShown={isEditProductModalShown}
-        hide={() => {
-          router.replace(`/maintainer/${org?.name}/products/overview`)
-        }}
-        modalContent={
-          product ? (
-            <EditProductModal
-              product={product}
+      {org && (
+        <>
+          <InlineModal
+            isShown={isCreateProductModalShown}
+            hide={hideCreateProductModal}
+            modalContent={
+              <CreateProductModal
+                organization={org}
+                hide={hideCreateProductModal}
+              />
+            }
+          />
+          {product && (
+            <InlineModal
+              isShown={isEditProductModalShown}
               hide={() => {
                 router.replace(`/maintainer/${org?.name}/products/overview`)
               }}
+              modalContent={
+                <EditProductModal
+                  product={product}
+                  organization={org}
+                  hide={() => {
+                    router.replace(`/maintainer/${org?.name}/products/overview`)
+                  }}
+                />
+              }
             />
-          ) : (
-            <></>
-          )
-        }
-      />
+          )}
+        </>
+      )}
     </DashboardBody>
   )
 }

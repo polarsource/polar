@@ -121,7 +121,7 @@ const SubscriptionTierEditModalContent = ({
           },
         })
 
-        revalidate(`subscriptionTiers:${organization.name}`)
+        revalidate(`products:${organization.id}`)
 
         hide()
       } catch (e) {
@@ -167,7 +167,7 @@ const SubscriptionTierEditModalContent = ({
       productUpdate: { is_archived: true },
     })
 
-    revalidate(`subscriptionTiers:${organization.name}`)
+    revalidate(`products:${organization.id}`)
 
     hide()
   }, [subscriptionTier, updateSubscriptionTier, organization, hide])

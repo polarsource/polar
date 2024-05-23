@@ -121,7 +121,7 @@ const CreateSubscriptionTierModalContent: React.FC<
 
         clearDraft('ProductCreate')
 
-        revalidate(`subscriptionTiers:${organization.name}`)
+        revalidate(`products:${organization.id}`)
 
         hide()
       } catch (e) {

@@ -58,6 +58,11 @@ Eburnea veneris. Circes efficerentque arte vultum finxit? Pondus modo,
 silvas percepto quorum, relicta. Mora cum dedit mille dedit gemmae et poenam
 rogando pascua, viridi malis fugit lanificae vulnere arsit, neci!`
 
+export const dummyMedia = [
+  'https://7vk6rcnylug0u6hg.public.blob.vercel-storage.com/image-uNOjlhlA1jNCzDcYXCtAJ9Xtdcqh1q.png',
+  'https://7vk6rcnylug0u6hg.public.blob.vercel-storage.com/image-TRZJDWeGWdRElWTvHOeOLsnpzpbXEZ.png',
+]
+
 export let products: Product[] = [
   {
     id: '1',

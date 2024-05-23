@@ -123,7 +123,7 @@ export default async function Page({
             ...cacheConfig,
             next: {
               ...cacheConfig.next,
-              tags: [`subscriptionTiers:${params.organization}`],
+              tags: [`products:${organization.id}`],
             },
           },
         ),

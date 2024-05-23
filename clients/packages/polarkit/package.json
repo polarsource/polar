@@ -34,6 +34,8 @@
     "./components/ui/table": "./src/components/ui/table.tsx",
     "./components/ui/textarea": "./src/components/ui/textarea.tsx",
     "./components/ui/tooltip": "./src/components/ui/tooltip.tsx",
+    "./components/ui/toggle": "./src/components/ui/toggle.tsx",
+    "./components/ui/toggle-group": "./src/components/ui/toggle-group.tsx",
     "./package.json": "./package.json"
   },
   "scripts": {
@@ -56,6 +58,8 @@
     "@radix-ui/react-switch": "^1.0.3",
     "@radix-ui/react-tabs": "^1.0.4",
     "@radix-ui/react-toast": "^1.1.3",
+    "@radix-ui/react-toggle": "^1.0.3",
+    "@radix-ui/react-toggle-group": "^1.0.4",
     "@radix-ui/react-tooltip": "^1.0.7",
     "@tanstack/react-table": "^8.10.7",
     "class-variance-authority": "^0.6.0",

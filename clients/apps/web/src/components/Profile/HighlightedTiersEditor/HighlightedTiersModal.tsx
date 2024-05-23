@@ -36,7 +36,7 @@ export const HighlightedTiersModal = ({
         },
       })
 
-      await revalidate(`subscriptionTiers:${organization.name}`)
+      await revalidate(`products:${organization.id}`)
     },
     [updateProductMutation, organization],
   )

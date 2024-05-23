@@ -7,21 +7,38 @@ import {
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { defaultRetry } from './retry'
 
-export const useProducts = (orgId?: string, limit = 100) =>
+export const useProducts = (organizationId?: string, limit = 100) =>
   useQuery({
-    queryKey: ['products', 'organization', orgId],
+    queryKey: ['products', { organizationId }],
     queryFn: () =>
       api.products.listProducts({
-        organizationId: orgId ?? '',
+        organizationId: organizationId ?? '',
         limit,
       }),
     retry: defaultRetry,
-    enabled: !!orgId,
+    enabled: !!organizationId,
+  })
+
+export const useBenefitProducts = (
+  organizationId?: string,
+  benefitId?: string,
+  limit = 100,
+) =>
+  useQuery({
+    queryKey: ['products', { organizationId, benefitId }],
+    queryFn: () =>
+      api.products.listProducts({
+        organizationId: organizationId ?? '',
+        benefitId: benefitId ?? '',
+        limit,
+      }),
+    retry: defaultRetry,
+    enabled: !!organizationId && !!benefitId,
   })
 
 export const useProduct = (id?: string) =>
   useQuery({
-    queryKey: ['products', 'id', id],
+    queryKey: ['products', { id }],
     queryFn: () => {
       return api.products.getProduct({
         id: id ?? '',
@@ -31,7 +48,7 @@ export const useProduct = (id?: string) =>
     enabled: !!id,
   })
 
-export const useCreateProduct = (orgId?: string) =>
+export const useCreateProduct = (organizationId?: string) =>
   useMutation({
     mutationFn: (productCreate: ProductCreate) => {
       return api.products.createProduct({
@@ -40,12 +57,12 @@ export const useCreateProduct = (orgId?: string) =>
     },
     onSuccess: (_result, _variables, _ctx) => {
       queryClient.invalidateQueries({
-        queryKey: ['products', 'organization', orgId],
+        queryKey: ['products', { organizationId }],
       })
     },
   })
 
-export const useUpdateProduct = (orgId?: string) =>
+export const useUpdateProduct = (organizationId?: string) =>
   useMutation({
     mutationFn: ({
       id,
@@ -61,16 +78,16 @@ export const useUpdateProduct = (orgId?: string) =>
     },
     onSuccess: (_result, _variables, _ctx) => {
       queryClient.invalidateQueries({
-        queryKey: ['products', 'organization', orgId],
+        queryKey: ['products', { organizationId }],
       })
 
       queryClient.invalidateQueries({
-        queryKey: ['products', 'id', _variables.id],
+        queryKey: ['products', { id: _variables.id }],
       })
     },
   })
 
-export const useUpdateProductBenefits = (orgId?: string) =>
+export const useUpdateProductBenefits = (organizationId?: string) =>
   useMutation({
     mutationFn: ({
       id,
@@ -86,11 +103,11 @@ export const useUpdateProductBenefits = (orgId?: string) =>
     },
     onSuccess: (_result, _variables, _ctx) => {
       queryClient.invalidateQueries({
-        queryKey: ['products', 'organization', orgId],
+        queryKey: ['products', { organizationId }],
       })
 
       queryClient.invalidateQueries({
-        queryKey: ['products', 'id', _variables.id],
+        queryKey: ['products', { id: _variables.id }],
       })
     },
   })

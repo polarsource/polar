@@ -106,3 +106,7 @@ class FileUpdate(Schema):
     storage_version: str | None
     checksum_sha256_base64: str | None
     checksum_sha256_hex: str | None
+
+
+class FilePatch(Schema):
+    is_enabled: bool

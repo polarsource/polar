@@ -14,6 +14,7 @@ from polar.tags.api import Tags
 from . import auth
 from .schemas import (
     FileCreate,
+    FilePatch,
     FileRead,
     FileUpload,
     FileUploadCompleted,
@@ -79,6 +80,35 @@ async def uploaded(
     return await file_service.complete_upload(
         session, file=file, completed_schema=completed_schema
     )
+
+
+@router.patch(
+    "/files/{file_id}",
+    tags=[Tags.PUBLIC],
+    response_model=FileRead,
+)
+async def update(
+    auth_subject: auth.CreatorFilesWrite,
+    file_id: UUID4,
+    patches: FilePatch,
+    authz: Authz = Depends(Authz.authz),
+    session: AsyncSession = Depends(get_db_session),
+) -> FileRead:
+    subject = auth_subject.subject
+
+    file = await file_service.get(session, file_id)
+    if not file:
+        raise FileNotFound(f"No file exists with ID: {file_id}")
+
+    organization = await organization_service.get(session, file.organization_id)
+    if not organization:
+        raise NotPermitted()
+
+    if not await authz.can(subject, AccessType.write, organization):
+        raise NotPermitted()
+
+    updated = await file_service.patch(session, file=file, patches=patches)
+    return FileRead.from_db(updated)
 
 
 @router.get(

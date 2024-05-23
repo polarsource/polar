@@ -1,3 +1,4 @@
+import { motion } from 'framer-motion'
 import React, {
   FunctionComponent,
   MouseEvent,
@@ -64,15 +65,18 @@ export const Modal: FunctionComponent<ModalProps> = ({
             }}
           >
             <div className="block h-[80px] w-2 lg:max-h-[10%] lg:grow-[2]"></div>
-            <div
+            <motion.div
               className={twMerge(
                 'dark:bg-polar-800 relative z-10 flex max-h-full w-full flex-col overflow-hidden rounded-3xl bg-white shadow lg:w-[800px] lg:max-w-full',
                 className,
               )}
+              initial={{ opacity: 0, scale: 0.99 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.2, ease: 'easeInOut' }}
               onClick={onInnerClick}
             >
               {modalContent}
-            </div>
+            </motion.div>
           </div>
         </div>
       </FocusLock>

@@ -150,7 +150,7 @@ export const CommandPaletteContextProvider = ({
             id: `doc-${result.ref}`,
             // @ts-ignore
             name: searchMetadataLookup.get(result.ref).title ?? '',
-            description: 'Open Document in Polar Documentation',
+            description: 'Open in Polar Documentation',
             type: CommandType.Documentation,
             action: () => {
               router.push(result.ref)

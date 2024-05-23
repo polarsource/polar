@@ -74,7 +74,11 @@ class ProductService(ResourceService[Product, ProductCreate, ProductUpdate]):
                 == select(ProductPrice)
                 .correlate(Product)
                 .with_only_columns(ProductPrice.id)
-                .where(ProductPrice.product_id == Product.id)
+                .where(
+                    ProductPrice.product_id == Product.id,
+                    ProductPrice.is_archived.is_(False),
+                    ProductPrice.deleted_at.is_(None),
+                )
                 .order_by(ProductPrice.price_amount.asc())
                 .limit(1)
                 .scalar_subquery()

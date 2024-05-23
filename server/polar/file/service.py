@@ -7,6 +7,7 @@ from polar.config import settings
 from polar.exceptions import ResourceNotFound
 from polar.integrations.aws.s3 import S3FileError, S3Service, S3UnsupportedFile
 from polar.kit.services import ResourceService
+from polar.kit.utils import utc_now
 from polar.models import Organization
 from polar.models.file import File
 from polar.postgres import AsyncSession, sql
@@ -142,6 +143,21 @@ class FileService(ResourceService[File, FileCreate, FileUpdate]):
             mime_type=file.mime_type,
         )
         return FileDownload.from_db_presigned(file, url=url, expires_at=expires_at)
+
+    async def delete(
+        self,
+        session: AsyncSession,
+        *,
+        file: File,
+    ) -> bool:
+        file.deleted_at = utc_now()
+        session.add(file)
+        await session.flush()
+        assert file.deleted_at is not None
+
+        deleted = s3_service.delete_file(file.path)
+        log.info("file.delete", file_id=file.id, s3_deleted=deleted)
+        return True
 
 
 file = FileService(File)

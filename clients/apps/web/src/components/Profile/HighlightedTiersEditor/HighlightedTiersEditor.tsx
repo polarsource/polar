@@ -300,7 +300,7 @@ const useCreateBaselineTier = (
       },
     })
 
-    await revalidate(`subscriptionTiers:${organization.name}`)
+    await revalidate(`products:${organization.id}`)
   }, [
     organization,
     createProductMutation,

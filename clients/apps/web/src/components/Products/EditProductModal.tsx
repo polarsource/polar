@@ -1,79 +1,157 @@
-import { useCurrentOrgAndRepoFromURL } from '@/hooks'
-import { useBenefits } from '@/hooks/queries'
-import { Product, useUpdateProduct } from '@/hooks/queries/dummy_products'
-import { BenefitPublicInner } from '@polar-sh/sdk'
-import Button from 'polarkit/components/ui/atoms/button'
-import Input from 'polarkit/components/ui/atoms/input'
-import MoneyInput from 'polarkit/components/ui/atoms/moneyinput'
-import TextArea from 'polarkit/components/ui/atoms/textarea'
+import revalidate from '@/app/actions'
 import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from 'polarkit/components/ui/form'
-import { useCallback, useState } from 'react'
+  useBenefits,
+  useUpdateProduct,
+  useUpdateProductBenefits,
+} from '@/hooks/queries'
+import { setValidationErrors } from '@/utils/api/errors'
+import {
+  BenefitPublicInner,
+  Organization,
+  Product,
+  ProductUpdate,
+  ResponseError,
+  SubscriptionTierType,
+  ValidationError,
+} from '@polar-sh/sdk'
+import Button from 'polarkit/components/ui/atoms/button'
+import { Form } from 'polarkit/components/ui/form'
+import { useCallback, useMemo, useState } from 'react'
 import { useForm } from 'react-hook-form'
-import { org as testOrg } from 'utils/testdata'
-import ImageUpload from '../Form/ImageUpload'
+import { isPremiumArticlesBenefit } from '../Benefit/utils'
+import { ConfirmModal } from '../Modal/ConfirmModal'
 import { InlineModalHeader } from '../Modal/InlineModal'
-import ProductBenefitsSelector from './ProductBenefitsSelector'
-
-interface EditProductForm {
-  id: string
-  name: string
-  description: string
-  media: string[]
-  price: number
-  benefits: BenefitPublicInner[]
-}
+import { useModal } from '../Modal/useModal'
+import ProductBenefitsForm from './ProductBenefitsForm'
+import ProductForm from './ProductForm'
 
 export interface EditProductModalProps {
   product: Product
+  organization: Organization
   hide: () => void
 }
 
-export const EditProductModal = ({ product, hide }: EditProductModalProps) => {
-  const [selectedBenefits, setBenefits] = useState<BenefitPublicInner[]>(
-    product.benefits,
+export const EditProductModal = ({
+  product,
+  organization,
+  hide,
+}: EditProductModalProps) => {
+  const isFreeTier = product.type === SubscriptionTierType.FREE
+  const benefits = useBenefits(organization.id)
+  const organizationBenefits = useMemo(
+    () => benefits.data?.items ?? [],
+    [benefits],
   )
-  const { org } = useCurrentOrgAndRepoFromURL()
-  const { data } = useBenefits(org?.id, 999)
 
-  const benefits = data?.items ?? []
+  const [enabledBenefitIds, setEnabledBenefitIds] = useState<
+    BenefitPublicInner['id'][]
+  >(product.benefits.map((benefit) => benefit.id) ?? [])
 
-  const form = useForm<EditProductForm>({
+  const form = useForm<ProductUpdate>({
     defaultValues: {
       ...product,
     },
   })
 
-  const { handleSubmit } = form
+  const { handleSubmit, setError } = form
 
-  const { mutate: editProductMutation } = useUpdateProduct(org?.name)
+  const updateProduct = useUpdateProduct(organization?.id)
+  const updateBenefits = useUpdateProductBenefits(organization.id)
 
   const onSubmit = useCallback(
-    async (editProductParams: EditProductForm) => {
-      // Execute the mutation
-      await editProductMutation({
-        id: editProductParams.id,
-        productUpdate: {
-          ...editProductParams,
-          benefits: selectedBenefits,
-          organization: testOrg,
-        },
-      })
+    async (productUpdate: ProductUpdate) => {
+      try {
+        await updateProduct.mutateAsync({
+          id: product.id,
+          productUpdate,
+        })
+        await updateBenefits.mutateAsync({
+          id: product.id,
+          productBenefitsUpdate: {
+            benefits: enabledBenefitIds,
+          },
+        })
 
-      hide()
+        revalidate(`products:${organization.id}`)
+
+        hide()
+      } catch (e) {
+        if (e instanceof ResponseError) {
+          const body = await e.response.json()
+          if (e.response.status === 422) {
+            const validationErrors = body['detail'] as ValidationError[]
+            setValidationErrors(validationErrors, setError)
+          }
+        }
+      }
     },
-    [editProductMutation, hide, selectedBenefits],
+    [
+      organization,
+      product,
+      enabledBenefitIds,
+      updateProduct,
+      updateBenefits,
+      setError,
+      hide,
+    ],
   )
 
-  if (!org) {
-    return null
-  }
+  const onSelectBenefit = useCallback(
+    (benefit: BenefitPublicInner) => {
+      setEnabledBenefitIds((benefitIds) => [...benefitIds, benefit.id])
+    },
+    [setEnabledBenefitIds],
+  )
+
+  const onRemoveBenefit = useCallback(
+    (benefit: BenefitPublicInner) => {
+      setEnabledBenefitIds((benefits) =>
+        benefits.filter((b) => b !== benefit.id),
+      )
+    },
+    [setEnabledBenefitIds],
+  )
+
+  const enabledBenefits = useMemo(
+    () =>
+      organizationBenefits.filter((benefit) =>
+        enabledBenefitIds.includes(benefit.id),
+      ),
+    [organizationBenefits, enabledBenefitIds],
+  )
+
+  // const benefitsAdded = useMemo(
+  //   () =>
+  //     enabledBenefits.filter(
+  //       (benefit) => !product.benefits.some(({ id }) => id === benefit.id),
+  //     ),
+  //   [enabledBenefits, product],
+  // )
+
+  // const benefitsRemoved = useMemo(
+  //   () =>
+  //     product.benefits.filter(
+  //       (benefit) => !enabledBenefits.some(({ id }) => id === benefit.id),
+  //     ),
+  //   [enabledBenefits, product],
+  // )
+
+  const {
+    isShown: isArchiveModalShown,
+    hide: hideArchiveModal,
+    show: showArchiveModal,
+  } = useModal()
+
+  const handleArchiveProduct = useCallback(async () => {
+    await updateProduct.mutateAsync({
+      id: product.id,
+      productUpdate: { is_archived: true },
+    })
+
+    revalidate(`products:${organization.id}`)
+
+    hide()
+  }, [product, updateProduct, organization, hide])
 
   return (
     <div className="flex h-full flex-col">
@@ -89,102 +167,52 @@ export const EditProductModal = ({ product, hide }: EditProductModalProps) => {
               onSubmit={handleSubmit(onSubmit)}
               className="flex flex-col gap-y-8"
             >
-              <FormField
-                control={form.control}
-                name="name"
-                rules={{
-                  required: 'This field is required',
-                }}
-                render={({ field }) => (
-                  <FormItem className="flex flex-col gap-2">
-                    <div className="flex flex-row items-center justify-between">
-                      <FormLabel>Name</FormLabel>
-                    </div>
-                    <FormControl>
-                      <Input {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
+              <ProductForm update={true} isFreeTier={isFreeTier} />
+              <ProductBenefitsForm
+                className="w-full"
+                organization={organization}
+                organizationBenefits={organizationBenefits.filter(
+                  (benefit) =>
+                    // Hide not selectable benefits unless they are already enabled
+                    (benefit.selectable ||
+                      enabledBenefits.some((b) => b.id === benefit.id)) &&
+                    // Hide premium articles benefit on free tier
+                    (!isFreeTier || !isPremiumArticlesBenefit(benefit)),
                 )}
+                benefits={enabledBenefits}
+                onSelectBenefit={onSelectBenefit}
+                onRemoveBenefit={onRemoveBenefit}
               />
-              <FormField
-                control={form.control}
-                name="description"
-                rules={{
-                  required: 'This field is required',
-                }}
-                render={({ field }) => (
-                  <FormItem className="flex flex-col gap-2">
-                    <div className="flex flex-row items-center justify-between">
-                      <FormLabel>Description</FormLabel>
+              {!isFreeTier && (
+                <>
+                  <div className="dark:bg-polar-700 flex w-full flex-col space-y-4 rounded-2xl bg-gray-100 p-6">
+                    <div className="flex flex-col gap-y-2">
+                      <h3 className="text-sm font-medium">Archive Product</h3>
+                      <p className="dark:text-polar-500 text-sm text-gray-500">
+                        Archiving a product will not affect its current
+                        customers, only prevent new subscribers and purchases.
+                      </p>
                     </div>
-                    <FormControl>
-                      <TextArea
-                        className="min-h-44 resize-none rounded-2xl"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="price"
-                rules={{
-                  required: 'This field is required',
-                }}
-                render={({ field }) => (
-                  <FormItem className="flex flex-col gap-2">
-                    <div className="flex flex-row items-center justify-between">
-                      <FormLabel>Pricing</FormLabel>
-                    </div>
-                    <FormControl>
-                      <MoneyInput
-                        id="pricing"
-                        placeholder={0}
-                        {...field}
-                        onChange={(e) => {
-                          field.onChange(parseFloat(e.target.value) * 100)
-                        }}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="media"
-                render={({ field }) => (
-                  <FormItem className="flex flex-col gap-2">
-                    <div className="flex flex-row items-center justify-between">
-                      <FormLabel>Media</FormLabel>
-                    </div>
-                    <FormControl>
-                      <ImageUpload
-                        width={1000}
-                        height={1000}
-                        onUploaded={field.onChange}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <ProductBenefitsSelector
-                organization={org}
-                selectedBenefits={selectedBenefits}
-                benefits={benefits}
-                onSelectBenefit={(benefit) =>
-                  setBenefits((benefits) => [...benefits, benefit])
-                }
-                onRemoveBenefit={(benefit) => {
-                  setBenefits((benefits) =>
-                    benefits.filter((b) => b.id !== benefit.id),
-                  )
-                }}
-              />
+                    <Button
+                      className="self-start"
+                      variant="destructive"
+                      onClick={showArchiveModal}
+                      size="sm"
+                    >
+                      Archive
+                    </Button>
+                  </div>
+                  <ConfirmModal
+                    title="Archive Product"
+                    description="Archiving a product will not affect its current customers, only prevent new subscribers and purchases."
+                    onConfirm={handleArchiveProduct}
+                    isShown={isArchiveModalShown}
+                    hide={hideArchiveModal}
+                    destructiveText="Archive"
+                    destructive
+                  />
+                </>
+              )}
             </form>
           </Form>
         </div>

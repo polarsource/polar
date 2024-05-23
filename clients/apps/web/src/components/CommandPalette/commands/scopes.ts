@@ -57,11 +57,6 @@ export const API_SCOPES = [
     commands: createAPICommands('accounts'),
   },
   {
-    name: 'api:newsletters',
-    type: ScopeType.Isolated,
-    commands: createAPICommands('newsletters'),
-  },
-  {
     name: 'api:webhooks',
     type: ScopeType.Isolated,
     commands: createAPICommands('webhooks'),

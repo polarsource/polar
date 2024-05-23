@@ -4916,6 +4916,35 @@ export interface FileDownload {
 /**
  * 
  * @export
+ * @interface FileNotFound
+ */
+export interface FileNotFound {
+    /**
+     * 
+     * @type {string}
+     * @memberof FileNotFound
+     */
+    type: FileNotFoundTypeEnum;
+    /**
+     * 
+     * @type {string}
+     * @memberof FileNotFound
+     */
+    detail: string;
+}
+
+
+/**
+ * @export
+ */
+export const FileNotFoundTypeEnum = {
+    FILE_NOT_FOUND: 'FileNotFound'
+} as const;
+export type FileNotFoundTypeEnum = typeof FileNotFoundTypeEnum[keyof typeof FileNotFoundTypeEnum];
+
+/**
+ * 
+ * @export
  * @interface FilePatch
  */
 export interface FilePatch {

@@ -69,6 +69,12 @@ export const useFileUpload = ({
     })
   }
 
+  const removeFile = (fileId: string) => {
+    setFiles((prev) => {
+      return prev.filter((file) => file.id !== fileId)
+    })
+  }
+
   const onFileCreate = (response: FileUpload) => {
     const newFile = buildFileObject(response)
     newFile.isUploading = true
@@ -126,6 +132,7 @@ export const useFileUpload = ({
     files,
     setFiles,
     updateFile,
+    removeFile,
     ...dropzone,
   }
 }

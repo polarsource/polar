@@ -82,6 +82,7 @@ const DownloadablesForm = ({
     files,
     setFiles,
     updateFile,
+    removeFile,
     getRootProps,
     getInputProps,
     isDragActive,
@@ -99,7 +100,12 @@ const DownloadablesForm = ({
           <input {...getInputProps()} />
         </DropzoneView>
       </div>
-      <FileList files={files} setFiles={setFiles} updateFile={updateFile} />
+      <FileList
+        files={files}
+        setFiles={setFiles}
+        updateFile={updateFile}
+        removeFile={removeFile}
+      />
     </>
   )
 }

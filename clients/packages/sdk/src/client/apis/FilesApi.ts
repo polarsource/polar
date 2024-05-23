@@ -16,12 +16,18 @@
 import * as runtime from '../runtime';
 import type {
   FileCreate,
+  FileNotFound,
   FilePatch,
   FileRead,
   FileUpload,
   FileUploadCompleted,
   HTTPValidationError,
+  NotPermitted,
 } from '../models/index';
+
+export interface FilesApiDeleteRequest {
+    id: string;
+}
 
 export interface FilesApiCreateRequest {
     fileCreate: FileCreate;
@@ -33,12 +39,12 @@ export interface FilesApiListDownloadablesRequest {
 }
 
 export interface FilesApiUpdateRequest {
-    fileId: string;
+    id: string;
     filePatch: FilePatch;
 }
 
 export interface FilesApiUploadedRequest {
-    fileId: string;
+    id: string;
     fileUploadCompleted: FileUploadCompleted;
 }
 
@@ -46,6 +52,46 @@ export interface FilesApiUploadedRequest {
  * 
  */
 export class FilesApi extends runtime.BaseAPI {
+
+    /**
+     * Delete
+     */
+    async _deleteRaw(requestParameters: FilesApiDeleteRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<void>> {
+        if (requestParameters['id'] == null) {
+            throw new runtime.RequiredError(
+                'id',
+                'Required parameter "id" was null or undefined when calling _delete().'
+            );
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("HTTPBearer", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+        const response = await this.request({
+            path: `/api/v1/files/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
+            method: 'DELETE',
+            headers: headerParameters,
+            query: queryParameters,
+        }, initOverrides);
+
+        return new runtime.VoidApiResponse(response);
+    }
+
+    /**
+     * Delete
+     */
+    async _delete(requestParameters: FilesApiDeleteRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<void> {
+        await this._deleteRaw(requestParameters, initOverrides);
+    }
 
     /**
      * Create
@@ -140,10 +186,10 @@ export class FilesApi extends runtime.BaseAPI {
      * Update
      */
     async updateRaw(requestParameters: FilesApiUpdateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<FileRead>> {
-        if (requestParameters['fileId'] == null) {
+        if (requestParameters['id'] == null) {
             throw new runtime.RequiredError(
-                'fileId',
-                'Required parameter "fileId" was null or undefined when calling update().'
+                'id',
+                'Required parameter "id" was null or undefined when calling update().'
             );
         }
 
@@ -169,7 +215,7 @@ export class FilesApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/files/files/{file_id}`.replace(`{${"file_id"}}`, encodeURIComponent(String(requestParameters['fileId']))),
+            path: `/api/v1/files/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
             method: 'PATCH',
             headers: headerParameters,
             query: queryParameters,
@@ -191,10 +237,10 @@ export class FilesApi extends runtime.BaseAPI {
      * Uploaded
      */
     async uploadedRaw(requestParameters: FilesApiUploadedRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<FileRead>> {
-        if (requestParameters['fileId'] == null) {
+        if (requestParameters['id'] == null) {
             throw new runtime.RequiredError(
-                'fileId',
-                'Required parameter "fileId" was null or undefined when calling uploaded().'
+                'id',
+                'Required parameter "id" was null or undefined when calling uploaded().'
             );
         }
 
@@ -220,7 +266,7 @@ export class FilesApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/files/{file_id}/uploaded`.replace(`{${"file_id"}}`, encodeURIComponent(String(requestParameters['fileId']))),
+            path: `/api/v1/files/{id}/uploaded`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,

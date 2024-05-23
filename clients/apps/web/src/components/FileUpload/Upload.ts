@@ -179,7 +179,7 @@ export class Upload {
   ) {
     return api.files
       .uploaded({
-        fileId: createFileResponse.id,
+        id: createFileResponse.id,
         fileUploadCompleted: {
           id: createFileResponse.upload.id,
           path: createFileResponse.upload.path,

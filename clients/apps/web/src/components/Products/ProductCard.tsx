@@ -1,7 +1,6 @@
 'use client'
 
 import { dummyMedia } from '@/hooks/queries/dummy_products'
-import { formatCurrencyAndAmount } from '@/utils/money'
 import { PanoramaOutlined } from '@mui/icons-material'
 import { Organization, Product } from '@polar-sh/sdk'
 import Markdown from 'markdown-to-jsx'
@@ -9,6 +8,8 @@ import Image from 'next/image'
 import { Pill } from 'polarkit/components/ui/atoms'
 import Avatar from 'polarkit/components/ui/atoms/avatar'
 import { markdownOpts } from '../Feed/Markdown/markdown'
+import SubscriptionGroupIcon from '../Subscriptions/SubscriptionGroupIcon'
+import ProductPrices from './ProductPrices'
 
 interface ProductCardProps {
   product: Product
@@ -21,7 +22,6 @@ export const ProductCard = ({
   organization,
   showOrganization = false,
 }: ProductCardProps) => {
-  const price = product.prices.length > 0 ? product.prices[0] : undefined
   return (
     <div className="dark:bg-polar-800 dark:border-polar-700 dark:hover:bg-polar-700 flex h-full w-full flex-col gap-6 rounded-3xl border border-transparent bg-white p-6 shadow-sm transition-colors hover:bg-gray-50">
       {dummyMedia.length > 0 ? (
@@ -51,8 +51,9 @@ export const ProductCard = ({
           </div>
         )}
         <div className="flex flex-col gap-y-2">
-          <h3 className="dark:text-polar-50 line-clamp-2 font-medium leading-snug text-gray-950">
+          <h3 className="dark:text-polar-50 line-clamp-2 flex items-center justify-between gap-1 font-medium leading-snug text-gray-950">
             {product.name}
+            <SubscriptionGroupIcon type={product.type} className="text-xl" />
           </h3>
           <div className="dark:text-polar-400 line-clamp-2 text-sm text-gray-600">
             {product.description && (
@@ -78,15 +79,9 @@ export const ProductCard = ({
         </div>
       </div>
       <div className="flex flex-row items-center justify-between">
-        {price && (
-          <h3 className="text-lg leading-snug text-blue-500 dark:text-blue-400">
-            {formatCurrencyAndAmount(
-              price.price_amount,
-              price.price_currency,
-              0,
-            )}
-          </h3>
-        )}
+        <h3 className="text-lg leading-snug text-blue-500 dark:text-blue-400">
+          <ProductPrices prices={product.prices} />
+        </h3>
         <Pill className="px-2.5 py-1" color="blue">
           {product.benefits.length === 1
             ? `${product.benefits.length} Benefit`

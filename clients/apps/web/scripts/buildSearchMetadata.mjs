@@ -20,6 +20,10 @@ const {
 const slugger = new GitHubSlugger()
 const baseURL = new URL('', import.meta.url).pathname
 
+function capitalizeFirstLetter(string) {
+  return string.charAt(0).toUpperCase() + string.slice(1);
+}
+
 function* walkSync(dir, filePredicate) {
   const files = fs.readdirSync(dir, { withFileTypes: true })
 
@@ -65,19 +69,29 @@ const buildDocsMetadata = async () => {
     await remark()
       .use(mdx)
       .use(() => (tree) => {
+        const strippedFilePath = filePath.replace('page.mdx', '')
+        const absolutePath = absolutePathToPage(strippedFilePath, {
+          dir: 'src/app',
+          keepIndex: false,
+          pagesType: PAGE_TYPES.APP,
+          extensions: ['mdx', 'md'],
+        })
+        const path = normalizeAppPath(absolutePath)
+        const [ancestor, pageName] = path.split('/').slice(-2)
+
+        const prettyAncestor = capitalizeFirstLetter(ancestor.replaceAll(/[\s-_]+/g, ' '))
+        const prettyPageName = capitalizeFirstLetter(pageName).replaceAll(/[\s-_]+/g, ' ')
+
+        mdxDocuments.push({
+          id: path,
+          title: ancestor !== 'docs' ? `${prettyAncestor}: ${prettyPageName}` : prettyPageName,
+        })
+
         visit(tree, 'heading', (node) => {
           visit(node, 'text', (textNode) => {
-            const strippedFilePath = filePath.replace('page.mdx', '')
-            const absolutePath = absolutePathToPage(strippedFilePath, {
-              dir: 'src/app',
-              keepIndex: false,
-              pagesType: PAGE_TYPES.APP,
-              extensions: ['mdx', 'md'],
-            })
-            const path = normalizeAppPath(absolutePath)
             mdxDocuments.push({
               id: `${path}#${slugger.slug(textNode.value)}`,
-              title: textNode.value,
+              title: `${prettyPageName}: ${textNode.value}`,
               body: textNode.value,
             })
           })

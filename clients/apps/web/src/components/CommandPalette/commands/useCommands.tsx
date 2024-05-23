@@ -115,7 +115,9 @@ export const CommandPaletteContextProvider = ({
     const searchResults =
       scope?.type === ScopeType.Global && input.length > 0
         ? searchIndex.query((q) =>
-            q.term(input, { wildcard: lunr.Query.wildcard.TRAILING }),
+            q.term(input.trim().split(/\s+/), {
+              wildcard: lunr.Query.wildcard.TRAILING,
+            }),
           )
         : []
 

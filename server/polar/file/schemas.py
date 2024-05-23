@@ -22,6 +22,8 @@ class FileCreate(S3FileCreate):
 
 class FileRead(S3File):
     service: FileServiceTypes
+    is_enabled: bool
+    is_uploaded: bool
     created_at: datetime
 
     @staticmethod
@@ -38,6 +40,8 @@ class FileRead(S3File):
             checksum_etag=record.checksum_etag,
             last_modified_at=record.last_modified_at,
             storage_version=record.storage_version,
+            is_enabled=record.is_enabled,
+            is_uploaded=record.is_uploaded,
             created_at=record.created_at,
         )
         if record.checksum_sha256_base64 and record.checksum_sha256_hex:
@@ -55,6 +59,8 @@ class FileRead(S3File):
 
 
 class FileUpload(S3FileUpload):
+    is_enabled: bool
+    is_uploaded: bool = False
     service: FileServiceTypes
 
 
@@ -62,6 +68,8 @@ class FileUploadCompleted(S3FileUploadCompleted): ...
 
 
 class FileDownload(S3FileDownload):
+    is_enabled: bool
+    is_uploaded: bool
     service: FileServiceTypes
 
     @classmethod

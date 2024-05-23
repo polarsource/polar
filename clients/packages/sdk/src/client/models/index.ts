@@ -4896,6 +4896,18 @@ export interface FileDownload {
     download: S3DownloadURL;
     /**
      * 
+     * @type {boolean}
+     * @memberof FileDownload
+     */
+    is_enabled: boolean;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof FileDownload
+     */
+    is_uploaded: boolean;
+    /**
+     * 
      * @type {FileServiceTypes}
      * @memberof FileDownload
      */
@@ -4985,6 +4997,18 @@ export interface FileRead {
      * @memberof FileRead
      */
     service: FileServiceTypes;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof FileRead
+     */
+    is_enabled: boolean;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof FileRead
+     */
+    is_uploaded: boolean;
     /**
      * 
      * @type {string}
@@ -5086,6 +5110,18 @@ export interface FileUpload {
      * @memberof FileUpload
      */
     upload: S3FileUploadMultipart;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof FileUpload
+     */
+    is_enabled: boolean;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof FileUpload
+     */
+    is_uploaded?: boolean;
     /**
      * 
      * @type {FileServiceTypes}

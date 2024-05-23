@@ -5,11 +5,11 @@ from uuid import UUID
 
 from sqlalchemy import (
     TIMESTAMP,
+    Boolean,
     ForeignKey,
     Integer,
     String,
 )
-from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import (
     Mapped,
     declared_attr,
@@ -70,9 +70,8 @@ class File(RecordModel):
     checksum_sha256_base64: Mapped[str] = mapped_column(String, nullable=True)
     checksum_sha256_hex: Mapped[str] = mapped_column(String, nullable=True)
 
-    @hybrid_property
-    def uploaded(self) -> bool:
-        return bool(self.checksum_etag) and bool(self.last_modified_at)
+    is_uploaded: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    is_enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
 
 
 __all__ = ("File", "FileExtension")

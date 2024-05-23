@@ -69,7 +69,7 @@ export const FileListItem = ({
     updateFile((prev) => {
       return {
         ...prev,
-        enabled,
+        is_enabled: enabled,
       }
     })
   }
@@ -102,7 +102,7 @@ export const FileListItem = ({
       </div>
       {!isUploading && (
         <div className="flex w-14">
-          <Switch checked={file.enabled} onCheckedChange={onToggleEnabled} />
+          <Switch checked={file.is_enabled} onCheckedChange={onToggleEnabled} />
           <span
             ref={sortable ? sortable.setDraggableNodeRef : undefined}
             className="cursor-grab"

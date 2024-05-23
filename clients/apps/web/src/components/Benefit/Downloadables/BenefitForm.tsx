@@ -69,8 +69,9 @@ const DownloadablesForm = ({
 
   const setFormFiles = (files: FileObject[]) => {
     const property = []
+
     for (const file of files) {
-      if (file.isUploaded) {
+      if (file.is_uploaded) {
         property.push(file.id)
       }
     }

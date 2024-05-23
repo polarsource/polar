@@ -228,7 +228,10 @@ class ProductService(ResourceService[Product, ProductCreate, ProductUpdate]):
                     [
                         {
                             "type": "too_short",
-                            "loc": ("prices",),
+                            "loc": (
+                                "body",
+                                "prices",
+                            ),
                             "msg": "At least one price is required.",
                             "input": update_schema.prices,
                         }
@@ -392,7 +395,7 @@ class ProductService(ResourceService[Product, ProductCreate, ProductUpdate]):
                     [
                         {
                             "type": "value_error",
-                            "loc": ("benefits", order),
+                            "loc": ("body", "benefits", order),
                             "msg": "Benefit does not exist.",
                             "input": benefit_id,
                         }
@@ -403,7 +406,7 @@ class ProductService(ResourceService[Product, ProductCreate, ProductUpdate]):
                     [
                         {
                             "type": "value_error",
-                            "loc": ("benefits", order),
+                            "loc": ("body", "benefits", order),
                             "msg": "Benefit is not selectable.",
                             "input": benefit_id,
                         }
@@ -423,7 +426,10 @@ class ProductService(ResourceService[Product, ProductCreate, ProductUpdate]):
                     [
                         {
                             "type": "value_error",
-                            "loc": ("benefits",),
+                            "loc": (
+                                "body",
+                                "benefits",
+                            ),
                             "msg": "Benefit is not selectable.",
                             "input": deleted_benefit.id,
                         }

@@ -12,20 +12,15 @@ import { useDropzone } from 'react-dropzone'
 import { Upload } from './Upload'
 
 export interface FileObject extends FileRead {
-  enabled: boolean
-  isUploaded: boolean
   isUploading: boolean
   uploadedBytes: number
 }
 
 const buildFileObject = (file: FileRead): FileObject => {
-  const uploaded = file.last_modified_at !== null
   return {
     ...file,
-    enabled: true,
-    isUploaded: uploaded,
     isUploading: false,
-    uploadedBytes: uploaded ? file.size : 0,
+    uploadedBytes: file.is_uploaded ? file.size : 0,
   }
 }
 
@@ -87,7 +82,6 @@ export const useFileUpload = ({
       return {
         ...prev,
         ...response,
-        isUploaded: true,
         isUploading: false,
         uploadedBytes: response.size,
       }
@@ -110,6 +104,7 @@ export const useFileUpload = ({
         const buffer = reader.result
         if (buffer instanceof ArrayBuffer) {
           const upload = new Upload({
+            service,
             organization,
             file,
             buffer,

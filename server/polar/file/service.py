@@ -48,7 +48,7 @@ class FileService(ResourceService[File, FileCreate, FileUpdate]):
     ) -> Sequence[File]:
         statement = sql.select(File).where(
             File.organization_id == organization_id,
-            File.last_modified_at.is_not(None),
+            File.is_uploaded == True,  # noqa
             File.deleted_at.is_(None),
             File.id.in_(ids),
         )
@@ -70,13 +70,20 @@ class FileService(ResourceService[File, FileCreate, FileUpdate]):
         instance = File(
             organization=organization,
             service=create_schema.service,
+            is_enabled=True,
+            is_uploaded=False,
             **upload.model_dump(exclude={"upload", "organization_id"}),
         )
         session.add(instance)
         await session.flush()
         assert instance.id is not None
 
-        return FileUpload(service=create_schema.service, **upload.model_dump())
+        return FileUpload(
+            is_enabled=instance.is_enabled,
+            is_uploaded=instance.is_uploaded,
+            service=create_schema.service,
+            **upload.model_dump(),
+        )
 
     async def complete_upload(
         self,
@@ -86,6 +93,8 @@ class FileService(ResourceService[File, FileCreate, FileUpdate]):
         completed_schema: FileUploadCompleted,
     ) -> FileRead:
         s3file = s3_service.complete_multipart_upload(completed_schema)
+
+        file.is_uploaded = True
 
         if s3file.checksum_etag:
             file.checksum_etag = s3file.checksum_etag

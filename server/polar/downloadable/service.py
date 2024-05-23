@@ -147,7 +147,8 @@ class DownloadableService(
                 Downloadable.status == DownloadableStatus.granted,
                 Downloadable.deleted_at.is_(None),
                 File.deleted_at.is_(None),
-                File.last_modified_at.is_not(None),
+                File.is_uploaded == True,  # noqa
+                File.is_enabled == True,  # noqa
                 Benefit.deleted_at.is_(None),
             )
             .order_by(Downloadable.created_at.desc())

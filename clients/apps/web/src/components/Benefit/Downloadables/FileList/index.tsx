@@ -47,6 +47,11 @@ export const FileList = ({
     return <></>
   }
 
+  let activeFile = undefined
+  if (activeId) {
+    activeFile = files.find((file) => file.id === activeId) as FileObject
+  }
+
   return (
     <DndContext
       sensors={sensors}
@@ -71,12 +76,11 @@ export const FileList = ({
             ))}
           </div>
           <DragOverlay adjustScale={true}>
-            {activeId ? (
+            {activeFile ? (
               <>
                 <FileListItem
-                  file={
-                    files.find((file) => file.id === activeId) as FileObject
-                  }
+                  file={activeFile}
+                  updateFile={getUpdateScopedFile(activeFile.id)}
                 />
               </>
             ) : null}

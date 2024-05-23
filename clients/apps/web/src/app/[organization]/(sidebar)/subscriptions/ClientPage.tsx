@@ -1,9 +1,9 @@
 'use client'
 
 import { FreeTierSubscribe } from '@/components/Organization/FreeTierSubscribe'
+import CheckoutButton from '@/components/Products/CheckoutButton'
 import SubscriptionTierCard from '@/components/Subscriptions/SubscriptionTierCard'
 import SubscriptionTierRecurringIntervalSwitch from '@/components/Subscriptions/SubscriptionTierRecurringIntervalSwitch'
-import SubscriptionTierSubscribeButton from '@/components/Subscriptions/SubscriptionTierSubscribeButton'
 import { hasRecurringInterval } from '@/components/Subscriptions/utils'
 import { useRecurringInterval } from '@/hooks/products'
 import { useListAdminOrganizations } from '@/hooks/queries'
@@ -71,12 +71,14 @@ const ClientPage: React.FC<OrganizationSubscriptionsPublicPageProps> = ({
                     organization={organization}
                   />
                 ) : (
-                  <SubscriptionTierSubscribeButton
+                  <CheckoutButton
                     organization={organization}
                     recurringInterval={recurringInterval}
-                    subscriptionTier={tier}
+                    product={tier}
                     checkoutPath="/api/checkout"
-                  />
+                  >
+                    Subscribe
+                  </CheckoutButton>
                 ))}
             </SubscriptionTierCard>
           ))}

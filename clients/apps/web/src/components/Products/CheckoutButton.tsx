@@ -6,6 +6,7 @@ import {
   Organization,
   Product,
   ProductPrice,
+  ProductPriceRecurring,
   ProductPriceRecurringInterval,
   ProductPriceType,
   SubscriptionTierType,
@@ -14,21 +15,21 @@ import {
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import Button, { ButtonProps } from 'polarkit/components/ui/atoms/button'
-import { useCallback, useMemo, useState } from 'react'
+import React, { useCallback, useMemo, useState } from 'react'
 import { ConfirmModal } from '../Modal/ConfirmModal'
 
 const buttonClasses =
   'grow transition-colors dark:hover:border-[--var-dark-border-color] dark:hover:bg-[--var-dark-border-color] dark:hover:text-[--var-dark-fg-color]'
 
-interface AnonymousSubscriptionTierSubscribeButtonProps {
+interface AnonymousCheckoutButtonProps {
   price: ProductPrice
   checkoutPath: string
   variant?: ButtonProps['variant']
 }
 
-const AnonymousSubscriptionTierSubscribeButton: React.FC<
-  AnonymousSubscriptionTierSubscribeButtonProps
-> = ({ price, checkoutPath, variant = 'outline' }) => {
+const AnonymousCheckoutButton: React.FC<
+  React.PropsWithChildren<AnonymousCheckoutButtonProps>
+> = ({ price, checkoutPath, variant = 'outline', children }) => {
   return (
     <Link className="w-full" href={`${checkoutPath}?price=${price.id}`}>
       <Button
@@ -36,30 +37,31 @@ const AnonymousSubscriptionTierSubscribeButton: React.FC<
         fullWidth
         variant={variant}
       >
-        Subscribe
+        {children}
       </Button>
     </Link>
   )
 }
 
-interface AuthenticatedSubscriptionTierSubscribeButtonProps {
+interface AuthenticatedCheckoutButtonProps {
   user: UserRead
-  subscriptionTier: Product
+  product: Product
   price: ProductPrice
   organization: Organization
   checkoutPath: string
   variant?: ButtonProps['variant']
 }
 
-const AuthenticatedSubscriptionTierSubscribeButton: React.FC<
-  AuthenticatedSubscriptionTierSubscribeButtonProps
+const AuthenticatedCheckoutButton: React.FC<
+  React.PropsWithChildren<AuthenticatedCheckoutButtonProps>
 > = ({
   user,
-  subscriptionTier,
+  product,
   price,
   organization,
   checkoutPath,
   variant = 'outline',
+  children,
 }) => {
   const router = useRouter()
 
@@ -79,9 +81,9 @@ const AuthenticatedSubscriptionTierSubscribeButton: React.FC<
     () =>
       subscriptions &&
       subscriptions.some(
-        (subscription) => subscription.product_id === subscriptionTier.id,
+        (subscription) => subscription.product_id === product.id,
       ),
-    [subscriptions, subscriptionTier],
+    [subscriptions, product],
   )
 
   const upgradableSubscription = useMemo(
@@ -115,7 +117,7 @@ const AuthenticatedSubscriptionTierSubscribeButton: React.FC<
       await api.subscriptions.upgradeSubscription({
         id: upgradableSubscription.id,
         subscriptionUpgrade: {
-          subscription_tier_id: subscriptionTier.id,
+          subscription_tier_id: product.id,
           price_id: price.id,
         },
       })
@@ -123,7 +125,7 @@ const AuthenticatedSubscriptionTierSubscribeButton: React.FC<
     }
   }, [
     upgradableSubscription,
-    subscriptionTier,
+    product,
     price,
     refetchUserSubscriptions,
     router,
@@ -171,8 +173,8 @@ const AuthenticatedSubscriptionTierSubscribeButton: React.FC<
                   hide={() => setShowConfirmModal(false)}
                   title={
                     isDowngrade
-                      ? `Downgrade to ${subscriptionTier.name}`
-                      : `Upgrade to ${subscriptionTier.name}`
+                      ? `Downgrade to ${product.name}`
+                      : `Upgrade to ${product.name}`
                   }
                   description={
                     isDowngrade
@@ -198,7 +200,7 @@ const AuthenticatedSubscriptionTierSubscribeButton: React.FC<
                   fullWidth
                   variant={variant}
                 >
-                  Subscribe
+                  {children}
                 </Button>
               </Link>
             )}
@@ -216,57 +218,61 @@ const AuthenticatedSubscriptionTierSubscribeButton: React.FC<
   )
 }
 
-interface SubscriptionTierSubscribeButtonProps {
-  subscriptionTier: Product
-  recurringInterval: ProductPriceRecurringInterval
+interface CheckoutButtonProps {
+  product: Product
+  recurringInterval?: ProductPriceRecurringInterval
   organization: Organization
   checkoutPath: string
   variant?: ButtonProps['variant']
 }
 
-const SubscriptionTierSubscribeButton: React.FC<
-  SubscriptionTierSubscribeButtonProps
+const CheckoutButton: React.FC<
+  React.PropsWithChildren<CheckoutButtonProps>
 > = ({
-  subscriptionTier,
+  product,
   recurringInterval,
   organization,
   checkoutPath,
   variant,
+  children,
 }) => {
   const { currentUser } = useAuth()
 
   const price = useMemo(() => {
-    const price = subscriptionTier.prices?.find(
-      (price) =>
-        price.type === ProductPriceType.RECURRING &&
-        price.recurring_interval === recurringInterval,
-    )
-    if (!price) {
-      return subscriptionTier.prices[0]
+    if (product.is_recurring && recurringInterval) {
+      return product.prices.find(
+        (price) =>
+          price.type === ProductPriceType.RECURRING &&
+          price.recurring_interval === recurringInterval,
+      ) as ProductPriceRecurring
     }
-    return price
-  }, [subscriptionTier, recurringInterval])
+    return product.prices[0]
+  }, [product, recurringInterval])
 
   return (
     <>
       {currentUser ? (
-        <AuthenticatedSubscriptionTierSubscribeButton
+        <AuthenticatedCheckoutButton
           user={currentUser}
-          subscriptionTier={subscriptionTier}
+          product={product}
           price={price}
           organization={organization}
           checkoutPath={checkoutPath}
           variant={variant}
-        />
+        >
+          {children}
+        </AuthenticatedCheckoutButton>
       ) : (
-        <AnonymousSubscriptionTierSubscribeButton
+        <AnonymousCheckoutButton
           price={price}
           checkoutPath={checkoutPath}
           variant={variant}
-        />
+        >
+          {children}
+        </AnonymousCheckoutButton>
       )}
     </>
   )
 }
 
-export default SubscriptionTierSubscribeButton
+export default CheckoutButton

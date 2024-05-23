@@ -1,6 +1,6 @@
 import { FreeTierSubscribe } from '@/components/Organization/FreeTierSubscribe'
+import CheckoutButton from '@/components/Products/CheckoutButton'
 import SubscriptionTierCard from '@/components/Subscriptions/SubscriptionTierCard'
-import SubscriptionTierSubscribeButton from '@/components/Subscriptions/SubscriptionTierSubscribeButton'
 import { useSortable } from '@dnd-kit/sortable'
 import {
   Organization,
@@ -44,12 +44,14 @@ export const DraggableSubscriptionTierCard = ({
               organization={organization}
             />
           ) : (
-            <SubscriptionTierSubscribeButton
+            <CheckoutButton
               organization={organization}
-              subscriptionTier={subscriptionTier}
+              product={subscriptionTier}
               recurringInterval={recurringInterval}
               checkoutPath="/api/checkout"
-            />
+            >
+              Subscribe
+            </CheckoutButton>
           )}
         </>
       ) : null}

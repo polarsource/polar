@@ -1,9 +1,9 @@
 'use client'
 
 import LogoIcon from '@/components/Brand/LogoIcon'
+import CheckoutButton from '@/components/Products/CheckoutButton'
 import SubscriptionTierCard from '@/components/Subscriptions/SubscriptionTierCard'
 import SubscriptionTierRecurringIntervalSwitch from '@/components/Subscriptions/SubscriptionTierRecurringIntervalSwitch'
-import SubscriptionTierSubscribeButton from '@/components/Subscriptions/SubscriptionTierSubscribeButton'
 import { hasRecurringInterval } from '@/components/Subscriptions/utils'
 import { useRecurringInterval } from '@/hooks/products'
 import { useListAdminOrganizations } from '@/hooks/queries'
@@ -105,13 +105,15 @@ export default function ClientPage({
               <Button fullWidth>Subscribe</Button>
             </Link>
           ) : (
-            <SubscriptionTierSubscribeButton
+            <CheckoutButton
               organization={organization}
-              subscriptionTier={selectedTier}
+              product={selectedTier}
               recurringInterval={recurringInterval}
               checkoutPath="/api/checkout"
               variant="default"
-            />
+            >
+              Subscribe
+            </CheckoutButton>
           ))}
         <Link href={organizationPageLink(organization)}>
           <Button variant="ghost">Skip</Button>

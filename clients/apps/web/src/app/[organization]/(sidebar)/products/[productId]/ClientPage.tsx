@@ -2,15 +2,16 @@
 
 import { resolveBenefitIcon } from '@/components/Benefit/utils'
 import { previewOpts } from '@/components/Feed/Markdown/BrowserRender'
+import CheckoutButton from '@/components/Products/CheckoutButton'
 import ProductPrices from '@/components/Products/ProductPrices'
 import { Slideshow } from '@/components/Products/Slideshow'
 import { dummyMedia } from '@/hooks/queries/dummy_products'
 import { Organization, Product } from '@polar-sh/sdk'
 import Markdown from 'markdown-to-jsx'
-import Button from 'polarkit/components/ui/atoms/button'
 import ShadowBox from 'polarkit/components/ui/atoms/shadowbox'
 
 export default function ClientPage({
+  organization,
   product,
 }: {
   organization: Organization
@@ -71,9 +72,14 @@ export default function ClientPage({
             </div>
           </div>
           <div className="flex flex-col gap-2">
-            <Button size="lg" fullWidth>
+            <CheckoutButton
+              product={product}
+              organization={organization}
+              checkoutPath="/api/checkout"
+              variant="default"
+            >
               Buy Now
-            </Button>
+            </CheckoutButton>
           </div>
         </ShadowBox>
       </div>

@@ -2,6 +2,7 @@ import revalidate from '@/app/actions'
 import { isPremiumArticlesBenefit } from '@/components/Benefit/utils'
 import { Modal } from '@/components/Modal'
 import { useModal } from '@/components/Modal/useModal'
+import CheckoutButton from '@/components/Products/CheckoutButton'
 import SubscriptionTierCard from '@/components/Subscriptions/SubscriptionTierCard'
 import { useRecurringInterval } from '@/hooks/products'
 import {
@@ -22,7 +23,6 @@ import Button from 'polarkit/components/ui/atoms/button'
 import { useCallback, useMemo, useState } from 'react'
 import { FreeTierSubscribe } from '../../Organization/FreeTierSubscribe'
 import SubscriptionTierRecurringIntervalSwitch from '../../Subscriptions/SubscriptionTierRecurringIntervalSwitch'
-import SubscriptionTierSubscribeButton from '../../Subscriptions/SubscriptionTierSubscribeButton'
 import { hasRecurringInterval } from '../../Subscriptions/utils'
 import { HighlightedTiersModal } from './HighlightedTiersModal'
 
@@ -129,12 +129,14 @@ export const HighlightedTiersEditor = ({
                         organization={organization}
                       />
                     ) : (
-                      <SubscriptionTierSubscribeButton
+                      <CheckoutButton
                         organization={organization}
-                        subscriptionTier={tier}
+                        product={tier}
                         recurringInterval={recurringInterval}
                         checkoutPath="/api/checkout"
-                      />
+                      >
+                        Subscribe
+                      </CheckoutButton>
                     )}
                   </>
                 ) : null}

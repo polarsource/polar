@@ -1,0 +1,104 @@
+import BrowserCallout from '@/components/Feed/Markdown/Callout/BrowserCallout';
+
+# Polar SDK
+The Polar SDK is a TypeScript library that provides a high-level API for interacting with the Polar platform. The API client is automatically generated from our OpenAPI implementation, making it up-to-date with the server-side API.
+
+## Installation
+The SDK is available from NPM. To install it, run:
+
+```bash 
+pnpm install @polar-sh/sdk
+```
+
+### Configuring the Polar Client
+In order to make requests with the Polar client, you need to provide an access key in the form of a Bearer token when making your requsts. 
+
+You can create personal access tokens in your [Polar settings](https://app.polar.sh/settings).
+
+```typescript
+import {PolarAPI, Configuration} from '@polar-sh/sdk';
+
+const polar = new PolarAPI(
+    new Configuration({
+        headers: {
+            Authorization: `Bearer ${process.env.POLAR_ACCESS_TOKEN}`
+        }
+    })
+);
+```
+
+<BrowserCallout type="CAUTION">
+Remember to keep your access token secure and never expose it in client-side code.
+
+If you are using the Polar SDK in a server-side application, you can store your access token in an environment variable and access it using `process.env.POLAR_ACCESS_TOKEN`.
+</BrowserCallout>
+
+## Examples
+
+### Issues looking for funding
+You can easily retrieve issues looking for funding using the Funding-service.
+
+```typescript
+import {
+  Configuration,
+  ListFundingSortBy,
+  Platforms,
+  PolarAPI,
+} from '@polar-sh/sdk'
+
+const polar = new PolarAPI(new Configuration())
+
+const issuesFunding = await polar.funding.search({
+  platform: Platforms.GITHUB,
+  organizationName: '<MY_GITHUB_ORGANIZATION_NAME>',
+  badged: true,
+  closed: false,
+  sorting: [
+    ListFundingSortBy.MOST_FUNDED,
+    ListFundingSortBy.MOST_ENGAGEMENT,
+    ListFundingSortBy.NEWEST,
+  ],
+  limit: 20,
+})
+```
+
+### Issue data from GitHub Issue
+Retrieve Polar data about a given GitHub issue.
+
+```typescript
+import { Configuration, PolarAPI } from '@polar-sh/sdk'
+
+const polar = new PolarAPI(
+    new Configuration()
+);
+
+const params = {
+  organization: 'polarsource',
+  repo: 'polar',
+  number: 900,
+}
+
+const issue = await polar.issues.lookup({
+  externalUrl: `https://github.com/${params.organization}/${params.repo}/issues/${params.number}`,
+})
+```
+
+### Add Polar badge to a GitHub issue
+Adds a Polar badge to a given GitHub issue.
+
+```typescript
+import { PolarAPI, Configuration } from '@polar-sh/sdk';
+
+const polar = new PolarAPI(
+    new Configuration({
+        headers: {
+            Authorization: `Bearer ${process.env.POLAR_ACCESS_TOKEN}`
+        }
+    })
+);
+
+await polar.issues.addPolarBadge({
+  id: '<ISSUE_ID>',
+})
+```
+

@@ -1,7 +1,6 @@
 'use client'
 
 import LogoIcon from '@/components/Brand/LogoIcon'
-import { useCurrentOrgAndRepoFromURL } from '@/hooks'
 import { useAuth } from '@/hooks/auth'
 import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
 import { CONFIG } from '@/utils/config'
@@ -20,14 +19,13 @@ import {
   useState,
 } from 'react'
 import { twMerge } from 'tailwind-merge'
-import { CommandPalette } from '../CommandPalette/CommandPalette'
+import { CommandPaletteTrigger } from '../CommandPalette/CommandPaletteTrigger'
 import DashboardNavigation from '../Dashboard/DashboardNavigation'
+import { DashboardProvider, useDashboard } from '../Dashboard/DashboardProvider'
 import DisabledMaintainerNavigation from '../Dashboard/DisabledMaintainerNavigation'
 import MaintainerNavigation from '../Dashboard/MaintainerNavigation'
 import MaintainerRepoSelection from '../Dashboard/MaintainerRepoSelection'
 import MetaNavigation from '../Dashboard/MetaNavigation'
-import { Modal } from '../Modal'
-import { useModal } from '../Modal/useModal'
 import DashboardProfileDropdown from '../Navigation/DashboardProfileDropdown'
 import { BrandingMenu } from './Public/BrandingMenu'
 
@@ -60,6 +58,7 @@ const DashboardSidebar = () => {
   const orgs = orgContext?.memberOrganizations ?? []
   const adminOrgs = orgContext?.adminOrganizations ?? []
   const isOrgAdmin = adminOrgs.some((o) => currentOrg && o.id === currentOrg.id)
+  const { showCommandPalette } = useDashboard()
 
   const shouldRenderMaintainerNavigation = currentOrg
     ? isOrgAdmin
@@ -106,6 +105,15 @@ const DashboardSidebar = () => {
           {shouldRenderMaintainerNavigation && <DisabledMaintainerNavigation />}
         </div>
 
+        <div className="hidden p-8 md:block">
+          <CommandPaletteTrigger
+            title="API & Documentation"
+            className="cursor-text bg-gray-100 shadow-none"
+            shortcutClassName="bg-white cursor-default dark:border-polar-600"
+            onClick={showCommandPalette}
+          />
+        </div>
+
         <div className="dark:border-t-polar-800 flex flex-col gap-y-2 border-t border-t-gray-100">
           <MetaNavigation />
         </div>
@@ -115,32 +123,8 @@ const DashboardSidebar = () => {
 }
 
 const DashboardLayout = (props: PropsWithChildren<{ className?: string }>) => {
-  const {
-    isShown: isCommandPaletteShown,
-    show: showCommandPalette,
-    hide: hideCommandPalette,
-  } = useModal()
-
-  const { org: organization } = useCurrentOrgAndRepoFromURL()
-
-  useEffect(() => {
-    const handleKeyPress = (e: KeyboardEvent) => {
-      if (isCommandPaletteShown) return
-
-      if (e.key === 'k' && e.metaKey) {
-        showCommandPalette()
-      }
-    }
-
-    window.addEventListener('keydown', handleKeyPress)
-
-    return () => {
-      window.removeEventListener('keydown', handleKeyPress)
-    }
-  }, [isCommandPaletteShown, showCommandPalette])
-
   return (
-    <>
+    <DashboardProvider>
       <div className="relative flex h-full w-full flex-col md:flex-row">
         <MobileNav />
         <div className="hidden md:flex">
@@ -158,21 +142,7 @@ const DashboardLayout = (props: PropsWithChildren<{ className?: string }>) => {
           </main>
         </div>
       </div>
-      <Modal
-        isShown={isCommandPaletteShown}
-        hide={hideCommandPalette}
-        modalContent={
-          organization ? (
-            <CommandPalette
-              organization={organization}
-              hide={hideCommandPalette}
-            />
-          ) : (
-            <></>
-          )
-        }
-      />
-    </>
+    </DashboardProvider>
   )
 }
 

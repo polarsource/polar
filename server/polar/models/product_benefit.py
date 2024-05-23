@@ -29,7 +29,7 @@ class ProductBenefit(RecordModel):
 
     @declared_attr
     def product(cls) -> Mapped["Product"]:
-        return relationship("Product", lazy="raise")
+        return relationship("Product", lazy="raise", back_populates="product_benefits")
 
     @declared_attr
     def benefit(cls) -> Mapped["Benefit"]:

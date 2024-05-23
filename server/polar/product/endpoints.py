@@ -44,6 +44,9 @@ async def list_products(
             "If `false`, only one-time purchase products are returned. "
         ),
     ),
+    benefit_id: UUID4 | None = Query(
+        None, description="Filter products granting specific benefit."
+    ),
     type: SubscriptionTierType | None = Query(None),
     session: AsyncSession = Depends(get_db_session),
 ) -> ListResource[ProductSchema]:
@@ -54,6 +57,7 @@ async def list_products(
         organization_id=organization_id,
         include_archived=include_archived,
         is_recurring=is_recurring,
+        benefit_id=benefit_id,
         type=type,
         pagination=pagination,
     )

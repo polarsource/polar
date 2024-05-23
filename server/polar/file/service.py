@@ -14,6 +14,7 @@ from polar.postgres import AsyncSession, sql
 from .schemas import (
     FileCreate,
     FileDownload,
+    FilePatch,
     FileRead,
     FileUpdate,
     FileUpload,
@@ -55,6 +56,19 @@ class FileService(ResourceService[File, FileCreate, FileUpdate]):
         res = await session.execute(statement)
         records = res.scalars().all()
         return records
+
+    async def patch(
+        self,
+        session: AsyncSession,
+        *,
+        file: File,
+        patches: FilePatch,
+    ) -> File:
+        file.is_enabled = patches.is_enabled
+        session.add(file)
+        await session.flush()
+        assert file.is_enabled == patches.is_enabled
+        return file
 
     async def generate_presigned_upload(
         self,

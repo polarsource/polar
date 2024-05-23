@@ -24,19 +24,14 @@ class BenefitDownloadablesFiles:
         if benefit.organization_id != organization_id:
             raise NotPermitted()
 
-    async def get_property_files(self) -> list[UUID]:
-        benefit = await self.get_or_raise()
-        if not benefit:
-            return []
-
-        property_files = benefit.properties.get("files", [])
-        property_files = list(map(UUID, property_files))
-        return property_files
-
     async def get_file_ids(
         self,
     ) -> list[UUID]:
-        return await self.get_property_files()
+        benefit = await self.get_or_raise()
+
+        property_files = benefit.properties.get("files", [])
+        ids = list(map(UUID, property_files))
+        return ids
 
     async def sort_mapping[T](self, mapping: dict[UUID, T]) -> list[T]:
         file_ids = await self.get_file_ids()

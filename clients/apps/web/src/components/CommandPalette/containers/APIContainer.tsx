@@ -72,7 +72,7 @@ const buildNodeJSCommand = (endpoint: OpenAPIV3_1.OperationObject) => {
 const polar = new PolarAPI(
     new Configuration({
         headers: {
-            'Authorization': 'Bearer <token>'
+            'Authorization': \`Bearer \${process.env.POLAR_ACCESS_TOKEN}\`
         }
     })
 );

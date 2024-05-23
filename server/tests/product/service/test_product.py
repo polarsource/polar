@@ -18,8 +18,8 @@ from polar.models.product_price import ProductPriceRecurringInterval, ProductPri
 from polar.postgres import AsyncSession
 from polar.product.schemas import (
     ExistingProductPrice,
-    ProductCreate,
     ProductPriceRecurringCreate,
+    ProductRecurringCreate,
     ProductUpdate,
 )
 from polar.product.service.product import FreeTierIsNotArchivable
@@ -600,7 +600,7 @@ class TestUserCreate:
     async def test_user_not_existing_organization(
         self, auth_subject: AuthSubject[User], session: AsyncSession, authz: Authz
     ) -> None:
-        create_schema = ProductCreate(
+        create_schema = ProductRecurringCreate(
             type=SubscriptionTierType.individual,
             name="Product",
             organization_id=uuid.uuid4(),
@@ -630,7 +630,7 @@ class TestUserCreate:
         authz: Authz,
         organization: Organization,
     ) -> None:
-        create_schema = ProductCreate(
+        create_schema = ProductRecurringCreate(
             type=SubscriptionTierType.individual,
             name="Product",
             organization_id=organization.id,
@@ -670,7 +670,7 @@ class TestUserCreate:
         )
         create_price_for_product_mock.return_value = SimpleNamespace(id="PRICE_ID")
 
-        create_schema = ProductCreate(
+        create_schema = ProductRecurringCreate(
             type=SubscriptionTierType.individual,
             name="Product",
             organization_id=organization.id,
@@ -724,7 +724,7 @@ class TestUserCreate:
         )
         create_price_for_product_mock.return_value = SimpleNamespace(id="PRICE_ID")
 
-        create_schema = ProductCreate(
+        create_schema = ProductRecurringCreate(
             type=SubscriptionTierType.individual,
             name="Product",
             organization_id=organization.id,
@@ -770,7 +770,7 @@ class TestUserCreate:
         )
         create_price_for_product_mock.return_value = SimpleNamespace(id="PRICE_ID")
 
-        create_schema = ProductCreate(
+        create_schema = ProductRecurringCreate(
             type=SubscriptionTierType.individual,
             name="Product",
             description="",
@@ -801,7 +801,7 @@ class TestUserCreate:
         authz: Authz,
         organization: Organization,
     ) -> None:
-        create_schema = ProductCreate(
+        create_schema = ProductRecurringCreate(
             type=SubscriptionTierType.individual,
             name="Product",
             organization_id=organization.id,
@@ -840,7 +840,7 @@ class TestUserCreate:
         )
         create_price_for_product_mock.return_value = SimpleNamespace(id="PRICE_ID")
 
-        create_schema = ProductCreate(
+        create_schema = ProductRecurringCreate(
             type=SubscriptionTierType.individual,
             name="Product",
             prices=[

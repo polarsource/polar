@@ -1,6 +1,6 @@
 from typing import Annotated, Literal
 
-from pydantic import UUID4, AfterValidator, Field
+from pydantic import UUID4, AfterValidator, Discriminator, Field
 
 from polar.benefit.schemas import BenefitPublic, BenefitSubscriber
 from polar.kit.schemas import (
@@ -28,7 +28,7 @@ PriceAmount = Annotated[
 PriceCurrency = Annotated[
     str,
     Field(
-        "usd",
+        default="usd",
         pattern="usd",
         description="The currency. Currently, only `usd` is supported.",
     ),
@@ -111,28 +111,48 @@ ProductPriceOneTimeCreateList = Annotated[
 ]
 
 
-class ProductCreate(Schema):
-    """
-    Schema to create a product.
-    """
-
-    type: Literal[
-        SubscriptionTierType.individual,
-        SubscriptionTierType.business,
-    ]
+class ProductCreateBase(Schema):
     name: ProductName
     description: ProductDescription = None
-    is_highlighted: bool = False
+
     prices: ProductPriceRecurringCreateList | ProductPriceOneTimeCreateList = Field(
         ..., description="List of available prices for this product."
     )
     organization_id: UUID4 | None = Field(
-        None,
+        default=None,
         description=(
             "The ID of the organization owning the product. "
             "**Required unless you use an organization token.**"
         ),
     )
+
+
+class ProductRecurringCreate(ProductCreateBase):
+    """
+    Schema to create a recurring product, i.e. a subscription.
+    """
+
+    prices: ProductPriceRecurringCreateList = Field(
+        ..., description="List of available prices for this product."
+    )
+    type: Literal[
+        SubscriptionTierType.individual,
+        SubscriptionTierType.business,
+    ] = Field(deprecated=True)
+    is_highlighted: bool = Field(default=False, deprecated=True)
+
+
+class ProductOneTimeCreate(ProductCreateBase):
+    """
+    Schema to create a one-time product.
+    """
+
+    prices: ProductPriceOneTimeCreateList = Field(
+        ..., description="List of available prices for this product."
+    )
+
+
+ProductCreate = ProductRecurringCreate | ProductOneTimeCreate
 
 
 class ExistingProductPrice(Schema):
@@ -152,9 +172,9 @@ class ProductUpdate(Schema):
 
     name: ProductName | None = None
     description: ProductDescription = None
-    is_highlighted: bool | None = None
+    is_highlighted: bool | None = Field(default=None, deprecated=True)
     is_archived: bool | None = Field(
-        None,
+        default=None,
         description=(
             "Whether the product is archived. "
             "If `true`, the product won't be available for purchase anymore. "
@@ -192,16 +212,8 @@ class ProductBenefitsUpdate(Schema):
     )
 
 
-class ProductPrice(TimestampedSchema):
-    """
-    A price for a product.
-    """
-
+class ProductPriceBase(TimestampedSchema):
     id: UUID4 = Field(description="The ID of the price.")
-    type: ProductPriceType = Field(description="The type of the price.")
-    recurring_interval: ProductPriceRecurringInterval | None = Field(
-        None, description="The recurring interval of the price, if type is `recurring`."
-    )
     price_amount: int = Field(description="The price in cents.")
     price_currency: str = Field(description="The currency.")
     is_archived: bool = Field(
@@ -209,21 +221,52 @@ class ProductPrice(TimestampedSchema):
     )
 
 
+class ProductPriceRecurring(ProductPriceBase):
+    """
+    A recurring price for a product, i.e. a subscription.
+    """
+
+    type: Literal[ProductPriceType.recurring] = Field(
+        description="The type of the price."
+    )
+    recurring_interval: ProductPriceRecurringInterval | None = Field(
+        None, description="The recurring interval of the price, if type is `recurring`."
+    )
+
+
+class ProductPriceOneTime(ProductPriceBase):
+    """
+    A one-time price for a product.
+    """
+
+    type: Literal[ProductPriceType.one_time] = Field(
+        description="The type of the price."
+    )
+
+
+ProductPrice = Annotated[
+    ProductPriceRecurring | ProductPriceOneTime, Discriminator("type")
+]
+
+
 class ProductBase(TimestampedSchema):
     id: UUID4 = Field(description="The ID of the product.")
-    type: SubscriptionTierType
     name: str = Field(description="The name of the product.")
-    description: str | None = Field(None, description="The description of the product.")
+    description: str | None = Field(
+        default=None, description="The description of the product."
+    )
     is_recurring: bool = Field(
         description="Whether the product is a subscription tier."
     )
-    is_highlighted: bool
     is_archived: bool = Field(
         description="Whether the product is archived and no longer available."
     )
     organization_id: UUID4 = Field(
         description="The ID of the organization owning the product."
     )
+
+    type: SubscriptionTierType | None = Field(default=None, deprecated=True)
+    is_highlighted: bool | None = Field(default=None, deprecated=True)
 
 
 class Product(ProductBase):

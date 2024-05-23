@@ -29,15 +29,17 @@ class Product(RecordModel):
 
     __table_args__ = (Index("idx_organization_id_type", "organization_id", "type"),)
 
-    type: Mapped[SubscriptionTierType] = mapped_column(
-        String, nullable=False, index=True
-    )
     name: Mapped[str] = mapped_column(String, nullable=False)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
-    is_highlighted: Mapped[bool] = mapped_column(
-        Boolean, nullable=False, default=False, index=True
-    )
     is_archived: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+
+    # Legacy fields for the old subscription tiers
+    type: Mapped[SubscriptionTierType | None] = mapped_column(
+        String, nullable=True, index=True
+    )
+    is_highlighted: Mapped[bool | None] = mapped_column(
+        Boolean, nullable=True, index=True
+    )
 
     stripe_product_id: Mapped[str | None] = mapped_column(
         String, nullable=True, index=True

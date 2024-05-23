@@ -13,7 +13,7 @@ import {
   BenefitPublicInner,
   Organization,
   ProductCreate,
-  ProductCreateTypeEnum,
+  ProductRecurringCreateTypeEnum,
   ResponseError,
   ValidationError,
 } from '@polar-sh/sdk'
@@ -27,7 +27,7 @@ import SubscriptionTierBenefitsForm from './SubscriptionTierBenefitsForm'
 import SubscriptionTierForm from './SubscriptionTierForm'
 
 interface CreateSubscriptionTierModalProps {
-  type?: ProductCreateTypeEnum
+  type?: ProductRecurringCreateTypeEnum
   organization: Organization
   hide: () => void
 }
@@ -54,7 +54,7 @@ const CreateSubscriptionTierModal: React.FC<
 export default CreateSubscriptionTierModal
 
 interface CreateSubscriptionTierModalContentProps {
-  type?: ProductCreateTypeEnum
+  type?: ProductRecurringCreateTypeEnum
   organization: Organization
   organizationBenefits: BenefitPublicInner[]
   hide: () => void
@@ -121,7 +121,8 @@ const CreateSubscriptionTierModalContent: React.FC<
 
         clearDraft('ProductCreate')
 
-        revalidate(`products:${organization.id}`)
+        revalidate(`products:${organization.id}:recurring`)
+        revalidate(`products:${organization.id}:one_time`)
 
         hide()
       } catch (e) {

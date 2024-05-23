@@ -1,4 +1,3 @@
-import { products } from '@/hooks/queries/dummy_products'
 import { getServerSideAPI } from '@/utils/api/serverside'
 import { redirectToCanonicalDomain } from '@/utils/nav'
 import { Organization, Platforms, ResponseError } from '@polar-sh/sdk'
@@ -111,6 +110,17 @@ export default async function Page({
     notFound()
   }
 
+  const products = await api.products.listProducts(
+    { organizationId: organization.id, isRecurring: false },
+    {
+      ...cacheConfig,
+      next: {
+        ...cacheConfig.next,
+        tags: [`products:${organization.id}:one-time`],
+      },
+    },
+  )
+
   redirectToCanonicalDomain({
     organization,
     paramOrganizationName: params.organization,
@@ -118,5 +128,7 @@ export default async function Page({
     subPath: '/products',
   })
 
-  return <ClientPage organization={organization} products={products} />
+  return (
+    <ClientPage organization={organization} products={products.items || []} />
+  )
 }

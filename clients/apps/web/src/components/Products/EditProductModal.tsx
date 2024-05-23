@@ -72,7 +72,8 @@ export const EditProductModal = ({
           },
         })
 
-        revalidate(`products:${organization.id}`)
+        revalidate(`products:${organization.id}:recurring`)
+        revalidate(`products:${organization.id}:one_time`)
 
         hide()
       } catch (e) {
@@ -148,7 +149,8 @@ export const EditProductModal = ({
       productUpdate: { is_archived: true },
     })
 
-    revalidate(`products:${organization.id}`)
+    revalidate(`products:${organization.id}:recurring`)
+    revalidate(`products:${organization.id}:one_time`)
 
     hide()
   }, [product, updateProduct, organization, hide])

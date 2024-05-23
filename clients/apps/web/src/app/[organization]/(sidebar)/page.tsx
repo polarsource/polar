@@ -164,12 +164,13 @@ export default async function Page({
       api.products.listProducts(
         {
           organizationId: organization.id,
+          isRecurring: true,
         },
         {
           ...cacheConfig,
           next: {
             ...cacheConfig.next,
-            tags: [`products:${params.organization}`],
+            tags: [`products:${organization.id}:recurring`],
           },
         },
       ),

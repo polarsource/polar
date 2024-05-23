@@ -7,6 +7,7 @@ import {
   Product,
   ProductPrice,
   ProductPriceRecurringInterval,
+  ProductPriceType,
   SubscriptionTierType,
   UserRead,
 } from '@polar-sh/sdk'
@@ -236,7 +237,9 @@ const SubscriptionTierSubscribeButton: React.FC<
 
   const price = useMemo(() => {
     const price = subscriptionTier.prices?.find(
-      (price) => price.recurring_interval === recurringInterval,
+      (price) =>
+        price.type === ProductPriceType.RECURRING &&
+        price.recurring_interval === recurringInterval,
     )
     if (!price) {
       return subscriptionTier.prices[0]

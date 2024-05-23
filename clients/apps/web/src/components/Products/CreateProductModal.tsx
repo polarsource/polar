@@ -80,7 +80,8 @@ export const CreateProductModal = ({
 
         clearDraft('ProductCreate')
 
-        revalidate(`products:${organization.id}`)
+        revalidate(`products:${organization.id}:recurring`)
+        revalidate(`products:${organization.id}:one_time`)
 
         hide()
       } catch (e) {

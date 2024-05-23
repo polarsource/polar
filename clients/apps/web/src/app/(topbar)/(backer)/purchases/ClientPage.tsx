@@ -190,6 +190,7 @@ const PurchaseItem = ({ purchase }: { purchase: Purchase }) => {
       {'organization' in purchase.product ? (
         <ProductCard
           key={purchase.id}
+          // @ts-ignore
           product={purchase.product}
           showOrganization
         />

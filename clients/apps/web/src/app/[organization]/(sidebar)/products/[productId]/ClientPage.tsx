@@ -3,9 +3,9 @@
 import { resolveBenefitIcon } from '@/components/Benefit/utils'
 import { previewOpts } from '@/components/Feed/Markdown/BrowserRender'
 import { Slideshow } from '@/components/Products/Slideshow'
-import { Product } from '@/hooks/queries/dummy_products'
+import { dummyMedia } from '@/hooks/queries/dummy_products'
 import { getCentsInDollarString } from '@/utils/money'
-import { Organization } from '@polar-sh/sdk'
+import { Organization, Product } from '@polar-sh/sdk'
 import Markdown from 'markdown-to-jsx'
 import Button from 'polarkit/components/ui/atoms/button'
 import ShadowBox from 'polarkit/components/ui/atoms/shadowbox'
@@ -19,24 +19,28 @@ export default function ClientPage({
   return (
     <div className="flex flex-col items-start gap-8 pb-8 md:flex-row md:gap-12 md:pb-0">
       <div className="flex flex-col gap-8 md:w-2/3">
-        {product.media.length && <Slideshow images={product.media} />}
+        <Slideshow images={dummyMedia} />
         <ShadowBox className="flex flex-col gap-6 ring-gray-100">
           <h1 className="text-2xl font-medium">{product.name}</h1>
-          <div className="prose dark:prose-invert prose-headings:mt-8 prose-headings:font-semibold prose-headings:text-black prose-h1:text-3xl prose-h2:text-2xl prose-h3:text-xl prose-h4:text-lg prose-h5:text-md prose-h6:text-sm dark:prose-headings:text-polar-50 dark:text-polar-300 max-w-4xl text-gray-800">
-            <Markdown
-              options={{
-                ...previewOpts,
-                overrides: {
-                  ...previewOpts.overrides,
-                  a: (props) => (
-                    <a {...props} rel="noopener noreferrer nofollow" />
-                  ),
-                },
-              }}
-            >
-              {product.description}
-            </Markdown>
-          </div>
+          {product.description ? (
+            <div className="prose dark:prose-invert prose-headings:mt-8 prose-headings:font-semibold prose-headings:text-black prose-h1:text-3xl prose-h2:text-2xl prose-h3:text-xl prose-h4:text-lg prose-h5:text-md prose-h6:text-sm dark:prose-headings:text-polar-50 dark:text-polar-300 max-w-4xl text-gray-800">
+              <Markdown
+                options={{
+                  ...previewOpts,
+                  overrides: {
+                    ...previewOpts.overrides,
+                    a: (props) => (
+                      <a {...props} rel="noopener noreferrer nofollow" />
+                    ),
+                  },
+                }}
+              >
+                {product.description}
+              </Markdown>
+            </div>
+          ) : (
+            <></>
+          )}
         </ShadowBox>
       </div>
       <div className="flex w-full flex-col gap-8 md:sticky md:top-16 md:w-1/3">

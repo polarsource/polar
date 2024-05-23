@@ -266,6 +266,7 @@ const useCreateBaselineTier = (
       created_at: new Date().toISOString(),
       is_highlighted: false,
       is_archived: false,
+      is_recurring: true,
       organization_id: organization.id,
     }
   }, [organization])
@@ -300,7 +301,8 @@ const useCreateBaselineTier = (
       },
     })
 
-    await revalidate(`products:${organization.id}`)
+    revalidate(`products:${organization.id}:recurring`)
+    revalidate(`products:${organization.id}:one_time`)
   }, [
     organization,
     createProductMutation,

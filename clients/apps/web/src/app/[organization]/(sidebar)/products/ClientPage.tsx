@@ -1,7 +1,6 @@
 import { ProductCard } from '@/components/Products/ProductCard'
-import { Product } from '@/hooks/queries/dummy_products'
 import { organizationPageLink } from '@/utils/nav'
-import { Organization } from '@polar-sh/sdk'
+import { Organization, Product } from '@polar-sh/sdk'
 import Link from 'next/link'
 
 export default function ClientPage({

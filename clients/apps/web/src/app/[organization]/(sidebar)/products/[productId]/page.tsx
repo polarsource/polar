@@ -1,7 +1,6 @@
-import { products } from '@/hooks/queries/dummy_products'
 import { getServerSideAPI } from '@/utils/api/serverside'
 import { redirectToCanonicalDomain } from '@/utils/nav'
-import { Organization, Platforms, ResponseError } from '@polar-sh/sdk'
+import { Organization, Platforms, Product, ResponseError } from '@polar-sh/sdk'
 import type { Metadata } from 'next'
 import { headers } from 'next/headers'
 import { notFound } from 'next/navigation'
@@ -111,18 +110,26 @@ export default async function Page({
     notFound()
   }
 
+  let product: Product | undefined
+  try {
+    product = await api.products.getProduct(
+      { id: params.productId },
+      cacheConfig,
+    )
+  } catch (e) {
+    if (e instanceof ResponseError && e.response.status === 404) {
+      notFound()
+    } else {
+      throw e
+    }
+  }
+
   redirectToCanonicalDomain({
     organization,
     paramOrganizationName: params.organization,
     headers: headers(),
     subPath: `/products/${params.productId}`,
   })
-
-  const product = products.find((p) => p.id === params.productId)
-
-  if (!product) {
-    notFound()
-  }
 
   return <ClientPage organization={organization} product={product} />
 }

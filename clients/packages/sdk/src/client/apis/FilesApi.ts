@@ -16,6 +16,7 @@
 import * as runtime from '../runtime';
 import type {
   FileCreate,
+  FilePatch,
   FileRead,
   FileUpload,
   FileUploadCompleted,
@@ -29,6 +30,11 @@ export interface FilesApiCreateRequest {
 export interface FilesApiListDownloadablesRequest {
     benefitId: string;
     organizationId?: string;
+}
+
+export interface FilesApiUpdateRequest {
+    fileId: string;
+    filePatch: FilePatch;
 }
 
 export interface FilesApiUploadedRequest {
@@ -127,6 +133,57 @@ export class FilesApi extends runtime.BaseAPI {
      */
     async listDownloadables(requestParameters: FilesApiListDownloadablesRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Array<FileRead>> {
         const response = await this.listDownloadablesRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
+     * Update
+     */
+    async updateRaw(requestParameters: FilesApiUpdateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<FileRead>> {
+        if (requestParameters['fileId'] == null) {
+            throw new runtime.RequiredError(
+                'fileId',
+                'Required parameter "fileId" was null or undefined when calling update().'
+            );
+        }
+
+        if (requestParameters['filePatch'] == null) {
+            throw new runtime.RequiredError(
+                'filePatch',
+                'Required parameter "filePatch" was null or undefined when calling update().'
+            );
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        headerParameters['Content-Type'] = 'application/json';
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("HTTPBearer", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+        const response = await this.request({
+            path: `/api/v1/files/files/{file_id}`.replace(`{${"file_id"}}`, encodeURIComponent(String(requestParameters['fileId']))),
+            method: 'PATCH',
+            headers: headerParameters,
+            query: queryParameters,
+            body: requestParameters['filePatch'],
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse(response);
+    }
+
+    /**
+     * Update
+     */
+    async update(requestParameters: FilesApiUpdateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<FileRead> {
+        const response = await this.updateRaw(requestParameters, initOverrides);
         return await response.value();
     }
 

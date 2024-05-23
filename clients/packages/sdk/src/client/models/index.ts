@@ -4916,6 +4916,19 @@ export interface FileDownload {
 /**
  * 
  * @export
+ * @interface FilePatch
+ */
+export interface FilePatch {
+    /**
+     * 
+     * @type {boolean}
+     * @memberof FilePatch
+     */
+    is_enabled: boolean;
+}
+/**
+ * 
+ * @export
  * @interface FileRead
  */
 export interface FileRead {

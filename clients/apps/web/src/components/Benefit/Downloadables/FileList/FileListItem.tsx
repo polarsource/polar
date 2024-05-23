@@ -1,5 +1,6 @@
 'use client'
 
+import { api } from '@/utils/api'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { DragIndicatorOutlined } from '@mui/icons-material'
@@ -65,11 +66,20 @@ export const FileListItem = ({
   updateFile: (callback: (prev: FileObject) => FileObject) => void
   sortable?: ReturnType<typeof useSortable>
 }) => {
-  const onToggleEnabled = (enabled: boolean) => {
+  const onToggleEnabled = async (enabled: boolean) => {
+    const response = await api.files.update({
+      fileId: file.id,
+      filePatch: {
+        is_enabled: enabled,
+      },
+    })
+    if (!(response && response.id)) {
+      return
+    }
     updateFile((prev) => {
       return {
         ...prev,
-        is_enabled: enabled,
+        ...response,
       }
     })
   }

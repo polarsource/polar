@@ -20,7 +20,6 @@ import type {
   FileUpload,
   FileUploadCompleted,
   HTTPValidationError,
-  ListResourceFileRead,
 } from '../models/index';
 
 export interface FilesApiCreateRequest {
@@ -89,7 +88,7 @@ export class FilesApi extends runtime.BaseAPI {
     /**
      * List Downloadables
      */
-    async listDownloadablesRaw(requestParameters: FilesApiListDownloadablesRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListResourceFileRead>> {
+    async listDownloadablesRaw(requestParameters: FilesApiListDownloadablesRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Array<FileRead>>> {
         if (requestParameters['benefitId'] == null) {
             throw new runtime.RequiredError(
                 'benefitId',
@@ -126,7 +125,7 @@ export class FilesApi extends runtime.BaseAPI {
     /**
      * List Downloadables
      */
-    async listDownloadables(requestParameters: FilesApiListDownloadablesRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ListResourceFileRead> {
+    async listDownloadables(requestParameters: FilesApiListDownloadablesRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Array<FileRead>> {
         const response = await this.listDownloadablesRaw(requestParameters, initOverrides);
         return await response.value();
     }

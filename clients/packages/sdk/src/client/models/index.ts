@@ -5753,25 +5753,6 @@ export interface ListResourceDownloadableRead {
 /**
  * 
  * @export
- * @interface ListResourceFileRead
- */
-export interface ListResourceFileRead {
-    /**
-     * 
-     * @type {Array<FileRead>}
-     * @memberof ListResourceFileRead
-     */
-    items?: Array<FileRead>;
-    /**
-     * 
-     * @type {Pagination}
-     * @memberof ListResourceFileRead
-     */
-    pagination: Pagination;
-}
-/**
- * 
- * @export
  * @interface ListResourceIssue
  */
 export interface ListResourceIssue {

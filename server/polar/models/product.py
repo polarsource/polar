@@ -80,6 +80,7 @@ class Product(RecordModel):
         lazy="selectin",
         order_by="ProductBenefit.order",
         cascade="all, delete-orphan",
+        back_populates="product",
     )
 
     benefits: AssociationProxy[list["Benefit"]] = association_proxy(

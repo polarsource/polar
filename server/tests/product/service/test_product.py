@@ -325,6 +325,40 @@ class TestList:
         assert count == 0
         assert len(results) == 0
 
+    @pytest.mark.auth
+    async def test_filter_benefit_id(
+        self,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        session: AsyncSession,
+        organization: Organization,
+        products: list[Product],
+        benefit_organization: Benefit,
+        benefit_organization_second: Benefit,
+    ) -> None:
+        for product in products[:2]:
+            await add_product_benefits(
+                save_fixture,
+                product=product,
+                benefits=[benefit_organization, benefit_organization_second],
+            )
+
+        # then
+        session.expunge_all()
+
+        results, count = await product_service.list(
+            session,
+            auth_subject,
+            organization_id=organization.id,
+            benefit_id=benefit_organization.id,
+            pagination=PaginationParams(1, 10),
+        )
+
+        assert count == 2
+        assert len(results) == 2
+        assert results[0].id == products[0].id
+        assert results[1].id == products[1].id
+
     async def test_pagination(
         self,
         session: AsyncSession,

@@ -63,6 +63,7 @@ class ProductService(ResourceService[Product, ProductCreate, ProductUpdate]):
         organization_id: uuid.UUID | None = None,
         include_archived: bool = False,
         is_recurring: bool | None = None,
+        benefit_id: uuid.UUID | None = None,
         type: SubscriptionTierType | None = None,
         pagination: PaginationParams,
     ) -> tuple[Sequence[Product], int]:
@@ -92,6 +93,13 @@ class ProductService(ResourceService[Product, ProductCreate, ProductUpdate]):
 
         if type is not None:
             statement = statement.where(Product.type == type)
+
+        if benefit_id is not None:
+            statement = (
+                statement.join(Product.product_benefits)
+                .where(ProductBenefit.benefit_id == benefit_id)
+                .options(contains_eager(Product.product_benefits))
+            )
 
         statement = statement.order_by(
             case(

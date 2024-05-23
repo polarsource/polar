@@ -3,17 +3,26 @@ import {
   ProductBenefitsUpdate,
   ProductCreate,
   ProductUpdate,
+  ProductsApiListProductsRequest,
 } from '@polar-sh/sdk'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { defaultRetry } from './retry'
 
-export const useProducts = (organizationId?: string, limit = 100) =>
+export const useProducts = (
+  organizationId?: string,
+  parameters?: Omit<
+    ProductsApiListProductsRequest,
+    'organization_id' | 'limit'
+  >,
+  limit = 100,
+) =>
   useQuery({
-    queryKey: ['products', { organizationId }],
+    queryKey: ['products', { organizationId, ...(parameters || {}) }],
     queryFn: () =>
       api.products.listProducts({
         organizationId: organizationId ?? '',
         limit,
+        ...(parameters || {}),
       }),
     retry: defaultRetry,
     enabled: !!organizationId,

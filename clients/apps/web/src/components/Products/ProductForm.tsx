@@ -1,7 +1,11 @@
 'use client'
 
 import { ErrorMessage } from '@hookform/error-message'
-import { ClearOutlined } from '@mui/icons-material'
+import {
+  ClearOutlined,
+  LoopOutlined,
+  ShoppingCartOutlined,
+} from '@mui/icons-material'
 import {
   PricesInner,
   ProductCreate,
@@ -261,14 +265,20 @@ const ProductForm: React.FC<ProductFormProps> = ({ update, isFreeTier }) => {
                   value={ProductPriceType.ONE_TIME}
                   className="h-20 w-full flex-col items-start border"
                 >
-                  <div>One-time purchase</div>
+                  <div className="flex items-center gap-2">
+                    <ShoppingCartOutlined fontSize="inherit" />
+                    One-time purchase
+                  </div>
                   <div className="font-normal">Charge a one-time fee</div>
                 </ToggleGroupItem>
                 <ToggleGroupItem
                   value={ProductPriceType.RECURRING}
                   className="h-20 w-full flex-col items-start border"
                 >
-                  <div>Subscription</div>
+                  <div className="flex items-center gap-2">
+                    <LoopOutlined fontSize="inherit" />
+                    Subscription
+                  </div>
                   <div className="font-normal">Charge an ongoing fee</div>
                 </ToggleGroupItem>
               </ToggleGroup>

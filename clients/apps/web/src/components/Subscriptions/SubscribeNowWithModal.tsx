@@ -40,7 +40,6 @@ const SubscribeNowWithModal = ({
 
   const { data: { items: subscriptionTiers } = { items: [] } } = useProducts(
     organization.id,
-    100,
   )
 
   const freeSubscriptionTier = subscriptionTiers?.find(

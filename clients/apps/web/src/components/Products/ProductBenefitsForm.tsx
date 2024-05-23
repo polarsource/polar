@@ -1,18 +1,6 @@
-import {
-  useCreateBenefit,
-  useDeleteBenefit,
-  useUpdateBenefit,
-} from '@/hooks/queries'
-import { setValidationErrors } from '@/utils/api/errors'
+import { useDeleteBenefit } from '@/hooks/queries'
 import { LoyaltyOutlined, MoreVertOutlined } from '@mui/icons-material'
-import {
-  BenefitCreate,
-  BenefitPublicInner,
-  BenefitUpdate,
-  Organization,
-  ResponseError,
-  ValidationError,
-} from '@polar-sh/sdk'
+import { BenefitPublicInner, Organization } from '@polar-sh/sdk'
 import { useSearchParams } from 'next/navigation'
 import { Switch } from 'polarkit/components/ui/atoms'
 import Button from 'polarkit/components/ui/atoms/button'
@@ -22,12 +10,11 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from 'polarkit/components/ui/dropdown-menu'
-import { Form } from 'polarkit/components/ui/form'
-import { useCallback, useMemo, useState } from 'react'
-import { useForm } from 'react-hook-form'
+import { useCallback } from 'react'
 import { twMerge } from 'tailwind-merge'
-import { NewBenefitForm, UpdateBenefitForm } from '../Benefit/BenefitForm'
-import { CreatableBenefit, resolveBenefitIcon } from '../Benefit/utils'
+import CreateBenefitModalContent from '../Benefit/CreateBenefitModalContent'
+import UpdateBenefitModalContent from '../Benefit/UpdateBenefitModalContent'
+import { resolveBenefitIcon } from '../Benefit/utils'
 import { Modal } from '../Modal'
 import { ConfirmModal } from '../Modal/ConfirmModal'
 import { useModal } from '../Modal/useModal'
@@ -120,7 +107,7 @@ const BenefitRow = ({
         isShown={isDeleteShown}
         hide={hideDelete}
         title="Delete Benefit"
-        description={`Deleting a benefit will remove it from other Subscription tiers & revokes it for existing subscribers. Are you sure?`}
+        description="Deleting a benefit will remove it from every Products & revoke it for existing customers. Are you sure?"
         onConfirm={handleDeleteBenefit}
         destructive
       />
@@ -205,7 +192,7 @@ const ProductBenefitsForm = ({
         isShown={isShown}
         hide={toggle}
         modalContent={
-          <NewBenefitModalContent
+          <CreateBenefitModalContent
             organization={organization}
             hideModal={hide}
             onSelectBenefit={(benefit) => {
@@ -220,201 +207,3 @@ const ProductBenefitsForm = ({
 }
 
 export default ProductBenefitsForm
-
-export type NewBenefitModalParams = {
-  type?: CreatableBenefit
-  description?: string
-  guild_token?: string
-}
-
-interface NewBenefitModalContentProps {
-  organization: Organization
-  onSelectBenefit: (benefit: BenefitPublicInner) => void
-  hideModal: () => void
-  defaultValues?: NewBenefitModalParams
-}
-
-export const NewBenefitModalContent = ({
-  organization,
-  onSelectBenefit,
-  hideModal,
-  defaultValues,
-}: NewBenefitModalContentProps) => {
-  const [isLoading, setIsLoading] = useState(false)
-  const searchParams = useSearchParams()
-  const { type, description, ...properties } =
-    useMemo<NewBenefitModalParams>(() => {
-      if (defaultValues) {
-        return defaultValues
-      }
-
-      if (!searchParams) {
-        return {}
-      }
-      return Object.fromEntries(searchParams.entries())
-    }, [searchParams, defaultValues])
-
-  const createSubscriptionBenefit = useCreateBenefit(organization.name)
-
-  const form = useForm<BenefitCreate>({
-    defaultValues: {
-      organization_id: organization.id,
-      type: type ? type : 'custom',
-      description: description ? description : undefined,
-      properties: {
-        ...(properties as any),
-      },
-      is_tax_applicable: false,
-    },
-  })
-
-  const { handleSubmit, setError } = form
-
-  const handleCreateNewBenefit = useCallback(
-    async (subscriptionBenefitCreate: BenefitCreate) => {
-      try {
-        setIsLoading(true)
-        const benefit = await createSubscriptionBenefit.mutateAsync(
-          subscriptionBenefitCreate,
-        )
-
-        if (benefit) {
-          onSelectBenefit(benefit)
-          hideModal()
-        }
-      } catch (e) {
-        if (e instanceof ResponseError) {
-          const body = await e.response.json()
-          if (e.response.status === 422) {
-            const validationErrors = body['detail'] as ValidationError[]
-            setValidationErrors(validationErrors, setError, 2)
-          }
-        }
-      } finally {
-        setIsLoading(false)
-      }
-    },
-    [hideModal, onSelectBenefit, createSubscriptionBenefit, setError],
-  )
-
-  return (
-    <div className="flex flex-col gap-y-6 px-8 py-10">
-      <div>
-        <h2 className="text-lg">Create Benefit</h2>
-        <p className="dark:text-polar-500 mt-2 text-sm text-gray-500">
-          Created benefits will be available for use in all products of your
-          organization
-        </p>
-      </div>
-      <div className="flex flex-col gap-y-6">
-        <Form {...form}>
-          <form
-            className="flex flex-col gap-y-6"
-            onSubmit={handleSubmit(handleCreateNewBenefit)}
-          >
-            <NewBenefitForm />
-            <div className="mt-4 flex flex-row items-center gap-x-4">
-              <Button
-                className="self-start"
-                type="submit"
-                loading={isLoading}
-                disabled={!form.formState.isValid}
-              >
-                Create
-              </Button>
-              <Button
-                variant="ghost"
-                className="self-start"
-                onClick={hideModal}
-              >
-                Cancel
-              </Button>
-            </div>
-          </form>
-        </Form>
-      </div>
-    </div>
-  )
-}
-
-interface UpdateBenefitModalContentProps {
-  organization: Organization
-  benefit: BenefitPublicInner
-  hideModal: () => void
-}
-
-export const UpdateBenefitModalContent = ({
-  organization,
-  benefit,
-  hideModal,
-}: UpdateBenefitModalContentProps) => {
-  const [isLoading, setIsLoading] = useState(false)
-
-  const updateSubscriptionBenefit = useUpdateBenefit(organization.name)
-
-  const handleUpdateNewBenefit = useCallback(
-    async (benefitUpdate: Omit<BenefitUpdate, 'type'>) => {
-      try {
-        setIsLoading(true)
-        await updateSubscriptionBenefit.mutateAsync({
-          id: benefit.id,
-          benefitUpdate: {
-            type: benefit.type,
-            ...benefitUpdate,
-          },
-        })
-
-        hideModal()
-      } catch (err) {
-        console.error(err)
-      } finally {
-        setIsLoading(false)
-      }
-    },
-    [hideModal, updateSubscriptionBenefit, benefit],
-  )
-
-  const form = useForm<Omit<BenefitUpdate, 'type'>>({
-    defaultValues: benefit,
-  })
-
-  const { handleSubmit } = form
-
-  return (
-    <div className="flex flex-col gap-y-6 px-8 py-10">
-      <div>
-        <h2 className="text-lg">Update Subscription Benefit</h2>
-        <p className="dark:text-polar-500 mt-2 text-sm text-gray-500">
-          Tax applicability and Benefit type cannot be updated
-        </p>
-      </div>
-      <div className="flex flex-col gap-y-6">
-        <Form {...form}>
-          <form
-            className="flex flex-col gap-y-6"
-            onSubmit={handleSubmit(handleUpdateNewBenefit)}
-          >
-            <UpdateBenefitForm type={benefit.type} />
-            <div className="mt-4 flex flex-row items-center gap-x-4">
-              <Button
-                className="self-start"
-                type="submit"
-                loading={isLoading}
-                disabled={!form.formState.isValid}
-              >
-                Update
-              </Button>
-              <Button
-                variant="ghost"
-                className="self-start"
-                onClick={hideModal}
-              >
-                Cancel
-              </Button>
-            </div>
-          </form>
-        </Form>
-      </div>
-    </div>
-  )
-}

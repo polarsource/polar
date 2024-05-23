@@ -196,14 +196,6 @@ const maintainerRoutesList = (org: Organization): Route[] => [
         link: `/maintainer/${org.name}/subscriptions/overview`,
       },
       {
-        title: 'Tiers',
-        link: `/maintainer/${org.name}/subscriptions/tiers`,
-      },
-      {
-        title: 'Benefits',
-        link: `/maintainer/${org.name}/subscriptions/benefits`,
-      },
-      {
         title: 'Subscribers',
         link: `/maintainer/${org.name}/subscriptions/subscribers`,
       },
@@ -221,6 +213,16 @@ const maintainerRoutesList = (org: Organization): Route[] => [
     get if() {
       return isFeatureEnabled('products')
     },
+    subs: [
+      {
+        title: 'Overview',
+        link: `/maintainer/${org.name}/products/overview`,
+      },
+      {
+        title: 'Benefits',
+        link: `/maintainer/${org.name}/products/benefits`,
+      },
+    ],
   },
   {
     id: 'donations',

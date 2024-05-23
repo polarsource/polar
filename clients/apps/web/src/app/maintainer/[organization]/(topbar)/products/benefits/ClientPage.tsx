@@ -1,17 +1,14 @@
 'use client'
 
+import CreateBenefitModalContent, {
+  CreateBenefitModalParams,
+} from '@/components/Benefit/CreateBenefitModalContent'
+import UpdateBenefitModalContent from '@/components/Benefit/UpdateBenefitModalContent'
 import { DiscordIcon, resolveBenefitIcon } from '@/components/Benefit/utils'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { ConfirmModal } from '@/components/Modal/ConfirmModal'
 import { InlineModal } from '@/components/Modal/InlineModal'
 import { useModal } from '@/components/Modal/useModal'
-import { EnableSubscriptionsView } from '@/components/Subscriptions/EnableSubscriptionsView'
-import SubscriptionGroupIcon from '@/components/Subscriptions/SubscriptionGroupIcon'
-import {
-  NewSubscriptionTierBenefitModalContent,
-  NewSubscriptionsModalParams,
-  UpdateSubscriptionTierBenefitModalContent,
-} from '@/components/Subscriptions/SubscriptionTierBenefitsForm'
 import {
   useAdvertisementDisplays,
   useBenefits,
@@ -54,7 +51,7 @@ const ClientPage = ({ organization }: { organization: Organization }) => {
   } = useModal(searchParams?.get('create_benefit') === 'true')
 
   const [createModalDefaultValues, setCreateModalDefaultValues] =
-    useState<NewSubscriptionsModalParams>()
+    useState<CreateBenefitModalParams>()
 
   const benefitProducts = useMemo(
     () =>
@@ -74,10 +71,6 @@ const ClientPage = ({ organization }: { organization: Organization }) => {
     },
     [],
   )
-
-  if (!organization.feature_settings?.subscriptions_enabled) {
-    return <EnableSubscriptionsView organization={organization} />
-  }
 
   return (
     <DashboardBody className="flex flex-col gap-y-8">
@@ -131,10 +124,6 @@ const ClientPage = ({ organization }: { organization: Organization }) => {
                       href={`/maintainer/${organization.name}/subscriptions/tiers?tierId=${tier.id}`}
                       className="dark:bg-polar-800 dark:hover:bg-polar-700 -mx-2 flex flex-row items-center gap-x-2 rounded-xl bg-gray-100 px-4 py-3 transition-colors hover:bg-blue-50 hover:text-blue-500"
                     >
-                      <SubscriptionGroupIcon
-                        className="h-4! w-4! text-lg"
-                        type={tier.type}
-                      />
                       <span className="text-sm">{tier.name}</span>
                     </Link>
                   ))
@@ -156,7 +145,7 @@ const ClientPage = ({ organization }: { organization: Organization }) => {
           isShown={isShown}
           hide={toggle}
           modalContent={
-            <NewSubscriptionTierBenefitModalContent
+            <CreateBenefitModalContent
               organization={organization}
               defaultValues={createModalDefaultValues}
               hideModal={hide}
@@ -248,7 +237,7 @@ const BenefitRow = ({
         isShown={isEditShown}
         hide={hideEdit}
         modalContent={
-          <UpdateSubscriptionTierBenefitModalContent
+          <UpdateBenefitModalContent
             organization={organization}
             benefit={benefit}
             hideModal={hideEdit}
@@ -259,7 +248,7 @@ const BenefitRow = ({
         isShown={isDeleteShown}
         hide={hideDelete}
         title="Delete Benefit"
-        description={`Deleting a benefit will remove it from other Subscription tiers & revokes it for existing subscribers. Are you sure?`}
+        description="Deleting a benefit will remove it from every Products & revoke it for existing customers. Are you sure?"
         onConfirm={handleDeleteBenefit}
         destructive
       />
@@ -370,7 +359,7 @@ const RecommendedBenefits = ({
 }: {
   existingBenefits: BenefitPublicInner[]
   openCreateBenefitModal: () => void
-  setCreateModalDefaultValues: (v: NewSubscriptionsModalParams) => void
+  setCreateModalDefaultValues: (v: CreateBenefitModalParams) => void
 }) => {
   const hasDiscord = existingBenefits.find((b) => b.type === 'discord')
   const hasAds = existingBenefits.find((b) => b.type === 'ads')

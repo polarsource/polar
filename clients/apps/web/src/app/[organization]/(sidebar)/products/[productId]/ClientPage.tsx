@@ -2,9 +2,9 @@
 
 import { resolveBenefitIcon } from '@/components/Benefit/utils'
 import { previewOpts } from '@/components/Feed/Markdown/BrowserRender'
+import ProductPrices from '@/components/Products/ProductPrices'
 import { Slideshow } from '@/components/Products/Slideshow'
 import { dummyMedia } from '@/hooks/queries/dummy_products'
-import { getCentsInDollarString } from '@/utils/money'
 import { Organization, Product } from '@polar-sh/sdk'
 import Markdown from 'markdown-to-jsx'
 import Button from 'polarkit/components/ui/atoms/button'
@@ -48,7 +48,7 @@ export default function ClientPage({
           <h3 className="text-lg font-medium">{product.name}</h3>
           <div className="flex flex-col gap-4">
             <h1 className="text-5xl font-light text-blue-500 dark:text-blue-400">
-              ${getCentsInDollarString(product.price)}
+              <ProductPrices prices={product.prices} />
             </h1>
             <p className="dark:text-polar-500 text-sm text-gray-400">
               Before VAT and taxes

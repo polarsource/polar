@@ -97,12 +97,14 @@ class BenefitDownloadablesService(
             benefit_id=benefit.id,
             unless_file_id_in=file_ids,
         )
+        log.info(
+            "benefit.downloadables.revoke_user_grants",
+            user_id=user.id,
+            benefit_id=benefit.id,
+            unless=file_ids,
+        )
 
         if not file_ids:
-            return ret
-
-        if action not in ["grant", "revoke"]:
-            # TODO: Handle error
             return ret
 
         for file_id in file_ids:
@@ -124,7 +126,6 @@ class BenefitDownloadablesService(
                 )
 
             if not downloadable:
-                # TODO: Handle error
                 continue
 
             ret["files"].append(
@@ -146,10 +147,15 @@ class BenefitDownloadablesService(
         update: bool = False,
         attempt: int = 1,
     ) -> Downloadable | None:
-        # TODO: Check if active?
         file = await file_service.get(self.session, file_id)
         if not file:
-            # TODO: How to deal with errors here?
+            log.info(
+                "benefit.downloadables.file_not_found",
+                action="grant",
+                file_id=file_id,
+                user_id=user.id,
+                benefit_id=benefit.id,
+            )
             return None
 
         create_schema = DownloadableCreate(
@@ -159,6 +165,13 @@ class BenefitDownloadablesService(
             status=DownloadableStatus.granted,
         )
         res = await downloadable_service.create_or_update(self.session, create_schema)
+        log.info(
+            "benefit.downloadables.granted",
+            file_id=file_id,
+            user_id=user.id,
+            downloadables_id=res.id,
+            benefit_id=benefit.id,
+        )
         return res
 
     async def revoke_downloadable(
@@ -169,10 +182,15 @@ class BenefitDownloadablesService(
         *,
         attempt: int = 1,
     ) -> Downloadable | None:
-        # TODO: Check if active?
         file = await file_service.get(self.session, file_id)
         if not file:
-            # TODO: How to deal with errors here?
+            log.info(
+                "benefit.downloadables.file_not_found",
+                action="revoke",
+                file_id=file_id,
+                user_id=user.id,
+                benefit_id=benefit.id,
+            )
             return None
 
         create_schema = DownloadableCreate(
@@ -182,4 +200,11 @@ class BenefitDownloadablesService(
             status=DownloadableStatus.revoked,
         )
         res = await downloadable_service.create_or_update(self.session, create_schema)
+        log.info(
+            "benefit.downloadables.revoked",
+            file_id=file_id,
+            user_id=user.id,
+            downloadables_id=res.id,
+            benefit_id=benefit.id,
+        )
         return res

@@ -156,15 +156,21 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
         elif grant.is_revoked:
             return grant
 
-        benefit_service = get_benefit_service(benefit.type, session)
-        properties = await benefit_service.revoke(
-            benefit,
-            user,
-            grant.properties,
-            attempt=attempt,
+        # Check if the user has other grants (from other purchases) for this benefit
+        # If yes, don't call the revoke logic, just mark the grant as revoked
+        other_grants = await self._get_granted_by_benefit_and_user(
+            session, benefit, user
         )
+        if len(other_grants) < 2:
+            benefit_service = get_benefit_service(benefit.type, session)
+            properties = await benefit_service.revoke(
+                benefit,
+                user,
+                grant.properties,
+                attempt=attempt,
+            )
+            grant.properties = properties
 
-        grant.properties = properties
         grant.set_revoked()
 
         session.add(grant)
@@ -401,6 +407,22 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
     ) -> Sequence[BenefitGrant]:
         statement = select(BenefitGrant).where(
             BenefitGrant.benefit_id == benefit.id,
+            BenefitGrant.is_granted.is_(True),
+            BenefitGrant.deleted_at.is_(None),
+        )
+
+        result = await session.execute(statement)
+        return result.scalars().all()
+
+    async def _get_granted_by_benefit_and_user(
+        self,
+        session: AsyncSession,
+        benefit: Benefit,
+        user: User,
+    ) -> Sequence[BenefitGrant]:
+        statement = select(BenefitGrant).where(
+            BenefitGrant.benefit_id == benefit.id,
+            BenefitGrant.user_id == user.id,
             BenefitGrant.is_granted.is_(True),
             BenefitGrant.deleted_at.is_(None),
         )

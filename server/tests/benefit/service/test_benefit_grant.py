@@ -27,6 +27,7 @@ from polar.subscription.service import subscription as subscription_service
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     add_product_benefits,
+    create_benefit_grant,
     create_sale,
     create_subscription,
 )
@@ -221,6 +222,42 @@ class TestRevokeBenefit:
         )
 
         assert updated_grant.id == grant.id
+        assert updated_grant.is_revoked
+        benefit_service_mock.revoke.assert_not_called()
+
+    async def test_several_benefit_grants(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        subscription: Subscription,
+        user: User,
+        benefit_organization: Benefit,
+        benefit_service_mock: MagicMock,
+        product: Product,
+    ) -> None:
+        first_grant = await create_benefit_grant(
+            save_fixture, user, benefit_organization, subscription=subscription
+        )
+        first_grant.set_granted()
+        await save_fixture(first_grant)
+
+        second_subscription = await create_subscription(
+            save_fixture, product=product, user=user
+        )
+        second_grant = await create_benefit_grant(
+            save_fixture, user, benefit_organization, subscription=second_subscription
+        )
+        second_grant.set_granted()
+        await save_fixture(second_grant)
+
+        # then
+        session.expunge_all()
+
+        updated_grant = await benefit_grant_service.revoke_benefit(
+            session, user, benefit_organization, subscription=subscription
+        )
+
+        assert updated_grant.id == first_grant.id
         assert updated_grant.is_revoked
         benefit_service_mock.revoke.assert_not_called()
 

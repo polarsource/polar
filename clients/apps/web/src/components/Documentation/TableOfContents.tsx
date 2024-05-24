@@ -47,7 +47,7 @@ export const TableOfContents = () => {
           <a key={item.id} href={`#${item.id}`}>
             <li
               className={twMerge(
-                'dark:text-polar-500 items- flex flex-row gap-x-2 leading-normal text-gray-500 transition-colors duration-200 ease-in-out hover:text-blue-500 dark:hover:text-white',
+                'dark:text-polar-500 flex flex-row gap-x-2 leading-normal text-gray-500 transition-colors duration-200 ease-in-out hover:text-blue-500 dark:hover:text-white',
               )}
             >
               {item.level > 2 && (

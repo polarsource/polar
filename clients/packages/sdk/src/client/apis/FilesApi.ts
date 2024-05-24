@@ -22,6 +22,7 @@ import type {
   FileUpload,
   FileUploadCompleted,
   HTTPValidationError,
+  ListResourceFileRead,
   NotPermitted,
 } from '../models/index';
 
@@ -33,9 +34,11 @@ export interface FilesApiCreateRequest {
     fileCreate: FileCreate;
 }
 
-export interface FilesApiListDownloadablesRequest {
-    benefitId: string;
+export interface FilesApiListRequest {
     organizationId?: string;
+    ids?: Array<string>;
+    page?: number;
+    limit?: number;
 }
 
 export interface FilesApiUpdateRequest {
@@ -138,20 +141,25 @@ export class FilesApi extends runtime.BaseAPI {
     }
 
     /**
-     * List Downloadables
+     * List
      */
-    async listDownloadablesRaw(requestParameters: FilesApiListDownloadablesRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Array<FileRead>>> {
-        if (requestParameters['benefitId'] == null) {
-            throw new runtime.RequiredError(
-                'benefitId',
-                'Required parameter "benefitId" was null or undefined when calling listDownloadables().'
-            );
-        }
-
+    async listRaw(requestParameters: FilesApiListRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListResourceFileRead>> {
         const queryParameters: any = {};
 
         if (requestParameters['organizationId'] != null) {
             queryParameters['organization_id'] = requestParameters['organizationId'];
+        }
+
+        if (requestParameters['ids'] != null) {
+            queryParameters['ids'] = requestParameters['ids'];
+        }
+
+        if (requestParameters['page'] != null) {
+            queryParameters['page'] = requestParameters['page'];
+        }
+
+        if (requestParameters['limit'] != null) {
+            queryParameters['limit'] = requestParameters['limit'];
         }
 
         const headerParameters: runtime.HTTPHeaders = {};
@@ -165,7 +173,7 @@ export class FilesApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/files/downloadables/{benefit_id}`.replace(`{${"benefit_id"}}`, encodeURIComponent(String(requestParameters['benefitId']))),
+            path: `/api/v1/files`,
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
@@ -175,10 +183,10 @@ export class FilesApi extends runtime.BaseAPI {
     }
 
     /**
-     * List Downloadables
+     * List
      */
-    async listDownloadables(requestParameters: FilesApiListDownloadablesRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Array<FileRead>> {
-        const response = await this.listDownloadablesRaw(requestParameters, initOverrides);
+    async list(requestParameters: FilesApiListRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ListResourceFileRead> {
+        const response = await this.listRaw(requestParameters, initOverrides);
         return await response.value();
     }
 

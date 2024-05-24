@@ -87,7 +87,7 @@ class FileService(ResourceService[File, FileCreate, FileUpdate]):
             service=create_schema.service,
             is_enabled=True,
             is_uploaded=False,
-            **upload.model_dump(exclude={"upload", "organization_id"}),
+            **upload.model_dump(exclude={"upload", "organization_id", "size_readable"}),
         )
         session.add(instance)
         await session.flush()

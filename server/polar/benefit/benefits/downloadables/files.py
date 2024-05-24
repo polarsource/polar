@@ -1,8 +1,22 @@
+from typing import cast
 from uuid import UUID
 
 from polar.exceptions import NotPermitted, ResourceNotFound
 from polar.models import Benefit
+from polar.models.benefit import BenefitDownloadablesProperties
 from polar.postgres import AsyncSession, sql
+
+
+def get_ids_from_files_properties(
+    properties: BenefitDownloadablesProperties,
+) -> list[UUID]:
+    ids = []
+    files = properties.get("files", [])
+    for file_id in files:
+        if not isinstance(file_id, UUID):
+            file_id = UUID(file_id)
+        ids.append(file_id)
+    return ids
 
 
 class BenefitDownloadablesFiles:
@@ -28,10 +42,9 @@ class BenefitDownloadablesFiles:
         self,
     ) -> list[UUID]:
         benefit = await self.get_or_raise()
-
-        property_files = benefit.properties.get("files", [])
-        ids = list(map(UUID, property_files))
-        return ids
+        return get_ids_from_files_properties(
+            cast(BenefitDownloadablesProperties, benefit.properties)
+        )
 
     async def sort_mapping[T](self, mapping: dict[UUID, T]) -> list[T]:
         file_ids = await self.get_file_ids()

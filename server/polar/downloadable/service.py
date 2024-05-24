@@ -117,6 +117,32 @@ class DownloadableService(
         sorted = await benefit_files.sort_mapping(mapping)
         return sorted, count
 
+    async def revoke_user_grants(
+        self,
+        session: AsyncSession,
+        user: User,
+        benefit_id: UUID,
+        unless_file_id_in: list[UUID],
+    ) -> None:
+        statement = (
+            sql.update(Downloadable)
+            .where(
+                Downloadable.user_id == user.id,
+                Downloadable.benefit_id == benefit_id,
+                Downloadable.status == DownloadableStatus.granted,
+                Downloadable.deleted_at.is_(None),
+            )
+            .values(
+                status=DownloadableStatus.revoked,
+                modified_at=utc_now(),
+            )
+        )
+
+        if unless_file_id_in:
+            statement = statement.where(Downloadable.file_id.not_in(unless_file_id_in))
+
+        await session.execute(statement)
+
     def generate_downloadable_schemas(
         self, downloadables: Sequence[Downloadable]
     ) -> list[DownloadableRead]:

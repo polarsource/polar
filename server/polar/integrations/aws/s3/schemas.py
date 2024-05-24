@@ -80,9 +80,11 @@ class S3File(Schema, validate_assignment=True):
             "polar-name": self.name,
             "polar-extension": self.extension,
             "polar-size": str(self.size),
-            "polar-sha256-base64": self.checksum_sha256_base64,
-            "polar-sha256-hex": self.checksum_sha256_hex,
         }
+        if self.checksum_sha256_base64:
+            metadata["polar-sha256-base64"] = self.checksum_sha256_base64
+        if self.checksum_sha256_hex:
+            metadata["polar-sha256-hex"] = self.checksum_sha256_hex
         return metadata
 
     @classmethod

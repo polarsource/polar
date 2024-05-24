@@ -21,7 +21,7 @@ import {
   TabsList,
   TabsTrigger,
 } from 'polarkit/components/ui/atoms/tabs'
-import { useCallback } from 'react'
+import { useCallback, useMemo } from 'react'
 
 export default function ClientPage({
   pagination,
@@ -76,9 +76,15 @@ export default function ClientPage({
   const { data: organizationAccount, isLoading: accountIsLoading } = useAccount(
     personalOrganization?.account_id,
   )
+  const { data: personalAccount } = useAccount(currentUser?.account_id)
+
+  const account = useMemo(
+    () => organizationAccount || personalAccount,
+    [organizationAccount, personalAccount],
+  )
 
   const balancesHook = useSearchTransactions({
-    accountId: organizationAccount?.id,
+    accountId: account?.id,
     type: TransactionType.BALANCE,
     excludePlatformFees: true,
     ...getAPIParams(pagination, sorting),
@@ -87,7 +93,7 @@ export default function ClientPage({
   const balancesCount = balancesHook.data?.pagination.max_page ?? 1
 
   const payoutsHooks = useSearchTransactions({
-    accountId: organizationAccount?.id,
+    accountId: account?.id,
     type: TransactionType.PAYOUT,
     ...getAPIParams(pagination, sorting),
   })
@@ -108,9 +114,9 @@ export default function ClientPage({
           isPersonal
         />
       )}
-      {organizationAccount && (
+      {account && (
         <AccountBalance
-          account={organizationAccount}
+          account={account}
           onWithdrawSuccess={onWithdrawSuccess}
         />
       )}

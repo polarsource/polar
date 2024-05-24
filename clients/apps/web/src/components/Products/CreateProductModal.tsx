@@ -6,6 +6,7 @@ import {
 } from '@/hooks/queries'
 import { useStore } from '@/store'
 import { setValidationErrors } from '@/utils/api/errors'
+import { isFeatureEnabled } from '@/utils/feature-flags'
 import {
   BenefitPublicInner,
   Organization,
@@ -56,7 +57,8 @@ export const CreateProductModal = ({
     defaultValues: {
       ...(savedFormValues ? savedFormValues : {}),
       organization_id: organization.id,
-      prices: (productPriceType === ProductPriceType.RECURRING
+      prices: (!isFeatureEnabled('products') ||
+      productPriceType === ProductPriceType.RECURRING
         ? [
             {
               type: ProductPriceType.RECURRING,

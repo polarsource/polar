@@ -9,6 +9,7 @@ import { ProductCard } from '@/components/Products/ProductCard'
 import ProductPriceTypeSelect from '@/components/Products/ProductPriceTypeSelect'
 import { useCurrentOrgAndRepoFromURL } from '@/hooks'
 import { useProduct, useProducts } from '@/hooks/queries/products'
+import { isFeatureEnabled } from '@/utils/feature-flags'
 import { AddOutlined } from '@mui/icons-material'
 import { ProductPriceType } from '@polar-sh/sdk'
 import Link from 'next/link'
@@ -67,11 +68,13 @@ export default function ClientPage() {
     <DashboardBody className="flex flex-col gap-8">
       <div className="flex flex-row items-center justify-between">
         <h1 className="text-lg">Overview</h1>
-        <div className="flex w-1/3 flex-row items-center gap-2 md:w-1/5">
-          <ProductPriceTypeSelect
-            value={productPriceType}
-            onChange={onFilterChange}
-          />
+        <div className="flex w-1/3 flex-row items-center justify-end gap-2 md:w-1/5">
+          {isFeatureEnabled('products') && (
+            <ProductPriceTypeSelect
+              value={productPriceType}
+              onChange={onFilterChange}
+            />
+          )}
           <Button size="icon" onClick={showCreateProductModal}>
             <AddOutlined className="h-4 w-4" />
           </Button>

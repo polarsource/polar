@@ -1,6 +1,7 @@
 'use client'
 
 import { dummyMedia } from '@/hooks/queries/dummy_products'
+import { isFeatureEnabled } from '@/utils/feature-flags'
 import { PanoramaOutlined } from '@mui/icons-material'
 import { Organization, Product } from '@polar-sh/sdk'
 import Markdown from 'markdown-to-jsx'
@@ -24,18 +25,22 @@ export const ProductCard = ({
 }: ProductCardProps) => {
   return (
     <div className="dark:bg-polar-800 dark:border-polar-700 dark:hover:bg-polar-700 flex h-full w-full flex-col gap-6 rounded-3xl border border-transparent bg-white p-6 shadow-sm transition-colors hover:bg-gray-50">
-      {dummyMedia.length > 0 ? (
-        <Image
-          className="aspect-square w-full rounded-2xl bg-gray-100 object-cover"
-          alt={`${product.name} product image`}
-          width={600}
-          height={600}
-          src={dummyMedia[0]}
-        />
-      ) : (
-        <div className="dark:bg-polar-900 flex aspect-square w-full flex-col items-center justify-center rounded-2xl bg-gray-100">
-          <PanoramaOutlined className="dark:text-polar-500 text-gray-500" />
-        </div>
+      {isFeatureEnabled('products') && (
+        <>
+          {dummyMedia.length > 0 ? (
+            <Image
+              className="aspect-square w-full rounded-2xl bg-gray-100 object-cover"
+              alt={`${product.name} product image`}
+              width={600}
+              height={600}
+              src={dummyMedia[0]}
+            />
+          ) : (
+            <div className="dark:bg-polar-900 flex aspect-square w-full flex-col items-center justify-center rounded-2xl bg-gray-100">
+              <PanoramaOutlined className="dark:text-polar-500 text-gray-500" />
+            </div>
+          )}
+        </>
       )}
       <div className="flex flex-grow flex-col gap-3">
         {organization && showOrganization && (

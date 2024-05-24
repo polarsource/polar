@@ -21,9 +21,6 @@ from .files import get_ids_from_files_properties
 
 log: Logger = structlog.get_logger()
 
-precondition_error_subject_template = ()
-precondition_error_body_template = """"""
-
 
 class BenefitDownloadablesService(
     BenefitServiceProtocol[BenefitDownloadables, BenefitDownloadablesProperties]

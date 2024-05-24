@@ -95,7 +95,7 @@ export const APIContainer = ({
   path: string
   method: string
 }) => {
-  const [currentTab, setCurrentTab] = useState<'curl' | 'nodejs'>()
+  const [currentTab, setCurrentTab] = useState<'curl' | 'nodejs'>('curl')
   const [didCopy, setDidCopy] = useState(false)
 
   const triggerClassName = 'py-1'

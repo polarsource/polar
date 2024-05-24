@@ -202,36 +202,43 @@ class PayoutTransactionService(BaseTransactionService):
         if balance is available.
         """
         for payout in await self._get_pending_stripe_payouts(session):
-            account = payout.account
-            assert account is not None
-            assert account.stripe_id is not None
-            _, balance = stripe_service.retrieve_balance(account.stripe_id)
+            enqueue_job("payout.trigger_stripe_payout", payout_id=payout.id)
 
-            if balance < -payout.account_amount:
-                log.info(
-                    (
-                        "The Stripe Connect account doesn't have enough balance "
-                        "to make the payout yet"
-                    ),
-                    account_id=str(account.id),
-                    balance=balance,
-                    payout_amount=-payout.account_amount,
-                )
-                continue
+    async def trigger_stripe_payout(
+        self, session: AsyncSession, payout: Transaction
+    ) -> Transaction:
+        assert payout.account_id is not None
+        account = await account_service.get(session, payout.account_id)
+        assert account is not None
+        assert account.stripe_id is not None
+        _, balance = stripe_service.retrieve_balance(account.stripe_id)
 
-            # Trigger a payout on the Stripe Connect account
-            stripe_payout = stripe_service.create_payout(
-                stripe_account=account.stripe_id,
-                amount=-payout.account_amount,
-                currency=payout.account_currency,
-                metadata={
-                    "payout_transaction_id": str(payout.id),
-                },
+        if balance < -payout.account_amount:
+            log.info(
+                (
+                    "The Stripe Connect account doesn't have enough balance "
+                    "to make the payout yet"
+                ),
+                account_id=str(account.id),
+                balance=balance,
+                payout_amount=-payout.account_amount,
             )
-            payout.payout_id = stripe_payout.id
+            return payout
 
-            session.add(payout)
-            await session.flush()
+        # Trigger a payout on the Stripe Connect account
+        stripe_payout = stripe_service.create_payout(
+            stripe_account=account.stripe_id,
+            amount=-payout.account_amount,
+            currency=payout.account_currency,
+            metadata={
+                "payout_transaction_id": str(payout.id),
+            },
+        )
+        payout.payout_id = stripe_payout.id
+
+        session.add(payout)
+
+        return payout
 
     async def create_payout_from_stripe(
         self,

@@ -36,12 +36,6 @@ async def sync_stripe_fees(ctx: JobContext) -> None:
         await processor_fee_transaction_service.sync_stripe_fees(session)
 
 
-@interval(minute=15)
-async def trigger_stripe_payouts(ctx: JobContext) -> None:
-    async with AsyncSessionMaker(ctx) as session:
-        await payout_transaction_service.trigger_stripe_payouts(session)
-
-
 @task("payout.created")
 async def payout_created(
     ctx: JobContext, payout_id: uuid.UUID, polar_context: PolarWorkerContext
@@ -81,3 +75,20 @@ async def payout_created(
 
         webhook.add_embed(embed)
         await webhook.execute()
+
+
+@interval(minute=15)
+async def trigger_stripe_payouts(ctx: JobContext) -> None:
+    async with AsyncSessionMaker(ctx) as session:
+        await payout_transaction_service.trigger_stripe_payouts(session)
+
+
+@task("payout.trigger_stripe_payout")
+async def trigger_payout(
+    ctx: JobContext, payout_id: uuid.UUID, polar_context: PolarWorkerContext
+) -> None:
+    async with AsyncSessionMaker(ctx) as session:
+        payout = await payout_transaction_service.get(session, payout_id)
+        if payout is None:
+            raise PayoutDoesNotExist(payout_id)
+        await payout_transaction_service.trigger_stripe_payout(session, payout)

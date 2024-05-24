@@ -4,6 +4,7 @@ import { ArrowForward } from '@mui/icons-material'
 import { usePathname } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
+import { useDocumentationContext } from './DocumentationProvider'
 
 interface ToCItem {
   id: string
@@ -14,6 +15,7 @@ interface ToCItem {
 export const TableOfContents = () => {
   const [toc, setToc] = useState<ToCItem[]>([])
   const pathname = usePathname()
+  const { intersectingToCEntries } = useDocumentationContext()
 
   useEffect(() => {
     const content = document.getElementById('mdx-wrapper')?.innerHTML
@@ -48,6 +50,8 @@ export const TableOfContents = () => {
             <li
               className={twMerge(
                 'dark:text-polar-500 flex flex-row gap-x-2 leading-normal text-gray-500 transition-colors duration-200 ease-in-out hover:text-blue-500 dark:hover:text-white',
+                intersectingToCEntries.includes(item.id) &&
+                  'text-blue-500 dark:text-white',
               )}
             >
               {item.level > 2 && (

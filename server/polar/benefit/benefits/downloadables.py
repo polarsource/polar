@@ -14,12 +14,23 @@ from polar.models import Organization, User
 from polar.models.benefit import BenefitDownloadables, BenefitDownloadablesProperties
 from polar.models.downloadable import Downloadable, DownloadableStatus
 
-from ..base import (
+from .base import (
     BenefitServiceProtocol,
 )
-from .files import get_ids_from_files_properties
 
 log: Logger = structlog.get_logger()
+
+
+def get_ids_from_files_properties(
+    properties: BenefitDownloadablesProperties,
+) -> list[UUID]:
+    ids = []
+    files = properties.get("files", [])
+    for file_id in files:
+        if not isinstance(file_id, UUID):
+            file_id = UUID(file_id)
+        ids.append(file_id)
+    return ids
 
 
 class BenefitDownloadablesService(

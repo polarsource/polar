@@ -18,7 +18,7 @@ from .base import (
 )
 from .custom import BenefitCustomService
 from .discord import BenefitDiscordService
-from .downloadables.service import BenefitDownloadablesService
+from .downloadables import BenefitDownloadablesService
 from .github_repository import BenefitGitHubRepositoryService
 
 _SERVICE_CLASS_MAP: dict[

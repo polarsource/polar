@@ -50,7 +50,7 @@ export const TableOfContents = () => {
                 'dark:text-polar-500 items- flex flex-row gap-x-2 leading-normal text-gray-500 transition-colors duration-200 ease-in-out hover:text-blue-500 dark:hover:text-white',
               )}
             >
-              {item.level > 1 && (
+              {item.level > 2 && (
                 <ArrowForward className="mt-[4px]" fontSize="inherit" />
               )}
               {item.text}

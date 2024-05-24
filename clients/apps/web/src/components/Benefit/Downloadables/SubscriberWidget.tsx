@@ -25,7 +25,7 @@ const DownloadablesSubscriberWidget = ({
 }: {
   benefit: BenefitDownloadablesSubscriber
 }) => {
-  const downloadablesQuery = useDownloadables(benefit.id)
+  const downloadablesQuery = useDownloadables(benefit.properties.files)
 
   const downloadables: DownloadableRead[] = downloadablesQuery.data?.items
 

@@ -4,7 +4,6 @@ from uuid import UUID
 import structlog
 from sqlalchemy.orm import contains_eager
 
-from polar.benefit.benefits.downloadables.files import BenefitDownloadablesFiles
 from polar.file.service import file as file_service
 from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.services import ResourceService
@@ -26,6 +25,34 @@ log = structlog.get_logger()
 class DownloadableService(
     ResourceService[Downloadable, DownloadableCreate, DownloadableUpdate]
 ):
+    async def get_list(
+        self,
+        session: AsyncSession,
+        *,
+        user: User,
+        pagination: PaginationParams,
+        organization_id: UUID | None = None,
+        file_ids: list[UUID] | None = None,
+    ) -> tuple[Sequence[Downloadable], int]:
+        statement = self._get_base_query(user)
+
+        if organization_id:
+            statement = statement.where(File.organization_id == organization_id)
+
+        if file_ids:
+            statement = statement.where(File.id.in_(file_ids))
+
+        return await paginate(session, statement, pagination=pagination)
+
+    async def user_get(
+        self, session: AsyncSession, user: User, id: UUID
+    ) -> Downloadable | None:
+        statement = self._get_base_query(user)
+        statement = statement.where(Downloadable.id == id)
+        res = await session.execute(statement)
+        record = res.scalars().one_or_none()
+        return record
+
     async def create_or_update(
         self,
         session: AsyncSession,
@@ -59,63 +86,6 @@ class DownloadableService(
         session.add(downloadable)
         await session.flush()
         return downloadable
-
-    async def get_for_user(
-        self,
-        session: AsyncSession,
-        *,
-        user: User,
-        pagination: PaginationParams,
-        organization_id: UUID | None = None,
-    ) -> tuple[Sequence[Downloadable], int]:
-        statement = self._get_base_query(user)
-
-        if organization_id:
-            statement = statement.where(File.organization_id == organization_id)
-
-        return await paginate(session, statement, pagination=pagination)
-
-    async def get_for_user_by_id(
-        self, session: AsyncSession, user: User, id: UUID
-    ) -> Downloadable | None:
-        statement = self._get_base_query(user)
-        statement = statement.where(Downloadable.id == id)
-        res = await session.execute(statement)
-        record = res.scalars().one_or_none()
-        return record
-
-    async def get_for_user_by_file_ids(
-        self,
-        session: AsyncSession,
-        *,
-        user: User,
-        pagination: PaginationParams,
-        ids: list[UUID],
-    ) -> tuple[Sequence[Downloadable], int]:
-        statement = self._get_base_query(user)
-        statement = statement.where(File.id.in_(ids))
-        return await paginate(session, statement, pagination=pagination)
-
-    async def get_for_user_by_benefit_id(
-        self,
-        session: AsyncSession,
-        user: User,
-        pagination: PaginationParams,
-        benefit_id: UUID,
-    ) -> tuple[Sequence[Downloadable], int]:
-        # Our base query ensures user can only access files they have a
-        # relationship with, i.e no upfront validation required.
-        benefit_files = BenefitDownloadablesFiles(session, benefit_id)
-        file_ids = await benefit_files.get_file_ids()
-        if not file_ids:
-            return ([], 0)
-
-        downloadables, count = await self.get_for_user_by_file_ids(
-            session, user=user, pagination=pagination, ids=file_ids
-        )
-        mapping = {downloadable.file_id: downloadable for downloadable in downloadables}
-        sorted = await benefit_files.sort_mapping(mapping)
-        return sorted, count
 
     async def revoke_user_grants(
         self,

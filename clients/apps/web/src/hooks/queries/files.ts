@@ -21,7 +21,7 @@ export const useFiles = (organizationId: string, fileIds: string[]) =>
             return lookup
           }, {})
           // Return in given ID order
-          const sorted = fileIds.map((id) => files[id])
+          const sorted = fileIds.map((id) => files[id]).filter((file) => !!file)
           return {
             items: sorted,
             pagination: response.pagination,

@@ -6,6 +6,7 @@ import structlog
 from polar.config import settings
 from polar.exceptions import ResourceNotFound
 from polar.integrations.aws.s3 import S3FileError, S3Service, S3UnsupportedFile
+from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.services import ResourceService
 from polar.kit.utils import utc_now
 from polar.models import Organization
@@ -41,22 +42,27 @@ s3_service = S3Service(
 
 
 class FileService(ResourceService[File, FileCreate, FileUpdate]):
-    async def get_by_ids(
+    async def get_list(
         self,
         session: AsyncSession,
         *,
         organization_id: UUID,
-        ids: list[UUID] | list[str],
-    ) -> Sequence[File]:
-        statement = sql.select(File).where(
-            File.organization_id == organization_id,
-            File.is_uploaded == True,  # noqa
-            File.deleted_at.is_(None),
-            File.id.in_(ids),
+        pagination: PaginationParams,
+        ids: list[UUID] | None = None,
+    ) -> tuple[Sequence[File], int]:
+        statement = (
+            sql.select(File)
+            .where(
+                File.organization_id == organization_id,
+                File.is_uploaded == True,  # noqa
+                File.deleted_at.is_(None),
+            )
+            .order_by(File.created_at.desc())
         )
-        res = await session.execute(statement)
-        records = res.scalars().all()
-        return records
+        if ids:
+            statement = statement.where(File.id.in_(ids))
+
+        return await paginate(session, statement, pagination=pagination)
 
     async def patch(
         self,

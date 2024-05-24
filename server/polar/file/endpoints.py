@@ -1,12 +1,12 @@
 from typing import Annotated
 
 import structlog
-from fastapi import APIRouter, Depends, Path
+from fastapi import APIRouter, Depends, Path, Query
 from pydantic import UUID4
 
 from polar.authz.service import AccessType, Authz
-from polar.benefit.benefits.downloadables.files import BenefitDownloadablesFiles
 from polar.exceptions import NotPermitted
+from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.models import Organization
 from polar.organization.resolver import get_payload_organization
 from polar.organization.service import organization as organization_service
@@ -33,6 +33,46 @@ FileNotFoundResponse = {
     "description": "File not found.",
     "model": FileNotFound.schema(),
 }
+
+
+@router.get(
+    "",
+    tags=[Tags.PUBLIC],
+    response_model=ListResource[FileRead],
+)
+async def list(
+    auth_subject: auth.CreatorFilesWrite,
+    pagination: PaginationParamsQuery,
+    organization_id: UUID4 | None = None,
+    ids: list[UUID4] | None = Query(
+        None,
+        description=("List of file IDs to get. "),
+    ),
+    authz: Authz = Depends(Authz.authz),
+    session: AsyncSession = Depends(get_db_session),
+) -> ListResource[FileRead]:
+    subject = auth_subject.subject
+
+    if not organization_id:
+        if not isinstance(subject, Organization):
+            raise NotPermitted()
+        organization_id = subject.id
+
+    organization = await organization_service.get(session, organization_id)
+    if not organization:
+        raise NotPermitted()
+
+    if not await authz.can(subject, AccessType.write, organization):
+        raise NotPermitted()
+
+    results, count = await file_service.get_list(
+        session, organization_id=organization_id, ids=ids, pagination=pagination
+    )
+    return ListResource.from_paginated_results(
+        [FileRead.from_db(result) for result in results],
+        count,
+        pagination,
+    )
 
 
 @router.post(
@@ -155,44 +195,3 @@ async def delete(
         raise NotPermitted()
 
     await file_service.delete(session, file=file)
-
-
-@router.get(
-    "/downloadables/{benefit_id}",
-    tags=[Tags.PUBLIC],
-    response_model=list[FileRead],
-)
-async def list_downloadables(
-    auth_subject: auth.CreatorFilesWrite,
-    benefit_id: UUID4,
-    organization_id: UUID4 | None = None,
-    authz: Authz = Depends(Authz.authz),
-    session: AsyncSession = Depends(get_db_session),
-) -> list[FileRead]:
-    subject = auth_subject.subject
-
-    if not organization_id:
-        if not isinstance(subject, Organization):
-            raise NotPermitted()
-        organization_id = subject.id
-
-    organization = await organization_service.get(session, organization_id)
-    if not organization:
-        raise NotPermitted()
-
-    if not await authz.can(subject, AccessType.write, organization):
-        raise NotPermitted()
-
-    benefit_files = BenefitDownloadablesFiles(session, benefit_id)
-    # Ensure accessed benefit belongs to organization admin
-    await benefit_files.ensure_organization_matches(organization.id)
-
-    file_ids = await benefit_files.get_file_ids()
-    if not file_ids:
-        return []
-
-    files = await file_service.get_by_ids(
-        session, organization_id=organization.id, ids=file_ids
-    )
-    mapping = {file.id: FileRead.from_db(file) for file in files}
-    return await benefit_files.sort_mapping(mapping)

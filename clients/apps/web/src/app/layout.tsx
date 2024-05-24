@@ -24,21 +24,21 @@ export const metadata: Metadata = {
     default: 'Polar',
   },
   description:
-    'Pledge for progress. Polar gives open source maintainers a better and funded backlog based on what drives the most impact within their community.',
+    'From first donation to IPO. Polar is the funding & monetization platform for developers.',
   openGraph: {
     images: 'https://polar.sh/assets/brand/polar_og.jpg',
     type: 'website',
-    title: 'Polar - Pledge for progress',
+    title: 'Polar - A funding & monetization platform for developers',
     siteName: 'Polar',
     description:
-      'Polar gives open source maintainers a better and funded backlog based on what drives the most impact within their community.',
+      'From first donation to IPO. Polar is the funding & monetization platform for developers.',
   },
   twitter: {
     images: 'https://polar.sh/assets/brand/polar_og.jpg',
     card: 'summary_large_image',
-    title: 'Polar - Pledge for progress',
+    title: 'Polar - A funding & monetization platform for developers',
     description:
-      'Polar gives open source maintainers a better and funded backlog based on what drives the most impact within their community.',
+      'From first donation to IPO. Polar is the funding & monetization platform for developers.',
   },
   metadataBase: new URL('https://polar.sh/'),
 }

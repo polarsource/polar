@@ -217,6 +217,10 @@ const maintainerRoutesList = (org: Organization): Route[] => [
         link: `/maintainer/${org.name}/subscriptions/overview`,
       },
       {
+        title: 'Tiers',
+        link: `/maintainer/${org.name}/products/overview`,
+      },
+      {
         title: 'Subscribers',
         link: `/maintainer/${org.name}/subscriptions/subscribers`,
       },

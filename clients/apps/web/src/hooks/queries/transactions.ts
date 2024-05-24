@@ -20,7 +20,7 @@ export const useSearchTransactions = (variables: {
   sorting?: string[]
 }): UseQueryResult<ListResourceTransaction> =>
   useQuery({
-    queryKey: ['transactions', JSON.stringify(variables)],
+    queryKey: ['transactions', { ...variables }],
     queryFn: () =>
       api.transactions.searchTransactions({
         ...variables,

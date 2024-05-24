@@ -40,7 +40,7 @@ export default function Page({
       <div className="flex w-full max-w-3xl flex-shrink flex-col">
         <div className="flex flex-col gap-y-16">
           <div className="flex flex-col gap-y-4">
-            <span className="text-lg capitalize text-black dark:text-white">
+            <span className="text-lg capitalize text-blue-500 dark:text-blue-400">
               {subHeader}
             </span>
             <h1 className="text-4xl font-medium leading-normal text-black dark:text-white">

@@ -61,7 +61,7 @@ const DocumentationPageTopbar = async () => {
     'absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2'
 
   return (
-    <div className="dark:bg-polar-950 dark:border-polar-700 sticky top-0 hidden flex-row items-center justify-between border-b border-gray-200 bg-white px-4 py-8 md:flex md:px-12">
+    <div className="dark:bg-polar-950 dark:border-polar-700 relative hidden flex-row items-center justify-between border-b border-gray-100 bg-white px-4 py-8 md:flex md:px-12">
       <h1 className="text-xl font-medium">Documentation</h1>
 
       <BrandingMenu

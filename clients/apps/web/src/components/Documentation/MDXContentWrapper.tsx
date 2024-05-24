@@ -6,7 +6,7 @@ export const MDXContentWrapper = ({ children }: PropsWithChildren) => {
     <div
       className={twMerge(
         'prose dark:prose-invert max-w-3xl',
-        'dark:text-polar-200 text-gray-800',
+        'dark:text-polar-200 text-gray-600',
         'prose-img:rounded-2xl',
         'dark:prose-headings:leading-normal prose-headings:leading-normal prose-headings:text-black prose-h1:text-4xl prose-h2:text-3xl prose-h3:text-2xl prose-h4:text-xl prose-h5:text-lg prose-h6:text-md dark:prose-headings:text-white prose-headings:font-medium',
         'prose-code:before:content-none prose-code:after:content-none prose-code:bg-gray-75 dark:prose-code:bg-polar-800 prose-code:font-normal prose-code:rounded-sm prose-code:px-1.5 prose-code:py-1',

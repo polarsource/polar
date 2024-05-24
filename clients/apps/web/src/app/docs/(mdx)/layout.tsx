@@ -5,10 +5,13 @@ import { TableOfContents } from '../../../components/Documentation/TableOfConten
 export default function Layout({ children }: PropsWithChildren) {
   return (
     <>
-      <div id="mdx-wrapper" className="flex w-fit flex-shrink flex-col">
+      <div
+        id="mdx-wrapper"
+        className="flex w-full max-w-3xl flex-shrink flex-col"
+      >
         <MDXContentWrapper>{children}</MDXContentWrapper>
       </div>
-      <div className="flex w-full flex-shrink-0 flex-col md:sticky md:top-36 md:w-64">
+      <div className="flex w-full flex-shrink-0 flex-col md:sticky md:top-12 md:w-64">
         <TableOfContents />
       </div>
     </>

@@ -6,14 +6,27 @@ import { defaultRetry } from './retry'
 
 import { useMutation } from '@tanstack/react-query'
 
-export const useFiles = (organizationId: string, benefitId: string) =>
+export const useFiles = (organizationId: string, fileIds: string[]) =>
   useQuery({
-    queryKey: ['user', 'files', organizationId, benefitId],
+    queryKey: ['user', 'files', organizationId, ...fileIds],
     queryFn: () =>
-      api.files.listDownloadables({
-        organizationId,
-        benefitId,
-      }),
+      api.files
+        .list({
+          organizationId,
+          ids: fileIds,
+        })
+        .then((response) => {
+          const files = response.items.reduce((lookup, file) => {
+            lookup[file.id] = file
+            return lookup
+          }, {})
+          // Return in given ID order
+          const sorted = fileIds.map((id) => files[id])
+          return {
+            items: sorted,
+            pagination: response.pagination,
+          }
+        }),
     retry: defaultRetry,
   })
 
@@ -23,12 +36,14 @@ export const usePatchFile = (
 ) =>
   useMutation({
     mutationFn: ({ enabled }: { enabled: boolean }) => {
-      return api.files.update({
-        id: id,
-        filePatch: {
-          is_enabled: enabled,
-        },
-      })
+      return api.files
+        .update({
+          id: id,
+          filePatch: {
+            is_enabled: enabled,
+          },
+        })
+        .then((res) => {})
     },
     onSuccess: (response: FileRead) => {
       if (onSuccessCallback) {

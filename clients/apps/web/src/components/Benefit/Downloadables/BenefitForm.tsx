@@ -2,6 +2,7 @@
 
 import {
   BenefitDownloadablesCreate,
+  FileRead,
   FileServiceTypes,
   Organization,
 } from '@polar-sh/sdk'
@@ -120,10 +121,10 @@ const DownloadablesEditForm = ({
 }: DownloadablesBenefitFormProps) => {
   const { getValues } = useFormContext<BenefitDownloadablesCreate>()
 
-  const benefitId = getValues('id')
-  const filesQuery = useFiles(organization.id, benefitId)
+  const fileIds = getValues('properties.files')
+  const filesQuery = useFiles(organization.id, fileIds)
 
-  const files: FileRead[] = filesQuery.data
+  const files: FileRead[] = filesQuery?.data?.items
 
   if (filesQuery.isLoading) {
     // TODO: Style me

@@ -4863,6 +4863,12 @@ export interface FileDownload {
      * @type {string}
      * @memberof FileDownload
      */
+    size_readable?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof FileDownload
+     */
     storage_version?: string;
     /**
      * 
@@ -5008,6 +5014,12 @@ export interface FileRead {
      * @type {string}
      * @memberof FileRead
      */
+    size_readable?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof FileRead
+     */
     storage_version?: string;
     /**
      * 
@@ -5116,6 +5128,12 @@ export interface FileUpload {
      * @memberof FileUpload
      */
     size: number;
+    /**
+     * 
+     * @type {string}
+     * @memberof FileUpload
+     */
+    size_readable?: string;
     /**
      * 
      * @type {string}
@@ -5825,6 +5843,25 @@ export interface ListResourceDownloadableRead {
      * 
      * @type {Pagination}
      * @memberof ListResourceDownloadableRead
+     */
+    pagination: Pagination;
+}
+/**
+ * 
+ * @export
+ * @interface ListResourceFileRead
+ */
+export interface ListResourceFileRead {
+    /**
+     * 
+     * @type {Array<FileRead>}
+     * @memberof ListResourceFileRead
+     */
+    items?: Array<FileRead>;
+    /**
+     * 
+     * @type {Pagination}
+     * @memberof ListResourceFileRead
      */
     pagination: Pagination;
 }

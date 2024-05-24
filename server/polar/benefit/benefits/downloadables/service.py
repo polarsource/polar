@@ -17,6 +17,7 @@ from polar.models.downloadable import Downloadable, DownloadableStatus
 from ..base import (
     BenefitServiceProtocol,
 )
+from .files import get_ids_from_files_properties
 
 log: Logger = structlog.get_logger()
 
@@ -36,7 +37,7 @@ class BenefitDownloadablesService(
         update: bool = False,
         attempt: int = 1,
     ) -> dict[str, Any]:
-        return await self.iterate_files(
+        return await self.update_file_grants(
             benefit=benefit,
             user=user,
             grant_properties=grant_properties,
@@ -53,7 +54,7 @@ class BenefitDownloadablesService(
         *,
         attempt: int = 1,
     ) -> dict[str, Any]:
-        return await self.iterate_files(
+        return await self.update_file_grants(
             benefit=benefit,
             user=user,
             grant_properties=grant_properties,
@@ -66,14 +67,16 @@ class BenefitDownloadablesService(
         benefit: BenefitDownloadables,
         previous_properties: BenefitDownloadablesProperties,
     ) -> bool:
-        return False
+        new_file_ids = sorted(get_ids_from_files_properties(benefit.properties))
+        previous_file_ids = sorted(get_ids_from_files_properties(previous_properties))
+        return new_file_ids != previous_file_ids
 
     async def validate_properties(
         self, auth_subject: AuthSubject[User | Organization], properties: dict[str, Any]
     ) -> BenefitDownloadablesProperties:
         return cast(BenefitDownloadablesProperties, properties)
 
-    async def iterate_files(
+    async def update_file_grants(
         self,
         benefit: BenefitDownloadables,
         user: User,
@@ -84,7 +87,17 @@ class BenefitDownloadablesService(
         attempt: int = 1,
     ) -> dict[str, Any]:
         ret: dict[str, Any] = dict(files=[])
-        file_ids = benefit.properties.get("files", [])
+        file_ids = get_ids_from_files_properties(benefit.properties)
+
+        # First revoke all existing grants for files not included in
+        # the current benefit state, i.e benefit.properties
+        await downloadable_service.revoke_user_grants(
+            self.session,
+            user=user,
+            benefit_id=benefit.id,
+            unless_file_id_in=file_ids,
+        )
+
         if not file_ids:
             return ret
 
@@ -93,9 +106,9 @@ class BenefitDownloadablesService(
             return ret
 
         for file_id in file_ids:
-            permission = None
+            downloadable = None
             if action == "grant":
-                permission = await self.grant_downloadable(
+                downloadable = await self.grant_downloadable(
                     benefit=benefit,
                     user=user,
                     file_id=file_id,
@@ -103,22 +116,22 @@ class BenefitDownloadablesService(
                     attempt=attempt,
                 )
             elif action == "revoke":
-                permission = await self.revoke_downloadable(
+                downloadable = await self.revoke_downloadable(
                     benefit=benefit,
                     user=user,
                     file_id=file_id,
                     attempt=attempt,
                 )
 
-            if not permission:
+            if not downloadable:
                 # TODO: Handle error
                 continue
 
             ret["files"].append(
                 dict(
-                    file_id=file_id,
-                    downloadable_id=str(permission.id),
-                    status=permission.status,
+                    file_id=str(file_id),
+                    downloadable_id=str(downloadable.id),
+                    status=downloadable.status,
                 )
             )
 
@@ -145,7 +158,8 @@ class BenefitDownloadablesService(
             benefit_id=benefit.id,
             status=DownloadableStatus.granted,
         )
-        return await downloadable_service.create_or_update(self.session, create_schema)
+        res = await downloadable_service.create_or_update(self.session, create_schema)
+        return res
 
     async def revoke_downloadable(
         self,
@@ -167,4 +181,5 @@ class BenefitDownloadablesService(
             benefit_id=benefit.id,
             status=DownloadableStatus.revoked,
         )
-        return await downloadable_service.create_or_update(self.session, create_schema)
+        res = await downloadable_service.create_or_update(self.session, create_schema)
+        return res

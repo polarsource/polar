@@ -108,8 +108,7 @@ const DashboardSidebar = () => {
         <div className="hidden p-8 md:block">
           <CommandPaletteTrigger
             title="API & Documentation"
-            className="cursor-text bg-gray-100 shadow-none"
-            shortcutClassName="bg-white cursor-default dark:border-polar-600"
+            className="cursor-text "
             onClick={showCommandPalette}
           />
         </div>

@@ -1,5 +1,6 @@
 'use client'
 
+import { isFeatureEnabled } from '@/utils/feature-flags'
 import { ErrorMessage } from '@hookform/error-message'
 import {
   ClearOutlined,
@@ -253,12 +254,12 @@ const ProductForm: React.FC<ProductFormProps> = ({ update, isFreeTier }) => {
         <>
           <div className="flex flex-col gap-4">
             <FormLabel>Pricing</FormLabel>
-            {!update && (
+            {!update && isFeatureEnabled('products') && (
               <ToggleGroup
                 type="single"
                 value={pricingType}
-                onValueChange={(value) =>
-                  setPricingType(value as ProductPriceType)
+                onValueChange={(value: ProductPriceType) =>
+                  setPricingType(value)
                 }
               >
                 <ToggleGroupItem

@@ -181,6 +181,27 @@ const maintainerRoutesList = (org: Organization): Route[] => [
     if: org.feature_settings?.articles_enabled,
   },
   {
+    id: 'products',
+    title: 'Products',
+    icon: <DiamondOutlined className="h-5 w-5" fontSize="inherit" />,
+    postIcon: undefined,
+    link: `/maintainer/${org.name}/products/overview`,
+    checkIsActive: (currentRoute: string): boolean => {
+      return currentRoute.startsWith(`/maintainer/${org.name}/products`)
+    },
+    if: org.feature_settings?.subscriptions_enabled,
+    subs: [
+      {
+        title: 'Overview',
+        link: `/maintainer/${org.name}/products/overview`,
+      },
+      {
+        title: 'Benefits',
+        link: `/maintainer/${org.name}/products/benefits`,
+      },
+    ],
+  },
+  {
     id: 'org-subscriptions',
     title: 'Subscriptions',
     icon: <Bolt className="h-5 w-5" fontSize="inherit" />,
@@ -198,29 +219,6 @@ const maintainerRoutesList = (org: Organization): Route[] => [
       {
         title: 'Subscribers',
         link: `/maintainer/${org.name}/subscriptions/subscribers`,
-      },
-    ],
-  },
-  {
-    id: 'products',
-    title: 'Products',
-    icon: <DiamondOutlined className="h-5 w-5" fontSize="inherit" />,
-    postIcon: undefined,
-    link: `/maintainer/${org.name}/products/overview`,
-    checkIsActive: (currentRoute: string): boolean => {
-      return currentRoute.startsWith(`/maintainer/${org.name}/products`)
-    },
-    get if() {
-      return isFeatureEnabled('products')
-    },
-    subs: [
-      {
-        title: 'Overview',
-        link: `/maintainer/${org.name}/products/overview`,
-      },
-      {
-        title: 'Benefits',
-        link: `/maintainer/${org.name}/products/benefits`,
       },
     ],
   },

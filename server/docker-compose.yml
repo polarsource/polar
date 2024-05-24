@@ -42,5 +42,19 @@ services:
     ports:
       - "6380:6380"
 
+  minio:
+    image: docker.io/bitnami/minio:2022
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - "minio_data:/minio"
+    environment:
+      - MINIO_ROOT_USER=${POLAR_MINIO_USER}
+      - MINIO_ROOT_PASSWORD=${POLAR_MINIO_PWD}
+      - MINIO_DEFAULT_BUCKETS=${POLAR_S3_FILES_BUCKET_NAME},test-${POLAR_S3_FILES_BUCKET_NAME}
+
 volumes:
   postgres_data:
+  minio_data:
+    driver: local

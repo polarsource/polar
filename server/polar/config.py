@@ -135,8 +135,14 @@ class Settings(BaseSettings):
     AWS_SIGNATURE_VERSION: str = "v4"
 
     # Downloadable files
-    S3_FILES_BUCKET_NAME: str = ""
+    S3_FILES_BUCKET_NAME: str = "development-polar-s3"
     S3_FILES_PRESIGN_TTL: int = 600  # 10 minutes
+    # Override to http://127.0.0.1:9000 in .env during development
+    S3_ENDPOINT_URL: str | None = None
+
+    # MinIO (Local S3 Development)
+    MINIO_USER: str = "polar"
+    MINIO_PWD: str = "polarpolar"  # MinIO requires min 8 chars
 
     # Application behaviours
     API_PAGINATION_MAX_LIMIT: int = 100

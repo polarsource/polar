@@ -143,7 +143,7 @@ class S3Service:
         if not response:
             raise S3FileError("No response from S3")
 
-        version_id = response.get("VersionId", None)
+        version_id = response.get("VersionId", "")
         head = self.client.head_object(
             Bucket=self.bucket, Key=data.path, VersionId=version_id
         )

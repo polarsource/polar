@@ -3,9 +3,10 @@ import hashlib
 from datetime import datetime
 from typing import Any, Self
 
-from pydantic import UUID4
+from pydantic import UUID4, model_validator
 
 from polar.kit.schemas import Schema
+from polar.kit.utils import human_readable_size
 
 
 def get_downloadable_content_disposition(filename: str) -> str:
@@ -45,7 +46,7 @@ class S3FileCreate(Schema):
     upload: S3FileCreateMultipart
 
 
-class S3File(Schema):
+class S3File(Schema, validate_assignment=True):
     id: UUID4
     organization_id: UUID4
 
@@ -54,6 +55,8 @@ class S3File(Schema):
     path: str
     mime_type: str
     size: int
+
+    size_readable: str | None = None
 
     # Provided by AWS S3
     storage_version: str | None = None
@@ -64,6 +67,11 @@ class S3File(Schema):
     checksum_sha256_hex: str | None = None
 
     last_modified_at: datetime | None = None
+
+    @model_validator(mode="before")
+    def post_update(cls, values: dict[str, Any]) -> dict[str, Any]:
+        values["size_readable"] = human_readable_size(float(values["size"]))
+        return values
 
     def to_metadata(self) -> dict[str, str]:
         metadata = {

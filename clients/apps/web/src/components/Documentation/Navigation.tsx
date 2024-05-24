@@ -5,6 +5,7 @@ import { CommandPaletteTrigger } from '@/components/CommandPalette/CommandPalett
 import { useModal } from '@/components/Modal/useModal'
 import {
   ApiOutlined,
+  ArrowForward,
   CloseOutlined,
   DescriptionOutlined,
   ShortTextOutlined,
@@ -48,7 +49,6 @@ export const DocumentationPageSidebar = () => {
     <div className="flex w-full flex-shrink-0 flex-col gap-y-12 md:w-60">
       <div className="hidden flex-col gap-y-12 md:flex">
         <CommandPaletteTrigger onClick={show} />
-        <Separator />
       </div>
       <ul className="flex flex-col">
         <li>
@@ -145,19 +145,34 @@ const OverviewSections = () => {
       <div className="flex flex-col gap-y-4">
         <h2 className="font-medium">Issue Funding</h2>
         <div className="flex flex-col">
-          <NaviagtionItem href="/docs/overview/issue-funding/overview">
+          <NaviagtionItem
+            href="/docs/overview/issue-funding/overview"
+            icon={<ArrowForward fontSize="inherit" />}
+          >
             Overview
           </NaviagtionItem>
-          <NaviagtionItem href="/docs/overview/issue-funding/getting-started">
+          <NaviagtionItem
+            href="/docs/overview/issue-funding/getting-started"
+            icon={<ArrowForward fontSize="inherit" />}
+          >
             Getting Started
           </NaviagtionItem>
-          <NaviagtionItem href="/docs/overview/issue-funding/workflow">
+          <NaviagtionItem
+            href="/docs/overview/issue-funding/workflow"
+            icon={<ArrowForward fontSize="inherit" />}
+          >
             Workflow
           </NaviagtionItem>
-          <NaviagtionItem href="/docs/overview/issue-funding/promote">
+          <NaviagtionItem
+            href="/docs/overview/issue-funding/promote"
+            icon={<ArrowForward fontSize="inherit" />}
+          >
             Promote
           </NaviagtionItem>
-          <NaviagtionItem href="/docs/overview/issue-funding/reward-contributors">
+          <NaviagtionItem
+            href="/docs/overview/issue-funding/reward-contributors"
+            icon={<ArrowForward fontSize="inherit" />}
+          >
             Reward Contributors
           </NaviagtionItem>
         </div>
@@ -171,16 +186,28 @@ const FAQSections = () => {
     <div className="flex flex-col gap-y-4">
       <h2 className="font-medium">FAQ</h2>
       <div className="flex flex-col">
-        <NaviagtionItem href="/docs/overview/faq/overview">
+        <NaviagtionItem
+          href="/docs/overview/faq/overview"
+          icon={<ArrowForward fontSize="inherit" />}
+        >
           Overview
         </NaviagtionItem>
-        <NaviagtionItem href="/docs/overview/faq/for-maintainers">
+        <NaviagtionItem
+          href="/docs/overview/faq/for-maintainers"
+          icon={<ArrowForward fontSize="inherit" />}
+        >
           For Maintainers
         </NaviagtionItem>
-        <NaviagtionItem href="/docs/overview/faq/for-backers">
+        <NaviagtionItem
+          href="/docs/overview/faq/for-backers"
+          icon={<ArrowForward fontSize="inherit" />}
+        >
           For Backers
         </NaviagtionItem>
-        <NaviagtionItem href="/docs/overview/faq/for-contributors">
+        <NaviagtionItem
+          href="/docs/overview/faq/for-contributors"
+          icon={<ArrowForward fontSize="inherit" />}
+        >
           For Contributors
         </NaviagtionItem>
       </div>

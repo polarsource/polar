@@ -37,7 +37,7 @@ export default function Page({
 
   return (
     <>
-      <div className="flex w-full flex-shrink flex-col">
+      <div className="flex w-full max-w-3xl flex-shrink flex-col">
         <div className="flex flex-col gap-y-16">
           <div className="flex flex-col gap-y-4">
             <span className="text-lg capitalize text-black dark:text-white">
@@ -68,6 +68,7 @@ export default function Page({
       </div>
       <div className="flex w-full flex-shrink-0 flex-col gap-y-8 md:w-96">
         <APIContainer
+          className="bg-gray-50"
           operation={operation}
           method={method}
           path={apiEndpointPath}

@@ -12,6 +12,7 @@ import {
   TabsTrigger,
 } from 'polarkit/components/ui/atoms/tabs'
 import { useCallback, useMemo, useState } from 'react'
+import { twMerge } from 'tailwind-merge'
 import { resolveReference } from '../../Documentation/APINavigation'
 
 export const requestBodyParameters = (
@@ -84,10 +85,12 @@ polar.${namespace}.${snakeToCamel(endpointName)}()
 }
 
 export const APIContainer = ({
+  className,
   operation,
   path,
   method,
 }: {
+  className?: string
   operation: OpenAPIV3_1.OperationObject
   path: string
   method: string
@@ -121,7 +124,12 @@ export const APIContainer = ({
   }, [copyCodeToClipboard, curlCommand, nodeJSCommand, currentTab, setDidCopy])
 
   return (
-    <div className="dark:bg-polar-900 flex h-full w-full flex-col rounded-3xl bg-white shadow-sm">
+    <div
+      className={twMerge(
+        'dark:bg-polar-900 flex h-full w-full flex-col rounded-3xl bg-white shadow-sm',
+        className,
+      )}
+    >
       <Tabs
         defaultValue="curl"
         onValueChange={(v) => setCurrentTab(v as 'curl' | 'nodejs')}

@@ -44,7 +44,7 @@ export const CommandPalette = ({ organization, hide }: CommandPaletteProps) => {
       organization={organization}
       hideCommandPalette={hide}
     >
-      <div className="dark:bg-polar-900 dark:border-polar-800 flex w-full flex-grow flex-col overflow-hidden rounded-3xl border bg-gray-100">
+      <div className="dark:bg-polar-950 bg-gray-75 flex w-full flex-grow flex-col overflow-hidden rounded-3xl">
         <CommandPaletteInput />
         <CommandPaletteContainer />
       </div>
@@ -65,7 +65,7 @@ const CommandPaletteInput = () => {
   }, [setScopeKeys])
 
   return (
-    <div className="dark:bg-polar-950 dark:border-polar-800 flex flex-row gap-x-4 border-b border-gray-200 bg-white px-8 py-6">
+    <div className="dark:bg-polar-950 dark:border-polar-800 flex flex-row gap-x-4 bg-white px-8 py-6 dark:border-b">
       {renderBackButton && (
         <div
           className="dark:bg-polar-700 dark:hover:bg-polar-600 flex aspect-square h-full flex-shrink-0 flex-col items-center justify-center rounded-lg bg-gray-200 transition-colors hover:cursor-pointer hover:bg-gray-100"

@@ -1,5 +1,6 @@
 'use client'
 
+import { ArrowForward } from '@mui/icons-material'
 import { usePathname } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -40,16 +41,18 @@ export const TableOfContents = () => {
 
   return (
     <nav className="hidden w-full flex-col gap-y-4 md:flex">
-      <h3 className="text-black dark:text-white">Table of Contents</h3>
-      <ul className="flex flex-col gap-y-2 text-sm">
+      <h3 className="text-black dark:text-white">On this page</h3>
+      <ul className="flex flex-col gap-y-2.5 text-sm">
         {toc.map((item) => (
           <a key={item.id} href={`#${item.id}`}>
             <li
               className={twMerge(
-                'dark:text-polar-500 text-gray-500 transition-colors duration-200 ease-in-out hover:text-black dark:hover:text-white',
+                'dark:text-polar-500 items- flex flex-row gap-x-2 leading-normal text-gray-500 transition-colors duration-200 ease-in-out hover:text-blue-500 dark:hover:text-white',
               )}
-              style={{ marginLeft: `${(item.level - 1) / 2}em` }}
             >
+              {item.level > 1 && (
+                <ArrowForward className="mt-[4px]" fontSize="inherit" />
+              )}
               {item.text}
             </li>
           </a>

@@ -93,7 +93,7 @@ export const MobileNav = () => {
   }, [pathname])
 
   const header = (
-    <div className="dark:bg-polar-900 fixed left-0 right-0 top-0 z-50 flex flex-row items-center justify-between bg-white p-4 md:hidden">
+    <div className="dark:bg-polar-900 dark:border-polar-700 fixed left-0 right-0 top-0 z-50 flex flex-row items-center justify-between border-b border-gray-200 bg-white p-4 md:hidden">
       <a href="/" className="flex flex-shrink-0 flex-row items-center gap-x-3">
         <LogoIcon className="h-10 w-10 text-blue-500 dark:text-blue-400" />
         <span className="font-medium">Documentation</span>
@@ -109,7 +109,7 @@ export const MobileNav = () => {
   )
 
   return mobileNavOpen ? (
-    <div className="flex h-full flex-col">
+    <div className="flex h-full flex-col px-8 py-4">
       <div className="dark:bg-polar-900 bg-gray-75 relative flex flex-row items-center justify-between">
         {header}
       </div>

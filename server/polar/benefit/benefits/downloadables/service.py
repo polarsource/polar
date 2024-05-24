@@ -64,8 +64,8 @@ class BenefitDownloadablesService(
         benefit: BenefitDownloadables,
         previous_properties: BenefitDownloadablesProperties,
     ) -> bool:
-        new_file_ids = sorted(get_ids_from_files_properties(benefit.properties))
-        previous_file_ids = sorted(get_ids_from_files_properties(previous_properties))
+        new_file_ids = set(get_ids_from_files_properties(benefit.properties))
+        previous_file_ids = set(get_ids_from_files_properties(previous_properties))
         return new_file_ids != previous_file_ids
 
     async def validate_properties(

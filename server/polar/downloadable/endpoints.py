@@ -31,33 +31,24 @@ async def list(
     pagination: PaginationParamsQuery,
     organization_id: UUID4 | None = Query(
         None,
-        description=("Filter by organization files belong to. "),
+        description=("Filter by organization behind downloadables. "),
     ),
-    benefit_id: UUID4 | None = Query(
+    file_ids: list[UUID4] | None = Query(
         None,
-        description=("Filter by granted benefit. "),
+        description=("Filter by given file IDs. "),
     ),
     authz: Authz = Depends(Authz.authz),
     session: AsyncSession = Depends(get_db_session),
 ) -> ListResource[DownloadableRead]:
     subject = auth_subject.subject
 
-    if not benefit_id:
-        # Sorted by when file was granted
-        results, count = await downloadable_service.get_for_user(
-            session,
-            user=subject,
-            organization_id=organization_id,
-            pagination=pagination,
-        )
-    else:
-        # Sorted by benefit specific order
-        results, count = await downloadable_service.get_for_user_by_benefit_id(
-            session,
-            user=subject,
-            benefit_id=benefit_id,
-            pagination=pagination,
-        )
+    results, count = await downloadable_service.get_list(
+        session,
+        user=subject,
+        pagination=pagination,
+        organization_id=organization_id,
+        file_ids=file_ids,
+    )
 
     return ListResource.from_paginated_results(
         downloadable_service.generate_downloadable_schemas(results),
@@ -79,9 +70,7 @@ async def get(
 ) -> DownloadableRead:
     subject = auth_subject.subject
 
-    downloadable = await downloadable_service.get_for_user_by_id(
-        session, user=subject, id=id
-    )
+    downloadable = await downloadable_service.user_get(session, user=subject, id=id)
     if not downloadable:
         raise ResourceNotFound()
 

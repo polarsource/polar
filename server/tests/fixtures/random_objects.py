@@ -586,8 +586,7 @@ async def add_product_benefits(
 ) -> Product:
     product.product_benefits = []
     for order, benefit in enumerate(benefits):
-        product_benefit = ProductBenefit(product=product, benefit=benefit, order=order)
-        product.product_benefits.append(product_benefit)
+        product.product_benefits.append(ProductBenefit(benefit=benefit, order=order))
     await save_fixture(product)
     return product
 

@@ -1,9 +1,10 @@
 import uuid
 from collections.abc import Sequence
+from typing import Any
 
 import stripe as stripe_lib
-from sqlalchemy import Select, and_, func, select, text
-from sqlalchemy.orm import contains_eager, joinedload
+from sqlalchemy import Select, UnaryExpression, and_, asc, desc, func, select, text
+from sqlalchemy.orm import aliased, contains_eager, joinedload
 
 from polar.account.service import account as account_service
 from polar.auth.models import AuthSubject, is_organization, is_user
@@ -17,6 +18,7 @@ from polar.integrations.stripe.utils import get_expandable_id
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.services import ResourceServiceReader
+from polar.kit.sorting import Sorting
 from polar.models import (
     HeldBalance,
     Order,
@@ -27,6 +29,7 @@ from polar.models import (
     User,
     UserOrganization,
 )
+from polar.models.product_price import ProductPriceType
 from polar.models.transaction import TransactionType
 from polar.notifications.notification import (
     MaintainerCreateAccountNotificationPayload,
@@ -34,6 +37,7 @@ from polar.notifications.notification import (
 )
 from polar.notifications.service import PartialNotification
 from polar.notifications.service import notifications as notifications_service
+from polar.order.sorting import SortProperty
 from polar.organization.service import organization as organization_service
 from polar.product.service.product_price import product_price as product_price_service
 from polar.subscription.service import subscription as subscription_service
@@ -109,18 +113,54 @@ class OrderService(ResourceServiceReader[Order]):
         auth_subject: AuthSubject[User | Organization],
         *,
         organization_id: uuid.UUID | None = None,
+        product_id: uuid.UUID | None = None,
+        product_price_type: ProductPriceType | None = None,
+        user_id: uuid.UUID | None = None,
         pagination: PaginationParams,
+        sorting: list[Sorting[SortProperty]] = [(SortProperty.created_at, True)],
     ) -> tuple[Sequence[Order], int]:
         statement = self._get_readable_order_statement(auth_subject)
 
         statement = statement.options(
-            joinedload(Order.user),
-            joinedload(Order.product_price),
             joinedload(Order.subscription),
-        ).order_by(Order.created_at.desc())
+        )
+
+        OrderProductPrice = aliased(ProductPrice)
+        statement = statement.join(
+            OrderProductPrice, onclause=Order.product_price_id == OrderProductPrice.id
+        ).options(contains_eager(Order.product_price.of_type(OrderProductPrice)))
+
+        OrderUser = aliased(User)
+        statement = statement.join(
+            OrderUser, onclause=Order.user_id == OrderUser.id
+        ).options(contains_eager(Order.user.of_type(OrderUser)))
 
         if organization_id is not None:
             statement = statement.where(Product.organization_id == organization_id)
+
+        if product_id is not None:
+            statement = statement.where(Order.product_id == product_id)
+
+        if product_price_type is not None:
+            statement = statement.where(OrderProductPrice.type == product_price_type)
+
+        if user_id is not None:
+            statement = statement.where(Order.user_id == user_id)
+
+        order_by_clauses: list[UnaryExpression[Any]] = []
+        for criterion, is_desc in sorting:
+            clause_function = desc if is_desc else asc
+            if criterion == SortProperty.created_at:
+                order_by_clauses.append(clause_function(Order.created_at))
+            elif criterion == SortProperty.amount:
+                order_by_clauses.append(clause_function(Order.amount))
+            elif criterion == SortProperty.user:
+                order_by_clauses.append(clause_function(OrderUser.username))
+            elif criterion == SortProperty.product:
+                order_by_clauses.append(clause_function(Product.name))
+            elif criterion == SortProperty.subscription:
+                order_by_clauses.append(clause_function(Order.subscription_id))
+        statement = statement.order_by(*order_by_clauses)
 
         return await paginate(session, statement, pagination=pagination)
 

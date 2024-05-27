@@ -19,6 +19,10 @@ export const resolveEndpointMetadata = (
   let operation: OpenAPIV3_1.OperationObject
   try {
     operation = apiEndpoint?.[method] as OpenAPIV3_1.OperationObject
+
+    if (!operation) {
+      throw new Error('Operation not found')
+    }
   } catch (e) {
     // @ts-ignore
     operation = schema.paths?.[`${apiEndpointPath}/`]?.[method]

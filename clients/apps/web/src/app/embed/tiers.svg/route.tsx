@@ -13,15 +13,19 @@ const getHighlightedSubscriptions = async (
   org: string,
   limit: number = 100,
 ): Promise<Product[]> => {
-  let url = `${getServerURL()}/api/v1/subscriptions/tiers/search?platform=github&organization_name=${org}&limit=${limit}`
+  const { id: orgId } = await fetch(
+    `${getServerURL()}/api/v1/organizations/lookup?organization_name=${org}&platform=github`,
+    { method: 'GET' },
+  ).then((res) => res.json())
+
+  let url = `${getServerURL()}/api/v1/products?organization_id=${orgId}&is_recurring=true&limit=${limit}`
 
   const response = await fetch(url, {
     method: 'GET',
   })
-  const data = (await response.json()) as ListResourceProduct
+  const d = (await response.json()) as ListResourceProduct
   return (
-    data.items?.filter((tier) => tier.is_highlighted || tier.type === 'free') ||
-    []
+    d.items?.filter((tier) => tier.is_highlighted || tier.type === 'free') || []
   )
 }
 

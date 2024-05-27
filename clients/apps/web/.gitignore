@@ -41,3 +41,6 @@ storybook-static
 
 # Sentry Auth Token
 .sentryclirc
+
+searchIndex.json
+searchMetadata.json

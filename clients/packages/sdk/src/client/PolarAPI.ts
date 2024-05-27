@@ -31,6 +31,7 @@ import {
   TrafficApi,
   TransactionsApi,
   UsersApi,
+  OrdersApi,
   WebhookNotificationsApi,
   WebhooksApi,
 } from '.'
@@ -54,6 +55,7 @@ export class PolarAPI {
   public readonly magicLink: MagicLinkApi
   public readonly notifications: NotificationsApi
   public readonly oauth2: Oauth2Api
+  public readonly orders: OrdersApi
   public readonly organizations: OrganizationsApi
   public readonly paymentMethods: PaymentMethodsApi
   public readonly personalAccessToken: PersonalAccessTokenApi
@@ -90,6 +92,7 @@ export class PolarAPI {
     this.magicLink = new MagicLinkApi(config)
     this.notifications = new NotificationsApi(config)
     this.oauth2 = new Oauth2Api(config)
+    this.orders = new OrdersApi(config)
     this.organizations = new OrganizationsApi(config)
     this.paymentMethods = new PaymentMethodsApi(config)
     this.personalAccessToken = new PersonalAccessTokenApi(config)

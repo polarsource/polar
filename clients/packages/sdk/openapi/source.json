@@ -5877,105 +5877,6 @@
                 }
             }
         },
-        "/api/v1/subscriptions/subscribe-sessions/": {
-            "post": {
-                "tags": [
-                    "subscriptions"
-                ],
-                "summary": "Create Subscribe Session",
-                "operationId": "subscriptions:create_subscribe_session",
-                "requestBody": {
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "#/components/schemas/SubscribeSessionCreate"
-                            }
-                        }
-                    },
-                    "required": true
-                },
-                "responses": {
-                    "201": {
-                        "description": "Successful Response",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/SubscribeSession"
-                                }
-                            }
-                        }
-                    },
-                    "422": {
-                        "description": "Validation Error",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/HTTPValidationError"
-                                }
-                            }
-                        }
-                    }
-                },
-                "security": [
-                    {
-                        "OpenIdConnect": []
-                    },
-                    {
-                        "HTTPBearer": []
-                    }
-                ]
-            }
-        },
-        "/api/v1/subscriptions/subscribe-sessions/{id}": {
-            "get": {
-                "tags": [
-                    "subscriptions"
-                ],
-                "summary": "Get Subscribe Session",
-                "operationId": "subscriptions:get_subscribe_session",
-                "security": [
-                    {
-                        "OpenIdConnect": []
-                    },
-                    {
-                        "HTTPBearer": []
-                    }
-                ],
-                "parameters": [
-                    {
-                        "name": "id",
-                        "in": "path",
-                        "required": true,
-                        "schema": {
-                            "type": "string",
-                            "title": "Id"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Successful Response",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/SubscribeSession"
-                                }
-                            }
-                        }
-                    },
-                    "422": {
-                        "description": "Validation Error",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/HTTPValidationError"
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        },
         "/api/v1/subscriptions/subscriptions/statistics": {
             "get": {
                 "tags": [
@@ -11065,8 +10966,8 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "webhooks:write",
-                            "webhooks:read"
+                            "webhooks:read",
+                            "webhooks:write"
                         ]
                     },
                     {
@@ -11236,8 +11137,8 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "webhooks:write",
-                            "webhooks:read"
+                            "webhooks:read",
+                            "webhooks:write"
                         ]
                     },
                     {
@@ -11472,8 +11373,8 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "webhooks:write",
-                            "webhooks:read"
+                            "webhooks:read",
+                            "webhooks:write"
                         ]
                     },
                     {
@@ -11679,6 +11580,43 @@
                         "description": "Whether to include archived products."
                     },
                     {
+                        "name": "is_recurring",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "boolean"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "description": "Filter on recurring products. If `true`, only subscriptions tiers are returned. If `false`, only one-time purchase products are returned. ",
+                            "title": "Is Recurring"
+                        },
+                        "description": "Filter on recurring products. If `true`, only subscriptions tiers are returned. If `false`, only one-time purchase products are returned. "
+                    },
+                    {
+                        "name": "benefit_id",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string",
+                                    "format": "uuid4"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "description": "Filter products granting specific benefit.",
+                            "title": "Benefit Id"
+                        },
+                        "description": "Filter products granting specific benefit."
+                    },
+                    {
                         "name": "type",
                         "in": "query",
                         "required": false,
@@ -11772,7 +11710,15 @@
                     "content": {
                         "application/json": {
                             "schema": {
-                                "$ref": "#/components/schemas/ProductCreate"
+                                "anyOf": [
+                                    {
+                                        "$ref": "#/components/schemas/ProductRecurringCreate"
+                                    },
+                                    {
+                                        "$ref": "#/components/schemas/ProductOneTimeCreate"
+                                    }
+                                ],
+                                "title": "Product Create"
                             }
                         }
                     }
@@ -12056,14 +12002,14 @@
                 }
             }
         },
-        "/api/v1/sales/": {
+        "/api/v1/orders/": {
             "get": {
                 "tags": [
-                    "sales"
+                    "orders"
                 ],
-                "summary": "List Sales",
-                "description": "List sales.",
-                "operationId": "sales:list_sales",
+                "summary": "List Orders",
+                "description": "List orders.",
+                "operationId": "orders:list_orders",
                 "security": [
                     {
                         "OpenIdConnect": []
@@ -12073,7 +12019,7 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "creator:sales:read"
+                            "orders:read"
                         ]
                     },
                     {
@@ -12133,7 +12079,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/ListResource_Sale_"
+                                    "$ref": "#/components/schemas/ListResource_Order_"
                                 }
                             }
                         }
@@ -12151,14 +12097,14 @@
                 }
             }
         },
-        "/api/v1/sales/statistics": {
+        "/api/v1/orders/statistics": {
             "get": {
                 "tags": [
-                    "sales"
+                    "orders"
                 ],
-                "summary": "Get Sales Statistics",
-                "description": "Get monthly data about your sales and earnings.",
-                "operationId": "sales:get_sales_statistics",
+                "summary": "Get Orders Statistics",
+                "description": "Get monthly data about your orders and earnings.",
+                "operationId": "orders:get_orders_statistics",
                 "security": [
                     {
                         "OpenIdConnect": []
@@ -12168,7 +12114,7 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "creator:sales:read"
+                            "orders:read"
                         ]
                     },
                     {
@@ -12221,7 +12167,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/SalesStatistics"
+                                    "$ref": "#/components/schemas/OrdersStatistics"
                                 }
                             }
                         }
@@ -12239,14 +12185,14 @@
                 }
             }
         },
-        "/api/v1/sales/{id}": {
+        "/api/v1/orders/{id}": {
             "get": {
                 "tags": [
-                    "sales"
+                    "orders"
                 ],
-                "summary": "Get Sale",
-                "description": "Get a sale by ID.",
-                "operationId": "sales:get_sale",
+                "summary": "Get Order",
+                "description": "Get an order by ID.",
+                "operationId": "orders:get_order",
                 "security": [
                     {
                         "OpenIdConnect": []
@@ -12256,7 +12202,7 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "creator:sales:read"
+                            "orders:read"
                         ]
                     },
                     {
@@ -12271,10 +12217,10 @@
                         "schema": {
                             "type": "string",
                             "format": "uuid4",
-                            "description": "The sale ID.",
+                            "description": "The order ID.",
                             "title": "Id"
                         },
-                        "description": "The sale ID."
+                        "description": "The order ID."
                     }
                 ],
                 "responses": {
@@ -12283,13 +12229,13 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/Sale"
+                                    "$ref": "#/components/schemas/Order"
                                 }
                             }
                         }
                     },
                     "404": {
-                        "description": "Sale not found.",
+                        "description": "Order not found.",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -12311,14 +12257,14 @@
                 }
             }
         },
-        "/api/v1/sales/{id}/invoice": {
+        "/api/v1/orders/{id}/invoice": {
             "get": {
                 "tags": [
-                    "sales"
+                    "orders"
                 ],
-                "summary": "Get Sale Invoice",
-                "description": "Get a sale's invoice data.",
-                "operationId": "sales:get_sale_invoice",
+                "summary": "Get Order Invoice",
+                "description": "Get an order's invoice data.",
+                "operationId": "orders:get_order_invoice",
                 "security": [
                     {
                         "OpenIdConnect": []
@@ -12328,7 +12274,7 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "creator:sales:read"
+                            "orders:read"
                         ]
                     },
                     {
@@ -12343,10 +12289,10 @@
                         "schema": {
                             "type": "string",
                             "format": "uuid4",
-                            "description": "The sale ID.",
+                            "description": "The order ID.",
                             "title": "Id"
                         },
-                        "description": "The sale ID."
+                        "description": "The order ID."
                     }
                 ],
                 "responses": {
@@ -12355,17 +12301,116 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/SaleInvoice"
+                                    "$ref": "#/components/schemas/OrderInvoice"
                                 }
                             }
                         }
                     },
                     "404": {
-                        "description": "Sale not found.",
+                        "description": "Order not found.",
                         "content": {
                             "application/json": {
                                 "schema": {
                                     "$ref": "#/components/schemas/ResourceNotFound"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/checkouts/": {
+            "post": {
+                "tags": [
+                    "checkouts"
+                ],
+                "summary": "Create Checkout",
+                "operationId": "checkouts:create_checkout",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CheckoutCreate"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "201": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Checkout"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "OpenIdConnect": []
+                    },
+                    {
+                        "HTTPBearer": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/checkouts/{id}": {
+            "get": {
+                "tags": [
+                    "checkouts"
+                ],
+                "summary": "Get Checkout",
+                "operationId": "checkouts:get_checkout",
+                "security": [
+                    {
+                        "OpenIdConnect": []
+                    },
+                    {
+                        "HTTPBearer": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "title": "Id"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Checkout"
                                 }
                             }
                         }
@@ -16475,6 +16520,114 @@
                 ],
                 "title": "Byline"
             },
+            "Checkout": {
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "title": "Id",
+                        "description": "The ID of the checkout."
+                    },
+                    "url": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Url",
+                        "description": "URL the customer should be redirected to complete the purchase."
+                    },
+                    "customer_email": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Customer Email"
+                    },
+                    "customer_name": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Customer Name"
+                    },
+                    "product": {
+                        "$ref": "#/components/schemas/Product-Output"
+                    },
+                    "product_price": {
+                        "oneOf": [
+                            {
+                                "$ref": "#/components/schemas/ProductPriceRecurring"
+                            },
+                            {
+                                "$ref": "#/components/schemas/ProductPriceOneTime"
+                            }
+                        ],
+                        "title": "Product Price",
+                        "discriminator": {
+                            "propertyName": "type",
+                            "mapping": {
+                                "one_time": "#/components/schemas/ProductPriceOneTime",
+                                "recurring": "#/components/schemas/ProductPriceRecurring"
+                            }
+                        }
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "id",
+                    "product",
+                    "product_price"
+                ],
+                "title": "Checkout",
+                "description": "A checkout session."
+            },
+            "CheckoutCreate": {
+                "properties": {
+                    "product_price_id": {
+                        "type": "string",
+                        "format": "uuid4",
+                        "title": "Product Price Id",
+                        "description": "ID of the product price to subscribe to."
+                    },
+                    "success_url": {
+                        "type": "string",
+                        "minLength": 1,
+                        "format": "uri",
+                        "title": "Success Url",
+                        "description": "URL where the customer will be redirected after a successful subscription. You can add the `session_id={CHECKOUT_SESSION_ID}` query parameter to retrieve the checkout session id."
+                    },
+                    "customer_email": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "email"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Customer Email",
+                        "description": "If you already know the email of your customer, you can set it. It'll be pre-filled on the checkout page."
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "product_price_id",
+                    "success_url"
+                ],
+                "title": "CheckoutCreate"
+            },
             "ConfirmIssue": {
                 "properties": {
                     "splits": {
@@ -18499,6 +18652,26 @@
                 ],
                 "title": "ListResource[OAuth2Client]"
             },
+            "ListResource_Order_": {
+                "properties": {
+                    "items": {
+                        "items": {
+                            "$ref": "#/components/schemas/Order"
+                        },
+                        "type": "array",
+                        "title": "Items",
+                        "default": []
+                    },
+                    "pagination": {
+                        "$ref": "#/components/schemas/Pagination"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "pagination"
+                ],
+                "title": "ListResource[Order]"
+            },
             "ListResource_OrganizationMember_": {
                 "properties": {
                     "items": {
@@ -18698,26 +18871,6 @@
                     "pagination"
                 ],
                 "title": "ListResource[Reward]"
-            },
-            "ListResource_Sale_": {
-                "properties": {
-                    "items": {
-                        "items": {
-                            "$ref": "#/components/schemas/Sale"
-                        },
-                        "type": "array",
-                        "title": "Items",
-                        "default": []
-                    },
-                    "pagination": {
-                        "$ref": "#/components/schemas/Pagination"
-                    }
-                },
-                "type": "object",
-                "required": [
-                    "pagination"
-                ],
-                "title": "ListResource[Sale]"
             },
             "ListResource_SubscriptionSubscriber_": {
                 "properties": {
@@ -19958,7 +20111,7 @@
                     "scope": {
                         "type": "string",
                         "title": "Scope",
-                        "default": "openid profile email articles:read user:read creator:subscriptions:read creator:subscriptions:write backer:subscriptions:read backer:subscriptions:write creator:products:read creator:products:write creator:benefits:read creator:benefits:write creator:sales:read webhooks:read webhooks:write"
+                        "default": "openid profile email articles:read user:read creator:subscriptions:read creator:subscriptions:write backer:subscriptions:read backer:subscriptions:write creator:products:read creator:products:write creator:benefits:read creator:benefits:write orders:read webhooks:read webhooks:write"
                     },
                     "client_name": {
                         "type": "string",
@@ -20119,7 +20272,7 @@
                     "scope": {
                         "type": "string",
                         "title": "Scope",
-                        "default": "openid profile email articles:read user:read creator:subscriptions:read creator:subscriptions:write backer:subscriptions:read backer:subscriptions:write creator:products:read creator:products:write creator:benefits:read creator:benefits:write creator:sales:read webhooks:read webhooks:write"
+                        "default": "openid profile email articles:read user:read creator:subscriptions:read creator:subscriptions:write backer:subscriptions:read backer:subscriptions:write creator:products:read creator:products:write creator:benefits:read creator:benefits:write orders:read webhooks:read webhooks:write"
                     },
                     "client_name": {
                         "type": "string",
@@ -20240,7 +20393,7 @@
                     "scope": {
                         "type": "string",
                         "title": "Scope",
-                        "default": "openid profile email articles:read user:read creator:subscriptions:read creator:subscriptions:write backer:subscriptions:read backer:subscriptions:write creator:products:read creator:products:write creator:benefits:read creator:benefits:write creator:sales:read webhooks:read webhooks:write"
+                        "default": "openid profile email articles:read user:read creator:subscriptions:read creator:subscriptions:write backer:subscriptions:read backer:subscriptions:write creator:products:read creator:products:write creator:benefits:read creator:benefits:write orders:read webhooks:read webhooks:write"
                     },
                     "client_name": {
                         "type": "string",
@@ -20462,6 +20615,449 @@
                     "discord"
                 ],
                 "title": "OAuthPlatform"
+            },
+            "Order": {
+                "properties": {
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "title": "Created At",
+                        "description": "Creation timestamp of the object."
+                    },
+                    "modified_at": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "date-time"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Modified At",
+                        "description": "Last modification timestamp of the object."
+                    },
+                    "id": {
+                        "type": "string",
+                        "format": "uuid4",
+                        "title": "Id"
+                    },
+                    "amount": {
+                        "type": "integer",
+                        "title": "Amount"
+                    },
+                    "tax_amount": {
+                        "type": "integer",
+                        "title": "Tax Amount"
+                    },
+                    "currency": {
+                        "type": "string",
+                        "title": "Currency"
+                    },
+                    "user_id": {
+                        "type": "string",
+                        "format": "uuid4",
+                        "title": "User Id"
+                    },
+                    "product_id": {
+                        "type": "string",
+                        "format": "uuid4",
+                        "title": "Product Id"
+                    },
+                    "product_price_id": {
+                        "type": "string",
+                        "format": "uuid4",
+                        "title": "Product Price Id"
+                    },
+                    "subscription_id": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "uuid4"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Subscription Id"
+                    },
+                    "user": {
+                        "$ref": "#/components/schemas/OrderUser"
+                    },
+                    "product": {
+                        "$ref": "#/components/schemas/OrderProduct"
+                    },
+                    "product_price": {
+                        "oneOf": [
+                            {
+                                "$ref": "#/components/schemas/ProductPriceRecurring"
+                            },
+                            {
+                                "$ref": "#/components/schemas/ProductPriceOneTime"
+                            }
+                        ],
+                        "title": "Product Price",
+                        "discriminator": {
+                            "propertyName": "type",
+                            "mapping": {
+                                "one_time": "#/components/schemas/ProductPriceOneTime",
+                                "recurring": "#/components/schemas/ProductPriceRecurring"
+                            }
+                        }
+                    },
+                    "subscription": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/components/schemas/OrderSubscription"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ]
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "created_at",
+                    "id",
+                    "amount",
+                    "tax_amount",
+                    "currency",
+                    "user_id",
+                    "product_id",
+                    "product_price_id",
+                    "user",
+                    "product",
+                    "product_price"
+                ],
+                "title": "Order"
+            },
+            "OrderInvoice": {
+                "properties": {
+                    "url": {
+                        "type": "string",
+                        "title": "Url",
+                        "description": "The URL to the invoice."
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "url"
+                ],
+                "title": "OrderInvoice",
+                "description": "Order's invoice data."
+            },
+            "OrderProduct": {
+                "properties": {
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "title": "Created At",
+                        "description": "Creation timestamp of the object."
+                    },
+                    "modified_at": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "date-time"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Modified At",
+                        "description": "Last modification timestamp of the object."
+                    },
+                    "id": {
+                        "type": "string",
+                        "format": "uuid4",
+                        "title": "Id",
+                        "description": "The ID of the product."
+                    },
+                    "name": {
+                        "type": "string",
+                        "title": "Name",
+                        "description": "The name of the product."
+                    },
+                    "description": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Description",
+                        "description": "The description of the product."
+                    },
+                    "is_recurring": {
+                        "type": "boolean",
+                        "title": "Is Recurring",
+                        "description": "Whether the product is a subscription tier."
+                    },
+                    "is_archived": {
+                        "type": "boolean",
+                        "title": "Is Archived",
+                        "description": "Whether the product is archived and no longer available."
+                    },
+                    "organization_id": {
+                        "type": "string",
+                        "format": "uuid4",
+                        "title": "Organization Id",
+                        "description": "The ID of the organization owning the product."
+                    },
+                    "type": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/components/schemas/SubscriptionTierType"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "deprecated": true
+                    },
+                    "is_highlighted": {
+                        "anyOf": [
+                            {
+                                "type": "boolean"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Is Highlighted",
+                        "deprecated": true
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "created_at",
+                    "id",
+                    "name",
+                    "is_recurring",
+                    "is_archived",
+                    "organization_id"
+                ],
+                "title": "OrderProduct"
+            },
+            "OrderSubscription": {
+                "properties": {
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "title": "Created At",
+                        "description": "Creation timestamp of the object."
+                    },
+                    "modified_at": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "date-time"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Modified At",
+                        "description": "Last modification timestamp of the object."
+                    },
+                    "id": {
+                        "type": "string",
+                        "format": "uuid4",
+                        "title": "Id"
+                    },
+                    "status": {
+                        "$ref": "#/components/schemas/SubscriptionStatus"
+                    },
+                    "current_period_start": {
+                        "type": "string",
+                        "format": "date-time",
+                        "title": "Current Period Start"
+                    },
+                    "current_period_end": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "date-time"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Current Period End"
+                    },
+                    "cancel_at_period_end": {
+                        "type": "boolean",
+                        "title": "Cancel At Period End"
+                    },
+                    "started_at": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "date-time"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Started At"
+                    },
+                    "ended_at": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "date-time"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Ended At"
+                    },
+                    "user_id": {
+                        "type": "string",
+                        "format": "uuid4",
+                        "title": "User Id"
+                    },
+                    "organization_id": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "uuid4"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Organization Id"
+                    },
+                    "product_id": {
+                        "type": "string",
+                        "format": "uuid4",
+                        "title": "Product Id"
+                    },
+                    "price_id": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "uuid4"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Price Id"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "created_at",
+                    "id",
+                    "status",
+                    "current_period_start",
+                    "cancel_at_period_end",
+                    "user_id",
+                    "product_id"
+                ],
+                "title": "OrderSubscription"
+            },
+            "OrderUser": {
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid4",
+                        "title": "Id"
+                    },
+                    "email": {
+                        "type": "string",
+                        "title": "Email"
+                    },
+                    "public_name": {
+                        "type": "string",
+                        "title": "Public Name"
+                    },
+                    "github_username": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Github Username"
+                    },
+                    "avatar_url": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Avatar Url"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "id",
+                    "email",
+                    "public_name"
+                ],
+                "title": "OrderUser"
+            },
+            "OrdersStatistics": {
+                "properties": {
+                    "periods": {
+                        "items": {
+                            "$ref": "#/components/schemas/OrdersStatisticsPeriod"
+                        },
+                        "type": "array",
+                        "title": "Periods"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "periods"
+                ],
+                "title": "OrdersStatistics"
+            },
+            "OrdersStatisticsPeriod": {
+                "properties": {
+                    "date": {
+                        "type": "string",
+                        "format": "date",
+                        "title": "Date"
+                    },
+                    "orders": {
+                        "type": "integer",
+                        "title": "Orders"
+                    },
+                    "earnings": {
+                        "type": "integer",
+                        "title": "Earnings"
+                    },
+                    "expected_orders": {
+                        "type": "integer",
+                        "title": "Expected Orders"
+                    },
+                    "expected_earnings": {
+                        "type": "integer",
+                        "title": "Expected Earnings"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "date",
+                    "orders",
+                    "earnings",
+                    "expected_orders",
+                    "expected_earnings"
+                ],
+                "title": "OrdersStatisticsPeriod"
             },
             "Organization": {
                 "properties": {
@@ -21987,9 +22583,6 @@
                         "title": "Id",
                         "description": "The ID of the product."
                     },
-                    "type": {
-                        "$ref": "#/components/schemas/SubscriptionTierType"
-                    },
                     "name": {
                         "type": "string",
                         "title": "Name",
@@ -22007,9 +22600,10 @@
                         "title": "Description",
                         "description": "The description of the product."
                     },
-                    "is_highlighted": {
+                    "is_recurring": {
                         "type": "boolean",
-                        "title": "Is Highlighted"
+                        "title": "Is Recurring",
+                        "description": "Whether the product is a subscription tier."
                     },
                     "is_archived": {
                         "type": "boolean",
@@ -22022,9 +22616,46 @@
                         "title": "Organization Id",
                         "description": "The ID of the organization owning the product."
                     },
+                    "type": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/components/schemas/SubscriptionTierType"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "deprecated": true
+                    },
+                    "is_highlighted": {
+                        "anyOf": [
+                            {
+                                "type": "boolean"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Is Highlighted",
+                        "deprecated": true
+                    },
                     "prices": {
                         "items": {
-                            "$ref": "#/components/schemas/ProductPrice"
+                            "oneOf": [
+                                {
+                                    "$ref": "#/components/schemas/ProductPriceRecurring"
+                                },
+                                {
+                                    "$ref": "#/components/schemas/ProductPriceOneTime"
+                                }
+                            ],
+                            "discriminator": {
+                                "propertyName": "type",
+                                "mapping": {
+                                    "one_time": "#/components/schemas/ProductPriceOneTime",
+                                    "recurring": "#/components/schemas/ProductPriceRecurring"
+                                }
+                            }
                         },
                         "type": "array",
                         "title": "Prices",
@@ -22050,9 +22681,8 @@
                 "required": [
                     "created_at",
                     "id",
-                    "type",
                     "name",
-                    "is_highlighted",
+                    "is_recurring",
                     "is_archived",
                     "organization_id",
                     "prices",
@@ -22088,9 +22718,6 @@
                         "title": "Id",
                         "description": "The ID of the product."
                     },
-                    "type": {
-                        "$ref": "#/components/schemas/SubscriptionTierType"
-                    },
                     "name": {
                         "type": "string",
                         "title": "Name",
@@ -22108,9 +22735,10 @@
                         "title": "Description",
                         "description": "The description of the product."
                     },
-                    "is_highlighted": {
+                    "is_recurring": {
                         "type": "boolean",
-                        "title": "Is Highlighted"
+                        "title": "Is Recurring",
+                        "description": "Whether the product is a subscription tier."
                     },
                     "is_archived": {
                         "type": "boolean",
@@ -22123,9 +22751,46 @@
                         "title": "Organization Id",
                         "description": "The ID of the organization owning the product."
                     },
+                    "type": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/components/schemas/SubscriptionTierType"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "deprecated": true
+                    },
+                    "is_highlighted": {
+                        "anyOf": [
+                            {
+                                "type": "boolean"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Is Highlighted",
+                        "deprecated": true
+                    },
                     "prices": {
                         "items": {
-                            "$ref": "#/components/schemas/ProductPrice"
+                            "oneOf": [
+                                {
+                                    "$ref": "#/components/schemas/ProductPriceRecurring"
+                                },
+                                {
+                                    "$ref": "#/components/schemas/ProductPriceOneTime"
+                                }
+                            ],
+                            "discriminator": {
+                                "propertyName": "type",
+                                "mapping": {
+                                    "one_time": "#/components/schemas/ProductPriceOneTime",
+                                    "recurring": "#/components/schemas/ProductPriceRecurring"
+                                }
+                            }
                         },
                         "type": "array",
                         "title": "Prices",
@@ -22151,9 +22816,8 @@
                 "required": [
                     "created_at",
                     "id",
-                    "type",
                     "name",
-                    "is_highlighted",
+                    "is_recurring",
                     "is_archived",
                     "organization_id",
                     "prices",
@@ -22181,16 +22845,8 @@
                 "title": "ProductBenefitsUpdate",
                 "description": "Schema to update the benefits granted by a product."
             },
-            "ProductCreate": {
+            "ProductOneTimeCreate": {
                 "properties": {
-                    "type": {
-                        "type": "string",
-                        "enum": [
-                            "individual",
-                            "business"
-                        ],
-                        "title": "Type"
-                    },
                     "name": {
                         "type": "string",
                         "maxLength": 24,
@@ -22211,32 +22867,14 @@
                         "title": "Description",
                         "description": "The description of the product."
                     },
-                    "is_highlighted": {
-                        "type": "boolean",
-                        "title": "Is Highlighted",
-                        "default": false
-                    },
                     "prices": {
                         "items": {
-                            "oneOf": [
-                                {
-                                    "$ref": "#/components/schemas/ProductPriceRecurringCreate"
-                                },
-                                {
-                                    "$ref": "#/components/schemas/ProductPriceOneTimeCreate"
-                                }
-                            ],
-                            "discriminator": {
-                                "propertyName": "type",
-                                "mapping": {
-                                    "one_time": "#/components/schemas/ProductPriceOneTimeCreate",
-                                    "recurring": "#/components/schemas/ProductPriceRecurringCreate"
-                                }
-                            }
+                            "$ref": "#/components/schemas/ProductPriceOneTimeCreate"
                         },
                         "type": "array",
+                        "maxItems": 1,
                         "minItems": 1,
-                        "title": "Prices",
+                        "title": "One-time price",
                         "description": "List of available prices for this product."
                     },
                     "organization_id": {
@@ -22255,14 +22893,13 @@
                 },
                 "type": "object",
                 "required": [
-                    "type",
                     "name",
                     "prices"
                 ],
-                "title": "ProductCreate",
-                "description": "Schema to create a product."
+                "title": "ProductOneTimeCreate",
+                "description": "Schema to create a one-time product."
             },
-            "ProductPrice": {
+            "ProductPriceOneTime": {
                 "properties": {
                     "created_at": {
                         "type": "string",
@@ -22289,25 +22926,6 @@
                         "title": "Id",
                         "description": "The ID of the price."
                     },
-                    "type": {
-                        "allOf": [
-                            {
-                                "$ref": "#/components/schemas/ProductPriceType"
-                            }
-                        ],
-                        "description": "The type of the price."
-                    },
-                    "recurring_interval": {
-                        "anyOf": [
-                            {
-                                "$ref": "#/components/schemas/ProductPriceRecurringInterval"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "description": "The recurring interval of the price, if type is `recurring`."
-                    },
                     "price_amount": {
                         "type": "integer",
                         "title": "Price Amount",
@@ -22322,19 +22940,28 @@
                         "type": "boolean",
                         "title": "Is Archived",
                         "description": "Whether the price is archived and no longer available."
+                    },
+                    "type": {
+                        "type": "string",
+                        "enum": [
+                            "one_time"
+                        ],
+                        "const": "one_time",
+                        "title": "Type",
+                        "description": "The type of the price."
                     }
                 },
                 "type": "object",
                 "required": [
                     "created_at",
                     "id",
-                    "type",
                     "price_amount",
                     "price_currency",
-                    "is_archived"
+                    "is_archived",
+                    "type"
                 ],
-                "title": "ProductPrice",
-                "description": "A price for a product."
+                "title": "ProductPriceOneTime",
+                "description": "A one-time price for a product."
             },
             "ProductPriceOneTimeCreate": {
                 "properties": {
@@ -22368,6 +22995,81 @@
                 ],
                 "title": "ProductPriceOneTimeCreate",
                 "description": "Schema to create a one-time product price."
+            },
+            "ProductPriceRecurring": {
+                "properties": {
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "title": "Created At",
+                        "description": "Creation timestamp of the object."
+                    },
+                    "modified_at": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "date-time"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Modified At",
+                        "description": "Last modification timestamp of the object."
+                    },
+                    "id": {
+                        "type": "string",
+                        "format": "uuid4",
+                        "title": "Id",
+                        "description": "The ID of the price."
+                    },
+                    "price_amount": {
+                        "type": "integer",
+                        "title": "Price Amount",
+                        "description": "The price in cents."
+                    },
+                    "price_currency": {
+                        "type": "string",
+                        "title": "Price Currency",
+                        "description": "The currency."
+                    },
+                    "is_archived": {
+                        "type": "boolean",
+                        "title": "Is Archived",
+                        "description": "Whether the price is archived and no longer available."
+                    },
+                    "type": {
+                        "type": "string",
+                        "enum": [
+                            "recurring"
+                        ],
+                        "const": "recurring",
+                        "title": "Type",
+                        "description": "The type of the price."
+                    },
+                    "recurring_interval": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/components/schemas/ProductPriceRecurringInterval"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "description": "The recurring interval of the price, if type is `recurring`."
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "created_at",
+                    "id",
+                    "price_amount",
+                    "price_currency",
+                    "is_archived",
+                    "type"
+                ],
+                "title": "ProductPriceRecurring",
+                "description": "A recurring price for a product, i.e. a subscription."
             },
             "ProductPriceRecurringCreate": {
                 "properties": {
@@ -22427,6 +23129,76 @@
                 ],
                 "title": "ProductPriceType"
             },
+            "ProductRecurringCreate": {
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "maxLength": 24,
+                        "minLength": 3,
+                        "title": "Name",
+                        "description": "The name of the product."
+                    },
+                    "description": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "maxLength": 240
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Description",
+                        "description": "The description of the product."
+                    },
+                    "prices": {
+                        "items": {
+                            "$ref": "#/components/schemas/ProductPriceRecurringCreate"
+                        },
+                        "type": "array",
+                        "maxItems": 2,
+                        "minItems": 1,
+                        "title": "Recurring prices",
+                        "description": "List of available prices for this product."
+                    },
+                    "organization_id": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "uuid4"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Organization Id",
+                        "description": "The ID of the organization owning the product. **Required unless you use an organization token.**"
+                    },
+                    "type": {
+                        "type": "string",
+                        "enum": [
+                            "individual",
+                            "business"
+                        ],
+                        "title": "Type",
+                        "deprecated": true
+                    },
+                    "is_highlighted": {
+                        "type": "boolean",
+                        "title": "Is Highlighted",
+                        "default": false,
+                        "deprecated": true
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "name",
+                    "prices",
+                    "type"
+                ],
+                "title": "ProductRecurringCreate",
+                "description": "Schema to create a recurring product, i.e. a subscription."
+            },
             "ProductSubscriber": {
                 "properties": {
                     "created_at": {
@@ -22454,9 +23226,6 @@
                         "title": "Id",
                         "description": "The ID of the product."
                     },
-                    "type": {
-                        "$ref": "#/components/schemas/SubscriptionTierType"
-                    },
                     "name": {
                         "type": "string",
                         "title": "Name",
@@ -22474,9 +23243,10 @@
                         "title": "Description",
                         "description": "The description of the product."
                     },
-                    "is_highlighted": {
+                    "is_recurring": {
                         "type": "boolean",
-                        "title": "Is Highlighted"
+                        "title": "Is Recurring",
+                        "description": "Whether the product is a subscription tier."
                     },
                     "is_archived": {
                         "type": "boolean",
@@ -22489,9 +23259,46 @@
                         "title": "Organization Id",
                         "description": "The ID of the organization owning the product."
                     },
+                    "type": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/components/schemas/SubscriptionTierType"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "deprecated": true
+                    },
+                    "is_highlighted": {
+                        "anyOf": [
+                            {
+                                "type": "boolean"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Is Highlighted",
+                        "deprecated": true
+                    },
                     "prices": {
                         "items": {
-                            "$ref": "#/components/schemas/ProductPrice"
+                            "oneOf": [
+                                {
+                                    "$ref": "#/components/schemas/ProductPriceRecurring"
+                                },
+                                {
+                                    "$ref": "#/components/schemas/ProductPriceOneTime"
+                                }
+                            ],
+                            "discriminator": {
+                                "propertyName": "type",
+                                "mapping": {
+                                    "one_time": "#/components/schemas/ProductPriceOneTime",
+                                    "recurring": "#/components/schemas/ProductPriceRecurring"
+                                }
+                            }
                         },
                         "type": "array",
                         "title": "Prices",
@@ -22525,9 +23332,8 @@
                 "required": [
                     "created_at",
                     "id",
-                    "type",
                     "name",
-                    "is_highlighted",
+                    "is_recurring",
                     "is_archived",
                     "organization_id",
                     "prices",
@@ -22573,7 +23379,8 @@
                                 "type": "null"
                             }
                         ],
-                        "title": "Is Highlighted"
+                        "title": "Is Highlighted",
+                        "deprecated": true
                     },
                     "is_archived": {
                         "anyOf": [
@@ -22596,21 +23403,10 @@
                                             "$ref": "#/components/schemas/ExistingProductPrice"
                                         },
                                         {
-                                            "oneOf": [
-                                                {
-                                                    "$ref": "#/components/schemas/ProductPriceRecurringCreate"
-                                                },
-                                                {
-                                                    "$ref": "#/components/schemas/ProductPriceOneTimeCreate"
-                                                }
-                                            ],
-                                            "discriminator": {
-                                                "propertyName": "type",
-                                                "mapping": {
-                                                    "one_time": "#/components/schemas/ProductPriceOneTimeCreate",
-                                                    "recurring": "#/components/schemas/ProductPriceRecurringCreate"
-                                                }
-                                            }
+                                            "$ref": "#/components/schemas/ProductPriceRecurringCreate"
+                                        },
+                                        {
+                                            "$ref": "#/components/schemas/ProductPriceOneTimeCreate"
                                         }
                                     ]
                                 },
@@ -23571,487 +24367,6 @@
                 ],
                 "title": "RewardsSummaryReceiver"
             },
-            "Sale": {
-                "properties": {
-                    "created_at": {
-                        "type": "string",
-                        "format": "date-time",
-                        "title": "Created At",
-                        "description": "Creation timestamp of the object."
-                    },
-                    "modified_at": {
-                        "anyOf": [
-                            {
-                                "type": "string",
-                                "format": "date-time"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Modified At",
-                        "description": "Last modification timestamp of the object."
-                    },
-                    "id": {
-                        "type": "string",
-                        "format": "uuid4",
-                        "title": "Id"
-                    },
-                    "amount": {
-                        "type": "integer",
-                        "title": "Amount"
-                    },
-                    "tax_amount": {
-                        "type": "integer",
-                        "title": "Tax Amount"
-                    },
-                    "currency": {
-                        "type": "string",
-                        "title": "Currency"
-                    },
-                    "user_id": {
-                        "type": "string",
-                        "format": "uuid4",
-                        "title": "User Id"
-                    },
-                    "product_id": {
-                        "type": "string",
-                        "format": "uuid4",
-                        "title": "Product Id"
-                    },
-                    "product_price_id": {
-                        "type": "string",
-                        "format": "uuid4",
-                        "title": "Product Price Id"
-                    },
-                    "subscription_id": {
-                        "anyOf": [
-                            {
-                                "type": "string",
-                                "format": "uuid4"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Subscription Id"
-                    },
-                    "user": {
-                        "$ref": "#/components/schemas/SaleUser"
-                    },
-                    "product": {
-                        "$ref": "#/components/schemas/SaleProduct"
-                    },
-                    "product_price": {
-                        "$ref": "#/components/schemas/SaleProductPrice"
-                    },
-                    "subscription": {
-                        "anyOf": [
-                            {
-                                "$ref": "#/components/schemas/SaleSubscription"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ]
-                    }
-                },
-                "type": "object",
-                "required": [
-                    "created_at",
-                    "id",
-                    "amount",
-                    "tax_amount",
-                    "currency",
-                    "user_id",
-                    "product_id",
-                    "product_price_id",
-                    "user",
-                    "product",
-                    "product_price"
-                ],
-                "title": "Sale"
-            },
-            "SaleInvoice": {
-                "properties": {
-                    "url": {
-                        "type": "string",
-                        "title": "Url",
-                        "description": "The URL to the invoice."
-                    }
-                },
-                "type": "object",
-                "required": [
-                    "url"
-                ],
-                "title": "SaleInvoice",
-                "description": "Sale's invoice data."
-            },
-            "SaleProduct": {
-                "properties": {
-                    "created_at": {
-                        "type": "string",
-                        "format": "date-time",
-                        "title": "Created At",
-                        "description": "Creation timestamp of the object."
-                    },
-                    "modified_at": {
-                        "anyOf": [
-                            {
-                                "type": "string",
-                                "format": "date-time"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Modified At",
-                        "description": "Last modification timestamp of the object."
-                    },
-                    "id": {
-                        "type": "string",
-                        "format": "uuid4",
-                        "title": "Id",
-                        "description": "The ID of the product."
-                    },
-                    "type": {
-                        "$ref": "#/components/schemas/SubscriptionTierType"
-                    },
-                    "name": {
-                        "type": "string",
-                        "title": "Name",
-                        "description": "The name of the product."
-                    },
-                    "description": {
-                        "anyOf": [
-                            {
-                                "type": "string"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Description",
-                        "description": "The description of the product."
-                    },
-                    "is_highlighted": {
-                        "type": "boolean",
-                        "title": "Is Highlighted"
-                    },
-                    "is_archived": {
-                        "type": "boolean",
-                        "title": "Is Archived",
-                        "description": "Whether the product is archived and no longer available."
-                    },
-                    "organization_id": {
-                        "type": "string",
-                        "format": "uuid4",
-                        "title": "Organization Id",
-                        "description": "The ID of the organization owning the product."
-                    }
-                },
-                "type": "object",
-                "required": [
-                    "created_at",
-                    "id",
-                    "type",
-                    "name",
-                    "is_highlighted",
-                    "is_archived",
-                    "organization_id"
-                ],
-                "title": "SaleProduct"
-            },
-            "SaleProductPrice": {
-                "properties": {
-                    "created_at": {
-                        "type": "string",
-                        "format": "date-time",
-                        "title": "Created At",
-                        "description": "Creation timestamp of the object."
-                    },
-                    "modified_at": {
-                        "anyOf": [
-                            {
-                                "type": "string",
-                                "format": "date-time"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Modified At",
-                        "description": "Last modification timestamp of the object."
-                    },
-                    "id": {
-                        "type": "string",
-                        "format": "uuid4",
-                        "title": "Id",
-                        "description": "The ID of the price."
-                    },
-                    "type": {
-                        "allOf": [
-                            {
-                                "$ref": "#/components/schemas/ProductPriceType"
-                            }
-                        ],
-                        "description": "The type of the price."
-                    },
-                    "recurring_interval": {
-                        "anyOf": [
-                            {
-                                "$ref": "#/components/schemas/ProductPriceRecurringInterval"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "description": "The recurring interval of the price, if type is `recurring`."
-                    },
-                    "price_amount": {
-                        "type": "integer",
-                        "title": "Price Amount",
-                        "description": "The price in cents."
-                    },
-                    "price_currency": {
-                        "type": "string",
-                        "title": "Price Currency",
-                        "description": "The currency."
-                    },
-                    "is_archived": {
-                        "type": "boolean",
-                        "title": "Is Archived",
-                        "description": "Whether the price is archived and no longer available."
-                    }
-                },
-                "type": "object",
-                "required": [
-                    "created_at",
-                    "id",
-                    "type",
-                    "price_amount",
-                    "price_currency",
-                    "is_archived"
-                ],
-                "title": "SaleProductPrice"
-            },
-            "SaleSubscription": {
-                "properties": {
-                    "created_at": {
-                        "type": "string",
-                        "format": "date-time",
-                        "title": "Created At",
-                        "description": "Creation timestamp of the object."
-                    },
-                    "modified_at": {
-                        "anyOf": [
-                            {
-                                "type": "string",
-                                "format": "date-time"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Modified At",
-                        "description": "Last modification timestamp of the object."
-                    },
-                    "id": {
-                        "type": "string",
-                        "format": "uuid4",
-                        "title": "Id"
-                    },
-                    "status": {
-                        "$ref": "#/components/schemas/SubscriptionStatus"
-                    },
-                    "current_period_start": {
-                        "type": "string",
-                        "format": "date-time",
-                        "title": "Current Period Start"
-                    },
-                    "current_period_end": {
-                        "anyOf": [
-                            {
-                                "type": "string",
-                                "format": "date-time"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Current Period End"
-                    },
-                    "cancel_at_period_end": {
-                        "type": "boolean",
-                        "title": "Cancel At Period End"
-                    },
-                    "started_at": {
-                        "anyOf": [
-                            {
-                                "type": "string",
-                                "format": "date-time"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Started At"
-                    },
-                    "ended_at": {
-                        "anyOf": [
-                            {
-                                "type": "string",
-                                "format": "date-time"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Ended At"
-                    },
-                    "user_id": {
-                        "type": "string",
-                        "format": "uuid4",
-                        "title": "User Id"
-                    },
-                    "organization_id": {
-                        "anyOf": [
-                            {
-                                "type": "string",
-                                "format": "uuid4"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Organization Id"
-                    },
-                    "product_id": {
-                        "type": "string",
-                        "format": "uuid4",
-                        "title": "Product Id"
-                    },
-                    "price_id": {
-                        "anyOf": [
-                            {
-                                "type": "string",
-                                "format": "uuid4"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Price Id"
-                    }
-                },
-                "type": "object",
-                "required": [
-                    "created_at",
-                    "id",
-                    "status",
-                    "current_period_start",
-                    "cancel_at_period_end",
-                    "user_id",
-                    "product_id"
-                ],
-                "title": "SaleSubscription"
-            },
-            "SaleUser": {
-                "properties": {
-                    "id": {
-                        "type": "string",
-                        "format": "uuid4",
-                        "title": "Id"
-                    },
-                    "email": {
-                        "type": "string",
-                        "title": "Email"
-                    },
-                    "public_name": {
-                        "type": "string",
-                        "title": "Public Name"
-                    },
-                    "github_username": {
-                        "anyOf": [
-                            {
-                                "type": "string"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Github Username"
-                    },
-                    "avatar_url": {
-                        "anyOf": [
-                            {
-                                "type": "string"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Avatar Url"
-                    }
-                },
-                "type": "object",
-                "required": [
-                    "id",
-                    "email",
-                    "public_name"
-                ],
-                "title": "SaleUser"
-            },
-            "SalesStatistics": {
-                "properties": {
-                    "periods": {
-                        "items": {
-                            "$ref": "#/components/schemas/SalesStatisticsPeriod"
-                        },
-                        "type": "array",
-                        "title": "Periods"
-                    }
-                },
-                "type": "object",
-                "required": [
-                    "periods"
-                ],
-                "title": "SalesStatistics"
-            },
-            "SalesStatisticsPeriod": {
-                "properties": {
-                    "date": {
-                        "type": "string",
-                        "format": "date",
-                        "title": "Date"
-                    },
-                    "sales": {
-                        "type": "integer",
-                        "title": "Sales"
-                    },
-                    "earnings": {
-                        "type": "integer",
-                        "title": "Earnings"
-                    },
-                    "expected_sales": {
-                        "type": "integer",
-                        "title": "Expected Sales"
-                    },
-                    "expected_earnings": {
-                        "type": "integer",
-                        "title": "Expected Earnings"
-                    }
-                },
-                "type": "object",
-                "required": [
-                    "date",
-                    "sales",
-                    "earnings",
-                    "expected_sales",
-                    "expected_earnings"
-                ],
-                "title": "SalesStatisticsPeriod"
-            },
             "Scope": {
                 "type": "string",
                 "enum": [
@@ -24070,7 +24385,7 @@
                     "creator:products:write",
                     "creator:benefits:read",
                     "creator:benefits:write",
-                    "creator:sales:read",
+                    "orders:read",
                     "webhooks:read",
                     "webhooks:write"
                 ],
@@ -24101,135 +24416,6 @@
                     "active"
                 ],
                 "title": "Status"
-            },
-            "SubscribeSession": {
-                "properties": {
-                    "id": {
-                        "type": "string",
-                        "title": "Id",
-                        "description": "ID of the subscribe session."
-                    },
-                    "url": {
-                        "anyOf": [
-                            {
-                                "type": "string"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Url",
-                        "description": "URL where you should redirect your backer so they can subscribe to the selected tier."
-                    },
-                    "customer_email": {
-                        "anyOf": [
-                            {
-                                "type": "string"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Customer Email"
-                    },
-                    "customer_name": {
-                        "anyOf": [
-                            {
-                                "type": "string"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Customer Name"
-                    },
-                    "organization_subscriber_id": {
-                        "anyOf": [
-                            {
-                                "type": "string",
-                                "format": "uuid4"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Organization Subscriber Id"
-                    },
-                    "subscription_tier": {
-                        "$ref": "#/components/schemas/Product-Output"
-                    },
-                    "price": {
-                        "$ref": "#/components/schemas/ProductPrice"
-                    },
-                    "organization_name": {
-                        "type": "string",
-                        "title": "Organization Name"
-                    }
-                },
-                "type": "object",
-                "required": [
-                    "id",
-                    "subscription_tier",
-                    "price",
-                    "organization_name"
-                ],
-                "title": "SubscribeSession"
-            },
-            "SubscribeSessionCreate": {
-                "properties": {
-                    "tier_id": {
-                        "type": "string",
-                        "format": "uuid4",
-                        "title": "Tier Id",
-                        "description": "ID of the Subscription Tier to subscribe to."
-                    },
-                    "price_id": {
-                        "type": "string",
-                        "format": "uuid4",
-                        "title": "Price Id",
-                        "description": "ID of the Subscription Tier Price to subscribe to."
-                    },
-                    "success_url": {
-                        "type": "string",
-                        "minLength": 1,
-                        "format": "uri",
-                        "title": "Success Url",
-                        "description": "URL where the backer will be redirected after a successful subscription. You can add the `session_id={CHECKOUT_SESSION_ID}` query parameter to retrieve the subscribe session id."
-                    },
-                    "organization_subscriber_id": {
-                        "anyOf": [
-                            {
-                                "type": "string",
-                                "format": "uuid4"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Organization Subscriber Id",
-                        "description": "ID of the Organization on behalf which you want to subscribe this tier to. You need to be an administrator of the Organization to do this."
-                    },
-                    "customer_email": {
-                        "anyOf": [
-                            {
-                                "type": "string",
-                                "format": "email"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Customer Email",
-                        "description": "If you already know the email of your backer, you can set it. It'll be pre-filled on the subscription page."
-                    }
-                },
-                "type": "object",
-                "required": [
-                    "tier_id",
-                    "price_id",
-                    "success_url"
-                ],
-                "title": "SubscribeSessionCreate"
             },
             "Subscription-Input": {
                 "properties": {
@@ -24358,12 +24544,27 @@
                     "price": {
                         "anyOf": [
                             {
-                                "$ref": "#/components/schemas/ProductPrice"
+                                "oneOf": [
+                                    {
+                                        "$ref": "#/components/schemas/ProductPriceRecurring"
+                                    },
+                                    {
+                                        "$ref": "#/components/schemas/ProductPriceOneTime"
+                                    }
+                                ],
+                                "discriminator": {
+                                    "propertyName": "type",
+                                    "mapping": {
+                                        "one_time": "#/components/schemas/ProductPriceOneTime",
+                                        "recurring": "#/components/schemas/ProductPriceRecurring"
+                                    }
+                                }
                             },
                             {
                                 "type": "null"
                             }
-                        ]
+                        ],
+                        "title": "Price"
                     }
                 },
                 "type": "object",
@@ -24507,12 +24708,27 @@
                     "price": {
                         "anyOf": [
                             {
-                                "$ref": "#/components/schemas/ProductPrice"
+                                "oneOf": [
+                                    {
+                                        "$ref": "#/components/schemas/ProductPriceRecurring"
+                                    },
+                                    {
+                                        "$ref": "#/components/schemas/ProductPriceOneTime"
+                                    }
+                                ],
+                                "discriminator": {
+                                    "propertyName": "type",
+                                    "mapping": {
+                                        "one_time": "#/components/schemas/ProductPriceOneTime",
+                                        "recurring": "#/components/schemas/ProductPriceRecurring"
+                                    }
+                                }
                             },
                             {
                                 "type": "null"
                             }
-                        ]
+                        ],
+                        "title": "Price"
                     }
                 },
                 "type": "object",
@@ -24737,12 +24953,27 @@
                     "price": {
                         "anyOf": [
                             {
-                                "$ref": "#/components/schemas/ProductPrice"
+                                "oneOf": [
+                                    {
+                                        "$ref": "#/components/schemas/ProductPriceRecurring"
+                                    },
+                                    {
+                                        "$ref": "#/components/schemas/ProductPriceOneTime"
+                                    }
+                                ],
+                                "discriminator": {
+                                    "propertyName": "type",
+                                    "mapping": {
+                                        "one_time": "#/components/schemas/ProductPriceOneTime",
+                                        "recurring": "#/components/schemas/ProductPriceRecurring"
+                                    }
+                                }
                             },
                             {
                                 "type": "null"
                             }
-                        ]
+                        ],
+                        "title": "Price"
                     }
                 },
                 "type": "object",
@@ -24779,12 +25010,27 @@
                     "price": {
                         "anyOf": [
                             {
-                                "$ref": "#/components/schemas/ProductPrice"
+                                "oneOf": [
+                                    {
+                                        "$ref": "#/components/schemas/ProductPriceRecurring"
+                                    },
+                                    {
+                                        "$ref": "#/components/schemas/ProductPriceOneTime"
+                                    }
+                                ],
+                                "discriminator": {
+                                    "propertyName": "type",
+                                    "mapping": {
+                                        "one_time": "#/components/schemas/ProductPriceOneTime",
+                                        "recurring": "#/components/schemas/ProductPriceRecurring"
+                                    }
+                                }
                             },
                             {
                                 "type": "null"
                             }
-                        ]
+                        ],
+                        "title": "Price"
                     }
                 },
                 "type": "object",
@@ -25338,10 +25584,10 @@
                             }
                         ]
                     },
-                    "sale": {
+                    "order": {
                         "anyOf": [
                             {
-                                "$ref": "#/components/schemas/TransactionSale"
+                                "$ref": "#/components/schemas/TransactionOrder"
                             },
                             {
                                 "type": "null"
@@ -25551,10 +25797,10 @@
                             }
                         ]
                     },
-                    "sale": {
+                    "order": {
                         "anyOf": [
                             {
-                                "$ref": "#/components/schemas/TransactionSale"
+                                "$ref": "#/components/schemas/TransactionOrder"
                             },
                             {
                                 "type": "null"
@@ -25922,6 +26168,60 @@
                 ],
                 "title": "TransactionIssueReward"
             },
+            "TransactionOrder": {
+                "properties": {
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "title": "Created At",
+                        "description": "Creation timestamp of the object."
+                    },
+                    "modified_at": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "date-time"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Modified At",
+                        "description": "Last modification timestamp of the object."
+                    },
+                    "id": {
+                        "type": "string",
+                        "format": "uuid4",
+                        "title": "Id"
+                    },
+                    "product": {
+                        "$ref": "#/components/schemas/TransactionProduct"
+                    },
+                    "product_price": {
+                        "$ref": "#/components/schemas/TransactionProductPrice"
+                    },
+                    "subscription_id": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "uuid4"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Subscription Id"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "created_at",
+                    "id",
+                    "product",
+                    "product_price"
+                ],
+                "title": "TransactionOrder"
+            },
             "TransactionOrganization": {
                 "properties": {
                     "created_at": {
@@ -26187,60 +26487,6 @@
                     "name"
                 ],
                 "title": "TransactionRepository"
-            },
-            "TransactionSale": {
-                "properties": {
-                    "created_at": {
-                        "type": "string",
-                        "format": "date-time",
-                        "title": "Created At",
-                        "description": "Creation timestamp of the object."
-                    },
-                    "modified_at": {
-                        "anyOf": [
-                            {
-                                "type": "string",
-                                "format": "date-time"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Modified At",
-                        "description": "Last modification timestamp of the object."
-                    },
-                    "id": {
-                        "type": "string",
-                        "format": "uuid4",
-                        "title": "Id"
-                    },
-                    "product": {
-                        "$ref": "#/components/schemas/TransactionProduct"
-                    },
-                    "product_price": {
-                        "$ref": "#/components/schemas/TransactionProductPrice"
-                    },
-                    "subscription_id": {
-                        "anyOf": [
-                            {
-                                "type": "string",
-                                "format": "uuid4"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Subscription Id"
-                    }
-                },
-                "type": "object",
-                "required": [
-                    "created_at",
-                    "id",
-                    "product",
-                    "product_price"
-                ],
-                "title": "TransactionSale"
             },
             "TransactionType": {
                 "type": "string",

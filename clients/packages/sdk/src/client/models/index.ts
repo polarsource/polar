@@ -5138,6 +5138,25 @@ export interface ListResourceOAuth2Client {
 /**
  * 
  * @export
+ * @interface ListResourceOrder
+ */
+export interface ListResourceOrder {
+    /**
+     * 
+     * @type {Array<Order>}
+     * @memberof ListResourceOrder
+     */
+    items?: Array<Order>;
+    /**
+     * 
+     * @type {Pagination}
+     * @memberof ListResourceOrder
+     */
+    pagination: Pagination;
+}
+/**
+ * 
+ * @export
  * @interface ListResourceOrganization
  */
 export interface ListResourceOrganization {
@@ -5322,25 +5341,6 @@ export interface ListResourceReward {
      * 
      * @type {Pagination}
      * @memberof ListResourceReward
-     */
-    pagination: Pagination;
-}
-/**
- * 
- * @export
- * @interface ListResourceSale
- */
-export interface ListResourceSale {
-    /**
-     * 
-     * @type {Array<Sale>}
-     * @memberof ListResourceSale
-     */
-    items?: Array<Sale>;
-    /**
-     * 
-     * @type {Pagination}
-     * @memberof ListResourceSale
      */
     pagination: Pagination;
 }
@@ -6979,6 +6979,349 @@ export const OAuthPlatform = {
 } as const;
 export type OAuthPlatform = typeof OAuthPlatform[keyof typeof OAuthPlatform];
 
+/**
+ * 
+ * @export
+ * @interface Order
+ */
+export interface Order {
+    /**
+     * Creation timestamp of the object.
+     * @type {string}
+     * @memberof Order
+     */
+    created_at: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof Order
+     */
+    modified_at?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof Order
+     */
+    id: string;
+    /**
+     * 
+     * @type {number}
+     * @memberof Order
+     */
+    amount: number;
+    /**
+     * 
+     * @type {number}
+     * @memberof Order
+     */
+    tax_amount: number;
+    /**
+     * 
+     * @type {string}
+     * @memberof Order
+     */
+    currency: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof Order
+     */
+    user_id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof Order
+     */
+    product_id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof Order
+     */
+    product_price_id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof Order
+     */
+    subscription_id?: string;
+    /**
+     * 
+     * @type {OrderUser}
+     * @memberof Order
+     */
+    user: OrderUser;
+    /**
+     * 
+     * @type {OrderProduct}
+     * @memberof Order
+     */
+    product: OrderProduct;
+    /**
+     * 
+     * @type {ProductPrice}
+     * @memberof Order
+     */
+    product_price: ProductPrice;
+    /**
+     * 
+     * @type {OrderSubscription}
+     * @memberof Order
+     */
+    subscription?: OrderSubscription;
+}
+/**
+ * Order's invoice data.
+ * @export
+ * @interface OrderInvoice
+ */
+export interface OrderInvoice {
+    /**
+     * The URL to the invoice.
+     * @type {string}
+     * @memberof OrderInvoice
+     */
+    url: string;
+}
+/**
+ * 
+ * @export
+ * @interface OrderProduct
+ */
+export interface OrderProduct {
+    /**
+     * Creation timestamp of the object.
+     * @type {string}
+     * @memberof OrderProduct
+     */
+    created_at: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof OrderProduct
+     */
+    modified_at?: string;
+    /**
+     * The ID of the product.
+     * @type {string}
+     * @memberof OrderProduct
+     */
+    id: string;
+    /**
+     * The name of the product.
+     * @type {string}
+     * @memberof OrderProduct
+     */
+    name: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof OrderProduct
+     */
+    description?: string;
+    /**
+     * Whether the product is a subscription tier.
+     * @type {boolean}
+     * @memberof OrderProduct
+     */
+    is_recurring: boolean;
+    /**
+     * Whether the product is archived and no longer available.
+     * @type {boolean}
+     * @memberof OrderProduct
+     */
+    is_archived: boolean;
+    /**
+     * The ID of the organization owning the product.
+     * @type {string}
+     * @memberof OrderProduct
+     */
+    organization_id: string;
+    /**
+     * 
+     * @type {SubscriptionTierType}
+     * @memberof OrderProduct
+     */
+    type?: SubscriptionTierType;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof OrderProduct
+     */
+    is_highlighted?: boolean;
+}
+/**
+ * 
+ * @export
+ * @interface OrderSubscription
+ */
+export interface OrderSubscription {
+    /**
+     * Creation timestamp of the object.
+     * @type {string}
+     * @memberof OrderSubscription
+     */
+    created_at: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof OrderSubscription
+     */
+    modified_at?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof OrderSubscription
+     */
+    id: string;
+    /**
+     * 
+     * @type {SubscriptionStatus}
+     * @memberof OrderSubscription
+     */
+    status: SubscriptionStatus;
+    /**
+     * 
+     * @type {string}
+     * @memberof OrderSubscription
+     */
+    current_period_start: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof OrderSubscription
+     */
+    current_period_end?: string;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof OrderSubscription
+     */
+    cancel_at_period_end: boolean;
+    /**
+     * 
+     * @type {string}
+     * @memberof OrderSubscription
+     */
+    started_at?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof OrderSubscription
+     */
+    ended_at?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof OrderSubscription
+     */
+    user_id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof OrderSubscription
+     */
+    organization_id?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof OrderSubscription
+     */
+    product_id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof OrderSubscription
+     */
+    price_id?: string;
+}
+/**
+ * 
+ * @export
+ * @interface OrderUser
+ */
+export interface OrderUser {
+    /**
+     * 
+     * @type {string}
+     * @memberof OrderUser
+     */
+    id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof OrderUser
+     */
+    email: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof OrderUser
+     */
+    public_name: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof OrderUser
+     */
+    github_username?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof OrderUser
+     */
+    avatar_url?: string;
+}
+/**
+ * 
+ * @export
+ * @interface OrdersStatistics
+ */
+export interface OrdersStatistics {
+    /**
+     * 
+     * @type {Array<OrdersStatisticsPeriod>}
+     * @memberof OrdersStatistics
+     */
+    periods: Array<OrdersStatisticsPeriod>;
+}
+/**
+ * 
+ * @export
+ * @interface OrdersStatisticsPeriod
+ */
+export interface OrdersStatisticsPeriod {
+    /**
+     * 
+     * @type {string}
+     * @memberof OrdersStatisticsPeriod
+     */
+    date: string;
+    /**
+     * 
+     * @type {number}
+     * @memberof OrdersStatisticsPeriod
+     */
+    orders: number;
+    /**
+     * 
+     * @type {number}
+     * @memberof OrdersStatisticsPeriod
+     */
+    earnings: number;
+    /**
+     * 
+     * @type {number}
+     * @memberof OrdersStatisticsPeriod
+     */
+    expected_orders: number;
+    /**
+     * 
+     * @type {number}
+     * @memberof OrdersStatisticsPeriod
+     */
+    expected_earnings: number;
+}
 /**
  * 
  * @export
@@ -9407,349 +9750,6 @@ export interface RewardsSummaryReceiver {
      */
     avatar_url?: string;
 }
-/**
- * 
- * @export
- * @interface Sale
- */
-export interface Sale {
-    /**
-     * Creation timestamp of the object.
-     * @type {string}
-     * @memberof Sale
-     */
-    created_at: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof Sale
-     */
-    modified_at?: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof Sale
-     */
-    id: string;
-    /**
-     * 
-     * @type {number}
-     * @memberof Sale
-     */
-    amount: number;
-    /**
-     * 
-     * @type {number}
-     * @memberof Sale
-     */
-    tax_amount: number;
-    /**
-     * 
-     * @type {string}
-     * @memberof Sale
-     */
-    currency: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof Sale
-     */
-    user_id: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof Sale
-     */
-    product_id: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof Sale
-     */
-    product_price_id: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof Sale
-     */
-    subscription_id?: string;
-    /**
-     * 
-     * @type {SaleUser}
-     * @memberof Sale
-     */
-    user: SaleUser;
-    /**
-     * 
-     * @type {SaleProduct}
-     * @memberof Sale
-     */
-    product: SaleProduct;
-    /**
-     * 
-     * @type {ProductPrice}
-     * @memberof Sale
-     */
-    product_price: ProductPrice;
-    /**
-     * 
-     * @type {SaleSubscription}
-     * @memberof Sale
-     */
-    subscription?: SaleSubscription;
-}
-/**
- * Sale's invoice data.
- * @export
- * @interface SaleInvoice
- */
-export interface SaleInvoice {
-    /**
-     * The URL to the invoice.
-     * @type {string}
-     * @memberof SaleInvoice
-     */
-    url: string;
-}
-/**
- * 
- * @export
- * @interface SaleProduct
- */
-export interface SaleProduct {
-    /**
-     * Creation timestamp of the object.
-     * @type {string}
-     * @memberof SaleProduct
-     */
-    created_at: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof SaleProduct
-     */
-    modified_at?: string;
-    /**
-     * The ID of the product.
-     * @type {string}
-     * @memberof SaleProduct
-     */
-    id: string;
-    /**
-     * The name of the product.
-     * @type {string}
-     * @memberof SaleProduct
-     */
-    name: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof SaleProduct
-     */
-    description?: string;
-    /**
-     * Whether the product is a subscription tier.
-     * @type {boolean}
-     * @memberof SaleProduct
-     */
-    is_recurring: boolean;
-    /**
-     * Whether the product is archived and no longer available.
-     * @type {boolean}
-     * @memberof SaleProduct
-     */
-    is_archived: boolean;
-    /**
-     * The ID of the organization owning the product.
-     * @type {string}
-     * @memberof SaleProduct
-     */
-    organization_id: string;
-    /**
-     * 
-     * @type {SubscriptionTierType}
-     * @memberof SaleProduct
-     */
-    type?: SubscriptionTierType;
-    /**
-     * 
-     * @type {boolean}
-     * @memberof SaleProduct
-     */
-    is_highlighted?: boolean;
-}
-/**
- * 
- * @export
- * @interface SaleSubscription
- */
-export interface SaleSubscription {
-    /**
-     * Creation timestamp of the object.
-     * @type {string}
-     * @memberof SaleSubscription
-     */
-    created_at: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof SaleSubscription
-     */
-    modified_at?: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof SaleSubscription
-     */
-    id: string;
-    /**
-     * 
-     * @type {SubscriptionStatus}
-     * @memberof SaleSubscription
-     */
-    status: SubscriptionStatus;
-    /**
-     * 
-     * @type {string}
-     * @memberof SaleSubscription
-     */
-    current_period_start: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof SaleSubscription
-     */
-    current_period_end?: string;
-    /**
-     * 
-     * @type {boolean}
-     * @memberof SaleSubscription
-     */
-    cancel_at_period_end: boolean;
-    /**
-     * 
-     * @type {string}
-     * @memberof SaleSubscription
-     */
-    started_at?: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof SaleSubscription
-     */
-    ended_at?: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof SaleSubscription
-     */
-    user_id: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof SaleSubscription
-     */
-    organization_id?: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof SaleSubscription
-     */
-    product_id: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof SaleSubscription
-     */
-    price_id?: string;
-}
-/**
- * 
- * @export
- * @interface SaleUser
- */
-export interface SaleUser {
-    /**
-     * 
-     * @type {string}
-     * @memberof SaleUser
-     */
-    id: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof SaleUser
-     */
-    email: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof SaleUser
-     */
-    public_name: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof SaleUser
-     */
-    github_username?: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof SaleUser
-     */
-    avatar_url?: string;
-}
-/**
- * 
- * @export
- * @interface SalesStatistics
- */
-export interface SalesStatistics {
-    /**
-     * 
-     * @type {Array<SalesStatisticsPeriod>}
-     * @memberof SalesStatistics
-     */
-    periods: Array<SalesStatisticsPeriod>;
-}
-/**
- * 
- * @export
- * @interface SalesStatisticsPeriod
- */
-export interface SalesStatisticsPeriod {
-    /**
-     * 
-     * @type {string}
-     * @memberof SalesStatisticsPeriod
-     */
-    date: string;
-    /**
-     * 
-     * @type {number}
-     * @memberof SalesStatisticsPeriod
-     */
-    sales: number;
-    /**
-     * 
-     * @type {number}
-     * @memberof SalesStatisticsPeriod
-     */
-    earnings: number;
-    /**
-     * 
-     * @type {number}
-     * @memberof SalesStatisticsPeriod
-     */
-    expected_sales: number;
-    /**
-     * 
-     * @type {number}
-     * @memberof SalesStatisticsPeriod
-     */
-    expected_earnings: number;
-}
 
 /**
  * 
@@ -9771,7 +9771,7 @@ export const Scope = {
     CREATORPRODUCTSWRITE: 'creator:products:write',
     CREATORBENEFITSREAD: 'creator:benefits:read',
     CREATORBENEFITSWRITE: 'creator:benefits:write',
-    CREATORSALESREAD: 'creator:sales:read',
+    ORDERSREAD: 'orders:read',
     WEBHOOKSREAD: 'webhooks:read',
     WEBHOOKSWRITE: 'webhooks:write'
 } as const;
@@ -10594,10 +10594,10 @@ export interface Transaction {
     issue_reward?: TransactionIssueReward;
     /**
      * 
-     * @type {TransactionSale}
+     * @type {TransactionOrder}
      * @memberof Transaction
      */
-    sale?: TransactionSale;
+    order?: TransactionOrder;
     /**
      * 
      * @type {TransactionDonation}
@@ -10745,10 +10745,10 @@ export interface TransactionDetails {
     issue_reward?: TransactionIssueReward;
     /**
      * 
-     * @type {TransactionSale}
+     * @type {TransactionOrder}
      * @memberof TransactionDetails
      */
-    sale?: TransactionSale;
+    order?: TransactionOrder;
     /**
      * 
      * @type {TransactionDonation}
@@ -11027,6 +11027,49 @@ export interface TransactionIssueReward {
 /**
  * 
  * @export
+ * @interface TransactionOrder
+ */
+export interface TransactionOrder {
+    /**
+     * Creation timestamp of the object.
+     * @type {string}
+     * @memberof TransactionOrder
+     */
+    created_at: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof TransactionOrder
+     */
+    modified_at?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof TransactionOrder
+     */
+    id: string;
+    /**
+     * 
+     * @type {TransactionProduct}
+     * @memberof TransactionOrder
+     */
+    product: TransactionProduct;
+    /**
+     * 
+     * @type {TransactionProductPrice}
+     * @memberof TransactionOrder
+     */
+    product_price: TransactionProductPrice;
+    /**
+     * 
+     * @type {string}
+     * @memberof TransactionOrder
+     */
+    subscription_id?: string;
+}
+/**
+ * 
+ * @export
  * @interface TransactionOrganization
  */
 export interface TransactionOrganization {
@@ -11256,49 +11299,6 @@ export interface TransactionRepository {
      * @memberof TransactionRepository
      */
     name: string;
-}
-/**
- * 
- * @export
- * @interface TransactionSale
- */
-export interface TransactionSale {
-    /**
-     * Creation timestamp of the object.
-     * @type {string}
-     * @memberof TransactionSale
-     */
-    created_at: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof TransactionSale
-     */
-    modified_at?: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof TransactionSale
-     */
-    id: string;
-    /**
-     * 
-     * @type {TransactionProduct}
-     * @memberof TransactionSale
-     */
-    product: TransactionProduct;
-    /**
-     * 
-     * @type {TransactionProductPrice}
-     * @memberof TransactionSale
-     */
-    product_price: TransactionProductPrice;
-    /**
-     * 
-     * @type {string}
-     * @memberof TransactionSale
-     */
-    subscription_id?: string;
 }
 
 /**

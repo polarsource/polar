@@ -17,6 +17,7 @@ apis/IssuesApi.ts
 apis/MagicLinkApi.ts
 apis/NotificationsApi.ts
 apis/Oauth2Api.ts
+apis/OrdersApi.ts
 apis/OrganizationsApi.ts
 apis/PaymentMethodsApi.ts
 apis/PersonalAccessTokenApi.ts
@@ -25,7 +26,6 @@ apis/ProductsApi.ts
 apis/PullRequestsApi.ts
 apis/RepositoriesApi.ts
 apis/RewardsApi.ts
-apis/SalesApi.ts
 apis/StreamApi.ts
 apis/SubscriptionsApi.ts
 apis/TrafficApi.ts

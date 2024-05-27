@@ -1,5 +1,6 @@
 'use client'
 
+import { resolveValue } from '@/components/Documentation/schemaResolver'
 import { CONFIG } from '@/utils/config'
 import { CheckOutlined, FileCopyOutlined } from '@mui/icons-material'
 import { AnimatePresence, motion } from 'framer-motion'
@@ -13,7 +14,6 @@ import {
 } from 'polarkit/components/ui/atoms/tabs'
 import { useCallback, useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
-import { resolveReference } from '../../Documentation/APINavigation'
 
 export const requestBodyParameters = (
   endpoint: OpenAPIV3_1.OperationObject,
@@ -25,11 +25,9 @@ export const requestBodyParameters = (
     'application/json' in endpoint.requestBody.content &&
     endpoint.requestBody.content['application/json'] &&
     'schema' in endpoint.requestBody.content['application/json'] &&
-    endpoint.requestBody.content['application/json'].schema &&
-    '$ref' in endpoint.requestBody.content['application/json'].schema &&
-    resolveReference(endpoint.requestBody.content['application/json'].schema)
+    endpoint.requestBody.content['application/json'].schema
 
-  return schema && 'properties' in schema ? schema.properties : undefined
+  return schema && 'properties' in schema ? resolveValue(schema) : undefined
 }
 
 const buildCurlCommand = (
@@ -39,12 +37,6 @@ const buildCurlCommand = (
 ) => {
   const requestParameters = requestBodyParameters(endpoint)
   const requiredBodyParameters = requestParameters
-    ? Object.entries(requestParameters)
-        .map(([key]) => ({
-          [key]: `<${key}>`,
-        }))
-        .reduce((acc, curr) => ({ ...acc, ...curr }), {})
-    : undefined
 
   const bodyParametersString = requiredBodyParameters
     ? `-d '${JSON.stringify(requiredBodyParameters, null, 2)}'`
@@ -177,12 +169,12 @@ export const APIContainer = ({
           </Button>
         </TabsList>
         <TabsContent value="curl" className="p-2 py-0">
-          <pre className="dark:text-polar-50 h-full select-text overflow-auto p-4 font-mono text-xs leading-normal text-gray-900">
+          <pre className="dark:text-polar-50 select-text overflow-auto p-4 font-mono text-xs leading-normal text-gray-900">
             {curlCommand}
           </pre>
         </TabsContent>
         <TabsContent value="nodejs" className="p-2 py-0">
-          <pre className="dark:text-polar-50 h-full select-text overflow-auto p-4 font-mono text-xs leading-normal text-gray-900">
+          <pre className="dark:text-polar-50 select-text overflow-auto p-4 font-mono text-xs leading-normal text-gray-900">
             {nodeJSCommand}
           </pre>
         </TabsContent>

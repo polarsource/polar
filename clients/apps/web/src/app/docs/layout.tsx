@@ -1,3 +1,4 @@
+import { DocumentationProvider } from '@/components/Documentation/DocumentationProvider'
 import { BrandingMenu } from '@/components/Layout/Public/BrandingMenu'
 import Footer from '@/components/Organization/Footer'
 import { getServerSideAPI } from '@/utils/api/serverside'
@@ -13,21 +14,23 @@ import { PolarMenu } from '../[organization]/(sidebar)/LayoutPolarMenu'
 
 export default async function Layout({ children }: PropsWithChildren) {
   return (
-    <div className="dark:bg-polar-950 flex w-full flex-col items-center gap-y-12 bg-white">
-      <div className="flex h-fit w-full max-w-[100vw] flex-row justify-stretch">
-        <div className="flex w-full flex-grow flex-col gap-y-12 pt-12 md:pt-0">
-          <DocumentationPageTopbar />
-          <MobileNav />
-          <div className="flex flex-col gap-x-16 gap-y-16 px-4 pb-24 pt-16 md:flex-row md:items-start md:justify-between md:px-12 md:pt-0">
-            <div className="hidden md:block">
-              <DocumentationPageSidebar />
+    <DocumentationProvider>
+      <div className="dark:bg-polar-950 flex w-full flex-col items-center gap-y-12 bg-white">
+        <div className="flex h-fit w-full max-w-[100vw] flex-row justify-stretch">
+          <div className="flex w-full flex-grow flex-col gap-y-12 pt-12 md:pt-0">
+            <DocumentationPageTopbar />
+            <MobileNav />
+            <div className="flex flex-col gap-x-16 gap-y-16 px-4 pb-24 pt-16 md:flex-row md:items-start md:justify-between md:px-12 md:pt-0">
+              <div className="hidden md:block">
+                <DocumentationPageSidebar />
+              </div>
+              {children}
             </div>
-            {children}
           </div>
         </div>
+        <Footer showUpsellFooter={false} wide />
       </div>
-      <Footer showUpsellFooter={false} wide />
-    </div>
+    </DocumentationProvider>
   )
 }
 

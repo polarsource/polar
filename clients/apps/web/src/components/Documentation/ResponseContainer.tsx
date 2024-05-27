@@ -1,3 +1,5 @@
+'use client'
+
 import { OpenAPIV3_1 } from 'openapi-types'
 import {
   Tabs,
@@ -5,7 +7,7 @@ import {
   TabsList,
   TabsTrigger,
 } from 'polarkit/components/ui/atoms/tabs'
-import { resolveReference } from './APINavigation'
+import { resolveValue } from './schemaResolver'
 
 export const ResponseContainer = ({
   responses,
@@ -38,12 +40,7 @@ export const ResponseContainer = ({
             'content' in response &&
             response.content?.['application/json'].schema &&
             'schema' in response.content['application/json'] &&
-            '$ref' in response.content['application/json'].schema
-              ? resolveReference(response.content['application/json'].schema)
-              : undefined
-
-          const properties =
-            schema && 'properties' in schema ? schema.properties : undefined
+            response.content['application/json'].schema
 
           return (
             <TabsContent
@@ -51,9 +48,9 @@ export const ResponseContainer = ({
               value={statusCode}
               className="p-2 py-0"
             >
-              {properties ? (
+              {schema ? (
                 <pre className="dark:text-polar-50 max-h-72 select-text overflow-auto p-4 font-mono text-xs leading-normal text-gray-900">
-                  {JSON.stringify(properties, null, 2)}
+                  {JSON.stringify(resolveValue(schema), null, 2)}
                 </pre>
               ) : undefined}
             </TabsContent>

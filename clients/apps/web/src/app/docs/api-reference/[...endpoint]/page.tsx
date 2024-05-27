@@ -1,34 +1,51 @@
+'use client'
+
+import { useDocumentationContext } from '@/components/Documentation/DocumentationProvider'
 import { OpenAPIV3_1 } from 'openapi-types'
 import { useMemo } from 'react'
 import { APIContainer } from '../../../../components/CommandPalette/containers/APIContainer'
-import { resolveReference } from '../../../../components/Documentation/APINavigation'
 import { BodyParameters } from '../../../../components/Documentation/BodyParameters'
 import { Parameters } from '../../../../components/Documentation/Parameters'
 import { ResponseContainer } from '../../../../components/Documentation/ResponseContainer'
-import { resolveOpenAPIEndpointMetadata } from '../../../../components/Documentation/resolveOpenAPIEndpointMetadata'
+import { resolveEndpointMetadata } from '../../../../components/Documentation/resolveEndpointMetadata'
 
 export default function Page({
   params: { endpoint },
 }: {
   params: { endpoint: string[] }
 }) {
-  const { operation, method, apiEndpointPath } = resolveOpenAPIEndpointMetadata(
-    endpoint.join('/'),
-  )
+  const { schema } = useDocumentationContext()
+
+  const metadata = schema
+    ? resolveEndpointMetadata(
+        endpoint.join('/'),
+        schema as unknown as OpenAPIV3_1.Document,
+      )
+    : undefined
+
+  const { operation, method, apiEndpointPath } = metadata ?? {
+    operation: null,
+    method: null,
+    apiEndpointPath: null,
+  }
 
   const requestBodyParameters = useMemo(() => {
-    if (operation.requestBody && !('content' in operation.requestBody)) {
+    if (
+      operation &&
+      operation.requestBody &&
+      !('content' in operation.requestBody)
+    ) {
       return undefined
     }
 
     const schema =
+      operation &&
       operation.requestBody &&
+      'content' in operation.requestBody &&
       'schema' in operation.requestBody.content['application/json'] &&
-      operation.requestBody.content['application/json'].schema &&
-      '$ref' in operation.requestBody.content['application/json'].schema &&
       operation.requestBody.content['application/json'].schema
 
-    return schema ? resolveReference(schema) : undefined
+    return schema
   }, [operation])
 
   if (!operation) return null
@@ -48,7 +65,7 @@ export default function Page({
             </h1>
             <div className="flex flex-row items-center gap-x-4">
               <span className="dark:bg-polar-700 rounded-md bg-gray-200/50 px-2 py-1 font-mono text-xs font-normal uppercase">
-                {method}
+                {method ?? 'Unknown Method'}
               </span>
               <pre className="w-fit font-mono text-sm">{apiEndpointPath}</pre>
             </div>

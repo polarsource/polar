@@ -14,7 +14,7 @@ import {
 import { usePathname } from 'next/navigation'
 import { Separator } from 'polarkit/components/ui/separator'
 import { useEffect, useState } from 'react'
-import { sections } from './APINavigation'
+import { useSections } from './APINavigation'
 import { NaviagtionItem } from './NavigationItem'
 import { SearchPalette } from './SearchPalette'
 
@@ -232,6 +232,8 @@ const APISections = () => {
 }
 
 const APIReferenceSections = () => {
+  const sections = useSections()
+
   return (
     <>
       {sections.map((section) => (

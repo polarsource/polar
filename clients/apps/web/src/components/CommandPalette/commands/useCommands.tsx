@@ -1,6 +1,8 @@
-import { resolveOpenAPIEndpointMetadata } from '@/components/Documentation/resolveOpenAPIEndpointMetadata'
+import { resolveEndpointMetadata } from '@/components/Documentation/resolveEndpointMetadata'
 import { useCurrentOrgAndRepoFromURL } from '@/hooks'
+import SwaggerParser from '@apidevtools/swagger-parser'
 import { Organization } from '@polar-sh/sdk'
+import openapiSchema from '@polar-sh/sdk/openapi'
 import lunr from 'lunr'
 import {
   useParams,
@@ -8,6 +10,7 @@ import {
   useRouter,
   useSearchParams,
 } from 'next/navigation'
+import { OpenAPIV3_1 } from 'openapi-types'
 import {
   PropsWithChildren,
   createContext,
@@ -27,6 +30,8 @@ import {
 import { SCOPES, Scope, ScopeKey, ScopeType } from './scopes'
 import { useScopes } from './useScopes'
 
+const apiParser = new SwaggerParser()
+
 // @ts-ignore
 const searchMetadataLookup = new Map([
   ...lunrSearchMetadata.openapi.map((m) => [m.id, m]),
@@ -34,6 +39,7 @@ const searchMetadataLookup = new Map([
 ])
 
 export interface CommandPaletteContextValue {
+  apiSchema?: OpenAPIV3_1.Document
   scopes: ReturnType<typeof SCOPES>
   scopeKey: ScopeKey
   scope?: Scope
@@ -50,6 +56,7 @@ export interface CommandPaletteContextValue {
 }
 
 const defaultCommandPaletteContextValue: CommandPaletteContextValue = {
+  apiSchema: undefined,
   scopes: [] as any,
   scopeKey: 'global',
   scope: { name: 'global', commands: [], type: ScopeType.Global },
@@ -87,6 +94,7 @@ export const CommandPaletteContextProvider = ({
   const router = useRouter()
   const { org } = useCurrentOrgAndRepoFromURL()
 
+  const [apiSchema, setApiSchema] = useState<OpenAPIV3_1.Document>()
   const [scopeKeys, setScopeKeys] = useState<ScopeKey[]>(['global'])
   const [selectedCommand, setSelectedCommand] = useState<Command>()
   const [input, setInput] = useState('')
@@ -110,6 +118,11 @@ export const CommandPaletteContextProvider = ({
     [scopes, scopeKey],
   )
 
+  useEffect(() => {
+    // @ts-ignore
+    apiParser.dereference(openapiSchema).then(setApiSchema)
+  }, [])
+
   // Filter out commands based on input
   const commands = useMemo(() => {
     const searchResults =
@@ -125,14 +138,15 @@ export const CommandPaletteContextProvider = ({
       (result) => {
         const isAPIEntry = result.ref.includes('/api/v1/')
 
-        if (isAPIEntry) {
+        if (isAPIEntry && apiSchema) {
           const { operation, method, apiEndpointPath } =
-            resolveOpenAPIEndpointMetadata(
+            resolveEndpointMetadata(
               result.ref.replace('/docs/api-reference/', ''),
+              apiSchema,
             )
 
           return {
-            id: `${operation.operationId}-${method}-${apiEndpointPath}`,
+            id: `${operation.operationId}-${method ?? 'unknown'}-${apiEndpointPath}`,
             name: operation.summary ?? '',
             description: 'Explore API Endpoint',
             type: CommandType.API,
@@ -170,7 +184,7 @@ export const CommandPaletteContextProvider = ({
       ) ?? []
 
     return [...searchCommands, ...scopeCommands]
-  }, [scope, input, searchIndex, router, hideCommandPalette])
+  }, [scope, input, searchIndex, router, hideCommandPalette, apiSchema])
 
   useEffect(() => {
     setSelectedCommand(commands[0])

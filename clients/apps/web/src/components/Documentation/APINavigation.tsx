@@ -1,5 +1,6 @@
 import openapiSchema from '@polar-sh/sdk/openapi'
 import { OpenAPIV3_1 } from 'openapi-types'
+import { useDocumentationContext } from './DocumentationProvider'
 
 export type SchemaPaths = (typeof openapiSchema)['paths']
 export type SchemaPathKey = keyof SchemaPaths
@@ -46,8 +47,12 @@ const extractEntries = <T extends {}>(obj: T) => {
   return Object.entries(obj) as [keyof T, T[keyof T]][]
 }
 
-const buildSections = (): Section[] => {
-  const sections = extractEntries(openapiSchema.paths ?? {}).reduce<Section[]>(
+export const useSections = (): Section[] => {
+  const { schema } = useDocumentationContext()
+
+  if (!schema) return []
+
+  const sections = extractEntries(schema.paths ?? {}).reduce<Section[]>(
     (acc, [path, endpoints]) => {
       const [ancestor] = path.replace('/api/v1/', '').split('/').filter(Boolean)
 
@@ -102,15 +107,4 @@ const buildSections = (): Section[] => {
   )
 
   return sections.sort((a, b) => a.name.localeCompare(b.name))
-}
-
-export const sections = buildSections()
-
-export const resolveReference = (reference: OpenAPIV3_1.ReferenceObject) => {
-  const type = reference.$ref.replaceAll(
-    '#/components/schemas/',
-    '',
-  ) as keyof (typeof openapiSchema.components)['schemas']
-
-  return openapiSchema.components['schemas'][type]
 }

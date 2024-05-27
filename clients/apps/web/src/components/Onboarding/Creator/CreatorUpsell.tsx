@@ -26,11 +26,15 @@ interface OnboardingMap {
 }
 
 export const useUpsellSteps = () => {
+  let onboardingMap = {}
+  if (typeof window !== 'undefined') {
+    onboardingMap = JSON.parse(localStorage.getItem(ONBOARDING_MAP_KEY) ?? '{}')
+  }
+
   const { org: currentOrg } = useCurrentOrgAndRepoFromURL()
   const [upsellSteps, setUpsellSteps] = useState<UpsellStepProps[]>([])
-  const [onboardingCompletedMap, setOnboardingCompletedMap] = useState<
-    Partial<OnboardingMap>
-  >(JSON.parse(localStorage.getItem(ONBOARDING_MAP_KEY) ?? '{}'))
+  const [onboardingCompletedMap, setOnboardingCompletedMap] =
+    useState<Partial<OnboardingMap>>(onboardingMap)
 
   const { data: products, isPending: tiersPending } = useProducts(
     currentOrg?.id ?? '',

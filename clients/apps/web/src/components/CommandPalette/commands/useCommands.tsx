@@ -135,10 +135,15 @@ export const CommandPaletteContextProvider = ({
         : []
 
     const searchCommands = searchResults.map<DocumentationCommand | APICommand>(
+      // @ts-ignore
       (result) => {
         const isAPIEntry = result.ref.includes('/api/v1/')
 
-        if (isAPIEntry && apiSchema) {
+        if (!apiSchema) {
+          throw new Error('API Schema not loaded')
+        }
+
+        if (isAPIEntry) {
           const { operation, method, apiEndpointPath } =
             resolveEndpointMetadata(
               result.ref.replace('/docs/api-reference/', ''),

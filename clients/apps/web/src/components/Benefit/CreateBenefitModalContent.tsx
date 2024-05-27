@@ -106,7 +106,7 @@ const CreateBenefitModalContent = ({
             className="flex flex-col gap-y-6"
             onSubmit={handleSubmit(handleCreateNewBenefit)}
           >
-            <NewBenefitForm />
+            <NewBenefitForm organization={organization} />
             <div className="mt-4 flex flex-row items-center gap-x-4">
               <Button
                 className="self-start"

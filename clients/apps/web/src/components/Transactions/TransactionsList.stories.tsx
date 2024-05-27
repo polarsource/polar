@@ -4,12 +4,12 @@ import {
   TransactionDonation,
   TransactionIssue,
   TransactionIssueReward,
+  TransactionOrder,
   TransactionOrganization,
   TransactionPledge,
   TransactionProduct,
   TransactionProductPrice,
   TransactionRepository,
-  TransactionSale,
 } from '@polar-sh/sdk'
 import type { Meta, StoryObj } from '@storybook/react'
 import TransactionsList from './TransactionsList'
@@ -122,21 +122,21 @@ const product_price: TransactionProductPrice = {
   is_archived: false,
 }
 
-const sale: TransactionSale = {
+const order: TransactionOrder = {
   created_at: '',
   id: '',
   product,
   product_price,
 }
 
-const txSale: Transaction = {
+const txOrder: Transaction = {
   ...tx,
-  sale,
+  order,
 }
 
 export const Default: Story = {
   args: {
-    transactions: [tx, txDonation, txIssueReward, txSale],
+    transactions: [tx, txDonation, txIssueReward, txOrder],
     isLoading: false,
   },
 }

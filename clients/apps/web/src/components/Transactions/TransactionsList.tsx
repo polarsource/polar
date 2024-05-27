@@ -27,13 +27,13 @@ import { useMemo } from 'react'
 import ProductPill from '../Products/ProductPill'
 
 const getTransactionMeta = (transaction: Transaction) => {
-  if (transaction.sale) {
+  if (transaction.order) {
     return {
-      type: transaction.sale.subscription_id ? 'Subscription' : 'Purchase',
-      organization: transaction.sale.product.organization,
+      type: transaction.order.subscription_id ? 'Subscription' : 'Purchase',
+      organization: transaction.order.product.organization,
       meta: {
-        product: transaction.sale.product,
-        price: transaction.sale.product_price,
+        product: transaction.order.product,
+        price: transaction.order.product_price,
       },
     }
   } else if (transaction.issue_reward) {

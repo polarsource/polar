@@ -3,6 +3,7 @@ import stripe
 from arq import Retry
 
 from polar.account.service import account as account_service
+from polar.auth.models import AuthSubject
 from polar.authz.service import Authz
 from polar.donation.service import donation_service
 from polar.held_balance.service import held_balance as held_balance_service
@@ -123,11 +124,13 @@ class TestDonations:
         )  # $20 minus Polar and payment processor fees
         assert 0 == summary.payout.amount
 
+    @pytest.mark.auth
     async def test_held_balance(
         self,
         session: AsyncSession,
         organization: Organization,
         open_collective_account: Account,
+        auth_subject: AuthSubject[User],
         user: User,
         donation_sender: DonationSender,
     ) -> None:
@@ -142,7 +145,7 @@ class TestDonations:
 
         # (account is not connected at this moment)
         summary = await transaction_service.get_summary(
-            session, user, open_collective_account, authz
+            session, auth_subject.subject, open_collective_account, authz
         )
         assert 0 == summary.balance.amount
 
@@ -151,7 +154,7 @@ class TestDonations:
         await organization_service.set_account(
             session,
             authz=authz,
-            user=user,
+            auth_subject=auth_subject,
             organization=organization,
             account_id=open_collective_account.id,
         )
@@ -166,7 +169,7 @@ class TestDonations:
 
         # expect account balance
         summary = await transaction_service.get_summary(
-            session, user, account, await Authz.authz(session)
+            session, auth_subject.subject, account, await Authz.authz(session)
         )
 
         assert (

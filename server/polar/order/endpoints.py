@@ -7,10 +7,11 @@ from polar.exceptions import ResourceNotFound
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.routing import APIRouter
 from polar.models import Order
+from polar.models.product_price import ProductPriceType
 from polar.postgres import AsyncSession, get_db_session
 from polar.tags.api import Tags
 
-from . import auth
+from . import auth, sorting
 from .schemas import Order as OrderSchema
 from .schemas import OrderInvoice, OrdersStatistics
 from .service import order as order_service
@@ -26,9 +27,21 @@ OrderNotFound = {"description": "Order not found.", "model": ResourceNotFound.sc
 async def list_orders(
     auth_subject: auth.OrdersRead,
     pagination: PaginationParamsQuery,
+    sorting: sorting.ListSorting,
     organization_id: UUID4 | None = Query(
         None, description="Filter by organization ID."
     ),
+    product_id: UUID4 | None = Query(None, description="Filter by product ID."),
+    product_price_type: ProductPriceType | None = Query(
+        None,
+        description=(
+            "Filter by product price type. "
+            "`recurring` will return orders corresponding "
+            "to subscriptions creations or renewals. "
+            "`one_time` will return orders corresponding to one-time purchases."
+        ),
+    ),
+    user_id: UUID4 | None = Query(None, description="Filter by customer's user ID."),
     session: AsyncSession = Depends(get_db_session),
 ) -> ListResource[OrderSchema]:
     """List orders."""
@@ -36,7 +49,11 @@ async def list_orders(
         session,
         auth_subject,
         organization_id=organization_id,
+        product_id=product_id,
+        product_price_type=product_price_type,
+        user_id=user_id,
         pagination=pagination,
+        sorting=sorting,
     )
 
     return ListResource.from_paginated_results(

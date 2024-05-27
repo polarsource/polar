@@ -5893,8 +5893,8 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "creator:subscriptions:write",
-                            "creator:subscriptions:read"
+                            "creator:subscriptions:read",
+                            "creator:subscriptions:write"
                         ]
                     },
                     {
@@ -6042,8 +6042,8 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "creator:subscriptions:write",
-                            "creator:subscriptions:read"
+                            "creator:subscriptions:read",
+                            "creator:subscriptions:write"
                         ]
                     },
                     {
@@ -6265,8 +6265,8 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "backer:subscriptions:write",
-                            "backer:subscriptions:read"
+                            "backer:subscriptions:read",
+                            "backer:subscriptions:write"
                         ]
                     },
                     {
@@ -6725,8 +6725,8 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "creator:subscriptions:write",
-                            "creator:subscriptions:read"
+                            "creator:subscriptions:read",
+                            "creator:subscriptions:write"
                         ]
                     },
                     {
@@ -10312,8 +10312,8 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "creator:benefits:write",
-                            "creator:benefits:read"
+                            "creator:benefits:read",
+                            "creator:benefits:write"
                         ]
                     },
                     {
@@ -10525,8 +10525,8 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "creator:benefits:write",
-                            "creator:benefits:read"
+                            "creator:benefits:read",
+                            "creator:benefits:write"
                         ]
                     },
                     {
@@ -10812,8 +10812,8 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "creator:benefits:write",
-                            "creator:benefits:read"
+                            "creator:benefits:read",
+                            "creator:benefits:write"
                         ]
                     },
                     {
@@ -10966,8 +10966,8 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "webhooks:read",
-                            "webhooks:write"
+                            "webhooks:write",
+                            "webhooks:read"
                         ]
                     },
                     {
@@ -11137,8 +11137,8 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "webhooks:read",
-                            "webhooks:write"
+                            "webhooks:write",
+                            "webhooks:read"
                         ]
                     },
                     {
@@ -11373,8 +11373,8 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "webhooks:read",
-                            "webhooks:write"
+                            "webhooks:write",
+                            "webhooks:read"
                         ]
                     },
                     {
@@ -12047,6 +12047,62 @@
                         "description": "Filter by organization ID."
                     },
                     {
+                        "name": "product_id",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string",
+                                    "format": "uuid4"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "description": "Filter by product ID.",
+                            "title": "Product Id"
+                        },
+                        "description": "Filter by product ID."
+                    },
+                    {
+                        "name": "product_price_type",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "$ref": "#/components/schemas/ProductPriceType"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "description": "Filter by product price type. `recurring` will return orders corresponding to subscriptions creations or renewals. `one_time` will return orders corresponding to one-time purchases.",
+                            "title": "Product Price Type"
+                        },
+                        "description": "Filter by product price type. `recurring` will return orders corresponding to subscriptions creations or renewals. `one_time` will return orders corresponding to one-time purchases."
+                    },
+                    {
+                        "name": "user_id",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string",
+                                    "format": "uuid4"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "description": "Filter by customer's user ID.",
+                            "title": "User Id"
+                        },
+                        "description": "Filter by customer's user ID."
+                    },
+                    {
                         "name": "page",
                         "in": "query",
                         "required": false,
@@ -12071,6 +12127,27 @@
                             "title": "Limit"
                         },
                         "description": "Size of a page, defaults to 10. Maximum is 100."
+                    },
+                    {
+                        "name": "sorting",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "string"
+                                    }
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "description": "Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.",
+                            "title": "Sorting"
+                        },
+                        "description": "Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order."
                     }
                 ],
                 "responses": {

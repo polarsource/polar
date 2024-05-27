@@ -20,6 +20,7 @@ import type {
   Order,
   OrderInvoice,
   OrdersStatistics,
+  ProductPriceType,
   ResourceNotFound,
 } from '../models/index';
 
@@ -38,8 +39,12 @@ export interface OrdersApiGetOrdersStatisticsRequest {
 
 export interface OrdersApiListOrdersRequest {
     organizationId?: string;
+    productId?: string;
+    productPriceType?: ProductPriceType;
+    userId?: string;
     page?: number;
     limit?: number;
+    sorting?: Array<string>;
 }
 
 /**
@@ -188,12 +193,28 @@ export class OrdersApi extends runtime.BaseAPI {
             queryParameters['organization_id'] = requestParameters['organizationId'];
         }
 
+        if (requestParameters['productId'] != null) {
+            queryParameters['product_id'] = requestParameters['productId'];
+        }
+
+        if (requestParameters['productPriceType'] != null) {
+            queryParameters['product_price_type'] = requestParameters['productPriceType'];
+        }
+
+        if (requestParameters['userId'] != null) {
+            queryParameters['user_id'] = requestParameters['userId'];
+        }
+
         if (requestParameters['page'] != null) {
             queryParameters['page'] = requestParameters['page'];
         }
 
         if (requestParameters['limit'] != null) {
             queryParameters['limit'] = requestParameters['limit'];
+        }
+
+        if (requestParameters['sorting'] != null) {
+            queryParameters['sorting'] = requestParameters['sorting'];
         }
 
         const headerParameters: runtime.HTTPHeaders = {};

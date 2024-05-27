@@ -20,6 +20,7 @@ from polar.user_organization.service import (
 from polar.webhook.service import webhook as webhook_service
 from polar.worker import enqueue_job
 
+from .auth import OrganizationsWrite
 from .schemas import (
     OrganizationCreateFromGitHubInstallation,
     OrganizationCreateFromGitHubUser,
@@ -249,14 +250,14 @@ class OrganizationService(ResourceServiceReader[Organization]):
         session: AsyncSession,
         *,
         authz: Authz,
-        user: User,
+        auth_subject: OrganizationsWrite,
         organization: Organization,
         account_id: UUID,
     ) -> Organization:
         account = await account_service.get_by_id(session, account_id)
         if account is None:
             raise InvalidAccount(account_id)
-        if not await authz.can(user, AccessType.write, account):
+        if not await authz.can(auth_subject.subject, AccessType.write, account):
             raise InvalidAccount(account_id)
 
         first_account_set = organization.account_id is None

@@ -92,6 +92,7 @@ async def create(
         mapped = {
             "articles:read": Scope.articles_read,
             "user:read": Scope.user_read,
+            "organizations:read": Scope.organizations_read,
         }
         scopes = [mapped[k] for k in payload.scopes]
     else:

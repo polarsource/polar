@@ -3704,7 +3704,8 @@ export interface CreatePersonalAccessToken {
  */
 export const CreatePersonalAccessTokenScopesEnum = {
     ARTICLESREAD: 'articles:read',
-    USERREAD: 'user:read'
+    USERREAD: 'user:read',
+    ORGANIZATIONSREAD: 'organizations:read'
 } as const;
 export type CreatePersonalAccessTokenScopesEnum = typeof CreatePersonalAccessTokenScopesEnum[keyof typeof CreatePersonalAccessTokenScopesEnum];
 
@@ -9763,6 +9764,8 @@ export const Scope = {
     USERREAD: 'user:read',
     ADMIN: 'admin',
     WEB_DEFAULT: 'web_default',
+    ORGANIZATIONSREAD: 'organizations:read',
+    ORGANIZATIONSWRITE: 'organizations:write',
     CREATORSUBSCRIPTIONSREAD: 'creator:subscriptions:read',
     CREATORSUBSCRIPTIONSWRITE: 'creator:subscriptions:write',
     BACKERSUBSCRIPTIONSREAD: 'backer:subscriptions:read',

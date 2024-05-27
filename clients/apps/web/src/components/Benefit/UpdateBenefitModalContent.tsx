@@ -63,7 +63,10 @@ const UpdateBenefitModalContent = ({
             className="flex flex-col gap-y-6"
             onSubmit={handleSubmit(handleUpdateNewBenefit)}
           >
-            <UpdateBenefitForm type={benefit.type} />
+            <UpdateBenefitForm
+              organization={organization}
+              type={benefit.type}
+            />
             <div className="mt-4 flex flex-row items-center gap-x-4">
               <Button
                 className="self-start"

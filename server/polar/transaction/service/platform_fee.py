@@ -137,7 +137,7 @@ class PlatformFeeTransactionService(BaseTransactionService):
         if incoming.pledge_id is not None and incoming.issue_reward_id is not None:
             fee_percent = account.platform_pledge_fee_percent
             fee_amount = math.floor(incoming.amount * (fee_percent / 100))
-        elif incoming.sale_id is not None:
+        elif incoming.order_id is not None:
             fee_percent = account.platform_subscription_fee_percent
             fee_amount = math.floor(incoming.amount * (fee_percent / 100))
         elif incoming.donation_id is not None:
@@ -205,10 +205,10 @@ class PlatformFeeTransactionService(BaseTransactionService):
             payment_processor_fees_balances.append(fee_balances)
 
         # Subscription fee
-        if incoming.sale_id is not None:
-            await session.refresh(incoming, {"sale"})
-            assert incoming.sale is not None
-            if incoming.sale.subscription_id is not None:
+        if incoming.order_id is not None:
+            await session.refresh(incoming, {"order"})
+            assert incoming.order is not None
+            if incoming.order.subscription_id is not None:
                 subscription_fee_amount = get_stripe_subscription_fee(incoming.amount)
                 fee_balances = (
                     await balance_transaction_service.create_reversal_balance(

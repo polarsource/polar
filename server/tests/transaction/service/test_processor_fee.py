@@ -7,7 +7,7 @@ import stripe as stripe_lib
 from pytest_mock import MockerFixture
 
 from polar.integrations.stripe.service import StripeService
-from polar.models import IssueReward, Pledge, Sale, Transaction
+from polar.models import IssueReward, Order, Pledge, Transaction
 from polar.models.transaction import PaymentProcessor, ProcessorFeeType, TransactionType
 from polar.postgres import AsyncSession
 from polar.transaction.service.processor_fee import (
@@ -31,7 +31,7 @@ async def create_payment_transaction(
     amount: int = 1000,
     charge_id: str | None = "STRIPE_CHARGE_ID",
     pledge: Pledge | None = None,
-    sale: Sale | None = None,
+    order: Order | None = None,
     issue_reward: IssueReward | None = None,
 ) -> Transaction:
     transaction = Transaction(
@@ -44,7 +44,7 @@ async def create_payment_transaction(
         tax_amount=0,
         charge_id=charge_id,
         pledge=pledge,
-        sale=sale,
+        order=order,
         issue_reward=issue_reward,
     )
     await save_fixture(transaction)
@@ -60,7 +60,7 @@ async def create_refund_transaction(
     charge_id: str | None = "STRIPE_CHARGE_ID",
     refund_id: str | None = "STRIPE_REFUND_ID",
     pledge: Pledge | None = None,
-    sale: Sale | None = None,
+    order: Order | None = None,
     issue_reward: IssueReward | None = None,
 ) -> Transaction:
     transaction = Transaction(
@@ -74,7 +74,7 @@ async def create_refund_transaction(
         charge_id=charge_id,
         refund_id=refund_id,
         pledge=pledge,
-        sale=sale,
+        order=order,
         issue_reward=issue_reward,
     )
     await save_fixture(transaction)
@@ -90,7 +90,7 @@ async def create_dispute_transaction(
     charge_id: str | None = "STRIPE_CHARGE_ID",
     dispute_id: str | None = "STRIPE_DISPUTE_ID",
     pledge: Pledge | None = None,
-    sale: Sale | None = None,
+    order: Order | None = None,
     issue_reward: IssueReward | None = None,
 ) -> Transaction:
     transaction = Transaction(
@@ -104,7 +104,7 @@ async def create_dispute_transaction(
         charge_id=charge_id,
         dispute_id=dispute_id,
         pledge=pledge,
-        sale=sale,
+        order=order,
         issue_reward=issue_reward,
     )
     await save_fixture(transaction)

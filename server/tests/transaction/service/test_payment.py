@@ -254,7 +254,7 @@ class TestCreatePayment:
         assert transaction.amount == stripe_charge.amount
         assert transaction.charge_id == stripe_charge.id
         assert transaction.pledge == pledge
-        assert transaction.sale is None
+        assert transaction.order is None
 
         create_payment_fees_mock.assert_awaited_once()
 

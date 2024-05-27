@@ -7,22 +7,22 @@ from polar.logging import Logger
 from polar.worker import AsyncSessionMaker, JobContext, PolarWorkerContext, task
 
 from ..product.service.product import product as product_service
-from .service import sale as sale_service
+from .service import order as order_service
 
 log: Logger = structlog.get_logger()
 
 
-class SaleTaskError(PolarTaskError): ...
+class OrderTaskError(PolarTaskError): ...
 
 
-class ProductDoesNotExist(SaleTaskError):
+class ProductDoesNotExist(OrderTaskError):
     def __init__(self, product_id: uuid.UUID) -> None:
         self.product_id = product_id
         message = f"The product with id {product_id} does not exist."
         super().__init__(message)
 
 
-@task("sale.update_product_benefits_grants")
+@task("order.update_product_benefits_grants")
 async def update_product_benefits_grants(
     ctx: JobContext, product_id: uuid.UUID, polar_context: PolarWorkerContext
 ) -> None:
@@ -31,4 +31,4 @@ async def update_product_benefits_grants(
         if product is None:
             raise ProductDoesNotExist(product_id)
 
-        await sale_service.update_product_benefits_grants(session, product)
+        await order_service.update_product_benefits_grants(session, product)

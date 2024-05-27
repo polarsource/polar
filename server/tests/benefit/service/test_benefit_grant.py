@@ -28,7 +28,7 @@ from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     add_product_benefits,
     create_benefit_grant,
-    create_sale,
+    create_order,
     create_subscription,
 )
 
@@ -759,14 +759,14 @@ class TestGetByBenefitAndScope:
         other_subscription = await create_subscription(
             save_fixture, product=product, user=user
         )
-        sale = await create_sale(save_fixture, product=product, user=user)
+        order = await create_order(save_fixture, product=product, user=user)
 
         retrieved_grant = await benefit_grant_service.get_by_benefit_and_scope(
             session,
             user=user,
             benefit=benefit_organization,
             subscription=other_subscription,
-            sale=sale,
+            order=order,
         )
         assert retrieved_grant is None
 

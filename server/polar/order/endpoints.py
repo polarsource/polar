@@ -1,0 +1,107 @@
+from typing import Annotated
+
+from fastapi import Depends, Path, Query
+from pydantic import UUID4
+
+from polar.exceptions import ResourceNotFound
+from polar.kit.pagination import ListResource, PaginationParamsQuery
+from polar.kit.routing import APIRouter
+from polar.models import Order
+from polar.postgres import AsyncSession, get_db_session
+from polar.tags.api import Tags
+
+from . import auth
+from .schemas import Order as OrderSchema
+from .schemas import OrderInvoice, OrdersStatistics
+from .service import order as order_service
+
+router = APIRouter(prefix="/orders", tags=["orders"])
+
+
+OrderID = Annotated[UUID4, Path(description="The order ID.")]
+OrderNotFound = {"description": "Order not found.", "model": ResourceNotFound.schema()}
+
+
+@router.get("/", response_model=ListResource[OrderSchema], tags=[Tags.PUBLIC])
+async def list_orders(
+    auth_subject: auth.OrdersRead,
+    pagination: PaginationParamsQuery,
+    organization_id: UUID4 | None = Query(
+        None, description="Filter by organization ID."
+    ),
+    session: AsyncSession = Depends(get_db_session),
+) -> ListResource[OrderSchema]:
+    """List orders."""
+    results, count = await order_service.list(
+        session,
+        auth_subject,
+        organization_id=organization_id,
+        pagination=pagination,
+    )
+
+    return ListResource.from_paginated_results(
+        [OrderSchema.model_validate(result) for result in results],
+        count,
+        pagination,
+    )
+
+
+@router.get("/statistics", response_model=OrdersStatistics, tags=[Tags.PUBLIC])
+async def get_orders_statistics(
+    auth_subject: auth.OrdersRead,
+    organization_id: UUID4 | None = Query(
+        None, description="Filter by organization ID."
+    ),
+    product_id: UUID4 | None = Query(None, description="Filter by product ID."),
+    session: AsyncSession = Depends(get_db_session),
+) -> OrdersStatistics:
+    """Get monthly data about your orders and earnings."""
+    periods = await order_service.get_statistics_periods(
+        session,
+        auth_subject,
+        organization_id=organization_id,
+        product_id=product_id,
+    )
+    return OrdersStatistics(periods=periods)
+
+
+@router.get(
+    "/{id}",
+    response_model=OrderSchema,
+    tags=[Tags.PUBLIC],
+    responses={404: OrderNotFound},
+)
+async def get_order(
+    id: OrderID,
+    auth_subject: auth.OrdersRead,
+    session: AsyncSession = Depends(get_db_session),
+) -> Order:
+    """Get an order by ID."""
+    order = await order_service.get_by_id(session, auth_subject, id)
+
+    if order is None:
+        raise ResourceNotFound()
+
+    return order
+
+
+@router.get(
+    "/{id}/invoice",
+    response_model=OrderInvoice,
+    tags=[Tags.PUBLIC],
+    responses={404: OrderNotFound},
+)
+async def get_order_invoice(
+    id: OrderID,
+    auth_subject: auth.OrdersRead,
+    session: AsyncSession = Depends(get_db_session),
+) -> OrderInvoice:
+    """Get an order's invoice data."""
+    order = await order_service.get_by_id(session, auth_subject, id)
+
+    if order is None:
+        raise ResourceNotFound()
+
+    invoice_url = await order_service.get_order_invoice_url(order)
+
+    return OrderInvoice(url=invoice_url)

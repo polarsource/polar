@@ -457,7 +457,7 @@ class ProductService(ResourceService[Product, ProductCreate, ProductUpdate]):
         enqueue_job(
             "subscription.subscription.update_product_benefits_grants", product.id
         )
-        enqueue_job("sale.update_product_benefits_grants", product.id)
+        enqueue_job("order.update_product_benefits_grants", product.id)
 
         await self._after_product_updated(session, product)
 

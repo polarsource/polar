@@ -8,9 +8,9 @@ from polar.enums import AccountType
 from polar.models import (
     Account,
     IssueReward,
+    Order,
     Organization,
     Pledge,
-    Sale,
     Transaction,
     User,
 )
@@ -33,7 +33,7 @@ async def create_balance_transactions(
     account: Account,
     pledge: Pledge | None = None,
     issue_reward: IssueReward | None = None,
-    sale: Sale | None = None,
+    order: Order | None = None,
 ) -> tuple[Transaction, Transaction]:
     payment_transaction = Transaction(
         type=TransactionType.payment,
@@ -45,7 +45,7 @@ async def create_balance_transactions(
         tax_amount=0,
         pledge=pledge,
         issue_reward=issue_reward,
-        sale=sale,
+        order=order,
     )
     await save_fixture(payment_transaction)
 
@@ -71,7 +71,7 @@ async def create_balance_transactions(
         tax_amount=0,
         pledge=pledge,
         issue_reward=issue_reward,
-        sale=sale,
+        order=order,
         balance_correlation_key="BALANCE_1",
         payment_transaction=payment_transaction,
     )
@@ -86,7 +86,7 @@ async def create_balance_transactions(
         tax_amount=0,
         pledge=pledge,
         issue_reward=issue_reward,
-        sale=sale,
+        order=order,
         balance_correlation_key="BALANCE_1",
         payment_transaction=payment_transaction,
     )
@@ -107,7 +107,7 @@ async def load_balance_transactions(
         joinedload(Transaction.account),
         joinedload(Transaction.pledge),
         joinedload(Transaction.issue_reward),
-        joinedload(Transaction.sale),
+        joinedload(Transaction.order),
     )
 
     loaded_outgoing = await session.get(Transaction, outgoing.id, options=load_options)
@@ -227,12 +227,12 @@ class TestCreateFeesReversalBalances:
         session: AsyncSession,
         save_fixture: SaveFixture,
         account_processor_fees: Account,
-        transaction_sale_subscription: Sale,
+        transaction_order_subscription: Order,
     ) -> None:
         balance_transactions = await create_balance_transactions(
             save_fixture,
             account=account_processor_fees,
-            sale=transaction_sale_subscription,
+            order=transaction_order_subscription,
         )
 
         # then

@@ -21,6 +21,7 @@ from polar.issue.endpoints import router as issue_router
 from polar.magic_link.endpoints import router as magic_link_router
 from polar.notifications.endpoints import router as notifications_router
 from polar.oauth2.endpoints.oauth2 import router as oauth2_router
+from polar.order.endpoints import router as order_router
 from polar.organization.endpoints import router as organization_router
 from polar.payment_method.endpoints import router as payment_method_router
 from polar.personal_access_token.endpoints import router as pat_router
@@ -29,7 +30,6 @@ from polar.product.endpoints import router as product_router
 from polar.pull_request.endpoints import router as pull_requests_router
 from polar.repository.endpoints import router as repository_router
 from polar.reward.endpoints import router as rewards_router
-from polar.sale.endpoints import router as sale_router
 from polar.subscription.endpoints import router as subscription_router
 from polar.traffic.endpoints import router as traffic_router
 from polar.transaction.endpoints import router as transaction_router
@@ -105,7 +105,7 @@ router.include_router(benefits_router)
 router.include_router(webhook_router)
 # /products
 router.include_router(product_router)
-# /sales
-router.include_router(sale_router)
+# /orders
+router.include_router(order_router)
 # /checkout
 router.include_router(checkout_router)

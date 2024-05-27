@@ -19,6 +19,7 @@ from .oauth2_authorization_code import OAuth2AuthorizationCode
 from .oauth2_client import OAuth2Client
 from .oauth2_grant import OAuth2Grant
 from .oauth2_token import OAuth2Token
+from .order import Order
 from .organization import Organization
 from .personal_access_token import PersonalAccessToken
 from .pledge import Pledge
@@ -28,7 +29,6 @@ from .product_benefit import ProductBenefit
 from .product_price import ProductPrice
 from .pull_request import PullRequest
 from .repository import Repository
-from .sale import Sale
 from .subscription import Subscription
 from .traffic import Traffic
 from .transaction import Transaction
@@ -62,13 +62,13 @@ __all__ = [
     "OAuth2Grant",
     "OAuth2Token",
     "OAuthAccount",
+    "Order",
     "Organization",
     "PersonalAccessToken",
     "Pledge",
     "PledgeTransaction",
     "PullRequest",
     "Repository",
-    "Sale",
     "Subscription",
     "Product",
     "ProductBenefit",

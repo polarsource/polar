@@ -75,7 +75,7 @@ class TransactionProductPrice(TimestampedSchema):
     is_archived: bool
 
 
-class TransactionSale(TimestampedSchema):
+class TransactionOrder(TimestampedSchema):
     id: UUID4
     product: TransactionProduct
     product_price: TransactionProductPrice
@@ -106,7 +106,7 @@ class TransactionEmbedded(TimestampedSchema):
 class Transaction(TransactionEmbedded):
     pledge: TransactionPledge | None = None
     issue_reward: TransactionIssueReward | None = None
-    sale: TransactionSale | None = None
+    order: TransactionOrder | None = None
     donation: TransactionDonation | None = None
 
     account_incurred_transactions: list[TransactionEmbedded]

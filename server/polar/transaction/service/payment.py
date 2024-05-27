@@ -132,7 +132,7 @@ class PaymentTransactionService(BaseTransactionService):
             payment_organization=payment_organization,
             charge_id=charge.id,
             pledge=pledge,
-            sale=None,
+            order=None,
             donation=donation,
         )
 

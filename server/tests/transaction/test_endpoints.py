@@ -189,7 +189,7 @@ class TestCreatePayout:
             account=account,
             pledge=None,
             issue_reward=None,
-            sale=None,
+            order=None,
             donation=None,
             account_incurred_transactions=[],
         )

@@ -12,9 +12,9 @@ if TYPE_CHECKING:
         Account,
         Donation,
         IssueReward,
+        Order,
         Organization,
         Pledge,
-        Sale,
         Transaction,
     )
 
@@ -88,17 +88,17 @@ class HeldBalance(RecordModel):
     def pledge(cls) -> Mapped["Pledge | None"]:
         return relationship("Pledge", lazy="raise")
 
-    sale_id: Mapped[UUID | None] = mapped_column(
+    order_id: Mapped[UUID | None] = mapped_column(
         PostgresUUID,
-        ForeignKey("sales.id", ondelete="set null"),
+        ForeignKey("orders.id", ondelete="set null"),
         nullable=True,
         index=True,
     )
-    """ID of the `Sale` related to this balance."""
+    """ID of the `Order` related to this balance."""
 
     @declared_attr
-    def sale(cls) -> Mapped["Sale | None"]:
-        return relationship("Sale", lazy="raise")
+    def order(cls) -> Mapped["Order | None"]:
+        return relationship("Order", lazy="raise")
 
     issue_reward_id: Mapped[UUID | None] = mapped_column(
         PostgresUUID,

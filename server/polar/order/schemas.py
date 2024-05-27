@@ -8,7 +8,7 @@ from polar.product.schemas import ProductBase, ProductPrice
 from polar.subscription.schemas import SubscriptionBase
 
 
-class SaleBase(TimestampedSchema):
+class OrderBase(TimestampedSchema):
     id: UUID4
     amount: int
     tax_amount: int
@@ -20,7 +20,7 @@ class SaleBase(TimestampedSchema):
     subscription_id: UUID4 | None = None
 
 
-class SaleUser(Schema):
+class OrderUser(Schema):
     id: UUID4
     email: str
     public_name: str
@@ -28,32 +28,32 @@ class SaleUser(Schema):
     avatar_url: str | None = None
 
 
-class SaleProduct(ProductBase): ...
+class OrderProduct(ProductBase): ...
 
 
-class SaleSubscription(SubscriptionBase): ...
+class OrderSubscription(SubscriptionBase): ...
 
 
-class Sale(SaleBase):
-    user: SaleUser
-    product: SaleProduct
+class Order(OrderBase):
+    user: OrderUser
+    product: OrderProduct
     product_price: ProductPrice
-    subscription: SaleSubscription | None = None
+    subscription: OrderSubscription | None = None
 
 
-class SalesStatisticsPeriod(Schema):
+class OrdersStatisticsPeriod(Schema):
     date: date
-    sales: int
+    orders: int
     earnings: int
-    expected_sales: int
+    expected_orders: int
     expected_earnings: int
 
 
-class SalesStatistics(Schema):
-    periods: Sequence[SalesStatisticsPeriod]
+class OrdersStatistics(Schema):
+    periods: Sequence[OrdersStatisticsPeriod]
 
 
-class SaleInvoice(Schema):
-    """Sale's invoice data."""
+class OrderInvoice(Schema):
+    """Order's invoice data."""
 
     url: str = Field(..., description="The URL to the invoice.")

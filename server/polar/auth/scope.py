@@ -26,7 +26,7 @@ class Scope(StrEnum):
     creator_benefits_read = "creator:benefits:read"
     creator_benefits_write = "creator:benefits:write"
 
-    creator_sales_read = "creator:sales:read"
+    creator_orders_read = "orders:read"
 
     webhooks_read = "webhooks:read"
     webhooks_write = "webhooks:write"

@@ -64,7 +64,7 @@ async def pledge_invoice_payment_fix(
                 .where(
                     Transaction.type == TransactionType.payment,
                     Transaction.pledge_id.is_(None),
-                    Transaction.sale_id.is_(None),
+                    Transaction.order_id.is_(None),
                 )
                 .order_by(Transaction.created_at.asc())
             )

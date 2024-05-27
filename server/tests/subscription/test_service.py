@@ -45,8 +45,8 @@ from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     add_product_benefits,
     create_active_subscription,
+    create_order,
     create_product_price,
-    create_sale,
     create_subscription,
     create_user,
 )
@@ -1350,7 +1350,7 @@ def get_balances_sum(balances: list[Transaction]) -> int:
     return sum(balance.amount for balance in balances)
 
 
-async def create_sale_subscription_balances(
+async def create_order_subscription_balances(
     save_fixture: SaveFixture,
     *,
     gross_amount: int,
@@ -1363,7 +1363,7 @@ async def create_sale_subscription_balances(
     net_amount = get_net_amount(gross_amount)
     transactions: list[Transaction] = []
     for month in range(start_month, end_month + 1):
-        sale = await create_sale(
+        order = await create_order(
             save_fixture,
             user=subscription.user,
             product=subscription.product,
@@ -1379,7 +1379,7 @@ async def create_sale_subscription_balances(
             account_amount=int(net_amount * 0.9),
             tax_amount=0,
             account=organization_account,
-            sale=sale,
+            order=order,
         )
         await save_fixture(transaction)
         transactions.append(transaction)
@@ -1445,7 +1445,7 @@ class TestGetStatisticsPeriods:
             ended_at=datetime(2023, 6, 15),
         )
         price = product.prices[0].price_amount
-        balances = await create_sale_subscription_balances(
+        balances = await create_order_subscription_balances(
             save_fixture,
             gross_amount=price,
             start_month=1,
@@ -1494,7 +1494,7 @@ class TestGetStatisticsPeriods:
             ended_at=datetime(2023, 6, 15),
         )
         price = product.prices[0].price_amount
-        balances = await create_sale_subscription_balances(
+        balances = await create_order_subscription_balances(
             save_fixture,
             gross_amount=price,
             start_month=1,
@@ -1559,7 +1559,7 @@ class TestGetStatisticsPeriods:
             ended_at=datetime(2023, 6, 15),
         )
         price = product.prices[0].price_amount
-        balances = await create_sale_subscription_balances(
+        balances = await create_order_subscription_balances(
             save_fixture,
             gross_amount=price,
             start_month=1,
@@ -1609,7 +1609,7 @@ class TestGetStatisticsPeriods:
             ended_at=datetime(2023, 6, 15),
         )
         price = product.prices[0].price_amount
-        await create_sale_subscription_balances(
+        await create_order_subscription_balances(
             save_fixture,
             gross_amount=price,
             start_month=1,
@@ -1656,7 +1656,7 @@ class TestGetStatisticsPeriods:
             ended_at=datetime(2023, 6, 15),
         )
         price_organization = product.prices[0].price_amount
-        balances_organization = await create_sale_subscription_balances(
+        balances_organization = await create_order_subscription_balances(
             save_fixture,
             gross_amount=price_organization,
             start_month=1,
@@ -1672,7 +1672,7 @@ class TestGetStatisticsPeriods:
             ended_at=datetime(2023, 6, 15),
         )
         price_organization_second = product_second.prices[0].price_amount
-        balances_organization_second = await create_sale_subscription_balances(
+        balances_organization_second = await create_order_subscription_balances(
             save_fixture,
             gross_amount=price_organization_second,
             start_month=1,
@@ -1723,7 +1723,7 @@ class TestGetStatisticsPeriods:
             started_at=datetime(2023, 1, 1),
         )
         price = product.prices[0].price_amount
-        balances = await create_sale_subscription_balances(
+        balances = await create_order_subscription_balances(
             save_fixture,
             gross_amount=price,
             start_month=1,
@@ -1831,7 +1831,7 @@ class TestGetStatisticsPeriods:
             user=user_second,
             started_at=datetime(2023, 1, 1, tzinfo=UTC),
         )
-        balances = await create_sale_subscription_balances(
+        balances = await create_order_subscription_balances(
             save_fixture,
             gross_amount=price.price_amount,
             start_month=1,

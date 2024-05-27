@@ -1484,7 +1484,7 @@ class TestUpdateBenefits:
                     "subscription.subscription.update_product_benefits_grants",
                     product.id,
                 ),
-                call("sale.update_product_benefits_grants", product.id),
+                call("order.update_product_benefits_grants", product.id),
             ]
         )
 
@@ -1536,7 +1536,7 @@ class TestUpdateBenefits:
                     "subscription.subscription.update_product_benefits_grants",
                     product.id,
                 ),
-                call("sale.update_product_benefits_grants", product.id),
+                call("order.update_product_benefits_grants", product.id),
             ]
         )
 
@@ -1587,7 +1587,7 @@ class TestUpdateBenefits:
                     "subscription.subscription.update_product_benefits_grants",
                     product.id,
                 ),
-                call("sale.update_product_benefits_grants", product.id),
+                call("order.update_product_benefits_grants", product.id),
             ]
         )
 
@@ -1646,7 +1646,7 @@ class TestUpdateBenefits:
                     "subscription.subscription.update_product_benefits_grants",
                     product.id,
                 ),
-                call("sale.update_product_benefits_grants", product.id),
+                call("order.update_product_benefits_grants", product.id),
             ]
         )
 
@@ -1795,6 +1795,6 @@ class TestUpdateBenefits:
                     "subscription.subscription.update_product_benefits_grants",
                     product.id,
                 ),
-                call("sale.update_product_benefits_grants", product.id),
+                call("order.update_product_benefits_grants", product.id),
             ]
         )

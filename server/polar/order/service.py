@@ -19,10 +19,10 @@ from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.services import ResourceServiceReader
 from polar.models import (
     HeldBalance,
+    Order,
     Organization,
     Product,
     ProductPrice,
-    Sale,
     Subscription,
     User,
     UserOrganization,
@@ -36,7 +36,6 @@ from polar.notifications.service import PartialNotification
 from polar.notifications.service import notifications as notifications_service
 from polar.organization.service import organization as organization_service
 from polar.product.service.product_price import product_price as product_price_service
-from polar.sale.schemas import SalesStatisticsPeriod
 from polar.subscription.service import subscription as subscription_service
 from polar.transaction.service.balance import PaymentTransactionForChargeDoesNotExist
 from polar.transaction.service.balance import (
@@ -48,30 +47,32 @@ from polar.transaction.service.platform_fee import (
 from polar.user.service import user as user_service
 from polar.worker import enqueue_job
 
+from .schemas import OrdersStatisticsPeriod
 
-class SaleError(PolarError): ...
+
+class OrderError(PolarError): ...
 
 
-class NotASaleInvoice(SaleError):
+class NotAnOrderInvoice(OrderError):
     def __init__(self, invoice_id: str) -> None:
         self.invoice_id = invoice_id
         message = (
-            f"Received invoice {invoice_id} from Stripe, but it is not a sale."
+            f"Received invoice {invoice_id} from Stripe, but it is not an order."
             " Check if it's an issue pledge."
         )
         super().__init__(message)
 
 
-class InvoiceWithNoOrMultipleLines(SaleError):
+class InvoiceWithNoOrMultipleLines(OrderError):
     def __init__(self, invoice_id: str) -> None:
         self.invoice_id = invoice_id
         message = (
-            f"Received invoice {invoice_id} from Stripe " f"with no or multiple lines."
+            f"Received invoice {invoice_id} from Stripe with no or multiple lines."
         )
         super().__init__(message)
 
 
-class ProductPriceDoesNotExist(SaleError):
+class ProductPriceDoesNotExist(OrderError):
     def __init__(self, invoice_id: str, stripe_price_id: str) -> None:
         self.invoice_id = invoice_id
         self.stripe_price_id = stripe_price_id
@@ -82,7 +83,7 @@ class ProductPriceDoesNotExist(SaleError):
         super().__init__(message)
 
 
-class SubscriptionDoesNotExist(SaleError):
+class SubscriptionDoesNotExist(OrderError):
     def __init__(self, invoice_id: str, stripe_subscription_id: str) -> None:
         self.invoice_id = invoice_id
         self.stripe_subscription_id = stripe_subscription_id
@@ -94,14 +95,14 @@ class SubscriptionDoesNotExist(SaleError):
         super().__init__(message)
 
 
-class InvoiceNotAvailable(SaleError):
-    def __init__(self, sale: Sale) -> None:
-        self.sale = sale
-        message = "The invoice is not available for this sale."
+class InvoiceNotAvailable(OrderError):
+    def __init__(self, order: Order) -> None:
+        self.order = order
+        message = "The invoice is not available for this order."
         super().__init__(message, 404)
 
 
-class SaleService(ResourceServiceReader[Sale]):
+class OrderService(ResourceServiceReader[Order]):
     async def list(
         self,
         session: AsyncSession,
@@ -109,14 +110,14 @@ class SaleService(ResourceServiceReader[Sale]):
         *,
         organization_id: uuid.UUID | None = None,
         pagination: PaginationParams,
-    ) -> tuple[Sequence[Sale], int]:
-        statement = self._get_readable_sale_statement(auth_subject)
+    ) -> tuple[Sequence[Order], int]:
+        statement = self._get_readable_order_statement(auth_subject)
 
         statement = statement.options(
-            joinedload(Sale.user),
-            joinedload(Sale.product_price),
-            joinedload(Sale.subscription),
-        ).order_by(Sale.created_at.desc())
+            joinedload(Order.user),
+            joinedload(Order.product_price),
+            joinedload(Order.subscription),
+        ).order_by(Order.created_at.desc())
 
         if organization_id is not None:
             statement = statement.where(Product.organization_id == organization_id)
@@ -128,28 +129,28 @@ class SaleService(ResourceServiceReader[Sale]):
         session: AsyncSession,
         auth_subject: AuthSubject[User | Organization],
         id: uuid.UUID,
-    ) -> Sale | None:
+    ) -> Order | None:
         statement = (
-            self._get_readable_sale_statement(auth_subject)
-            .where(Sale.id == id)
+            self._get_readable_order_statement(auth_subject)
+            .where(Order.id == id)
             .options(
-                joinedload(Sale.user),
-                joinedload(Sale.product_price),
-                joinedload(Sale.subscription),
+                joinedload(Order.user),
+                joinedload(Order.product_price),
+                joinedload(Order.subscription),
             )
         )
 
         result = await session.execute(statement)
         return result.scalar_one_or_none()
 
-    async def get_sale_invoice_url(self, sale: Sale) -> str:
-        if sale.stripe_invoice_id is None:
-            raise InvoiceNotAvailable(sale)
+    async def get_order_invoice_url(self, order: Order) -> str:
+        if order.stripe_invoice_id is None:
+            raise InvoiceNotAvailable(order)
 
-        stripe_invoice = stripe_service.get_invoice(sale.stripe_invoice_id)
+        stripe_invoice = stripe_service.get_invoice(order.stripe_invoice_id)
 
         if stripe_invoice.hosted_invoice_url is None:
-            raise InvoiceNotAvailable(sale)
+            raise InvoiceNotAvailable(order)
 
         return stripe_invoice.hosted_invoice_url
 
@@ -160,12 +161,12 @@ class SaleService(ResourceServiceReader[Sale]):
         *,
         organization_id: uuid.UUID | None = None,
         product_id: uuid.UUID | None = None,
-    ) -> Sequence[SalesStatisticsPeriod]:
-        sale_statement = self._get_readable_sale_statement(auth_subject)
+    ) -> Sequence[OrdersStatisticsPeriod]:
+        order_statement = self._get_readable_order_statement(auth_subject)
         subscription_statement = self._get_readable_subscription_statement(auth_subject)
 
         if organization_id is not None:
-            sale_statement = sale_statement.where(
+            order_statement = order_statement.where(
                 Product.organization_id == organization_id
             )
             subscription_statement = subscription_statement.where(
@@ -173,31 +174,31 @@ class SaleService(ResourceServiceReader[Sale]):
             )
 
         if product_id is not None:
-            sale_statement = sale_statement.where(Product.id == product_id)
+            order_statement = order_statement.where(Product.id == product_id)
             subscription_statement = subscription_statement.where(
                 Product.id == product_id
             )
 
-        statistics_periods: list[SalesStatisticsPeriod] = []
+        statistics_periods: list[OrdersStatisticsPeriod] = []
 
-        # Effective Sales data
+        # Effective Orders data
         date_column = func.generate_series(
             text("current_date - interval '11 month'"),
             text("current_date"),
             text("'1 month'::interval"),
         ).column_valued("date")
-        sales_data_statement = (
+        orders_data_statement = (
             select(
-                func.count(Sale.id).label("sales"),
-                func.coalesce(func.sum(Sale.amount).label("earnings"), 0),
+                func.count(Order.id).label("orders"),
+                func.coalesce(func.sum(Order.amount).label("earnings"), 0),
                 func.date_trunc("month", date_column),
             )
             .join(
-                Sale,
+                Order,
                 onclause=and_(
-                    func.date_trunc("month", Sale.created_at)
+                    func.date_trunc("month", Order.created_at)
                     == func.date_trunc("month", date_column),
-                    Sale.id.in_(sale_statement.with_only_columns(Sale.id)),
+                    Order.id.in_(order_statement.with_only_columns(Order.id)),
                 ),
                 isouter=True,
             )
@@ -205,23 +206,23 @@ class SaleService(ResourceServiceReader[Sale]):
             .order_by(date_column)
         )
 
-        sales_data = await session.execute(sales_data_statement)
-        for sales, earnings, date in sales_data.all():
+        orders_data = await session.execute(orders_data_statement)
+        for orders, earnings, date in orders_data.all():
             statistics_periods.append(
-                SalesStatisticsPeriod(
+                OrdersStatisticsPeriod(
                     date=date,
-                    sales=sales,
+                    orders=orders,
                     earnings=earnings,
-                    expected_sales=0,
+                    expected_orders=0,
                     expected_earnings=0,
                 )
             )
 
-        # Add expected sales data by looking at active subscriptions renewal date
+        # Add expected orders data by looking at active subscriptions renewal date
         current_date_column = text("current_date")
         expected_statement = (
             select(
-                func.count(Subscription.id).label("sales"),
+                func.count(Subscription.id).label("orders"),
                 func.coalesce(func.sum(ProductPrice.price_amount).label("earnings"), 0),
             )
             .add_columns(
@@ -241,15 +242,15 @@ class SaleService(ResourceServiceReader[Sale]):
         )
 
         expected_result = await session.execute(expected_statement)
-        expected_sales, expected_earnings, date, _ = expected_result.one()
-        statistics_periods[-1].expected_sales = expected_sales
+        expected_orders, expected_earnings, date, _ = expected_result.one()
+        statistics_periods[-1].expected_orders = expected_orders
         statistics_periods[-1].expected_earnings = expected_earnings
 
         return statistics_periods
 
-    async def create_sale_from_stripe(
+    async def create_order_from_stripe(
         self, session: AsyncSession, *, invoice: stripe_lib.Invoice
-    ) -> Sale:
+    ) -> Order:
         assert invoice.charge is not None
         assert invoice.id is not None
 
@@ -257,7 +258,7 @@ class SaleService(ResourceServiceReader[Sale]):
             ProductType.pledge,
             ProductType.donation,
         }:
-            raise NotASaleInvoice(invoice.id)
+            raise NotAnOrderInvoice(invoice.id)
 
         # Get price and product
         if len(invoice.lines.data) != 1:
@@ -303,9 +304,9 @@ class SaleService(ResourceServiceReader[Sale]):
         await loops_service.user_update(user, isBacker=True)
         session.add(user)
 
-        # Create Sale
+        # Create Order
         tax = invoice.tax or 0
-        sale = Sale(
+        order = Order(
             amount=invoice.total - tax,
             tax_amount=tax,
             currency=invoice.currency,
@@ -315,64 +316,64 @@ class SaleService(ResourceServiceReader[Sale]):
             product_price=product_price,
             subscription=subscription,
         )
-        session.add(sale)
+        session.add(order)
 
-        await self._create_sale_balance(
-            session, sale, charge_id=get_expandable_id(invoice.charge)
+        await self._create_order_balance(
+            session, order, charge_id=get_expandable_id(invoice.charge)
         )
 
-        if sale.subscription is None:
+        if order.subscription is None:
             enqueue_job(
                 "benefit.enqueue_benefits_grants",
                 task="grant",
                 user_id=user.id,
                 product_id=product.id,
-                sale_id=sale.id,
+                order_id=order.id,
             )
 
-        return sale
+        return order
 
     async def update_product_benefits_grants(
         self, session: AsyncSession, product: Product
     ) -> None:
-        statement = select(Sale).where(
-            Sale.product_id == product.id,
-            Sale.deleted_at.is_(None),
-            Sale.subscription_id.is_(None),
+        statement = select(Order).where(
+            Order.product_id == product.id,
+            Order.deleted_at.is_(None),
+            Order.subscription_id.is_(None),
         )
-        sales = await session.stream_scalars(statement)
-        async for sale in sales:
+        orders = await session.stream_scalars(statement)
+        async for order in orders:
             enqueue_job(
                 "benefit.enqueue_benefits_grants",
                 task="grant",
-                user_id=sale.user_id,
+                user_id=order.user_id,
                 product_id=product.id,
-                sale_id=sale.id,
+                order_id=order.id,
             )
 
-    async def _create_sale_balance(
-        self, session: AsyncSession, sale: Sale, charge_id: str
+    async def _create_order_balance(
+        self, session: AsyncSession, order: Order, charge_id: str
     ) -> None:
-        product = sale.product
+        product = order.product
         account = await account_service.get_by_organization_id(
             session, product.organization_id
         )
 
-        transfer_amount = sale.amount
+        transfer_amount = order.amount
 
-        # Retrieve the payment transaction and link it to the sale
+        # Retrieve the payment transaction and link it to the order
         payment_transaction = await balance_transaction_service.get_by(
             session, type=TransactionType.payment, charge_id=charge_id
         )
         if payment_transaction is None:
             raise PaymentTransactionForChargeDoesNotExist(charge_id)
-        payment_transaction.sale = sale
+        payment_transaction.order = order
         session.add(payment_transaction)
 
         # Prepare an held balance
         # It'll be used if the account is not created yet
         held_balance = HeldBalance(
-            amount=transfer_amount, sale=sale, payment_transaction=payment_transaction
+            amount=transfer_amount, order=order, payment_transaction=payment_transaction
         )
 
         # No account, create the held balance
@@ -406,21 +407,21 @@ class SaleService(ResourceServiceReader[Sale]):
                 destination_account=account,
                 charge_id=charge_id,
                 amount=transfer_amount,
-                sale=sale,
+                order=order,
             )
         )
         await platform_fee_transaction_service.create_fees_reversal_balances(
             session, balance_transactions=balance_transactions
         )
 
-    def _get_readable_sale_statement(
+    def _get_readable_order_statement(
         self, auth_subject: AuthSubject[User | Organization]
-    ) -> Select[tuple[Sale]]:
+    ) -> Select[tuple[Order]]:
         statement = (
-            select(Sale)
-            .where(Sale.deleted_at.is_(None))
-            .join(Sale.product)
-            .options(contains_eager(Sale.product))
+            select(Order)
+            .where(Order.deleted_at.is_(None))
+            .join(Order.product)
+            .options(contains_eager(Order.product))
         )
 
         if is_user(auth_subject):
@@ -470,4 +471,4 @@ class SaleService(ResourceServiceReader[Sale]):
         return statement
 
 
-sale = SaleService(Sale)
+order = OrderService(Order)

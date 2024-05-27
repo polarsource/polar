@@ -17,7 +17,7 @@ async def resolve_scope(
     session: AsyncSession, scope: BenefitGrantScopeArgs
 ) -> BenefitGrantScope:
     # Avoids a circular import :(
-    from polar.sale.service import sale as sale_service
+    from polar.order.service import order as order_service
     from polar.subscription.service import (
         subscription as subscription_service,
     )
@@ -28,11 +28,11 @@ async def resolve_scope(
         if subscription is None:
             raise InvalidScopeError(scope)
         resolved_scope["subscription"] = subscription
-    if sale_id := scope.get("sale_id"):
-        sale = await sale_service.get(session, sale_id)
-        if sale is None:
+    if order_id := scope.get("order_id"):
+        order = await order_service.get(session, order_id)
+        if order is None:
             raise InvalidScopeError(scope)
-        resolved_scope["sale"] = sale
+        resolved_scope["order"] = order
     return resolved_scope
 
 
@@ -40,6 +40,6 @@ def scope_to_args(scope: BenefitGrantScope) -> BenefitGrantScopeArgs:
     args: BenefitGrantScopeArgs = {}
     if subscription := scope.get("subscription"):
         args["subscription_id"] = subscription.id
-    if sale := scope.get("sale"):
-        args["sale_id"] = sale.id
+    if order := scope.get("order"):
+        args["order_id"] = order.id
     return args

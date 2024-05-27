@@ -46,11 +46,11 @@ from polar.models import (
     Benefit,
     BenefitGrant,
     OAuthAccount,
+    Order,
     Organization,
     Product,
     ProductBenefit,
     ProductPrice,
-    Sale,
     Subscription,
     Transaction,
     User,
@@ -957,9 +957,9 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
                 onclause=and_(
                     Transaction.type == TransactionType.balance,
                     Transaction.account_id.is_not(None),
-                    Transaction.sale_id.in_(
-                        select(Sale.id).where(
-                            Sale.subscription_id.in_(
+                    Transaction.order_id.in_(
+                        select(Order.id).where(
+                            Order.subscription_id.in_(
                                 subscriptions_statement.with_only_columns(
                                     Subscription.id
                                 )

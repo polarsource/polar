@@ -11,8 +11,8 @@ if TYPE_CHECKING:
     from polar.models import Product, ProductPrice, Subscription, User
 
 
-class Sale(RecordModel):
-    __tablename__ = "sales"
+class Order(RecordModel):
+    __tablename__ = "orders"
 
     amount: Mapped[int] = mapped_column(Integer, nullable=False)
     tax_amount: Mapped[int] = mapped_column(Integer, nullable=False)

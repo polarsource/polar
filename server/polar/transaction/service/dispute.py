@@ -68,7 +68,7 @@ class DisputeTransactionService(BaseTransactionService):
             payment_organization_id=payment_transaction.payment_organization_id,
             pledge_id=payment_transaction.pledge_id,
             issue_reward_id=payment_transaction.issue_reward_id,
-            sale_id=payment_transaction.sale_id,
+            order_id=payment_transaction.order_id,
         )
 
         # Compute and link fees
@@ -135,7 +135,7 @@ class DisputeTransactionService(BaseTransactionService):
             payment_organization_id=payment_transaction.payment_organization_id,
             pledge_id=payment_transaction.pledge_id,
             issue_reward_id=payment_transaction.issue_reward_id,
-            sale_id=payment_transaction.sale_id,
+            order_id=payment_transaction.order_id,
         )
 
         # Compute and link fees
@@ -164,7 +164,7 @@ class DisputeTransactionService(BaseTransactionService):
                 payment_transaction=payment_transaction,
                 amount=abs(outgoing.amount),
                 pledge=outgoing.pledge,
-                sale=outgoing.sale,
+                order=outgoing.order,
                 issue_reward=outgoing.issue_reward,
             )
 
@@ -194,7 +194,7 @@ class DisputeTransactionService(BaseTransactionService):
             .options(
                 joinedload(Transaction.account),
                 joinedload(Transaction.pledge),
-                joinedload(Transaction.sale),
+                joinedload(Transaction.order),
                 joinedload(Transaction.issue_reward),
             )
         )

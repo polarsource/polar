@@ -14,9 +14,9 @@ from polar.kit.sorting import Sorting
 from polar.models import (
     Account,
     Issue,
+    Order,
     Pledge,
     Product,
-    Sale,
     Transaction,
     User,
 )
@@ -69,10 +69,10 @@ class TransactionService(BaseTransactionService):
             ),
             # IssueReward
             subqueryload(Transaction.issue_reward),
-            # Sale
-            subqueryload(Transaction.sale).options(
-                joinedload(Sale.product).options(joinedload(Product.organization)),
-                joinedload(Sale.product_price),
+            # Order
+            subqueryload(Transaction.order).options(
+                joinedload(Order.product).options(joinedload(Product.organization)),
+                joinedload(Order.product_price),
             ),
             # Donation
             subqueryload(Transaction.donation).options(
@@ -127,10 +127,10 @@ class TransactionService(BaseTransactionService):
                 ),
                 # IssueReward
                 subqueryload(Transaction.issue_reward),
-                # Sale
-                subqueryload(Transaction.sale).options(
-                    joinedload(Sale.product).options(joinedload(Product.organization)),
-                    joinedload(Sale.product_price),
+                # Order
+                subqueryload(Transaction.order).options(
+                    joinedload(Order.product).options(joinedload(Product.organization)),
+                    joinedload(Order.product_price),
                 ),
                 # Donation
                 subqueryload(Transaction.donation).options(
@@ -151,17 +151,17 @@ class TransactionService(BaseTransactionService):
                     Transaction.issue_reward
                 ),
                 subqueryload(Transaction.paid_transactions)
-                .subqueryload(Transaction.sale)
+                .subqueryload(Transaction.order)
                 .options(
-                    joinedload(Sale.product),
-                    joinedload(Sale.product_price),
+                    joinedload(Order.product),
+                    joinedload(Order.product_price),
                 ),
                 subqueryload(Transaction.paid_transactions).subqueryload(
                     Transaction.account_incurred_transactions
                 ),
                 subqueryload(Transaction.paid_transactions)
-                .subqueryload(Transaction.sale)
-                .options(joinedload(Sale.product_price)),
+                .subqueryload(Transaction.order)
+                .options(joinedload(Order.product_price)),
                 subqueryload(Transaction.paid_transactions)
                 .subqueryload(Transaction.donation)
                 .options(

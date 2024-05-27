@@ -5,10 +5,10 @@ from polar.models import (
     Account,
     Issue,
     IssueReward,
+    Order,
     Organization,
     Pledge,
     Repository,
-    Sale,
     Transaction,
     User,
 )
@@ -18,9 +18,9 @@ from polar.models.transaction import PaymentProcessor, TransactionType
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     create_donation,
+    create_order,
     create_pledge,
     create_product,
-    create_sale,
     create_subscription,
 )
 
@@ -36,7 +36,7 @@ async def create_transaction(
     account_currency: str = "eur",
     pledge: Pledge | None = None,
     issue_reward: IssueReward | None = None,
-    sale: Sale | None = None,
+    order: Order | None = None,
     payout_transaction: Transaction | None = None,
     donation: Donation | None = None,
 ) -> Transaction:
@@ -53,7 +53,7 @@ async def create_transaction(
         payment_organization=payment_organization,
         pledge=pledge,
         issue_reward=issue_reward,
-        sale=sale,
+        order=order,
         donation=donation,
         payout_transaction=payout_transaction,
     )
@@ -125,12 +125,12 @@ async def transaction_issue_reward(
 
 
 @pytest_asyncio.fixture
-async def transaction_sale_subscription(
+async def transaction_order_subscription(
     save_fixture: SaveFixture, organization: Organization, user: User
-) -> Sale:
+) -> Order:
     product = await create_product(save_fixture, organization=organization)
     subscription = await create_subscription(save_fixture, product=product, user=user)
-    return await create_sale(
+    return await create_order(
         save_fixture, product=product, user=user, subscription=subscription
     )
 
@@ -174,7 +174,7 @@ async def account_transactions(
     account: Account,
     transaction_pledge: Pledge,
     transaction_issue_reward: IssueReward,
-    transaction_sale_subscription: Sale,
+    transaction_order_subscription: Order,
     transaction_donation_by_user: Donation,
     transaction_donation_by_organization: Donation,
     transaction_donation_on_behalf_of_organization: Donation,
@@ -193,7 +193,7 @@ async def account_transactions(
             type=TransactionType.balance,
             account_currency="usd",
             account=account,
-            sale=transaction_sale_subscription,
+            order=transaction_order_subscription,
         ),
         await create_transaction(
             save_fixture,

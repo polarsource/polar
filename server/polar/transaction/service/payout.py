@@ -16,7 +16,7 @@ from polar.kit.csv import IterableCSVWriter
 from polar.kit.db.postgres import AsyncSessionMaker
 from polar.kit.utils import generate_uuid, utc_now
 from polar.logging import Logger
-from polar.models import Account, Issue, Pledge, Sale, Transaction
+from polar.models import Account, Issue, Order, Pledge, Transaction
 from polar.models.donation import Donation
 from polar.models.transaction import PaymentProcessor, TransactionType
 from polar.postgres import AsyncSession
@@ -152,7 +152,7 @@ class PayoutTransactionService(BaseTransactionService):
             account=account,
             pledge=None,
             issue_reward=None,
-            sale=None,
+            order=None,
             donation=None,
             paid_transactions=[],
             incurred_transactions=[],
@@ -326,8 +326,8 @@ class PayoutTransactionService(BaseTransactionService):
             )
             .order_by(Transaction.created_at)
             .options(
-                # Sale
-                selectinload(Transaction.sale).joinedload(Sale.product),
+                # Order
+                selectinload(Transaction.order).joinedload(Order.product),
                 # Pledge
                 selectinload(Transaction.pledge)
                 .joinedload(Pledge.issue)
@@ -374,12 +374,12 @@ class PayoutTransactionService(BaseTransactionService):
                         )
                 elif transaction.pledge is not None:
                     description = f"Pledge to {transaction.pledge.issue.reference_key}"
-                elif transaction.sale is not None:
-                    product = transaction.sale.product
-                    if transaction.sale.subscription_id is not None:
+                elif transaction.order is not None:
+                    product = transaction.order.product
+                    if transaction.order.subscription_id is not None:
                         description = f"Subscription to {product.name}"
                     else:
-                        description = f"Sale of {product.name}"
+                        description = f"Order of {product.name}"
                 elif transaction.donation is not None:
                     description = (
                         f"Donation to {transaction.donation.to_organization.name}"

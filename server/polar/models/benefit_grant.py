@@ -26,35 +26,35 @@ from polar.kit.db.models import RecordModel
 from polar.kit.extensions.sqlalchemy import PostgresUUID
 
 if TYPE_CHECKING:
-    from polar.models import Benefit, Sale, Subscription, User
+    from polar.models import Benefit, Order, Subscription, User
 
 
 class BenefitGrantScope(TypedDict, total=False):
     subscription: "Subscription"
-    sale: "Sale"
+    order: "Order"
 
 
 if TYPE_CHECKING:
 
     class BenefitGrantScopeArgs(TypedDict, total=False):
         subscription_id: UUID
-        sale_id: UUID
+        order_id: UUID
 
 else:
 
     class BenefitGrantScopeArgs(dict):
         def __init__(
-            self, subscription_id: UUID | None = None, sale_id: UUID | None = None
+            self, subscription_id: UUID | None = None, order_id: UUID | None = None
         ) -> None:
             d = {}
             if subscription_id is not None:
                 d["subscription_id"] = subscription_id
-            if sale_id is not None:
-                d["sale_id"] = sale_id
+            if order_id is not None:
+                d["order_id"] = order_id
             super().__init__(d)
 
         def __composite_values__(self) -> tuple[UUID | None, UUID | None]:
-            return self.get("subscription_id"), self.get("sale_id")
+            return self.get("subscription_id"), self.get("order_id")
 
 
 class BenefitGrantScopeComparator(CompositeProperty.Comparator[BenefitGrantScopeArgs]):
@@ -119,19 +119,19 @@ class BenefitGrant(RecordModel):
     def subscription(cls) -> Mapped["Subscription | None"]:
         return relationship("Subscription", lazy="raise", back_populates="grants")
 
-    sale_id: Mapped[UUID | None] = mapped_column(
+    order_id: Mapped[UUID | None] = mapped_column(
         PostgresUUID,
-        ForeignKey("sales.id", ondelete="cascade"),
+        ForeignKey("orders.id", ondelete="cascade"),
         nullable=True,
         index=True,
     )
 
     @declared_attr
-    def sale(cls) -> Mapped["Sale | None"]:
-        return relationship("Sale", lazy="raise")
+    def order(cls) -> Mapped["Order | None"]:
+        return relationship("Order", lazy="raise")
 
     scope: Mapped[BenefitGrantScopeArgs] = composite(
-        "subscription_id", "sale_id", comparator_factory=BenefitGrantScopeComparator
+        "subscription_id", "order_id", comparator_factory=BenefitGrantScopeComparator
     )
 
     @hybrid_property

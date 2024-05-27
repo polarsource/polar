@@ -12,12 +12,12 @@ from polar.kit.utils import utc_now
 from polar.models import (
     Account,
     Benefit,
+    Order,
     Organization,
     Product,
     ProductBenefit,
     ProductPrice,
     Repository,
-    Sale,
     Subscription,
     User,
     UserOrganization,
@@ -523,7 +523,7 @@ async def create_product_price(
     return price
 
 
-async def create_sale(
+async def create_order(
     save_fixture: SaveFixture,
     *,
     product: Product,
@@ -534,8 +534,8 @@ async def create_sale(
     tax_amount: int = 0,
     stripe_invoice_id: str = "INVOICE_ID",
     created_at: datetime | None = None,
-) -> Sale:
-    sale = Sale(
+) -> Order:
+    order = Order(
         created_at=created_at or utc_now(),
         amount=amount,
         tax_amount=tax_amount,
@@ -550,8 +550,8 @@ async def create_sale(
         else None,
         subscription=subscription,
     )
-    await save_fixture(sale)
-    return sale
+    await save_fixture(order)
+    return order
 
 
 async def create_benefit(

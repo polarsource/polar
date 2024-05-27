@@ -89,7 +89,9 @@ class _Authenticator:
         self.allowed_subjects = allowed_subjects
         self.required_scopes = required_scopes
 
-    def __call__(self, auth_subject: AuthSubject[Subject]) -> AuthSubject[Subject]:
+    async def __call__(
+        self, auth_subject: AuthSubject[Subject]
+    ) -> AuthSubject[Subject]:
         # Anonymous
         if is_anonymous(auth_subject):
             if Anonymous in self.allowed_subjects:
@@ -147,8 +149,10 @@ def Authenticator(
 
     class _AuthenticatorSignature(_Authenticator):
         @with_signature(signature)
-        def __call__(self, auth_subject: AuthSubject[Subject]) -> AuthSubject[Subject]:
-            return super().__call__(auth_subject)
+        async def __call__(
+            self, auth_subject: AuthSubject[Subject]
+        ) -> AuthSubject[Subject]:
+            return await super().__call__(auth_subject)
 
     return _AuthenticatorSignature(
         allowed_subjects=allowed_subjects, required_scopes=required_scopes

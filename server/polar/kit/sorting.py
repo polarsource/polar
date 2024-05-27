@@ -1,33 +1,25 @@
 from enum import StrEnum
-from typing import Generic, TypeAlias, TypeVar
+from inspect import Parameter, Signature
+from typing import Any, Generic, TypeAlias, TypeVar
 
 from fastapi import Query
+from makefun import with_signature
 
-from polar.exceptions import BadRequest
+from polar.exceptions import PolarRequestValidationError
 
 PE = TypeVar("PE", bound=StrEnum)
 
 Sorting: TypeAlias = tuple[PE, bool]
 
 
-class SortingGetter(Generic[PE]):
+class _SortingGetter(Generic[PE]):
     def __init__(
         self, sort_property_enum: type[PE], default_sorting: list[str]
     ) -> None:
         self.sort_property_enum = sort_property_enum
         self.default_sorting = default_sorting
 
-    async def __call__(
-        self,
-        sorting: list[str] | None = Query(
-            None,
-            description=(
-                "Sorting criterion. "
-                "Several criteria can be used simultaneously and will be applied in order. "
-                "Add a minus sign `-` before the criteria name to sort by descending order."
-            ),
-        ),
-    ) -> list[Sorting[PE]]:
+    async def __call__(self, sorting: list[str] | None) -> list[Sorting[PE]]:
         if sorting is None:
             sorting = self.default_sorting
 
@@ -40,5 +32,57 @@ class SortingGetter(Generic[PE]):
             try:
                 parsed_sorting.append((self.sort_property_enum(criteria), desc))
             except ValueError as e:
-                raise BadRequest() from e
+                raise PolarRequestValidationError(
+                    [
+                        {
+                            "loc": ("query", "sorting"),
+                            "input": criteria,
+                            "msg": "Invalid sorting criterion.",
+                            "type": "enum",
+                        }
+                    ]
+                )
         return parsed_sorting
+
+
+def SortingGetter(
+    sort_property_enum: type[PE], default_sorting: list[str]
+) -> _SortingGetter[PE]:
+    """
+    Here comes some blood magic 🧙‍♂️
+
+    Generate a version of `_SortingGetter` with an overriden `__call__` signature.
+
+    By doing so, we can dynamically inject the allowed sorting properties into FastAPI
+    dependency, so they are properrly detected by the OpenAPI generator.
+    """
+    enum_values = []
+    for value in sort_property_enum:
+        enum_values.append(value.value)
+        enum_values.append(f"-{value.value}")
+
+    parameters: list[Parameter] = [
+        Parameter(name="self", kind=Parameter.POSITIONAL_OR_KEYWORD),
+        Parameter(
+            name="sorting",
+            kind=Parameter.POSITIONAL_OR_KEYWORD,
+            default=Query(
+                default_sorting,
+                description=(
+                    "Sorting criterion. "
+                    "Several criteria can be used simultaneously and will be applied in order. "
+                    "Add a minus sign `-` before the criteria name to sort by descending order."
+                ),
+                json_schema_extra={"type": "string", "enum": enum_values},
+            ),
+            annotation=list[str] | None,
+        ),
+    ]
+    signature = Signature(parameters)
+
+    class _SortingGetterSignature(_SortingGetter[Any]):
+        @with_signature(signature)
+        async def __call__(self, sorting: Any) -> list[Sorting[Any]]:
+            return await super().__call__(sorting)
+
+    return _SortingGetterSignature(sort_property_enum, default_sorting)

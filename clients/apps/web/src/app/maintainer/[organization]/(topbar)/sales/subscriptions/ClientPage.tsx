@@ -1,6 +1,18 @@
 'use client'
 
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
+import { Modal } from '@/components/Modal'
+import { useModal } from '@/components/Modal/useModal'
+import ProductPriceLabel from '@/components/Products/ProductPriceLabel'
+import AddSubscriberModal from '@/components/Subscriptions/AddSubscriberModal'
+import ImportSubscribersModal from '@/components/Subscriptions/ImportSubscribersModal'
+import SubscriptionStatusSelect from '@/components/Subscriptions/SubscriptionStatusSelect'
+import SubscriptionTiersSelect from '@/components/Subscriptions/SubscriptionTiersSelect'
+import {
+  getSubscriptionTiersByType,
+  subscriptionStatusDisplayNames,
+  tiersTypeDisplayNames,
+} from '@/components/Subscriptions/utils'
 import { useProducts, useSearchSubscriptions } from '@/hooks/queries'
 import { getServerURL } from '@/utils/api'
 import {
@@ -32,21 +44,8 @@ import {
   DataTableColumnHeader,
 } from 'polarkit/components/ui/atoms/datatable'
 import React, { useCallback, useMemo } from 'react'
-import { Modal } from '../Modal'
-import { useModal } from '../Modal/useModal'
-import ProductPriceLabel from '../Products/ProductPriceLabel'
-import AccountBanner from '../Transactions/AccountBanner'
-import AddSubscriberModal from './AddSubscriberModal'
-import ImportSubscribersModal from './ImportSubscribersModal'
-import SubscriptionStatusSelect from './SubscriptionStatusSelect'
-import SubscriptionTiersSelect from './SubscriptionTiersSelect'
-import {
-  getSubscriptionTiersByType,
-  subscriptionStatusDisplayNames,
-  tiersTypeDisplayNames,
-} from './utils'
 
-interface SubscribersPageProps {
+interface ClientPageProps {
   organization: Organization
   pagination: DataTablePaginationState
   sorting: DataTableSortingState
@@ -55,7 +54,7 @@ interface SubscribersPageProps {
   subscriptionStatus?: Extract<SubscriptionStatus, 'active' | 'canceled'>
 }
 
-const SubscribersPage: React.FC<SubscribersPageProps> = ({
+const ClientPage: React.FC<ClientPageProps> = ({
   organization,
   pagination,
   sorting,
@@ -104,9 +103,7 @@ const SubscribersPage: React.FC<SubscribersPageProps> = ({
         : updaterOrValue
 
     router.push(
-      `/maintainer/${
-        organization.name
-      }/subscriptions/subscribers?${getSearchParams(
+      `/maintainer/${organization.name}/sales/subscriptions?${getSearchParams(
         updatedPagination,
         sorting,
         filter,
@@ -126,9 +123,7 @@ const SubscribersPage: React.FC<SubscribersPageProps> = ({
         : updaterOrValue
 
     router.push(
-      `/maintainer/${
-        organization.name
-      }/subscriptions/subscribers?${getSearchParams(
+      `/maintainer/${organization.name}/sales/subscriptions?${getSearchParams(
         pagination,
         updatedSorting,
         filter,
@@ -139,9 +134,7 @@ const SubscribersPage: React.FC<SubscribersPageProps> = ({
 
   const setFilter = (filter: string) => {
     router.push(
-      `/maintainer/${
-        organization.name
-      }/subscriptions/subscribers?${getSearchParams(
+      `/maintainer/${organization.name}/sales/subscriptions?${getSearchParams(
         pagination,
         sorting,
         filter,
@@ -152,9 +145,7 @@ const SubscribersPage: React.FC<SubscribersPageProps> = ({
 
   const setStatus = (status: string) => {
     router.push(
-      `/maintainer/${
-        organization.name
-      }/subscriptions/subscribers?${getSearchParams(
+      `/maintainer/${organization.name}/sales/subscriptions?${getSearchParams(
         pagination,
         sorting,
         filter,
@@ -323,7 +314,6 @@ const SubscribersPage: React.FC<SubscribersPageProps> = ({
   return (
     <DashboardBody>
       <div className="flex flex-col gap-8">
-        {organization && <AccountBanner organization={organization} />}
         <div className="flex items-center justify-between gap-2">
           <h2 className="text-xl">Subscribers</h2>
 
@@ -410,4 +400,4 @@ const SubscribersPage: React.FC<SubscribersPageProps> = ({
   )
 }
 
-export default SubscribersPage
+export default ClientPage

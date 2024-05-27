@@ -3,7 +3,7 @@ import { getServerSideAPI } from '@/utils/api/serverside'
 import { DataTableSearchParams, parseSearchParams } from '@/utils/datatable'
 import { Platforms, SubscriptionTierType } from '@polar-sh/sdk'
 import { Metadata } from 'next'
-import ClientPage from '../../sales/subscriptions/ClientPage'
+import ClientPage from './ClientPage'
 
 export async function generateMetadata({
   params,

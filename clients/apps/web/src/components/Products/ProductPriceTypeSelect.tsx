@@ -1,4 +1,3 @@
-import { LoopOutlined, ShoppingCartOutlined } from '@mui/icons-material'
 import { ProductPriceType } from '@polar-sh/sdk'
 import {
   Select,
@@ -9,6 +8,8 @@ import {
   SelectValue,
 } from 'polarkit/components/ui/atoms/select'
 import React from 'react'
+import ProductPriceTypeIcon from './ProductPriceTypeIcon'
+import ProductPriceTypeLabel from './ProductPriceTypeLabel'
 
 interface ProductPriceTypeSelectProps {
   value: ProductPriceType | 'all'
@@ -31,14 +32,22 @@ const ProductPriceTypeSelect: React.FC<ProductPriceTypeSelectProps> = ({
         <SelectSeparator />
         <SelectItem value={ProductPriceType.ONE_TIME} className="font-medium">
           <div className="flex items-center gap-2 whitespace-normal">
-            <ShoppingCartOutlined fontSize="inherit" />
-            One-time purchase
+            <ProductPriceTypeIcon
+              productPriceType={ProductPriceType.ONE_TIME}
+            />
+            <ProductPriceTypeLabel
+              productPriceType={ProductPriceType.ONE_TIME}
+            />
           </div>
         </SelectItem>
         <SelectItem value={ProductPriceType.RECURRING} className="font-medium">
           <div className="flex items-center gap-2 whitespace-normal">
-            <LoopOutlined fontSize="inherit" />
-            Subscription
+            <ProductPriceTypeIcon
+              productPriceType={ProductPriceType.RECURRING}
+            />
+            <ProductPriceTypeLabel
+              productPriceType={ProductPriceType.RECURRING}
+            />
           </div>
         </SelectItem>
       </SelectContent>

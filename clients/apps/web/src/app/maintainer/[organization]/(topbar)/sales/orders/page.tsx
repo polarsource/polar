@@ -1,9 +1,8 @@
-import { EnableSubscriptionsView } from '@/components/Subscriptions/EnableSubscriptionsView'
 import { getServerSideAPI } from '@/utils/api/serverside'
 import { DataTableSearchParams, parseSearchParams } from '@/utils/datatable'
-import { Platforms, SubscriptionTierType } from '@polar-sh/sdk'
+import { Platforms, ProductPriceType } from '@polar-sh/sdk'
 import { Metadata } from 'next'
-import ClientPage from '../../sales/subscriptions/ClientPage'
+import ClientPage from './ClientPage'
 
 export async function generateMetadata({
   params,
@@ -21,9 +20,8 @@ export default async function Page({
 }: {
   params: { organization: string }
   searchParams: DataTableSearchParams & {
-    type?: SubscriptionTierType
-    subscription_tier_id?: string
-    status?: Extract<SubscriptionTierType, 'active' | 'inactive'>
+    product_id?: string
+    product_price_type?: ProductPriceType
   }
 }) {
   const api = getServerSideAPI()
@@ -33,21 +31,16 @@ export default async function Page({
   })
 
   const { pagination, sorting } = parseSearchParams(searchParams, [
-    { id: 'started_at', desc: true },
+    { id: 'created_at', desc: true },
   ])
-
-  if (!organization.feature_settings?.subscriptions_enabled) {
-    return <EnableSubscriptionsView organization={organization} />
-  }
 
   return (
     <ClientPage
       organization={organization}
       pagination={pagination}
       sorting={sorting}
-      subscriptionTierType={searchParams.type}
-      subscriptionTierId={searchParams.subscription_tier_id}
-      subscriptionStatus={searchParams.status}
+      productId={searchParams.product_id}
+      productPriceType={searchParams.product_price_type}
     />
   )
 }

@@ -13,6 +13,7 @@ import {
   Face,
   FavoriteBorderOutlined,
   HowToVoteOutlined,
+  ShoppingCartOutlined,
   SpaceDashboardOutlined,
   StickyNote2Outlined,
   TuneOutlined,
@@ -198,6 +199,29 @@ const maintainerRoutesList = (org: Organization): Route[] => [
       {
         title: 'Benefits',
         link: `/maintainer/${org.name}/products/benefits`,
+      },
+    ],
+  },
+  {
+    id: 'org-sales',
+    title: 'Sales',
+    icon: <ShoppingCartOutlined className="h-5 w-5" fontSize="inherit" />,
+    postIcon: undefined,
+    link: `/maintainer/${org.name}/sales/orders`,
+    checkIsActive: (currentRoute: string): boolean => {
+      return currentRoute.startsWith(`/maintainer/${org.name}/sales`)
+    },
+    get if() {
+      return isFeatureEnabled('products')
+    },
+    subs: [
+      {
+        title: 'Orders',
+        link: `/maintainer/${org.name}/sales/orders`,
+      },
+      {
+        title: 'Subscriptions',
+        link: `/maintainer/${org.name}/sales/subscriptions`,
       },
     ],
   },

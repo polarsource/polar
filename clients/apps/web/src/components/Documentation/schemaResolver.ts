@@ -1,6 +1,6 @@
 import { OpenAPIV3_1 } from 'openapi-types'
 
-export const resolveValue = (property: OpenAPIV3_1.SchemaObject) => {
+export const resolveValue = (property: OpenAPIV3_1.SchemaObject): any => {
   if ('anyOf' in property) return property.anyOf?.map(resolveValue).join(' | ')
 
   switch (property.type) {

@@ -22,6 +22,11 @@ export interface Scope<T extends ScopeType = ScopeType> {
 
 export const API_SCOPES = [
   {
+    name: 'api:products',
+    type: ScopeType.Isolated,
+    commands: createAPICommands('products'),
+  },
+  {
     name: 'api:donations',
     type: ScopeType.Isolated,
     commands: createAPICommands('donations'),

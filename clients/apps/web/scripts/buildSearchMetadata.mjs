@@ -103,10 +103,21 @@ const buildDocsMetadata = async () => {
   return mdxDocuments
 }
 
-const metadataOutputPath = path.resolve(
+
+const outputPath = path.resolve(
   baseURL,
-  '../../src/components/CommandPalette/index/searchMetadata.json',
+  '../../src/components/CommandPalette/index',
 )
+
+const metadataOutputPath = path.resolve(
+  outputPath,
+  'searchMetadata.json',
+)
+
+
+if (!fs.existsSync(outputPath)){
+  fs.mkdirSync(outputPath, { recursive: true });
+}
 
 writeFile(
     metadataOutputPath,

@@ -5217,8 +5217,8 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "organizations:write",
-                            "organizations:read"
+                            "organizations:read",
+                            "organizations:write"
                         ]
                     },
                     {
@@ -5280,8 +5280,8 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "organizations:write",
-                            "organizations:read"
+                            "organizations:read",
+                            "organizations:write"
                         ]
                     },
                     {
@@ -5363,8 +5363,8 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "organizations:write",
-                            "organizations:read"
+                            "organizations:read",
+                            "organizations:write"
                         ]
                     },
                     {
@@ -5465,8 +5465,8 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "organizations:write",
-                            "organizations:read"
+                            "organizations:read",
+                            "organizations:write"
                         ]
                     },
                     {
@@ -5985,8 +5985,8 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "creator:subscriptions:read",
-                            "creator:subscriptions:write"
+                            "creator:subscriptions:write",
+                            "creator:subscriptions:read"
                         ]
                     },
                     {
@@ -6134,8 +6134,8 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "creator:subscriptions:read",
-                            "creator:subscriptions:write"
+                            "creator:subscriptions:write",
+                            "creator:subscriptions:read"
                         ]
                     },
                     {
@@ -6269,6 +6269,26 @@
                                 }
                             ],
                             "description": "Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.",
+                            "type": "string",
+                            "enum": [
+                                "user",
+                                "-user",
+                                "status",
+                                "-status",
+                                "started_at",
+                                "-started_at",
+                                "current_period_end",
+                                "-current_period_end",
+                                "price_amount",
+                                "-price_amount",
+                                "subscription_tier_type",
+                                "-subscription_tier_type",
+                                "product",
+                                "-product"
+                            ],
+                            "default": [
+                                "-started_at"
+                            ],
                             "title": "Sorting"
                         },
                         "description": "Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order."
@@ -6357,8 +6377,8 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "backer:subscriptions:read",
-                            "backer:subscriptions:write"
+                            "backer:subscriptions:write",
+                            "backer:subscriptions:read"
                         ]
                     },
                     {
@@ -6476,6 +6496,26 @@
                                 }
                             ],
                             "description": "Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.",
+                            "type": "string",
+                            "enum": [
+                                "user",
+                                "-user",
+                                "status",
+                                "-status",
+                                "started_at",
+                                "-started_at",
+                                "current_period_end",
+                                "-current_period_end",
+                                "price_amount",
+                                "-price_amount",
+                                "subscription_tier_type",
+                                "-subscription_tier_type",
+                                "product",
+                                "-product"
+                            ],
+                            "default": [
+                                "-started_at"
+                            ],
                             "title": "Sorting"
                         },
                         "description": "Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order."
@@ -6817,8 +6857,8 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "creator:subscriptions:read",
-                            "creator:subscriptions:write"
+                            "creator:subscriptions:write",
+                            "creator:subscriptions:read"
                         ]
                     },
                     {
@@ -8103,6 +8143,16 @@
                                 }
                             ],
                             "description": "Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.",
+                            "type": "string",
+                            "enum": [
+                                "created_at",
+                                "-created_at",
+                                "amount",
+                                "-amount"
+                            ],
+                            "default": [
+                                "-created_at"
+                            ],
                             "title": "Sorting"
                         },
                         "description": "Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order."
@@ -9554,6 +9604,16 @@
                                 }
                             ],
                             "description": "Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.",
+                            "type": "string",
+                            "enum": [
+                                "amount",
+                                "-amount",
+                                "created_at",
+                                "-created_at"
+                            ],
+                            "default": [
+                                "-created_at"
+                            ],
                             "title": "Sorting"
                         },
                         "description": "Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order."
@@ -9869,6 +9929,16 @@
                                 }
                             ],
                             "description": "Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.",
+                            "type": "string",
+                            "enum": [
+                                "amount",
+                                "-amount",
+                                "created_at",
+                                "-created_at"
+                            ],
+                            "default": [
+                                "-created_at"
+                            ],
                             "title": "Sorting"
                         },
                         "description": "Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order."
@@ -10404,8 +10474,8 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "creator:benefits:read",
-                            "creator:benefits:write"
+                            "creator:benefits:write",
+                            "creator:benefits:read"
                         ]
                     },
                     {
@@ -10617,8 +10687,8 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "creator:benefits:read",
-                            "creator:benefits:write"
+                            "creator:benefits:write",
+                            "creator:benefits:read"
                         ]
                     },
                     {
@@ -10904,8 +10974,8 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "creator:benefits:read",
-                            "creator:benefits:write"
+                            "creator:benefits:write",
+                            "creator:benefits:read"
                         ]
                     },
                     {
@@ -11058,8 +11128,8 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "webhooks:write",
-                            "webhooks:read"
+                            "webhooks:read",
+                            "webhooks:write"
                         ]
                     },
                     {
@@ -11229,8 +11299,8 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "webhooks:write",
-                            "webhooks:read"
+                            "webhooks:read",
+                            "webhooks:write"
                         ]
                     },
                     {
@@ -11465,8 +11535,8 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "webhooks:write",
-                            "webhooks:read"
+                            "webhooks:read",
+                            "webhooks:write"
                         ]
                     },
                     {
@@ -11631,8 +11701,8 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "creator:products:write",
-                            "creator:products:read"
+                            "creator:products:read",
+                            "creator:products:write"
                         ]
                     },
                     {
@@ -11856,8 +11926,8 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "creator:products:write",
-                            "creator:products:read"
+                            "creator:products:read",
+                            "creator:products:write"
                         ]
                     },
                     {
@@ -12237,6 +12307,22 @@
                                 }
                             ],
                             "description": "Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.",
+                            "type": "string",
+                            "enum": [
+                                "created_at",
+                                "-created_at",
+                                "amount",
+                                "-amount",
+                                "user",
+                                "-user",
+                                "product",
+                                "-product",
+                                "subscription",
+                                "-subscription"
+                            ],
+                            "default": [
+                                "-created_at"
+                            ],
                             "title": "Sorting"
                         },
                         "description": "Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order."

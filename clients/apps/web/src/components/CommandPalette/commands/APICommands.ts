@@ -19,11 +19,12 @@ type FindMatchingPath<
   : never
 
 type Sitemap = {
-  newsletters: FindMatchingPath<'/api/v1/articles'>[]
+  products: FindMatchingPath<'/api/v1/products'>[]
   issues: FindMatchingPath<'/api/v1/issues'>[]
   donations: FindMatchingPath<'/api/v1/donations'>[]
   subscriptions: FindMatchingPath<'/api/v1/subscriptions'>[]
   benefits: FindMatchingPath<'/api/v1/benefits'>[]
+  newsletters: FindMatchingPath<'/api/v1/articles'>[]
   users: FindMatchingPath<'/api/v1/users'>[]
   accounts: FindMatchingPath<'/api/v1/accounts'>[]
   webhooks: FindMatchingPath<'/api/v1/webhooks'>[]
@@ -39,11 +40,12 @@ const filterPath = <T extends string>(key: T) =>
     .map(([path, methods]) => ({ path, methods }) as FindMatchingPath<T>)
 
 const sitemap: Sitemap = {
-  newsletters: filterPath('/api/v1/articles'),
+  products: filterPath('/api/v1/products'),
   issues: filterPath('/api/v1/issues'),
   donations: filterPath('/api/v1/donations'),
   subscriptions: filterPath('/api/v1/subscriptions'),
   benefits: filterPath('/api/v1/benefits'),
+  newsletters: filterPath('/api/v1/articles'),
   users: filterPath('/api/v1/users'),
   accounts: filterPath('/api/v1/accounts'),
   webhooks: filterPath('/api/v1/webhooks'),

@@ -15,6 +15,9 @@ class Scope(StrEnum):
     admin = "admin"  # Admin scope. For Polar staff only.
     web_default = "web_default"  # Web default scope. For users logged in on the web.
 
+    organizations_read = "organizations:read"
+    organizations_write = "organizations:write"
+
     creator_subscriptions_read = "creator:subscriptions:read"
     creator_subscriptions_write = "creator:subscriptions:write"
     backer_subscriptions_read = "backer:subscriptions:read"

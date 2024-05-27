@@ -3,7 +3,6 @@ from uuid import UUID
 import structlog
 from fastapi import APIRouter, Depends, HTTPException, Query
 
-from polar.auth.dependencies import WebUser, WebUserOrAnonymous
 from polar.auth.models import Subject
 from polar.authz.service import AccessType, Authz
 from polar.currency.schemas import CurrencyAmount
@@ -22,6 +21,7 @@ from polar.user_organization.service import (
     user_organization as user_organization_service,
 )
 
+from .auth import AnonymousOrganizationsRead, OrganizationsRead, OrganizationsWrite
 from .schemas import (
     CreditBalance,
     OrganizationBadgeSettingsRead,
@@ -72,7 +72,7 @@ async def to_schema(
     status_code=200,
 )
 async def list(
-    auth_subject: WebUser,
+    auth_subject: OrganizationsRead,
     is_admin_only: bool = Query(
         default=True,
         description="Include only organizations that the user is an admin of.",
@@ -98,7 +98,7 @@ async def list(
     status_code=200,
 )
 async def search(
-    auth_subject: WebUserOrAnonymous,
+    auth_subject: AnonymousOrganizationsRead,
     platform: Platforms | None = None,
     organization_name: str | None = None,
     session: AsyncSession = Depends(get_db_session),
@@ -130,7 +130,7 @@ async def search(
     responses={404: {}},
 )
 async def lookup(
-    auth_subject: WebUserOrAnonymous,
+    auth_subject: AnonymousOrganizationsRead,
     platform: Platforms | None = None,
     organization_name: str | None = None,
     custom_domain: str | None = None,
@@ -167,7 +167,7 @@ async def lookup(
 )
 async def get(
     id: UUID,
-    auth_subject: WebUserOrAnonymous,
+    auth_subject: AnonymousOrganizationsRead,
     session: AsyncSession = Depends(get_db_session),
 ) -> OrganizationSchema:
     org = await organization.get(session, id=id)
@@ -193,7 +193,7 @@ async def get(
 async def update(
     id: UUID,
     update: OrganizationUpdate,
-    auth_subject: WebUser,
+    auth_subject: OrganizationsWrite,
     authz: Authz = Depends(Authz.authz),
     session: AsyncSession = Depends(get_db_session),
 ) -> OrganizationSchema:
@@ -232,7 +232,7 @@ async def update(
 async def set_account(
     id: UUID,
     set_account: OrganizationSetAccount,
-    auth_subject: WebUser,
+    auth_subject: OrganizationsWrite,
     authz: Authz = Depends(Authz.authz),
     session: AsyncSession = Depends(get_db_session),
 ) -> OrganizationSchema:
@@ -246,7 +246,7 @@ async def set_account(
     org = await organization.set_account(
         session,
         authz=authz,
-        user=auth_subject.subject,
+        auth_subject=auth_subject,
         organization=org,
         account_id=set_account.account_id,
     )
@@ -263,7 +263,7 @@ async def set_account(
     status_code=200,
 )
 async def list_members(
-    auth_subject: WebUser,
+    auth_subject: OrganizationsWrite,
     id: UUID | None = None,
     session: AsyncSession = Depends(get_db_session),
     authz: Authz = Depends(Authz.authz),
@@ -299,7 +299,7 @@ async def list_members(
 )
 async def create_stripe_customer_portal(
     id: UUID,
-    auth_subject: WebUser,
+    auth_subject: OrganizationsWrite,
     session: AsyncSession = Depends(get_db_session),
     authz: Authz = Depends(Authz.authz),
 ) -> OrganizationStripePortalSession:
@@ -326,7 +326,7 @@ async def create_stripe_customer_portal(
 )
 async def get_credits(
     id: UUID,
-    auth_subject: WebUser,
+    auth_subject: OrganizationsWrite,
     session: AsyncSession = Depends(get_db_session),
     authz: Authz = Depends(Authz.authz),
 ) -> CreditBalance:
@@ -361,7 +361,7 @@ async def get_credits(
 )
 async def get_badge_settings(
     id: UUID,
-    auth_subject: WebUser,
+    auth_subject: OrganizationsWrite,
     authz: Authz = Depends(Authz.authz),
     session: AsyncSession = Depends(get_db_session),
 ) -> OrganizationBadgeSettingsRead:
@@ -433,7 +433,7 @@ async def get_badge_settings(
 async def update_badge_settings(
     id: UUID,
     settings: OrganizationBadgeSettingsUpdate,
-    auth_subject: WebUser,
+    auth_subject: OrganizationsWrite,
     authz: Authz = Depends(Authz.authz),
     session: AsyncSession = Depends(get_db_session),
 ) -> OrganizationSchema:

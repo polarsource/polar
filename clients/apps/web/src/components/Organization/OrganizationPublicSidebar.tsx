@@ -4,6 +4,7 @@ import revalidate from '@/app/actions'
 import { useAuth } from '@/hooks'
 import { useUpdateOrganization } from '@/hooks/queries'
 import { api } from '@/utils/api'
+import { CONFIG } from '@/utils/config'
 import { RssIcon } from '@heroicons/react/20/solid'
 import { LanguageOutlined, MailOutline } from '@mui/icons-material'
 import {
@@ -247,7 +248,7 @@ const RssModal = ({
   const { currentUser } = useAuth()
   const [token, setToken] = useState<string>()
   const auth = token ? `?auth=${token}` : ''
-  const url = `https://polar.sh/${organization.name}/rss${auth}`
+  const url = `${CONFIG.FRONTEND_BASE_URL}/${organization.name}/rss${auth}`
 
   useEffect(() => {
     if (!currentUser) {
@@ -260,7 +261,7 @@ const RssModal = ({
       .create({
         createPersonalAccessToken: {
           comment: `RSS for ${organization.name}`,
-          scopes: ['articles:read'],
+          scopes: ['organizations:read', 'articles:read'],
         },
       })
       .then((res: CreatePersonalAccessTokenResponse) => {

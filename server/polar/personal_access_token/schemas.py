@@ -28,7 +28,9 @@ class PersonalAccessToken(Schema):
 
 class CreatePersonalAccessToken(Schema):
     comment: str
-    scopes: list[Literal["articles:read", "user:read"]] | None = None
+    scopes: list[Literal["articles:read", "user:read", "organizations:read"]] | None = (
+        None
+    )
 
 
 class CreatePersonalAccessTokenResponse(PersonalAccessToken):

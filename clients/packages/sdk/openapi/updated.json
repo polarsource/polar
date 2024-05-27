@@ -5214,6 +5214,15 @@
                     },
                     {
                         "HTTPBearer": []
+                    },
+                    {
+                        "OpenIdConnect": [
+                            "organizations:write",
+                            "organizations:read"
+                        ]
+                    },
+                    {
+                        "HTTPBearer": []
                     }
                 ],
                 "parameters": [
@@ -5265,6 +5274,15 @@
                 "security": [
                     {
                         "OpenIdConnect": []
+                    },
+                    {
+                        "HTTPBearer": []
+                    },
+                    {
+                        "OpenIdConnect": [
+                            "organizations:write",
+                            "organizations:read"
+                        ]
                     },
                     {
                         "HTTPBearer": []
@@ -5339,6 +5357,15 @@
                 "security": [
                     {
                         "OpenIdConnect": []
+                    },
+                    {
+                        "HTTPBearer": []
+                    },
+                    {
+                        "OpenIdConnect": [
+                            "organizations:write",
+                            "organizations:read"
+                        ]
                     },
                     {
                         "HTTPBearer": []
@@ -5435,6 +5462,15 @@
                     },
                     {
                         "HTTPBearer": []
+                    },
+                    {
+                        "OpenIdConnect": [
+                            "organizations:write",
+                            "organizations:read"
+                        ]
+                    },
+                    {
+                        "HTTPBearer": []
                     }
                 ],
                 "parameters": [
@@ -5485,6 +5521,14 @@
                 "security": [
                     {
                         "OpenIdConnect": []
+                    },
+                    {
+                        "HTTPBearer": []
+                    },
+                    {
+                        "OpenIdConnect": [
+                            "organizations:write"
+                        ]
                     },
                     {
                         "HTTPBearer": []
@@ -5553,6 +5597,14 @@
                     },
                     {
                         "HTTPBearer": []
+                    },
+                    {
+                        "OpenIdConnect": [
+                            "organizations:write"
+                        ]
+                    },
+                    {
+                        "HTTPBearer": []
                     }
                 ],
                 "parameters": [
@@ -5618,6 +5670,14 @@
                     },
                     {
                         "HTTPBearer": []
+                    },
+                    {
+                        "OpenIdConnect": [
+                            "organizations:write"
+                        ]
+                    },
+                    {
+                        "HTTPBearer": []
                     }
                 ],
                 "parameters": [
@@ -5677,6 +5737,14 @@
                     },
                     {
                         "HTTPBearer": []
+                    },
+                    {
+                        "OpenIdConnect": [
+                            "organizations:write"
+                        ]
+                    },
+                    {
+                        "HTTPBearer": []
                     }
                 ],
                 "parameters": [
@@ -5726,6 +5794,14 @@
                 "security": [
                     {
                         "OpenIdConnect": []
+                    },
+                    {
+                        "HTTPBearer": []
+                    },
+                    {
+                        "OpenIdConnect": [
+                            "organizations:write"
+                        ]
                     },
                     {
                         "HTTPBearer": []
@@ -5780,6 +5856,14 @@
                     },
                     {
                         "HTTPBearer": []
+                    },
+                    {
+                        "OpenIdConnect": [
+                            "organizations:write"
+                        ]
+                    },
+                    {
+                        "HTTPBearer": []
                     }
                 ],
                 "parameters": [
@@ -5826,6 +5910,14 @@
                 "security": [
                     {
                         "OpenIdConnect": []
+                    },
+                    {
+                        "HTTPBearer": []
+                    },
+                    {
+                        "OpenIdConnect": [
+                            "organizations:write"
+                        ]
                     },
                     {
                         "HTTPBearer": []
@@ -6265,8 +6357,8 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "backer:subscriptions:write",
-                            "backer:subscriptions:read"
+                            "backer:subscriptions:read",
+                            "backer:subscriptions:write"
                         ]
                     },
                     {
@@ -10966,8 +11058,8 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "webhooks:read",
-                            "webhooks:write"
+                            "webhooks:write",
+                            "webhooks:read"
                         ]
                     },
                     {
@@ -11137,8 +11229,8 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "webhooks:read",
-                            "webhooks:write"
+                            "webhooks:write",
+                            "webhooks:read"
                         ]
                     },
                     {
@@ -11373,8 +11465,8 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "webhooks:read",
-                            "webhooks:write"
+                            "webhooks:write",
+                            "webhooks:read"
                         ]
                     },
                     {
@@ -16180,7 +16272,8 @@
                                     "type": "string",
                                     "enum": [
                                         "articles:read",
-                                        "user:read"
+                                        "user:read",
+                                        "organizations:read"
                                     ]
                                 },
                                 "type": "array"
@@ -18999,7 +19092,7 @@
                     "scope": {
                         "type": "string",
                         "title": "Scope",
-                        "default": "openid profile email articles:read user:read creator:subscriptions:read creator:subscriptions:write backer:subscriptions:read backer:subscriptions:write creator:products:read creator:products:write creator:benefits:read creator:benefits:write orders:read webhooks:read webhooks:write"
+                        "default": "openid profile email articles:read user:read organizations:read organizations:write creator:subscriptions:read creator:subscriptions:write backer:subscriptions:read backer:subscriptions:write creator:products:read creator:products:write creator:benefits:read creator:benefits:write orders:read webhooks:read webhooks:write"
                     },
                     "client_name": {
                         "type": "string",
@@ -19160,7 +19253,7 @@
                     "scope": {
                         "type": "string",
                         "title": "Scope",
-                        "default": "openid profile email articles:read user:read creator:subscriptions:read creator:subscriptions:write backer:subscriptions:read backer:subscriptions:write creator:products:read creator:products:write creator:benefits:read creator:benefits:write orders:read webhooks:read webhooks:write"
+                        "default": "openid profile email articles:read user:read organizations:read organizations:write creator:subscriptions:read creator:subscriptions:write backer:subscriptions:read backer:subscriptions:write creator:products:read creator:products:write creator:benefits:read creator:benefits:write orders:read webhooks:read webhooks:write"
                     },
                     "client_name": {
                         "type": "string",
@@ -19281,7 +19374,7 @@
                     "scope": {
                         "type": "string",
                         "title": "Scope",
-                        "default": "openid profile email articles:read user:read creator:subscriptions:read creator:subscriptions:write backer:subscriptions:read backer:subscriptions:write creator:products:read creator:products:write creator:benefits:read creator:benefits:write orders:read webhooks:read webhooks:write"
+                        "default": "openid profile email articles:read user:read organizations:read organizations:write creator:subscriptions:read creator:subscriptions:write backer:subscriptions:read backer:subscriptions:write creator:products:read creator:products:write creator:benefits:read creator:benefits:write orders:read webhooks:read webhooks:write"
                     },
                     "client_name": {
                         "type": "string",
@@ -22549,6 +22642,8 @@
                     "user:read",
                     "admin",
                     "web_default",
+                    "organizations:read",
+                    "organizations:write",
                     "creator:subscriptions:read",
                     "creator:subscriptions:write",
                     "backer:subscriptions:read",

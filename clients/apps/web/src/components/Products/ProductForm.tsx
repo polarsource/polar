@@ -2,11 +2,7 @@
 
 import { isFeatureEnabled } from '@/utils/feature-flags'
 import { ErrorMessage } from '@hookform/error-message'
-import {
-  ClearOutlined,
-  LoopOutlined,
-  ShoppingCartOutlined,
-} from '@mui/icons-material'
+import { ClearOutlined } from '@mui/icons-material'
 import {
   PricesInner,
   ProductCreate,
@@ -45,6 +41,7 @@ import {
   useFormContext,
 } from 'react-hook-form'
 import SubscriptionGroupIcon from '../Subscriptions/SubscriptionGroupIcon'
+import ProductPriceTypeIcon from './ProductPriceTypeIcon'
 
 interface ProductPriceItemProps {
   index: number
@@ -267,7 +264,9 @@ const ProductForm: React.FC<ProductFormProps> = ({ update, isFreeTier }) => {
                   className="h-20 w-full flex-col items-start border"
                 >
                   <div className="flex items-center gap-2">
-                    <ShoppingCartOutlined fontSize="inherit" />
+                    <ProductPriceTypeIcon
+                      productPriceType={ProductPriceType.ONE_TIME}
+                    />
                     One-time purchase
                   </div>
                   <div className="font-normal">Charge a one-time fee</div>
@@ -277,7 +276,9 @@ const ProductForm: React.FC<ProductFormProps> = ({ update, isFreeTier }) => {
                   className="h-20 w-full flex-col items-start border"
                 >
                   <div className="flex items-center gap-2">
-                    <LoopOutlined fontSize="inherit" />
+                    <ProductPriceTypeIcon
+                      productPriceType={ProductPriceType.RECURRING}
+                    />
                     Subscription
                   </div>
                   <div className="font-normal">Charge an ongoing fee</div>

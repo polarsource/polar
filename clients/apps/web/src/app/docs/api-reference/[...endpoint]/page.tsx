@@ -52,8 +52,6 @@ export default function Page({
 
   const subHeader = endpoint[2].replaceAll('_', ' ')
 
-  console.log(operation)
-
   return (
     <>
       <div className="flex w-full max-w-3xl flex-shrink flex-col">

@@ -51,7 +51,7 @@ ArticlesReadOrAnonymous = Annotated[
     tags=[Tags.INTERNAL],
     response_model=ArticleUnsubscribeResponse,
     description="Unsubscribe user from articles in emails.",
-    summary="Stop delivery of articles via email.",
+    summary="Unsubscribe user",
     status_code=200,
     responses={404: {}},
 )

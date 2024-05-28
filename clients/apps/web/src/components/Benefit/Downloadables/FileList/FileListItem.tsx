@@ -1,10 +1,7 @@
-'use client'
-
-import { useDeleteFile, usePatchFile } from '@/hooks/queries'
+import { useDeleteFile } from '@/hooks/queries'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { DragIndicatorOutlined } from '@mui/icons-material'
-import { FileRead } from '@polar-sh/sdk'
 import { Switch } from 'polarkit/components/ui/atoms'
 import { Card } from 'polarkit/components/ui/atoms/card'
 import { twMerge } from 'tailwind-merge'
@@ -60,30 +57,34 @@ const FileUploadDetails = ({ file }: { file: FileObject }) => {
 
 export const FileListItem = ({
   file,
-  updateFile,
   removeFile,
+  archivedFiles,
+  setArchivedFile,
   sortable,
 }: {
   file: FileObject
   updateFile: (callback: (prev: FileObject) => FileObject) => void
   removeFile: () => void
+  archivedFiles: { [key: string]: boolean }
+  setArchivedFile: (fileId: string, disabled: boolean) => void
   sortable?: ReturnType<typeof useSortable>
 }) => {
-  const patchFile = usePatchFile(file.id, (response: FileRead) => {
-    updateFile((prev) => {
-      return {
-        ...prev,
-        ...response,
-      }
-    })
-  })
+  // Re-introduce later for editing files, e.g version and perhaps even name?
+  // const patchFile = usePatchFile(file.id, (response: FileRead) => {
+  //   updateFile((prev) => {
+  //     return {
+  //       ...prev,
+  //       ...response,
+  //     }
+  //   })
+  // })
 
   const deleteFile = useDeleteFile(file.id, () => {
     removeFile()
   })
 
   const onToggleEnabled = (enabled: boolean) => {
-    patchFile.mutateAsync({ enabled })
+    setArchivedFile(file.id, !enabled)
   }
 
   const onDelete = async () => {
@@ -91,6 +92,11 @@ export const FileListItem = ({
   }
 
   const isUploading = file.isUploading
+
+  let isEnabled = true
+  if (archivedFiles && archivedFiles[file.id]) {
+    isEnabled = !archivedFiles[file.id]
+  }
 
   return (
     <Card
@@ -127,7 +133,8 @@ export const FileListItem = ({
           >
             x
           </a>
-          <Switch checked={file.is_enabled} onCheckedChange={onToggleEnabled} />
+          <Switch checked={isEnabled} onCheckedChange={onToggleEnabled} />
+
           <span
             ref={sortable ? sortable.setDraggableNodeRef : undefined}
             className="cursor-grab"
@@ -149,10 +156,14 @@ export const DraggableFileListItem = ({
   file,
   updateFile,
   removeFile,
+  archivedFiles,
+  setArchivedFile,
 }: {
   file: FileObject
   updateFile: (callback: (prev: FileObject) => FileObject) => void
   removeFile: () => void
+  archivedFiles: { [key: string]: boolean }
+  setArchivedFile: (fileId: string, disabled: boolean) => void
 }) => {
   const sortable = useSortable({ id: file.id })
 
@@ -161,6 +172,8 @@ export const DraggableFileListItem = ({
       file={file}
       updateFile={updateFile}
       removeFile={removeFile}
+      archivedFiles={archivedFiles}
+      setArchivedFile={setArchivedFile}
       sortable={sortable}
     />
   )

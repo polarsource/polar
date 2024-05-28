@@ -26,7 +26,7 @@ export interface DownloadablesApiGetRequest {
 
 export interface DownloadablesApiListRequest {
     organizationId?: string;
-    fileIds?: Array<string>;
+    benefitId?: string;
     page?: number;
     limit?: number;
 }
@@ -87,8 +87,8 @@ export class DownloadablesApi extends runtime.BaseAPI {
             queryParameters['organization_id'] = requestParameters['organizationId'];
         }
 
-        if (requestParameters['fileIds'] != null) {
-            queryParameters['file_ids'] = requestParameters['fileIds'];
+        if (requestParameters['benefitId'] != null) {
+            queryParameters['benefit_id'] = requestParameters['benefitId'];
         }
 
         if (requestParameters['page'] != null) {

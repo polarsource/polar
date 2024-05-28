@@ -1,11 +1,13 @@
-import { DownloadableRead } from '@polar-sh/sdk'
+import { BenefitDownloadablesSubscriber, DownloadableRead } from '@polar-sh/sdk'
 
 import { useDownloadables } from '@/hooks/queries'
 
 const DownloadableItem = ({
   downloadable,
+  historic,
 }: {
   downloadable: DownloadableRead
+  historic: boolean
 }) => {
   return (
     <a
@@ -16,6 +18,7 @@ const DownloadableItem = ({
       className="text-blue-500 underline"
     >
       {downloadable.file.name} ({downloadable.file.size} bytes)
+      {historic && ' (Historic)'}
     </a>
   )
 }
@@ -25,7 +28,16 @@ const DownloadablesSubscriberWidget = ({
 }: {
   benefit: BenefitDownloadablesSubscriber
 }) => {
-  const downloadablesQuery = useDownloadables(benefit.properties.files)
+  const downloadablesQuery = useDownloadables(
+    benefit.id,
+    benefit.properties.active_files,
+  )
+
+  let activeLookup: { [key: string]: boolean } = {}
+  benefit.properties.active_files.reduce((acc, fileId: string) => {
+    acc[fileId] = true
+    return acc
+  }, activeLookup)
 
   const downloadables: DownloadableRead[] = downloadablesQuery.data?.items
 
@@ -39,7 +51,10 @@ const DownloadablesSubscriberWidget = ({
       <ul>
         {downloadables.map((downloadable) => (
           <li key={downloadable.id}>
-            <DownloadableItem downloadable={downloadable} />
+            <DownloadableItem
+              downloadable={downloadable}
+              historic={!activeLookup[downloadable.file.id]}
+            />
           </li>
         ))}
       </ul>

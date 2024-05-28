@@ -22,7 +22,6 @@ class FileCreate(S3FileCreate):
 
 class FileRead(S3File):
     service: FileServiceTypes
-    is_enabled: bool
     is_uploaded: bool
     created_at: datetime
 
@@ -40,7 +39,6 @@ class FileRead(S3File):
             checksum_etag=record.checksum_etag,
             last_modified_at=record.last_modified_at,
             storage_version=record.storage_version,
-            is_enabled=record.is_enabled,
             is_uploaded=record.is_uploaded,
             created_at=record.created_at,
         )
@@ -59,7 +57,6 @@ class FileRead(S3File):
 
 
 class FileUpload(S3FileUpload):
-    is_enabled: bool
     is_uploaded: bool = False
     service: FileServiceTypes
 
@@ -68,7 +65,6 @@ class FileUploadCompleted(S3FileUploadCompleted): ...
 
 
 class FileDownload(S3FileDownload):
-    is_enabled: bool
     is_uploaded: bool
     service: FileServiceTypes
 
@@ -108,5 +104,4 @@ class FileUpdate(Schema):
     checksum_sha256_hex: str | None
 
 
-class FilePatch(Schema):
-    is_enabled: bool
+class FilePatch(Schema): ...

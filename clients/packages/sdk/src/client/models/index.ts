@@ -3109,6 +3109,12 @@ export type BenefitDownloadablesCreateTypeEnum = typeof BenefitDownloadablesCrea
 export interface BenefitDownloadablesCreateProperties {
     /**
      * 
+     * @type {{ [key: string]: boolean; }}
+     * @memberof BenefitDownloadablesCreateProperties
+     */
+    archived?: { [key: string]: boolean; };
+    /**
+     * 
      * @type {Array<string>}
      * @memberof BenefitDownloadablesCreateProperties
      */
@@ -3120,6 +3126,12 @@ export interface BenefitDownloadablesCreateProperties {
  * @interface BenefitDownloadablesProperties
  */
 export interface BenefitDownloadablesProperties {
+    /**
+     * 
+     * @type {{ [key: string]: boolean; }}
+     * @memberof BenefitDownloadablesProperties
+     */
+    archived: { [key: string]: boolean; };
     /**
      * 
      * @type {Array<string>}
@@ -3209,7 +3221,7 @@ export interface BenefitDownloadablesSubscriberProperties {
      * @type {Array<string>}
      * @memberof BenefitDownloadablesSubscriberProperties
      */
-    files: Array<string>;
+    active_files: Array<string>;
 }
 /**
  * 
@@ -4905,12 +4917,6 @@ export interface FileDownload {
      * @type {boolean}
      * @memberof FileDownload
      */
-    is_enabled: boolean;
-    /**
-     * 
-     * @type {boolean}
-     * @memberof FileDownload
-     */
     is_uploaded: boolean;
     /**
      * 
@@ -4948,19 +4954,6 @@ export const FileNotFoundTypeEnum = {
 } as const;
 export type FileNotFoundTypeEnum = typeof FileNotFoundTypeEnum[keyof typeof FileNotFoundTypeEnum];
 
-/**
- * 
- * @export
- * @interface FilePatch
- */
-export interface FilePatch {
-    /**
-     * 
-     * @type {boolean}
-     * @memberof FilePatch
-     */
-    is_enabled: boolean;
-}
 /**
  * 
  * @export
@@ -5051,12 +5044,6 @@ export interface FileRead {
      * @memberof FileRead
      */
     service: FileServiceTypes;
-    /**
-     * 
-     * @type {boolean}
-     * @memberof FileRead
-     */
-    is_enabled: boolean;
     /**
      * 
      * @type {boolean}
@@ -5170,12 +5157,6 @@ export interface FileUpload {
      * @memberof FileUpload
      */
     upload: S3FileUploadMultipart;
-    /**
-     * 
-     * @type {boolean}
-     * @memberof FileUpload
-     */
-    is_enabled: boolean;
     /**
      * 
      * @type {boolean}

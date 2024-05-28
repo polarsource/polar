@@ -76,6 +76,7 @@ class BenefitGitHubRepositoryProperties(BenefitProperties):
 
 
 class BenefitDownloadablesProperties(BenefitProperties):
+    archived: dict[UUID, bool]
     files: list[UUID]
 
 

@@ -32,15 +32,15 @@ class DownloadableService(
         user: User,
         pagination: PaginationParams,
         organization_id: UUID | None = None,
-        file_ids: list[UUID] | None = None,
+        benefit_id: UUID | None = None,
     ) -> tuple[Sequence[Downloadable], int]:
         statement = self._get_base_query(user)
 
         if organization_id:
             statement = statement.where(File.organization_id == organization_id)
 
-        if file_ids:
-            statement = statement.where(File.id.in_(file_ids))
+        if benefit_id:
+            statement = statement.where(Downloadable.benefit_id == benefit_id)
 
         return await paginate(session, statement, pagination=pagination)
 
@@ -53,11 +53,30 @@ class DownloadableService(
         record = res.scalars().one_or_none()
         return record
 
-    async def create_or_update(
+    async def grant_for_benefit_file(
         self,
         session: AsyncSession,
-        create_schema: DownloadableCreate,
-    ) -> Downloadable:
+        user: User,
+        benefit_id: UUID,
+        file_id: UUID,
+    ) -> Downloadable | None:
+        file = await file_service.get(session, file_id)
+        if not file:
+            log.info(
+                "downloadables.grant.file_not_found",
+                file_id=file_id,
+                user_id=user.id,
+                benefit_id=benefit_id,
+                granted=False,
+            )
+            return None
+
+        create_schema = DownloadableCreate(
+            file_id=file.id,
+            user_id=user.id,
+            benefit_id=benefit_id,
+            status=DownloadableStatus.granted,
+        )
         records = await self.upsert_many(
             session,
             create_schemas=[create_schema],
@@ -74,25 +93,22 @@ class DownloadableService(
         await session.flush()
         instance = records[0]
         assert instance.id is not None
+
+        log.info(
+            "downloadables.grant",
+            file_id=file.id,
+            user_id=user.id,
+            downloadables_id=instance.id,
+            benefit_id=benefit_id,
+            granted=True,
+        )
         return instance
 
-    async def increment_download_count(
-        self,
-        session: AsyncSession,
-        downloadable: Downloadable,
-    ) -> Downloadable:
-        downloadable.downloaded += 1
-        downloadable.last_downloaded_at = utc_now()
-        session.add(downloadable)
-        await session.flush()
-        return downloadable
-
-    async def revoke_user_grants(
+    async def revoke_for_benefit(
         self,
         session: AsyncSession,
         user: User,
         benefit_id: UUID,
-        unless_file_id_in: list[UUID],
     ) -> None:
         statement = (
             sql.update(Downloadable)
@@ -107,11 +123,23 @@ class DownloadableService(
                 modified_at=utc_now(),
             )
         )
-
-        if unless_file_id_in:
-            statement = statement.where(Downloadable.file_id.not_in(unless_file_id_in))
-
+        log.info(
+            "downloadables.revoked",
+            user_id=user.id,
+            benefit_id=benefit_id,
+        )
         await session.execute(statement)
+
+    async def increment_download_count(
+        self,
+        session: AsyncSession,
+        downloadable: Downloadable,
+    ) -> Downloadable:
+        downloadable.downloaded += 1
+        downloadable.last_downloaded_at = utc_now()
+        session.add(downloadable)
+        await session.flush()
+        return downloadable
 
     def generate_downloadable_schemas(
         self, downloadables: Sequence[Downloadable]

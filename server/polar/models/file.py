@@ -71,6 +71,8 @@ class File(RecordModel):
     checksum_sha256_hex: Mapped[str] = mapped_column(String, nullable=True)
 
     is_uploaded: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+
+    # Flag for Polar to disable consumption of file
     is_enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
 
 

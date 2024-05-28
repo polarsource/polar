@@ -45,13 +45,13 @@ const Footer = ({
               <FooterLink href="https://api.polar.sh/api/v1/integrations/github/authorize?return_to=%2Fmaintainer&user_signup_type=maintainer">
                 Create an Account
               </FooterLink>
-              <FooterLink href="https://docs.polar.sh/payment">
+              <FooterLink href="/docs/overview/payments-taxes">
                 Pricing
               </FooterLink>
-              <FooterLink href="https://docs.polar.sh/maintainers/posts">
+              <FooterLink href="/docs/overview/newsletters">
                 Newsletter
               </FooterLink>
-              <FooterLink href="https://docs.polar.sh/maintainers/issue-funding">
+              <FooterLink href="/docs/overview/issue-funding/overview">
                 Issue Funding
               </FooterLink>
             </div>
@@ -87,8 +87,10 @@ const Footer = ({
           <div className="flex flex-col gap-y-4">
             <h3 className="dark:text-polar-50 text-base">Support</h3>
             <div className="flex flex-col gap-y-2">
-              <FooterLink href="https://docs.polar.sh/">Docs</FooterLink>
-              <FooterLink href="https://docs.polar.sh/faq/">FAQ</FooterLink>
+              <FooterLink href="/docs">Docs</FooterLink>
+              <FooterLink href="/docs/overview/faq/for-maintainers">
+                FAQ
+              </FooterLink>
               <FooterLink href="mailto:support@polar.sh">Contact</FooterLink>
             </div>
           </div>

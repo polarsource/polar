@@ -31,7 +31,7 @@ Of course, you can offer paid tiers too that backers can upgrade to seamlessly o
 
 Many developers shy away from offering paid services & benefits due to the value-add tax implications. Calculating, capturing & remitting value-add taxes internationally is a crushing overhead for individual developers.
 
-That's why we're incredibly proud to be the merchant of record and handle value-add taxes so you don't have to. Read more about the details [here](https://docs.polar.sh/payment/).
+That's why we're incredibly proud to be the merchant of record and handle value-add taxes so you don't have to. Read more about the details [here](https://polar.sh/docs/overview/payments-taxes).
 
 **Unparalleled business offerings**
 

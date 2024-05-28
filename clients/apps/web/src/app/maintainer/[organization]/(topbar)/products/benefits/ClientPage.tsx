@@ -307,14 +307,14 @@ ${formattedDisplays}
         <h3 className="font-medium">Identifier</h3>
         <p className="dark:text-polar-400 text-sm text-gray-600">
           Use this ID when{' '}
-          <a
-            href="https://docs.polar.sh/maintainers/ads/"
+          <Link
+            href="/docs/overview/ads"
             target="_blank"
             rel="noopener"
             className="text-blue-500 hover:text-blue-400 dark:text-blue-400 dark:hover:text-blue-300"
           >
             integrating
-          </a>{' '}
+          </Link>{' '}
           ads in your README or website.
         </p>
         <pre>

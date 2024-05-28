@@ -96,12 +96,12 @@ const nextConfig = {
       // FAQ to docs
       {
         source: '/faq',
-        destination: 'https://docs.polar.sh/faq/',
+        destination: '/docs/overview/faq/overview',
         permanent: false,
       },
       {
         source: '/faq/:path*',
-        destination: 'https://docs.polar.sh/faq/:path*',
+        destination: '/docs/overview/faq/:path*',
         permanent: false,
       },
 

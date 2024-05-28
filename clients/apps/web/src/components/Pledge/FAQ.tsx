@@ -1,4 +1,5 @@
 import type { NextLayoutComponentType } from 'next'
+import Link from 'next/link'
 import {
   Accordion,
   AccordionContent,
@@ -28,13 +29,13 @@ const FAQ_BACKERS: FAQItems = [
     question: 'What happens if the issue is never completed?',
     answer: (
       <>
-        <a
-          href="https://docs.polar.sh/support"
+        <Link
+          href="/docs/overview/support"
           target="_blank"
           className="text-blue-400"
         >
           Contact our support
-        </a>{' '}
+        </Link>{' '}
         if nothing has happened within 6 months - we can help direct the pledge
         elsewhere or cancel it.
       </>
@@ -76,7 +77,7 @@ const FAQ_MAINTAINER: FAQItems = [
         </a>{' '}
         and we&apos;ll get you setup in no time. Questions? Checkout our{' '}
         <a
-          href="https://docs.polar.sh/faq/maintainers"
+          href="/docs/overview/faq/for-maintainers"
           target="_blank"
           className="text-blue-400"
         >

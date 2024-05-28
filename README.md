@@ -21,9 +21,9 @@
 <span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
 <a href="https://polar.sh/polarsource">Blog</a>
 <span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
-<a href="https://docs.polar.sh/">Docs</a>
+<a href="https://polar.sh/docs">Docs</a>
 <span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
-<a href="https://docs.polar.sh/api/">API</a>
+<a href="https://polar.sh/docs/api">API</a>
 
 
 <p align="center">
@@ -85,7 +85,7 @@ Focus on building your passion. We'll focus on the infrastructure to get you pai
 **🔓 Found a security vulnerability?** We greatly appreciate responsible and private disclosures to security@polar.sh. See [Security](./README.md#Security)
 
 ### Polar API & SDK
-You can integrate Polar on your docs, sites or services using our [Public API](https://docs.polar.sh/api), [Webhook API](https://api.polar.sh/docs#/webhooks), and/or our [Polar JS SDK](./clients/packages/sdk) (Beta)
+You can integrate Polar on your docs, sites or services using our [Public API](https://polar.sh/docs/api), [Webhook API](https://api.polar.sh/docs#/webhooks), and/or our [Polar JS SDK](./clients/packages/sdk) (Beta)
 
 
 ## Contributions

@@ -144,6 +144,7 @@ const OverviewSections = () => {
         <NaviagtionItem href="/docs/overview/payments-taxes">
           Payments & Taxes
         </NaviagtionItem>
+        <NaviagtionItem href="/docs/overview/support">Support</NaviagtionItem>
       </div>
 
       <div className="flex flex-col gap-y-4">

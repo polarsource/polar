@@ -2,9 +2,13 @@ import { useDeleteFile } from '@/hooks/queries'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { DragIndicatorOutlined } from '@mui/icons-material'
+import { FileRead } from '@polar-sh/sdk'
 import { Switch } from 'polarkit/components/ui/atoms'
 import { Card } from 'polarkit/components/ui/atoms/card'
+import { FormEventHandler, useCallback, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
+
+import { usePatchFile } from '@/hooks/queries'
 
 import { FileObject } from '@/components/FileUpload'
 
@@ -52,22 +56,108 @@ const FileUploadProgress = ({ file }: { file: FileObject }) => {
   )
 }
 
-const FileUploadDetails = ({ file }: { file: FileObject }) => {
+const Editable = ({
+  children,
+  enabled,
+  onUpdate,
+}: {
+  children: React.ReactNode
+  enabled: boolean
+  onUpdate: (updated: string) => void
+}) => {
+  const paragraphRef = useRef<HTMLParagraphElement>(null)
+
+  const [isDirty, setIsDirty] = useState(false)
+
+  const update = useCallback(
+    (updated) => {
+      if (isDirty) {
+        onUpdate(updated)
+      }
+    },
+    [onUpdate, isDirty],
+  )
+
+  const onBlur: FormEventHandler<HTMLParagraphElement> = useCallback(
+    (e) => {
+      if (!paragraphRef.current) return
+      setIsDirty(false)
+      const updated = (e.target as HTMLParagraphElement).innerText ?? ''
+      update(updated)
+    },
+    [update],
+  )
+
+  const onEditableChanged: FormEventHandler<HTMLParagraphElement> = () => {
+    if (!paragraphRef.current) return
+    setIsDirty(true)
+  }
+
   return (
     <>
-      <div className="text-gray-500">
-        <p className="text-xs">{formatBytes(file.size)}</p>
-        <p className="text-xs">
-          <span className="font-medium">SHA-256:</span>{' '}
-          {file.checksum_sha256_hex}
-        </p>
-      </div>
+      <p
+        ref={paragraphRef}
+        className="font-semibold"
+        suppressContentEditableWarning={true}
+        contentEditable={enabled}
+        onBlur={onBlur}
+        onKeyDown={(e) => {
+          onEditableChanged(e)
+          if (e.key === 'Enter') {
+            e.preventDefault()
+          }
+        }}
+      >
+        {children}
+      </p>
+    </>
+  )
+}
+
+const FileDetails = ({
+  file,
+  patchFile,
+}: {
+  file: FileObject
+  patchFile: (attrs: { name?: string; version?: string }) => void
+}) => {
+  const update = (attrs: { name?: string; version?: string }) => {
+    patchFile(attrs)
+  }
+
+  return (
+    <>
+      <Editable
+        onUpdate={(updated) => update({ name: updated })}
+        enabled={file.is_uploaded}
+      >
+        {file.name}
+      </Editable>
+      {!file.isUploading && (
+        <div className="text-gray-500">
+          <p className="text-xs">
+            <span className="font-medium">Size:</span> {file.size}
+          </p>
+          <p className="text-xs">
+            <span className="font-medium">SHA-256:</span>{' '}
+            {file.checksum_sha256_hex}
+          </p>
+          <label>Version:</label>
+          <Editable
+            onUpdate={(updated) => update({ version: updated })}
+            enabled={file.is_uploaded}
+          >
+            {file.version}
+          </Editable>
+        </div>
+      )}
     </>
   )
 }
 
 export const FileListItem = ({
   file,
+  updateFile,
   removeFile,
   archivedFiles,
   setArchivedFile,
@@ -81,14 +171,18 @@ export const FileListItem = ({
   sortable?: ReturnType<typeof useSortable>
 }) => {
   // Re-introduce later for editing files, e.g version and perhaps even name?
-  // const patchFile = usePatchFile(file.id, (response: FileRead) => {
-  //   updateFile((prev) => {
-  //     return {
-  //       ...prev,
-  //       ...response,
-  //     }
-  //   })
-  // })
+  const patchFileQuery = usePatchFile(file.id, (response: FileRead) => {
+    updateFile((prev: FileObject) => {
+      return {
+        ...prev,
+        ...response,
+      }
+    })
+  })
+
+  const patchFile = async (attrs: { name?: string; version?: string }) => {
+    await patchFileQuery.mutateAsync(attrs)
+  }
 
   const deleteFile = useDeleteFile(file.id, () => {
     removeFile()
@@ -129,8 +223,7 @@ export const FileListItem = ({
         <FilePreview file={file} />
       </div>
       <div className="flex-grow text-gray-700">
-        <strong className="font-semibold">{file.name}</strong>
-        {!isUploading && <FileUploadDetails file={file} />}
+        <FileDetails file={file} patchFile={patchFile} />
         {isUploading && <FileUploadProgress file={file} />}
       </div>
       {!isUploading && (

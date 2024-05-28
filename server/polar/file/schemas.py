@@ -17,10 +17,12 @@ from polar.models.file import File, FileServiceTypes
 
 
 class FileCreate(S3FileCreate):
+    version: str | None = None
     service: FileServiceTypes = FileServiceTypes.downloadable
 
 
 class FileRead(S3File):
+    version: str | None
     service: FileServiceTypes
     is_uploaded: bool
     created_at: datetime
@@ -35,6 +37,7 @@ class FileRead(S3File):
             path=record.path,
             mime_type=record.mime_type,
             size=record.size,
+            version=record.version,
             service=record.service,
             checksum_etag=record.checksum_etag,
             last_modified_at=record.last_modified_at,
@@ -57,6 +60,7 @@ class FileRead(S3File):
 
 
 class FileUpload(S3FileUpload):
+    version: str | None = None
     is_uploaded: bool = False
     service: FileServiceTypes
 
@@ -65,6 +69,7 @@ class FileUploadCompleted(S3FileUploadCompleted): ...
 
 
 class FileDownload(S3FileDownload):
+    version: str | None
     is_uploaded: bool
     service: FileServiceTypes
 
@@ -97,6 +102,7 @@ class FileDownload(S3FileDownload):
 
 class FileUpdate(Schema):
     id: UUID4
+    version: str | None
     checksum_etag: str
     last_modified_at: datetime
     storage_version: str | None
@@ -104,4 +110,6 @@ class FileUpdate(Schema):
     checksum_sha256_hex: str | None
 
 
-class FilePatch(Schema): ...
+class FilePatch(Schema):
+    name: str | None = None
+    version: str | None = None

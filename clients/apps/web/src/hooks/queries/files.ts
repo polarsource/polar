@@ -35,13 +35,22 @@ export const usePatchFile = (
   onSuccessCallback?: (res: FileRead) => void,
 ) =>
   useMutation({
-    mutationFn: ({ enabled }: { enabled: boolean }) => {
+    mutationFn: ({ name, version }: { name?: string; version?: string }) => {
+      let patch: {
+        name?: string
+        version?: string
+      } = {}
+      if (name) {
+        patch['name'] = name
+      }
+      if (version) {
+        patch['version'] = version
+      }
+
       return api.files
         .update({
           id: id,
-          filePatch: {
-            is_enabled: enabled,
-          },
+          filePatch: patch,
         })
         .then((res) => {})
     },

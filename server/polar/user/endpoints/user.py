@@ -1,5 +1,5 @@
 import structlog
-from fastapi import APIRouter, Depends, Response
+from fastapi import Depends, Response
 
 from polar.auth.dependencies import Authenticator, WebUser
 from polar.auth.models import AuthSubject
@@ -10,6 +10,7 @@ from polar.integrations.github.service.organization import (
     github_organization as github_organization_service,
 )
 from polar.integrations.stripe.service import stripe as stripe_service
+from polar.kit.routing import APIRouter
 from polar.locker import Locker, get_locker
 from polar.models import User
 from polar.organization.schemas import Organization
@@ -17,7 +18,7 @@ from polar.postgres import AsyncSession, get_db_session
 from polar.posthog import posthog
 from polar.user.service.user import user as user_service
 
-from .schemas import (
+from ..schemas import (
     UserRead,
     UserScopes,
     UserSetAccount,
@@ -27,7 +28,7 @@ from .schemas import (
 
 log = structlog.get_logger()
 
-router = APIRouter(prefix="/users", tags=["users"])
+router = APIRouter(tags=["users"])
 
 
 @router.get("/me", response_model=UserRead)

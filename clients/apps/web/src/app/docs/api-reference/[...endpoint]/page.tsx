@@ -52,6 +52,8 @@ export default function Page({
 
   const subHeader = endpoint[2].replaceAll('_', ' ')
 
+  console.log(operation)
+
   return (
     <>
       <div className="flex w-full max-w-3xl flex-shrink flex-col">
@@ -70,6 +72,9 @@ export default function Page({
               <pre className="w-fit font-mono text-sm">{apiEndpointPath}</pre>
             </div>
           </div>
+          <p className="dark:text-polar-500 text-lg text-gray-500">
+            {operation.description}
+          </p>
 
           {operation.parameters && (
             <Parameters

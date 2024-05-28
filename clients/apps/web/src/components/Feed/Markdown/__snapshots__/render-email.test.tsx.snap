@@ -174,7 +174,7 @@ exports[`posts 1`] = `
     <p>
       That's why we're incredibly proud to be the merchant of record and handle value-add taxes so you don't have to. Read more about the details 
       <a
-        href="https://docs.polar.sh/payment/"
+        href="https://polar.sh/docs/overview/payments-taxes"
       >
         here
       </a>

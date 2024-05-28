@@ -450,7 +450,7 @@ export const metaRoutes: Route[] = [
   {
     id: 'docs',
     title: 'Docs & Support',
-    link: `https://docs.polar.sh`,
+    link: '/docs',
     icon: undefined,
     postIcon: <ArrowUpRightIcon className="h-4 w-4" />,
     if: true,
@@ -498,7 +498,7 @@ export const unauthenticatedRoutes: Route[] = [
   {
     id: 'faq',
     title: 'FAQ',
-    link: `https://docs.polar.sh/faq/`,
+    link: '/docs/overview/faq/for-maintainers',
     icon: undefined,
     postIcon: <ArrowUpRightIcon className="h-4 w-4" />,
     if: true,
@@ -507,7 +507,7 @@ export const unauthenticatedRoutes: Route[] = [
   {
     id: 'docs',
     title: 'Docs',
-    link: `https://docs.polar.sh`,
+    link: '/docs',
     icon: undefined,
     postIcon: <ArrowUpRightIcon className="h-4 w-4" />,
     if: true,

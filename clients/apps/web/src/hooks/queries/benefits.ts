@@ -6,10 +6,10 @@ import { defaultRetry } from './retry'
 
 const _invalidateBenefitsQueries = ({
   id,
-  orgName,
+  orgId,
 }: {
   id?: string
-  orgName?: string
+  orgId?: string
 }) => {
   if (id) {
     queryClient.invalidateQueries({
@@ -17,9 +17,9 @@ const _invalidateBenefitsQueries = ({
     })
   }
 
-  if (orgName) {
+  if (orgId) {
     queryClient.invalidateQueries({
-      queryKey: ['benefits', 'organization', orgName],
+      queryKey: ['benefits', 'organization', orgId],
     })
   }
 
@@ -52,7 +52,7 @@ export const useBenefit = (id?: string) =>
     enabled: !!id,
   })
 
-export const useUpdateBenefit = (orgName?: string) =>
+export const useUpdateBenefit = (orgId?: string) =>
   useMutation({
     mutationFn: ({
       id,
@@ -67,11 +67,11 @@ export const useUpdateBenefit = (orgName?: string) =>
       })
     },
     onSuccess: (result, _variables, _ctx) => {
-      _invalidateBenefitsQueries({ id: result.id, orgName })
+      _invalidateBenefitsQueries({ id: result.id, orgId })
     },
   })
 
-export const useCreateBenefit = (orgName?: string) =>
+export const useCreateBenefit = (orgId?: string) =>
   useMutation({
     mutationFn: (benefitCreate: BenefitCreate) => {
       return api.benefits.createBenefit({
@@ -79,11 +79,11 @@ export const useCreateBenefit = (orgName?: string) =>
       })
     },
     onSuccess: (result, _variables, _ctx) => {
-      _invalidateBenefitsQueries({ id: result.id, orgName })
+      _invalidateBenefitsQueries({ id: result.id, orgId })
     },
   })
 
-export const useDeleteBenefit = (orgName?: string) =>
+export const useDeleteBenefit = (orgId?: string) =>
   useMutation({
     mutationFn: ({ id }: { id: string }) => {
       return api.benefits.deleteBenefit({
@@ -91,6 +91,6 @@ export const useDeleteBenefit = (orgName?: string) =>
       })
     },
     onSuccess: (_result, variables, _ctx) => {
-      _invalidateBenefitsQueries({ id: variables.id, orgName })
+      _invalidateBenefitsQueries({ id: variables.id, orgId })
     },
   })

@@ -1,34 +1,57 @@
 import { useDeleteFile } from '@/hooks/queries'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { DragIndicatorOutlined } from '@mui/icons-material'
+import {
+  AudioFileOutlined,
+  DescriptionOutlined,
+  FolderZipOutlined,
+  ImageOutlined,
+  InsertDriveFileOutlined,
+  MoreVertOutlined,
+  VideoFileOutlined,
+} from '@mui/icons-material'
 import { FileRead } from '@polar-sh/sdk'
 import { Switch } from 'polarkit/components/ui/atoms'
-import { Card } from 'polarkit/components/ui/atoms/card'
 import { FormEventHandler, useCallback, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 import { usePatchFile } from '@/hooks/queries'
 
 import { FileObject } from '@/components/FileUpload'
-
-function formatBytes(bytes: number) {
-  const units = ['byte', 'kilobyte', 'megabyte', 'gigabyte', 'terabyte']
-  const k = 1024
-  const i = Math.floor(Math.log(bytes) / Math.log(k))
-
-  return new Intl.NumberFormat('en-US', {
-    style: 'unit',
-    unit: units[i].toLowerCase(),
-    unitDisplay: 'short',
-    maximumFractionDigits: 2,
-  }).format(bytes / Math.pow(k, i))
-}
+import { ConfirmModal } from '@/components/Modal/ConfirmModal'
+import { useModal } from '@/components/Modal/useModal'
+import Button from 'polarkit/components/ui/atoms/button'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from 'polarkit/components/ui/dropdown-menu'
+import { useMemo } from 'react'
 
 const FilePreview = ({ file }: { file: FileObject }) => {
+  const icon = useMemo(() => {
+    const size: 'small' | 'large' | 'inherit' | 'medium' = 'small'
+
+    switch (true) {
+      case /image\/(.*)/.test(file.mime_type):
+        return <ImageOutlined fontSize={size} />
+      case /video\/(.*)/.test(file.mime_type):
+        return <VideoFileOutlined fontSize={size} />
+      case /audio\/(.*)/.test(file.mime_type):
+        return <AudioFileOutlined fontSize={size} />
+      case /application\/zip/.test(file.mime_type):
+        return <FolderZipOutlined fontSize={size} />
+      case /application\/pdf/.test(file.mime_type):
+        return <DescriptionOutlined fontSize={size} />
+      default:
+        return <InsertDriveFileOutlined fontSize={size} />
+    }
+  }, [file])
+
   return (
-    <div className="h-14 w-14 rounded bg-gray-200 text-gray-600">
-      <p className="font-semibold">.{file.extension}</p>
+    <div className="dark:bg-polar-600 dark:text-polar-50 flex h-10 w-10 flex-shrink-0 flex-col items-center justify-center rounded-full bg-blue-50 text-blue-500">
+      {icon}
     </div>
   )
 }
@@ -57,10 +80,12 @@ const FileUploadProgress = ({ file }: { file: FileObject }) => {
 }
 
 const Editable = ({
+  className,
   children,
   enabled,
   onUpdate,
 }: {
+  className?: string
   children: React.ReactNode
   enabled: boolean
   onUpdate: (updated: string) => void
@@ -70,7 +95,7 @@ const Editable = ({
   const [isDirty, setIsDirty] = useState(false)
 
   const update = useCallback(
-    (updated) => {
+    (updated: string) => {
       if (isDirty) {
         onUpdate(updated)
       }
@@ -97,8 +122,8 @@ const Editable = ({
     <>
       <p
         ref={paragraphRef}
-        className="font-semibold"
-        suppressContentEditableWarning={true}
+        className={className}
+        suppressContentEditableWarning
         contentEditable={enabled}
         onBlur={onBlur}
         onKeyDown={(e) => {
@@ -114,44 +139,11 @@ const Editable = ({
   )
 }
 
-const FileDetails = ({
-  file,
-  patchFile,
-}: {
-  file: FileObject
-  patchFile: (attrs: { name?: string; version?: string }) => void
-}) => {
-  const update = (attrs: { name?: string; version?: string }) => {
-    patchFile(attrs)
-  }
-
+const FileUploadDetails = ({ file }: { file: FileObject }) => {
   return (
-    <>
-      <Editable
-        onUpdate={(updated) => update({ name: updated })}
-        enabled={file.is_uploaded}
-      >
-        {file.name}
-      </Editable>
-      {!file.isUploading && (
-        <div className="text-gray-500">
-          <p className="text-xs">
-            <span className="font-medium">Size:</span> {file.size}
-          </p>
-          <p className="text-xs">
-            <span className="font-medium">SHA-256:</span>{' '}
-            {file.checksum_sha256_hex}
-          </p>
-          <label>Version:</label>
-          <Editable
-            onUpdate={(updated) => update({ version: updated })}
-            enabled={file.is_uploaded}
-          >
-            {file.version}
-          </Editable>
-        </div>
-      )}
-    </>
+    <div className="dark:text-polar-500 text-gray-500">
+      <p className="text-xs">{file.size_readable}</p>
+    </div>
   )
 }
 
@@ -180,34 +172,56 @@ export const FileListItem = ({
     })
   })
 
-  const patchFile = async (attrs: { name?: string; version?: string }) => {
-    await patchFileQuery.mutateAsync(attrs)
-  }
+  const patchFile = useCallback(
+    async (attrs: { name?: string; version?: string }) => {
+      await patchFileQuery.mutateAsync(attrs)
+    },
+    [patchFileQuery],
+  )
+
+  const {
+    isShown: isDeleteShown,
+    show: showDeleteModal,
+    hide: hideDeleteModal,
+  } = useModal()
 
   const deleteFile = useDeleteFile(file.id, () => {
     removeFile()
   })
 
-  const onToggleEnabled = (enabled: boolean) => {
-    setArchivedFile(file.id, !enabled)
-  }
+  const onToggleEnabled = useCallback(
+    (enabled: boolean) => {
+      setArchivedFile(file.id, !enabled)
+    },
+    [file, setArchivedFile],
+  )
 
-  const onDelete = async () => {
+  const onDelete = useCallback(async () => {
     deleteFile.mutateAsync()
-  }
+  }, [deleteFile])
 
-  const isUploading = file.isUploading
+  const onCopySHA = useCallback(() => {
+    navigator.clipboard.writeText(file.checksum_sha256_hex ?? '')
+  }, [file])
 
-  let isEnabled = true
-  if (archivedFiles && archivedFiles[file.id]) {
-    isEnabled = !archivedFiles[file.id]
-  }
+  const isUploading = useMemo(() => file.isUploading, [file])
+
+  let isEnabled = useMemo(() => {
+    return archivedFiles ? !archivedFiles[file.id] : true
+  }, [archivedFiles, file])
+
+  const update = useCallback(
+    (attrs: { name?: string; version?: string }) => {
+      patchFile(attrs)
+    },
+    [patchFile],
+  )
 
   return (
-    <Card
+    <div
       ref={sortable ? sortable.setNodeRef : undefined}
       className={twMerge(
-        'dark:text-polar-500 transition-color dark:hover:text-polar-300 dark:hover:bg-polar-800 transition-color mb-4 flex items-center gap-y-2 space-x-4 rounded text-gray-500 hover:bg-gray-50 hover:text-gray-600',
+        'dark:hover:bg-polar-700 dark:text-polar-500 hover:bg-gray-75 flex flex-row items-center justify-between gap-x-8 gap-y-2 rounded-xl px-4 py-2 text-gray-500 transition-colors',
         sortable?.isDragging && 'opacity-30',
       )}
       style={
@@ -219,40 +233,62 @@ export const FileListItem = ({
           : {}
       }
     >
-      <div className="flex w-14 text-center">
+      <div
+        ref={sortable ? sortable.setDraggableNodeRef : undefined}
+        className="flex w-full min-w-0 cursor-grab flex-row items-center gap-x-4"
+        {...sortable?.attributes}
+        {...sortable?.listeners}
+      >
         <FilePreview file={file} />
       </div>
-      <div className="flex-grow text-gray-700">
-        <FileDetails file={file} patchFile={patchFile} />
+      <div className="dark:text-polar-50 flex w-full min-w-0 flex-grow flex-col gap-y-1 text-gray-950">
+        <Editable
+          className="w-full truncate text-sm font-medium"
+          onUpdate={(updated) => update({ name: updated })}
+          enabled={file.is_uploaded}
+        >
+          {file.name}
+        </Editable>
+        {!isUploading && <FileUploadDetails file={file} />}
         {isUploading && <FileUploadProgress file={file} />}
       </div>
       {!isUploading && (
-        <div className="flex w-14">
-          <a
-            href="#"
-            onClick={(e) => {
-              e.preventDefault()
-              onDelete()
-            }}
-          >
-            x
-          </a>
+        <div className="flex w-fit flex-row items-center gap-x-2">
           <Switch checked={isEnabled} onCheckedChange={onToggleEnabled} />
-
-          <span
-            ref={sortable ? sortable.setDraggableNodeRef : undefined}
-            className="cursor-grab"
-            {...sortable?.attributes}
-            {...sortable?.listeners}
-          >
-            <DragIndicatorOutlined
-              className={twMerge('dark:text-polar-600 text-gray-400')}
-              fontSize="small"
-            />
-          </span>
+          <DropdownMenu>
+            <DropdownMenuTrigger className="focus:outline-none">
+              <Button
+                className={
+                  'border-none bg-transparent text-[16px] opacity-50 transition-opacity hover:opacity-100 dark:bg-transparent'
+                }
+                size="icon"
+                variant="secondary"
+              >
+                <MoreVertOutlined fontSize="inherit" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent
+              align="end"
+              className="dark:bg-polar-800 bg-gray-50 shadow-lg"
+            >
+              <DropdownMenuItem onClick={onCopySHA}>Copy SHA</DropdownMenuItem>
+              <DropdownMenuItem onClick={showDeleteModal}>
+                Delete
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       )}
-    </Card>
+
+      <ConfirmModal
+        isShown={isDeleteShown}
+        hide={hideDeleteModal}
+        title="Delete File Download"
+        description="Deleting a file from a benefit is permanent & will revoke access for granted customers. Are you sure?"
+        onConfirm={onDelete}
+        destructive
+      />
+    </div>
   )
 }
 

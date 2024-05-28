@@ -1,5 +1,6 @@
 import {
   CheckOutlined,
+  FileDownloadOutlined,
   GitHub,
   StickyNote2Outlined,
   WebOutlined,
@@ -24,6 +25,8 @@ export const resolveBenefitIcon = (
       return <DiscordIcon />
     case BenefitType.GITHUB_REPOSITORY:
       return <GitHub className={cn} fontSize={fontSize} />
+    case BenefitType.DOWNLOADABLES:
+      return <FileDownloadOutlined className={cn} fontSize={fontSize} />
     default:
       return <CheckOutlined className={cn} fontSize={fontSize} />
   }

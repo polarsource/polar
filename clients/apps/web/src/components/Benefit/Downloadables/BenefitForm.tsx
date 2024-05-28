@@ -28,18 +28,20 @@ const DropzoneView = ({
     <>
       <div
         className={twMerge(
-          'flex w-full items-center justify-center border pb-8 pt-8',
-          isDragActive ? 'border-blue-100 bg-blue-50' : 'bg-gray-50',
+          'flex w-full cursor-pointer items-center justify-center rounded-3xl border border-transparent pb-8 pt-8',
+          isDragActive
+            ? 'dark:border-polar-800 dark:bg-polar-950 border-blue-100 bg-blue-50'
+            : 'dark:bg-polar-700 bg-gray-100',
         )}
       >
-        <div className="text-center text-gray-700">
+        <div className="dark:text-polar-500 text-center text-gray-700">
           <div className="mb-4">
             <FileUploadIcon fontSize="large" />
           </div>
-          <strong>
+          <h3 className="font-medium">
             {!isDragActive && 'Feed me some bytes'}
             {isDragActive && "Drop it like it's hot"}
-          </strong>
+          </h3>
           <p className="mt-2 text-sm">
             You can drop files here or{' '}
             <a className="text-blue-400">click like a Netscape user</a>

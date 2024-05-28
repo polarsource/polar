@@ -377,7 +377,7 @@ const BenefitTypeSelect = ({}) => {
                       switch (value) {
                         case BenefitType.ARTICLES:
                           return false
-                        case BenefitType.FILES:
+                        case BenefitType.DOWNLOADABLES:
                           return isFeatureEnabled('benefit-files-create')
                         default:
                           return true

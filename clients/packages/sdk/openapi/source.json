@@ -11527,8 +11527,8 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "creator:benefits:read",
-                            "creator:benefits:write"
+                            "creator:benefits:write",
+                            "creator:benefits:read"
                         ]
                     },
                     {
@@ -11747,8 +11747,8 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "creator:benefits:read",
-                            "creator:benefits:write"
+                            "creator:benefits:write",
+                            "creator:benefits:read"
                         ]
                     },
                     {
@@ -12043,8 +12043,8 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "creator:benefits:read",
-                            "creator:benefits:write"
+                            "creator:benefits:write",
+                            "creator:benefits:read"
                         ]
                     },
                     {
@@ -13752,6 +13752,120 @@
                 }
             }
         },
+        "/api/v1/files": {
+            "get": {
+                "tags": [
+                    "files"
+                ],
+                "summary": "List",
+                "operationId": "files:list",
+                "security": [
+                    {
+                        "OpenIdConnect": []
+                    },
+                    {
+                        "HTTPBearer": []
+                    },
+                    {
+                        "OpenIdConnect": [
+                            "creator:files:write"
+                        ]
+                    },
+                    {
+                        "HTTPBearer": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "organization_id",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string",
+                                    "format": "uuid4"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "Organization Id"
+                        }
+                    },
+                    {
+                        "name": "ids",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "string",
+                                        "format": "uuid4"
+                                    }
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "description": "List of file IDs to get. ",
+                            "title": "Ids"
+                        },
+                        "description": "List of file IDs to get. "
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "exclusiveMinimum": 0,
+                            "description": "Page number, defaults to 1.",
+                            "default": 1,
+                            "title": "Page"
+                        },
+                        "description": "Page number, defaults to 1."
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "exclusiveMinimum": 0,
+                            "description": "Size of a page, defaults to 10. Maximum is 100.",
+                            "default": 10,
+                            "title": "Limit"
+                        },
+                        "description": "Size of a page, defaults to 10. Maximum is 100."
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ListResource_FileRead_"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/files/": {
             "post": {
                 "tags": [
@@ -13809,7 +13923,7 @@
                 ]
             }
         },
-        "/api/v1/files/{file_id}/uploaded": {
+        "/api/v1/files/{id}/uploaded": {
             "post": {
                 "tags": [
                     "files"
@@ -13834,14 +13948,16 @@
                 ],
                 "parameters": [
                     {
-                        "name": "file_id",
+                        "name": "id",
                         "in": "path",
                         "required": true,
                         "schema": {
                             "type": "string",
-                            "format": "uuid",
-                            "title": "File Id"
-                        }
+                            "format": "uuid4",
+                            "description": "The file ID.",
+                            "title": "Id"
+                        },
+                        "description": "The file ID."
                     }
                 ],
                 "requestBody": {
@@ -13861,6 +13977,78 @@
                             "application/json": {
                                 "schema": {
                                     "$ref": "#/components/schemas/FileRead"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/files/{id}": {
+            "delete": {
+                "tags": [
+                    "files"
+                ],
+                "summary": "Delete",
+                "operationId": "files:delete",
+                "security": [
+                    {
+                        "OpenIdConnect": []
+                    },
+                    {
+                        "HTTPBearer": []
+                    },
+                    {
+                        "OpenIdConnect": [
+                            "creator:files:write"
+                        ]
+                    },
+                    {
+                        "HTTPBearer": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid4",
+                            "title": "Id"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "File deleted."
+                    },
+                    "403": {
+                        "description": "You don't have the permission to update this file or it's not deletable.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/NotPermitted"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "File not found.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/FileNotFound"
                                 }
                             }
                         }
@@ -13916,10 +14104,10 @@
                                     "type": "null"
                                 }
                             ],
-                            "description": "Filter by organization files belong to. ",
+                            "description": "Filter by organization behind downloadables. ",
                             "title": "Organization Id"
                         },
-                        "description": "Filter by organization files belong to. "
+                        "description": "Filter by organization behind downloadables. "
                     },
                     {
                         "name": "benefit_id",
@@ -13935,10 +14123,10 @@
                                     "type": "null"
                                 }
                             ],
-                            "description": "Filter by granted benefit. ",
+                            "description": "Filter by given benefit ID. ",
                             "title": "Benefit Id"
                         },
-                        "description": "Filter by granted benefit. "
+                        "description": "Filter by given benefit ID. "
                     },
                     {
                         "name": "page",
@@ -17643,6 +17831,14 @@
             },
             "BenefitDownloadablesCreateProperties": {
                 "properties": {
+                    "archived": {
+                        "additionalProperties": {
+                            "type": "boolean"
+                        },
+                        "type": "object",
+                        "title": "Archived",
+                        "default": {}
+                    },
                     "files": {
                         "items": {
                             "type": "string",
@@ -17660,6 +17856,13 @@
             },
             "BenefitDownloadablesProperties": {
                 "properties": {
+                    "archived": {
+                        "additionalProperties": {
+                            "type": "boolean"
+                        },
+                        "type": "object",
+                        "title": "Archived"
+                    },
                     "files": {
                         "items": {
                             "type": "string",
@@ -17671,6 +17874,7 @@
                 },
                 "type": "object",
                 "required": [
+                    "archived",
                     "files"
                 ],
                 "title": "BenefitDownloadablesProperties"
@@ -17750,18 +17954,18 @@
             },
             "BenefitDownloadablesSubscriberProperties": {
                 "properties": {
-                    "files": {
+                    "active_files": {
                         "items": {
                             "type": "string",
                             "format": "uuid4"
                         },
                         "type": "array",
-                        "title": "Files"
+                        "title": "Active Files"
                     }
                 },
                 "type": "object",
                 "required": [
-                    "files"
+                    "active_files"
                 ],
                 "title": "BenefitDownloadablesSubscriberProperties"
             },
@@ -19768,6 +19972,17 @@
                         "type": "integer",
                         "title": "Size"
                     },
+                    "size_readable": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Size Readable"
+                    },
                     "storage_version": {
                         "anyOf": [
                             {
@@ -19827,6 +20042,10 @@
                     "download": {
                         "$ref": "#/components/schemas/S3DownloadURL"
                     },
+                    "is_uploaded": {
+                        "type": "boolean",
+                        "title": "Is Uploaded"
+                    },
                     "service": {
                         "$ref": "#/components/schemas/FileServiceTypes"
                     }
@@ -19841,9 +20060,32 @@
                     "mime_type",
                     "size",
                     "download",
+                    "is_uploaded",
                     "service"
                 ],
                 "title": "FileDownload"
+            },
+            "FileNotFound": {
+                "properties": {
+                    "type": {
+                        "type": "string",
+                        "enum": [
+                            "FileNotFound"
+                        ],
+                        "const": "FileNotFound",
+                        "title": "Type"
+                    },
+                    "detail": {
+                        "type": "string",
+                        "title": "Detail"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "type",
+                    "detail"
+                ],
+                "title": "FileNotFound"
             },
             "FileRead": {
                 "properties": {
@@ -19876,6 +20118,17 @@
                     "size": {
                         "type": "integer",
                         "title": "Size"
+                    },
+                    "size_readable": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Size Readable"
                     },
                     "storage_version": {
                         "anyOf": [
@@ -19936,6 +20189,10 @@
                     "service": {
                         "$ref": "#/components/schemas/FileServiceTypes"
                     },
+                    "is_uploaded": {
+                        "type": "boolean",
+                        "title": "Is Uploaded"
+                    },
                     "created_at": {
                         "type": "string",
                         "format": "date-time",
@@ -19952,6 +20209,7 @@
                     "mime_type",
                     "size",
                     "service",
+                    "is_uploaded",
                     "created_at"
                 ],
                 "title": "FileRead"
@@ -19995,6 +20253,17 @@
                     "size": {
                         "type": "integer",
                         "title": "Size"
+                    },
+                    "size_readable": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Size Readable"
                     },
                     "storage_version": {
                         "anyOf": [
@@ -20054,6 +20323,11 @@
                     },
                     "upload": {
                         "$ref": "#/components/schemas/S3FileUploadMultipart"
+                    },
+                    "is_uploaded": {
+                        "type": "boolean",
+                        "title": "Is Uploaded",
+                        "default": false
                     },
                     "service": {
                         "$ref": "#/components/schemas/FileServiceTypes"
@@ -21016,6 +21290,26 @@
                     "pagination"
                 ],
                 "title": "ListResource[DownloadableRead]"
+            },
+            "ListResource_FileRead_": {
+                "properties": {
+                    "items": {
+                        "items": {
+                            "$ref": "#/components/schemas/FileRead"
+                        },
+                        "type": "array",
+                        "title": "Items",
+                        "default": []
+                    },
+                    "pagination": {
+                        "$ref": "#/components/schemas/Pagination"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "pagination"
+                ],
+                "title": "ListResource[FileRead]"
             },
             "ListResource_IssueFunding_": {
                 "properties": {

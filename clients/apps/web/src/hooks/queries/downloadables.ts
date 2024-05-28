@@ -4,13 +4,13 @@ import { api } from '@/utils/api'
 import { DownloadableRead, ListResourceDownloadableRead } from '@polar-sh/sdk'
 import { defaultRetry } from './retry'
 
-export const useDownloadables = (fileIds: string[]) =>
+export const useDownloadables = (benefitId: string, activeFileIds: string[]) =>
   useQuery({
-    queryKey: ['user', 'downloadables', ...fileIds],
+    queryKey: ['user', 'downloadables', benefitId, ...activeFileIds],
     queryFn: () =>
       api.downloadables
         .list({
-          fileIds,
+          benefitId,
         })
         .then((response: ListResourceDownloadableRead) => {
           if (!response.items) {
@@ -26,9 +26,18 @@ export const useDownloadables = (fileIds: string[]) =>
             lookup,
           )
           // Return in given ID order
-          const sorted = fileIds
-            .map((id) => downloadables[id])
-            .filter((downloadable) => !!downloadable)
+          const added: { [key: string]: boolean } = {}
+          const sorted: DownloadableRead[] = []
+          activeFileIds.map((id) => {
+            sorted.push(downloadables[id])
+            added[id] = true
+          })
+          response.items.map((item) => {
+            if (item.file.id in added) {
+              return
+            }
+            sorted.push(item)
+          })
 
           return {
             items: sorted,

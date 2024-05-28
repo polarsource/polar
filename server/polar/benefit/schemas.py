@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Annotated, Literal
+from typing import Annotated, Any, Literal
 
 from pydantic import (
     UUID4,
@@ -8,6 +8,7 @@ from pydantic import (
     TypeAdapter,
     computed_field,
     field_validator,
+    model_validator,
 )
 
 from polar.config import settings
@@ -203,15 +204,38 @@ class BenefitGitHubRepositorySubscriberProperties(Schema):
 
 
 class BenefitDownloadablesCreateProperties(Schema):
+    archived: dict[UUID4, bool] = {}
     files: list[UUID4]
 
 
 class BenefitDownloadablesProperties(Schema):
+    archived: dict[UUID4, bool]
     files: list[UUID4]
+
+
+def get_active_file_ids(properties: BenefitDownloadablesProperties) -> list[UUID4]:
+    active = []
+    archived_files = properties.archived
+    for file_id in properties.files:
+        archived = archived_files.get(file_id, False)
+        if not archived:
+            active.append(file_id)
+
+    return active
 
 
 class BenefitDownloadablesSubscriberProperties(Schema):
-    files: list[UUID4]
+    active_files: list[UUID4]
+
+    @model_validator(mode="before")
+    @classmethod
+    def assign_active_files(cls, data: dict[str, Any]) -> dict[str, Any]:
+        if "files" not in data:
+            return data
+
+        schema = BenefitDownloadablesProperties(**data)
+        actives = get_active_file_ids(schema)
+        return dict(active_files=actives)
 
 
 # BenefitCreate

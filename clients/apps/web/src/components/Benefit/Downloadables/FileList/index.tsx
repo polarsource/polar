@@ -1,5 +1,3 @@
-'use client'
-
 import { FileObject } from '@/components/FileUpload'
 import { DndContext, DragOverlay, closestCenter } from '@dnd-kit/core'
 import { SortableContext, rectSortingStrategy } from '@dnd-kit/sortable'
@@ -12,6 +10,8 @@ export const FileList = ({
   setFiles,
   updateFile,
   removeFile,
+  archivedFiles,
+  setArchivedFile,
 }: {
   files: FileObject[]
   setFiles: (callback: (prev: FileObject[]) => FileObject[]) => void
@@ -20,6 +20,8 @@ export const FileList = ({
     callback: (prev: FileObject) => FileObject,
   ) => void
   removeFile: (fileId: string) => void
+  archivedFiles: { [key: string]: boolean }
+  setArchivedFile: (fileId: string, disabled: boolean) => void
 }) => {
   const getUpdateScopedFile = (fileId: string) => {
     return (callback: (prev: FileObject) => FileObject) => {
@@ -79,6 +81,8 @@ export const FileList = ({
                 file={file}
                 updateFile={getUpdateScopedFile(file.id)}
                 removeFile={getRemoveScopedFile(file.id)}
+                archivedFiles={archivedFiles}
+                setArchivedFile={setArchivedFile}
               />
             ))}
           </div>
@@ -89,6 +93,8 @@ export const FileList = ({
                   file={activeFile}
                   updateFile={getUpdateScopedFile(activeFile.id)}
                   removeFile={getRemoveScopedFile(activeFile.id)}
+                  archivedFiles={archivedFiles}
+                  setArchivedFile={setArchivedFile}
                 />
               </>
             ) : null}

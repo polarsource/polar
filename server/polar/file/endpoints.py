@@ -16,7 +16,6 @@ from polar.tags.api import Tags
 from . import auth
 from .schemas import (
     FileCreate,
-    FilePatch,
     FileRead,
     FileUpload,
     FileUploadCompleted,
@@ -130,33 +129,34 @@ async def uploaded(
     )
 
 
-@router.patch(
-    "/{id}",
-    tags=[Tags.PUBLIC],
-    response_model=FileRead,
-)
-async def update(
-    auth_subject: auth.CreatorFilesWrite,
-    id: FileID,
-    patches: FilePatch,
-    authz: Authz = Depends(Authz.authz),
-    session: AsyncSession = Depends(get_db_session),
-) -> FileRead:
-    subject = auth_subject.subject
-
-    file = await file_service.get(session, id)
-    if not file:
-        raise FileNotFound(f"No file exists with ID: {id}")
-
-    organization = await organization_service.get(session, file.organization_id)
-    if not organization:
-        raise NotPermitted()
-
-    if not await authz.can(subject, AccessType.write, organization):
-        raise NotPermitted()
-
-    updated = await file_service.patch(session, file=file, patches=patches)
-    return FileRead.from_db(updated)
+# Re-introduce with changing version
+# @router.patch(
+#     "/{id}",
+#     tags=[Tags.PUBLIC],
+#     response_model=FileRead,
+# )
+# async def update(
+#     auth_subject: auth.CreatorFilesWrite,
+#     id: FileID,
+#     patches: FilePatch,
+#     authz: Authz = Depends(Authz.authz),
+#     session: AsyncSession = Depends(get_db_session),
+# ) -> FileRead:
+#     subject = auth_subject.subject
+#
+#     file = await file_service.get(session, id)
+#     if not file:
+#         raise FileNotFound(f"No file exists with ID: {id}")
+#
+#     organization = await organization_service.get(session, file.organization_id)
+#     if not organization:
+#         raise NotPermitted()
+#
+#     if not await authz.can(subject, AccessType.write, organization):
+#         raise NotPermitted()
+#
+#     updated = await file_service.patch(session, file=file, patches=patches)
+#     return FileRead.from_db(updated)
 
 
 @router.delete(

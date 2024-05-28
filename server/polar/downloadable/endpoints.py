@@ -33,9 +33,9 @@ async def list(
         None,
         description=("Filter by organization behind downloadables. "),
     ),
-    file_ids: list[UUID4] | None = Query(
+    benefit_id: UUID4 | None = Query(
         None,
-        description=("Filter by given file IDs. "),
+        description=("Filter by given benefit ID. "),
     ),
     authz: Authz = Depends(Authz.authz),
     session: AsyncSession = Depends(get_db_session),
@@ -47,7 +47,7 @@ async def list(
         user=subject,
         pagination=pagination,
         organization_id=organization_id,
-        file_ids=file_ids,
+        benefit_id=benefit_id,
     )
 
     return ListResource.from_paginated_results(

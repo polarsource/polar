@@ -10,7 +10,7 @@ import {
 import { FileUploadOutlined as FileUploadIcon } from '@mui/icons-material'
 
 import { useFiles } from '@/hooks/queries'
-import { ReactElement } from 'react'
+import { ReactElement, useState } from 'react'
 import { useFormContext } from 'react-hook-form'
 import { twMerge } from 'tailwind-merge'
 
@@ -54,11 +54,17 @@ const DropzoneView = ({
 const DownloadablesForm = ({
   organization,
   initialFiles,
+  initialArchivedFiles,
 }: {
   organization: Organization
   initialFiles: FileObject[]
+  initialArchivedFiles: { [key: string]: boolean }
 }) => {
   const { setValue } = useFormContext<BenefitDownloadablesCreate>()
+
+  const [archivedFiles, setArchivedFiles] = useState<{
+    [key: string]: boolean
+  }>(initialArchivedFiles ?? {})
 
   /**
    * TODO
@@ -68,15 +74,27 @@ const DownloadablesForm = ({
    * Sortable files
    */
 
-  const setFormFiles = (files: FileObject[]) => {
-    const property = []
+  const setFormFiles = (formFiles: FileObject[]) => {
+    const files = []
 
-    for (const file of files) {
+    for (const file of formFiles) {
       if (file.is_uploaded) {
-        property.push(file.id)
+        files.push(file.id)
       }
     }
-    setValue('properties.files', property)
+
+    setValue('properties.files', files)
+  }
+
+  const setArchivedFile = (fileId: string, archived: boolean) => {
+    setArchivedFiles((prev) => {
+      const updated = { ...prev, [fileId]: archived }
+      if (!archived) {
+        delete updated[fileId]
+      }
+      setValue('properties.archived', updated)
+      return updated
+    })
   }
 
   const {
@@ -106,6 +124,8 @@ const DownloadablesForm = ({
         setFiles={setFiles}
         updateFile={updateFile}
         removeFile={removeFile}
+        archivedFiles={archivedFiles}
+        setArchivedFile={setArchivedFile}
       />
     </>
   )
@@ -122,6 +142,7 @@ const DownloadablesEditForm = ({
   const { getValues } = useFormContext<BenefitDownloadablesCreate>()
 
   const fileIds = getValues('properties.files')
+  const archivedFiles = getValues('properties.archived')
   const filesQuery = useFiles(organization.id, fileIds)
 
   const files: FileRead[] = filesQuery?.data?.items
@@ -131,7 +152,13 @@ const DownloadablesEditForm = ({
     return <div>Loading...</div>
   }
 
-  return <DownloadablesForm organization={organization} initialFiles={files} />
+  return (
+    <DownloadablesForm
+      organization={organization}
+      initialFiles={files}
+      initialArchivedFiles={archivedFiles}
+    />
+  )
 }
 
 export const DownloadablesBenefitForm = ({
@@ -139,7 +166,13 @@ export const DownloadablesBenefitForm = ({
   update = false,
 }: DownloadablesBenefitFormProps) => {
   if (!update) {
-    return <DownloadablesForm organization={organization} initialFiles={[]} />
+    return (
+      <DownloadablesForm
+        organization={organization}
+        initialFiles={[]}
+        initialArchivedFiles={{}}
+      />
+    )
   }
 
   return <DownloadablesEditForm organization={organization} />

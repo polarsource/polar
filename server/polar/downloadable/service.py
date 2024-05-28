@@ -1,9 +1,18 @@
 from collections.abc import Sequence
+from datetime import timedelta
 from uuid import UUID
 
 import structlog
+from itsdangerous import SignatureExpired, URLSafeTimedSerializer
 from sqlalchemy.orm import contains_eager
 
+from polar.config import settings
+from polar.exceptions import (
+    BadRequest,
+    ResourceNotFound,
+    ResourceUnavailable,
+)
+from polar.file.schemas import FileDownload
 from polar.file.service import file as file_service
 from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.services import ResourceService
@@ -17,9 +26,14 @@ from .schemas import (
     DownloadableCreate,
     DownloadableRead,
     DownloadableUpdate,
+    DownloadableURL,
 )
 
 log = structlog.get_logger()
+
+token_serializer = URLSafeTimedSerializer(
+    settings.S3_FILES_DOWNLOAD_SECRET, settings.S3_FILES_DOWNLOAD_SALT
+)
 
 
 class DownloadableService(
@@ -43,15 +57,6 @@ class DownloadableService(
             statement = statement.where(Downloadable.benefit_id == benefit_id)
 
         return await paginate(session, statement, pagination=pagination)
-
-    async def user_get(
-        self, session: AsyncSession, user: User, id: UUID
-    ) -> Downloadable | None:
-        statement = self._get_base_query(user)
-        statement = statement.where(Downloadable.id == id)
-        res = await session.execute(statement)
-        record = res.scalars().one_or_none()
-        return record
 
     async def grant_for_benefit_file(
         self,
@@ -153,6 +158,59 @@ class DownloadableService(
     def generate_downloadable_schema(
         self, downloadable: Downloadable
     ) -> DownloadableRead:
+        token = self.create_download_token(downloadable)
+        file_download = FileDownload.from_presigned(
+            downloadable.file,
+            url=token.url,
+            expires_at=token.expires_at,
+        )
+        return DownloadableRead(
+            id=downloadable.id,
+            benefit_id=downloadable.benefit_id,
+            file=file_download,
+        )
+
+    def create_download_token(self, downloadable: Downloadable) -> DownloadableURL:
+        expires_at = utc_now() + timedelta(seconds=settings.S3_FILES_PRESIGN_TTL)
+
+        last_downloaded_at = 0
+        if downloadable.last_downloaded_at:
+            last_downloaded_at = downloadable.last_downloaded_at.timestamp()
+
+        token = token_serializer.dumps(
+            dict(
+                id=str(downloadable.id),
+                # Not used initially, but good for future rate limiting
+                downloaded=downloadable.downloaded,
+                last_downloaded_at=last_downloaded_at,
+            )
+        )
+        redirect_to = f"{settings.BASE_URL}/downloadables/{token}"
+        return DownloadableURL(url=redirect_to, expires_at=expires_at)
+
+    async def get_from_token_or_raise(
+        self, session: AsyncSession, user: User, token: str
+    ) -> Downloadable:
+        try:
+            unpacked = token_serializer.loads(
+                token, max_age=settings.S3_FILES_PRESIGN_TTL
+            )
+            id = UUID(unpacked["id"])
+        except SignatureExpired:
+            raise ResourceUnavailable()
+        except KeyError:
+            raise BadRequest()
+
+        statement = self._get_base_query(user).where(Downloadable.id == id)
+        res = await session.execute(statement)
+        downloadable = res.scalars().one_or_none()
+        if not downloadable:
+            raise ResourceNotFound()
+
+        await self.increment_download_count(session, downloadable)
+        return downloadable
+
+    def generate_download_schema(self, downloadable: Downloadable) -> DownloadableRead:
         file_schema = file_service.generate_downloadable_schema(downloadable.file)
         return DownloadableRead(
             id=downloadable.id,

@@ -8,6 +8,19 @@ import { twMerge } from 'tailwind-merge'
 
 import { FileObject } from '@/components/FileUpload'
 
+function formatBytes(bytes: number) {
+  const units = ['byte', 'kilobyte', 'megabyte', 'gigabyte', 'terabyte']
+  const k = 1024
+  const i = Math.floor(Math.log(bytes) / Math.log(k))
+
+  return new Intl.NumberFormat('en-US', {
+    style: 'unit',
+    unit: units[i].toLowerCase(),
+    unitDisplay: 'short',
+    maximumFractionDigits: 2,
+  }).format(bytes / Math.pow(k, i))
+}
+
 const FilePreview = ({ file }: { file: FileObject }) => {
   return (
     <div className="h-14 w-14 rounded bg-gray-200 text-gray-600">
@@ -43,9 +56,7 @@ const FileUploadDetails = ({ file }: { file: FileObject }) => {
   return (
     <>
       <div className="text-gray-500">
-        <p className="text-xs">
-          <span className="font-medium">Size:</span> {file.size}
-        </p>
+        <p className="text-xs">{formatBytes(file.size)}</p>
         <p className="text-xs">
           <span className="font-medium">SHA-256:</span>{' '}
           {file.checksum_sha256_hex}

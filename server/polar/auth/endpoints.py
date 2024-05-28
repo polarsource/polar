@@ -14,7 +14,7 @@ from polar.exceptions import ResourceNotFound, Unauthorized
 from polar.kit import jwt
 from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession, get_db_session
-from polar.user.service import user as user_service
+from polar.user.service.user import user as user_service
 
 from .service import AuthService
 

@@ -13,7 +13,7 @@ from polar.models.transaction import PaymentProcessor, TransactionType
 from polar.organization.service import organization as organization_service
 from polar.pledge.service import pledge as pledge_service
 from polar.postgres import AsyncSession
-from polar.user.service import user as user_service
+from polar.user.service.user import user as user_service
 
 from .base import BaseTransactionService, BaseTransactionServiceError
 from .processor_fee import (

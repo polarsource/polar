@@ -15,7 +15,7 @@ from polar.kit.services import ResourceService
 from polar.kit.utils import utc_now
 from polar.models import MagicLink, User
 from polar.postgres import AsyncSession
-from polar.user.service import user as user_service
+from polar.user.service.user import user as user_service
 
 from .schemas import MagicLinkCreate, MagicLinkSource, MagicLinkUpdate
 

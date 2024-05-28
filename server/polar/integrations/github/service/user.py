@@ -14,7 +14,7 @@ from polar.organization.service import organization
 from polar.postgres import AsyncSession
 from polar.posthog import posthog
 from polar.user.oauth_service import oauth_account_service
-from polar.user.service import UserService
+from polar.user.service.user import UserService
 from polar.worker import enqueue_job
 
 from .. import client as github

@@ -15,7 +15,7 @@ from polar.models import User
 from polar.organization.schemas import Organization
 from polar.postgres import AsyncSession, get_db_session
 from polar.posthog import posthog
-from polar.user.service import user as user_service
+from polar.user.service.user import user as user_service
 
 from .schemas import (
     UserRead,

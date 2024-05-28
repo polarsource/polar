@@ -18,7 +18,7 @@ from polar.postgres import (
 )
 from polar.posthog import posthog
 from polar.tags.api import Tags
-from polar.user.service import user as user_service
+from polar.user.service.user import user as user_service
 from polar.worker import enqueue_job
 
 from .schemas import Article as ArticleSchema

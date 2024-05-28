@@ -8,7 +8,7 @@ from polar.product.service.product import (
 from polar.subscription.service import subscription as subscription_service
 from polar.worker import AsyncSessionMaker, JobContext, PolarWorkerContext, task
 
-from .service import user as user_service
+from .service.user import user as user_service
 
 
 class UserTaskError(PolarTaskError): ...

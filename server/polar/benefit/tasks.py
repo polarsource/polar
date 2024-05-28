@@ -10,7 +10,7 @@ from polar.models.benefit import BenefitType
 from polar.models.benefit_grant import BenefitGrantScopeArgs
 from polar.organization.service import organization as organization_service
 from polar.product.service.product import product as product_service
-from polar.user.service import user as user_service
+from polar.user.service.user import user as user_service
 from polar.worker import (
     AsyncSessionMaker,
     JobContext,

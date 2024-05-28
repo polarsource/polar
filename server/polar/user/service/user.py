@@ -15,7 +15,7 @@ from polar.postgres import AsyncSession, sql
 from polar.posthog import posthog
 from polar.worker import enqueue_job
 
-from .schemas import UserCreate, UserUpdate, UserUpdateSettings
+from ..schemas import UserCreate, UserUpdate, UserUpdateSettings
 
 log: Logger = structlog.get_logger()
 

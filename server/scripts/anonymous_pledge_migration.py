@@ -12,7 +12,7 @@ from polar.kit.email import EmailNotValidError, validate_email
 from polar.models import Pledge
 from polar.models.pledge import PledgeState
 from polar.postgres import create_async_engine
-from polar.user.service import user as user_service
+from polar.user.service.user import user as user_service
 
 cli = typer.Typer()
 

@@ -8,7 +8,7 @@ from polar.config import settings
 from polar.email.sender import get_email_sender
 from polar.logging import Logger
 from polar.models.article import Article
-from polar.user.service import user as user_service
+from polar.user.service.user import user as user_service
 from polar.worker import (
     AsyncSessionMaker,
     JobContext,

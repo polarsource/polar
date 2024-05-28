@@ -30,7 +30,7 @@ from polar.notifications.service import PartialNotification
 from polar.notifications.service import notifications as notification_service
 from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession
-from polar.user.service import user as user_service
+from polar.user.service.user import user as user_service
 from polar.worker import enqueue_job
 
 from .benefit_grant_scope import resolve_scope, scope_to_args

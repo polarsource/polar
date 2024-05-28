@@ -25,7 +25,7 @@ from polar.organization.dependencies import (
 from polar.postgres import AsyncSession, get_db_session
 from polar.posthog import posthog
 from polar.tags.api import Tags
-from polar.user.service import user as user_service
+from polar.user.service.user import user as user_service
 
 from ..product.service.product import (
     product as product_service,

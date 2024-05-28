@@ -14,7 +14,7 @@ from polar.kit.schemas import Schema
 from polar.models import User
 from polar.personal_access_token.service import personal_access_token_service
 from polar.postgres import AsyncSession
-from polar.user.service import user as user_service
+from polar.user.service.user import user as user_service
 
 log = structlog.get_logger()
 

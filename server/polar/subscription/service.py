@@ -69,7 +69,7 @@ from polar.notifications.service import PartialNotification
 from polar.notifications.service import notifications as notifications_service
 from polar.organization.service import organization as organization_service
 from polar.posthog import posthog
-from polar.user.service import user as user_service
+from polar.user.service.user import user as user_service
 from polar.webhook.service import webhook as webhook_service
 from polar.webhook.webhooks import WebhookTypeObject
 from polar.webhook_notifications.service import webhook_notifications_service

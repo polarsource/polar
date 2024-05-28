@@ -48,7 +48,7 @@ from polar.transaction.service.balance import (
 from polar.transaction.service.platform_fee import (
     platform_fee_transaction as platform_fee_transaction_service,
 )
-from polar.user.service import user as user_service
+from polar.user.service.user import user as user_service
 from polar.worker import enqueue_job
 
 from .schemas import OrdersStatisticsPeriod

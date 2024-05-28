@@ -39,7 +39,7 @@ from polar.subscription.service import (
     SubscriptionDoesNotExist,
 )
 from polar.subscription.service import subscription as subscription_service
-from polar.user.service import user as user_service
+from polar.user.service.user import user as user_service
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (

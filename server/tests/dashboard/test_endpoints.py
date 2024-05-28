@@ -10,7 +10,7 @@ from polar.models.repository import Repository
 from polar.models.user import User
 from polar.models.user_organization import UserOrganization
 from polar.postgres import AsyncSession
-from polar.user.service import user as user_service
+from polar.user.service.user import user as user_service
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_user_github_oauth
 

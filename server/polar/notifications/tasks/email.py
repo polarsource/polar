@@ -4,7 +4,7 @@ import structlog
 
 from polar.email.sender import get_email_sender
 from polar.notifications.service import notifications
-from polar.user.service import user as user_service
+from polar.user.service.user import user as user_service
 from polar.worker import AsyncSessionMaker, JobContext, PolarWorkerContext, task
 
 log = structlog.get_logger()

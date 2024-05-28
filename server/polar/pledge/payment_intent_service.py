@@ -20,7 +20,7 @@ from polar.organization.service import organization as organization_service
 from polar.pledge.hooks import PledgeHook, pledge_created
 from polar.postgres import AsyncSession
 from polar.repository.service import repository as repository_service
-from polar.user.service import user as user_service
+from polar.user.service.user import user as user_service
 
 from .schemas import (
     PledgeStripePaymentIntentCreate,

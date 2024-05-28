@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 
-import { api } from '@/utils/api'
+import { api, queryClient } from '@/utils/api'
 import { FileRead } from '@polar-sh/sdk'
 import { defaultRetry } from './retry'
 
@@ -8,7 +8,7 @@ import { useMutation } from '@tanstack/react-query'
 
 export const useFiles = (organizationId: string, fileIds: string[]) =>
   useQuery({
-    queryKey: ['user', 'files', organizationId, ...fileIds],
+    queryKey: ['user', 'files', JSON.stringify(fileIds)],
     queryFn: () =>
       api.files
         .list({
@@ -16,12 +16,17 @@ export const useFiles = (organizationId: string, fileIds: string[]) =>
           ids: fileIds,
         })
         .then((response) => {
-          const files = response.items.reduce((lookup, file) => {
-            lookup[file.id] = file
-            return lookup
-          }, {})
+          const files = response.items?.reduce(
+            (lookup: Record<string, FileRead>, file) => {
+              lookup[file.id] = file
+              return lookup
+            },
+            {},
+          )
           // Return in given ID order
-          const sorted = fileIds.map((id) => files[id]).filter((file) => !!file)
+          const sorted = fileIds
+            .map((id) => files?.[id])
+            .filter((file) => !!file)
           return {
             items: sorted,
             pagination: response.pagination,
@@ -47,17 +52,17 @@ export const usePatchFile = (
         patch['version'] = version
       }
 
-      return api.files
-        .update({
-          id: id,
-          filePatch: patch,
-        })
-        .then((res) => {})
+      return api.files.update({
+        id: id,
+        filePatch: patch,
+      })
     },
     onSuccess: (response: FileRead) => {
       if (onSuccessCallback) {
         onSuccessCallback(response)
       }
+
+      queryClient.invalidateQueries({ queryKey: ['user', 'files'] })
     },
   })
 
@@ -72,5 +77,7 @@ export const useDeleteFile = (id: string, onSuccessCallback?: () => void) =>
       if (onSuccessCallback) {
         onSuccessCallback()
       }
+
+      queryClient.invalidateQueries({ queryKey: ['user', 'files'] })
     },
   })

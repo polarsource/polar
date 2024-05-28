@@ -1,11 +1,9 @@
-from uuid import UUID
-
 import structlog
 from fastapi import APIRouter, Depends, Query
+from fastapi.responses import RedirectResponse
 from pydantic import UUID4
 
-from polar.authz.service import AccessType, Authz
-from polar.exceptions import NotPermitted, ResourceNotFound
+from polar.authz.service import Authz
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.postgres import AsyncSession, get_db_session
 from polar.tags.api import Tags
@@ -58,24 +56,25 @@ async def list(
 
 
 @router.get(
-    "/{id}",
+    "/{token}",
     tags=[Tags.PUBLIC],
-    response_model=DownloadableRead,
+    responses={
+        302: {"description": "Redirected to download"},
+        400: {"description": "Invalid signature"},
+        404: {"description": "Downloadable not found"},
+        410: {"description": "Expired signature"},
+    },
 )
 async def get(
-    id: UUID,
+    token: str,
     auth_subject: auth.BackerFilesRead,
     authz: Authz = Depends(Authz.authz),
     session: AsyncSession = Depends(get_db_session),
-) -> DownloadableRead:
+) -> RedirectResponse:
     subject = auth_subject.subject
 
-    downloadable = await downloadable_service.user_get(session, user=subject, id=id)
-    if not downloadable:
-        raise ResourceNotFound()
-
-    if not await authz.can(subject, AccessType.read, downloadable):
-        raise NotPermitted()
-
-    ret = downloadable_service.generate_downloadable_schema(downloadable)
-    return ret
+    downloadable = await downloadable_service.get_from_token_or_raise(
+        session, user=subject, token=token
+    )
+    signed = downloadable_service.generate_download_schema(downloadable)
+    return RedirectResponse(signed.file.download.url, 302)

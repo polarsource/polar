@@ -158,7 +158,7 @@ class FileService(ResourceService[File, FileCreate, FileUpdate]):
             filename=file.name,
             mime_type=file.mime_type,
         )
-        return FileDownload.from_db_presigned(file, url=url, expires_at=expires_at)
+        return FileDownload.from_presigned(file, url=url, expires_at=expires_at)
 
     async def delete(
         self,

@@ -137,6 +137,8 @@ class Settings(BaseSettings):
     # Downloadable files
     S3_FILES_BUCKET_NAME: str = "development-polar-s3"
     S3_FILES_PRESIGN_TTL: int = 600  # 10 minutes
+    S3_FILES_DOWNLOAD_SECRET: str = "supersecret"
+    S3_FILES_DOWNLOAD_SALT: str = "saltysalty"
     # Override to http://127.0.0.1:9000 in .env during development
     S3_ENDPOINT_URL: str | None = None
 

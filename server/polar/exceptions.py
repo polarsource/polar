@@ -86,6 +86,11 @@ class ResourceNotFound(PolarError):
         super().__init__(message, status_code)
 
 
+class ResourceUnavailable(PolarError):
+    def __init__(self, message: str = "Unavailable", status_code: int = 410) -> None:
+        super().__init__(message, status_code)
+
+
 class ResourceAlreadyExists(PolarError):
     def __init__(self, message: str = "Already exists", status_code: int = 409) -> None:
         super().__init__(message, status_code)

@@ -10,7 +10,6 @@ from polar.integrations.aws.s3.schemas import (
     S3FileDownload,
     S3FileUpload,
     S3FileUploadCompleted,
-    get_downloadable_content_disposition,
 )
 from polar.kit.schemas import Schema
 from polar.models.file import File, FileServiceTypes
@@ -74,28 +73,13 @@ class FileDownload(S3FileDownload):
     service: FileServiceTypes
 
     @classmethod
-    def from_db_presigned(cls, file: File, url: str, expires_at: datetime) -> Self:
-        download_headers = {
-            "Content-Disposition": get_downloadable_content_disposition(file.name),
-            "Content-Type": file.mime_type,
-            "x-amz-checksum-sha256": file.checksum_sha256_base64,
-            "x-amz-sdk-checksum-algorithm": "SHA256",
-        }
-        if file.checksum_sha256_base64:
-            download_headers.update(
-                {
-                    "x-amz-meta-sha256-base64": file.checksum_sha256_base64,
-                    "x-amz-meta-sha256-hex": file.checksum_sha256_hex,
-                }
-            )
-
+    def from_presigned(cls, file: File, url: str, expires_at: datetime) -> Self:
         file_dict = FileRead.prepare_dict_from_db(file)
         return cls(
             **file_dict,
             download=S3DownloadURL(
                 url=url,
                 expires_at=expires_at,
-                headers=download_headers,
             )
         )
 

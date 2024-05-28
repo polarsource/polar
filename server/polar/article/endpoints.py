@@ -233,7 +233,7 @@ async def create(
     response_model=ArticleReceiversResponse,
     tags=[Tags.PUBLIC],
     description="Get number of potential receivers for an article.",
-    summary="Get number of potential receivers for an article.",
+    summary="Potential article receivers",
     status_code=200,
     responses={404: {}},
 )

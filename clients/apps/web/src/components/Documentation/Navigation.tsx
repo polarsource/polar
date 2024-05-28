@@ -8,12 +8,16 @@ import {
   ArrowForward,
   CloseOutlined,
   DescriptionOutlined,
+  KeyboardArrowDown,
+  KeyboardArrowUp,
   ShortTextOutlined,
   SpaceDashboardOutlined,
 } from '@mui/icons-material'
+import { AnimatePresence, motion } from 'framer-motion'
 import { usePathname } from 'next/navigation'
 import { Separator } from 'polarkit/components/ui/separator'
-import { useEffect, useState } from 'react'
+import { PropsWithChildren, useEffect, useState } from 'react'
+import { twMerge } from 'tailwind-merge'
 import { useSections } from './APINavigation'
 import { NaviagtionItem } from './NavigationItem'
 import { SearchPalette } from './SearchPalette'
@@ -235,19 +239,26 @@ const APIReferenceSections = () => {
   const sections = useSections()
 
   return (
-    <>
-      {sections.map((section) => (
-        <div key={section.name} className="flex flex-col gap-y-4">
-          <h2 className="font-medium capitalize">{section.name}</h2>
-          <div className="flex flex-col">
+    <div className="flex flex-col gap-y-6">
+      <h3>API Endpoints</h3>
+      <div className="flex flex-col gap-y-5">
+        {sections.map((section) => (
+          <CollapsibleSection key={section.name} title={section.name}>
             {section.endpoints.map((endpoint) => (
               <NaviagtionItem
                 key={endpoint.path + endpoint.method}
-                className="text-sm"
+                className="m-0 bg-transparent p-0 text-sm dark:bg-transparent"
                 href={`/docs/api-reference/${endpoint.path}/${endpoint.method}`}
-                active={(pathname) =>
-                  pathname.includes(`${endpoint.path}/${endpoint.method}`)
-                }
+                active={(pathname) => {
+                  const hasTrailingSlash = endpoint.path.endsWith('/')
+                  const withTrailingSlash = hasTrailingSlash
+                    ? endpoint.path
+                    : `${endpoint.path}/`
+
+                  return pathname.includes(
+                    `${withTrailingSlash}${endpoint.method}`,
+                  )
+                }}
               >
                 <div className="flex w-full flex-row items-center justify-between gap-x-4">
                   {endpoint.name}
@@ -257,9 +268,70 @@ const APIReferenceSections = () => {
                 </div>
               </NaviagtionItem>
             ))}
-          </div>
-        </div>
-      ))}
-    </>
+          </CollapsibleSection>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+const CollapsibleSection = ({
+  title,
+  children,
+}: PropsWithChildren<{ title: string }>) => {
+  const [isOpen, setIsOpen] = useState(false)
+  const pathname = usePathname()
+
+  const active = pathname.includes(title.toLowerCase().replaceAll(' ', '-'))
+
+  useEffect(() => {
+    setIsOpen(active)
+  }, [active])
+
+  return (
+    <div
+      className={twMerge(
+        'dark:hover:bg-polar-700 hover:bg-gray-75 group -mx-4 -my-2 flex flex-col gap-y-2 rounded-xl px-4 py-2 transition-colors duration-100',
+        (isOpen || active) && 'bg-gray-75 dark:bg-polar-700',
+      )}
+    >
+      <div
+        className="flex cursor-pointer flex-row items-center justify-between"
+        onClick={() => setIsOpen((open) => !open)}
+      >
+        <h2
+          className={twMerge(
+            'dark:text-polar-500 dark:group-hover:text-polar-50 text-sm capitalize text-gray-500 transition-colors group-hover:text-black',
+            (isOpen || active) && 'dark:text-polar-50 text-black',
+          )}
+        >
+          {title}
+        </h2>
+        <span className="dark:text-polar-500 text-gray-500">
+          <AnimatePresence mode="popLayout">
+            {isOpen ? (
+              <motion.div
+                key={0}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+              >
+                <KeyboardArrowUp fontSize="small" />
+              </motion.div>
+            ) : (
+              <motion.div
+                key={1}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+              >
+                <KeyboardArrowDown fontSize="small" />
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </span>
+      </div>
+      {isOpen && <div className="flex flex-col gap-y-4 py-2">{children}</div>}
+    </div>
   )
 }

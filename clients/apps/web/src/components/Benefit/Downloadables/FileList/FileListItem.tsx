@@ -233,24 +233,26 @@ export const FileListItem = ({
           : {}
       }
     >
-      <div
-        ref={sortable ? sortable.setDraggableNodeRef : undefined}
-        className="flex w-full min-w-0 cursor-grab flex-row items-center gap-x-4"
-        {...sortable?.attributes}
-        {...sortable?.listeners}
-      >
-        <FilePreview file={file} />
-      </div>
-      <div className="dark:text-polar-50 flex w-full min-w-0 flex-grow flex-col gap-y-1 text-gray-950">
-        <Editable
-          className="w-full truncate text-sm font-medium"
-          onUpdate={(updated) => update({ name: updated })}
-          enabled={file.is_uploaded}
+      <div className="flex w-full min-w-0 flex-row items-center gap-x-4">
+        <div
+          className="cursor-grab"
+          ref={sortable ? sortable.setDraggableNodeRef : undefined}
+          {...sortable?.attributes}
+          {...sortable?.listeners}
         >
-          {file.name}
-        </Editable>
-        {!isUploading && <FileUploadDetails file={file} />}
-        {isUploading && <FileUploadProgress file={file} />}
+          <FilePreview file={file} />
+        </div>
+        <div className="dark:text-polar-50 flex w-full min-w-0 flex-grow flex-col gap-y-1 text-gray-950">
+          <Editable
+            className="w-full truncate text-sm font-medium"
+            onUpdate={(updated) => update({ name: updated })}
+            enabled={file.is_uploaded}
+          >
+            {file.name}
+          </Editable>
+          {!isUploading && <FileUploadDetails file={file} />}
+          {isUploading && <FileUploadProgress file={file} />}
+        </div>
       </div>
       {!isUploading && (
         <div className="flex w-fit flex-row items-center gap-x-2">

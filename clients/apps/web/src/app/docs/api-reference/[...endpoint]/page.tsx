@@ -1,6 +1,8 @@
 'use client'
 
 import { useDocumentationContext } from '@/components/Documentation/DocumentationProvider'
+import { MDXContentWrapper } from '@/components/Documentation/MDXContentWrapper'
+import Markdown from 'markdown-to-jsx'
 import { OpenAPIV3_1 } from 'openapi-types'
 import { useMemo } from 'react'
 import { APIContainer } from '../../../../components/CommandPalette/containers/APIContainer'
@@ -70,9 +72,9 @@ export default function Page({
               <pre className="w-fit font-mono text-sm">{apiEndpointPath}</pre>
             </div>
           </div>
-          <p className="dark:text-polar-500 text-lg text-gray-500">
-            {operation.description}
-          </p>
+          <MDXContentWrapper>
+            <Markdown>{operation.description ?? ''}</Markdown>
+          </MDXContentWrapper>
 
           {operation.parameters && (
             <Parameters

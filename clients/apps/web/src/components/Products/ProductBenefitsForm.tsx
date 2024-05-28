@@ -158,6 +158,7 @@ const ProductBenefitsForm = ({
             variant="secondary"
             className="self-start"
             onClick={toggle}
+            type="button"
           >
             New Benefit
           </Button>

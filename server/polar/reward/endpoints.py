@@ -15,7 +15,7 @@ from polar.organization.schemas import Organization as OrganizationSchema
 from polar.pledge.schemas import Pledge
 from polar.postgres import AsyncSession, get_db_session
 from polar.tags.api import Tags
-from polar.user.schemas import User
+from polar.user.schemas.user import User
 
 from .schemas import Reward, RewardsSummary, RewardsSummaryReceiver, RewardState
 from .service import reward_service

@@ -7,7 +7,7 @@ from polar.currency.schemas import CurrencyAmount
 from polar.kit.schemas import Schema
 from polar.organization.schemas import Organization
 from polar.pledge.schemas import Pledge
-from polar.user.schemas import User
+from polar.user.schemas.user import User
 
 
 class RewardState(str, Enum):

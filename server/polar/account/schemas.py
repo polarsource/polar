@@ -7,7 +7,7 @@ from polar.enums import AccountType
 from polar.kit.schemas import Schema
 from polar.models.account import Account as AccountModel
 from polar.organization.schemas import Organization
-from polar.user.schemas import UserBase
+from polar.user.schemas.user import UserBase
 
 
 # Public API

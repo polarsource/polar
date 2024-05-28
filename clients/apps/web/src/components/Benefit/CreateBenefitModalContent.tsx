@@ -48,7 +48,7 @@ const CreateBenefitModalContent = ({
       return Object.fromEntries(searchParams.entries())
     }, [searchParams, defaultValues])
 
-  const createSubscriptionBenefit = useCreateBenefit(organization.name)
+  const createSubscriptionBenefit = useCreateBenefit(organization.id)
 
   const form = useForm<BenefitCreate>({
     defaultValues: {

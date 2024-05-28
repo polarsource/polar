@@ -43,7 +43,7 @@ const BenefitRow = ({
     toggle: toggleDelete,
   } = useModal()
 
-  const deleteBenefit = useDeleteBenefit(organization.name)
+  const deleteBenefit = useDeleteBenefit(organization.id)
 
   const handleDeleteBenefit = useCallback(() => {
     deleteBenefit.mutateAsync({ id: benefit.id })

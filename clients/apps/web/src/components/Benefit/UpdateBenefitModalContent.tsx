@@ -19,7 +19,7 @@ const UpdateBenefitModalContent = ({
 }: UpdateBenefitModalContentProps) => {
   const [isLoading, setIsLoading] = useState(false)
 
-  const updateSubscriptionBenefit = useUpdateBenefit(organization.name)
+  const updateSubscriptionBenefit = useUpdateBenefit(organization.id)
 
   const handleUpdateNewBenefit = useCallback(
     async (benefitUpdate: Omit<BenefitUpdate, 'type'>) => {

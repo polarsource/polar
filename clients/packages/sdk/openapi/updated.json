@@ -13995,6 +13995,75 @@
             }
         },
         "/api/v1/files/{id}": {
+            "patch": {
+                "tags": [
+                    "files"
+                ],
+                "summary": "Update",
+                "operationId": "update",
+                "security": [
+                    {
+                        "OpenIdConnect": []
+                    },
+                    {
+                        "HTTPBearer": []
+                    },
+                    {
+                        "OpenIdConnect": [
+                            "creator:files:write"
+                        ]
+                    },
+                    {
+                        "HTTPBearer": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid4",
+                            "description": "The file ID.",
+                            "title": "Id"
+                        },
+                        "description": "The file ID."
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/FilePatch"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/FileRead"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
             "delete": {
                 "tags": [
                     "files"
@@ -19218,6 +19287,17 @@
                     "upload": {
                         "$ref": "#/components/schemas/S3FileCreateMultipart"
                     },
+                    "version": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Version"
+                    },
                     "service": {
                         "allOf": [
                             {
@@ -19340,6 +19420,17 @@
                     "download": {
                         "$ref": "#/components/schemas/S3DownloadURL"
                     },
+                    "version": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Version"
+                    },
                     "is_uploaded": {
                         "type": "boolean",
                         "title": "Is Uploaded"
@@ -19358,6 +19449,7 @@
                     "mime_type",
                     "size",
                     "download",
+                    "version",
                     "is_uploaded",
                     "service"
                 ],
@@ -19384,6 +19476,34 @@
                     "detail"
                 ],
                 "title": "FileNotFound"
+            },
+            "FilePatch": {
+                "properties": {
+                    "name": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Name"
+                    },
+                    "version": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Version"
+                    }
+                },
+                "type": "object",
+                "title": "FilePatch"
             },
             "FileRead": {
                 "properties": {
@@ -19484,6 +19604,17 @@
                         ],
                         "title": "Last Modified At"
                     },
+                    "version": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Version"
+                    },
                     "service": {
                         "$ref": "#/components/schemas/FileServiceTypes"
                     },
@@ -19506,6 +19637,7 @@
                     "path",
                     "mime_type",
                     "size",
+                    "version",
                     "service",
                     "is_uploaded",
                     "created_at"
@@ -19621,6 +19753,17 @@
                     },
                     "upload": {
                         "$ref": "#/components/schemas/S3FileUploadMultipart"
+                    },
+                    "version": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Version"
                     },
                     "is_uploaded": {
                         "type": "boolean",

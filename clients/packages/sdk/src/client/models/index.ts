@@ -4817,6 +4817,12 @@ export interface FileCreate {
     upload: S3FileCreateMultipart;
     /**
      * 
+     * @type {string}
+     * @memberof FileCreate
+     */
+    version?: string;
+    /**
+     * 
      * @type {FileServiceTypes}
      * @memberof FileCreate
      */
@@ -4914,6 +4920,12 @@ export interface FileDownload {
     download: S3DownloadURL;
     /**
      * 
+     * @type {string}
+     * @memberof FileDownload
+     */
+    version: string | null;
+    /**
+     * 
      * @type {boolean}
      * @memberof FileDownload
      */
@@ -4954,6 +4966,25 @@ export const FileNotFoundTypeEnum = {
 } as const;
 export type FileNotFoundTypeEnum = typeof FileNotFoundTypeEnum[keyof typeof FileNotFoundTypeEnum];
 
+/**
+ * 
+ * @export
+ * @interface FilePatch
+ */
+export interface FilePatch {
+    /**
+     * 
+     * @type {string}
+     * @memberof FilePatch
+     */
+    name?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof FilePatch
+     */
+    version?: string;
+}
 /**
  * 
  * @export
@@ -5038,6 +5069,12 @@ export interface FileRead {
      * @memberof FileRead
      */
     last_modified_at?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof FileRead
+     */
+    version: string | null;
     /**
      * 
      * @type {FileServiceTypes}
@@ -5157,6 +5194,12 @@ export interface FileUpload {
      * @memberof FileUpload
      */
     upload: S3FileUploadMultipart;
+    /**
+     * 
+     * @type {string}
+     * @memberof FileUpload
+     */
+    version?: string;
     /**
      * 
      * @type {boolean}

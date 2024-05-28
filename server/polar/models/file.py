@@ -53,22 +53,22 @@ class File(RecordModel):
 
     name: Mapped[str] = mapped_column(String, nullable=False)
     extension: Mapped[FileExtension] = mapped_column(String, nullable=False)
-    version: Mapped[str] = mapped_column(String, nullable=True)
+    version: Mapped[str | None] = mapped_column(String, nullable=True)
     path: Mapped[str] = mapped_column(String, nullable=False)
     mime_type: Mapped[str] = mapped_column(String, nullable=False)
     size: Mapped[int] = mapped_column(Integer, nullable=False)
 
     service: Mapped[FileServiceTypes] = mapped_column(String, nullable=False)
 
-    last_modified_at: Mapped[datetime] = mapped_column(
+    last_modified_at: Mapped[datetime | None] = mapped_column(
         TIMESTAMP(timezone=True),
         nullable=True,
     )
 
-    storage_version: Mapped[str] = mapped_column(String, nullable=True)
-    checksum_etag: Mapped[str] = mapped_column(String, nullable=True)
-    checksum_sha256_base64: Mapped[str] = mapped_column(String, nullable=True)
-    checksum_sha256_hex: Mapped[str] = mapped_column(String, nullable=True)
+    storage_version: Mapped[str | None] = mapped_column(String, nullable=True)
+    checksum_etag: Mapped[str | None] = mapped_column(String, nullable=True)
+    checksum_sha256_base64: Mapped[str | None] = mapped_column(String, nullable=True)
+    checksum_sha256_hex: Mapped[str | None] = mapped_column(String, nullable=True)
 
     is_uploaded: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
 

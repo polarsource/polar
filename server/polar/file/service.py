@@ -71,10 +71,20 @@ class FileService(ResourceService[File, FileCreate, FileUpdate]):
         file: File,
         patches: FilePatch,
     ) -> File:
-        file.is_enabled = patches.is_enabled
+        changes = False
+        if patches.name:
+            file.name = patches.name
+            changes = True
+
+        if patches.version:
+            file.version = patches.version
+            changes = True
+
+        if not changes:
+            return file
+
         session.add(file)
         await session.flush()
-        assert file.is_enabled == patches.is_enabled
         return file
 
     async def generate_presigned_upload(

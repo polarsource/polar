@@ -15,17 +15,71 @@
 
 import * as runtime from '../runtime';
 import type {
+  AlreadyCanceledSubscription,
+  AlreadySubscribed,
+  FreeSubscriptionUpgrade,
   HTTPValidationError,
+  ListResourceUserOrder,
+  ListResourceUserSubscription,
   LogoutResponse,
   Organization,
+  ProductPriceType,
+  ResourceNotFound,
+  UserFreeSubscriptionCreate,
+  UserOrder,
+  UserOrderInvoice,
   UserRead,
   UserScopes,
   UserSetAccount,
   UserStripePortalSession,
+  UserSubscription,
+  UserSubscriptionUpdate,
   UserUpdateSettings,
 } from '../models/index';
 
+export interface UsersApiCancelSubscriptionRequest {
+    id: string;
+}
+
+export interface UsersApiCreateSubscriptionRequest {
+    userFreeSubscriptionCreate: UserFreeSubscriptionCreate;
+}
+
+export interface UsersApiGetOrderRequest {
+    id: string;
+}
+
+export interface UsersApiGetOrderInvoiceRequest {
+    id: string;
+}
+
+export interface UsersApiGetSubscriptionRequest {
+    id: string;
+}
+
+export interface UsersApiListOrdersRequest {
+    organizationId?: string;
+    productId?: string;
+    productPriceType?: ProductPriceType;
+    page?: number;
+    limit?: number;
+    sorting?: Array<string>;
+}
+
+export interface UsersApiListSubscriptionsRequest {
+    organizationId?: string;
+    productId?: string;
+    active?: boolean;
+    page?: number;
+    limit?: number;
+    sorting?: Array<string>;
+}
+
 export interface UsersApiSetAccountRequest {
+    userSetAccount: UserSetAccount;
+}
+
+export interface UsersApiSetAccount0Request {
     userSetAccount: UserSetAccount;
 }
 
@@ -33,10 +87,62 @@ export interface UsersApiUpdatePreferencesRequest {
     userUpdateSettings: UserUpdateSettings;
 }
 
+export interface UsersApiUpdatePreferences0Request {
+    userUpdateSettings: UserUpdateSettings;
+}
+
+export interface UsersApiUpdateSubscriptionRequest {
+    id: string;
+    userSubscriptionUpdate: UserSubscriptionUpdate;
+}
+
 /**
  * 
  */
 export class UsersApi extends runtime.BaseAPI {
+
+    /**
+     * Cancel a subscription.
+     * Cancel Subscription
+     */
+    async cancelSubscriptionRaw(requestParameters: UsersApiCancelSubscriptionRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<UserSubscription>> {
+        if (requestParameters['id'] == null) {
+            throw new runtime.RequiredError(
+                'id',
+                'Required parameter "id" was null or undefined when calling cancelSubscription().'
+            );
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("HTTPBearer", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+        const response = await this.request({
+            path: `/api/v1/users/subscriptions/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
+            method: 'DELETE',
+            headers: headerParameters,
+            query: queryParameters,
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse(response);
+    }
+
+    /**
+     * Cancel a subscription.
+     * Cancel Subscription
+     */
+    async cancelSubscription(requestParameters: UsersApiCancelSubscriptionRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<UserSubscription> {
+        const response = await this.cancelSubscriptionRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
 
     /**
      * Create Stripe Customer Portal
@@ -73,6 +179,86 @@ export class UsersApi extends runtime.BaseAPI {
     }
 
     /**
+     * Create Stripe Customer Portal
+     */
+    async createStripeCustomerPortal_1Raw(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<UserStripePortalSession>> {
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("HTTPBearer", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+        const response = await this.request({
+            path: `/api/v1/users/me/stripe_customer_portal`,
+            method: 'POST',
+            headers: headerParameters,
+            query: queryParameters,
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse(response);
+    }
+
+    /**
+     * Create Stripe Customer Portal
+     */
+    async createStripeCustomerPortal_1(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<UserStripePortalSession> {
+        const response = await this.createStripeCustomerPortal_1Raw(initOverrides);
+        return await response.value();
+    }
+
+    /**
+     * Create a subscription on a **free** tier.  If you want to subscribe to a paid tier, you need to create a checkout session.
+     * Create Subscription
+     */
+    async createSubscriptionRaw(requestParameters: UsersApiCreateSubscriptionRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<UserSubscription>> {
+        if (requestParameters['userFreeSubscriptionCreate'] == null) {
+            throw new runtime.RequiredError(
+                'userFreeSubscriptionCreate',
+                'Required parameter "userFreeSubscriptionCreate" was null or undefined when calling createSubscription().'
+            );
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        headerParameters['Content-Type'] = 'application/json';
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("HTTPBearer", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+        const response = await this.request({
+            path: `/api/v1/users/subscriptions/`,
+            method: 'POST',
+            headers: headerParameters,
+            query: queryParameters,
+            body: requestParameters['userFreeSubscriptionCreate'],
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse(response);
+    }
+
+    /**
+     * Create a subscription on a **free** tier.  If you want to subscribe to a paid tier, you need to create a checkout session.
+     * Create Subscription
+     */
+    async createSubscription(requestParameters: UsersApiCreateSubscriptionRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<UserSubscription> {
+        const response = await this.createSubscriptionRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
      * Get Authenticated
      */
     async getAuthenticatedRaw(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<UserRead>> {
@@ -103,6 +289,289 @@ export class UsersApi extends runtime.BaseAPI {
      */
     async getAuthenticated(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<UserRead> {
         const response = await this.getAuthenticatedRaw(initOverrides);
+        return await response.value();
+    }
+
+    /**
+     * Get Authenticated
+     */
+    async getAuthenticated_2Raw(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<UserRead>> {
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("HTTPBearer", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+        const response = await this.request({
+            path: `/api/v1/users/me`,
+            method: 'GET',
+            headers: headerParameters,
+            query: queryParameters,
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse(response);
+    }
+
+    /**
+     * Get Authenticated
+     */
+    async getAuthenticated_2(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<UserRead> {
+        const response = await this.getAuthenticated_2Raw(initOverrides);
+        return await response.value();
+    }
+
+    /**
+     * Get an order by ID.
+     * Get Order
+     */
+    async getOrderRaw(requestParameters: UsersApiGetOrderRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<UserOrder>> {
+        if (requestParameters['id'] == null) {
+            throw new runtime.RequiredError(
+                'id',
+                'Required parameter "id" was null or undefined when calling getOrder().'
+            );
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("HTTPBearer", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+        const response = await this.request({
+            path: `/api/v1/users/orders/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
+            method: 'GET',
+            headers: headerParameters,
+            query: queryParameters,
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse(response);
+    }
+
+    /**
+     * Get an order by ID.
+     * Get Order
+     */
+    async getOrder(requestParameters: UsersApiGetOrderRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<UserOrder> {
+        const response = await this.getOrderRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
+     * Get an order\'s invoice data.
+     * Get Order Invoice
+     */
+    async getOrderInvoiceRaw(requestParameters: UsersApiGetOrderInvoiceRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<UserOrderInvoice>> {
+        if (requestParameters['id'] == null) {
+            throw new runtime.RequiredError(
+                'id',
+                'Required parameter "id" was null or undefined when calling getOrderInvoice().'
+            );
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("HTTPBearer", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+        const response = await this.request({
+            path: `/api/v1/users/orders/{id}/invoice`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
+            method: 'GET',
+            headers: headerParameters,
+            query: queryParameters,
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse(response);
+    }
+
+    /**
+     * Get an order\'s invoice data.
+     * Get Order Invoice
+     */
+    async getOrderInvoice(requestParameters: UsersApiGetOrderInvoiceRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<UserOrderInvoice> {
+        const response = await this.getOrderInvoiceRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
+     * Get a subscription by ID.
+     * Get Subscription
+     */
+    async getSubscriptionRaw(requestParameters: UsersApiGetSubscriptionRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<UserSubscription>> {
+        if (requestParameters['id'] == null) {
+            throw new runtime.RequiredError(
+                'id',
+                'Required parameter "id" was null or undefined when calling getSubscription().'
+            );
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("HTTPBearer", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+        const response = await this.request({
+            path: `/api/v1/users/subscriptions/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
+            method: 'GET',
+            headers: headerParameters,
+            query: queryParameters,
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse(response);
+    }
+
+    /**
+     * Get a subscription by ID.
+     * Get Subscription
+     */
+    async getSubscription(requestParameters: UsersApiGetSubscriptionRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<UserSubscription> {
+        const response = await this.getSubscriptionRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
+     * List my orders.
+     * List Orders
+     */
+    async listOrdersRaw(requestParameters: UsersApiListOrdersRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListResourceUserOrder>> {
+        const queryParameters: any = {};
+
+        if (requestParameters['organizationId'] != null) {
+            queryParameters['organization_id'] = requestParameters['organizationId'];
+        }
+
+        if (requestParameters['productId'] != null) {
+            queryParameters['product_id'] = requestParameters['productId'];
+        }
+
+        if (requestParameters['productPriceType'] != null) {
+            queryParameters['product_price_type'] = requestParameters['productPriceType'];
+        }
+
+        if (requestParameters['page'] != null) {
+            queryParameters['page'] = requestParameters['page'];
+        }
+
+        if (requestParameters['limit'] != null) {
+            queryParameters['limit'] = requestParameters['limit'];
+        }
+
+        if (requestParameters['sorting'] != null) {
+            queryParameters['sorting'] = requestParameters['sorting'];
+        }
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("HTTPBearer", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+        const response = await this.request({
+            path: `/api/v1/users/orders/`,
+            method: 'GET',
+            headers: headerParameters,
+            query: queryParameters,
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse(response);
+    }
+
+    /**
+     * List my orders.
+     * List Orders
+     */
+    async listOrders(requestParameters: UsersApiListOrdersRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ListResourceUserOrder> {
+        const response = await this.listOrdersRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
+     * List my subscriptions.
+     * List Subscriptions
+     */
+    async listSubscriptionsRaw(requestParameters: UsersApiListSubscriptionsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListResourceUserSubscription>> {
+        const queryParameters: any = {};
+
+        if (requestParameters['organizationId'] != null) {
+            queryParameters['organization_id'] = requestParameters['organizationId'];
+        }
+
+        if (requestParameters['productId'] != null) {
+            queryParameters['product_id'] = requestParameters['productId'];
+        }
+
+        if (requestParameters['active'] != null) {
+            queryParameters['active'] = requestParameters['active'];
+        }
+
+        if (requestParameters['page'] != null) {
+            queryParameters['page'] = requestParameters['page'];
+        }
+
+        if (requestParameters['limit'] != null) {
+            queryParameters['limit'] = requestParameters['limit'];
+        }
+
+        if (requestParameters['sorting'] != null) {
+            queryParameters['sorting'] = requestParameters['sorting'];
+        }
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("HTTPBearer", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+        const response = await this.request({
+            path: `/api/v1/users/subscriptions/`,
+            method: 'GET',
+            headers: headerParameters,
+            query: queryParameters,
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse(response);
+    }
+
+    /**
+     * List my subscriptions.
+     * List Subscriptions
+     */
+    async listSubscriptions(requestParameters: UsersApiListSubscriptionsRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ListResourceUserSubscription> {
+        const response = await this.listSubscriptionsRaw(requestParameters, initOverrides);
         return await response.value();
     }
 
@@ -143,6 +612,42 @@ export class UsersApi extends runtime.BaseAPI {
     }
 
     /**
+     * Logout
+     * @deprecated
+     */
+    async logout_3Raw(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<LogoutResponse>> {
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("HTTPBearer", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+        const response = await this.request({
+            path: `/api/v1/users/logout`,
+            method: 'GET',
+            headers: headerParameters,
+            query: queryParameters,
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse(response);
+    }
+
+    /**
+     * Logout
+     * @deprecated
+     */
+    async logout_3(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<LogoutResponse> {
+        const response = await this.logout_3Raw(initOverrides);
+        return await response.value();
+    }
+
+    /**
      * Maintainer Upgrade
      */
     async maintainerUpgradeRaw(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Organization>> {
@@ -177,6 +682,40 @@ export class UsersApi extends runtime.BaseAPI {
     }
 
     /**
+     * Maintainer Upgrade
+     */
+    async maintainerUpgrade_4Raw(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Organization>> {
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("HTTPBearer", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+        const response = await this.request({
+            path: `/api/v1/users/me/upgrade`,
+            method: 'POST',
+            headers: headerParameters,
+            query: queryParameters,
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse(response);
+    }
+
+    /**
+     * Maintainer Upgrade
+     */
+    async maintainerUpgrade_4(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Organization> {
+        const response = await this.maintainerUpgrade_4Raw(initOverrides);
+        return await response.value();
+    }
+
+    /**
      * Scopes
      */
     async scopesRaw(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<UserScopes>> {
@@ -207,6 +746,40 @@ export class UsersApi extends runtime.BaseAPI {
      */
     async scopes(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<UserScopes> {
         const response = await this.scopesRaw(initOverrides);
+        return await response.value();
+    }
+
+    /**
+     * Scopes
+     */
+    async scopes_5Raw(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<UserScopes>> {
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("HTTPBearer", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+        const response = await this.request({
+            path: `/api/v1/users/me/scopes`,
+            method: 'GET',
+            headers: headerParameters,
+            query: queryParameters,
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse(response);
+    }
+
+    /**
+     * Scopes
+     */
+    async scopes_5(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<UserScopes> {
+        const response = await this.scopes_5Raw(initOverrides);
         return await response.value();
     }
 
@@ -255,6 +828,50 @@ export class UsersApi extends runtime.BaseAPI {
     }
 
     /**
+     * Set Account
+     */
+    async setAccount_6Raw(requestParameters: UsersApiSetAccount0Request, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<UserRead>> {
+        if (requestParameters['userSetAccount'] == null) {
+            throw new runtime.RequiredError(
+                'userSetAccount',
+                'Required parameter "userSetAccount" was null or undefined when calling setAccount_6().'
+            );
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        headerParameters['Content-Type'] = 'application/json';
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("HTTPBearer", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+        const response = await this.request({
+            path: `/api/v1/users/me/account`,
+            method: 'PATCH',
+            headers: headerParameters,
+            query: queryParameters,
+            body: requestParameters['userSetAccount'],
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse(response);
+    }
+
+    /**
+     * Set Account
+     */
+    async setAccount_6(requestParameters: UsersApiSetAccount0Request, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<UserRead> {
+        const response = await this.setAccount_6Raw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
      * Update Preferences
      */
     async updatePreferencesRaw(requestParameters: UsersApiUpdatePreferencesRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<UserRead>> {
@@ -295,6 +912,103 @@ export class UsersApi extends runtime.BaseAPI {
      */
     async updatePreferences(requestParameters: UsersApiUpdatePreferencesRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<UserRead> {
         const response = await this.updatePreferencesRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
+     * Update Preferences
+     */
+    async updatePreferences_7Raw(requestParameters: UsersApiUpdatePreferences0Request, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<UserRead>> {
+        if (requestParameters['userUpdateSettings'] == null) {
+            throw new runtime.RequiredError(
+                'userUpdateSettings',
+                'Required parameter "userUpdateSettings" was null or undefined when calling updatePreferences_7().'
+            );
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        headerParameters['Content-Type'] = 'application/json';
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("HTTPBearer", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+        const response = await this.request({
+            path: `/api/v1/users/me`,
+            method: 'PUT',
+            headers: headerParameters,
+            query: queryParameters,
+            body: requestParameters['userUpdateSettings'],
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse(response);
+    }
+
+    /**
+     * Update Preferences
+     */
+    async updatePreferences_7(requestParameters: UsersApiUpdatePreferences0Request, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<UserRead> {
+        const response = await this.updatePreferences_7Raw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
+     * Update a subscription.
+     * Update Subscription
+     */
+    async updateSubscriptionRaw(requestParameters: UsersApiUpdateSubscriptionRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<UserSubscription>> {
+        if (requestParameters['id'] == null) {
+            throw new runtime.RequiredError(
+                'id',
+                'Required parameter "id" was null or undefined when calling updateSubscription().'
+            );
+        }
+
+        if (requestParameters['userSubscriptionUpdate'] == null) {
+            throw new runtime.RequiredError(
+                'userSubscriptionUpdate',
+                'Required parameter "userSubscriptionUpdate" was null or undefined when calling updateSubscription().'
+            );
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        headerParameters['Content-Type'] = 'application/json';
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("HTTPBearer", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+        const response = await this.request({
+            path: `/api/v1/users/subscriptions/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
+            method: 'PATCH',
+            headers: headerParameters,
+            query: queryParameters,
+            body: requestParameters['userSubscriptionUpdate'],
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse(response);
+    }
+
+    /**
+     * Update a subscription.
+     * Update Subscription
+     */
+    async updateSubscription(requestParameters: UsersApiUpdateSubscriptionRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<UserSubscription> {
+        const response = await this.updateSubscriptionRaw(requestParameters, initOverrides);
         return await response.value();
     }
 

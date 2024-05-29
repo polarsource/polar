@@ -15,23 +15,16 @@
 
 import * as runtime from '../runtime';
 import type {
-  FreeSubscriptionCreate,
   HTTPValidationError,
   ListResourceSubscription,
-  ListResourceSubscriptionSubscriber,
   ListResourceSubscriptionSummary,
   Platforms,
   Subscription,
   SubscriptionCreateEmail,
   SubscriptionTierType,
-  SubscriptionUpgrade,
   SubscriptionsImported,
   SubscriptionsStatistics,
 } from '../models/index';
-
-export interface SubscriptionsApiCancelSubscriptionRequest {
-    id: string;
-}
 
 export interface SubscriptionsApiCreateEmailSubscriptionRequest {
     subscriptionCreateEmail: SubscriptionCreateEmail;
@@ -39,27 +32,11 @@ export interface SubscriptionsApiCreateEmailSubscriptionRequest {
     platform?: Platforms;
 }
 
-export interface SubscriptionsApiCreateFreeSubscriptionRequest {
-    freeSubscriptionCreate: FreeSubscriptionCreate;
-}
-
 export interface SubscriptionsApiGetSubscriptionsStatisticsRequest {
     startDate: string;
     endDate: string;
     types?: Array<SubscriptionTierType>;
     subscriptionTierId?: string;
-    organizationName?: string;
-    platform?: Platforms;
-}
-
-export interface SubscriptionsApiSearchSubscribedSubscriptionsRequest {
-    type?: SubscriptionTierType;
-    subscriptionTierId?: string;
-    subscriberUserId?: string;
-    subscriberOrganizationId?: string;
-    page?: number;
-    limit?: number;
-    sorting?: Array<string>;
     organizationName?: string;
     platform?: Platforms;
 }
@@ -95,56 +72,10 @@ export interface SubscriptionsApiSubscriptionsImportRequest {
     platform?: Platforms;
 }
 
-export interface SubscriptionsApiUpgradeSubscriptionRequest {
-    id: string;
-    subscriptionUpgrade: SubscriptionUpgrade;
-}
-
 /**
  * 
  */
 export class SubscriptionsApi extends runtime.BaseAPI {
-
-    /**
-     * Cancel Subscription
-     */
-    async cancelSubscriptionRaw(requestParameters: SubscriptionsApiCancelSubscriptionRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Subscription>> {
-        if (requestParameters['id'] == null) {
-            throw new runtime.RequiredError(
-                'id',
-                'Required parameter "id" was null or undefined when calling cancelSubscription().'
-            );
-        }
-
-        const queryParameters: any = {};
-
-        const headerParameters: runtime.HTTPHeaders = {};
-
-        if (this.configuration && this.configuration.accessToken) {
-            const token = this.configuration.accessToken;
-            const tokenString = await token("HTTPBearer", []);
-
-            if (tokenString) {
-                headerParameters["Authorization"] = `Bearer ${tokenString}`;
-            }
-        }
-        const response = await this.request({
-            path: `/api/v1/subscriptions/subscriptions/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
-            method: 'DELETE',
-            headers: headerParameters,
-            query: queryParameters,
-        }, initOverrides);
-
-        return new runtime.JSONApiResponse(response);
-    }
-
-    /**
-     * Cancel Subscription
-     */
-    async cancelSubscription(requestParameters: SubscriptionsApiCancelSubscriptionRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Subscription> {
-        const response = await this.cancelSubscriptionRaw(requestParameters, initOverrides);
-        return await response.value();
-    }
 
     /**
      * Create Email Subscription
@@ -195,50 +126,6 @@ export class SubscriptionsApi extends runtime.BaseAPI {
      */
     async createEmailSubscription(requestParameters: SubscriptionsApiCreateEmailSubscriptionRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Subscription> {
         const response = await this.createEmailSubscriptionRaw(requestParameters, initOverrides);
-        return await response.value();
-    }
-
-    /**
-     * Create Free Subscription
-     */
-    async createFreeSubscriptionRaw(requestParameters: SubscriptionsApiCreateFreeSubscriptionRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Subscription>> {
-        if (requestParameters['freeSubscriptionCreate'] == null) {
-            throw new runtime.RequiredError(
-                'freeSubscriptionCreate',
-                'Required parameter "freeSubscriptionCreate" was null or undefined when calling createFreeSubscription().'
-            );
-        }
-
-        const queryParameters: any = {};
-
-        const headerParameters: runtime.HTTPHeaders = {};
-
-        headerParameters['Content-Type'] = 'application/json';
-
-        if (this.configuration && this.configuration.accessToken) {
-            const token = this.configuration.accessToken;
-            const tokenString = await token("HTTPBearer", []);
-
-            if (tokenString) {
-                headerParameters["Authorization"] = `Bearer ${tokenString}`;
-            }
-        }
-        const response = await this.request({
-            path: `/api/v1/subscriptions/subscriptions/`,
-            method: 'POST',
-            headers: headerParameters,
-            query: queryParameters,
-            body: requestParameters['freeSubscriptionCreate'],
-        }, initOverrides);
-
-        return new runtime.JSONApiResponse(response);
-    }
-
-    /**
-     * Create Free Subscription
-     */
-    async createFreeSubscription(requestParameters: SubscriptionsApiCreateFreeSubscriptionRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Subscription> {
-        const response = await this.createFreeSubscriptionRaw(requestParameters, initOverrides);
         return await response.value();
     }
 
@@ -311,76 +198,6 @@ export class SubscriptionsApi extends runtime.BaseAPI {
      */
     async getSubscriptionsStatistics(requestParameters: SubscriptionsApiGetSubscriptionsStatisticsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<SubscriptionsStatistics> {
         const response = await this.getSubscriptionsStatisticsRaw(requestParameters, initOverrides);
-        return await response.value();
-    }
-
-    /**
-     * Search Subscribed Subscriptions
-     */
-    async searchSubscribedSubscriptionsRaw(requestParameters: SubscriptionsApiSearchSubscribedSubscriptionsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListResourceSubscriptionSubscriber>> {
-        const queryParameters: any = {};
-
-        if (requestParameters['type'] != null) {
-            queryParameters['type'] = requestParameters['type'];
-        }
-
-        if (requestParameters['subscriptionTierId'] != null) {
-            queryParameters['subscription_tier_id'] = requestParameters['subscriptionTierId'];
-        }
-
-        if (requestParameters['subscriberUserId'] != null) {
-            queryParameters['subscriber_user_id'] = requestParameters['subscriberUserId'];
-        }
-
-        if (requestParameters['subscriberOrganizationId'] != null) {
-            queryParameters['subscriber_organization_id'] = requestParameters['subscriberOrganizationId'];
-        }
-
-        if (requestParameters['page'] != null) {
-            queryParameters['page'] = requestParameters['page'];
-        }
-
-        if (requestParameters['limit'] != null) {
-            queryParameters['limit'] = requestParameters['limit'];
-        }
-
-        if (requestParameters['sorting'] != null) {
-            queryParameters['sorting'] = requestParameters['sorting'];
-        }
-
-        if (requestParameters['organizationName'] != null) {
-            queryParameters['organization_name'] = requestParameters['organizationName'];
-        }
-
-        if (requestParameters['platform'] != null) {
-            queryParameters['platform'] = requestParameters['platform'];
-        }
-
-        const headerParameters: runtime.HTTPHeaders = {};
-
-        if (this.configuration && this.configuration.accessToken) {
-            const token = this.configuration.accessToken;
-            const tokenString = await token("HTTPBearer", []);
-
-            if (tokenString) {
-                headerParameters["Authorization"] = `Bearer ${tokenString}`;
-            }
-        }
-        const response = await this.request({
-            path: `/api/v1/subscriptions/subscriptions/subscribed`,
-            method: 'GET',
-            headers: headerParameters,
-            query: queryParameters,
-        }, initOverrides);
-
-        return new runtime.JSONApiResponse(response);
-    }
-
-    /**
-     * Search Subscribed Subscriptions
-     */
-    async searchSubscribedSubscriptions(requestParameters: SubscriptionsApiSearchSubscribedSubscriptionsRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ListResourceSubscriptionSubscriber> {
-        const response = await this.searchSubscribedSubscriptionsRaw(requestParameters, initOverrides);
         return await response.value();
     }
 
@@ -621,57 +438,6 @@ export class SubscriptionsApi extends runtime.BaseAPI {
      */
     async subscriptionsImport(requestParameters: SubscriptionsApiSubscriptionsImportRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<SubscriptionsImported> {
         const response = await this.subscriptionsImportRaw(requestParameters, initOverrides);
-        return await response.value();
-    }
-
-    /**
-     * Upgrade Subscription
-     */
-    async upgradeSubscriptionRaw(requestParameters: SubscriptionsApiUpgradeSubscriptionRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Subscription>> {
-        if (requestParameters['id'] == null) {
-            throw new runtime.RequiredError(
-                'id',
-                'Required parameter "id" was null or undefined when calling upgradeSubscription().'
-            );
-        }
-
-        if (requestParameters['subscriptionUpgrade'] == null) {
-            throw new runtime.RequiredError(
-                'subscriptionUpgrade',
-                'Required parameter "subscriptionUpgrade" was null or undefined when calling upgradeSubscription().'
-            );
-        }
-
-        const queryParameters: any = {};
-
-        const headerParameters: runtime.HTTPHeaders = {};
-
-        headerParameters['Content-Type'] = 'application/json';
-
-        if (this.configuration && this.configuration.accessToken) {
-            const token = this.configuration.accessToken;
-            const tokenString = await token("HTTPBearer", []);
-
-            if (tokenString) {
-                headerParameters["Authorization"] = `Bearer ${tokenString}`;
-            }
-        }
-        const response = await this.request({
-            path: `/api/v1/subscriptions/subscriptions/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
-            method: 'POST',
-            headers: headerParameters,
-            query: queryParameters,
-            body: requestParameters['subscriptionUpgrade'],
-        }, initOverrides);
-
-        return new runtime.JSONApiResponse(response);
-    }
-
-    /**
-     * Upgrade Subscription
-     */
-    async upgradeSubscription(requestParameters: SubscriptionsApiUpgradeSubscriptionRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Subscription> {
-        const response = await this.upgradeSubscriptionRaw(requestParameters, initOverrides);
         return await response.value();
     }
 

@@ -186,7 +186,7 @@ export class ArticlesApi extends runtime.BaseAPI {
 
     /**
      * Unsubscribe user from articles in emails.
-     * Stop delivery of articles via email.
+     * Unsubscribe user
      */
     async emailUnsubscribeRaw(requestParameters: ArticlesApiEmailUnsubscribeRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ArticleUnsubscribeResponse>> {
         if (requestParameters['articleSubscriptionId'] == null) {
@@ -224,7 +224,7 @@ export class ArticlesApi extends runtime.BaseAPI {
 
     /**
      * Unsubscribe user from articles in emails.
-     * Stop delivery of articles via email.
+     * Unsubscribe user
      */
     async emailUnsubscribe(requestParameters: ArticlesApiEmailUnsubscribeRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ArticleUnsubscribeResponse> {
         const response = await this.emailUnsubscribeRaw(requestParameters, initOverrides);
@@ -389,7 +389,7 @@ export class ArticlesApi extends runtime.BaseAPI {
 
     /**
      * Get number of potential receivers for an article.
-     * Get number of potential receivers for an article.
+     * Potential article receivers
      */
     async receiversRaw(requestParameters: ArticlesApiReceiversRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ArticleReceiversResponse>> {
         if (requestParameters['paidSubscribersOnly'] == null) {
@@ -449,7 +449,7 @@ export class ArticlesApi extends runtime.BaseAPI {
 
     /**
      * Get number of potential receivers for an article.
-     * Get number of potential receivers for an article.
+     * Potential article receivers
      */
     async receivers(requestParameters: ArticlesApiReceiversRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ArticleReceiversResponse> {
         const response = await this.receiversRaw(requestParameters, initOverrides);

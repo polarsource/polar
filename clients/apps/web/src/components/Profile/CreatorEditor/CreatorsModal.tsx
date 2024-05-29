@@ -1,9 +1,7 @@
 import ProductPill from '@/components/Products/ProductPill'
-import { useAuth } from '@/hooks'
 import {
   useGetOrganization,
   useOrganization,
-  useOrganizationSubscriptions,
   useUserSubscriptions,
 } from '@/hooks/queries'
 import { api } from '@/utils/api'
@@ -26,24 +24,13 @@ export interface CreatorsModalProps {
 
 export const CreatorsModal = ({
   creators,
-  organization,
   hideModal,
   setCreators,
 }: CreatorsModalProps) => {
   const [username, setUsername] = useState('')
   const [showOrgNotFound, toggleOrgNotFound] = useState(false)
-  const auth = useAuth()
 
-  const userSubscriptions =
-    useUserSubscriptions(auth.currentUser?.id, undefined, 9999).data?.items ||
-    []
-  const organizationSubscriptions =
-    useOrganizationSubscriptions(auth.currentUser?.id, undefined, 9999).data
-      ?.items || []
-
-  const subscriptions = organization.is_personal
-    ? userSubscriptions
-    : organizationSubscriptions
+  const subscriptions = useUserSubscriptions().data?.items || []
 
   const addCreator = (organizationName: string) => {
     toggleOrgNotFound(false)

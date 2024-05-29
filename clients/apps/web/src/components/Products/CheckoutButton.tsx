@@ -55,7 +55,6 @@ interface AuthenticatedCheckoutButtonProps {
 const AuthenticatedCheckoutButton: React.FC<
   React.PropsWithChildren<AuthenticatedCheckoutButtonProps>
 > = ({
-  user,
   product,
   price,
   organization,
@@ -69,12 +68,7 @@ const AuthenticatedCheckoutButton: React.FC<
     data: userSubscriptionsList,
     refetch: refetchUserSubscriptions,
     isFetched: userSubscriptionsListFetched,
-  } = useUserSubscriptions(
-    user.id,
-    organization.name,
-    10,
-    organization.platform,
-  )
+  } = useUserSubscriptions({ organizationId: organization.id, active: true })
   const subscriptions = userSubscriptionsList?.items
 
   const isSubscribed = useMemo(
@@ -114,18 +108,16 @@ const AuthenticatedCheckoutButton: React.FC<
     ) {
       router.push(`${checkoutPath}?price=${price.id}`)
     } else {
-      await api.subscriptions.upgradeSubscription({
+      await api.users.updateSubscription({
         id: upgradableSubscription.id,
-        subscriptionUpgrade: {
-          subscription_tier_id: product.id,
-          price_id: price.id,
+        userSubscriptionUpdate: {
+          product_price_id: price.id,
         },
       })
       refetchUserSubscriptions()
     }
   }, [
     upgradableSubscription,
-    product,
     price,
     refetchUserSubscriptions,
     router,

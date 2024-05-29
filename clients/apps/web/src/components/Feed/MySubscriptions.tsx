@@ -1,7 +1,7 @@
 import { useOrganization } from '@/hooks/queries'
 import { api } from '@/utils/api'
 import { MoreVertOutlined } from '@mui/icons-material'
-import { SubscriptionSubscriber } from '@polar-sh/sdk'
+import { UserSubscription } from '@polar-sh/sdk'
 import Link from 'next/link'
 import Avatar from 'polarkit/components/ui/atoms/avatar'
 import Button from 'polarkit/components/ui/atoms/button'
@@ -15,7 +15,7 @@ import { useCallback, useState } from 'react'
 import { ConfirmModal } from '../Modal/ConfirmModal'
 
 export interface MySubscriptionsProps {
-  subscriptions: SubscriptionSubscriber[]
+  subscriptions: UserSubscription[]
 }
 
 export const MySubscriptions = ({ subscriptions }: MySubscriptionsProps) => {
@@ -37,7 +37,7 @@ export const MySubscriptions = ({ subscriptions }: MySubscriptionsProps) => {
 const SubscriptionOrganizationItem = ({
   subscription,
 }: {
-  subscription: SubscriptionSubscriber
+  subscription: UserSubscription
 }) => {
   const [showCancelModal, setShowCancelModal] = useState(false)
   const [canceled, setCanceled] = useState(false)
@@ -49,7 +49,7 @@ const SubscriptionOrganizationItem = ({
   const isFreeTier = subscription.product.type === 'free'
 
   const cancelSubscription = useCallback(async () => {
-    await api.subscriptions.cancelSubscription({ id: subscription.id })
+    await api.users.cancelSubscription({ id: subscription.id })
     setShowCancelModal(false)
     setCanceled(true)
   }, [subscription])

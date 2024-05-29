@@ -2,7 +2,7 @@
 
 import { ProductCard } from '@/components/Products/ProductCard'
 import SubscriptionTierCard from '@/components/Subscriptions/SubscriptionTierCard'
-import { useUser, useUserSubscriptions } from '@/hooks/queries'
+import { useUserSubscriptions } from '@/hooks/queries'
 import { Purchase, usePurchases } from '@/hooks/queries/purchases'
 import { Organization } from '@polar-sh/sdk'
 import Link, { LinkProps } from 'next/link'
@@ -15,7 +15,6 @@ import { twMerge } from 'tailwind-merge'
 
 export default function ClientPage() {
   const [searchQuery, setSearchQuery] = useState('')
-  const user = useUser()
 
   const handleSearch = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -25,11 +24,7 @@ export default function ClientPage() {
   )
 
   const { data: purchases } = usePurchases()
-  const { data: subscriptions } = useUserSubscriptions(
-    user.data?.id,
-    undefined,
-    999,
-  )
+  const { data: subscriptions } = useUserSubscriptions({ limit: 100 })
 
   const searchParams = useSearchParams()
 

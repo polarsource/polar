@@ -6,7 +6,7 @@ from typing import Any
 from sqlalchemy import Select, UnaryExpression, asc, desc, nulls_first, select
 from sqlalchemy.orm import aliased, contains_eager, joinedload
 
-from polar.auth.models import AuthSubject
+from polar.auth.models import Anonymous, AuthSubject, is_direct_user
 from polar.exceptions import PolarError, PolarRequestValidationError
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.kit.db.postgres import AsyncSession
@@ -17,10 +17,12 @@ from polar.kit.utils import utc_now
 from polar.models import Organization, Product, ProductPrice, Subscription, User
 from polar.models.product import SubscriptionTierType
 from polar.models.subscription import SubscriptionStatus
+from polar.product.service.product import product as product_service
 from polar.product.service.product_price import product_price as product_price_service
 from polar.subscription.service import subscription as subscription_service
 
-from ..schemas.subscription import UserSubscriptionUpdate
+from ..schemas.subscription import UserFreeSubscriptionCreate, UserSubscriptionUpdate
+from ..service.user import user as user_service
 
 
 class UserSubscriptionError(PolarError): ...
@@ -132,6 +134,66 @@ class UserSubscriptionService(ResourceServiceReader[Subscription]):
 
         result = await session.execute(statement)
         return result.scalar_one_or_none()
+
+    async def create_free_subscription(
+        self,
+        session: AsyncSession,
+        *,
+        subscription_create: UserFreeSubscriptionCreate,
+        auth_subject: AuthSubject[User | Anonymous],
+    ) -> Subscription:
+        product = await product_service.get(session, subscription_create.product_id)
+
+        if product is None:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "product_id"),
+                        "msg": "Product does not exist.",
+                        "input": subscription_create.product_id,
+                    }
+                ]
+            )
+
+        if not product.is_recurring or product.type != SubscriptionTierType.free:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "product_id"),
+                        "msg": (
+                            "This product is not a free tier. "
+                            "You should start a checkout session "
+                            "to subscribe to this product."
+                        ),
+                        "input": subscription_create.product_id,
+                    }
+                ]
+            )
+
+        user: User | None = None
+        if is_direct_user(auth_subject):
+            user = auth_subject.subject
+        else:
+            if subscription_create.customer_email is None:
+                raise PolarRequestValidationError(
+                    [
+                        {
+                            "type": "missing",
+                            "loc": ("body", "customer_email"),
+                            "msg": "Value is required.",
+                            "input": subscription_create.customer_email,
+                        }
+                    ]
+                )
+            user = await user_service.get_by_email_or_signup(
+                session, email=subscription_create.customer_email
+            )
+
+        return await subscription_service.create_arbitrary_subscription(
+            session, user=user, product=product
+        )
 
     async def update(
         self,

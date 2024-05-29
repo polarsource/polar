@@ -7,8 +7,6 @@ from fastapi import Depends, Query, Response, UploadFile
 from fastapi.responses import StreamingResponse
 from pydantic import UUID4
 
-from polar.auth.dependencies import WebUserOrAnonymous
-from polar.auth.models import is_user
 from polar.authz.service import AccessType, Authz
 from polar.enums import UserSignupType
 from polar.exceptions import ResourceNotFound, Unauthorized
@@ -28,14 +26,13 @@ from ..product.service.product import (
     product as product_service,
 )
 from . import auth
+from .schemas import Subscription as SubscriptionSchema
 from .schemas import (
-    FreeSubscriptionCreate,
     SubscriptionCreateEmail,
     SubscriptionsImported,
     SubscriptionsStatistics,
     SubscriptionSummary,
 )
-from .schemas import Subscription as SubscriptionSchema
 from .service import AlreadySubscribed, SearchSortProperty
 from .service import subscription as subscription_service
 
@@ -111,38 +108,6 @@ async def search_subscriptions(
         count,
         pagination,
     )
-
-
-@router.post(
-    "/subscriptions/",
-    response_model=SubscriptionSchema,
-    status_code=201,
-    tags=[Tags.PUBLIC],
-)
-async def create_free_subscription(
-    free_subscription_create: FreeSubscriptionCreate,
-    auth_subject: WebUserOrAnonymous,
-    session: AsyncSession = Depends(get_db_session),
-) -> Subscription:
-    subscription = await subscription_service.create_free_subscription(
-        session,
-        free_subscription_create=free_subscription_create,
-        auth_subject=auth_subject,
-    )
-
-    if is_user(auth_subject):
-        posthog.auth_subject_event(
-            auth_subject,
-            "subscriptions",
-            "free_subscription",
-            "create",
-            {
-                "subscription_id": subscription.id,
-                "subscription_tier_id": free_subscription_create.tier_id,
-            },
-        )
-
-    return subscription
 
 
 @router.post(

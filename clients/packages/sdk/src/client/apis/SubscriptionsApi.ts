@@ -17,7 +17,6 @@ import * as runtime from '../runtime';
 import type {
   HTTPValidationError,
   ListResourceSubscription,
-  ListResourceSubscriptionSummary,
   Platforms,
   Subscription,
   SubscriptionCreateEmail,
@@ -50,13 +49,6 @@ export interface SubscriptionsApiSearchSubscriptionsRequest {
     page?: number;
     limit?: number;
     sorting?: Array<string>;
-    organizationName?: string;
-    platform?: Platforms;
-}
-
-export interface SubscriptionsApiSearchSubscriptionsSummaryRequest {
-    page?: number;
-    limit?: number;
     organizationName?: string;
     platform?: Platforms;
 }
@@ -272,56 +264,6 @@ export class SubscriptionsApi extends runtime.BaseAPI {
      */
     async searchSubscriptions(requestParameters: SubscriptionsApiSearchSubscriptionsRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ListResourceSubscription> {
         const response = await this.searchSubscriptionsRaw(requestParameters, initOverrides);
-        return await response.value();
-    }
-
-    /**
-     * Search Subscriptions Summary
-     */
-    async searchSubscriptionsSummaryRaw(requestParameters: SubscriptionsApiSearchSubscriptionsSummaryRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListResourceSubscriptionSummary>> {
-        const queryParameters: any = {};
-
-        if (requestParameters['page'] != null) {
-            queryParameters['page'] = requestParameters['page'];
-        }
-
-        if (requestParameters['limit'] != null) {
-            queryParameters['limit'] = requestParameters['limit'];
-        }
-
-        if (requestParameters['organizationName'] != null) {
-            queryParameters['organization_name'] = requestParameters['organizationName'];
-        }
-
-        if (requestParameters['platform'] != null) {
-            queryParameters['platform'] = requestParameters['platform'];
-        }
-
-        const headerParameters: runtime.HTTPHeaders = {};
-
-        if (this.configuration && this.configuration.accessToken) {
-            const token = this.configuration.accessToken;
-            const tokenString = await token("HTTPBearer", []);
-
-            if (tokenString) {
-                headerParameters["Authorization"] = `Bearer ${tokenString}`;
-            }
-        }
-        const response = await this.request({
-            path: `/api/v1/subscriptions/subscriptions/summary`,
-            method: 'GET',
-            headers: headerParameters,
-            query: queryParameters,
-        }, initOverrides);
-
-        return new runtime.JSONApiResponse(response);
-    }
-
-    /**
-     * Search Subscriptions Summary
-     */
-    async searchSubscriptionsSummary(requestParameters: SubscriptionsApiSearchSubscriptionsSummaryRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ListResourceSubscriptionSummary> {
-        const response = await this.searchSubscriptionsSummaryRaw(requestParameters, initOverrides);
         return await response.value();
     }
 

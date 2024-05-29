@@ -31,22 +31,6 @@ export const useSearchSubscriptions = (variables: {
     enabled: !!variables.organizationName && !!variables.platform,
   })
 
-export const useSubscriptionSummary = (
-  orgName: string,
-  limit = 20,
-  platform = Platforms.GITHUB,
-) =>
-  useQuery({
-    queryKey: ['subscriptionSummary', 'organization', orgName],
-    queryFn: () =>
-      api.subscriptions.searchSubscriptionsSummary({
-        organizationName: orgName,
-        platform,
-        limit,
-      }),
-    retry: defaultRetry,
-  })
-
 export const useSubscriptionStatistics = (variables: {
   orgName: string
   platform: Platforms

@@ -79,6 +79,7 @@
         "/api/v1/users/me": {
             "get": {
                 "tags": [
+                    "users",
                     "users"
                 ],
                 "summary": "Get Authenticated",
@@ -106,6 +107,7 @@
             },
             "put": {
                 "tags": [
+                    "users",
                     "users"
                 ],
                 "summary": "Update Preferences",
@@ -155,6 +157,7 @@
         "/api/v1/users/me/scopes": {
             "get": {
                 "tags": [
+                    "users",
                     "users"
                 ],
                 "summary": "Scopes",
@@ -184,6 +187,7 @@
         "/api/v1/users/me/upgrade": {
             "post": {
                 "tags": [
+                    "users",
                     "users"
                 ],
                 "summary": "Maintainer Upgrade",
@@ -213,6 +217,7 @@
         "/api/v1/users/me/account": {
             "patch": {
                 "tags": [
+                    "users",
                     "users"
                 ],
                 "summary": "Set Account",
@@ -262,6 +267,7 @@
         "/api/v1/users/logout": {
             "get": {
                 "tags": [
+                    "users",
                     "users"
                 ],
                 "summary": "Logout",
@@ -292,6 +298,7 @@
         "/api/v1/users/me/stripe_customer_portal": {
             "post": {
                 "tags": [
+                    "users",
                     "users"
                 ],
                 "summary": "Create Stripe Customer Portal",
@@ -316,6 +323,806 @@
                         "HTTPBearer": []
                     }
                 ]
+            }
+        },
+        "/api/v1/users/orders/": {
+            "get": {
+                "tags": [
+                    "users"
+                ],
+                "summary": "List Orders",
+                "description": "List my orders.",
+                "operationId": "list_orders",
+                "security": [
+                    {
+                        "OpenIdConnect": []
+                    },
+                    {
+                        "HTTPBearer": []
+                    },
+                    {
+                        "OpenIdConnect": [
+                            "user:orders:read"
+                        ]
+                    },
+                    {
+                        "HTTPBearer": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "organization_id",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string",
+                                    "format": "uuid4"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "description": "Filter by organization ID.",
+                            "title": "Organization Id"
+                        },
+                        "description": "Filter by organization ID."
+                    },
+                    {
+                        "name": "product_id",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string",
+                                    "format": "uuid4"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "description": "Filter by product ID.",
+                            "title": "Product Id"
+                        },
+                        "description": "Filter by product ID."
+                    },
+                    {
+                        "name": "product_price_type",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "$ref": "#/components/schemas/ProductPriceType"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "description": "Filter by product price type. `recurring` will return orders corresponding to subscriptions creations or renewals. `one_time` will return orders corresponding to one-time purchases.",
+                            "title": "Product Price Type"
+                        },
+                        "description": "Filter by product price type. `recurring` will return orders corresponding to subscriptions creations or renewals. `one_time` will return orders corresponding to one-time purchases."
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "exclusiveMinimum": 0,
+                            "description": "Page number, defaults to 1.",
+                            "default": 1,
+                            "title": "Page"
+                        },
+                        "description": "Page number, defaults to 1."
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "exclusiveMinimum": 0,
+                            "description": "Size of a page, defaults to 10. Maximum is 100.",
+                            "default": 10,
+                            "title": "Limit"
+                        },
+                        "description": "Size of a page, defaults to 10. Maximum is 100."
+                    },
+                    {
+                        "name": "sorting",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "string"
+                                    }
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "description": "Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.",
+                            "type": "string",
+                            "enum": [
+                                "created_at",
+                                "-created_at",
+                                "amount",
+                                "-amount",
+                                "organization",
+                                "-organization",
+                                "product",
+                                "-product",
+                                "subscription",
+                                "-subscription"
+                            ],
+                            "default": [
+                                "-created_at"
+                            ],
+                            "title": "Sorting"
+                        },
+                        "description": "Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order."
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ListResource_UserOrder_"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/users/orders/{id}": {
+            "get": {
+                "tags": [
+                    "users"
+                ],
+                "summary": "Get Order",
+                "description": "Get an order by ID.",
+                "operationId": "get_order",
+                "security": [
+                    {
+                        "OpenIdConnect": []
+                    },
+                    {
+                        "HTTPBearer": []
+                    },
+                    {
+                        "OpenIdConnect": [
+                            "user:orders:read"
+                        ]
+                    },
+                    {
+                        "HTTPBearer": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid4",
+                            "description": "The order ID.",
+                            "title": "Id"
+                        },
+                        "description": "The order ID."
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/UserOrder"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Order not found.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ResourceNotFound"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/users/orders/{id}/invoice": {
+            "get": {
+                "tags": [
+                    "users"
+                ],
+                "summary": "Get Order Invoice",
+                "description": "Get an order's invoice data.",
+                "operationId": "get_order_invoice",
+                "security": [
+                    {
+                        "OpenIdConnect": []
+                    },
+                    {
+                        "HTTPBearer": []
+                    },
+                    {
+                        "OpenIdConnect": [
+                            "user:orders:read"
+                        ]
+                    },
+                    {
+                        "HTTPBearer": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid4",
+                            "description": "The order ID.",
+                            "title": "Id"
+                        },
+                        "description": "The order ID."
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/UserOrderInvoice"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Order not found.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ResourceNotFound"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/users/subscriptions/": {
+            "get": {
+                "tags": [
+                    "users"
+                ],
+                "summary": "List Subscriptions",
+                "description": "List my subscriptions.",
+                "operationId": "list_subscriptions",
+                "security": [
+                    {
+                        "OpenIdConnect": []
+                    },
+                    {
+                        "HTTPBearer": []
+                    },
+                    {
+                        "OpenIdConnect": [
+                            "user:subscriptions:read"
+                        ]
+                    },
+                    {
+                        "HTTPBearer": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "organization_id",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string",
+                                    "format": "uuid4"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "description": "Filter by organization ID.",
+                            "title": "Organization Id"
+                        },
+                        "description": "Filter by organization ID."
+                    },
+                    {
+                        "name": "product_id",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string",
+                                    "format": "uuid4"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "description": "Filter by product ID.",
+                            "title": "Product Id"
+                        },
+                        "description": "Filter by product ID."
+                    },
+                    {
+                        "name": "active",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "boolean"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "description": "Filter by active or cancelled subscription.",
+                            "title": "Active"
+                        },
+                        "description": "Filter by active or cancelled subscription."
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "exclusiveMinimum": 0,
+                            "description": "Page number, defaults to 1.",
+                            "default": 1,
+                            "title": "Page"
+                        },
+                        "description": "Page number, defaults to 1."
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "exclusiveMinimum": 0,
+                            "description": "Size of a page, defaults to 10. Maximum is 100.",
+                            "default": 10,
+                            "title": "Limit"
+                        },
+                        "description": "Size of a page, defaults to 10. Maximum is 100."
+                    },
+                    {
+                        "name": "sorting",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "string"
+                                    }
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "description": "Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.",
+                            "type": "string",
+                            "enum": [
+                                "started_at",
+                                "-started_at",
+                                "price_amount",
+                                "-price_amount",
+                                "status",
+                                "-status",
+                                "organization",
+                                "-organization",
+                                "product",
+                                "-product"
+                            ],
+                            "default": [
+                                "-started_at"
+                            ],
+                            "title": "Sorting"
+                        },
+                        "description": "Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order."
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ListResource_UserSubscription_"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "users"
+                ],
+                "summary": "Create Subscription",
+                "description": "Create a subscription on a **free** tier.\n\nIf you want to subscribe to a paid tier, you need to create a checkout session.",
+                "operationId": "create_subscription",
+                "security": [
+                    {
+                        "OpenIdConnect": []
+                    },
+                    {
+                        "HTTPBearer": []
+                    },
+                    {
+                        "OpenIdConnect": [
+                            "user:subscriptions:write"
+                        ]
+                    },
+                    {
+                        "HTTPBearer": []
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UserFreeSubscriptionCreate"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Subscription created.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/UserSubscription"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Already subscribed to one of the tier of this organization.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/AlreadySubscribed"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Subscription not found.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ResourceNotFound"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/users/subscriptions/{id}": {
+            "get": {
+                "tags": [
+                    "users"
+                ],
+                "summary": "Get Subscription",
+                "description": "Get a subscription by ID.",
+                "operationId": "get_subscription",
+                "security": [
+                    {
+                        "OpenIdConnect": []
+                    },
+                    {
+                        "HTTPBearer": []
+                    },
+                    {
+                        "OpenIdConnect": [
+                            "user:subscriptions:read"
+                        ]
+                    },
+                    {
+                        "HTTPBearer": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid4",
+                            "description": "The subscription ID.",
+                            "title": "Id"
+                        },
+                        "description": "The subscription ID."
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/UserSubscription"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Subscription not found.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ResourceNotFound"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "tags": [
+                    "users"
+                ],
+                "summary": "Update Subscription",
+                "description": "Update a subscription.",
+                "operationId": "update_subscription",
+                "security": [
+                    {
+                        "OpenIdConnect": []
+                    },
+                    {
+                        "HTTPBearer": []
+                    },
+                    {
+                        "OpenIdConnect": [
+                            "user:subscriptions:write"
+                        ]
+                    },
+                    {
+                        "HTTPBearer": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid4",
+                            "description": "The subscription ID.",
+                            "title": "Id"
+                        },
+                        "description": "The subscription ID."
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UserSubscriptionUpdate"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Subscription updated.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/UserSubscription"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Can't upgrade from free to paid subscription tier to paid directly.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/FreeSubscriptionUpgrade"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Subscription not found.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ResourceNotFound"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "users"
+                ],
+                "summary": "Cancel Subscription",
+                "description": "Cancel a subscription.",
+                "operationId": "cancel_subscription",
+                "security": [
+                    {
+                        "OpenIdConnect": []
+                    },
+                    {
+                        "HTTPBearer": []
+                    },
+                    {
+                        "OpenIdConnect": [
+                            "user:subscriptions:write"
+                        ]
+                    },
+                    {
+                        "HTTPBearer": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid4",
+                            "description": "The subscription ID.",
+                            "title": "Id"
+                        },
+                        "description": "The subscription ID."
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Subscription canceled.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/UserSubscription"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "This subscription is already canceled or will be at the end of the period.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/AlreadyCanceledSubscription"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Subscription not found.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ResourceNotFound"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
             }
         },
         "/api/v1/integrations/github/authorize": {
@@ -5985,8 +6792,8 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "creator:subscriptions:write",
-                            "creator:subscriptions:read"
+                            "creator:subscriptions:read",
+                            "creator:subscriptions:write"
                         ]
                     },
                     {
@@ -6134,8 +6941,8 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "creator:subscriptions:write",
-                            "creator:subscriptions:read"
+                            "creator:subscriptions:read",
+                            "creator:subscriptions:write"
                         ]
                     },
                     {
@@ -6361,282 +7168,6 @@
                 }
             }
         },
-        "/api/v1/subscriptions/subscriptions/subscribed": {
-            "get": {
-                "tags": [
-                    "subscriptions"
-                ],
-                "summary": "Search Subscribed Subscriptions",
-                "operationId": "search_subscribed_subscriptions",
-                "security": [
-                    {
-                        "OpenIdConnect": []
-                    },
-                    {
-                        "HTTPBearer": []
-                    },
-                    {
-                        "OpenIdConnect": [
-                            "backer:subscriptions:write",
-                            "backer:subscriptions:read"
-                        ]
-                    },
-                    {
-                        "HTTPBearer": []
-                    }
-                ],
-                "parameters": [
-                    {
-                        "name": "type",
-                        "in": "query",
-                        "required": false,
-                        "schema": {
-                            "anyOf": [
-                                {
-                                    "$ref": "#/components/schemas/SubscriptionTierType"
-                                },
-                                {
-                                    "type": "null"
-                                }
-                            ],
-                            "title": "Type"
-                        }
-                    },
-                    {
-                        "name": "subscription_tier_id",
-                        "in": "query",
-                        "required": false,
-                        "schema": {
-                            "anyOf": [
-                                {
-                                    "type": "string",
-                                    "format": "uuid4"
-                                },
-                                {
-                                    "type": "null"
-                                }
-                            ],
-                            "title": "Subscription Tier Id"
-                        }
-                    },
-                    {
-                        "name": "subscriber_user_id",
-                        "in": "query",
-                        "required": false,
-                        "schema": {
-                            "anyOf": [
-                                {
-                                    "type": "string",
-                                    "format": "uuid4"
-                                },
-                                {
-                                    "type": "null"
-                                }
-                            ],
-                            "title": "Subscriber User Id"
-                        }
-                    },
-                    {
-                        "name": "subscriber_organization_id",
-                        "in": "query",
-                        "required": false,
-                        "schema": {
-                            "anyOf": [
-                                {
-                                    "type": "string",
-                                    "format": "uuid4"
-                                },
-                                {
-                                    "type": "null"
-                                }
-                            ],
-                            "title": "Subscriber Organization Id"
-                        }
-                    },
-                    {
-                        "name": "page",
-                        "in": "query",
-                        "required": false,
-                        "schema": {
-                            "type": "integer",
-                            "exclusiveMinimum": 0,
-                            "description": "Page number, defaults to 1.",
-                            "default": 1,
-                            "title": "Page"
-                        },
-                        "description": "Page number, defaults to 1."
-                    },
-                    {
-                        "name": "limit",
-                        "in": "query",
-                        "required": false,
-                        "schema": {
-                            "type": "integer",
-                            "exclusiveMinimum": 0,
-                            "description": "Size of a page, defaults to 10. Maximum is 100.",
-                            "default": 10,
-                            "title": "Limit"
-                        },
-                        "description": "Size of a page, defaults to 10. Maximum is 100."
-                    },
-                    {
-                        "name": "sorting",
-                        "in": "query",
-                        "required": false,
-                        "schema": {
-                            "anyOf": [
-                                {
-                                    "type": "array",
-                                    "items": {
-                                        "type": "string"
-                                    }
-                                },
-                                {
-                                    "type": "null"
-                                }
-                            ],
-                            "description": "Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.",
-                            "type": "string",
-                            "enum": [
-                                "user",
-                                "-user",
-                                "status",
-                                "-status",
-                                "started_at",
-                                "-started_at",
-                                "current_period_end",
-                                "-current_period_end",
-                                "price_amount",
-                                "-price_amount",
-                                "subscription_tier_type",
-                                "-subscription_tier_type",
-                                "product",
-                                "-product"
-                            ],
-                            "default": [
-                                "-started_at"
-                            ],
-                            "title": "Sorting"
-                        },
-                        "description": "Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order."
-                    },
-                    {
-                        "name": "organization_name",
-                        "in": "query",
-                        "required": false,
-                        "schema": {
-                            "anyOf": [
-                                {
-                                    "type": "string",
-                                    "minLength": 1
-                                },
-                                {
-                                    "type": "null"
-                                }
-                            ],
-                            "description": "Filter by organization name. Required unless you are authenticated as an organization.",
-                            "examples": [
-                                "my-org"
-                            ],
-                            "title": "Organization Name"
-                        },
-                        "description": "Filter by organization name. Required unless you are authenticated as an organization."
-                    },
-                    {
-                        "name": "platform",
-                        "in": "query",
-                        "required": false,
-                        "schema": {
-                            "anyOf": [
-                                {
-                                    "$ref": "#/components/schemas/Platforms"
-                                },
-                                {
-                                    "type": "null"
-                                }
-                            ],
-                            "description": "Platform linked to `organization_name`. Required if `organization_name` is set. Currently, only `github` is supported.",
-                            "examples": [
-                                "github"
-                            ],
-                            "title": "Platform"
-                        },
-                        "description": "Platform linked to `organization_name`. Required if `organization_name` is set. Currently, only `github` is supported."
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Successful Response",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/ListResource_SubscriptionSubscriber_"
-                                }
-                            }
-                        }
-                    },
-                    "422": {
-                        "description": "Validation Error",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/HTTPValidationError"
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/subscriptions/subscriptions/": {
-            "post": {
-                "tags": [
-                    "subscriptions"
-                ],
-                "summary": "Create Free Subscription",
-                "operationId": "create_free_subscription",
-                "requestBody": {
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "#/components/schemas/FreeSubscriptionCreate"
-                            }
-                        }
-                    },
-                    "required": true
-                },
-                "responses": {
-                    "201": {
-                        "description": "Successful Response",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/Subscription"
-                                }
-                            }
-                        }
-                    },
-                    "422": {
-                        "description": "Validation Error",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/HTTPValidationError"
-                                }
-                            }
-                        }
-                    }
-                },
-                "security": [
-                    {
-                        "OpenIdConnect": []
-                    },
-                    {
-                        "HTTPBearer": []
-                    }
-                ]
-            }
-        },
         "/api/v1/subscriptions/subscriptions/email": {
             "post": {
                 "tags": [
@@ -6857,8 +7388,8 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "creator:subscriptions:write",
-                            "creator:subscriptions:read"
+                            "creator:subscriptions:read",
+                            "creator:subscriptions:write"
                         ]
                     },
                     {
@@ -6916,132 +7447,6 @@
                         "content": {
                             "application/json": {
                                 "schema": {}
-                            }
-                        }
-                    },
-                    "422": {
-                        "description": "Validation Error",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/HTTPValidationError"
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/subscriptions/subscriptions/{id}": {
-            "post": {
-                "tags": [
-                    "subscriptions"
-                ],
-                "summary": "Upgrade Subscription",
-                "operationId": "upgrade_subscription",
-                "security": [
-                    {
-                        "OpenIdConnect": []
-                    },
-                    {
-                        "HTTPBearer": []
-                    },
-                    {
-                        "OpenIdConnect": [
-                            "backer:subscriptions:write"
-                        ]
-                    },
-                    {
-                        "HTTPBearer": []
-                    }
-                ],
-                "parameters": [
-                    {
-                        "name": "id",
-                        "in": "path",
-                        "required": true,
-                        "schema": {
-                            "type": "string",
-                            "format": "uuid4",
-                            "title": "Id"
-                        }
-                    }
-                ],
-                "requestBody": {
-                    "required": true,
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "#/components/schemas/SubscriptionUpgrade"
-                            }
-                        }
-                    }
-                },
-                "responses": {
-                    "200": {
-                        "description": "Successful Response",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/Subscription"
-                                }
-                            }
-                        }
-                    },
-                    "422": {
-                        "description": "Validation Error",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/HTTPValidationError"
-                                }
-                            }
-                        }
-                    }
-                }
-            },
-            "delete": {
-                "tags": [
-                    "subscriptions"
-                ],
-                "summary": "Cancel Subscription",
-                "operationId": "cancel_subscription",
-                "security": [
-                    {
-                        "OpenIdConnect": []
-                    },
-                    {
-                        "HTTPBearer": []
-                    },
-                    {
-                        "OpenIdConnect": [
-                            "backer:subscriptions:write"
-                        ]
-                    },
-                    {
-                        "HTTPBearer": []
-                    }
-                ],
-                "parameters": [
-                    {
-                        "name": "id",
-                        "in": "path",
-                        "required": true,
-                        "schema": {
-                            "type": "string",
-                            "format": "uuid4",
-                            "title": "Id"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Successful Response",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/Subscription"
-                                }
                             }
                         }
                     },
@@ -7173,7 +7578,7 @@
                 "tags": [
                     "articles"
                 ],
-                "summary": "Stop delivery of articles via email.",
+                "summary": "Unsubscribe user",
                 "description": "Unsubscribe user from articles in emails.",
                 "operationId": "email_unsubscribe",
                 "security": [
@@ -7579,7 +7984,7 @@
                 "tags": [
                     "articles"
                 ],
-                "summary": "Get number of potential receivers for an article.",
+                "summary": "Potential article receivers",
                 "description": "Get number of potential receivers for an article.",
                 "operationId": "receivers",
                 "security": [
@@ -10474,8 +10879,8 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "creator:benefits:write",
-                            "creator:benefits:read"
+                            "creator:benefits:read",
+                            "creator:benefits:write"
                         ]
                     },
                     {
@@ -10687,8 +11092,8 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "creator:benefits:write",
-                            "creator:benefits:read"
+                            "creator:benefits:read",
+                            "creator:benefits:write"
                         ]
                     },
                     {
@@ -10974,8 +11379,8 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "creator:benefits:write",
-                            "creator:benefits:read"
+                            "creator:benefits:read",
+                            "creator:benefits:write"
                         ]
                     },
                     {
@@ -11128,8 +11533,8 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "webhooks:read",
-                            "webhooks:write"
+                            "webhooks:write",
+                            "webhooks:read"
                         ]
                     },
                     {
@@ -11299,8 +11704,8 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "webhooks:read",
-                            "webhooks:write"
+                            "webhooks:write",
+                            "webhooks:read"
                         ]
                     },
                     {
@@ -11535,8 +11940,8 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "webhooks:read",
-                            "webhooks:write"
+                            "webhooks:write",
+                            "webhooks:read"
                         ]
                     },
                     {
@@ -11701,8 +12106,8 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "creator:products:read",
-                            "creator:products:write"
+                            "creator:products:write",
+                            "creator:products:read"
                         ]
                     },
                     {
@@ -11926,8 +12331,8 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "creator:products:read",
-                            "creator:products:write"
+                            "creator:products:write",
+                            "creator:products:read"
                         ]
                     },
                     {
@@ -13011,6 +13416,50 @@
                     "link_url"
                 ],
                 "title": "AdvertisementDisplay"
+            },
+            "AlreadyCanceledSubscription": {
+                "properties": {
+                    "type": {
+                        "type": "string",
+                        "enum": [
+                            "AlreadyCanceledSubscription"
+                        ],
+                        "const": "AlreadyCanceledSubscription",
+                        "title": "Type"
+                    },
+                    "detail": {
+                        "type": "string",
+                        "title": "Detail"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "type",
+                    "detail"
+                ],
+                "title": "AlreadyCanceledSubscription"
+            },
+            "AlreadySubscribed": {
+                "properties": {
+                    "type": {
+                        "type": "string",
+                        "enum": [
+                            "AlreadySubscribed"
+                        ],
+                        "const": "AlreadySubscribed",
+                        "title": "Type"
+                    },
+                    "detail": {
+                        "type": "string",
+                        "title": "Detail"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "type",
+                    "detail"
+                ],
+                "title": "AlreadySubscribed"
             },
             "AppPermissionsType": {
                 "properties": {
@@ -17253,33 +17702,27 @@
                 ],
                 "title": "ExternalGitHubPullRequestReference"
             },
-            "FreeSubscriptionCreate": {
+            "FreeSubscriptionUpgrade": {
                 "properties": {
-                    "tier_id": {
+                    "type": {
                         "type": "string",
-                        "format": "uuid4",
-                        "title": "Tier Id",
-                        "description": "ID of the free Subscription Tier to subscribe to."
-                    },
-                    "customer_email": {
-                        "anyOf": [
-                            {
-                                "type": "string",
-                                "format": "email"
-                            },
-                            {
-                                "type": "null"
-                            }
+                        "enum": [
+                            "FreeSubscriptionUpgrade"
                         ],
-                        "title": "Customer Email",
-                        "description": "Email of your backer. This field is required if the API is called outside the Polar app."
+                        "const": "FreeSubscriptionUpgrade",
+                        "title": "Type"
+                    },
+                    "detail": {
+                        "type": "string",
+                        "title": "Detail"
                     }
                 },
                 "type": "object",
                 "required": [
-                    "tier_id"
+                    "type",
+                    "detail"
                 ],
-                "title": "FreeSubscriptionCreate"
+                "title": "FreeSubscriptionUpgrade"
             },
             "Funding": {
                 "properties": {
@@ -18016,26 +18459,6 @@
                 ],
                 "title": "ListResource[Reward]"
             },
-            "ListResource_SubscriptionSubscriber_": {
-                "properties": {
-                    "items": {
-                        "items": {
-                            "$ref": "#/components/schemas/SubscriptionSubscriber"
-                        },
-                        "type": "array",
-                        "title": "Items",
-                        "default": []
-                    },
-                    "pagination": {
-                        "$ref": "#/components/schemas/Pagination"
-                    }
-                },
-                "type": "object",
-                "required": [
-                    "pagination"
-                ],
-                "title": "ListResource[SubscriptionSubscriber]"
-            },
             "ListResource_SubscriptionSummary_": {
                 "properties": {
                     "items": {
@@ -18151,6 +18574,46 @@
                     "pagination"
                 ],
                 "title": "ListResource[Union[BenefitArticles, BenefitAds, BenefitCustom, BenefitDiscord, BenefitGitHubRepository]]"
+            },
+            "ListResource_UserOrder_": {
+                "properties": {
+                    "items": {
+                        "items": {
+                            "$ref": "#/components/schemas/UserOrder"
+                        },
+                        "type": "array",
+                        "title": "Items",
+                        "default": []
+                    },
+                    "pagination": {
+                        "$ref": "#/components/schemas/Pagination"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "pagination"
+                ],
+                "title": "ListResource[UserOrder]"
+            },
+            "ListResource_UserSubscription_": {
+                "properties": {
+                    "items": {
+                        "items": {
+                            "$ref": "#/components/schemas/UserSubscription"
+                        },
+                        "type": "array",
+                        "title": "Items",
+                        "default": []
+                    },
+                    "pagination": {
+                        "$ref": "#/components/schemas/Pagination"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "pagination"
+                ],
+                "title": "ListResource[UserSubscription]"
             },
             "ListResource_WebhookDelivery_": {
                 "properties": {
@@ -19255,7 +19718,7 @@
                     "scope": {
                         "type": "string",
                         "title": "Scope",
-                        "default": "openid profile email articles:read user:read organizations:read organizations:write creator:subscriptions:read creator:subscriptions:write backer:subscriptions:read backer:subscriptions:write creator:products:read creator:products:write creator:benefits:read creator:benefits:write orders:read webhooks:read webhooks:write"
+                        "default": "openid profile email articles:read user:read organizations:read organizations:write creator:subscriptions:read creator:subscriptions:write creator:products:read creator:products:write creator:benefits:read creator:benefits:write orders:read webhooks:read webhooks:write user:orders:read user:subscriptions:read user:subscriptions:write"
                     },
                     "client_name": {
                         "type": "string",
@@ -19416,7 +19879,7 @@
                     "scope": {
                         "type": "string",
                         "title": "Scope",
-                        "default": "openid profile email articles:read user:read organizations:read organizations:write creator:subscriptions:read creator:subscriptions:write backer:subscriptions:read backer:subscriptions:write creator:products:read creator:products:write creator:benefits:read creator:benefits:write orders:read webhooks:read webhooks:write"
+                        "default": "openid profile email articles:read user:read organizations:read organizations:write creator:subscriptions:read creator:subscriptions:write creator:products:read creator:products:write creator:benefits:read creator:benefits:write orders:read webhooks:read webhooks:write user:orders:read user:subscriptions:read user:subscriptions:write"
                     },
                     "client_name": {
                         "type": "string",
@@ -19537,7 +20000,7 @@
                     "scope": {
                         "type": "string",
                         "title": "Scope",
-                        "default": "openid profile email articles:read user:read organizations:read organizations:write creator:subscriptions:read creator:subscriptions:write backer:subscriptions:read backer:subscriptions:write creator:products:read creator:products:write creator:benefits:read creator:benefits:write orders:read webhooks:read webhooks:write"
+                        "default": "openid profile email articles:read user:read organizations:read organizations:write creator:subscriptions:read creator:subscriptions:write creator:products:read creator:products:write creator:benefits:read creator:benefits:write orders:read webhooks:read webhooks:write user:orders:read user:subscriptions:read user:subscriptions:write"
                     },
                     "client_name": {
                         "type": "string",
@@ -21813,148 +22276,6 @@
                 "title": "ProductRecurringCreate",
                 "description": "Schema to create a recurring product, i.e. a subscription."
             },
-            "ProductSubscriber": {
-                "properties": {
-                    "created_at": {
-                        "type": "string",
-                        "format": "date-time",
-                        "title": "Created At",
-                        "description": "Creation timestamp of the object."
-                    },
-                    "modified_at": {
-                        "anyOf": [
-                            {
-                                "type": "string",
-                                "format": "date-time"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Modified At",
-                        "description": "Last modification timestamp of the object."
-                    },
-                    "id": {
-                        "type": "string",
-                        "format": "uuid4",
-                        "title": "Id",
-                        "description": "The ID of the product."
-                    },
-                    "name": {
-                        "type": "string",
-                        "title": "Name",
-                        "description": "The name of the product."
-                    },
-                    "description": {
-                        "anyOf": [
-                            {
-                                "type": "string"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Description",
-                        "description": "The description of the product."
-                    },
-                    "is_recurring": {
-                        "type": "boolean",
-                        "title": "Is Recurring",
-                        "description": "Whether the product is a subscription tier."
-                    },
-                    "is_archived": {
-                        "type": "boolean",
-                        "title": "Is Archived",
-                        "description": "Whether the product is archived and no longer available."
-                    },
-                    "organization_id": {
-                        "type": "string",
-                        "format": "uuid4",
-                        "title": "Organization Id",
-                        "description": "The ID of the organization owning the product."
-                    },
-                    "type": {
-                        "anyOf": [
-                            {
-                                "$ref": "#/components/schemas/SubscriptionTierType"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "deprecated": true
-                    },
-                    "is_highlighted": {
-                        "anyOf": [
-                            {
-                                "type": "boolean"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Is Highlighted",
-                        "deprecated": true
-                    },
-                    "prices": {
-                        "items": {
-                            "oneOf": [
-                                {
-                                    "$ref": "#/components/schemas/ProductPriceRecurring"
-                                },
-                                {
-                                    "$ref": "#/components/schemas/ProductPriceOneTime"
-                                }
-                            ],
-                            "discriminator": {
-                                "propertyName": "type",
-                                "mapping": {
-                                    "one_time": "#/components/schemas/ProductPriceOneTime",
-                                    "recurring": "#/components/schemas/ProductPriceRecurring"
-                                }
-                            }
-                        },
-                        "type": "array",
-                        "title": "Prices",
-                        "description": "List of available prices for this product."
-                    },
-                    "benefits": {
-                        "items": {
-                            "anyOf": [
-                                {
-                                    "$ref": "#/components/schemas/BenefitArticlesSubscriber"
-                                },
-                                {
-                                    "$ref": "#/components/schemas/BenefitAdsSubscriber"
-                                },
-                                {
-                                    "$ref": "#/components/schemas/BenefitDiscordSubscriber"
-                                },
-                                {
-                                    "$ref": "#/components/schemas/BenefitCustomSubscriber"
-                                },
-                                {
-                                    "$ref": "#/components/schemas/BenefitGitHubRepositorySubscriber"
-                                }
-                            ]
-                        },
-                        "type": "array",
-                        "title": "BenefitSubscriber"
-                    }
-                },
-                "type": "object",
-                "required": [
-                    "created_at",
-                    "id",
-                    "name",
-                    "is_recurring",
-                    "is_archived",
-                    "organization_id",
-                    "prices",
-                    "benefits"
-                ],
-                "title": "ProductSubscriber"
-            },
             "ProductUpdate": {
                 "properties": {
                     "name": {
@@ -22809,21 +23130,20 @@
                     "organizations:write",
                     "creator:subscriptions:read",
                     "creator:subscriptions:write",
-                    "backer:subscriptions:read",
-                    "backer:subscriptions:write",
                     "creator:products:read",
                     "creator:products:write",
                     "creator:benefits:read",
                     "creator:benefits:write",
                     "orders:read",
                     "webhooks:read",
-                    "webhooks:write"
+                    "webhooks:write",
+                    "user:orders:read",
+                    "user:subscriptions:read",
+                    "user:subscriptions:write"
                 ],
                 "title": "Scope",
                 "enumNames": {
                     "articles:read": "Articles Read",
-                    "backer:subscriptions:read": "Read subscriptions",
-                    "backer:subscriptions:write": "Create or modify subscriptions",
                     "creator:benefits:read": "Read benefits",
                     "creator:benefits:write": "Create or modify benefits",
                     "creator:subscriptions:read": "Read subscription tiers and subscribers",
@@ -22931,166 +23251,6 @@
                 ],
                 "title": "SubscriptionStatus"
             },
-            "SubscriptionSubscriber": {
-                "properties": {
-                    "created_at": {
-                        "type": "string",
-                        "format": "date-time",
-                        "title": "Created At",
-                        "description": "Creation timestamp of the object."
-                    },
-                    "modified_at": {
-                        "anyOf": [
-                            {
-                                "type": "string",
-                                "format": "date-time"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Modified At",
-                        "description": "Last modification timestamp of the object."
-                    },
-                    "id": {
-                        "type": "string",
-                        "format": "uuid4",
-                        "title": "Id"
-                    },
-                    "status": {
-                        "$ref": "#/components/schemas/SubscriptionStatus"
-                    },
-                    "current_period_start": {
-                        "type": "string",
-                        "format": "date-time",
-                        "title": "Current Period Start"
-                    },
-                    "current_period_end": {
-                        "anyOf": [
-                            {
-                                "type": "string",
-                                "format": "date-time"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Current Period End"
-                    },
-                    "cancel_at_period_end": {
-                        "type": "boolean",
-                        "title": "Cancel At Period End"
-                    },
-                    "started_at": {
-                        "anyOf": [
-                            {
-                                "type": "string",
-                                "format": "date-time"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Started At"
-                    },
-                    "ended_at": {
-                        "anyOf": [
-                            {
-                                "type": "string",
-                                "format": "date-time"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Ended At"
-                    },
-                    "user_id": {
-                        "type": "string",
-                        "format": "uuid4",
-                        "title": "User Id"
-                    },
-                    "organization_id": {
-                        "anyOf": [
-                            {
-                                "type": "string",
-                                "format": "uuid4"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Organization Id"
-                    },
-                    "product_id": {
-                        "type": "string",
-                        "format": "uuid4",
-                        "title": "Product Id"
-                    },
-                    "price_id": {
-                        "anyOf": [
-                            {
-                                "type": "string",
-                                "format": "uuid4"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Price Id"
-                    },
-                    "product": {
-                        "$ref": "#/components/schemas/ProductSubscriber"
-                    },
-                    "organization": {
-                        "anyOf": [
-                            {
-                                "$ref": "#/components/schemas/SubscriptionOrganization"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ]
-                    },
-                    "price": {
-                        "anyOf": [
-                            {
-                                "oneOf": [
-                                    {
-                                        "$ref": "#/components/schemas/ProductPriceRecurring"
-                                    },
-                                    {
-                                        "$ref": "#/components/schemas/ProductPriceOneTime"
-                                    }
-                                ],
-                                "discriminator": {
-                                    "propertyName": "type",
-                                    "mapping": {
-                                        "one_time": "#/components/schemas/ProductPriceOneTime",
-                                        "recurring": "#/components/schemas/ProductPriceRecurring"
-                                    }
-                                }
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Price"
-                    }
-                },
-                "type": "object",
-                "required": [
-                    "created_at",
-                    "id",
-                    "status",
-                    "current_period_start",
-                    "cancel_at_period_end",
-                    "user_id",
-                    "product_id",
-                    "product"
-                ],
-                "title": "SubscriptionSubscriber"
-            },
             "SubscriptionSummary": {
                 "properties": {
                     "user": {
@@ -23150,26 +23310,6 @@
                     "business"
                 ],
                 "title": "SubscriptionTierType"
-            },
-            "SubscriptionUpgrade": {
-                "properties": {
-                    "subscription_tier_id": {
-                        "type": "string",
-                        "format": "uuid4",
-                        "title": "Subscription Tier Id"
-                    },
-                    "price_id": {
-                        "type": "string",
-                        "format": "uuid4",
-                        "title": "Price Id"
-                    }
-                },
-                "type": "object",
-                "required": [
-                    "subscription_tier_id",
-                    "price_id"
-                ],
-                "title": "SubscriptionUpgrade"
             },
             "SubscriptionUser": {
                 "properties": {
@@ -24753,6 +24893,377 @@
                 ],
                 "title": "UserBase"
             },
+            "UserFreeSubscriptionCreate": {
+                "properties": {
+                    "product_id": {
+                        "type": "string",
+                        "format": "uuid4",
+                        "title": "Product Id",
+                        "description": "ID of the free tier to subscribe to."
+                    },
+                    "customer_email": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "email"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Customer Email",
+                        "description": "Email of the customer. This field is required if the API is called outside the Polar app."
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "product_id"
+                ],
+                "title": "UserFreeSubscriptionCreate"
+            },
+            "UserOrder": {
+                "properties": {
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "title": "Created At",
+                        "description": "Creation timestamp of the object."
+                    },
+                    "modified_at": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "date-time"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Modified At",
+                        "description": "Last modification timestamp of the object."
+                    },
+                    "id": {
+                        "type": "string",
+                        "format": "uuid4",
+                        "title": "Id"
+                    },
+                    "amount": {
+                        "type": "integer",
+                        "title": "Amount"
+                    },
+                    "tax_amount": {
+                        "type": "integer",
+                        "title": "Tax Amount"
+                    },
+                    "currency": {
+                        "type": "string",
+                        "title": "Currency"
+                    },
+                    "user_id": {
+                        "type": "string",
+                        "format": "uuid4",
+                        "title": "User Id"
+                    },
+                    "product_id": {
+                        "type": "string",
+                        "format": "uuid4",
+                        "title": "Product Id"
+                    },
+                    "product_price_id": {
+                        "type": "string",
+                        "format": "uuid4",
+                        "title": "Product Price Id"
+                    },
+                    "subscription_id": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "uuid4"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Subscription Id"
+                    },
+                    "product": {
+                        "$ref": "#/components/schemas/UserOrderProduct"
+                    },
+                    "product_price": {
+                        "oneOf": [
+                            {
+                                "$ref": "#/components/schemas/ProductPriceRecurring"
+                            },
+                            {
+                                "$ref": "#/components/schemas/ProductPriceOneTime"
+                            }
+                        ],
+                        "title": "Product Price",
+                        "discriminator": {
+                            "propertyName": "type",
+                            "mapping": {
+                                "one_time": "#/components/schemas/ProductPriceOneTime",
+                                "recurring": "#/components/schemas/ProductPriceRecurring"
+                            }
+                        }
+                    },
+                    "subscription": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/components/schemas/UserOrderSubscription"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ]
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "created_at",
+                    "id",
+                    "amount",
+                    "tax_amount",
+                    "currency",
+                    "user_id",
+                    "product_id",
+                    "product_price_id",
+                    "product",
+                    "product_price"
+                ],
+                "title": "UserOrder"
+            },
+            "UserOrderInvoice": {
+                "properties": {
+                    "url": {
+                        "type": "string",
+                        "title": "Url",
+                        "description": "The URL to the invoice."
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "url"
+                ],
+                "title": "UserOrderInvoice",
+                "description": "Order's invoice data."
+            },
+            "UserOrderProduct": {
+                "properties": {
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "title": "Created At",
+                        "description": "Creation timestamp of the object."
+                    },
+                    "modified_at": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "date-time"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Modified At",
+                        "description": "Last modification timestamp of the object."
+                    },
+                    "id": {
+                        "type": "string",
+                        "format": "uuid4",
+                        "title": "Id",
+                        "description": "The ID of the product."
+                    },
+                    "name": {
+                        "type": "string",
+                        "title": "Name",
+                        "description": "The name of the product."
+                    },
+                    "description": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Description",
+                        "description": "The description of the product."
+                    },
+                    "is_recurring": {
+                        "type": "boolean",
+                        "title": "Is Recurring",
+                        "description": "Whether the product is a subscription tier."
+                    },
+                    "is_archived": {
+                        "type": "boolean",
+                        "title": "Is Archived",
+                        "description": "Whether the product is archived and no longer available."
+                    },
+                    "organization_id": {
+                        "type": "string",
+                        "format": "uuid4",
+                        "title": "Organization Id",
+                        "description": "The ID of the organization owning the product."
+                    },
+                    "type": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/components/schemas/SubscriptionTierType"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "deprecated": true
+                    },
+                    "is_highlighted": {
+                        "anyOf": [
+                            {
+                                "type": "boolean"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Is Highlighted",
+                        "deprecated": true
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "created_at",
+                    "id",
+                    "name",
+                    "is_recurring",
+                    "is_archived",
+                    "organization_id"
+                ],
+                "title": "UserOrderProduct"
+            },
+            "UserOrderSubscription": {
+                "properties": {
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "title": "Created At",
+                        "description": "Creation timestamp of the object."
+                    },
+                    "modified_at": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "date-time"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Modified At",
+                        "description": "Last modification timestamp of the object."
+                    },
+                    "id": {
+                        "type": "string",
+                        "format": "uuid4",
+                        "title": "Id"
+                    },
+                    "status": {
+                        "$ref": "#/components/schemas/SubscriptionStatus"
+                    },
+                    "current_period_start": {
+                        "type": "string",
+                        "format": "date-time",
+                        "title": "Current Period Start"
+                    },
+                    "current_period_end": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "date-time"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Current Period End"
+                    },
+                    "cancel_at_period_end": {
+                        "type": "boolean",
+                        "title": "Cancel At Period End"
+                    },
+                    "started_at": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "date-time"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Started At"
+                    },
+                    "ended_at": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "date-time"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Ended At"
+                    },
+                    "user_id": {
+                        "type": "string",
+                        "format": "uuid4",
+                        "title": "User Id"
+                    },
+                    "organization_id": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "uuid4"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Organization Id"
+                    },
+                    "product_id": {
+                        "type": "string",
+                        "format": "uuid4",
+                        "title": "Product Id"
+                    },
+                    "price_id": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "uuid4"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Price Id"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "created_at",
+                    "id",
+                    "status",
+                    "current_period_start",
+                    "cancel_at_period_end",
+                    "user_id",
+                    "product_id"
+                ],
+                "title": "UserOrderSubscription"
+            },
             "UserRead": {
                 "properties": {
                     "created_at": {
@@ -24901,6 +25412,312 @@
                     "url"
                 ],
                 "title": "UserStripePortalSession"
+            },
+            "UserSubscription": {
+                "properties": {
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "title": "Created At",
+                        "description": "Creation timestamp of the object."
+                    },
+                    "modified_at": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "date-time"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Modified At",
+                        "description": "Last modification timestamp of the object."
+                    },
+                    "id": {
+                        "type": "string",
+                        "format": "uuid4",
+                        "title": "Id"
+                    },
+                    "status": {
+                        "$ref": "#/components/schemas/SubscriptionStatus"
+                    },
+                    "current_period_start": {
+                        "type": "string",
+                        "format": "date-time",
+                        "title": "Current Period Start"
+                    },
+                    "current_period_end": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "date-time"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Current Period End"
+                    },
+                    "cancel_at_period_end": {
+                        "type": "boolean",
+                        "title": "Cancel At Period End"
+                    },
+                    "started_at": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "date-time"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Started At"
+                    },
+                    "ended_at": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "date-time"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Ended At"
+                    },
+                    "user_id": {
+                        "type": "string",
+                        "format": "uuid4",
+                        "title": "User Id"
+                    },
+                    "organization_id": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "uuid4"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Organization Id"
+                    },
+                    "product_id": {
+                        "type": "string",
+                        "format": "uuid4",
+                        "title": "Product Id"
+                    },
+                    "price_id": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "uuid4"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Price Id"
+                    },
+                    "product": {
+                        "$ref": "#/components/schemas/UserSubscriptionProduct"
+                    },
+                    "price": {
+                        "anyOf": [
+                            {
+                                "oneOf": [
+                                    {
+                                        "$ref": "#/components/schemas/ProductPriceRecurring"
+                                    },
+                                    {
+                                        "$ref": "#/components/schemas/ProductPriceOneTime"
+                                    }
+                                ],
+                                "discriminator": {
+                                    "propertyName": "type",
+                                    "mapping": {
+                                        "one_time": "#/components/schemas/ProductPriceOneTime",
+                                        "recurring": "#/components/schemas/ProductPriceRecurring"
+                                    }
+                                }
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Price"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "created_at",
+                    "id",
+                    "status",
+                    "current_period_start",
+                    "cancel_at_period_end",
+                    "user_id",
+                    "product_id",
+                    "product"
+                ],
+                "title": "UserSubscription"
+            },
+            "UserSubscriptionProduct": {
+                "properties": {
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "title": "Created At",
+                        "description": "Creation timestamp of the object."
+                    },
+                    "modified_at": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "date-time"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Modified At",
+                        "description": "Last modification timestamp of the object."
+                    },
+                    "id": {
+                        "type": "string",
+                        "format": "uuid4",
+                        "title": "Id",
+                        "description": "The ID of the product."
+                    },
+                    "name": {
+                        "type": "string",
+                        "title": "Name",
+                        "description": "The name of the product."
+                    },
+                    "description": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Description",
+                        "description": "The description of the product."
+                    },
+                    "is_recurring": {
+                        "type": "boolean",
+                        "title": "Is Recurring",
+                        "description": "Whether the product is a subscription tier."
+                    },
+                    "is_archived": {
+                        "type": "boolean",
+                        "title": "Is Archived",
+                        "description": "Whether the product is archived and no longer available."
+                    },
+                    "organization_id": {
+                        "type": "string",
+                        "format": "uuid4",
+                        "title": "Organization Id",
+                        "description": "The ID of the organization owning the product."
+                    },
+                    "type": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/components/schemas/SubscriptionTierType"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "deprecated": true
+                    },
+                    "is_highlighted": {
+                        "anyOf": [
+                            {
+                                "type": "boolean"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Is Highlighted",
+                        "deprecated": true
+                    },
+                    "prices": {
+                        "items": {
+                            "oneOf": [
+                                {
+                                    "$ref": "#/components/schemas/ProductPriceRecurring"
+                                },
+                                {
+                                    "$ref": "#/components/schemas/ProductPriceOneTime"
+                                }
+                            ],
+                            "discriminator": {
+                                "propertyName": "type",
+                                "mapping": {
+                                    "one_time": "#/components/schemas/ProductPriceOneTime",
+                                    "recurring": "#/components/schemas/ProductPriceRecurring"
+                                }
+                            }
+                        },
+                        "type": "array",
+                        "title": "Prices",
+                        "description": "List of available prices for this product."
+                    },
+                    "benefits": {
+                        "items": {
+                            "anyOf": [
+                                {
+                                    "$ref": "#/components/schemas/BenefitArticlesSubscriber"
+                                },
+                                {
+                                    "$ref": "#/components/schemas/BenefitAdsSubscriber"
+                                },
+                                {
+                                    "$ref": "#/components/schemas/BenefitDiscordSubscriber"
+                                },
+                                {
+                                    "$ref": "#/components/schemas/BenefitCustomSubscriber"
+                                },
+                                {
+                                    "$ref": "#/components/schemas/BenefitGitHubRepositorySubscriber"
+                                }
+                            ]
+                        },
+                        "type": "array",
+                        "title": "BenefitSubscriber"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "created_at",
+                    "id",
+                    "name",
+                    "is_recurring",
+                    "is_archived",
+                    "organization_id",
+                    "prices",
+                    "benefits"
+                ],
+                "title": "UserSubscriptionProduct"
+            },
+            "UserSubscriptionUpdate": {
+                "properties": {
+                    "product_price_id": {
+                        "type": "string",
+                        "format": "uuid4",
+                        "title": "Product Price Id"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "product_price_id"
+                ],
+                "title": "UserSubscriptionUpdate"
             },
             "UserUpdateSettings": {
                 "properties": {

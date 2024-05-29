@@ -270,6 +270,64 @@ export interface AdvertisementDisplay {
     width?: number;
 }
 /**
+ * 
+ * @export
+ * @interface AlreadyCanceledSubscription
+ */
+export interface AlreadyCanceledSubscription {
+    /**
+     * 
+     * @type {string}
+     * @memberof AlreadyCanceledSubscription
+     */
+    type: AlreadyCanceledSubscriptionTypeEnum;
+    /**
+     * 
+     * @type {string}
+     * @memberof AlreadyCanceledSubscription
+     */
+    detail: string;
+}
+
+
+/**
+ * @export
+ */
+export const AlreadyCanceledSubscriptionTypeEnum = {
+    ALREADY_CANCELED_SUBSCRIPTION: 'AlreadyCanceledSubscription'
+} as const;
+export type AlreadyCanceledSubscriptionTypeEnum = typeof AlreadyCanceledSubscriptionTypeEnum[keyof typeof AlreadyCanceledSubscriptionTypeEnum];
+
+/**
+ * 
+ * @export
+ * @interface AlreadySubscribed
+ */
+export interface AlreadySubscribed {
+    /**
+     * 
+     * @type {string}
+     * @memberof AlreadySubscribed
+     */
+    type: AlreadySubscribedTypeEnum;
+    /**
+     * 
+     * @type {string}
+     * @memberof AlreadySubscribed
+     */
+    detail: string;
+}
+
+
+/**
+ * @export
+ */
+export const AlreadySubscribedTypeEnum = {
+    ALREADY_SUBSCRIBED: 'AlreadySubscribed'
+} as const;
+export type AlreadySubscribedTypeEnum = typeof AlreadySubscribedTypeEnum[keyof typeof AlreadySubscribedTypeEnum];
+
+/**
  * App Permissions
  * 
  * The permissions granted to the user access token.
@@ -4460,22 +4518,32 @@ export interface ExternalGitHubPullRequestReference {
 /**
  * 
  * @export
- * @interface FreeSubscriptionCreate
+ * @interface FreeSubscriptionUpgrade
  */
-export interface FreeSubscriptionCreate {
-    /**
-     * ID of the free Subscription Tier to subscribe to.
-     * @type {string}
-     * @memberof FreeSubscriptionCreate
-     */
-    tier_id: string;
+export interface FreeSubscriptionUpgrade {
     /**
      * 
      * @type {string}
-     * @memberof FreeSubscriptionCreate
+     * @memberof FreeSubscriptionUpgrade
      */
-    customer_email?: string;
+    type: FreeSubscriptionUpgradeTypeEnum;
+    /**
+     * 
+     * @type {string}
+     * @memberof FreeSubscriptionUpgrade
+     */
+    detail: string;
 }
+
+
+/**
+ * @export
+ */
+export const FreeSubscriptionUpgradeTypeEnum = {
+    FREE_SUBSCRIPTION_UPGRADE: 'FreeSubscriptionUpgrade'
+} as const;
+export type FreeSubscriptionUpgradeTypeEnum = typeof FreeSubscriptionUpgradeTypeEnum[keyof typeof FreeSubscriptionUpgradeTypeEnum];
+
 /**
  * 
  * @export
@@ -5367,25 +5435,6 @@ export interface ListResourceSubscription {
 /**
  * 
  * @export
- * @interface ListResourceSubscriptionSubscriber
- */
-export interface ListResourceSubscriptionSubscriber {
-    /**
-     * 
-     * @type {Array<SubscriptionSubscriber>}
-     * @memberof ListResourceSubscriptionSubscriber
-     */
-    items?: Array<SubscriptionSubscriber>;
-    /**
-     * 
-     * @type {Pagination}
-     * @memberof ListResourceSubscriptionSubscriber
-     */
-    pagination: Pagination;
-}
-/**
- * 
- * @export
  * @interface ListResourceSubscriptionSummary
  */
 export interface ListResourceSubscriptionSummary {
@@ -5456,6 +5505,44 @@ export interface ListResourceUnionBenefitArticlesBenefitAdsBenefitCustomBenefitD
      * 
      * @type {Pagination}
      * @memberof ListResourceUnionBenefitArticlesBenefitAdsBenefitCustomBenefitDiscordBenefitGitHubRepository
+     */
+    pagination: Pagination;
+}
+/**
+ * 
+ * @export
+ * @interface ListResourceUserOrder
+ */
+export interface ListResourceUserOrder {
+    /**
+     * 
+     * @type {Array<UserOrder>}
+     * @memberof ListResourceUserOrder
+     */
+    items?: Array<UserOrder>;
+    /**
+     * 
+     * @type {Pagination}
+     * @memberof ListResourceUserOrder
+     */
+    pagination: Pagination;
+}
+/**
+ * 
+ * @export
+ * @interface ListResourceUserSubscription
+ */
+export interface ListResourceUserSubscription {
+    /**
+     * 
+     * @type {Array<UserSubscription>}
+     * @memberof ListResourceUserSubscription
+     */
+    items?: Array<UserSubscription>;
+    /**
+     * 
+     * @type {Pagination}
+     * @memberof ListResourceUserSubscription
      */
     pagination: Pagination;
 }
@@ -8893,85 +8980,6 @@ export const ProductRecurringCreateTypeEnum = {
 export type ProductRecurringCreateTypeEnum = typeof ProductRecurringCreateTypeEnum[keyof typeof ProductRecurringCreateTypeEnum];
 
 /**
- * 
- * @export
- * @interface ProductSubscriber
- */
-export interface ProductSubscriber {
-    /**
-     * Creation timestamp of the object.
-     * @type {string}
-     * @memberof ProductSubscriber
-     */
-    created_at: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof ProductSubscriber
-     */
-    modified_at?: string;
-    /**
-     * The ID of the product.
-     * @type {string}
-     * @memberof ProductSubscriber
-     */
-    id: string;
-    /**
-     * The name of the product.
-     * @type {string}
-     * @memberof ProductSubscriber
-     */
-    name: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof ProductSubscriber
-     */
-    description?: string;
-    /**
-     * Whether the product is a subscription tier.
-     * @type {boolean}
-     * @memberof ProductSubscriber
-     */
-    is_recurring: boolean;
-    /**
-     * Whether the product is archived and no longer available.
-     * @type {boolean}
-     * @memberof ProductSubscriber
-     */
-    is_archived: boolean;
-    /**
-     * The ID of the organization owning the product.
-     * @type {string}
-     * @memberof ProductSubscriber
-     */
-    organization_id: string;
-    /**
-     * 
-     * @type {SubscriptionTierType}
-     * @memberof ProductSubscriber
-     */
-    type?: SubscriptionTierType;
-    /**
-     * 
-     * @type {boolean}
-     * @memberof ProductSubscriber
-     */
-    is_highlighted?: boolean;
-    /**
-     * List of available prices for this product.
-     * @type {Array<PricesInner>}
-     * @memberof ProductSubscriber
-     */
-    prices: Array<PricesInner>;
-    /**
-     * 
-     * @type {Array<BenefitSubscriberInner>}
-     * @memberof ProductSubscriber
-     */
-    benefits: Array<BenefitSubscriberInner>;
-}
-/**
  * Schema to update a product.
  * @export
  * @interface ProductUpdate
@@ -9768,15 +9776,16 @@ export const Scope = {
     ORGANIZATIONSWRITE: 'organizations:write',
     CREATORSUBSCRIPTIONSREAD: 'creator:subscriptions:read',
     CREATORSUBSCRIPTIONSWRITE: 'creator:subscriptions:write',
-    BACKERSUBSCRIPTIONSREAD: 'backer:subscriptions:read',
-    BACKERSUBSCRIPTIONSWRITE: 'backer:subscriptions:write',
     CREATORPRODUCTSREAD: 'creator:products:read',
     CREATORPRODUCTSWRITE: 'creator:products:write',
     CREATORBENEFITSREAD: 'creator:benefits:read',
     CREATORBENEFITSWRITE: 'creator:benefits:write',
     ORDERSREAD: 'orders:read',
     WEBHOOKSREAD: 'webhooks:read',
-    WEBHOOKSWRITE: 'webhooks:write'
+    WEBHOOKSWRITE: 'webhooks:write',
+    USERORDERSREAD: 'user:orders:read',
+    USERSUBSCRIPTIONSREAD: 'user:subscriptions:read',
+    USERSUBSCRIPTIONSWRITE: 'user:subscriptions:write'
 } as const;
 export type Scope = typeof Scope[keyof typeof Scope];
 
@@ -9897,10 +9906,10 @@ export interface Subscription {
     product: Product;
     /**
      * 
-     * @type {SubscriptionSubscriberPrice}
+     * @type {SubscriptionSummaryPrice}
      * @memberof Subscription
      */
-    price?: SubscriptionSubscriberPrice;
+    price?: SubscriptionSummaryPrice;
 }
 /**
  * 
@@ -9984,115 +9993,6 @@ export type SubscriptionStatus = typeof SubscriptionStatus[keyof typeof Subscrip
 /**
  * 
  * @export
- * @interface SubscriptionSubscriber
- */
-export interface SubscriptionSubscriber {
-    /**
-     * Creation timestamp of the object.
-     * @type {string}
-     * @memberof SubscriptionSubscriber
-     */
-    created_at: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionSubscriber
-     */
-    modified_at?: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionSubscriber
-     */
-    id: string;
-    /**
-     * 
-     * @type {SubscriptionStatus}
-     * @memberof SubscriptionSubscriber
-     */
-    status: SubscriptionStatus;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionSubscriber
-     */
-    current_period_start: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionSubscriber
-     */
-    current_period_end?: string;
-    /**
-     * 
-     * @type {boolean}
-     * @memberof SubscriptionSubscriber
-     */
-    cancel_at_period_end: boolean;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionSubscriber
-     */
-    started_at?: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionSubscriber
-     */
-    ended_at?: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionSubscriber
-     */
-    user_id: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionSubscriber
-     */
-    organization_id?: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionSubscriber
-     */
-    product_id: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionSubscriber
-     */
-    price_id?: string;
-    /**
-     * 
-     * @type {ProductSubscriber}
-     * @memberof SubscriptionSubscriber
-     */
-    product: ProductSubscriber;
-    /**
-     * 
-     * @type {SubscriptionOrganization}
-     * @memberof SubscriptionSubscriber
-     */
-    organization?: SubscriptionOrganization;
-    /**
-     * 
-     * @type {SubscriptionSubscriberPrice}
-     * @memberof SubscriptionSubscriber
-     */
-    price?: SubscriptionSubscriberPrice;
-}
-/**
- * @type SubscriptionSubscriberPrice
- * 
- * @export
- */
-export type SubscriptionSubscriberPrice = { type: 'one_time' } & ProductPriceOneTime | { type: 'recurring' } & ProductPriceRecurring;
-/**
- * 
- * @export
  * @interface SubscriptionSummary
  */
 export interface SubscriptionSummary {
@@ -10116,11 +10016,17 @@ export interface SubscriptionSummary {
     product: Product;
     /**
      * 
-     * @type {SubscriptionSubscriberPrice}
+     * @type {SubscriptionSummaryPrice}
      * @memberof SubscriptionSummary
      */
-    price?: SubscriptionSubscriberPrice;
+    price?: SubscriptionSummaryPrice;
 }
+/**
+ * @type SubscriptionSummaryPrice
+ * 
+ * @export
+ */
+export type SubscriptionSummaryPrice = { type: 'one_time' } & ProductPriceOneTime | { type: 'recurring' } & ProductPriceRecurring;
 
 /**
  * 
@@ -10133,25 +10039,6 @@ export const SubscriptionTierType = {
 } as const;
 export type SubscriptionTierType = typeof SubscriptionTierType[keyof typeof SubscriptionTierType];
 
-/**
- * 
- * @export
- * @interface SubscriptionUpgrade
- */
-export interface SubscriptionUpgrade {
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionUpgrade
-     */
-    subscription_tier_id: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionUpgrade
-     */
-    price_id: string;
-}
 /**
  * 
  * @export
@@ -11452,6 +11339,275 @@ export interface UserBase {
 /**
  * 
  * @export
+ * @interface UserFreeSubscriptionCreate
+ */
+export interface UserFreeSubscriptionCreate {
+    /**
+     * ID of the free tier to subscribe to.
+     * @type {string}
+     * @memberof UserFreeSubscriptionCreate
+     */
+    product_id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof UserFreeSubscriptionCreate
+     */
+    customer_email?: string;
+}
+/**
+ * 
+ * @export
+ * @interface UserOrder
+ */
+export interface UserOrder {
+    /**
+     * Creation timestamp of the object.
+     * @type {string}
+     * @memberof UserOrder
+     */
+    created_at: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof UserOrder
+     */
+    modified_at?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof UserOrder
+     */
+    id: string;
+    /**
+     * 
+     * @type {number}
+     * @memberof UserOrder
+     */
+    amount: number;
+    /**
+     * 
+     * @type {number}
+     * @memberof UserOrder
+     */
+    tax_amount: number;
+    /**
+     * 
+     * @type {string}
+     * @memberof UserOrder
+     */
+    currency: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof UserOrder
+     */
+    user_id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof UserOrder
+     */
+    product_id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof UserOrder
+     */
+    product_price_id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof UserOrder
+     */
+    subscription_id?: string;
+    /**
+     * 
+     * @type {UserOrderProduct}
+     * @memberof UserOrder
+     */
+    product: UserOrderProduct;
+    /**
+     * 
+     * @type {ProductPrice}
+     * @memberof UserOrder
+     */
+    product_price: ProductPrice;
+    /**
+     * 
+     * @type {UserOrderSubscription}
+     * @memberof UserOrder
+     */
+    subscription?: UserOrderSubscription;
+}
+/**
+ * Order's invoice data.
+ * @export
+ * @interface UserOrderInvoice
+ */
+export interface UserOrderInvoice {
+    /**
+     * The URL to the invoice.
+     * @type {string}
+     * @memberof UserOrderInvoice
+     */
+    url: string;
+}
+/**
+ * 
+ * @export
+ * @interface UserOrderProduct
+ */
+export interface UserOrderProduct {
+    /**
+     * Creation timestamp of the object.
+     * @type {string}
+     * @memberof UserOrderProduct
+     */
+    created_at: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof UserOrderProduct
+     */
+    modified_at?: string;
+    /**
+     * The ID of the product.
+     * @type {string}
+     * @memberof UserOrderProduct
+     */
+    id: string;
+    /**
+     * The name of the product.
+     * @type {string}
+     * @memberof UserOrderProduct
+     */
+    name: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof UserOrderProduct
+     */
+    description?: string;
+    /**
+     * Whether the product is a subscription tier.
+     * @type {boolean}
+     * @memberof UserOrderProduct
+     */
+    is_recurring: boolean;
+    /**
+     * Whether the product is archived and no longer available.
+     * @type {boolean}
+     * @memberof UserOrderProduct
+     */
+    is_archived: boolean;
+    /**
+     * The ID of the organization owning the product.
+     * @type {string}
+     * @memberof UserOrderProduct
+     */
+    organization_id: string;
+    /**
+     * 
+     * @type {SubscriptionTierType}
+     * @memberof UserOrderProduct
+     */
+    type?: SubscriptionTierType;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof UserOrderProduct
+     */
+    is_highlighted?: boolean;
+}
+/**
+ * 
+ * @export
+ * @interface UserOrderSubscription
+ */
+export interface UserOrderSubscription {
+    /**
+     * Creation timestamp of the object.
+     * @type {string}
+     * @memberof UserOrderSubscription
+     */
+    created_at: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof UserOrderSubscription
+     */
+    modified_at?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof UserOrderSubscription
+     */
+    id: string;
+    /**
+     * 
+     * @type {SubscriptionStatus}
+     * @memberof UserOrderSubscription
+     */
+    status: SubscriptionStatus;
+    /**
+     * 
+     * @type {string}
+     * @memberof UserOrderSubscription
+     */
+    current_period_start: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof UserOrderSubscription
+     */
+    current_period_end?: string;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof UserOrderSubscription
+     */
+    cancel_at_period_end: boolean;
+    /**
+     * 
+     * @type {string}
+     * @memberof UserOrderSubscription
+     */
+    started_at?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof UserOrderSubscription
+     */
+    ended_at?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof UserOrderSubscription
+     */
+    user_id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof UserOrderSubscription
+     */
+    organization_id?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof UserOrderSubscription
+     */
+    product_id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof UserOrderSubscription
+     */
+    price_id?: string;
+}
+/**
+ * 
+ * @export
  * @interface UserRead
  */
 export interface UserRead {
@@ -11578,6 +11734,195 @@ export interface UserStripePortalSession {
      * @memberof UserStripePortalSession
      */
     url: string;
+}
+/**
+ * 
+ * @export
+ * @interface UserSubscription
+ */
+export interface UserSubscription {
+    /**
+     * Creation timestamp of the object.
+     * @type {string}
+     * @memberof UserSubscription
+     */
+    created_at: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof UserSubscription
+     */
+    modified_at?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof UserSubscription
+     */
+    id: string;
+    /**
+     * 
+     * @type {SubscriptionStatus}
+     * @memberof UserSubscription
+     */
+    status: SubscriptionStatus;
+    /**
+     * 
+     * @type {string}
+     * @memberof UserSubscription
+     */
+    current_period_start: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof UserSubscription
+     */
+    current_period_end?: string;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof UserSubscription
+     */
+    cancel_at_period_end: boolean;
+    /**
+     * 
+     * @type {string}
+     * @memberof UserSubscription
+     */
+    started_at?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof UserSubscription
+     */
+    ended_at?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof UserSubscription
+     */
+    user_id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof UserSubscription
+     */
+    organization_id?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof UserSubscription
+     */
+    product_id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof UserSubscription
+     */
+    price_id?: string;
+    /**
+     * 
+     * @type {UserSubscriptionProduct}
+     * @memberof UserSubscription
+     */
+    product: UserSubscriptionProduct;
+    /**
+     * 
+     * @type {SubscriptionSummaryPrice}
+     * @memberof UserSubscription
+     */
+    price?: SubscriptionSummaryPrice;
+}
+/**
+ * 
+ * @export
+ * @interface UserSubscriptionProduct
+ */
+export interface UserSubscriptionProduct {
+    /**
+     * Creation timestamp of the object.
+     * @type {string}
+     * @memberof UserSubscriptionProduct
+     */
+    created_at: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof UserSubscriptionProduct
+     */
+    modified_at?: string;
+    /**
+     * The ID of the product.
+     * @type {string}
+     * @memberof UserSubscriptionProduct
+     */
+    id: string;
+    /**
+     * The name of the product.
+     * @type {string}
+     * @memberof UserSubscriptionProduct
+     */
+    name: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof UserSubscriptionProduct
+     */
+    description?: string;
+    /**
+     * Whether the product is a subscription tier.
+     * @type {boolean}
+     * @memberof UserSubscriptionProduct
+     */
+    is_recurring: boolean;
+    /**
+     * Whether the product is archived and no longer available.
+     * @type {boolean}
+     * @memberof UserSubscriptionProduct
+     */
+    is_archived: boolean;
+    /**
+     * The ID of the organization owning the product.
+     * @type {string}
+     * @memberof UserSubscriptionProduct
+     */
+    organization_id: string;
+    /**
+     * 
+     * @type {SubscriptionTierType}
+     * @memberof UserSubscriptionProduct
+     */
+    type?: SubscriptionTierType;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof UserSubscriptionProduct
+     */
+    is_highlighted?: boolean;
+    /**
+     * List of available prices for this product.
+     * @type {Array<PricesInner>}
+     * @memberof UserSubscriptionProduct
+     */
+    prices: Array<PricesInner>;
+    /**
+     * 
+     * @type {Array<BenefitSubscriberInner>}
+     * @memberof UserSubscriptionProduct
+     */
+    benefits: Array<BenefitSubscriberInner>;
+}
+/**
+ * 
+ * @export
+ * @interface UserSubscriptionUpdate
+ */
+export interface UserSubscriptionUpdate {
+    /**
+     * 
+     * @type {string}
+     * @memberof UserSubscriptionUpdate
+     */
+    product_price_id: string;
 }
 /**
  * 

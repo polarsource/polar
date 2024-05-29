@@ -1,5 +1,11 @@
 # @polar-sh/sdk
 
+## 0.5.1
+
+### Patch Changes
+
+- d93b98b: Generated API client
+
 ## 0.5.0
 
 ### Minor Changes

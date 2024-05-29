@@ -43,7 +43,7 @@ class CheckoutService:
                 [
                     {
                         "type": "value_error",
-                        "loc": ("body", "price_id"),
+                        "loc": ("body", "product_price_id"),
                         "msg": "Price does not exist.",
                         "input": create_schema.product_price_id,
                     }
@@ -55,7 +55,7 @@ class CheckoutService:
                 [
                     {
                         "type": "value_error",
-                        "loc": ("body", "price_id"),
+                        "loc": ("body", "product_price_id"),
                         "msg": "Price is archived.",
                         "input": create_schema.product_price_id,
                     }
@@ -68,7 +68,7 @@ class CheckoutService:
                 [
                     {
                         "type": "value_error",
-                        "loc": ("body", "price_id"),
+                        "loc": ("body", "product_price_id"),
                         "msg": "Product is archived.",
                         "input": create_schema.product_price_id,
                     }

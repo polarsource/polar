@@ -5,9 +5,7 @@ from pydantic import UUID4, Field
 from polar.enums import Platforms
 from polar.kit.schemas import EmailStrDNS, Schema, TimestampedSchema
 from polar.models.subscription import SubscriptionStatus
-from polar.product.schemas import Product, ProductPrice, ProductSubscriber
-
-# Subscriptions
+from polar.product.schemas import Product, ProductPrice
 
 
 class SubscriptionPublicUser(Schema):
@@ -48,12 +46,6 @@ class Subscription(SubscriptionBase):
     price: ProductPrice | None = None
 
 
-class SubscriptionSubscriber(SubscriptionBase):
-    product: ProductSubscriber
-    organization: SubscriptionOrganization | None = None
-    price: ProductPrice | None = None
-
-
 class FreeSubscriptionCreate(Schema):
     tier_id: UUID4 = Field(
         ...,
@@ -66,11 +58,6 @@ class FreeSubscriptionCreate(Schema):
             "This field is required if the API is called outside the Polar app."
         ),
     )
-
-
-class SubscriptionUpgrade(Schema):
-    subscription_tier_id: UUID4
-    price_id: UUID4
 
 
 class SubscriptionCreateEmail(Schema):

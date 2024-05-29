@@ -1,0 +1,150 @@
+from typing import Annotated
+
+from fastapi import Depends, Path, Query
+from pydantic import UUID4
+
+from polar.exceptions import ResourceNotFound
+from polar.kit.db.postgres import AsyncSession
+from polar.kit.pagination import ListResource, PaginationParamsQuery
+from polar.kit.routing import APIRouter
+from polar.kit.sorting import Sorting, SortingGetter
+from polar.models import Subscription
+from polar.postgres import get_db_session
+from polar.tags.api import Tags
+
+from .. import auth
+from ..schemas.subscription import UserSubscription, UserSubscriptionUpdate
+from ..service.subscription import (
+    AlreadyCanceledSubscription,
+    FreeSubscriptionUpgrade,
+    SortProperty,
+)
+from ..service.subscription import user_subscription as user_subscription_service
+
+router = APIRouter(prefix="/subscriptions")
+
+SubscriptionID = Annotated[UUID4, Path(description="The subscription ID.")]
+SubscriptionNotFound = {
+    "description": "Subscription not found.",
+    "model": ResourceNotFound.schema(),
+}
+
+ListSorting = Annotated[
+    list[Sorting[SortProperty]],
+    Depends(SortingGetter(SortProperty, ["-started_at"])),
+]
+
+
+@router.get("/", response_model=ListResource[UserSubscription], tags=[Tags.PUBLIC])
+async def list_subscriptions(
+    auth_subject: auth.UserSubscriptionsRead,
+    pagination: PaginationParamsQuery,
+    sorting: ListSorting,
+    organization_id: UUID4 | None = Query(
+        None, description="Filter by organization ID."
+    ),
+    product_id: UUID4 | None = Query(None, description="Filter by product ID."),
+    active: bool | None = Query(
+        None,
+        description=("Filter by active or cancelled subscription."),
+    ),
+    session: AsyncSession = Depends(get_db_session),
+) -> ListResource[UserSubscription]:
+    """List my subscriptions."""
+    results, count = await user_subscription_service.list(
+        session,
+        auth_subject,
+        organization_id=organization_id,
+        product_id=product_id,
+        active=active,
+        pagination=pagination,
+        sorting=sorting,
+    )
+
+    return ListResource.from_paginated_results(
+        [UserSubscription.model_validate(result) for result in results],
+        count,
+        pagination,
+    )
+
+
+@router.get(
+    "/{id}",
+    response_model=UserSubscription,
+    tags=[Tags.PUBLIC],
+    responses={404: SubscriptionNotFound},
+)
+async def get_subscription(
+    id: SubscriptionID,
+    auth_subject: auth.UserSubscriptionsRead,
+    session: AsyncSession = Depends(get_db_session),
+) -> Subscription:
+    """Get a subscription by ID."""
+    subscription = await user_subscription_service.get_by_id(session, auth_subject, id)
+
+    if subscription is None:
+        raise ResourceNotFound()
+
+    return subscription
+
+
+@router.patch(
+    "/{id}",
+    response_model=UserSubscription,
+    tags=[Tags.PUBLIC],
+    responses={
+        200: {"description": "Subscription updated."},
+        403: {
+            "description": (
+                "Can't upgrade from free to paid subscription tier to paid directly."
+            ),
+            "model": FreeSubscriptionUpgrade.schema(),
+        },
+        404: SubscriptionNotFound,
+    },
+)
+async def update_subscription(
+    id: SubscriptionID,
+    subscription_update: UserSubscriptionUpdate,
+    auth_subject: auth.UserSubscriptionsWrite,
+    session: AsyncSession = Depends(get_db_session),
+) -> Subscription:
+    """Update a subscription."""
+    subscription = await user_subscription_service.get_by_id(session, auth_subject, id)
+
+    if subscription is None:
+        raise ResourceNotFound()
+
+    return await user_subscription_service.update(
+        session, subscription=subscription, subscription_update=subscription_update
+    )
+
+
+@router.delete(
+    "/{id}",
+    response_model=UserSubscription,
+    tags=[Tags.PUBLIC],
+    responses={
+        200: {"description": "Subscription canceled."},
+        403: {
+            "description": (
+                "This subscription is already canceled "
+                "or will be at the end of the period."
+            ),
+            "model": AlreadyCanceledSubscription.schema(),
+        },
+        404: SubscriptionNotFound,
+    },
+)
+async def cancel_subscription(
+    id: SubscriptionID,
+    auth_subject: auth.UserSubscriptionsWrite,
+    session: AsyncSession = Depends(get_db_session),
+) -> Subscription:
+    """Cancel a subscription."""
+    subscription = await user_subscription_service.get_by_id(session, auth_subject, id)
+
+    if subscription is None:
+        raise ResourceNotFound()
+
+    return await user_subscription_service.cancel(session, subscription=subscription)

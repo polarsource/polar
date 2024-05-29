@@ -20,8 +20,6 @@ class Scope(StrEnum):
 
     creator_subscriptions_read = "creator:subscriptions:read"
     creator_subscriptions_write = "creator:subscriptions:write"
-    backer_subscriptions_read = "backer:subscriptions:read"
-    backer_subscriptions_write = "backer:subscriptions:write"
 
     creator_products_read = "creator:products:read"
     creator_products_write = "creator:products:write"
@@ -35,6 +33,8 @@ class Scope(StrEnum):
     webhooks_write = "webhooks:write"
 
     user_orders_read = "user:orders:read"
+    user_subscriptions_read = "user:subscriptions:read"
+    user_subscriptions_write = "user:subscriptions:write"
 
     @classmethod
     def __get_pydantic_json_schema__(
@@ -57,8 +57,6 @@ SCOPES_SUPPORTED_DISPLAY_NAMES: dict[Scope, str] = {
     Scope.user_read: "User Read",
     Scope.creator_subscriptions_read: "Read subscription tiers and subscribers",
     Scope.creator_subscriptions_write: "Create or modify subscription tiers and subscribers",
-    Scope.backer_subscriptions_read: "Read subscriptions",
-    Scope.backer_subscriptions_write: "Create or modify subscriptions",
     Scope.creator_benefits_read: "Read benefits",
     Scope.creator_benefits_write: "Create or modify benefits",
     Scope.webhooks_read: "Read webhooks",

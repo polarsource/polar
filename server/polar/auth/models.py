@@ -46,6 +46,20 @@ def is_user(auth_subject: AuthSubject[S]) -> TypeGuard[AuthSubject[User]]:
     return isinstance(auth_subject.subject, User)
 
 
+def is_direct_user(auth_subject: AuthSubject[S]) -> TypeGuard[AuthSubject[User]]:
+    """
+    Whether we can trust this subject to be a user acting directly.
+
+    Useful when creating checkout sessions or subscriptions, where we need to
+    be sure we can tie it to the calling user (i.e., not being a creator with
+    a PAT).
+    """
+    return is_user(auth_subject) and auth_subject.method in {
+        AuthMethod.COOKIE,
+        AuthMethod.OAUTH2_ACCESS_TOKEN,
+    }
+
+
 def is_organization(
     auth_subject: AuthSubject[S],
 ) -> TypeGuard[AuthSubject[Organization]]:

@@ -1,4 +1,3 @@
-import uuid
 from datetime import UTC, date, datetime, timedelta
 from unittest.mock import MagicMock, call
 
@@ -6,10 +5,9 @@ import pytest
 import stripe as stripe_lib
 from pytest_mock import MockerFixture
 
-from polar.auth.models import Anonymous, AuthSubject
+from polar.auth.models import AuthSubject
 from polar.authz.service import Authz
 from polar.config import settings
-from polar.exceptions import ResourceNotFound
 from polar.kit.pagination import PaginationParams
 from polar.models import (
     Account,
@@ -27,12 +25,9 @@ from polar.models.subscription import SubscriptionStatus
 from polar.models.transaction import PaymentProcessor, TransactionType
 from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession
-from polar.subscription.schemas import FreeSubscriptionCreate
 from polar.subscription.service import (
     AlreadySubscribed,
     AssociatedSubscriptionTierPriceDoesNotExist,
-    NotAFreeSubscriptionTier,
-    RequiredCustomerEmail,
     SubscriptionDoesNotExist,
 )
 from polar.subscription.service import subscription as subscription_service
@@ -127,178 +122,6 @@ def construct_stripe_invoice(
 @pytest.fixture
 def authz(session: AsyncSession) -> Authz:
     return Authz(session)
-
-
-@pytest.mark.asyncio
-class TestCreateFreeSubscription:
-    @pytest.mark.auth
-    async def test_not_existing_subscription_tier(
-        self, auth_subject: AuthSubject[User], session: AsyncSession
-    ) -> None:
-        # then
-        session.expunge_all()
-
-        with pytest.raises(ResourceNotFound):
-            await subscription_service.create_free_subscription(
-                session,
-                free_subscription_create=FreeSubscriptionCreate(
-                    tier_id=uuid.uuid4(), customer_email=None
-                ),
-                auth_subject=auth_subject,
-            )
-
-    @pytest.mark.auth
-    async def test_not_free_subscription_tier(
-        self,
-        auth_subject: AuthSubject[User],
-        session: AsyncSession,
-        product: Product,
-        user: User,
-    ) -> None:
-        # then
-        session.expunge_all()
-
-        with pytest.raises(NotAFreeSubscriptionTier):
-            await subscription_service.create_free_subscription(
-                session,
-                free_subscription_create=FreeSubscriptionCreate(
-                    tier_id=product.id, customer_email=None
-                ),
-                auth_subject=auth_subject,
-            )
-
-    async def test_already_subscribed_email(
-        self,
-        auth_subject: AuthSubject[Anonymous],
-        session: AsyncSession,
-        save_fixture: SaveFixture,
-        subscription_tier_free: Product,
-        user: User,
-    ) -> None:
-        await create_active_subscription(
-            save_fixture,
-            product=subscription_tier_free,
-            user=user,
-            stripe_subscription_id=None,
-        )
-
-        # then
-        session.expunge_all()
-
-        with pytest.raises(AlreadySubscribed):
-            await subscription_service.create_free_subscription(
-                session,
-                free_subscription_create=FreeSubscriptionCreate(
-                    tier_id=subscription_tier_free.id,
-                    customer_email=user.email,
-                ),
-                auth_subject=auth_subject,
-            )
-
-    @pytest.mark.auth
-    async def test_already_subscribed_user(
-        self,
-        auth_subject: AuthSubject[User],
-        session: AsyncSession,
-        save_fixture: SaveFixture,
-        subscription_tier_free: Product,
-        user: User,
-    ) -> None:
-        await create_active_subscription(
-            save_fixture,
-            product=subscription_tier_free,
-            user=user,
-            stripe_subscription_id=None,
-        )
-
-        # then
-        session.expunge_all()
-
-        with pytest.raises(AlreadySubscribed):
-            await subscription_service.create_free_subscription(
-                session,
-                free_subscription_create=FreeSubscriptionCreate(
-                    tier_id=subscription_tier_free.id, customer_email=None
-                ),
-                auth_subject=auth_subject,
-            )
-
-    async def test_new_user_no_customer_email(
-        self,
-        auth_subject: AuthSubject[Anonymous],
-        session: AsyncSession,
-        subscription_tier_free: Product,
-    ) -> None:
-        # then
-        session.expunge_all()
-
-        with pytest.raises(RequiredCustomerEmail):
-            await subscription_service.create_free_subscription(
-                session,
-                free_subscription_create=FreeSubscriptionCreate(
-                    tier_id=subscription_tier_free.id, customer_email=None
-                ),
-                auth_subject=auth_subject,
-            )
-
-    async def test_new_user(
-        self,
-        auth_subject: AuthSubject[Anonymous],
-        mocker: MockerFixture,
-        session: AsyncSession,
-        subscription_tier_free: Product,
-    ) -> None:
-        enqueue_benefits_grants_mock = mocker.patch.object(
-            subscription_service, "enqueue_benefits_grants"
-        )
-
-        # then
-        session.expunge_all()
-
-        subscription = await subscription_service.create_free_subscription(
-            session,
-            free_subscription_create=FreeSubscriptionCreate(
-                tier_id=subscription_tier_free.id,
-                customer_email="backer@example.com",
-            ),
-            auth_subject=auth_subject,
-        )
-        await session.flush()
-
-        assert subscription.product_id == subscription_tier_free.id
-        assert subscription.user.email == "backer@example.com"
-
-        enqueue_benefits_grants_mock.assert_called_once()
-
-    @pytest.mark.auth
-    async def test_authenticated_user(
-        self,
-        auth_subject: AuthSubject[User],
-        mocker: MockerFixture,
-        session: AsyncSession,
-        subscription_tier_free: Product,
-        user: User,
-    ) -> None:
-        enqueue_benefits_grants_mock = mocker.patch.object(
-            subscription_service, "enqueue_benefits_grants"
-        )
-
-        # then
-        session.expunge_all()
-
-        subscription = await subscription_service.create_free_subscription(
-            session,
-            free_subscription_create=FreeSubscriptionCreate(
-                tier_id=subscription_tier_free.id, customer_email=None
-            ),
-            auth_subject=auth_subject,
-        )
-        await session.flush()
-
-        assert subscription.product_id == subscription_tier_free.id
-        assert subscription.user_id == user.id
-
-        enqueue_benefits_grants_mock.assert_called_once()
 
 
 @pytest.mark.asyncio

@@ -1,6 +1,6 @@
 from datetime import date, datetime
 
-from pydantic import UUID4, Field
+from pydantic import UUID4
 
 from polar.enums import Platforms
 from polar.kit.schemas import EmailStrDNS, Schema, TimestampedSchema
@@ -44,20 +44,6 @@ class Subscription(SubscriptionBase):
     organization: SubscriptionOrganization | None = None
     product: Product
     price: ProductPrice | None = None
-
-
-class FreeSubscriptionCreate(Schema):
-    tier_id: UUID4 = Field(
-        ...,
-        description="ID of the free Subscription Tier to subscribe to.",
-    )
-    customer_email: EmailStrDNS | None = Field(
-        None,
-        description=(
-            "Email of your backer. "
-            "This field is required if the API is called outside the Polar app."
-        ),
-    )
 
 
 class SubscriptionCreateEmail(Schema):

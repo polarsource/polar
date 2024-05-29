@@ -24,15 +24,13 @@ from sqlalchemy import (
 from sqlalchemy.orm import contains_eager, joinedload
 
 from polar.auth.models import (
-    Anonymous,
-    AuthMethod,
     AuthSubject,
     is_organization,
     is_user,
 )
 from polar.config import settings
 from polar.enums import UserSignupType
-from polar.exceptions import PolarError, ResourceNotFound
+from polar.exceptions import PolarError
 from polar.integrations.loops.service import loops as loops_service
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.integrations.stripe.utils import get_expandable_id
@@ -76,7 +74,7 @@ from polar.worker import enqueue_job
 
 from ..product.service.product import product as product_service
 from ..product.service.product_price import product_price as product_price_service
-from .schemas import FreeSubscriptionCreate, SubscriptionsStatisticsPeriod
+from .schemas import SubscriptionsStatisticsPeriod
 
 
 class SubscriptionError(PolarError): ...
@@ -102,22 +100,6 @@ class SubscriptionDoesNotExist(SubscriptionError):
             f"but no associated Subscription exists."
         )
         super().__init__(message)
-
-
-class NotAFreeSubscriptionTier(SubscriptionError):
-    def __init__(self, subscription_tier_id: uuid.UUID) -> None:
-        self.subscription_tier_id = subscription_tier_id
-        message = (
-            "Can't directly create a subscription to a non-free subscription tier. "
-            "You should create a subscribe session."
-        )
-        super().__init__(message, 403)
-
-
-class RequiredCustomerEmail(SubscriptionError):
-    def __init__(self) -> None:
-        message = "The customer email is required."
-        super().__init__(message, 422)
 
 
 class AlreadySubscribed(SubscriptionError):
@@ -336,43 +318,6 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         result = await session.execute(statement)
 
         return list(result.scalars().all())
-
-    async def create_free_subscription(
-        self,
-        session: AsyncSession,
-        *,
-        free_subscription_create: FreeSubscriptionCreate,
-        auth_subject: AuthSubject[User | Anonymous],
-        signup_type: UserSignupType = UserSignupType.backer,
-    ) -> Subscription:
-        subscription_tier = await product_service.get(
-            session, free_subscription_create.tier_id
-        )
-
-        if subscription_tier is None:
-            raise ResourceNotFound()
-
-        if subscription_tier.type != SubscriptionTierType.free:
-            raise NotAFreeSubscriptionTier(subscription_tier.id)
-
-        user: User | None = None
-        # Set the user directly only from a cookie-based authentication!
-        # With the PAT, it's probably a call from the maintainer who wants to subscribe
-        # a backer from their own website
-        if is_user(auth_subject) and auth_subject.method == AuthMethod.COOKIE:
-            user = auth_subject.subject
-        else:
-            if free_subscription_create.customer_email is None:
-                raise RequiredCustomerEmail()
-            user = await user_service.get_by_email_or_signup(
-                session,
-                email=free_subscription_create.customer_email,
-                signup_type=signup_type,
-            )
-
-        return await self.create_arbitrary_subscription(
-            session, user=user, product=subscription_tier
-        )
 
     async def create_arbitrary_subscription(
         self,

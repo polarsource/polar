@@ -3,7 +3,11 @@ from typing import cast
 
 import stripe as stripe_lib
 
-from polar.auth.models import Anonymous, AuthMethod, AuthSubject, is_user
+from polar.auth.models import (
+    Anonymous,
+    AuthSubject,
+    is_direct_user,
+)
 from polar.checkout.schemas import Checkout, CheckoutCreate
 from polar.exceptions import PolarError, PolarRequestValidationError, ResourceNotFound
 from polar.integrations.stripe.schemas import ProductType
@@ -91,10 +95,7 @@ class CheckoutService:
                 metadata["subscription_id"] = str(free_subscription_upgrade.id)
 
         customer_options: dict[str, str] = {}
-        # Set the customer only from a cookie-based authentication!
-        # With the PAT, it's probably a call from the maintainer who wants to redirect
-        # the backer they bring from their own website.
-        if is_user(auth_subject) and auth_subject.method == AuthMethod.COOKIE:
+        if is_direct_user(auth_subject):
             user = auth_subject.subject
             metadata["user_id"] = str(user.id)
             if user.stripe_customer_id is not None:
@@ -176,7 +177,7 @@ class CheckoutService:
         Check that the user doesn't already have a subscription, unless it's on the
         free tier.
         """
-        if is_user(auth_subject) and auth_subject.method == AuthMethod.COOKIE:
+        if is_direct_user(auth_subject):
             existing_subscriptions = (
                 await subscription_service.get_active_user_subscriptions(
                     session,

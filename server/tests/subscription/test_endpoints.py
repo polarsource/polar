@@ -65,28 +65,6 @@ class TestSearchSubscriptions:
 
 
 @pytest.mark.asyncio
-@pytest.mark.http_auto_expunge
-class TestCreateFreeSubscription:
-    async def test_anonymous(
-        self,
-        client: AsyncClient,
-        subscription_tier_free: Product,
-    ) -> None:
-        response = await client.post(
-            "/api/v1/subscriptions/subscriptions/",
-            json={
-                "tier_id": str(subscription_tier_free.id),
-                "customer_email": "backer@example.com",
-            },
-        )
-
-        assert response.status_code == 201
-
-        json = response.json()
-        assert json["product_id"] == str(subscription_tier_free.id)
-
-
-@pytest.mark.asyncio
 class TestSearchSubscriptionsSummary:
     @pytest.mark.http_auto_expunge
     async def test_not_existing_organization(self, client: AsyncClient) -> None:

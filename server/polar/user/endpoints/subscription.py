@@ -10,10 +10,15 @@ from polar.kit.routing import APIRouter
 from polar.kit.sorting import Sorting, SortingGetter
 from polar.models import Subscription
 from polar.postgres import get_db_session
+from polar.subscription.service import AlreadySubscribed
 from polar.tags.api import Tags
 
 from .. import auth
-from ..schemas.subscription import UserSubscription, UserSubscriptionUpdate
+from ..schemas.subscription import (
+    UserFreeSubscriptionCreate,
+    UserSubscription,
+    UserSubscriptionUpdate,
+)
 from ..service.subscription import (
     AlreadyCanceledSubscription,
     FreeSubscriptionUpgrade,
@@ -86,6 +91,37 @@ async def get_subscription(
         raise ResourceNotFound()
 
     return subscription
+
+
+@router.post(
+    "/",
+    response_model=UserSubscription,
+    tags=[Tags.PUBLIC],
+    status_code=201,
+    responses={
+        201: {"description": "Subscription created."},
+        400: {
+            "description": (
+                "Already subscribed to one of the tier of this organization."
+            ),
+            "model": AlreadySubscribed.schema(),
+        },
+        404: SubscriptionNotFound,
+    },
+)
+async def create_subscription(
+    subscription_create: UserFreeSubscriptionCreate,
+    auth_subject: auth.UserSubscriptionsWriteOrAnonymous,
+    session: AsyncSession = Depends(get_db_session),
+) -> Subscription:
+    """
+    Create a subscription on a **free** tier.
+
+    If you want to subscribe to a paid tier, you need to create a checkout session.
+    """
+    return await user_subscription_service.create_free_subscription(
+        session, subscription_create=subscription_create, auth_subject=auth_subject
+    )
 
 
 @router.patch(

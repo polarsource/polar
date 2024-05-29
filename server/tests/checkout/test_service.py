@@ -200,7 +200,7 @@ class TestCreate:
             },
         )
 
-    @pytest.mark.auth(AuthSubjectFixture(method=AuthMethod.OAUTH2_ACCESS_TOKEN))
+    @pytest.mark.auth(AuthSubjectFixture(method=AuthMethod.PERSONAL_ACCESS_TOKEN))
     async def test_valid_token(
         self,
         auth_subject: AuthSubject[User],
@@ -252,7 +252,7 @@ class TestCreate:
             },
         )
 
-    @pytest.mark.auth(AuthSubjectFixture(method=AuthMethod.OAUTH2_ACCESS_TOKEN))
+    @pytest.mark.auth(AuthSubjectFixture(method=AuthMethod.PERSONAL_ACCESS_TOKEN))
     async def test_valid_token_customer_email(
         self,
         auth_subject: AuthSubject[User],

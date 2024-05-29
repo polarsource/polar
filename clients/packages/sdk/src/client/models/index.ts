@@ -5245,6 +5245,25 @@ export interface ListResourceOrganization {
 /**
  * 
  * @export
+ * @interface ListResourceOrganizationCustomer
+ */
+export interface ListResourceOrganizationCustomer {
+    /**
+     * 
+     * @type {Array<OrganizationCustomer>}
+     * @memberof ListResourceOrganizationCustomer
+     */
+    items?: Array<OrganizationCustomer>;
+    /**
+     * 
+     * @type {Pagination}
+     * @memberof ListResourceOrganizationCustomer
+     */
+    pagination: Pagination;
+}
+/**
+ * 
+ * @export
  * @interface ListResourceOrganizationMember
  */
 export interface ListResourceOrganizationMember {
@@ -5429,25 +5448,6 @@ export interface ListResourceSubscription {
      * 
      * @type {Pagination}
      * @memberof ListResourceSubscription
-     */
-    pagination: Pagination;
-}
-/**
- * 
- * @export
- * @interface ListResourceSubscriptionSummary
- */
-export interface ListResourceSubscriptionSummary {
-    /**
-     * 
-     * @type {Array<SubscriptionSummary>}
-     * @memberof ListResourceSubscriptionSummary
-     */
-    items?: Array<SubscriptionSummary>;
-    /**
-     * 
-     * @type {Pagination}
-     * @memberof ListResourceSubscriptionSummary
      */
     pagination: Pagination;
 }
@@ -7682,6 +7682,43 @@ export interface OrganizationCheckPermissionsInput {
 /**
  * 
  * @export
+ * @interface OrganizationCustomer
+ */
+export interface OrganizationCustomer {
+    /**
+     * 
+     * @type {string}
+     * @memberof OrganizationCustomer
+     */
+    public_name: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof OrganizationCustomer
+     */
+    github_username?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof OrganizationCustomer
+     */
+    avatar_url?: string;
+}
+
+/**
+ * 
+ * @export
+ */
+export const OrganizationCustomerType = {
+    SUBSCRIPTION: 'subscription',
+    ORDER: 'order',
+    DONATION: 'donation'
+} as const;
+export type OrganizationCustomerType = typeof OrganizationCustomerType[keyof typeof OrganizationCustomerType];
+
+/**
+ * 
+ * @export
  * @interface OrganizationFeatureSettings
  */
 export interface OrganizationFeatureSettings {
@@ -9906,10 +9943,10 @@ export interface Subscription {
     product: Product;
     /**
      * 
-     * @type {SubscriptionSummaryPrice}
+     * @type {UserSubscriptionPrice}
      * @memberof Subscription
      */
-    price?: SubscriptionSummaryPrice;
+    price?: UserSubscriptionPrice;
 }
 /**
  * 
@@ -9949,31 +9986,6 @@ export interface SubscriptionOrganization {
      */
     avatar_url: string;
 }
-/**
- * 
- * @export
- * @interface SubscriptionPublicUser
- */
-export interface SubscriptionPublicUser {
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionPublicUser
-     */
-    public_name: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionPublicUser
-     */
-    github_username?: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionPublicUser
-     */
-    avatar_url?: string;
-}
 
 /**
  * 
@@ -9990,43 +10002,6 @@ export const SubscriptionStatus = {
 } as const;
 export type SubscriptionStatus = typeof SubscriptionStatus[keyof typeof SubscriptionStatus];
 
-/**
- * 
- * @export
- * @interface SubscriptionSummary
- */
-export interface SubscriptionSummary {
-    /**
-     * 
-     * @type {SubscriptionPublicUser}
-     * @memberof SubscriptionSummary
-     */
-    user: SubscriptionPublicUser;
-    /**
-     * 
-     * @type {SubscriptionOrganization}
-     * @memberof SubscriptionSummary
-     */
-    organization?: SubscriptionOrganization;
-    /**
-     * 
-     * @type {Product}
-     * @memberof SubscriptionSummary
-     */
-    product: Product;
-    /**
-     * 
-     * @type {SubscriptionSummaryPrice}
-     * @memberof SubscriptionSummary
-     */
-    price?: SubscriptionSummaryPrice;
-}
-/**
- * @type SubscriptionSummaryPrice
- * 
- * @export
- */
-export type SubscriptionSummaryPrice = { type: 'one_time' } & ProductPriceOneTime | { type: 'recurring' } & ProductPriceRecurring;
 
 /**
  * 
@@ -10050,6 +10025,12 @@ export interface SubscriptionUser {
      * @type {string}
      * @memberof SubscriptionUser
      */
+    email: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof SubscriptionUser
+     */
     public_name: string;
     /**
      * 
@@ -10063,12 +10044,6 @@ export interface SubscriptionUser {
      * @memberof SubscriptionUser
      */
     avatar_url?: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionUser
-     */
-    email: string;
 }
 /**
  * 
@@ -11827,11 +11802,17 @@ export interface UserSubscription {
     product: UserSubscriptionProduct;
     /**
      * 
-     * @type {SubscriptionSummaryPrice}
+     * @type {UserSubscriptionPrice}
      * @memberof UserSubscription
      */
-    price?: SubscriptionSummaryPrice;
+    price?: UserSubscriptionPrice;
 }
+/**
+ * @type UserSubscriptionPrice
+ * 
+ * @export
+ */
+export type UserSubscriptionPrice = { type: 'one_time' } & ProductPriceOneTime | { type: 'recurring' } & ProductPriceRecurring;
 /**
  * 
  * @export

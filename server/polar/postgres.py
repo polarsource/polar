@@ -49,16 +49,35 @@ async def get_db_sessionmaker(
 
 
 async def get_db_session(
+    request: Request,
     sessionmaker: AsyncSessionMaker = Depends(get_db_sessionmaker),
 ) -> AsyncGenerator[AsyncSession, None]:
-    async with sessionmaker() as session:
-        try:
-            yield session
-        except:
-            await session.rollback()
-            raise
-        else:
-            await session.commit()
+    """
+    Generates a new session for the request
+    using the sessionmaker in the application state.
+
+    Note that we store it in the request state: this way, we make sure we only have
+    one session per request.
+
+    In normal circumstances, this is handled by FastAPI
+    dependency cache, but we discovered that when using the `Security` dependent
+    (which we do in our `Authenticator` dependency), FastAPI uses a different cache
+    key which include the security scopes. So, we ended up with multiple sessions.
+
+    Ref: https://github.com/tiangolo/fastapi/discussions/8421
+    """
+    if session := getattr(request.state, "session", None):
+        yield session
+    else:
+        async with sessionmaker() as session:
+            try:
+                request.state.session = session
+                yield session
+            except:
+                await session.rollback()
+                raise
+            else:
+                await session.commit()
 
 
 __all__ = [

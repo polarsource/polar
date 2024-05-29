@@ -18,10 +18,7 @@ from polar.kit.routing import APIRouter
 from polar.kit.sorting import Sorting, SortingGetter
 from polar.models import Subscription
 from polar.models.product import SubscriptionTierType
-from polar.organization.dependencies import (
-    ResolvedOptionalOrganization,
-    ResolvedOrganization,
-)
+from polar.organization.dependencies import ResolvedOrganization
 from polar.postgres import AsyncSession, get_db_session
 from polar.posthog import posthog
 from polar.tags.api import Tags
@@ -36,9 +33,7 @@ from .schemas import (
     SubscriptionCreateEmail,
     SubscriptionsImported,
     SubscriptionsStatistics,
-    SubscriptionSubscriber,
     SubscriptionSummary,
-    SubscriptionUpgrade,
 )
 from .schemas import Subscription as SubscriptionSchema
 from .service import AlreadySubscribed, SearchSortProperty
@@ -113,42 +108,6 @@ async def search_subscriptions(
 
     return ListResource.from_paginated_results(
         [SubscriptionSchema.model_validate(result) for result in results],
-        count,
-        pagination,
-    )
-
-
-@router.get(
-    "/subscriptions/subscribed",
-    response_model=ListResource[SubscriptionSubscriber],
-    tags=[Tags.PUBLIC],
-)
-async def search_subscribed_subscriptions(
-    auth_subject: auth.BackerSubscriptionsRead,
-    pagination: PaginationParamsQuery,
-    sorting: SearchSorting,
-    organization: ResolvedOptionalOrganization,
-    type: SubscriptionTierType | None = Query(None),
-    subscription_tier_id: UUID4 | None = Query(None),
-    subscriber_user_id: UUID4 | None = Query(None),
-    subscriber_organization_id: UUID4 | None = Query(None),
-    session: AsyncSession = Depends(get_db_session),
-) -> ListResource[SubscriptionSubscriber]:
-    results, count = await subscription_service.search_subscribed(
-        session,
-        auth_subject,
-        type=type,
-        organization=organization,
-        subscription_tier_id=subscription_tier_id,
-        subscriber_user_id=subscriber_user_id,
-        subscriber_organization_id=subscriber_organization_id,
-        active=True,
-        pagination=pagination,
-        sorting=sorting,
-    )
-
-    return ListResource.from_paginated_results(
-        [SubscriptionSubscriber.model_validate(result) for result in results],
         count,
         pagination,
     )
@@ -323,53 +282,6 @@ async def subscriptions_export(
     name = f"{organization.name}_subscribers.csv"
     headers = {"Content-Disposition": f'attachment; filename="{name}"'}
     return StreamingResponse(create_csv(), headers=headers, media_type="text/csv")
-
-
-@router.post(
-    "/subscriptions/{id}", response_model=SubscriptionSchema, tags=[Tags.PUBLIC]
-)
-async def upgrade_subscription(
-    id: UUID4,
-    subscription_upgrade: SubscriptionUpgrade,
-    auth_subject: auth.BackerSubscriptionsWrite,
-    authz: Authz = Depends(Authz.authz),
-    session: AsyncSession = Depends(get_db_session),
-) -> Subscription:
-    subscription = await subscription_service.get(session, id)
-    if subscription is None:
-        raise ResourceNotFound()
-
-    posthog.auth_subject_event(
-        auth_subject, "subscriptions", "upgrade_subscription", "submit"
-    )
-
-    return await subscription_service.upgrade_subscription(
-        session,
-        subscription=subscription,
-        subscription_upgrade=subscription_upgrade,
-        authz=authz,
-        auth_subject=auth_subject,
-    )
-
-
-@router.delete(
-    "/subscriptions/{id}", response_model=SubscriptionSchema, tags=[Tags.PUBLIC]
-)
-async def cancel_subscription(
-    id: UUID4,
-    auth_subject: auth.BackerSubscriptionsWrite,
-    authz: Authz = Depends(Authz.authz),
-    session: AsyncSession = Depends(get_db_session),
-) -> Subscription:
-    subscription = await subscription_service.get(session, id)
-    if subscription is None:
-        raise ResourceNotFound()
-
-    posthog.auth_subject_event(auth_subject, "subscriptions", "subscription", "cancel")
-
-    return await subscription_service.cancel_subscription(
-        session, subscription=subscription, authz=authz, auth_subject=auth_subject
-    )
 
 
 @router.get(

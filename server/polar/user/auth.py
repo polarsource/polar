@@ -11,3 +11,15 @@ _UserOrdersRead = Authenticator(
     allowed_subjects={User},
 )
 UserOrdersRead = Annotated[AuthSubject[User], Depends(_UserOrdersRead)]
+
+_UserSubscriptionsRead = Authenticator(
+    required_scopes={Scope.web_default, Scope.user_subscriptions_read},
+    allowed_subjects={User},
+)
+UserSubscriptionsRead = Annotated[AuthSubject[User], Depends(_UserSubscriptionsRead)]
+
+_UserSubscriptionsWrite = Authenticator(
+    required_scopes={Scope.web_default, Scope.user_subscriptions_write},
+    allowed_subjects={User},
+)
+UserSubscriptionsWrite = Annotated[AuthSubject[User], Depends(_UserSubscriptionsWrite)]

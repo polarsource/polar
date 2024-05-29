@@ -49,7 +49,7 @@ async def list_orders(
     ),
     session: AsyncSession = Depends(get_db_session),
 ) -> ListResource[UserOrder]:
-    """List orders."""
+    """List my orders."""
     results, count = await user_order_service.list(
         session,
         auth_subject,

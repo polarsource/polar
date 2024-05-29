@@ -39,35 +39,3 @@ _CreatorSubscriptionsWrite = Authenticator(
 CreatorSubscriptionsWrite = Annotated[
     AuthSubject[User | Organization], Depends(_CreatorSubscriptionsWrite)
 ]
-
-_BackerSubscriptionsReadOrAnonymous = Authenticator(
-    required_scopes={
-        Scope.web_default,
-        Scope.backer_subscriptions_read,
-        Scope.backer_subscriptions_write,
-    },
-    allowed_subjects={Anonymous, User},
-)
-BackerSubscriptionsReadOrAnonymous = Annotated[
-    AuthSubject[Anonymous | User], Depends(_BackerSubscriptionsReadOrAnonymous)
-]
-
-_BackerSubscriptionsRead = Authenticator(
-    required_scopes={
-        Scope.web_default,
-        Scope.backer_subscriptions_read,
-        Scope.backer_subscriptions_write,
-    },
-    allowed_subjects={User},
-)
-BackerSubscriptionsRead = Annotated[
-    AuthSubject[User], Depends(_BackerSubscriptionsRead)
-]
-
-_BackerSubscriptionsWrite = Authenticator(
-    required_scopes={Scope.web_default, Scope.backer_subscriptions_write},
-    allowed_subjects={User},
-)
-BackerSubscriptionsWrite = Annotated[
-    AuthSubject[User], Depends(_BackerSubscriptionsWrite)
-]

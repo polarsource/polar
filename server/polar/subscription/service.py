@@ -30,10 +30,9 @@ from polar.auth.models import (
     is_organization,
     is_user,
 )
-from polar.authz.service import AccessType, Authz
 from polar.config import settings
 from polar.enums import UserSignupType
-from polar.exceptions import NotPermitted, PolarError, ResourceNotFound
+from polar.exceptions import PolarError, ResourceNotFound
 from polar.integrations.loops.service import loops as loops_service
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.integrations.stripe.utils import get_expandable_id
@@ -77,11 +76,7 @@ from polar.worker import enqueue_job
 
 from ..product.service.product import product as product_service
 from ..product.service.product_price import product_price as product_price_service
-from .schemas import (
-    FreeSubscriptionCreate,
-    SubscriptionsStatisticsPeriod,
-    SubscriptionUpgrade,
-)
+from .schemas import FreeSubscriptionCreate, SubscriptionsStatisticsPeriod
 
 
 class SubscriptionError(PolarError): ...
@@ -138,36 +133,6 @@ class AlreadySubscribed(SubscriptionError):
             "This user is already subscribed to one of the tier of this organization."
         )
         super().__init__(message, 400)
-
-
-class AlreadyCanceledSubscription(SubscriptionError):
-    def __init__(self, subscription: Subscription) -> None:
-        self.subscription = subscription
-        message = (
-            "This subscription is already canceled or will be at the end of the period."
-        )
-        super().__init__(message)
-
-
-class FreeSubscriptionUpgrade(SubscriptionError):
-    def __init__(self, subscription: Subscription) -> None:
-        self.subscription = subscription
-        message = (
-            "Can't upgrade from free to paid subscription tier to paid directly. "
-            "You should start a subscribe session and specify you want to upgrade this "
-            "subscription."
-        )
-        super().__init__(message)
-
-
-class InvalidSubscriptionTierUpgrade(SubscriptionError):
-    def __init__(self, subscription_tier_id: uuid.UUID) -> None:
-        self.subscription_tier_id = subscription_tier_id
-        message = (
-            "Can't upgrade to this subscription tier: either it doesn't exist "
-            "or it doesn't belong to the same organization."
-        )
-        super().__init__(message)
 
 
 class EndDateInTheFuture(SubscriptionError):
@@ -297,86 +262,6 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
             contains_eager(Subscription.product),
             contains_eager(Subscription.price),
             contains_eager(Subscription.user),
-            joinedload(Subscription.organization),
-        )
-
-        results, count = await paginate(session, statement, pagination=pagination)
-
-        return results, count
-
-    async def search_subscribed(
-        self,
-        session: AsyncSession,
-        auth_subject: AuthSubject[User],
-        *,
-        organization: Organization | None = None,
-        type: SubscriptionTierType | None = None,
-        subscription_tier_id: uuid.UUID | None = None,
-        subscriber_user_id: uuid.UUID | None = None,
-        subscriber_organization_id: uuid.UUID | None = None,
-        active: bool | None = None,
-        pagination: PaginationParams,
-        sorting: list[Sorting[SearchSortProperty]] = [
-            (SearchSortProperty.started_at, True)
-        ],
-    ) -> tuple[Sequence[Subscription], int]:
-        statement = (
-            self._get_subscribed_subscriptions_statement(auth_subject)
-            .join(Product)
-            .join(Subscription.price, isouter=True)
-            .where(Subscription.started_at.is_not(None))
-        )
-
-        if organization is not None:
-            statement = statement.where(Product.organization_id == organization.id)
-
-        if type is not None:
-            statement = statement.where(Product.type == type)
-
-        if subscription_tier_id is not None:
-            statement = statement.where(Product.id == subscription_tier_id)
-
-        if subscriber_user_id is not None:
-            statement = statement.where(
-                Subscription.user_id == subscriber_user_id,
-                Subscription.organization_id.is_(None),
-            )
-
-        if subscriber_organization_id is not None:
-            statement = statement.where(
-                Subscription.organization_id == subscriber_organization_id
-            )
-
-        if active is not None:
-            if active:
-                statement = statement.where(Subscription.active.is_(True))
-            else:
-                statement = statement.where(Subscription.canceled.is_(True))
-
-        order_by_clauses: list[UnaryExpression[Any]] = []
-        for criterion, is_desc in sorting:
-            clause_function = desc if is_desc else asc
-            if criterion == SearchSortProperty.user:
-                order_by_clauses.append(clause_function(User.username))
-            if criterion == SearchSortProperty.status:
-                order_by_clauses.append(clause_function(Subscription.status))
-            if criterion == SearchSortProperty.started_at:
-                order_by_clauses.append(clause_function(Subscription.started_at))
-            if criterion == SearchSortProperty.current_period_end:
-                order_by_clauses.append(
-                    clause_function(Subscription.current_period_end)
-                )
-            if criterion == SearchSortProperty.price_amount:
-                order_by_clauses.append(clause_function(ProductPrice.price_amount))
-            if criterion == SearchSortProperty.subscription_tier_type:
-                order_by_clauses.append(clause_function(Product.type))
-            if criterion == SearchSortProperty.product:
-                order_by_clauses.append(clause_function(Product.name))
-        statement = statement.order_by(*order_by_clauses)
-
-        statement = statement.options(
-            contains_eager(Subscription.product),
-            contains_eager(Subscription.price),
             joinedload(Subscription.organization),
         )
 
@@ -658,7 +543,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
             session, subscription, WebhookEventType.subscription_created
         )
 
-    async def _after_subscription_updated(
+    async def after_subscription_updated(
         self, session: AsyncSession, subscription: Subscription
     ) -> None:
         await self._send_webhook(
@@ -751,7 +636,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
 
         await self.enqueue_benefits_grants(session, subscription)
 
-        await self._after_subscription_updated(session, subscription)
+        await self.after_subscription_updated(session, subscription)
 
         return subscription
 
@@ -807,96 +692,6 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         subscriptions = await session.stream_scalars(statement)
         async for subscription in subscriptions:
             await self.enqueue_benefits_grants(session, subscription)
-
-    async def upgrade_subscription(
-        self,
-        session: AsyncSession,
-        *,
-        subscription: Subscription,
-        subscription_upgrade: SubscriptionUpgrade,
-        authz: Authz,
-        auth_subject: AuthSubject[User],
-    ) -> Subscription:
-        if not await authz.can(auth_subject.subject, AccessType.write, subscription):
-            raise NotPermitted()
-
-        await session.refresh(
-            subscription, {"product", "user", "organization", "price"}
-        )
-
-        if subscription.product.type == SubscriptionTierType.free:
-            raise FreeSubscriptionUpgrade(subscription)
-
-        new_subscription_tier = await product_service.get_by_id(
-            session, auth_subject, subscription_upgrade.subscription_tier_id
-        )
-
-        if new_subscription_tier is None:
-            raise InvalidSubscriptionTierUpgrade(
-                subscription_upgrade.subscription_tier_id
-            )
-
-        # Make sure the new tier belongs to the same organization
-        old_subscription_tier = subscription.product
-        if (
-            old_subscription_tier.organization_id
-            != new_subscription_tier.organization_id
-        ):
-            raise InvalidSubscriptionTierUpgrade(new_subscription_tier.id)
-
-        new_price = new_subscription_tier.get_price(subscription_upgrade.price_id)
-        if new_price is None:
-            raise InvalidSubscriptionTierUpgrade(new_subscription_tier.id)
-        assert subscription.price is not None
-
-        stripe_service.update_subscription_price(
-            subscription.stripe_subscription_id,
-            old_price=subscription.price.stripe_price_id,
-            new_price=new_price.stripe_price_id,
-        )
-
-        subscription.product = new_subscription_tier
-        subscription.price = new_price
-        session.add(subscription)
-
-        await self._after_subscription_updated(session, subscription)
-
-        return subscription
-
-    async def cancel_subscription(
-        self,
-        session: AsyncSession,
-        *,
-        subscription: Subscription,
-        authz: Authz,
-        auth_subject: AuthSubject[User],
-    ) -> Subscription:
-        await session.refresh(
-            subscription, {"product", "user", "organization", "price"}
-        )
-
-        if not await authz.can(auth_subject.subject, AccessType.write, subscription):
-            raise NotPermitted()
-
-        if not subscription.active or subscription.cancel_at_period_end:
-            raise AlreadyCanceledSubscription(subscription)
-
-        if subscription.stripe_subscription_id is not None:
-            stripe_service.cancel_subscription(subscription.stripe_subscription_id)
-        else:
-            subscription.ended_at = utc_now()
-            subscription.cancel_at_period_end = True
-            subscription.status = SubscriptionStatus.canceled
-
-            # free subscriptions end immediately (vs at end of billing period)
-            # queue removal of grants
-            await self.enqueue_benefits_grants(session, subscription)
-
-        session.add(subscription)
-
-        await self._after_subscription_updated(session, subscription)
-
-        return subscription
 
     async def get_statistics_periods(
         self,

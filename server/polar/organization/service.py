@@ -3,9 +3,9 @@ from datetime import UTC, datetime
 from uuid import UUID
 
 import structlog
-from sqlalchemy import or_, select
+from sqlalchemy import and_, or_, select
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import contains_eager
+from sqlalchemy.orm import aliased, contains_eager
 
 from polar.account.service import account as account_service
 from polar.authz.service import AccessType, Authz
@@ -24,6 +24,7 @@ from polar.models import (
     User,
     UserOrganization,
 )
+from polar.models.user import OAuthPlatform
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.postgres import AsyncSession, sql
 from polar.user_organization.service import (
@@ -362,28 +363,33 @@ class OrganizationService(ResourceServiceReader[Organization]):
     ) -> tuple[Sequence[User], int]:
         clauses = []
         if OrganizationCustomerType.subscription in customer_types:
+            SubscriptionProduct = aliased(Product)
             clauses.append(
                 User.id.in_(
                     select(Subscription)
                     .with_only_columns(Subscription.user_id)
-                    .join(Product, onclause=Product.id == Subscription.product_id)
+                    .join(
+                        SubscriptionProduct,
+                        onclause=SubscriptionProduct.id == Subscription.product_id,
+                    )
                     .where(
                         Subscription.deleted_at.is_(None),
-                        Product.organization_id == organization.id,
+                        SubscriptionProduct.organization_id == organization.id,
                         Subscription.active.is_(True),
                     )
                 ),
             )
 
         if OrganizationCustomerType.order in customer_types:
+            OrderProduct = aliased(Product)
             clauses.append(
                 User.id.in_(
                     select(Order)
                     .with_only_columns(Order.user_id)
-                    .join(Product, onclause=Product.id == Order.product_id)
+                    .join(OrderProduct, onclause=OrderProduct.id == Order.product_id)
                     .where(
                         Order.deleted_at.is_(None),
-                        Product.organization_id == organization.id,
+                        OrderProduct.organization_id == organization.id,
                         Order.subscription_id.is_(None),
                     )
                 ),
@@ -403,7 +409,14 @@ class OrganizationService(ResourceServiceReader[Organization]):
 
         statement = (
             select(User)
-            .join(OAuthAccount, onclause=User.id == OAuthAccount.user_id, isouter=True)
+            .join(
+                OAuthAccount,
+                onclause=and_(
+                    User.id == OAuthAccount.user_id,
+                    OAuthAccount.platform == OAuthPlatform.github,
+                ),
+                isouter=True,
+            )
             .where(or_(*clauses))
             .order_by(
                 # Put users with a GitHub account first, so we can display their avatar

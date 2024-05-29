@@ -42,7 +42,6 @@ from polar.kit.utils import utc_now
 from polar.models import (
     Benefit,
     BenefitGrant,
-    OAuthAccount,
     Order,
     Organization,
     Product,
@@ -56,7 +55,6 @@ from polar.models import (
 from polar.models.product import SubscriptionTierType
 from polar.models.subscription import SubscriptionStatus
 from polar.models.transaction import TransactionType
-from polar.models.user import OAuthPlatform
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.notifications.notification import (
     MaintainerNewPaidSubscriptionNotificationPayload,
@@ -245,48 +243,6 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
             contains_eager(Subscription.price),
             contains_eager(Subscription.user),
             joinedload(Subscription.organization),
-        )
-
-        results, count = await paginate(session, statement, pagination=pagination)
-
-        return results, count
-
-    async def search_summary(
-        self,
-        session: AsyncSession,
-        *,
-        organization: Organization,
-        pagination: PaginationParams,
-    ) -> tuple[Sequence[Subscription], int]:
-        statement = (
-            (
-                select(Subscription)
-                .join(Subscription.product)
-                .join(User, onclause=User.id == Subscription.user_id, isouter=True)
-                .join(
-                    OAuthAccount,
-                    onclause=and_(
-                        User.id == OAuthAccount.user_id,
-                        OAuthAccount.platform == OAuthPlatform.github,
-                    ),
-                    isouter=True,
-                )
-                .options(
-                    contains_eager(Subscription.user),
-                    joinedload(Subscription.organization),
-                    contains_eager(Subscription.product),
-                    joinedload(Subscription.price),
-                )
-            )
-            .where(
-                Subscription.active.is_(True),
-                Product.organization_id == organization.id,
-            )
-            .order_by(
-                # Put users with a GitHub account first, so we can display their avatar
-                OAuthAccount.created_at.desc().nulls_last(),
-                Subscription.started_at.desc(),
-            )
         )
 
         results, count = await paginate(session, statement, pagination=pagination)

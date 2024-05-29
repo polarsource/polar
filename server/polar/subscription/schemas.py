@@ -8,14 +8,11 @@ from polar.models.subscription import SubscriptionStatus
 from polar.product.schemas import Product, ProductPrice
 
 
-class SubscriptionPublicUser(Schema):
+class SubscriptionUser(Schema):
+    email: str
     public_name: str
     github_username: str | None = None
     avatar_url: str | None = None
-
-
-class SubscriptionUser(SubscriptionPublicUser):
-    email: str
 
 
 class SubscriptionOrganization(Schema):
@@ -52,13 +49,6 @@ class SubscriptionCreateEmail(Schema):
 
 class SubscriptionsImported(Schema):
     count: int
-
-
-class SubscriptionSummary(Schema):
-    user: SubscriptionPublicUser
-    organization: SubscriptionOrganization | None = None
-    product: Product
-    price: ProductPrice | None = None
 
 
 class SubscriptionsStatisticsPeriod(Schema):

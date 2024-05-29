@@ -3,15 +3,27 @@ from datetime import UTC, datetime
 from uuid import UUID
 
 import structlog
+from sqlalchemy import or_, select
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import contains_eager
 
 from polar.account.service import account as account_service
 from polar.authz.service import AccessType, Authz
 from polar.enums import Platforms
 from polar.exceptions import BadRequest, PolarError
 from polar.integrations.loops.service import loops as loops_service
+from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.services import ResourceServiceReader
-from polar.models import Organization, User, UserOrganization
+from polar.models import (
+    Donation,
+    OAuthAccount,
+    Order,
+    Organization,
+    Product,
+    Subscription,
+    User,
+    UserOrganization,
+)
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.postgres import AsyncSession, sql
 from polar.user_organization.service import (
@@ -24,6 +36,7 @@ from .auth import OrganizationsWrite
 from .schemas import (
     OrganizationCreateFromGitHubInstallation,
     OrganizationCreateFromGitHubUser,
+    OrganizationCustomerType,
     OrganizationUpdate,
 )
 
@@ -334,6 +347,74 @@ class OrganizationService(ResourceServiceReader[Organization]):
         await self._after_update(session, org)
 
         return org
+
+    async def list_customers(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+        *,
+        pagination: PaginationParams,
+        customer_types: set[OrganizationCustomerType] = {
+            OrganizationCustomerType.subscription,
+            OrganizationCustomerType.order,
+            OrganizationCustomerType.donation,
+        },
+    ) -> tuple[Sequence[User], int]:
+        clauses = []
+        if OrganizationCustomerType.subscription in customer_types:
+            clauses.append(
+                User.id.in_(
+                    select(Subscription)
+                    .with_only_columns(Subscription.user_id)
+                    .join(Product, onclause=Product.id == Subscription.product_id)
+                    .where(
+                        Subscription.deleted_at.is_(None),
+                        Product.organization_id == organization.id,
+                        Subscription.active.is_(True),
+                    )
+                ),
+            )
+
+        if OrganizationCustomerType.order in customer_types:
+            clauses.append(
+                User.id.in_(
+                    select(Order)
+                    .with_only_columns(Order.user_id)
+                    .join(Product, onclause=Product.id == Order.product_id)
+                    .where(
+                        Order.deleted_at.is_(None),
+                        Product.organization_id == organization.id,
+                        Order.subscription_id.is_(None),
+                    )
+                ),
+            )
+
+        if OrganizationCustomerType.donation in customer_types:
+            clauses.append(
+                User.id.in_(
+                    select(Donation)
+                    .with_only_columns(Donation.by_user_id)
+                    .where(
+                        Donation.deleted_at.is_(None),
+                        Donation.to_organization_id == organization.id,
+                    )
+                ),
+            )
+
+        statement = (
+            select(User)
+            .join(OAuthAccount, onclause=User.id == OAuthAccount.user_id, isouter=True)
+            .where(or_(*clauses))
+            .order_by(
+                # Put users with a GitHub account first, so we can display their avatar
+                OAuthAccount.created_at.desc().nulls_last()
+            )
+            .options(contains_eager(User.oauth_accounts))
+        )
+
+        results, count = await paginate(session, statement, pagination=pagination)
+
+        return results, count
 
     async def _after_update(
         self,

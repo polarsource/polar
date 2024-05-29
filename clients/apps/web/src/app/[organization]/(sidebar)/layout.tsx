@@ -6,8 +6,8 @@ import { PublicPageOrganizationContextProvider } from '@/providers/organization'
 import { getServerSideAPI } from '@/utils/api/serverside'
 import {
   ListResourceOrganization,
+  ListResourceOrganizationCustomer,
   ListResourceProduct,
-  ListResourceSubscriptionSummary,
   Organization,
   Platforms,
   UserRead,
@@ -33,7 +33,7 @@ export default async function Layout({
 
   let authenticatedUser: UserRead | undefined
   let organization: Organization | undefined
-  let subscriptionsSummary: ListResourceSubscriptionSummary | undefined
+  let organizationCustomers: ListResourceOrganizationCustomer | undefined
   let userAdminOrganizations: ListResourceOrganization | undefined
   let products: ListResourceProduct | undefined
 
@@ -48,7 +48,7 @@ export default async function Layout({
 
     const [
       loadAuthenticatedUser,
-      loadSubscriptionsSummary,
+      loadOrganizationCustomers,
       loadUserAdminOrganizations,
       loadSubscriptionTiers,
     ] = await Promise.all([
@@ -56,10 +56,10 @@ export default async function Layout({
         // Handle unauthenticated
         return undefined
       }),
-      api.subscriptions.searchSubscriptionsSummary(
+      api.organizations.listOrganizationCustomers(
         {
-          organizationName: params.organization,
-          platform: Platforms.GITHUB,
+          id: organization.id,
+          customerTypes: new Set(['subscription']),
           limit: 3,
         },
         cacheConfig,
@@ -87,7 +87,7 @@ export default async function Layout({
     ])
 
     authenticatedUser = loadAuthenticatedUser
-    subscriptionsSummary = loadSubscriptionsSummary
+    organizationCustomers = loadOrganizationCustomers
     userAdminOrganizations = loadUserAdminOrganizations
     products = loadSubscriptionTiers
   } catch (e) {
@@ -117,7 +117,7 @@ export default async function Layout({
           </div>
           <div className="relative flex w-fit flex-shrink-0 flex-col justify-between py-8 md:sticky md:top-0 md:py-16">
             <OrganizationPublicSidebar
-              subscriptionsSummary={subscriptionsSummary}
+              organizationCustomers={organizationCustomers}
               organization={organization}
               userAdminOrganizations={userAdminOrganizations?.items ?? []}
               products={products?.items ?? []}

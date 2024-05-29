@@ -1,29 +1,34 @@
 import { Subscribe } from '@/components/Embed/Subscribe'
 import { getServerURL } from '@/utils/api'
 import {
-  ListResourceSubscriptionSummary,
-  SubscriptionSummary,
+  ListResourceOrganizationCustomer,
+  OrganizationCustomer,
 } from '@polar-sh/sdk'
 const { default: satori } = require('satori')
 
 export const runtime = 'edge'
 
-const getSubscriptions = async (
+const getCustomers = async (
   org: string,
   limit: number = 3,
-): Promise<[SubscriptionSummary[], number]> => {
-  let url = `${getServerURL()}/api/v1/subscriptions/subscriptions/summary?platform=github&organization_name=${org}&limit=${limit}`
+): Promise<[OrganizationCustomer[], number]> => {
+  const { id: orgId } = await fetch(
+    `${getServerURL()}/api/v1/organizations/lookup?organization_name=${org}&platform=github`,
+    { method: 'GET' },
+  ).then((res) => res.json())
+
+  let url = `${getServerURL()}/api/v1/organizations/${orgId}/customers?customer_types=subscription&limit=${limit}`
 
   const response = await fetch(url, {
     method: 'GET',
   })
-  const data = (await response.json()) as ListResourceSubscriptionSummary
+  const data = (await response.json()) as ListResourceOrganizationCustomer
   return [data.items || [], data.pagination.total_count]
 }
 
 const renderBadge = async (
-  subscriptions: SubscriptionSummary[],
-  totalSubscriptions: number,
+  customers: OrganizationCustomer[],
+  totalCustomers: number,
   label: string,
   darkmode: boolean,
 ) => {
@@ -37,8 +42,8 @@ const renderBadge = async (
 
   return await satori(
     <Subscribe
-      subscriptions={subscriptions}
-      totalSubscriptions={totalSubscriptions}
+      customers={customers}
+      totalCustomers={totalCustomers}
       darkmode={darkmode}
       label={label}
     />,
@@ -73,8 +78,8 @@ export async function GET(request: Request) {
   }
 
   try {
-    const [subscriptions, total] = await getSubscriptions(org)
-    const svg = await renderBadge(subscriptions, total, label, darkmode)
+    const [customers, total] = await getCustomers(org)
+    const svg = await renderBadge(customers, total, label, darkmode)
 
     return new Response(svg, {
       headers: {

@@ -9,7 +9,7 @@ import { RssIcon } from '@heroicons/react/20/solid'
 import { LanguageOutlined, MailOutline } from '@mui/icons-material'
 import {
   CreatePersonalAccessTokenResponse,
-  ListResourceSubscriptionSummary,
+  ListResourceOrganizationCustomer,
   Organization,
   OrganizationProfileSettings,
   Product,
@@ -33,14 +33,14 @@ import { FreeTierSubscribe } from './FreeTierSubscribe'
 
 interface OrganizationPublicSidebarProps {
   organization: Organization
-  subscriptionsSummary: ListResourceSubscriptionSummary
+  organizationCustomers: ListResourceOrganizationCustomer
   userAdminOrganizations: Organization[]
   products: Product[]
 }
 
 export const OrganizationPublicSidebar = ({
   organization,
-  subscriptionsSummary,
+  organizationCustomers,
   userAdminOrganizations,
   products,
 }: OrganizationPublicSidebarProps) => {
@@ -59,7 +59,7 @@ export const OrganizationPublicSidebar = ({
   const isAdmin = userAdminOrganizations.some((o) => o.id === organization.id)
 
   const shouldRenderSubscriberCount =
-    (subscriptionsSummary.items?.length ?? 0) > 0
+    (organizationCustomers.items?.length ?? 0) > 0
 
   const updateOrganizationMutation = useUpdateOrganization()
 
@@ -182,15 +182,15 @@ export const OrganizationPublicSidebar = ({
             {shouldRenderSubscriberCount && (
               <div className="flex flex-row items-center gap-x-4">
                 <div className="flex w-fit flex-shrink-0 flex-row items-center md:hidden lg:flex">
-                  {subscriptionsSummary.items?.map((subscriber, i, array) => (
+                  {organizationCustomers.items?.map((user, i, array) => (
                     <Avatar
                       className={twMerge(
                         'h-10 w-10',
                         i !== array.length - 1 && '-mr-3',
                       )}
                       key={i}
-                      name={subscriber.user.public_name ?? ''}
-                      avatar_url={subscriber.user.avatar_url}
+                      name={user.public_name ?? ''}
+                      avatar_url={user.avatar_url}
                       height={40}
                       width={40}
                     />
@@ -200,8 +200,8 @@ export const OrganizationPublicSidebar = ({
                   {Intl.NumberFormat('en-US', {
                     notation: 'compact',
                     compactDisplay: 'short',
-                  }).format(subscriptionsSummary.pagination.total_count)}{' '}
-                  {subscriptionsSummary.pagination.total_count === 1
+                  }).format(organizationCustomers.pagination.total_count)}{' '}
+                  {organizationCustomers.pagination.total_count === 1
                     ? 'Subscriber'
                     : 'Subscribers'}
                 </span>

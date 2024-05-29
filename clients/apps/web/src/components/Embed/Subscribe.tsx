@@ -1,18 +1,18 @@
-import { SubscriptionSummary } from '@polar-sh/sdk'
+import { OrganizationCustomer } from '@polar-sh/sdk'
 import React from 'react'
 
 export const Subscribe = ({
-  subscriptions,
-  totalSubscriptions,
+  customers,
+  totalCustomers,
   darkmode,
   label,
 }: {
-  subscriptions: SubscriptionSummary[]
-  totalSubscriptions: number
+  customers: OrganizationCustomer[]
+  totalCustomers: number
   darkmode: boolean
   label: string
 }) => {
-  const extraSubscribersCount = totalSubscriptions - subscriptions.length
+  const extraSubscribersCount = totalCustomers - customers.length
   const extraSubscribersCountDisplay =
     extraSubscribersCount > 1000
       ? `${Math.round(extraSubscribersCount / 1000)}K`
@@ -80,7 +80,7 @@ export const Subscribe = ({
               justifyItems: 'end',
             }}
           >
-            {subscriptions.length > 0 && (
+            {customers.length > 0 && (
               <div
                 style={{
                   display: 'flex',
@@ -88,11 +88,11 @@ export const Subscribe = ({
                   height: '22px',
                 }}
               >
-                {subscriptions.map((subscription, idx) => (
+                {customers.map((user, idx) => (
                   <React.Fragment key={idx}>
-                    {subscription.organization && (
+                    {user.avatar_url && (
                       <img
-                        src={subscription.organization.avatar_url}
+                        src={user.avatar_url}
                         style={{
                           height: 22,
                           width: 22,
@@ -105,49 +105,30 @@ export const Subscribe = ({
                         }}
                       />
                     )}
-                    {subscription.user && (
-                      <>
-                        {subscription.user.avatar_url && (
-                          <img
-                            src={subscription.user.avatar_url}
-                            style={{
-                              height: 22,
-                              width: 22,
-                              borderRadius: 22,
-                              border: darkmode
-                                ? '1px solid #1B1D29'
-                                : '1px solid white',
-                              marginLeft: idx > 0 ? '-6px' : '',
-                              flexShrink: '0',
-                            }}
-                          />
-                        )}
-                        {!subscription.user.avatar_url && (
-                          <div
-                            style={{
-                              backgroundColor: darkmode ? '#2e4070' : '#C9DBF4',
-                              color: darkmode ? '#a6c7ea' : '#0062FF',
-                              height: 22,
-                              width: 22,
-                              borderRadius: 22,
-                              marginLeft: '-6px',
-                              textAlign: 'center',
-                              fontSize: '8px',
-                              lineHeight: '20px',
-                              border: darkmode
-                                ? '1px solid #13151D'
-                                : '1px solid white',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'space-around',
-                              flexShrink: '0',
-                              textTransform: 'uppercase',
-                            }}
-                          >
-                            <span>{subscription.user.public_name}</span>
-                          </div>
-                        )}
-                      </>
+                    {!user.avatar_url && (
+                      <div
+                        style={{
+                          backgroundColor: darkmode ? '#2e4070' : '#C9DBF4',
+                          color: darkmode ? '#a6c7ea' : '#0062FF',
+                          height: 22,
+                          width: 22,
+                          borderRadius: 22,
+                          marginLeft: '-6px',
+                          textAlign: 'center',
+                          fontSize: '8px',
+                          lineHeight: '20px',
+                          border: darkmode
+                            ? '1px solid #13151D'
+                            : '1px solid white',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-around',
+                          flexShrink: '0',
+                          textTransform: 'uppercase',
+                        }}
+                      >
+                        <span>{user.public_name}</span>
+                      </div>
                     )}
                   </React.Fragment>
                 ))}

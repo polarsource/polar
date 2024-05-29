@@ -12,7 +12,7 @@ import { useOrganization } from '@/hooks/queries'
 import { api } from '@/utils/api'
 import { organizationPageLink } from '@/utils/nav'
 import { BoltOutlined, MoreVertOutlined } from '@mui/icons-material'
-import { BenefitSubscriberInner, SubscriptionSubscriber } from '@polar-sh/sdk'
+import { BenefitSubscriberInner, UserSubscription } from '@polar-sh/sdk'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { FormattedDateTime } from 'polarkit/components/ui/atoms'
@@ -32,7 +32,7 @@ import { twMerge } from 'tailwind-merge'
 const ClientPage = ({
   subscriptions,
 }: {
-  subscriptions: SubscriptionSubscriber[]
+  subscriptions: UserSubscription[]
 }) => {
   const { reloadUser } = useAuth()
   // Force to reload the user to make sure we have fresh data after connecting an app
@@ -45,7 +45,7 @@ const ClientPage = ({
     BenefitSubscriberInner | undefined
   >()
   const [selectedBenefitSubscription, setSelectedBenefitSubscription] =
-    useState<SubscriptionSubscriber | undefined>(subscriptions[0])
+    useState<UserSubscription | undefined>(subscriptions[0])
 
   return subscriptions.length === 0 ? (
     <div className="dark:text-polar-400 flex h-full flex-col items-center gap-y-4 pt-32 text-6xl text-gray-600">
@@ -91,7 +91,7 @@ const ClientPage = ({
 export default ClientPage
 
 interface SubscriptionOrganizationProps {
-  subscription: SubscriptionSubscriber
+  subscription: UserSubscription
   selectedBenefit: BenefitSubscriberInner | undefined
   onSelectBenefit: (benefit: BenefitSubscriberInner) => void
 }
@@ -112,10 +112,10 @@ const Subscription = ({
   const isFreeTier = subscription.product.type === 'free'
 
   const cancelSubscription = useCallback(async () => {
-    await api.subscriptions.cancelSubscription({ id: subscription.id })
+    await api.users.cancelSubscription({ id: subscription.id })
     setShowCancelModal(false)
     router.refresh()
-  }, [subscription])
+  }, [subscription, router])
 
   if (!org) {
     return <></>
@@ -251,7 +251,7 @@ const Subscription = ({
 
 interface BenefitContextWidgetProps {
   benefit: BenefitSubscriberInner
-  subscription: SubscriptionSubscriber
+  subscription: UserSubscription
 }
 
 const GitHubRepoWidget = ({ benefit }: BenefitContextWidgetProps) => {

@@ -10,7 +10,7 @@ import { usePurchase } from '@/hooks/queries/purchases'
 import { getCentsInDollarString } from '@/utils/money'
 import { organizationPageLink } from '@/utils/nav'
 import { ArrowBackOutlined } from '@mui/icons-material'
-import { BenefitSubscriberInner, SubscriptionSubscriber } from '@polar-sh/sdk'
+import { BenefitSubscriberInner, UserSubscription } from '@polar-sh/sdk'
 import Markdown from 'markdown-to-jsx'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
@@ -124,7 +124,7 @@ export default function Page() {
 
 interface BenefitContextWidgetProps {
   benefit: BenefitSubscriberInner
-  subscription: SubscriptionSubscriber
+  subscription: UserSubscription
 }
 
 const GitHubRepoWidget = ({ benefit }: BenefitContextWidgetProps) => {

@@ -1,7 +1,6 @@
 'use client'
 
 import LongformPost from '@/components/Feed/LongformPost'
-import { useAuth } from '@/hooks/auth'
 import { organizationPageLink } from '@/utils/nav'
 import { useTrafficRecordPageView } from '@/utils/traffic'
 import { ArrowBackOutlined } from '@mui/icons-material'
@@ -20,8 +19,6 @@ interface PostPageProps {
 export default function Page({ article, products }: PostPageProps) {
   useTrafficRecordPageView({ article })
 
-  const { currentUser } = useAuth()
-
   // Check if the user is the author of the article
   const allOrganizations = useListAllOrganizations()
   const orgIds = (allOrganizations.data?.items ?? []).map((o) => o.id)
@@ -29,12 +26,11 @@ export default function Page({ article, products }: PostPageProps) {
   const isAuthor =
     article.organization.is_personal && orgIds.includes(article.organization.id)
 
-  const userSubs = useUserSubscriptions(
-    currentUser?.id,
-    article.organization.name,
-    30,
-    article.organization.platform,
-  )
+  const userSubs = useUserSubscriptions({
+    organizationId: article.organization.id,
+    active: true,
+    limit: 100,
+  })
 
   const subscription = (userSubs.data?.items ?? []).find(
     (s) => s.product.organization_id === article.organization.id,

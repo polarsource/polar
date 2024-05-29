@@ -1,5 +1,10 @@
 import { api, queryClient } from '@/utils/api'
-import { UserRead, UserUpdateSettings } from '@polar-sh/sdk'
+import {
+  UserFreeSubscriptionCreate,
+  UserRead,
+  UserUpdateSettings,
+  UsersApiListSubscriptionsRequest,
+} from '@polar-sh/sdk'
 import {
   UseMutationResult,
   UseQueryResult,
@@ -74,5 +79,26 @@ export const useMaintainerUpgrade = () =>
     },
     onSuccess: (_result, _variables, _ctx) => {
       queryClient.invalidateQueries()
+    },
+  })
+
+export const useUserSubscriptions = (
+  parameters: UsersApiListSubscriptionsRequest = {},
+) =>
+  useQuery({
+    queryKey: ['user', 'subscriptions', parameters],
+    queryFn: () => api.users.listSubscriptions(parameters),
+    retry: defaultRetry,
+  })
+
+export const useCreateSubscription = () =>
+  useMutation({
+    mutationFn: (userFreeSubscriptionCreate: UserFreeSubscriptionCreate) => {
+      return api.users.createSubscription({ userFreeSubscriptionCreate })
+    },
+    onSuccess: (_result, _variables, _ctx) => {
+      queryClient.invalidateQueries({
+        queryKey: ['user', 'subscriptions'],
+      })
     },
   })

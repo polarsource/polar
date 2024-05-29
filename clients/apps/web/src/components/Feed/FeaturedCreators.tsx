@@ -1,6 +1,5 @@
-import { useAuth } from '@/hooks'
 import {
-  useCreateFreeSubscription,
+  useCreateSubscription,
   useListAdminOrganizations,
   useOrganizationLookup,
   useProducts,
@@ -76,24 +75,22 @@ const FeaturedCreator = ({
 }: {
   creator: ArrayElement<typeof featuredCreators>
 }) => {
-  const { currentUser } = useAuth()
   const adminOrgs = useListAdminOrganizations()
-
-  const { data } = useUserSubscriptions(
-    currentUser?.id,
-    creator.name,
-    10,
-    Platforms.GITHUB,
-  )
-  const subscription = data && data.items && data.items[0]
-  const isSubscribed = subscription !== undefined
-
-  const createFreeSubscription = useCreateFreeSubscription()
 
   const creatorOrganization = useOrganizationLookup(
     creator.name,
     Platforms.GITHUB,
   )
+
+  const { data } = useUserSubscriptions({
+    organizationId: creatorOrganization.data?.id,
+    active: true,
+  })
+  const subscription = data && data.items && data.items[0]
+  const isSubscribed = subscription !== undefined
+
+  const createFreeSubscription = useCreateSubscription()
+
   const { data: { items: products } = { items: [] } } = useProducts(
     creatorOrganization.data?.id,
   )
@@ -115,7 +112,7 @@ const FeaturedCreator = ({
       e.stopPropagation()
 
       await createFreeSubscription.mutateAsync({
-        tier_id: freeSubscriptionTier.id,
+        product_id: freeSubscriptionTier.id,
       })
     },
     [createFreeSubscription, freeSubscriptionTier],

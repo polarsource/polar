@@ -3,7 +3,7 @@
 import { useAuth } from '@/hooks'
 import { useSendMagicLink } from '@/hooks/magicLink'
 import {
-  useCreateFreeSubscription,
+  useCreateSubscription,
   useProducts,
   useUserSubscriptions,
 } from '@/hooks/queries'
@@ -31,15 +31,12 @@ interface AuthenticatedFreeTierSubscribeProps {
 export const AuthenticatedFreeTierSubscribe = ({
   product,
   organization,
-  user,
   upsellSubscriptions,
 }: AuthenticatedFreeTierSubscribeProps) => {
-  const { data, isFetched } = useUserSubscriptions(
-    user.id,
-    organization.name,
-    10,
-    organization.platform,
-  )
+  const { data, isFetched } = useUserSubscriptions({
+    organizationId: organization.id,
+    active: true,
+  })
   const subscription = data && data.items && data.items[0]
   const isSubscribed = subscription !== undefined
   const router = useRouter()
@@ -48,10 +45,10 @@ export const AuthenticatedFreeTierSubscribe = ({
     (tier) => tier.is_highlighted,
   )
 
-  const createFreeSubscription = useCreateFreeSubscription()
+  const createFreeSubscription = useCreateSubscription()
 
   const onSubscribeFree = async () => {
-    await createFreeSubscription.mutateAsync({ tier_id: product.id })
+    await createFreeSubscription.mutateAsync({ product_id: product.id })
 
     if (upsellSubscriptions && hasHighlightedSubscriptions) {
       router.push(organizationPageLink(organization, 'subscribe'))
@@ -120,7 +117,7 @@ export const AnonymousFreeTierSubscribe = ({
 
   const [email, setEmail] = useState('')
 
-  const createFreeSubscription = useCreateFreeSubscription()
+  const createFreeSubscription = useCreateSubscription()
 
   const onSubscribeFree: SubmitHandler<{ customer_email: string }> =
     useCallback(
@@ -128,7 +125,7 @@ export const AnonymousFreeTierSubscribe = ({
         setSuccess(false)
 
         await createFreeSubscription.mutateAsync({
-          tier_id: product.id,
+          product_id: product.id,
           customer_email: data.customer_email,
         })
 
@@ -162,7 +159,7 @@ export const AnonymousFreeTierSubscribe = ({
   const onEmailSignin = useCallback(async () => {
     setEmailSignInClicked(true) // set to true, never resets to false
     sendMagicLink(email)
-  }, [email, router])
+  }, [email, sendMagicLink])
 
   return (
     <>

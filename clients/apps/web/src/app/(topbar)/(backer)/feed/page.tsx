@@ -17,15 +17,11 @@ import {
 import { useEffect } from 'react'
 
 export default function Page() {
-  const { currentUser, authenticated, reloadUser } = useAuth()
+  const { authenticated, reloadUser } = useAuth()
   const { isLoading: adminOrgsAreLoading } = useListAdminOrganizations()
   const personalOrg = usePersonalOrganization()
 
-  const userSubscriptions = useUserSubscriptions(
-    currentUser?.id,
-    undefined,
-    9999,
-  )
+  const userSubscriptions = useUserSubscriptions({ active: true, limit: 100 })
 
   // Reload user on page load to make sure that the github oauth data is up to date
   useEffect(() => {

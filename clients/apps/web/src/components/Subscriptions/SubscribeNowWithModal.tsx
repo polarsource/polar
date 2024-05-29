@@ -1,7 +1,7 @@
 import { useAuth } from '@/hooks/auth'
 import { useSendMagicLink } from '@/hooks/magicLink'
 import {
-  useCreateFreeSubscription,
+  useCreateSubscription,
   useProducts,
   useUserSubscriptions,
 } from '@/hooks/queries'
@@ -10,11 +10,10 @@ import { CheckIcon } from '@heroicons/react/24/outline'
 import {
   Organization,
   Product,
-  SubscriptionSubscriber,
   SubscriptionTierType,
+  UserSubscription,
 } from '@polar-sh/sdk'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
 import Button from 'polarkit/components/ui/atoms/button'
 import Input from 'polarkit/components/ui/atoms/input'
 import { Form, FormField, FormMessage } from 'polarkit/components/ui/form'
@@ -46,23 +45,18 @@ const SubscribeNowWithModal = ({
     (tier) => tier.type === SubscriptionTierType.FREE,
   )
 
-  const { data } = useUserSubscriptions(
-    currentUser?.id,
-    organization.name,
-    10,
-    organization.platform,
-  )
+  const { data } = useUserSubscriptions({ organizationId: organization.id })
   const subscription = data && data.items && data.items[0]
   const isSubscribed = subscription !== undefined
 
-  const createFreeSubscription = useCreateFreeSubscription()
+  const createFreeSubscription = useCreateSubscription()
 
   const onSubscribeFree = async () => {
     if (!freeSubscriptionTier) {
       return
     }
     await createFreeSubscription.mutateAsync({
-      tier_id: freeSubscriptionTier.id,
+      product_id: freeSubscriptionTier.id,
     })
   }
 
@@ -167,7 +161,7 @@ const LoggedInSubscribeModalContent = ({
   organization: Organization
   isSubscribed: boolean
   isLoading: boolean
-  subscription?: SubscriptionSubscriber
+  subscription?: UserSubscription
 }) => {
   return (
     <>
@@ -213,15 +207,13 @@ const AnonymousSubscribeModalContent = ({
   freeSubscriptionTier: Product
   organization: Organization
 }) => {
-  const router = useRouter()
-
   const [success, setSuccess] = useState(false)
   const form = useForm<{ customer_email: string }>()
   const { control, handleSubmit } = form
 
   const [email, setEmail] = useState('')
 
-  const createFreeSubscription = useCreateFreeSubscription()
+  const createFreeSubscription = useCreateSubscription()
 
   const onSubscribeFree: SubmitHandler<{ customer_email: string }> =
     useCallback(
@@ -233,7 +225,7 @@ const AnonymousSubscribeModalContent = ({
         setSuccess(false)
 
         await createFreeSubscription.mutateAsync({
-          tier_id: freeSubscriptionTier.id,
+          product_id: freeSubscriptionTier.id,
           customer_email: data.customer_email,
         })
 
@@ -255,7 +247,7 @@ const AnonymousSubscribeModalContent = ({
     )
 
     sendMagicLink(email)
-  }, [email, router])
+  }, [email, sendMagicLink])
 
   if (success) {
     return (

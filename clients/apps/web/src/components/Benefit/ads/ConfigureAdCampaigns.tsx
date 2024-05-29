@@ -10,7 +10,7 @@ import {
   BenefitSubscriberInner,
   CreateAdvertisementCampaign,
   EditAdvertisementCampaign,
-  SubscriptionSubscriber,
+  UserSubscription,
 } from '@polar-sh/sdk'
 import Button from 'polarkit/components/ui/atoms/button'
 import Input from 'polarkit/components/ui/atoms/input'
@@ -29,7 +29,7 @@ const ConfigureAdCampaigns = ({
   subscription,
 }: {
   benefit: BenefitSubscriberInner
-  subscription: SubscriptionSubscriber
+  subscription: UserSubscription
 }) => {
   const campaigns = useAdvertisementCampaigns(subscription.id, benefit.id)
 
@@ -59,7 +59,7 @@ const CreateCampaign = ({
   subscription,
 }: {
   benefit: BenefitSubscriberInner
-  subscription: SubscriptionSubscriber
+  subscription: UserSubscription
 }) => {
   const create = useCreateAdvertisementCampaigns()
 

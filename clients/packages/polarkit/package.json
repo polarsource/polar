@@ -1,6 +1,6 @@
 {
   "name": "polarkit",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "private": true,
   "exports": {
     "./components/ui/accordion": "./src/components/ui/accordion.tsx",

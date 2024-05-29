@@ -1,5 +1,6 @@
 from collections.abc import Sequence
 from datetime import datetime
+from enum import StrEnum
 from typing import Annotated, Self
 from uuid import UUID
 
@@ -200,6 +201,18 @@ class CreditBalance(Schema):
     amount: CurrencyAmount = Field(
         description="The customers credit balance. A negative value means that Polar owes this customer money (credit), a positive number means that the customer owes Polar money (debit)."
     )
+
+
+class OrganizationCustomerType(StrEnum):
+    subscription = "subscription"
+    order = "order"
+    donation = "donation"
+
+
+class OrganizationCustomer(Schema):
+    public_name: str
+    github_username: str | None = None
+    avatar_url: str | None = None
 
 
 #

@@ -22,16 +22,13 @@ from polar.posthog import posthog
 from polar.tags.api import Tags
 from polar.user.service.user import user as user_service
 
-from ..product.service.product import (
-    product as product_service,
-)
+from ..product.service.product import product as product_service
 from . import auth
 from .schemas import Subscription as SubscriptionSchema
 from .schemas import (
     SubscriptionCreateEmail,
     SubscriptionsImported,
     SubscriptionsStatistics,
-    SubscriptionSummary,
 )
 from .service import AlreadySubscribed, SearchSortProperty
 from .service import subscription as subscription_service
@@ -247,24 +244,3 @@ async def subscriptions_export(
     name = f"{organization.name}_subscribers.csv"
     headers = {"Content-Disposition": f'attachment; filename="{name}"'}
     return StreamingResponse(create_csv(), headers=headers, media_type="text/csv")
-
-
-@router.get(
-    "/subscriptions/summary",
-    response_model=ListResource[SubscriptionSummary],
-    tags=[Tags.PUBLIC],
-)
-async def search_subscriptions_summary(
-    pagination: PaginationParamsQuery,
-    organization: ResolvedOrganization,
-    session: AsyncSession = Depends(get_db_session),
-) -> ListResource[SubscriptionSummary]:
-    results, count = await subscription_service.search_summary(
-        session, organization=organization, pagination=pagination
-    )
-
-    return ListResource.from_paginated_results(
-        [SubscriptionSummary.model_validate(result) for result in results],
-        count,
-        pagination,
-    )

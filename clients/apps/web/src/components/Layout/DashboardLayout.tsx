@@ -16,6 +16,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useMemo,
   useState,
 } from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -50,6 +51,7 @@ const GitHubAppUpsell = () => {
 }
 
 const DashboardSidebar = () => {
+  const [scrollDistance, setScrollDistance] = useState(0)
   const [scrollTop, setScrollTop] = useState(0)
   const { currentUser } = useAuth()
 
@@ -68,10 +70,17 @@ const DashboardSidebar = () => {
     setScrollTop(e.currentTarget.scrollTop)
   }, [])
 
-  const shouldRenderBorder = scrollTop > 0
+  const shouldRenderUpperBorder = useMemo(() => scrollTop > 0, [scrollTop])
+  const shouldRenderLowerBorder = useMemo(
+    () => scrollTop < scrollDistance,
+    [scrollTop, scrollDistance],
+  )
 
-  const scrollClassName = shouldRenderBorder
-    ? 'border-b dark:border-b-polar-800 border-b-gray-100'
+  const upperScrollClassName = shouldRenderUpperBorder
+    ? 'border-b dark:border-b-polar-700 border-b-gray-200'
+    : ''
+  const lowerScrollClassName = shouldRenderLowerBorder
+    ? 'border-t dark:border-t-polar-700 border-t-gray-200'
     : ''
 
   if (!currentUser) {
@@ -85,7 +94,7 @@ const DashboardSidebar = () => {
       )}
     >
       <div className="flex h-full flex-col">
-        <div className={scrollClassName}>
+        <div className={upperScrollClassName}>
           <div className="relative z-10 mt-5 hidden translate-x-0 flex-row items-center justify-between space-x-2 pl-7 pr-8 md:flex">
             <BrandingMenu />
           </div>
@@ -95,6 +104,11 @@ const DashboardSidebar = () => {
         </div>
 
         <div
+          ref={(el) => {
+            if (el) {
+              setScrollDistance(el.scrollHeight - el.clientHeight)
+            }
+          }}
           className="flex w-full flex-grow flex-col gap-y-2 md:h-full md:overflow-y-auto"
           onScroll={handleScroll}
         >
@@ -105,7 +119,7 @@ const DashboardSidebar = () => {
           {shouldRenderMaintainerNavigation && <DisabledMaintainerNavigation />}
         </div>
 
-        <div className="hidden p-8 md:block">
+        <div className={twMerge('hidden p-8 md:block', lowerScrollClassName)}>
           <CommandPaletteTrigger
             title="API & Documentation"
             className="cursor-text "
@@ -113,7 +127,7 @@ const DashboardSidebar = () => {
           />
         </div>
 
-        <div className="dark:border-t-polar-800 flex flex-col gap-y-2 border-t border-t-gray-100">
+        <div className="dark:border-t-polar-700 flex flex-col gap-y-2 border-t border-t-gray-200">
           <MetaNavigation />
         </div>
       </div>

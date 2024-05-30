@@ -3,7 +3,7 @@ from collections.abc import Sequence
 from enum import StrEnum
 from typing import Any
 
-from sqlalchemy import Select, UnaryExpression, asc, desc, nulls_first, select
+from sqlalchemy import Select, UnaryExpression, asc, desc, nulls_first, or_, select
 from sqlalchemy.orm import aliased, contains_eager, joinedload
 
 from polar.auth.models import Anonymous, AuthSubject, is_direct_user
@@ -65,6 +65,7 @@ class UserSubscriptionService(ResourceServiceReader[Subscription]):
         organization_id: uuid.UUID | None = None,
         product_id: uuid.UUID | None = None,
         active: bool | None = None,
+        query: str | None = None,
         pagination: PaginationParams,
         sorting: list[Sorting[SortProperty]] = [(SortProperty.started_at, True)],
     ) -> tuple[Sequence[Subscription], int]:
@@ -72,8 +73,10 @@ class UserSubscriptionService(ResourceServiceReader[Subscription]):
             Subscription.started_at.is_not(None)
         )
 
-        statement = statement.options(
-            joinedload(Subscription.product),
+        statement = (
+            statement.join(Product, onclause=Subscription.product_id == Product.id)
+            .join(Organization, onclause=Product.organization_id == Organization.id)
+            .options(contains_eager(Subscription.product))
         )
 
         SubscriptionProductPrice = aliased(ProductPrice)
@@ -95,6 +98,14 @@ class UserSubscriptionService(ResourceServiceReader[Subscription]):
             else:
                 statement = statement.where(Subscription.canceled.is_(True))
 
+        if query is not None:
+            statement = statement.where(
+                or_(
+                    Product.name.ilike(f"%{query}%"),
+                    Organization.name.ilike(f"%{query}%"),
+                )
+            )
+
         order_by_clauses: list[UnaryExpression[Any]] = []
         for criterion, is_desc in sorting:
             clause_function = desc if is_desc else asc
@@ -107,9 +118,6 @@ class UserSubscriptionService(ResourceServiceReader[Subscription]):
             elif criterion == SortProperty.status:
                 order_by_clauses.append(clause_function(Subscription.status))
             elif criterion == SortProperty.organization:
-                statement = statement.join(
-                    Organization, onclause=Product.organization_id == Organization.id
-                )
                 order_by_clauses.append(clause_function(Organization.name))
             elif criterion == SortProperty.product:
                 order_by_clauses.append(clause_function(Product.name))

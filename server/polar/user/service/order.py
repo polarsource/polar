@@ -3,7 +3,7 @@ from collections.abc import Sequence
 from enum import StrEnum
 from typing import Any
 
-from sqlalchemy import Select, UnaryExpression, asc, desc, select
+from sqlalchemy import Select, UnaryExpression, asc, desc, or_, select
 from sqlalchemy.orm import aliased, contains_eager, joinedload
 
 from polar.auth.models import AuthSubject
@@ -44,6 +44,8 @@ class UserOrderService(ResourceServiceReader[Order]):
         organization_id: uuid.UUID | None = None,
         product_id: uuid.UUID | None = None,
         product_price_type: ProductPriceType | None = None,
+        subscription_id: uuid.UUID | None = None,
+        query: str | None = None,
         pagination: PaginationParams,
         sorting: list[Sorting[SortProperty]] = [(SortProperty.created_at, True)],
     ) -> tuple[Sequence[Order], int]:
@@ -51,7 +53,7 @@ class UserOrderService(ResourceServiceReader[Order]):
 
         statement = statement.options(
             joinedload(Order.subscription),
-        )
+        ).join(Organization, onclause=Product.organization_id == Organization.id)
 
         OrderProductPrice = aliased(ProductPrice)
         statement = statement.join(
@@ -67,6 +69,17 @@ class UserOrderService(ResourceServiceReader[Order]):
         if product_price_type is not None:
             statement = statement.where(OrderProductPrice.type == product_price_type)
 
+        if subscription_id is not None:
+            statement = statement.where(Order.subscription_id == subscription_id)
+
+        if query is not None:
+            statement = statement.where(
+                or_(
+                    Product.name.ilike(f"%{query}%"),
+                    Organization.name.ilike(f"%{query}%"),
+                )
+            )
+
         order_by_clauses: list[UnaryExpression[Any]] = []
         for criterion, is_desc in sorting:
             clause_function = desc if is_desc else asc
@@ -75,9 +88,6 @@ class UserOrderService(ResourceServiceReader[Order]):
             elif criterion == SortProperty.amount:
                 order_by_clauses.append(clause_function(Order.amount))
             elif criterion == SortProperty.organization:
-                statement = statement.join(
-                    Organization, onclause=Product.organization_id == Organization.id
-                )
                 order_by_clauses.append(clause_function(Organization.name))
             elif criterion == SortProperty.product:
                 order_by_clauses.append(clause_function(Product.name))

@@ -3,6 +3,7 @@ import {
   UserFreeSubscriptionCreate,
   UserRead,
   UserUpdateSettings,
+  UsersApiListOrdersRequest,
   UsersApiListSubscriptionsRequest,
 } from '@polar-sh/sdk'
 import {
@@ -95,6 +96,32 @@ export const useCreateSubscription = () =>
   useMutation({
     mutationFn: (userFreeSubscriptionCreate: UserFreeSubscriptionCreate) => {
       return api.users.createSubscription({ userFreeSubscriptionCreate })
+    },
+    onSuccess: (_result, _variables, _ctx) => {
+      queryClient.invalidateQueries({
+        queryKey: ['user', 'subscriptions'],
+      })
+    },
+  })
+
+export const useUserOrders = (parameters: UsersApiListOrdersRequest = {}) =>
+  useQuery({
+    queryKey: ['user', 'orders', parameters],
+    queryFn: () => api.users.listOrders(parameters),
+    retry: defaultRetry,
+  })
+
+export const useUserOrderInvoice = () =>
+  useMutation({
+    mutationFn: (id: string) => {
+      return api.users.getOrderInvoice({ id })
+    },
+  })
+
+export const useCancelSubscription = (id: string) =>
+  useMutation({
+    mutationFn: () => {
+      return api.users.cancelSubscription({ id })
     },
     onSuccess: (_result, _variables, _ctx) => {
       queryClient.invalidateQueries({

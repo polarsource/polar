@@ -203,10 +203,10 @@ export const useOrganizationCredits = (id?: string) =>
     enabled: !!id,
   })
 
-export const useOrganization = (id: string) =>
+export const useOrganization = (id: string, enabled: boolean = true) =>
   useQuery({
     queryKey: ['organization', id],
     queryFn: () => api.organizations.get({ id }),
     retry: defaultRetry,
-    enabled: !!id,
+    enabled,
   })

@@ -115,7 +115,7 @@ export const HighlightedTiersEditor = ({
             .filter(hasRecurringInterval(recurringInterval))
             .map((tier) => (
               <SubscriptionTierCard
-                className="min-h-0 w-full max-w-[260px] shrink-0 md:max-w-full"
+                className="min-h-0 w-full max-w-[260px] shrink-0"
                 key={tier.id}
                 subscriptionTier={tier}
                 variant="small"

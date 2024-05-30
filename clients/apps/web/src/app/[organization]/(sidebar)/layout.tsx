@@ -1,5 +1,4 @@
 import LogoIcon from '@/components/Brand/LogoIcon'
-import { BrandingMenu } from '@/components/Layout/Public/BrandingMenu'
 import { OrganizationPublicPageNav } from '@/components/Organization/OrganizationPublicPageNav'
 import { OrganizationPublicSidebar } from '@/components/Organization/OrganizationPublicSidebar'
 import { PublicPageOrganizationContextProvider } from '@/providers/organization'
@@ -100,49 +99,41 @@ export default async function Layout({
 
   return (
     <PublicPageOrganizationContextProvider organization={organization}>
-      <div className="flex flex-col">
-        <div className="mx-auto flex w-full max-w-[1440px] flex-col items-start px-4 md:h-full md:flex-row md:gap-8 md:space-y-0 xl:gap-24">
-          <div className="dark:bg-polar-950 sticky top-0 z-20 flex w-full flex-row items-center justify-between bg-white py-4 md:relative md:hidden">
-            <a href="/">
-              <LogoIcon
-                className="text-blue-500 dark:text-blue-400"
-                size={40}
-              />
-            </a>
-            <PolarMenu
-              organization={organization}
-              authenticatedUser={authenticatedUser}
-              userAdminOrganizations={userAdminOrganizations?.items ?? []}
-            />
-          </div>
-          <div className="relative flex w-fit flex-shrink-0 flex-col justify-between py-8 md:sticky md:top-0 md:py-16">
-            <OrganizationPublicSidebar
-              subscriptionsSummary={subscriptionsSummary}
-              organization={organization}
-              userAdminOrganizations={userAdminOrganizations?.items ?? []}
-              products={products?.items ?? []}
-            />
-          </div>
-          <div className="flex h-full w-full flex-col gap-y-8 md:gap-y-16 md:py-12">
-            <div className="flex w-full flex-row flex-wrap items-center justify-between gap-x-8 gap-y-4">
-              <div className="flex w-full flex-row items-center gap-x-6 overflow-x-auto md:w-fit md:overflow-x-visible">
-                <div className="hidden md:flex">
-                  <BrandingMenu />
-                </div>
-                <div className="flex w-full flex-row items-center pb-2 md:pb-0">
-                  <OrganizationPublicPageNav organization={organization} />
-                </div>
-              </div>
-              <div className="ml-auto hidden flex-row md:flex">
-                <PolarMenu
-                  organization={organization}
-                  authenticatedUser={authenticatedUser}
-                  userAdminOrganizations={userAdminOrganizations?.items ?? []}
-                />
+      <div className="mx-auto flex w-full max-w-full flex-col items-start md:h-screen md:flex-row md:gap-8 md:space-y-0  xl:gap-24">
+        <div className="dark:bg-polar-950 sticky top-0 z-20 flex w-full flex-row items-center justify-between bg-white py-4 md:relative md:hidden">
+          <a href="/">
+            <LogoIcon className="text-blue-500 dark:text-blue-400" size={40} />
+          </a>
+          <PolarMenu
+            organization={organization}
+            authenticatedUser={authenticatedUser}
+            userAdminOrganizations={userAdminOrganizations?.items ?? []}
+          />
+        </div>
+        <div className="relative flex h-full w-full max-w-[30%] flex-col justify-between px-4 py-8 md:sticky md:top-0 md:px-12 md:py-16">
+          <OrganizationPublicSidebar
+            subscriptionsSummary={subscriptionsSummary}
+            organization={organization}
+            userAdminOrganizations={userAdminOrganizations?.items ?? []}
+            products={products?.items ?? []}
+          />
+        </div>
+        <div className="flex h-full w-full max-w-7xl flex-col gap-y-8 overflow-y-auto px-4 md:gap-y-16 md:px-12 md:py-12">
+          <div className="flex w-full flex-row flex-wrap items-center justify-between gap-x-8 gap-y-4">
+            <div className="flex w-full flex-row items-center gap-x-6 overflow-x-auto md:w-fit md:overflow-x-visible">
+              <div className="flex w-full flex-row items-center pb-2 md:pb-0">
+                <OrganizationPublicPageNav organization={organization} />
               </div>
             </div>
-            {children}
+            <div className="ml-auto hidden flex-row md:flex">
+              <PolarMenu
+                organization={organization}
+                authenticatedUser={authenticatedUser}
+                userAdminOrganizations={userAdminOrganizations?.items ?? []}
+              />
+            </div>
           </div>
+          {children}
         </div>
       </div>
     </PublicPageOrganizationContextProvider>

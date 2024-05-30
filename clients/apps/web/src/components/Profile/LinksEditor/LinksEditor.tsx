@@ -19,14 +19,12 @@ export interface LinksEditorProps {
   links: { opengraph: OgObject; url: string }[]
   onChange: (organizations: Link[]) => void
   disabled?: boolean
-  variant?: 'grid' | 'column'
 }
 
 export const LinksEditor = ({
   links,
   onChange,
   disabled,
-  variant = 'grid',
 }: LinksEditorProps) => {
   const { show, isShown, hide } = useModal()
 
@@ -54,8 +52,7 @@ export const LinksEditor = ({
           <h3 className="text-center text-lg">Links</h3>
           <p
             className={twMerge(
-              'cursor-pointer text-center text-blue-500 dark:text-blue-400',
-              variant === 'column' && 'text-sm',
+              'cursor-pointer text-center text-sm text-blue-500 dark:text-blue-400',
             )}
             onClick={show}
           >
@@ -105,9 +102,7 @@ export const LinksEditor = ({
           </div>
           <div
             className={twMerge(
-              variant === 'grid'
-                ? 'gap-6 md:grid md:grid-cols-2 lg:grid-cols-3'
-                : 'flex gap-y-4 md:flex-col',
+              'gap-6 md:grid md:grid-cols-2 lg:grid-cols-3',
               '-mx-4 flex-row justify-start gap-4 overflow-x-auto px-4 pb-4 md:mx-0 md:p-0',
             )}
           >

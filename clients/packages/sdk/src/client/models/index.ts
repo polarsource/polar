@@ -11494,6 +11494,18 @@ export interface UserOrderProduct {
      * @memberof UserOrderProduct
      */
     is_highlighted?: boolean;
+    /**
+     * List of available prices for this product.
+     * @type {Array<PricesInner>}
+     * @memberof UserOrderProduct
+     */
+    prices: Array<PricesInner>;
+    /**
+     * 
+     * @type {Array<BenefitSubscriberInner>}
+     * @memberof UserOrderProduct
+     */
+    benefits: Array<BenefitSubscriberInner>;
 }
 /**
  * 

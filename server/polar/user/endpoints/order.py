@@ -47,6 +47,12 @@ async def list_orders(
             "`one_time` will return orders corresponding to one-time purchases."
         ),
     ),
+    subscription_id: UUID4 | None = Query(
+        None, description="Filter by subscription ID."
+    ),
+    query: str | None = Query(
+        None, description="Search by product or organization name."
+    ),
     session: AsyncSession = Depends(get_db_session),
 ) -> ListResource[UserOrder]:
     """List my orders."""
@@ -56,6 +62,8 @@ async def list_orders(
         organization_id=organization_id,
         product_id=product_id,
         product_price_type=product_price_type,
+        subscription_id=subscription_id,
+        query=query,
         pagination=pagination,
         sorting=sorting,
     )

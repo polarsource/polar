@@ -53,6 +53,9 @@ async def list_subscriptions(
         None,
         description=("Filter by active or cancelled subscription."),
     ),
+    query: str | None = Query(
+        None, description="Search by product or organization name."
+    ),
     session: AsyncSession = Depends(get_db_session),
 ) -> ListResource[UserSubscription]:
     """List my subscriptions."""
@@ -62,6 +65,7 @@ async def list_subscriptions(
         organization_id=organization_id,
         product_id=product_id,
         active=active,
+        query=query,
         pagination=pagination,
         sorting=sorting,
     )

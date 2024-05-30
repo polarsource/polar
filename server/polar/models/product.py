@@ -2,6 +2,7 @@ from enum import StrEnum
 from typing import TYPE_CHECKING, cast
 from uuid import UUID
 
+from citext import CIText
 from sqlalchemy import Boolean, ColumnElement, ForeignKey, Index, String, Text, select
 from sqlalchemy.ext.associationproxy import AssociationProxy, association_proxy
 from sqlalchemy.ext.hybrid import hybrid_property
@@ -29,7 +30,7 @@ class Product(RecordModel):
 
     __table_args__ = (Index("idx_organization_id_type", "organization_id", "type"),)
 
-    name: Mapped[str] = mapped_column(String, nullable=False)
+    name: Mapped[str] = mapped_column(CIText(), nullable=False)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     is_archived: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
 

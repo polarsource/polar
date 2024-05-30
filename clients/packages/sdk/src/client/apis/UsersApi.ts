@@ -61,6 +61,8 @@ export interface UsersApiListOrdersRequest {
     organizationId?: string;
     productId?: string;
     productPriceType?: ProductPriceType;
+    subscriptionId?: string;
+    query?: string;
     page?: number;
     limit?: number;
     sorting?: Array<string>;
@@ -70,6 +72,7 @@ export interface UsersApiListSubscriptionsRequest {
     organizationId?: string;
     productId?: string;
     active?: boolean;
+    query?: string;
     page?: number;
     limit?: number;
     sorting?: Array<string>;
@@ -474,6 +477,14 @@ export class UsersApi extends runtime.BaseAPI {
             queryParameters['product_price_type'] = requestParameters['productPriceType'];
         }
 
+        if (requestParameters['subscriptionId'] != null) {
+            queryParameters['subscription_id'] = requestParameters['subscriptionId'];
+        }
+
+        if (requestParameters['query'] != null) {
+            queryParameters['query'] = requestParameters['query'];
+        }
+
         if (requestParameters['page'] != null) {
             queryParameters['page'] = requestParameters['page'];
         }
@@ -532,6 +543,10 @@ export class UsersApi extends runtime.BaseAPI {
 
         if (requestParameters['active'] != null) {
             queryParameters['active'] = requestParameters['active'];
+        }
+
+        if (requestParameters['query'] != null) {
+            queryParameters['query'] = requestParameters['query'];
         }
 
         if (requestParameters['page'] != null) {

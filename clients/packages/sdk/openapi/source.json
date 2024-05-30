@@ -407,6 +407,43 @@
                         "description": "Filter by product price type. `recurring` will return orders corresponding to subscriptions creations or renewals. `one_time` will return orders corresponding to one-time purchases."
                     },
                     {
+                        "name": "subscription_id",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string",
+                                    "format": "uuid4"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "description": "Filter by subscription ID.",
+                            "title": "Subscription Id"
+                        },
+                        "description": "Filter by subscription ID."
+                    },
+                    {
+                        "name": "query",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "description": "Search by product or organization name.",
+                            "title": "Query"
+                        },
+                        "description": "Search by product or organization name."
+                    },
+                    {
                         "name": "page",
                         "in": "query",
                         "required": false,
@@ -718,6 +755,24 @@
                             "title": "Active"
                         },
                         "description": "Filter by active or cancelled subscription."
+                    },
+                    {
+                        "name": "query",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "description": "Search by product or organization name.",
+                            "title": "Query"
+                        },
+                        "description": "Search by product or organization name."
                     },
                     {
                         "name": "page",
@@ -6440,9 +6495,9 @@
                             },
                             "description": "Filter by the type of purchase the customer made.",
                             "default": [
+                                "subscription",
                                 "order",
-                                "donation",
-                                "subscription"
+                                "donation"
                             ],
                             "title": "Customer Types"
                         },
@@ -11542,8 +11597,8 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "webhooks:read",
-                            "webhooks:write"
+                            "webhooks:write",
+                            "webhooks:read"
                         ]
                     },
                     {
@@ -11713,8 +11768,8 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "webhooks:read",
-                            "webhooks:write"
+                            "webhooks:write",
+                            "webhooks:read"
                         ]
                     },
                     {
@@ -11949,8 +12004,8 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "webhooks:read",
-                            "webhooks:write"
+                            "webhooks:write",
+                            "webhooks:read"
                         ]
                     },
                     {
@@ -12115,8 +12170,8 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "creator:products:read",
-                            "creator:products:write"
+                            "creator:products:write",
+                            "creator:products:read"
                         ]
                     },
                     {
@@ -12340,8 +12395,8 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "creator:products:read",
-                            "creator:products:write"
+                            "creator:products:write",
+                            "creator:products:read"
                         ]
                     },
                     {
@@ -27253,6 +27308,51 @@
                         ],
                         "title": "Is Highlighted",
                         "deprecated": true
+                    },
+                    "prices": {
+                        "items": {
+                            "oneOf": [
+                                {
+                                    "$ref": "#/components/schemas/ProductPriceRecurring"
+                                },
+                                {
+                                    "$ref": "#/components/schemas/ProductPriceOneTime"
+                                }
+                            ],
+                            "discriminator": {
+                                "propertyName": "type",
+                                "mapping": {
+                                    "one_time": "#/components/schemas/ProductPriceOneTime",
+                                    "recurring": "#/components/schemas/ProductPriceRecurring"
+                                }
+                            }
+                        },
+                        "type": "array",
+                        "title": "Prices",
+                        "description": "List of available prices for this product."
+                    },
+                    "benefits": {
+                        "items": {
+                            "anyOf": [
+                                {
+                                    "$ref": "#/components/schemas/BenefitArticlesSubscriber"
+                                },
+                                {
+                                    "$ref": "#/components/schemas/BenefitAdsSubscriber"
+                                },
+                                {
+                                    "$ref": "#/components/schemas/BenefitDiscordSubscriber"
+                                },
+                                {
+                                    "$ref": "#/components/schemas/BenefitCustomSubscriber"
+                                },
+                                {
+                                    "$ref": "#/components/schemas/BenefitGitHubRepositorySubscriber"
+                                }
+                            ]
+                        },
+                        "type": "array",
+                        "title": "BenefitSubscriber"
                     }
                 },
                 "type": "object",
@@ -27262,7 +27362,9 @@
                     "name",
                     "is_recurring",
                     "is_archived",
-                    "organization_id"
+                    "organization_id",
+                    "prices",
+                    "benefits"
                 ],
                 "title": "UserOrderProduct"
             },

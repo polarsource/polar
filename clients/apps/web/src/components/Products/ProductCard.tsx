@@ -1,28 +1,34 @@
 'use client'
 
+import { useOrganization } from '@/hooks/queries'
 import { dummyMedia } from '@/hooks/queries/dummy_products'
 import { isFeatureEnabled } from '@/utils/feature-flags'
 import { PanoramaOutlined } from '@mui/icons-material'
-import { Organization, Product } from '@polar-sh/sdk'
+import { Product, ProductPrice } from '@polar-sh/sdk'
 import Markdown from 'markdown-to-jsx'
 import Image from 'next/image'
 import { Pill } from 'polarkit/components/ui/atoms'
 import Avatar from 'polarkit/components/ui/atoms/avatar'
 import { markdownOpts } from '../Feed/Markdown/markdown'
 import SubscriptionGroupIcon from '../Subscriptions/SubscriptionGroupIcon'
+import ProductPriceLabel from './ProductPriceLabel'
 import ProductPrices from './ProductPrices'
 
 interface ProductCardProps {
   product: Product
-  organization?: Organization
+  price?: ProductPrice
   showOrganization?: boolean
 }
 
 export const ProductCard = ({
   product,
-  organization,
+  price,
   showOrganization = false,
 }: ProductCardProps) => {
+  const { data: organization } = useOrganization(
+    product.organization_id,
+    showOrganization,
+  )
   return (
     <div className="dark:bg-polar-800 dark:border-polar-700 dark:hover:bg-polar-700 flex h-full w-full flex-col gap-6 rounded-3xl border border-transparent bg-white p-6 shadow-sm transition-colors hover:bg-gray-50">
       {isFeatureEnabled('products') && (
@@ -85,7 +91,11 @@ export const ProductCard = ({
       </div>
       <div className="flex flex-row items-center justify-between">
         <h3 className="text-lg leading-snug text-blue-500 dark:text-blue-400">
-          <ProductPrices prices={product.prices} />
+          {price ? (
+            <ProductPriceLabel price={price} />
+          ) : (
+            <ProductPrices prices={product.prices} />
+          )}
         </h3>
         <Pill className="px-2.5 py-1" color="blue">
           {product.benefits.length === 1

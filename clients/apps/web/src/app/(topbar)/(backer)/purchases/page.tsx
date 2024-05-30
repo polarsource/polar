@@ -1,7 +1,5 @@
-'use client'
-
-import ClientPage from './ClientPage'
+import { redirect } from 'next/navigation'
 
 export default function Page() {
-  return <ClientPage />
+  redirect('/purchases/products')
 }

@@ -70,7 +70,7 @@ export default function ClientPage() {
           </div>
         </div>
       ) : (
-        <>
+        <div className="flex flex-col">
           <div className="grid h-full grid-cols-1 gap-6 md:grid-cols-3">
             {subscriptions?.items?.map((order) => (
               <SubscriptionItem key={order.id} subscription={order} />
@@ -83,7 +83,7 @@ export default function ClientPage() {
             onPageChange={onPageChange}
             currentURL={searchParams}
           />
-        </>
+        </div>
       )}
     </div>
   )

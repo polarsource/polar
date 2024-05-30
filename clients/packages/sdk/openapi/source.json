@@ -6024,8 +6024,8 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "organizations:write",
-                            "organizations:read"
+                            "organizations:read",
+                            "organizations:write"
                         ]
                     },
                     {
@@ -6087,8 +6087,8 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "organizations:write",
-                            "organizations:read"
+                            "organizations:read",
+                            "organizations:write"
                         ]
                     },
                     {
@@ -6170,8 +6170,8 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "organizations:write",
-                            "organizations:read"
+                            "organizations:read",
+                            "organizations:write"
                         ]
                     },
                     {
@@ -6272,8 +6272,8 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "organizations:write",
-                            "organizations:read"
+                            "organizations:read",
+                            "organizations:write"
                         ]
                     },
                     {
@@ -6407,8 +6407,8 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "organizations:write",
-                            "organizations:read"
+                            "organizations:read",
+                            "organizations:write"
                         ]
                     },
                     {
@@ -6440,9 +6440,9 @@
                             },
                             "description": "Filter by the type of purchase the customer made.",
                             "default": [
+                                "subscription",
                                 "order",
-                                "donation",
-                                "subscription"
+                                "donation"
                             ],
                             "title": "Customer Types"
                         },
@@ -6911,8 +6911,8 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "creator:subscriptions:read",
-                            "creator:subscriptions:write"
+                            "creator:subscriptions:write",
+                            "creator:subscriptions:read"
                         ]
                     },
                     {
@@ -7060,8 +7060,8 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "creator:subscriptions:read",
-                            "creator:subscriptions:write"
+                            "creator:subscriptions:write",
+                            "creator:subscriptions:read"
                         ]
                     },
                     {
@@ -7507,8 +7507,8 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "creator:subscriptions:read",
-                            "creator:subscriptions:write"
+                            "creator:subscriptions:write",
+                            "creator:subscriptions:read"
                         ]
                     },
                     {

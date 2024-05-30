@@ -1,6 +1,6 @@
 {
   "name": "@polar-sh/sdk",
-  "version": "0.5.1",
+  "version": "0.5.2",
   "type": "module",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",

@@ -23,7 +23,6 @@ from polar.models.product import SubscriptionTierType
 from polar.models.product_price import ProductPriceRecurringInterval
 from polar.models.subscription import SubscriptionStatus
 from polar.models.transaction import PaymentProcessor, TransactionType
-from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession
 from polar.subscription.service import (
     AlreadySubscribed,
@@ -332,50 +331,6 @@ class TestCreateSubscriptionFromStripe:
 
         assert user_loaded.stripe_customer_id == stripe_subscription.customer
 
-    async def test_organization(
-        self,
-        session: AsyncSession,
-        stripe_service_mock: MagicMock,
-        product: Product,
-        user: User,
-        organization: Organization,
-    ) -> None:
-        stripe_customer = construct_stripe_customer()
-        get_customer_mock = stripe_service_mock.get_customer
-        get_customer_mock.return_value = stripe_customer
-
-        assert product.stripe_product_id is not None
-        stripe_subscription = construct_stripe_subscription(
-            user=user,
-            organization=organization,
-            price_id=product.prices[0].stripe_price_id,
-        )
-
-        # then
-        session.expunge_all()
-
-        subscription = await subscription_service.create_subscription_from_stripe(
-            session, stripe_subscription=stripe_subscription
-        )
-
-        assert subscription.stripe_subscription_id == stripe_subscription.id
-        assert subscription.product_id == product.id
-
-        assert subscription.user_id == user.id
-        assert subscription.organization_id == organization.id
-
-        # load user
-        user_loaded = await user_service.get(session, user.id)
-        assert user_loaded
-        assert user_loaded.stripe_customer_id is None
-
-        # load org
-        organization_loaded = await organization_service.get(session, organization.id)
-        assert organization_loaded
-
-        assert organization_loaded.stripe_customer_id == stripe_subscription.customer
-        assert organization_loaded.billing_email == stripe_customer.email
-
 
 @pytest.mark.asyncio
 class TestUpdateSubscriptionFromStripe:
@@ -602,48 +557,6 @@ class TestUpdateProductBenefitsGrants:
         session.expunge_all()
 
         await subscription_service.update_product_benefits_grants(session, product)
-
-        assert enqueue_benefits_grants_mock.call_count == 2
-        assert enqueue_benefits_grants_mock.call_args_list[0].args[1] == subscription_1
-        assert enqueue_benefits_grants_mock.call_args_list[1].args[1] == subscription_2
-
-
-@pytest.mark.asyncio
-class TestUpdateOrganizationBenefitsGrants:
-    async def test_valid(
-        self,
-        session: AsyncSession,
-        save_fixture: SaveFixture,
-        mocker: MockerFixture,
-        user: User,
-        organization_second: Organization,
-        product: Product,
-        product_second: Product,
-    ) -> None:
-        enqueue_benefits_grants_mock = mocker.patch.object(
-            subscription_service, "enqueue_benefits_grants"
-        )
-
-        subscription_1 = await create_subscription(
-            save_fixture,
-            product=product,
-            user=user,
-            organization=organization_second,
-        )
-        subscription_2 = await create_subscription(
-            save_fixture,
-            product=product_second,
-            user=user,
-            organization=organization_second,
-        )
-        await create_subscription(save_fixture, product=product, user=user)
-
-        # then
-        session.expunge_all()
-
-        await subscription_service.update_organization_benefits_grants(
-            session, organization_second
-        )
 
         assert enqueue_benefits_grants_mock.call_count == 2
         assert enqueue_benefits_grants_mock.call_args_list[0].args[1] == subscription_1

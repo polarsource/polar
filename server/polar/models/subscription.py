@@ -1,6 +1,6 @@
 from datetime import UTC, datetime
 from enum import StrEnum
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING
 from uuid import UUID
 
 from sqlalchemy import (
@@ -9,7 +9,6 @@ from sqlalchemy import (
     ColumnElement,
     ForeignKey,
     String,
-    func,
     type_coerce,
 )
 from sqlalchemy.ext.hybrid import hybrid_property
@@ -19,7 +18,7 @@ from polar.kit.db.models import RecordModel
 from polar.kit.extensions.sqlalchemy import PostgresUUID
 
 if TYPE_CHECKING:
-    from polar.models import BenefitGrant, Organization, Product, ProductPrice, User
+    from polar.models import BenefitGrant, Product, ProductPrice, User
 
 
 class SubscriptionStatus(StrEnum):
@@ -65,17 +64,6 @@ class Subscription(RecordModel):
     def user(cls) -> Mapped["User"]:
         return relationship("User", lazy="raise")
 
-    organization_id: Mapped[UUID | None] = mapped_column(
-        PostgresUUID,
-        ForeignKey("organizations.id", ondelete="cascade"),
-        nullable=True,
-        index=True,
-    )
-
-    @declared_attr
-    def organization(cls) -> Mapped["Organization"]:
-        return relationship("Organization", lazy="raise")
-
     product_id: Mapped[UUID] = mapped_column(
         PostgresUUID,
         ForeignKey("products.id", ondelete="cascade"),
@@ -111,15 +99,6 @@ class Subscription(RecordModel):
             SubscriptionStatus.incomplete,
             SubscriptionStatus.incomplete_expired,
         ]
-
-    @hybrid_property
-    def subscriber_id(self) -> UUID:
-        return cast(UUID, self.user_id or self.organization_id)
-
-    @subscriber_id.inplace.expression
-    @classmethod
-    def _subscriber_id_expression(cls) -> ColumnElement[UUID]:
-        return func.coalesce(cls.user_id, cls.organization_id)
 
     @hybrid_property
     def active(self) -> bool:

@@ -434,7 +434,7 @@ BenefitSubscriber = Annotated[
 
 BenefitSubscriberAdapter = TypeAdapter[BenefitSubscriber](BenefitSubscriber)
 
-# Properties that are public (included in Subscription Tier endpoints)
+# Properties that are public (included in Product endpoints)
 BenefitPublic = BenefitBase | BenefitArticles
 
 

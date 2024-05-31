@@ -4,11 +4,15 @@ import BenefitDetails from '@/components/Benefit/BenefitDetails'
 import { BenefitRow } from '@/components/Benefit/BenefitRow'
 import { previewOpts } from '@/components/Feed/Markdown/BrowserRender'
 import { InlineModal } from '@/components/Modal/InlineModal'
-import { useOrganization, useUserOrderInvoice } from '@/hooks/queries'
+import {
+  useOrganization,
+  useUserBenefits,
+  useUserOrderInvoice,
+} from '@/hooks/queries'
 import { formatCurrencyAndAmount } from '@/utils/money'
 import { organizationPageLink } from '@/utils/nav'
 import { ArrowBackOutlined } from '@mui/icons-material'
-import { BenefitSubscriberInner, UserOrder } from '@polar-sh/sdk'
+import { UserBenefit, UserOrder } from '@polar-sh/sdk'
 import Markdown from 'markdown-to-jsx'
 import Link from 'next/link'
 import Button from 'polarkit/components/ui/atoms/button'
@@ -17,9 +21,15 @@ import { useCallback, useState } from 'react'
 
 const ClientPage = ({ order }: { order: UserOrder }) => {
   const { data: organization } = useOrganization(order.product.organization_id)
+  const { data: benefits } = useUserBenefits({
+    orderId: order.id,
+    limit: 100,
+    sorting: ['type'],
+  })
 
-  const [selectedBenefit, setSelectedBenefit] =
-    useState<BenefitSubscriberInner | null>(null)
+  const [selectedBenefit, setSelectedBenefit] = useState<UserBenefit | null>(
+    null,
+  )
 
   const orderInvoiceMutation = useUserOrderInvoice()
   const openInvoice = useCallback(async () => {
@@ -38,18 +48,20 @@ const ClientPage = ({ order }: { order: UserOrder }) => {
       </Link>
       <div className="flex h-full flex-grow flex-row items-start gap-x-12">
         <div className="flex w-full flex-col gap-8 md:w-full">
-          <ShadowBox className="flex flex-col gap-6 ring-gray-100">
-            {order.product.benefits.map((benefit) => (
-              <>
-                <BenefitRow
-                  key={benefit.id}
-                  benefit={benefit}
-                  selected={benefit.id === selectedBenefit?.id}
-                  onSelect={() => setSelectedBenefit(benefit)}
-                />
-              </>
-            ))}
-          </ShadowBox>
+          {benefits?.items && (
+            <ShadowBox className="flex flex-col gap-6 ring-gray-100">
+              {benefits.items.map((benefit) => (
+                <>
+                  <BenefitRow
+                    key={benefit.id}
+                    benefit={benefit}
+                    selected={benefit.id === selectedBenefit?.id}
+                    onSelect={() => setSelectedBenefit(benefit)}
+                  />
+                </>
+              ))}
+            </ShadowBox>
+          )}
           <InlineModal
             isShown={selectedBenefit !== null}
             hide={() => setSelectedBenefit(null)}

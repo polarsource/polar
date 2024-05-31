@@ -3,12 +3,12 @@
 import { resolveBenefitIcon } from '@/components/Benefit/utils'
 import GitHubIcon from '@/components/Icons/GitHubIcon'
 import { useOrganization } from '@/hooks/queries'
-import { BenefitSubscriberInner } from '@polar-sh/sdk'
+import { UserBenefit } from '@polar-sh/sdk'
 import Link from 'next/link'
 import Button from 'polarkit/components/ui/atoms/button'
 
 interface BenefitDetailsProps {
-  benefit: BenefitSubscriberInner
+  benefit: UserBenefit
 }
 
 const GitHubRepoWidget = ({ benefit }: BenefitDetailsProps) => {

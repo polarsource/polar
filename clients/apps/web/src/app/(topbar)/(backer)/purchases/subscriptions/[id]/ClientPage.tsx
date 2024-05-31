@@ -9,17 +9,14 @@ import ProductPriceLabel from '@/components/Products/ProductPriceLabel'
 import {
   useCancelSubscription,
   useOrganization,
+  useUserBenefits,
   useUserOrderInvoice,
   useUserOrders,
 } from '@/hooks/queries'
 import { formatCurrencyAndAmount } from '@/utils/money'
 import { organizationPageLink } from '@/utils/nav'
 import { ArrowBackOutlined, ReceiptOutlined } from '@mui/icons-material'
-import {
-  BenefitSubscriberInner,
-  UserOrder,
-  UserSubscription,
-} from '@polar-sh/sdk'
+import { UserBenefit, UserOrder, UserSubscription } from '@polar-sh/sdk'
 import Markdown from 'markdown-to-jsx'
 import Link from 'next/link'
 import { FormattedDateTime } from 'polarkit/components/ui/atoms'
@@ -31,9 +28,15 @@ const ClientPage = ({ subscription }: { subscription: UserSubscription }) => {
   const { data: organization } = useOrganization(
     subscription.product.organization_id,
   )
+  const { data: benefits } = useUserBenefits({
+    subscriptionId: subscription.id,
+    limit: 100,
+    sorting: ['type'],
+  })
 
-  const [selectedBenefit, setSelectedBenefit] =
-    useState<BenefitSubscriberInner | null>(null)
+  const [selectedBenefit, setSelectedBenefit] = useState<UserBenefit | null>(
+    null,
+  )
 
   const { data: orders } = useUserOrders({
     subscriptionId: subscription.id,
@@ -70,18 +73,20 @@ const ClientPage = ({ subscription }: { subscription: UserSubscription }) => {
       </Link>
       <div className="flex h-full flex-grow flex-row items-start gap-x-12">
         <div className="flex w-full flex-col gap-8 md:w-full">
-          <ShadowBox className="flex flex-col gap-6 ring-gray-100">
-            {subscription.product.benefits.map((benefit) => (
-              <>
-                <BenefitRow
-                  key={benefit.id}
-                  benefit={benefit}
-                  selected={benefit.id === selectedBenefit?.id}
-                  onSelect={() => setSelectedBenefit(benefit)}
-                />
-              </>
-            ))}
-          </ShadowBox>
+          {benefits?.items && (
+            <ShadowBox className="flex flex-col gap-6 ring-gray-100">
+              {benefits.items.map((benefit) => (
+                <>
+                  <BenefitRow
+                    key={benefit.id}
+                    benefit={benefit}
+                    selected={benefit.id === selectedBenefit?.id}
+                    onSelect={() => setSelectedBenefit(benefit)}
+                  />
+                </>
+              ))}
+            </ShadowBox>
+          )}
           <InlineModal
             isShown={selectedBenefit !== null}
             hide={() => setSelectedBenefit(null)}

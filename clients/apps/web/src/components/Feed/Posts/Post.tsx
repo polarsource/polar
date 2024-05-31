@@ -154,28 +154,30 @@ const PostBody = (props: FeedPost & { isHovered: boolean }) => {
     </div>
   )
 }
-export const AnimatedIconButton = (
-  props: PropsWithChildren<{
-    className?: string
-    active?: boolean | undefined
-    variant?: ButtonProps['variant']
-  }>,
-) => {
-  const x = useSpring(0, { damping: 15, velocity: 5 })
-  const incomingX = useTransform(x, [0, 1], [-30, 0], { clamp: false })
-  const outgoingX = useTransform(x, [0, 1], [0, 30], { clamp: false })
+export const AnimatedIconButton = ({
+  direction = 'horizontal',
+  ...props
+}: PropsWithChildren<{
+  className?: string
+  active?: boolean | undefined
+  variant?: ButtonProps['variant']
+  direction?: 'horizontal' | 'vertical'
+}>) => {
+  const pos = useSpring(0, { damping: 15, velocity: 5 })
+  const incoming = useTransform(pos, [0, 1], [-30, 0], { clamp: false })
+  const outgoing = useTransform(pos, [0, 1], [0, 30], { clamp: false })
 
   useEffect(() => {
-    x.set(props.active ? 1 : 0)
-  }, [x, props])
+    pos.set(props.active ? 1 : 0)
+  }, [pos, props])
 
   const handleMouse = useCallback(
     (value: number) => () => {
       if (typeof props.active === 'undefined') {
-        x.set(value)
+        pos.set(value)
       }
     },
-    [x, props],
+    [pos, props],
   )
 
   return (
@@ -192,13 +194,13 @@ export const AnimatedIconButton = (
     >
       <motion.div
         className="absolute inset-0 flex items-center justify-center"
-        style={{ x: incomingX }}
+        style={direction === 'horizontal' ? { x: incoming } : { y: incoming }}
       >
         {props.children}
       </motion.div>
       <motion.div
         className="absolute inset-0 flex items-center justify-center"
-        style={{ x: outgoingX }}
+        style={direction === 'horizontal' ? { x: outgoing } : { y: outgoing }}
       >
         {props.children}
       </motion.div>

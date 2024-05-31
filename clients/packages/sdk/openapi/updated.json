@@ -7246,8 +7246,8 @@
                             "description": "Filter by the type of purchase the customer made.",
                             "default": [
                                 "order",
-                                "donation",
-                                "subscription"
+                                "subscription",
+                                "donation"
                             ],
                             "title": "Customer Types"
                         },
@@ -7716,8 +7716,8 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "creator:subscriptions:read",
-                            "creator:subscriptions:write"
+                            "creator:subscriptions:write",
+                            "creator:subscriptions:read"
                         ]
                     },
                     {
@@ -7865,8 +7865,8 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "creator:subscriptions:read",
-                            "creator:subscriptions:write"
+                            "creator:subscriptions:write",
+                            "creator:subscriptions:read"
                         ]
                     },
                     {
@@ -8295,8 +8295,8 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "creator:subscriptions:read",
-                            "creator:subscriptions:write"
+                            "creator:subscriptions:write",
+                            "creator:subscriptions:read"
                         ]
                     },
                     {
@@ -12197,8 +12197,8 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "webhooks:write",
-                            "webhooks:read"
+                            "webhooks:read",
+                            "webhooks:write"
                         ]
                     },
                     {
@@ -12368,8 +12368,8 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "webhooks:write",
-                            "webhooks:read"
+                            "webhooks:read",
+                            "webhooks:write"
                         ]
                     },
                     {
@@ -12604,8 +12604,8 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "webhooks:write",
-                            "webhooks:read"
+                            "webhooks:read",
+                            "webhooks:write"
                         ]
                     },
                     {
@@ -14248,7 +14248,7 @@
                 }
             }
         },
-        "/api/v1/downloadables/{id}": {
+        "/api/v1/downloadables/{token}": {
             "get": {
                 "tags": [
                     "downloadables"
@@ -14273,13 +14273,12 @@
                 ],
                 "parameters": [
                     {
-                        "name": "id",
+                        "name": "token",
                         "in": "path",
                         "required": true,
                         "schema": {
                             "type": "string",
-                            "format": "uuid",
-                            "title": "Id"
+                            "title": "Token"
                         }
                     }
                 ],
@@ -14288,11 +14287,21 @@
                         "description": "Successful Response",
                         "content": {
                             "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/DownloadableRead"
-                                }
+                                "schema": {}
                             }
                         }
+                    },
+                    "302": {
+                        "description": "Redirected to download"
+                    },
+                    "400": {
+                        "description": "Invalid signature"
+                    },
+                    "404": {
+                        "description": "Downloadable not found"
+                    },
+                    "410": {
+                        "description": "Expired signature"
                     },
                     "422": {
                         "description": "Validation Error",

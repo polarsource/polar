@@ -291,7 +291,6 @@ class OrderService(ResourceServiceReader[Order]):
     async def create_order_from_stripe(
         self, session: AsyncSession, *, invoice: stripe_lib.Invoice
     ) -> Order:
-        assert invoice.charge is not None
         assert invoice.id is not None
 
         if invoice.metadata and invoice.metadata.get("type") in {
@@ -299,6 +298,8 @@ class OrderService(ResourceServiceReader[Order]):
             ProductType.donation,
         }:
             raise NotAnOrderInvoice(invoice.id)
+
+        assert invoice.charge is not None
 
         # Get price and product
         if len(invoice.lines.data) != 1:

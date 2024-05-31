@@ -315,41 +315,27 @@ const ClientPage: React.FC<SubscriptionsOverviewProps> = ({
                     >
                       <div className="flex flex-row items-center justify-center gap-2">
                         <Avatar
-                          avatar_url={
-                            subscription.organization
-                              ? subscription.organization.avatar_url
-                              : subscription.user.avatar_url
-                          }
-                          name={
-                            subscription.organization
-                              ? subscription.organization.name
-                              : subscription.user.public_name
-                          }
+                          avatar_url={subscription.user.avatar_url}
+                          name={subscription.user.public_name}
                           className="h-8 w-8"
                         />
                         <div className="flex flex-col text-sm">
-                          {subscription.organization ? (
-                            <div className="font-medium">
-                              {subscription.organization.name}
-                            </div>
-                          ) : (
-                            <>
-                              {subscription.user.github_username ? (
-                                <>
-                                  <div className="font-medium">
-                                    {subscription.user.github_username}
-                                  </div>
-                                  <div className="dark:text-polar-500 text-xs text-gray-400">
-                                    {subscription.user.email}
-                                  </div>
-                                </>
-                              ) : (
+                          <>
+                            {subscription.user.github_username ? (
+                              <>
                                 <div className="font-medium">
+                                  {subscription.user.github_username}
+                                </div>
+                                <div className="dark:text-polar-500 text-xs text-gray-400">
                                   {subscription.user.email}
                                 </div>
-                              )}
-                            </>
-                          )}
+                              </>
+                            ) : (
+                              <div className="font-medium">
+                                {subscription.user.email}
+                              </div>
+                            )}
+                          </>
 
                           <div className="dark:text-polar-500 text-xs text-gray-400">
                             <FormattedDateTime

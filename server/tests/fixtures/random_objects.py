@@ -597,7 +597,6 @@ async def create_subscription(
     product: Product,
     price: ProductPrice | None = None,
     user: User,
-    organization: Organization | None = None,
     status: SubscriptionStatus = SubscriptionStatus.incomplete,
     started_at: datetime | None = None,
     ended_at: datetime | None = None,
@@ -619,7 +618,6 @@ async def create_subscription(
         started_at=started_at,
         ended_at=ended_at,
         user=user,
-        organization=organization,
         product=product,
         price=price
         if price is not None
@@ -647,7 +645,6 @@ async def create_active_subscription(
         product=product,
         price=price,
         user=user,
-        organization=organization,
         status=SubscriptionStatus.active,
         started_at=started_at or utc_now(),
         ended_at=ended_at,
@@ -803,21 +800,6 @@ async def subscription(
     user: User,
 ) -> Subscription:
     return await create_subscription(save_fixture, product=product, user=user)
-
-
-@pytest_asyncio.fixture
-async def subscription_organization(
-    save_fixture: SaveFixture,
-    product: Product,
-    organization_second: Organization,
-    user_second: User,
-) -> Subscription:
-    return await create_subscription(
-        save_fixture,
-        product=product,
-        user=user_second,
-        organization=organization_second,
-    )
 
 
 async def create_benefit_grant(

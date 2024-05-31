@@ -157,7 +157,6 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
 
         query = query.options(
             joinedload(Subscription.user),
-            joinedload(Subscription.organization),
             joinedload(Subscription.price),
             joinedload(Subscription.product),
         )
@@ -174,7 +173,6 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         type: SubscriptionTierType | None = None,
         subscription_tier_id: uuid.UUID | None = None,
         subscriber_user_id: uuid.UUID | None = None,
-        subscriber_organization_id: uuid.UUID | None = None,
         active: bool | None = None,
         pagination: PaginationParams,
         sorting: list[Sorting[SearchSortProperty]] = [
@@ -199,15 +197,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
             statement = statement.where(Product.id == subscription_tier_id)
 
         if subscriber_user_id is not None:
-            statement = statement.where(
-                Subscription.user_id == subscriber_user_id,
-                Subscription.organization_id.is_(None),
-            )
-
-        if subscriber_organization_id is not None:
-            statement = statement.where(
-                Subscription.organization_id == subscriber_organization_id
-            )
+            statement = statement.where(Subscription.user_id == subscriber_user_id)
 
         if active is not None:
             if active:
@@ -242,7 +232,6 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
             contains_eager(Subscription.product),
             contains_eager(Subscription.price),
             contains_eager(Subscription.user),
-            joinedload(Subscription.organization),
         )
 
         results, count = await paginate(session, statement, pagination=pagination)
@@ -299,7 +288,6 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
             cancel_at_period_end=False,
             started_at=start,
             user=user,
-            organization=None,
             product=product,
             price=price,
         )
@@ -336,9 +324,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
             statement = (
                 select(Subscription)
                 .where(Subscription.id == uuid.UUID(existing_subscription_id))
-                .options(
-                    joinedload(Subscription.user), joinedload(Subscription.organization)
-                )
+                .options(joinedload(Subscription.user))
             )
             result = await session.execute(statement)
             subscription = result.unique().scalar_one_or_none()
@@ -366,21 +352,6 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         customer = stripe_service.get_customer(customer_id)
         customer_email = cast(str, customer.email)
 
-        # Subscribe as organization
-        organization_subscriber_id = stripe_subscription.metadata.get(
-            "organization_subscriber_id"
-        )
-        if organization_subscriber_id is not None:
-            organization = await organization_service.get(
-                session, uuid.UUID(organization_subscriber_id)
-            )
-            if organization is not None:
-                # Take the chance to update Stripe customer ID and billing email
-                organization.stripe_customer_id = customer_id
-                organization.billing_email = customer_email
-                session.add(organization)
-                subscription.organization = organization
-
         # Take user from existing subscription, or get it from metadata
         user_id = stripe_subscription.metadata.get("user_id")
         user: User | None = subscription.user
@@ -394,10 +365,9 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         subscription.user = user
 
         # Take the chance to update Stripe customer ID and email marketing
-        if subscription.organization is None:
-            user.stripe_customer_id = customer_id
-            await loops_service.user_update(user, isBacker=True)
-            session.add(user)
+        user.stripe_customer_id = customer_id
+        await loops_service.user_update(user, isBacker=True)
+        session.add(user)
 
         session.add(subscription)
         await session.flush()
@@ -472,19 +442,9 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
             case WebhookEventType.subscription_updated:
                 event = (event_type, full_subscription)
 
-        # subscription created hooks for subscribing organization
-        if subscription.organization_id:
-            if subscribing_org := await organization_service.get(
-                session, subscription.organization_id
-            ):
-                await webhook_service.send(session, target=subscribing_org, we=event)
-
         # subscription events for subscribing user
-        if subscription.user_id:
-            if subscribing_user := await user_service.get(
-                session, subscription.user_id
-            ):
-                await webhook_service.send(session, target=subscribing_user, we=event)
+        if subscribing_user := await user_service.get(session, subscription.user_id):
+            await webhook_service.send(session, target=subscribing_user, we=event)
 
         # subscribed to org
         if tier := await product_service.get_loaded(session, subscription.product_id):
@@ -578,17 +538,6 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
     ) -> None:
         statement = select(Subscription).where(
             Subscription.product_id == product.id, Subscription.deleted_at.is_(None)
-        )
-        subscriptions = await session.stream_scalars(statement)
-        async for subscription in subscriptions:
-            await self.enqueue_benefits_grants(session, subscription)
-
-    async def update_organization_benefits_grants(
-        self, session: AsyncSession, organization: Organization
-    ) -> None:
-        statement = select(Subscription).where(
-            Subscription.organization_id == organization.id,
-            Subscription.deleted_at.is_(None),
         )
         subscriptions = await session.stream_scalars(statement)
         async for subscription in subscriptions:
@@ -710,7 +659,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
                 func.count(
                     distinct(
                         tuple_(
-                            Subscription.subscriber_id,
+                            Subscription.user_id,
                             Subscription.product_id,
                         )
                     )
@@ -851,23 +800,9 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         self, auth_subject: AuthSubject[User]
     ) -> Select[Any]:
         user = auth_subject.subject
-        return (
-            select(Subscription)
-            .join(
-                UserOrganization,
-                isouter=True,
-                onclause=and_(
-                    UserOrganization.organization_id == Subscription.organization_id,
-                    UserOrganization.user_id == user.id,
-                ),
-            )
-            .where(
-                Subscription.deleted_at.is_(None),
-                or_(
-                    Subscription.user_id == user.id,
-                    UserOrganization.user_id == user.id,
-                ),
-            )
+        return select(Subscription).where(
+            Subscription.deleted_at.is_(None),
+            Subscription.user_id == user.id,
         )
 
     async def _get_outdated_grants(

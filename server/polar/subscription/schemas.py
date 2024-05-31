@@ -2,7 +2,6 @@ from datetime import date, datetime
 
 from pydantic import UUID4
 
-from polar.enums import Platforms
 from polar.kit.schemas import EmailStrDNS, Schema, TimestampedSchema
 from polar.models.subscription import SubscriptionStatus
 from polar.product.schemas import Product, ProductPrice
@@ -15,12 +14,6 @@ class SubscriptionUser(Schema):
     avatar_url: str | None = None
 
 
-class SubscriptionOrganization(Schema):
-    name: str
-    platform: Platforms
-    avatar_url: str
-
-
 class SubscriptionBase(TimestampedSchema):
     id: UUID4
     status: SubscriptionStatus
@@ -31,14 +24,12 @@ class SubscriptionBase(TimestampedSchema):
     ended_at: datetime | None = None
 
     user_id: UUID4
-    organization_id: UUID4 | None = None
     product_id: UUID4
     price_id: UUID4 | None = None
 
 
 class Subscription(SubscriptionBase):
     user: SubscriptionUser
-    organization: SubscriptionOrganization | None = None
     product: Product
     price: ProductPrice | None = None
 

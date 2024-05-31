@@ -2,7 +2,7 @@ from typing import Annotated, Literal
 
 from pydantic import UUID4, AfterValidator, Discriminator, Field
 
-from polar.benefit.schemas import BenefitPublic, BenefitSubscriber
+from polar.benefit.schemas import BenefitPublic
 from polar.kit.schemas import (
     EmptyStrToNoneValidator,
     MergeJSONSchema,
@@ -280,10 +280,3 @@ class Product(ProductBase):
     benefits: list[BenefitPublic] = Field(
         title="BenefitPublic", description="The benefits granted by the product."
     )
-
-
-class ProductSubscriber(ProductBase):
-    prices: list[ProductPrice] = Field(
-        description="List of available prices for this product."
-    )
-    benefits: list[BenefitSubscriber] = Field(title="BenefitSubscriber")

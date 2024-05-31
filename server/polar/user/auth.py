@@ -6,6 +6,13 @@ from polar.auth.dependencies import Authenticator
 from polar.auth.models import Anonymous, AuthSubject, User
 from polar.auth.scope import Scope
 
+_UserBenefitsRead = Authenticator(
+    required_scopes={Scope.web_default, Scope.user_benefits_read},
+    allowed_subjects={User},
+)
+UserBenefitsRead = Annotated[AuthSubject[User], Depends(_UserBenefitsRead)]
+
+
 _UserOrdersRead = Authenticator(
     required_scopes={Scope.web_default, Scope.user_orders_read},
     allowed_subjects={User},

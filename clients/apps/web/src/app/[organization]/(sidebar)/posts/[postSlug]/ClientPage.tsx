@@ -5,7 +5,11 @@ import { organizationPageLink } from '@/utils/nav'
 import { useTrafficRecordPageView } from '@/utils/traffic'
 import { ArrowBackOutlined } from '@mui/icons-material'
 
-import { useListAllOrganizations, useUserSubscriptions } from '@/hooks/queries'
+import {
+  useListAllOrganizations,
+  useUserBenefits,
+  useUserSubscriptions,
+} from '@/hooks/queries'
 import { Article, BenefitPublicInner, Product } from '@polar-sh/sdk'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
@@ -38,12 +42,15 @@ export default function Page({ article, products }: PostPageProps) {
 
   const isSubscriber = subscription ? true : false
 
-  const articleBenefits =
-    subscription?.product.benefits.filter((b) => b.type === 'articles') ?? []
-
-  const hasPaidArticlesBenefit = articleBenefits.some(
-    (b) => 'paid_articles' in b.properties && b.properties['paid_articles'],
-  )
+  const { data: benefits } = useUserBenefits({
+    type: 'articles',
+    organizationId: article.organization.id,
+    limit: 100,
+  })
+  const hasPaidArticlesBenefit =
+    benefits?.items?.some(
+      (b) => b.type === 'articles' && b.properties.paid_articles,
+    ) || false
 
   const isPaidBenefit = (b: BenefitPublicInner) =>
     b.type === 'articles' &&

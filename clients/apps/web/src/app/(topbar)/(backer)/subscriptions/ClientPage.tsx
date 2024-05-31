@@ -8,11 +8,11 @@ import { ConfirmModal } from '@/components/Modal/ConfirmModal'
 import ProductPill from '@/components/Products/ProductPill'
 import { StaggerReveal } from '@/components/Shared/StaggerReveal'
 import { useAuth } from '@/hooks'
-import { useOrganization } from '@/hooks/queries'
+import { useOrganization, useUserBenefits } from '@/hooks/queries'
 import { api } from '@/utils/api'
 import { organizationPageLink } from '@/utils/nav'
 import { BoltOutlined, MoreVertOutlined } from '@mui/icons-material'
-import { BenefitSubscriberInner, UserSubscription } from '@polar-sh/sdk'
+import { UserBenefit, UserSubscription } from '@polar-sh/sdk'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { FormattedDateTime } from 'polarkit/components/ui/atoms'
@@ -42,7 +42,7 @@ const ClientPage = ({
   }, [])
 
   const [selectedBenefit, setSelectedBenefit] = useState<
-    BenefitSubscriberInner | undefined
+    UserBenefit | undefined
   >()
   const [selectedBenefitSubscription, setSelectedBenefitSubscription] =
     useState<UserSubscription | undefined>(subscriptions[0])
@@ -92,8 +92,8 @@ export default ClientPage
 
 interface SubscriptionOrganizationProps {
   subscription: UserSubscription
-  selectedBenefit: BenefitSubscriberInner | undefined
-  onSelectBenefit: (benefit: BenefitSubscriberInner) => void
+  selectedBenefit: UserBenefit | undefined
+  onSelectBenefit: (benefit: UserBenefit) => void
 }
 
 const Subscription = ({
@@ -105,6 +105,11 @@ const Subscription = ({
   const { data: org } = useOrganization(
     subscription.product.organization_id ?? '',
   )
+  const { data: benefits } = useUserBenefits({
+    subscriptionId: subscription.id,
+    limit: 100,
+    sorting: ['type'],
+  })
   const [showCancelModal, setShowCancelModal] = useState(false)
   const router = useRouter()
 
@@ -220,7 +225,7 @@ const Subscription = ({
             key={subscription.product_id}
             className="flex flex-col gap-y-2"
           >
-            {subscription.product.benefits.map((benefit) => (
+            {benefits?.items?.map((benefit) => (
               <StaggerReveal.Child key={benefit.id}>
                 <BenefitRow
                   benefit={benefit}
@@ -250,7 +255,7 @@ const Subscription = ({
 }
 
 interface BenefitContextWidgetProps {
-  benefit: BenefitSubscriberInner
+  benefit: UserBenefit
   subscription: UserSubscription
 }
 

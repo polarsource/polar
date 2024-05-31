@@ -7,9 +7,9 @@ import {
 } from '@/hooks/queries'
 import {
   AdvertisementCampaign,
-  BenefitSubscriberInner,
   CreateAdvertisementCampaign,
   EditAdvertisementCampaign,
+  UserBenefit,
   UserSubscription,
 } from '@polar-sh/sdk'
 import Button from 'polarkit/components/ui/atoms/button'
@@ -28,7 +28,7 @@ const ConfigureAdCampaigns = ({
   benefit,
   subscription,
 }: {
-  benefit: BenefitSubscriberInner
+  benefit: UserBenefit
   subscription: UserSubscription
 }) => {
   const campaigns = useAdvertisementCampaigns(subscription.id, benefit.id)
@@ -58,7 +58,7 @@ const CreateCampaign = ({
   benefit,
   subscription,
 }: {
-  benefit: BenefitSubscriberInner
+  benefit: UserBenefit
   subscription: UserSubscription
 }) => {
   const create = useCreateAdvertisementCampaigns()
@@ -128,7 +128,7 @@ const EditCampaign = ({
   benefit,
 }: {
   campaign: AdvertisementCampaign
-  benefit: BenefitSubscriberInner
+  benefit: UserBenefit
 }) => {
   const edit = useEditAdvertisementCampaigns()
   const deleteAd = useDeleteAdvertisementCampaigns()

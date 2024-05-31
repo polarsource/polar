@@ -3,6 +3,7 @@ import {
   UserFreeSubscriptionCreate,
   UserRead,
   UserUpdateSettings,
+  UsersApiListBenefitsRequest,
   UsersApiListOrdersRequest,
   UsersApiListSubscriptionsRequest,
 } from '@polar-sh/sdk'
@@ -128,4 +129,11 @@ export const useCancelSubscription = (id: string) =>
         queryKey: ['user', 'subscriptions'],
       })
     },
+  })
+
+export const useUserBenefits = (parameters: UsersApiListBenefitsRequest = {}) =>
+  useQuery({
+    queryKey: ['user', 'benefits', parameters],
+    queryFn: () => api.users.listBenefits(parameters),
+    retry: defaultRetry,
   })

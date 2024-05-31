@@ -1,7 +1,7 @@
 import { useDiscordAccount, useGitHubAccount } from '@/hooks'
 import { getGitHubAuthorizeURL, getUserDiscordAuthorizeURL } from '@/utils/auth'
 import { AutoAwesome } from '@mui/icons-material'
-import { BenefitSubscriberInner } from '@polar-sh/sdk'
+import { UserBenefit } from '@polar-sh/sdk'
 import { usePathname } from 'next/navigation'
 import Button from 'polarkit/components/ui/atoms/button'
 import { useCallback } from 'react'
@@ -10,9 +10,9 @@ import { useBenefitActions } from './useBenefitAction'
 import { benefitsDisplayNames, resolveBenefitIcon } from './utils'
 
 interface BenefitRowProps {
-  benefit: BenefitSubscriberInner
+  benefit: UserBenefit
   selected?: boolean
-  onSelect?: (benefit: BenefitSubscriberInner) => void
+  onSelect?: (benefit: UserBenefit) => void
 }
 
 export const BenefitRow = ({

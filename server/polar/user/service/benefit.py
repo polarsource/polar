@@ -1,0 +1,111 @@
+import uuid
+from collections.abc import Sequence
+from enum import StrEnum
+from typing import Any
+
+from sqlalchemy import Select, UnaryExpression, and_, asc, desc, select
+
+from polar.auth.models import AuthSubject
+from polar.exceptions import PolarError
+from polar.kit.db.postgres import AsyncSession
+from polar.kit.pagination import PaginationParams, paginate
+from polar.kit.services import ResourceServiceReader
+from polar.kit.sorting import Sorting
+from polar.models import (
+    Benefit,
+    BenefitGrant,
+    Organization,
+    User,
+)
+from polar.models.benefit import BenefitType
+
+
+class UserBenefitError(PolarError): ...
+
+
+class SortProperty(StrEnum):
+    granted_at = "granted_at"
+    type = "type"
+    organization = "organization"
+    order = "order"
+    subscription = "subscription"
+
+
+class UserBenefitService(ResourceServiceReader[Benefit]):
+    async def list(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        *,
+        type: BenefitType | None = None,
+        organization_id: uuid.UUID | None = None,
+        order_id: uuid.UUID | None = None,
+        subscription_id: uuid.UUID | None = None,
+        pagination: PaginationParams,
+        sorting: list[Sorting[SortProperty]] = [(SortProperty.granted_at, True)],
+    ) -> tuple[Sequence[Benefit], int]:
+        statement = self._get_readable_benefit_statement(auth_subject)
+
+        if type is not None:
+            statement = statement.where(Benefit.type == type)
+
+        if organization_id is not None:
+            statement = statement.where(Benefit.organization_id == organization_id)
+
+        if order_id is not None:
+            statement = statement.where(BenefitGrant.order_id == order_id)
+
+        if subscription_id is not None:
+            statement = statement.where(BenefitGrant.subscription_id == subscription_id)
+
+        order_by_clauses: list[UnaryExpression[Any]] = []
+        for criterion, is_desc in sorting:
+            clause_function = desc if is_desc else asc
+            if criterion == SortProperty.granted_at:
+                order_by_clauses.append(clause_function(BenefitGrant.granted_at))
+            elif criterion == SortProperty.type:
+                order_by_clauses.append(clause_function(Benefit.type))
+            elif criterion == SortProperty.organization:
+                statement = statement.join(
+                    Organization, onclause=Benefit.organization_id == Organization.id
+                )
+                order_by_clauses.append(clause_function(Organization.name))
+            elif criterion == SortProperty.order:
+                order_by_clauses.append(clause_function(BenefitGrant.order_id))
+            elif criterion == SortProperty.subscription:
+                order_by_clauses.append(clause_function(BenefitGrant.subscription_id))
+        statement = statement.order_by(*order_by_clauses)
+
+        return await paginate(session, statement, pagination=pagination)
+
+    async def get_by_id(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        id: uuid.UUID,
+    ) -> Benefit | None:
+        statement = self._get_readable_benefit_statement(auth_subject).where(
+            Benefit.id == id
+        )
+
+        result = await session.execute(statement)
+        return result.scalar_one_or_none()
+
+    def _get_readable_benefit_statement(
+        self, auth_subject: AuthSubject[User]
+    ) -> Select[tuple[Benefit]]:
+        statement = (
+            select(Benefit)
+            .join(
+                BenefitGrant,
+                onclause=and_(
+                    BenefitGrant.benefit_id == Benefit.id,
+                    BenefitGrant.user_id == auth_subject.subject.id,
+                ),
+            )
+            .where(Benefit.deleted_at.is_(None), BenefitGrant.is_granted.is_(True))
+        )
+        return statement
+
+
+user_benefit = UserBenefitService(Benefit)

@@ -1,7 +1,14 @@
 from datetime import datetime
 from typing import Annotated, Literal
 
-from pydantic import UUID4, Field, computed_field, field_validator
+from pydantic import (
+    UUID4,
+    Discriminator,
+    Field,
+    TypeAdapter,
+    computed_field,
+    field_validator,
+)
 
 from polar.config import settings
 from polar.kit import jwt
@@ -416,13 +423,16 @@ class BenefitGitHubRepositorySubscriber(BenefitBase):
 
 
 # Properties that are available to subscribers only
-BenefitSubscriber = (
+BenefitSubscriber = Annotated[
     BenefitArticlesSubscriber
     | BenefitAdsSubscriber
     | BenefitDiscordSubscriber
     | BenefitCustomSubscriber
-    | BenefitGitHubRepositorySubscriber
-)
+    | BenefitGitHubRepositorySubscriber,
+    Discriminator("type"),
+]
+
+BenefitSubscriberAdapter = TypeAdapter[BenefitSubscriber](BenefitSubscriber)
 
 # Properties that are public (included in Subscription Tier endpoints)
 BenefitPublic = BenefitBase | BenefitArticles

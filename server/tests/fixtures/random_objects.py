@@ -3,7 +3,7 @@ import secrets
 import string
 import uuid
 from datetime import UTC, datetime, timedelta
-from typing import Any
+from typing import Any, Unpack
 
 import pytest_asyncio
 
@@ -26,7 +26,7 @@ from polar.models.article import Article
 from polar.models.benefit import (
     BenefitType,
 )
-from polar.models.benefit_grant import BenefitGrant
+from polar.models.benefit_grant import BenefitGrant, BenefitGrantScope
 from polar.models.donation import Donation
 from polar.models.issue import Issue
 from polar.models.pledge import Pledge, PledgeState, PledgeType
@@ -806,10 +806,12 @@ async def create_benefit_grant(
     save_fixture: SaveFixture,
     user: User,
     benefit: Benefit,
-    *,
-    subscription: Subscription,
+    granted: bool | None = None,
+    **scope: Unpack[BenefitGrantScope],
 ) -> BenefitGrant:
-    grant = BenefitGrant(benefit=benefit, user=user, subscription=subscription)
+    grant = BenefitGrant(benefit=benefit, user=user, **scope)
+    if granted is not None:
+        grant.set_granted() if granted else grant.set_revoked()
     await save_fixture(grant)
     return grant
 

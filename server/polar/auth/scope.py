@@ -32,6 +32,7 @@ class Scope(StrEnum):
     webhooks_read = "webhooks:read"
     webhooks_write = "webhooks:write"
 
+    user_benefits_read = "user:benefits:read"
     user_orders_read = "user:orders:read"
     user_subscriptions_read = "user:subscriptions:read"
     user_subscriptions_write = "user:subscriptions:write"

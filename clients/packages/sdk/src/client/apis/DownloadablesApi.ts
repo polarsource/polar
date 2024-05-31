@@ -15,13 +15,12 @@
 
 import * as runtime from '../runtime';
 import type {
-  DownloadableRead,
   HTTPValidationError,
   ListResourceDownloadableRead,
 } from '../models/index';
 
 export interface DownloadablesApiGetRequest {
-    id: string;
+    token: string;
 }
 
 export interface DownloadablesApiListRequest {
@@ -39,11 +38,11 @@ export class DownloadablesApi extends runtime.BaseAPI {
     /**
      * Get
      */
-    async getRaw(requestParameters: DownloadablesApiGetRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<DownloadableRead>> {
-        if (requestParameters['id'] == null) {
+    async getRaw(requestParameters: DownloadablesApiGetRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<any>> {
+        if (requestParameters['token'] == null) {
             throw new runtime.RequiredError(
-                'id',
-                'Required parameter "id" was null or undefined when calling get().'
+                'token',
+                'Required parameter "token" was null or undefined when calling get().'
             );
         }
 
@@ -60,19 +59,23 @@ export class DownloadablesApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/downloadables/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
+            path: `/api/v1/downloadables/{token}`.replace(`{${"token"}}`, encodeURIComponent(String(requestParameters['token']))),
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
         }, initOverrides);
 
-        return new runtime.JSONApiResponse(response);
+        if (this.isJsonMime(response.headers.get('content-type'))) {
+            return new runtime.JSONApiResponse<any>(response);
+        } else {
+            return new runtime.TextApiResponse(response) as any;
+        }
     }
 
     /**
      * Get
      */
-    async get(requestParameters: DownloadablesApiGetRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<DownloadableRead> {
+    async get(requestParameters: DownloadablesApiGetRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<any> {
         const response = await this.getRaw(requestParameters, initOverrides);
         return await response.value();
     }

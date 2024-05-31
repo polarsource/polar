@@ -6495,8 +6495,8 @@
                             },
                             "description": "Filter by the type of purchase the customer made.",
                             "default": [
-                                "subscription",
                                 "order",
+                                "subscription",
                                 "donation"
                             ],
                             "title": "Customer Types"
@@ -7172,23 +7172,6 @@
                                 }
                             ],
                             "title": "Subscriber User Id"
-                        }
-                    },
-                    {
-                        "name": "subscriber_organization_id",
-                        "in": "query",
-                        "required": false,
-                        "schema": {
-                            "anyOf": [
-                                {
-                                    "type": "string",
-                                    "format": "uuid4"
-                                },
-                                {
-                                    "type": "null"
-                                }
-                            ],
-                            "title": "Subscriber Organization Id"
                         }
                     },
                     {
@@ -21704,18 +21687,6 @@
                         "format": "uuid4",
                         "title": "User Id"
                     },
-                    "organization_id": {
-                        "anyOf": [
-                            {
-                                "type": "string",
-                                "format": "uuid4"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Organization Id"
-                    },
                     "product_id": {
                         "type": "string",
                         "format": "uuid4",
@@ -25182,18 +25153,6 @@
                         "format": "uuid4",
                         "title": "User Id"
                     },
-                    "organization_id": {
-                        "anyOf": [
-                            {
-                                "type": "string",
-                                "format": "uuid4"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Organization Id"
-                    },
                     "product_id": {
                         "type": "string",
                         "format": "uuid4",
@@ -25213,16 +25172,6 @@
                     },
                     "user": {
                         "$ref": "#/components/schemas/SubscriptionUser"
-                    },
-                    "organization": {
-                        "anyOf": [
-                            {
-                                "$ref": "#/components/schemas/SubscriptionOrganization"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ]
                     },
                     "product": {
                         "$ref": "#/components/schemas/Product-Input"
@@ -25346,18 +25295,6 @@
                         "format": "uuid4",
                         "title": "User Id"
                     },
-                    "organization_id": {
-                        "anyOf": [
-                            {
-                                "type": "string",
-                                "format": "uuid4"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Organization Id"
-                    },
                     "product_id": {
                         "type": "string",
                         "format": "uuid4",
@@ -25377,16 +25314,6 @@
                     },
                     "user": {
                         "$ref": "#/components/schemas/SubscriptionUser"
-                    },
-                    "organization": {
-                        "anyOf": [
-                            {
-                                "$ref": "#/components/schemas/SubscriptionOrganization"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ]
                     },
                     "product": {
                         "$ref": "#/components/schemas/Product-Output"
@@ -25444,28 +25371,6 @@
                     "email"
                 ],
                 "title": "SubscriptionCreateEmail"
-            },
-            "SubscriptionOrganization": {
-                "properties": {
-                    "name": {
-                        "type": "string",
-                        "title": "Name"
-                    },
-                    "platform": {
-                        "$ref": "#/components/schemas/Platforms"
-                    },
-                    "avatar_url": {
-                        "type": "string",
-                        "title": "Avatar Url"
-                    }
-                },
-                "type": "object",
-                "required": [
-                    "name",
-                    "platform",
-                    "avatar_url"
-                ],
-                "title": "SubscriptionOrganization"
             },
             "SubscriptionStatus": {
                 "type": "string",
@@ -27446,18 +27351,6 @@
                         "type": "string",
                         "format": "uuid4",
                         "title": "User Id"
-                    },
-                    "organization_id": {
-                        "anyOf": [
-                            {
-                                "type": "string",
-                                "format": "uuid4"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Organization Id"
                     },
                     "product_id": {
                         "type": "string",

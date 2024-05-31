@@ -175,27 +175,13 @@ const ClientPage: React.FC<ClientPageProps> = ({
       ),
       cell: ({ row: { original: subscription } }) => {
         const user = subscription.user
-        const organization = subscription.organization
         return (
           <div className="flex flex-row items-center gap-2">
-            {organization && (
-              <>
-                <Avatar
-                  avatar_url={organization.avatar_url}
-                  name={organization.name}
-                />
-                <div className="fw-medium">{organization.name}</div>
-              </>
-            )}
-            {!organization && (
-              <>
-                <Avatar avatar_url={user.avatar_url} name={user.public_name} />
-                {user.github_username ? (
-                  <div className="fw-medium">@{user.github_username}</div>
-                ) : null}
-                <div className="fw-medium">{user.email}</div>
-              </>
-            )}
+            <Avatar avatar_url={user.avatar_url} name={user.public_name} />
+            {user.github_username ? (
+              <div className="fw-medium">@{user.github_username}</div>
+            ) : null}
+            <div className="fw-medium">{user.email}</div>
           </div>
         )
       },

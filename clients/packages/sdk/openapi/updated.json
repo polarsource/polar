@@ -325,6 +325,293 @@
                 ]
             }
         },
+        "/api/v1/users/benefits/": {
+            "get": {
+                "tags": [
+                    "users"
+                ],
+                "summary": "List Benefits",
+                "description": "List my granted benefits.",
+                "operationId": "list_benefits",
+                "security": [
+                    {
+                        "OpenIdConnect": []
+                    },
+                    {
+                        "HTTPBearer": []
+                    },
+                    {
+                        "OpenIdConnect": [
+                            "user:benefits:read"
+                        ]
+                    },
+                    {
+                        "HTTPBearer": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "type",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "$ref": "#/components/schemas/BenefitType"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "description": "Filter by benefit type.",
+                            "title": "Type"
+                        },
+                        "description": "Filter by benefit type."
+                    },
+                    {
+                        "name": "organization_id",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string",
+                                    "format": "uuid4"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "description": "Filter by organization ID.",
+                            "title": "Organization Id"
+                        },
+                        "description": "Filter by organization ID."
+                    },
+                    {
+                        "name": "order_id",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string",
+                                    "format": "uuid4"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "description": "Filter by order ID.",
+                            "title": "Order Id"
+                        },
+                        "description": "Filter by order ID."
+                    },
+                    {
+                        "name": "subscription_id",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string",
+                                    "format": "uuid4"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "description": "Filter by subscription ID.",
+                            "title": "Subscription Id"
+                        },
+                        "description": "Filter by subscription ID."
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "exclusiveMinimum": 0,
+                            "description": "Page number, defaults to 1.",
+                            "default": 1,
+                            "title": "Page"
+                        },
+                        "description": "Page number, defaults to 1."
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "exclusiveMinimum": 0,
+                            "description": "Size of a page, defaults to 10. Maximum is 100.",
+                            "default": 10,
+                            "title": "Limit"
+                        },
+                        "description": "Size of a page, defaults to 10. Maximum is 100."
+                    },
+                    {
+                        "name": "sorting",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "string"
+                                    }
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "description": "Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.",
+                            "type": "string",
+                            "enum": [
+                                "granted_at",
+                                "-granted_at",
+                                "type",
+                                "-type",
+                                "organization",
+                                "-organization",
+                                "order",
+                                "-order",
+                                "subscription",
+                                "-subscription"
+                            ],
+                            "default": [
+                                "-granted_at"
+                            ],
+                            "title": "Sorting"
+                        },
+                        "description": "Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order."
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ListResource_Annotated_Union_BenefitArticlesSubscriber__BenefitAdsSubscriber__BenefitDiscordSubscriber__BenefitCustomSubscriber__BenefitGitHubRepositorySubscriber___Discriminator__MergeJSONSchema__"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/users/benefits/{id}": {
+            "get": {
+                "tags": [
+                    "users"
+                ],
+                "summary": "Get Benefit",
+                "description": "Get a granted benefit by ID.",
+                "operationId": "get_benefit",
+                "security": [
+                    {
+                        "OpenIdConnect": []
+                    },
+                    {
+                        "HTTPBearer": []
+                    },
+                    {
+                        "OpenIdConnect": [
+                            "user:benefits:read"
+                        ]
+                    },
+                    {
+                        "HTTPBearer": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid4",
+                            "description": "The benefit ID.",
+                            "title": "Id"
+                        },
+                        "description": "The benefit ID."
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "oneOf": [
+                                        {
+                                            "$ref": "#/components/schemas/BenefitArticlesSubscriber"
+                                        },
+                                        {
+                                            "$ref": "#/components/schemas/BenefitAdsSubscriber"
+                                        },
+                                        {
+                                            "$ref": "#/components/schemas/BenefitDiscordSubscriber"
+                                        },
+                                        {
+                                            "$ref": "#/components/schemas/BenefitCustomSubscriber"
+                                        },
+                                        {
+                                            "$ref": "#/components/schemas/BenefitGitHubRepositorySubscriber"
+                                        }
+                                    ],
+                                    "discriminator": {
+                                        "propertyName": "type",
+                                        "mapping": {
+                                            "articles": "#/components/schemas/BenefitArticlesSubscriber",
+                                            "ads": "#/components/schemas/BenefitAdsSubscriber",
+                                            "discord": "#/components/schemas/BenefitDiscordSubscriber",
+                                            "custom": "#/components/schemas/BenefitCustomSubscriber",
+                                            "github_repository": "#/components/schemas/BenefitGitHubRepositorySubscriber"
+                                        }
+                                    },
+                                    "title": "Response Users:Get Benefit"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Benefit not found or not granted.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ResourceNotFound"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/users/orders/": {
             "get": {
                 "tags": [
@@ -6495,9 +6782,9 @@
                             },
                             "description": "Filter by the type of purchase the customer made.",
                             "default": [
-                                "order",
                                 "subscription",
-                                "donation"
+                                "donation",
+                                "order"
                             ],
                             "title": "Customer Types"
                         },
@@ -18146,6 +18433,53 @@
                 ],
                 "title": "ListResource[AdvertisementDisplay]"
             },
+            "ListResource_Annotated_Union_BenefitArticlesSubscriber__BenefitAdsSubscriber__BenefitDiscordSubscriber__BenefitCustomSubscriber__BenefitGitHubRepositorySubscriber___Discriminator__MergeJSONSchema__": {
+                "properties": {
+                    "items": {
+                        "items": {
+                            "oneOf": [
+                                {
+                                    "$ref": "#/components/schemas/BenefitArticlesSubscriber"
+                                },
+                                {
+                                    "$ref": "#/components/schemas/BenefitAdsSubscriber"
+                                },
+                                {
+                                    "$ref": "#/components/schemas/BenefitDiscordSubscriber"
+                                },
+                                {
+                                    "$ref": "#/components/schemas/BenefitCustomSubscriber"
+                                },
+                                {
+                                    "$ref": "#/components/schemas/BenefitGitHubRepositorySubscriber"
+                                }
+                            ],
+                            "title": "UserBenefit",
+                            "discriminator": {
+                                "propertyName": "type",
+                                "mapping": {
+                                    "ads": "#/components/schemas/BenefitAdsSubscriber",
+                                    "articles": "#/components/schemas/BenefitArticlesSubscriber",
+                                    "custom": "#/components/schemas/BenefitCustomSubscriber",
+                                    "discord": "#/components/schemas/BenefitDiscordSubscriber",
+                                    "github_repository": "#/components/schemas/BenefitGitHubRepositorySubscriber"
+                                }
+                            }
+                        },
+                        "type": "array",
+                        "title": "Items",
+                        "default": []
+                    },
+                    "pagination": {
+                        "$ref": "#/components/schemas/Pagination"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "pagination"
+                ],
+                "title": "ListResource[Annotated[Union[BenefitArticlesSubscriber, BenefitAdsSubscriber, BenefitDiscordSubscriber, BenefitCustomSubscriber, BenefitGitHubRepositorySubscriber], Discriminator, MergeJSONSchema]]"
+            },
             "ListResource_Article_": {
                 "properties": {
                     "items": {
@@ -19765,7 +20099,7 @@
                     "scope": {
                         "type": "string",
                         "title": "Scope",
-                        "default": "openid profile email articles:read user:read organizations:read organizations:write creator:subscriptions:read creator:subscriptions:write creator:products:read creator:products:write creator:benefits:read creator:benefits:write orders:read webhooks:read webhooks:write user:orders:read user:subscriptions:read user:subscriptions:write"
+                        "default": "openid profile email articles:read user:read organizations:read organizations:write creator:subscriptions:read creator:subscriptions:write creator:products:read creator:products:write creator:benefits:read creator:benefits:write orders:read webhooks:read webhooks:write user:benefits:read user:orders:read user:subscriptions:read user:subscriptions:write"
                     },
                     "client_name": {
                         "type": "string",
@@ -19926,7 +20260,7 @@
                     "scope": {
                         "type": "string",
                         "title": "Scope",
-                        "default": "openid profile email articles:read user:read organizations:read organizations:write creator:subscriptions:read creator:subscriptions:write creator:products:read creator:products:write creator:benefits:read creator:benefits:write orders:read webhooks:read webhooks:write user:orders:read user:subscriptions:read user:subscriptions:write"
+                        "default": "openid profile email articles:read user:read organizations:read organizations:write creator:subscriptions:read creator:subscriptions:write creator:products:read creator:products:write creator:benefits:read creator:benefits:write orders:read webhooks:read webhooks:write user:benefits:read user:orders:read user:subscriptions:read user:subscriptions:write"
                     },
                     "client_name": {
                         "type": "string",
@@ -20047,7 +20381,7 @@
                     "scope": {
                         "type": "string",
                         "title": "Scope",
-                        "default": "openid profile email articles:read user:read organizations:read organizations:write creator:subscriptions:read creator:subscriptions:write creator:products:read creator:products:write creator:benefits:read creator:benefits:write orders:read webhooks:read webhooks:write user:orders:read user:subscriptions:read user:subscriptions:write"
+                        "default": "openid profile email articles:read user:read organizations:read organizations:write creator:subscriptions:read creator:subscriptions:write creator:products:read creator:products:write creator:benefits:read creator:benefits:write orders:read webhooks:read webhooks:write user:benefits:read user:orders:read user:subscriptions:read user:subscriptions:write"
                     },
                     "client_name": {
                         "type": "string",
@@ -23216,6 +23550,7 @@
                     "orders:read",
                     "webhooks:read",
                     "webhooks:write",
+                    "user:benefits:read",
                     "user:orders:read",
                     "user:subscriptions:read",
                     "user:subscriptions:write"
@@ -25128,24 +25463,16 @@
                         "items": {
                             "anyOf": [
                                 {
-                                    "$ref": "#/components/schemas/BenefitArticlesSubscriber"
+                                    "$ref": "#/components/schemas/BenefitBase"
                                 },
                                 {
-                                    "$ref": "#/components/schemas/BenefitAdsSubscriber"
-                                },
-                                {
-                                    "$ref": "#/components/schemas/BenefitDiscordSubscriber"
-                                },
-                                {
-                                    "$ref": "#/components/schemas/BenefitCustomSubscriber"
-                                },
-                                {
-                                    "$ref": "#/components/schemas/BenefitGitHubRepositorySubscriber"
+                                    "$ref": "#/components/schemas/BenefitArticles"
                                 }
                             ]
                         },
                         "type": "array",
-                        "title": "BenefitSubscriber"
+                        "title": "BenefitPublic",
+                        "description": "The benefits granted by the product."
                     }
                 },
                 "type": "object",
@@ -25678,24 +26005,16 @@
                         "items": {
                             "anyOf": [
                                 {
-                                    "$ref": "#/components/schemas/BenefitArticlesSubscriber"
+                                    "$ref": "#/components/schemas/BenefitBase"
                                 },
                                 {
-                                    "$ref": "#/components/schemas/BenefitAdsSubscriber"
-                                },
-                                {
-                                    "$ref": "#/components/schemas/BenefitDiscordSubscriber"
-                                },
-                                {
-                                    "$ref": "#/components/schemas/BenefitCustomSubscriber"
-                                },
-                                {
-                                    "$ref": "#/components/schemas/BenefitGitHubRepositorySubscriber"
+                                    "$ref": "#/components/schemas/BenefitArticles"
                                 }
                             ]
                         },
                         "type": "array",
-                        "title": "BenefitSubscriber"
+                        "title": "BenefitPublic",
+                        "description": "The benefits granted by the product."
                     }
                 },
                 "type": "object",

@@ -44,7 +44,6 @@ export interface SubscriptionsApiSearchSubscriptionsRequest {
     type?: SubscriptionTierType;
     subscriptionTierId?: string;
     subscriberUserId?: string;
-    subscriberOrganizationId?: string;
     active?: boolean;
     page?: number;
     limit?: number;
@@ -209,10 +208,6 @@ export class SubscriptionsApi extends runtime.BaseAPI {
 
         if (requestParameters['subscriberUserId'] != null) {
             queryParameters['subscriber_user_id'] = requestParameters['subscriberUserId'];
-        }
-
-        if (requestParameters['subscriberOrganizationId'] != null) {
-            queryParameters['subscriber_organization_id'] = requestParameters['subscriberOrganizationId'];
         }
 
         if (requestParameters['active'] != null) {

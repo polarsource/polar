@@ -7309,12 +7309,6 @@ export interface OrderSubscription {
      * @type {string}
      * @memberof OrderSubscription
      */
-    organization_id?: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof OrderSubscription
-     */
     product_id: string;
     /**
      * 
@@ -9910,12 +9904,6 @@ export interface Subscription {
      * @type {string}
      * @memberof Subscription
      */
-    organization_id?: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof Subscription
-     */
     product_id: string;
     /**
      * 
@@ -9929,12 +9917,6 @@ export interface Subscription {
      * @memberof Subscription
      */
     user: SubscriptionUser;
-    /**
-     * 
-     * @type {SubscriptionOrganization}
-     * @memberof Subscription
-     */
-    organization?: SubscriptionOrganization;
     /**
      * 
      * @type {Product}
@@ -9960,31 +9942,6 @@ export interface SubscriptionCreateEmail {
      * @memberof SubscriptionCreateEmail
      */
     email: string;
-}
-/**
- * 
- * @export
- * @interface SubscriptionOrganization
- */
-export interface SubscriptionOrganization {
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionOrganization
-     */
-    name: string;
-    /**
-     * 
-     * @type {Platforms}
-     * @memberof SubscriptionOrganization
-     */
-    platform: Platforms;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionOrganization
-     */
-    avatar_url: string;
 }
 
 /**
@@ -11573,12 +11530,6 @@ export interface UserOrderSubscription {
      * @memberof UserOrderSubscription
      */
     user_id: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof UserOrderSubscription
-     */
-    organization_id?: string;
     /**
      * 
      * @type {string}

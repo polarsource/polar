@@ -3542,12 +3542,6 @@ export interface BenefitPreconditionErrorNotificationPayload {
  */
 export type BenefitPublicInner = BenefitArticles | BenefitBase;
 
-/**
- * @type BenefitSubscriberInner
- * @export
- */
-export type BenefitSubscriberInner = BenefitAdsSubscriber | BenefitArticlesSubscriber | BenefitCustomSubscriber | BenefitDiscordSubscriber | BenefitGitHubRepositorySubscriber;
-
 
 /**
  * 
@@ -5068,6 +5062,25 @@ export interface ListResourceAdvertisementDisplay {
      * 
      * @type {Pagination}
      * @memberof ListResourceAdvertisementDisplay
+     */
+    pagination: Pagination;
+}
+/**
+ * 
+ * @export
+ * @interface ListResourceAnnotatedUnionBenefitArticlesSubscriberBenefitAdsSubscriberBenefitDiscordSubscriberBenefitCustomSubscriberBenefitGitHubRepositorySubscriberDiscriminatorMergeJSONSchema
+ */
+export interface ListResourceAnnotatedUnionBenefitArticlesSubscriberBenefitAdsSubscriberBenefitDiscordSubscriberBenefitCustomSubscriberBenefitGitHubRepositorySubscriberDiscriminatorMergeJSONSchema {
+    /**
+     * 
+     * @type {Array<UserBenefit>}
+     * @memberof ListResourceAnnotatedUnionBenefitArticlesSubscriberBenefitAdsSubscriberBenefitDiscordSubscriberBenefitCustomSubscriberBenefitGitHubRepositorySubscriberDiscriminatorMergeJSONSchema
+     */
+    items?: Array<UserBenefit>;
+    /**
+     * 
+     * @type {Pagination}
+     * @memberof ListResourceAnnotatedUnionBenefitArticlesSubscriberBenefitAdsSubscriberBenefitDiscordSubscriberBenefitCustomSubscriberBenefitGitHubRepositorySubscriberDiscriminatorMergeJSONSchema
      */
     pagination: Pagination;
 }
@@ -9609,6 +9622,12 @@ export type ResponseBenefitsUpdateBenefit = BenefitAds | BenefitArticles | Benef
  */
 export type ResponseOauth2Oauth2Authorize = { sub_type: 'organization' } & AuthorizeResponseOrganization | { sub_type: 'user' } & AuthorizeResponseUser;
 /**
+ * @type ResponseUsersGetBenefit
+ * 
+ * @export
+ */
+export type ResponseUsersGetBenefit = { type: 'ads' } & BenefitAdsSubscriber | { type: 'articles' } & BenefitArticlesSubscriber | { type: 'custom' } & BenefitCustomSubscriber | { type: 'discord' } & BenefitDiscordSubscriber | { type: 'github_repository' } & BenefitGitHubRepositorySubscriber;
+/**
  * 
  * @export
  * @interface Reward
@@ -9814,6 +9833,7 @@ export const Scope = {
     ORDERSREAD: 'orders:read',
     WEBHOOKSREAD: 'webhooks:read',
     WEBHOOKSWRITE: 'webhooks:write',
+    USERBENEFITSREAD: 'user:benefits:read',
     USERORDERSREAD: 'user:orders:read',
     USERSUBSCRIPTIONSREAD: 'user:subscriptions:read',
     USERSUBSCRIPTIONSWRITE: 'user:subscriptions:write'
@@ -11269,6 +11289,12 @@ export interface UserBase {
     account_id?: string;
 }
 /**
+ * @type UserBenefit
+ * 
+ * @export
+ */
+export type UserBenefit = { type: 'ads' } & BenefitAdsSubscriber | { type: 'articles' } & BenefitArticlesSubscriber | { type: 'custom' } & BenefitCustomSubscriber | { type: 'discord' } & BenefitDiscordSubscriber | { type: 'github_repository' } & BenefitGitHubRepositorySubscriber;
+/**
  * 
  * @export
  * @interface UserFreeSubscriptionCreate
@@ -11458,11 +11484,11 @@ export interface UserOrderProduct {
      */
     prices: Array<PricesInner>;
     /**
-     * 
-     * @type {Array<BenefitSubscriberInner>}
+     * The benefits granted by the product.
+     * @type {Array<BenefitPublicInner>}
      * @memberof UserOrderProduct
      */
-    benefits: Array<BenefitSubscriberInner>;
+    benefits: Array<BenefitPublicInner>;
 }
 /**
  * 
@@ -11849,11 +11875,11 @@ export interface UserSubscriptionProduct {
      */
     prices: Array<PricesInner>;
     /**
-     * 
-     * @type {Array<BenefitSubscriberInner>}
+     * The benefits granted by the product.
+     * @type {Array<BenefitPublicInner>}
      * @memberof UserSubscriptionProduct
      */
-    benefits: Array<BenefitSubscriberInner>;
+    benefits: Array<BenefitPublicInner>;
 }
 /**
  * 

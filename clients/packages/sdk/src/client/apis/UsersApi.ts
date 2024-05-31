@@ -17,14 +17,17 @@ import * as runtime from '../runtime';
 import type {
   AlreadyCanceledSubscription,
   AlreadySubscribed,
+  BenefitType,
   FreeSubscriptionUpgrade,
   HTTPValidationError,
+  ListResourceAnnotatedUnionBenefitArticlesSubscriberBenefitAdsSubscriberBenefitDiscordSubscriberBenefitCustomSubscriberBenefitGitHubRepositorySubscriberDiscriminatorMergeJSONSchema,
   ListResourceUserOrder,
   ListResourceUserSubscription,
   LogoutResponse,
   Organization,
   ProductPriceType,
   ResourceNotFound,
+  ResponseUsersGetBenefit,
   UserFreeSubscriptionCreate,
   UserOrder,
   UserOrderInvoice,
@@ -45,6 +48,10 @@ export interface UsersApiCreateSubscriptionRequest {
     userFreeSubscriptionCreate: UserFreeSubscriptionCreate;
 }
 
+export interface UsersApiGetBenefitRequest {
+    id: string;
+}
+
 export interface UsersApiGetOrderRequest {
     id: string;
 }
@@ -55,6 +62,16 @@ export interface UsersApiGetOrderInvoiceRequest {
 
 export interface UsersApiGetSubscriptionRequest {
     id: string;
+}
+
+export interface UsersApiListBenefitsRequest {
+    type?: BenefitType;
+    organizationId?: string;
+    orderId?: string;
+    subscriptionId?: string;
+    page?: number;
+    limit?: number;
+    sorting?: Array<string>;
 }
 
 export interface UsersApiListOrdersRequest {
@@ -330,6 +347,49 @@ export class UsersApi extends runtime.BaseAPI {
     }
 
     /**
+     * Get a granted benefit by ID.
+     * Get Benefit
+     */
+    async getBenefitRaw(requestParameters: UsersApiGetBenefitRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ResponseUsersGetBenefit>> {
+        if (requestParameters['id'] == null) {
+            throw new runtime.RequiredError(
+                'id',
+                'Required parameter "id" was null or undefined when calling getBenefit().'
+            );
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("HTTPBearer", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+        const response = await this.request({
+            path: `/api/v1/users/benefits/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
+            method: 'GET',
+            headers: headerParameters,
+            query: queryParameters,
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse(response);
+    }
+
+    /**
+     * Get a granted benefit by ID.
+     * Get Benefit
+     */
+    async getBenefit(requestParameters: UsersApiGetBenefitRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ResponseUsersGetBenefit> {
+        const response = await this.getBenefitRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
      * Get an order by ID.
      * Get Order
      */
@@ -455,6 +515,70 @@ export class UsersApi extends runtime.BaseAPI {
      */
     async getSubscription(requestParameters: UsersApiGetSubscriptionRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<UserSubscription> {
         const response = await this.getSubscriptionRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
+     * List my granted benefits.
+     * List Benefits
+     */
+    async listBenefitsRaw(requestParameters: UsersApiListBenefitsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListResourceAnnotatedUnionBenefitArticlesSubscriberBenefitAdsSubscriberBenefitDiscordSubscriberBenefitCustomSubscriberBenefitGitHubRepositorySubscriberDiscriminatorMergeJSONSchema>> {
+        const queryParameters: any = {};
+
+        if (requestParameters['type'] != null) {
+            queryParameters['type'] = requestParameters['type'];
+        }
+
+        if (requestParameters['organizationId'] != null) {
+            queryParameters['organization_id'] = requestParameters['organizationId'];
+        }
+
+        if (requestParameters['orderId'] != null) {
+            queryParameters['order_id'] = requestParameters['orderId'];
+        }
+
+        if (requestParameters['subscriptionId'] != null) {
+            queryParameters['subscription_id'] = requestParameters['subscriptionId'];
+        }
+
+        if (requestParameters['page'] != null) {
+            queryParameters['page'] = requestParameters['page'];
+        }
+
+        if (requestParameters['limit'] != null) {
+            queryParameters['limit'] = requestParameters['limit'];
+        }
+
+        if (requestParameters['sorting'] != null) {
+            queryParameters['sorting'] = requestParameters['sorting'];
+        }
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("HTTPBearer", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+        const response = await this.request({
+            path: `/api/v1/users/benefits/`,
+            method: 'GET',
+            headers: headerParameters,
+            query: queryParameters,
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse(response);
+    }
+
+    /**
+     * List my granted benefits.
+     * List Benefits
+     */
+    async listBenefits(requestParameters: UsersApiListBenefitsRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ListResourceAnnotatedUnionBenefitArticlesSubscriberBenefitAdsSubscriberBenefitDiscordSubscriberBenefitCustomSubscriberBenefitGitHubRepositorySubscriberDiscriminatorMergeJSONSchema> {
+        const response = await this.listBenefitsRaw(requestParameters, initOverrides);
         return await response.value();
     }
 

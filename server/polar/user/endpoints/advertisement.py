@@ -137,9 +137,9 @@ async def update_advertisement_campaign(
 @router.post(
     "/{id}/enable",
     tags=[Tags.PUBLIC],
-    status_code=202,
+    status_code=204,
     responses={
-        202: {"description": "Advertisement campaign enabled on benefit."},
+        204: {"description": "Advertisement campaign enabled on benefit."},
         404: AdvertisementCampaignNotFound,
     },
 )

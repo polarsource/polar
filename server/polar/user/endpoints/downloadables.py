@@ -8,11 +8,11 @@ from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.postgres import AsyncSession, get_db_session
 from polar.tags.api import Tags
 
-from . import auth
-from .schemas import (
+from .. import auth
+from ..schemas.downloadables import (
     DownloadableRead,
 )
-from .service import downloadable as downloadable_service
+from ..service.downloadables import downloadable as downloadable_service
 
 log = structlog.get_logger()
 
@@ -24,7 +24,7 @@ router = APIRouter(prefix="/downloadables", tags=["downloadables"])
     tags=[Tags.PUBLIC],
     response_model=ListResource[DownloadableRead],
 )
-async def list(
+async def list_downloadables(
     auth_subject: auth.UserDownloadablesRead,
     pagination: PaginationParamsQuery,
     organization_id: UUID4 | None = Query(
@@ -65,7 +65,7 @@ async def list(
         410: {"description": "Expired signature"},
     },
 )
-async def get(
+async def get_downloadable(
     token: str,
     auth_subject: auth.UserDownloadablesRead,
     authz: Authz = Depends(Authz.authz),

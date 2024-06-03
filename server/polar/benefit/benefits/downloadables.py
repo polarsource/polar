@@ -7,10 +7,10 @@ import structlog
 
 from polar.auth.models import AuthSubject
 from polar.benefit import schemas as benefit_schemas
-from polar.downloadable.service import downloadable as downloadable_service
 from polar.logging import Logger
 from polar.models import Organization, User
 from polar.models.benefit import BenefitDownloadables, BenefitDownloadablesProperties
+from polar.user.service.downloadables import downloadable as downloadable_service
 
 from .base import (
     BenefitServiceProtocol,

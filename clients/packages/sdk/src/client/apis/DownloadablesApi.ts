@@ -19,11 +19,11 @@ import type {
   ListResourceDownloadableRead,
 } from '../models/index';
 
-export interface DownloadablesApiGetRequest {
+export interface DownloadablesApiGetDownloadableRequest {
     token: string;
 }
 
-export interface DownloadablesApiListRequest {
+export interface DownloadablesApiListDownloadablesRequest {
     organizationId?: string;
     benefitId?: string;
     page?: number;
@@ -36,13 +36,13 @@ export interface DownloadablesApiListRequest {
 export class DownloadablesApi extends runtime.BaseAPI {
 
     /**
-     * Get
+     * Get Downloadable
      */
-    async getRaw(requestParameters: DownloadablesApiGetRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<any>> {
+    async getDownloadableRaw(requestParameters: DownloadablesApiGetDownloadableRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<any>> {
         if (requestParameters['token'] == null) {
             throw new runtime.RequiredError(
                 'token',
-                'Required parameter "token" was null or undefined when calling get().'
+                'Required parameter "token" was null or undefined when calling getDownloadable().'
             );
         }
 
@@ -59,7 +59,7 @@ export class DownloadablesApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/downloadables/{token}`.replace(`{${"token"}}`, encodeURIComponent(String(requestParameters['token']))),
+            path: `/api/v1/users/downloadables/{token}`.replace(`{${"token"}}`, encodeURIComponent(String(requestParameters['token']))),
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
@@ -73,17 +73,17 @@ export class DownloadablesApi extends runtime.BaseAPI {
     }
 
     /**
-     * Get
+     * Get Downloadable
      */
-    async get(requestParameters: DownloadablesApiGetRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<any> {
-        const response = await this.getRaw(requestParameters, initOverrides);
+    async getDownloadable(requestParameters: DownloadablesApiGetDownloadableRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<any> {
+        const response = await this.getDownloadableRaw(requestParameters, initOverrides);
         return await response.value();
     }
 
     /**
-     * List
+     * List Downloadables
      */
-    async listRaw(requestParameters: DownloadablesApiListRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListResourceDownloadableRead>> {
+    async listDownloadablesRaw(requestParameters: DownloadablesApiListDownloadablesRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListResourceDownloadableRead>> {
         const queryParameters: any = {};
 
         if (requestParameters['organizationId'] != null) {
@@ -113,7 +113,7 @@ export class DownloadablesApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/downloadables`,
+            path: `/api/v1/users/downloadables`,
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
@@ -123,10 +123,10 @@ export class DownloadablesApi extends runtime.BaseAPI {
     }
 
     /**
-     * List
+     * List Downloadables
      */
-    async list(requestParameters: DownloadablesApiListRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ListResourceDownloadableRead> {
-        const response = await this.listRaw(requestParameters, initOverrides);
+    async listDownloadables(requestParameters: DownloadablesApiListDownloadablesRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ListResourceDownloadableRead> {
+        const response = await this.listDownloadablesRaw(requestParameters, initOverrides);
         return await response.value();
     }
 

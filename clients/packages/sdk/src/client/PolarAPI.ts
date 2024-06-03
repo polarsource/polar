@@ -9,7 +9,6 @@ import {
   Configuration,
   DashboardApi,
   DonationsApi,
-  DownloadablesApi,
   FilesApi,
   FundingApi,
   HealthApi,
@@ -74,7 +73,6 @@ export class PolarAPI {
   public readonly webhookNotifications: WebhookNotificationsApi
   public readonly webhooks: WebhooksApi
   public readonly files: FilesApi
-  public readonly downloadables: DownloadablesApi
 
   constructor(config: Configuration) {
     this.accounts = new AccountsApi(config)
@@ -113,6 +111,5 @@ export class PolarAPI {
     this.webhookNotifications = new WebhookNotificationsApi(config)
     this.webhooks = new WebhooksApi(config)
     this.files = new FilesApi(config)
-    this.downloadables = new DownloadablesApi(config)
   }
 }

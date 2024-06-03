@@ -22,7 +22,7 @@ from polar.models.downloadable import Downloadable, DownloadableStatus
 from polar.models.file import File
 from polar.postgres import AsyncSession, sql
 
-from .schemas import (
+from ..schemas.downloadables import (
     DownloadableCreate,
     DownloadableRead,
     DownloadableUpdate,
@@ -185,7 +185,7 @@ class DownloadableService(
                 last_downloaded_at=last_downloaded_at,
             )
         )
-        redirect_to = f"{settings.BASE_URL}/downloadables/{token}"
+        redirect_to = f"{settings.BASE_URL}/users/downloadables/{token}"
         return DownloadableURL(url=redirect_to, expires_at=expires_at)
 
     async def get_from_token_or_raise(

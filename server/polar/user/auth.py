@@ -53,3 +53,16 @@ _UserAdvertisementCampaignsWrite = Authenticator(
 UserAdvertisementCampaignsWrite = Annotated[
     AuthSubject[User], Depends(_UserAdvertisementCampaignsWrite)
 ]
+
+UserDownloadablesRead = Annotated[
+    AuthSubject[User],
+    Depends(
+        Authenticator(
+            required_scopes={
+                Scope.web_default,
+                Scope.user_downloadables_read,
+            },
+            allowed_subjects={User},
+        )
+    ),
+]

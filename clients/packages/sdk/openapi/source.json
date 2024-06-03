@@ -1930,6 +1930,189 @@
                 }
             }
         },
+        "/api/v1/users/downloadables": {
+            "get": {
+                "tags": [
+                    "users",
+                    "downloadables"
+                ],
+                "summary": "List Downloadables",
+                "operationId": "users:list_downloadables",
+                "security": [
+                    {
+                        "OpenIdConnect": []
+                    },
+                    {
+                        "HTTPBearer": []
+                    },
+                    {
+                        "OpenIdConnect": [
+                            "user:downloadables:read"
+                        ]
+                    },
+                    {
+                        "HTTPBearer": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "organization_id",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string",
+                                    "format": "uuid4"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "description": "Filter by organization behind downloadables. ",
+                            "title": "Organization Id"
+                        },
+                        "description": "Filter by organization behind downloadables. "
+                    },
+                    {
+                        "name": "benefit_id",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string",
+                                    "format": "uuid4"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "description": "Filter by given benefit ID. ",
+                            "title": "Benefit Id"
+                        },
+                        "description": "Filter by given benefit ID. "
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "exclusiveMinimum": 0,
+                            "description": "Page number, defaults to 1.",
+                            "default": 1,
+                            "title": "Page"
+                        },
+                        "description": "Page number, defaults to 1."
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "exclusiveMinimum": 0,
+                            "description": "Size of a page, defaults to 10. Maximum is 100.",
+                            "default": 10,
+                            "title": "Limit"
+                        },
+                        "description": "Size of a page, defaults to 10. Maximum is 100."
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ListResource_DownloadableRead_"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/users/downloadables/{token}": {
+            "get": {
+                "tags": [
+                    "users",
+                    "downloadables"
+                ],
+                "summary": "Get Downloadable",
+                "operationId": "users:get_downloadable",
+                "security": [
+                    {
+                        "OpenIdConnect": []
+                    },
+                    {
+                        "HTTPBearer": []
+                    },
+                    {
+                        "OpenIdConnect": [
+                            "user:downloadables:read"
+                        ]
+                    },
+                    {
+                        "HTTPBearer": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "token",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "title": "Token"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "302": {
+                        "description": "Redirected to download"
+                    },
+                    "400": {
+                        "description": "Invalid signature"
+                    },
+                    "404": {
+                        "description": "Downloadable not found"
+                    },
+                    "410": {
+                        "description": "Expired signature"
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/integrations/github/authorize": {
             "get": {
                 "tags": [
@@ -6829,8 +7012,8 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "organizations:write",
-                            "organizations:read"
+                            "organizations:read",
+                            "organizations:write"
                         ]
                     },
                     {
@@ -6892,8 +7075,8 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "organizations:write",
-                            "organizations:read"
+                            "organizations:read",
+                            "organizations:write"
                         ]
                     },
                     {
@@ -6975,8 +7158,8 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "organizations:write",
-                            "organizations:read"
+                            "organizations:read",
+                            "organizations:write"
                         ]
                     },
                     {
@@ -7077,8 +7260,8 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "organizations:write",
-                            "organizations:read"
+                            "organizations:read",
+                            "organizations:write"
                         ]
                     },
                     {
@@ -7212,8 +7395,8 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "organizations:write",
-                            "organizations:read"
+                            "organizations:read",
+                            "organizations:write"
                         ]
                     },
                     {
@@ -7245,8 +7428,8 @@
                             },
                             "description": "Filter by the type of purchase the customer made.",
                             "default": [
-                                "order",
                                 "donation",
+                                "order",
                                 "subscription"
                             ],
                             "title": "Customer Types"
@@ -12197,8 +12380,8 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "webhooks:read",
-                            "webhooks:write"
+                            "webhooks:write",
+                            "webhooks:read"
                         ]
                     },
                     {
@@ -12368,8 +12551,8 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "webhooks:read",
-                            "webhooks:write"
+                            "webhooks:write",
+                            "webhooks:read"
                         ]
                     },
                     {
@@ -12604,8 +12787,8 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "webhooks:read",
-                            "webhooks:write"
+                            "webhooks:write",
+                            "webhooks:read"
                         ]
                     },
                     {
@@ -14121,187 +14304,6 @@
                                 }
                             }
                         }
-                    },
-                    "422": {
-                        "description": "Validation Error",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/HTTPValidationError"
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/downloadables": {
-            "get": {
-                "tags": [
-                    "downloadables"
-                ],
-                "summary": "List",
-                "operationId": "downloadables:list",
-                "security": [
-                    {
-                        "OpenIdConnect": []
-                    },
-                    {
-                        "HTTPBearer": []
-                    },
-                    {
-                        "OpenIdConnect": [
-                            "user:downloadables:read"
-                        ]
-                    },
-                    {
-                        "HTTPBearer": []
-                    }
-                ],
-                "parameters": [
-                    {
-                        "name": "organization_id",
-                        "in": "query",
-                        "required": false,
-                        "schema": {
-                            "anyOf": [
-                                {
-                                    "type": "string",
-                                    "format": "uuid4"
-                                },
-                                {
-                                    "type": "null"
-                                }
-                            ],
-                            "description": "Filter by organization behind downloadables. ",
-                            "title": "Organization Id"
-                        },
-                        "description": "Filter by organization behind downloadables. "
-                    },
-                    {
-                        "name": "benefit_id",
-                        "in": "query",
-                        "required": false,
-                        "schema": {
-                            "anyOf": [
-                                {
-                                    "type": "string",
-                                    "format": "uuid4"
-                                },
-                                {
-                                    "type": "null"
-                                }
-                            ],
-                            "description": "Filter by given benefit ID. ",
-                            "title": "Benefit Id"
-                        },
-                        "description": "Filter by given benefit ID. "
-                    },
-                    {
-                        "name": "page",
-                        "in": "query",
-                        "required": false,
-                        "schema": {
-                            "type": "integer",
-                            "exclusiveMinimum": 0,
-                            "description": "Page number, defaults to 1.",
-                            "default": 1,
-                            "title": "Page"
-                        },
-                        "description": "Page number, defaults to 1."
-                    },
-                    {
-                        "name": "limit",
-                        "in": "query",
-                        "required": false,
-                        "schema": {
-                            "type": "integer",
-                            "exclusiveMinimum": 0,
-                            "description": "Size of a page, defaults to 10. Maximum is 100.",
-                            "default": 10,
-                            "title": "Limit"
-                        },
-                        "description": "Size of a page, defaults to 10. Maximum is 100."
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Successful Response",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/ListResource_DownloadableRead_"
-                                }
-                            }
-                        }
-                    },
-                    "422": {
-                        "description": "Validation Error",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/HTTPValidationError"
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/downloadables/{token}": {
-            "get": {
-                "tags": [
-                    "downloadables"
-                ],
-                "summary": "Get",
-                "operationId": "downloadables:get",
-                "security": [
-                    {
-                        "OpenIdConnect": []
-                    },
-                    {
-                        "HTTPBearer": []
-                    },
-                    {
-                        "OpenIdConnect": [
-                            "user:downloadables:read"
-                        ]
-                    },
-                    {
-                        "HTTPBearer": []
-                    }
-                ],
-                "parameters": [
-                    {
-                        "name": "token",
-                        "in": "path",
-                        "required": true,
-                        "schema": {
-                            "type": "string",
-                            "title": "Token"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Successful Response",
-                        "content": {
-                            "application/json": {
-                                "schema": {}
-                            }
-                        }
-                    },
-                    "302": {
-                        "description": "Redirected to download"
-                    },
-                    "400": {
-                        "description": "Invalid signature"
-                    },
-                    "404": {
-                        "description": "Downloadable not found"
-                    },
-                    "410": {
-                        "description": "Expired signature"
                     },
                     "422": {
                         "description": "Validation Error",

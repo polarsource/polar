@@ -126,7 +126,7 @@ class Organization(RecordModel):
 
     # If this organization was created from a GitHub User object, without installing
     # the Polar GitHub App.
-    created_from_user_maintainer_upgrade: Mapped[Boolean] = mapped_column(
+    created_from_user_maintainer_upgrade: Mapped[bool] = mapped_column(
         Boolean, default=False, nullable=False
     )
 

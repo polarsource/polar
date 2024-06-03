@@ -26,13 +26,6 @@ if TYPE_CHECKING:
     )
 
 
-class FileExtension(StrEnum):
-    jpg = "jpg"
-    jpeg = "jpeg"
-    gif = "gif"
-    png = "png"
-
-
 class FileServiceTypes(StrEnum):
     downloadable = "downloadable"
 
@@ -52,7 +45,7 @@ class File(RecordModel):
         return relationship("Organization", lazy="raise")
 
     name: Mapped[str] = mapped_column(String, nullable=False)
-    extension: Mapped[FileExtension] = mapped_column(String, nullable=False)
+    extension: Mapped[str] = mapped_column(String, nullable=False)
     version: Mapped[str | None] = mapped_column(String, nullable=True)
     path: Mapped[str] = mapped_column(String, nullable=False)
     mime_type: Mapped[str] = mapped_column(String, nullable=False)
@@ -74,6 +67,3 @@ class File(RecordModel):
 
     # Flag for Polar to disable consumption of file
     is_enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
-
-
-__all__ = ("File", "FileExtension")

@@ -12,7 +12,6 @@ _UserBenefitsRead = Authenticator(
 )
 UserBenefitsRead = Annotated[AuthSubject[User], Depends(_UserBenefitsRead)]
 
-
 _UserOrdersRead = Authenticator(
     required_scopes={Scope.web_default, Scope.user_orders_read},
     allowed_subjects={User},
@@ -38,3 +37,19 @@ _UserSubscriptionsWrite = Authenticator(
     allowed_subjects={User},
 )
 UserSubscriptionsWrite = Annotated[AuthSubject[User], Depends(_UserSubscriptionsWrite)]
+
+_UserAdvertisementCampaignsRead = Authenticator(
+    required_scopes={Scope.web_default, Scope.user_advertisement_campaigns_read},
+    allowed_subjects={User},
+)
+UserAdvertisementCampaignsRead = Annotated[
+    AuthSubject[User], Depends(_UserAdvertisementCampaignsRead)
+]
+
+_UserAdvertisementCampaignsWrite = Authenticator(
+    required_scopes={Scope.web_default, Scope.user_advertisement_campaigns_write},
+    allowed_subjects={User},
+)
+UserAdvertisementCampaignsWrite = Annotated[
+    AuthSubject[User], Depends(_UserAdvertisementCampaignsWrite)
+]

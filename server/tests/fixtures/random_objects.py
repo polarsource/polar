@@ -11,6 +11,8 @@ from polar.enums import AccountType, Platforms
 from polar.kit.utils import utc_now
 from polar.models import (
     Account,
+    AdvertisementCampaign,
+    Article,
     Benefit,
     Order,
     Organization,
@@ -22,7 +24,6 @@ from polar.models import (
     User,
     UserOrganization,
 )
-from polar.models.article import Article
 from polar.models.benefit import (
     BenefitType,
 )
@@ -557,9 +558,9 @@ async def create_order(
 async def create_benefit(
     save_fixture: SaveFixture,
     *,
+    organization: Organization,
     type: BenefitType = BenefitType.custom,
     is_tax_applicable: bool | None = None,
-    organization: Organization | None = None,
     description: str = "Subscription Benefit",
     selectable: bool = True,
     deletable: bool = True,
@@ -569,7 +570,7 @@ async def create_benefit(
         type=type,
         description=description,
         is_tax_applicable=is_tax_applicable if is_tax_applicable is not None else False,
-        organization_id=organization.id if organization is not None else None,
+        organization=organization,
         selectable=selectable,
         deletable=deletable,
         properties=properties,
@@ -807,11 +808,14 @@ async def create_benefit_grant(
     user: User,
     benefit: Benefit,
     granted: bool | None = None,
+    properties: dict[str, Any] | None = None,
     **scope: Unpack[BenefitGrantScope],
 ) -> BenefitGrant:
     grant = BenefitGrant(benefit=benefit, user=user, **scope)
     if granted is not None:
         grant.set_granted() if granted else grant.set_revoked()
+    if properties is not None:
+        grant.properties = properties
     await save_fixture(grant)
     return grant
 
@@ -856,3 +860,16 @@ async def create_donation(
     )
     await save_fixture(donation)
     return donation
+
+
+async def create_advertisement_campaign(
+    save_fixture: SaveFixture, *, user: User
+) -> AdvertisementCampaign:
+    advertisement_campaign = AdvertisementCampaign(
+        user=user,
+        image_url="https://example.com/img.jpg",
+        text="",
+        link_url="https://example.com",
+    )
+    await save_fixture(advertisement_campaign)
+    return advertisement_campaign

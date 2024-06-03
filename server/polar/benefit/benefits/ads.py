@@ -17,8 +17,10 @@ class BenefitAdsService(BenefitServiceProtocol[BenefitAds, BenefitAdsProperties]
         update: bool = False,
         attempt: int = 1,
     ) -> dict[str, Any]:
-        # no-op
-        return {}
+        # `grant_properties` stores the associated campaign ID, but it's
+        # set by the user with a dedicated endpoint.
+        # Make sure then to not overwrite it.
+        return grant_properties
 
     async def revoke(
         self,
@@ -28,8 +30,10 @@ class BenefitAdsService(BenefitServiceProtocol[BenefitAds, BenefitAdsProperties]
         *,
         attempt: int = 1,
     ) -> dict[str, Any]:
-        # no-op
-        return {}
+        # `grant_properties` stores the associated campaign ID, but it's
+        # set by the user with a dedicated endpoint.
+        # Make sure then to not overwrite it.
+        return grant_properties
 
     async def requires_update(
         self,

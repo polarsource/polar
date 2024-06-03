@@ -110,14 +110,9 @@ const CreateBenefitModalContent = ({
             <div className="mt-4 flex flex-row items-center gap-x-4">
               <Button
                 className="self-start"
-                type="button"
+                type="submit"
                 loading={isLoading}
                 disabled={!form.formState.isValid}
-                onClick={(e) => {
-                  e.stopPropagation()
-                  e.preventDefault()
-                  handleSubmit(handleCreateNewBenefit)()
-                }}
               >
                 Create
               </Button>

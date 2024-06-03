@@ -142,10 +142,6 @@ class Settings(BaseSettings):
     # Override to http://127.0.0.1:9000 in .env during development
     S3_ENDPOINT_URL: str | None = None
 
-    # MinIO (Local S3 Development)
-    MINIO_USER: str = "polar"
-    MINIO_PWD: str = "polarpolar"  # MinIO requires min 8 chars
-
     # Application behaviours
     API_PAGINATION_MAX_LIMIT: int = 100
 

@@ -43,16 +43,35 @@ services:
       - "6380:6380"
 
   minio:
-    image: docker.io/bitnami/minio:2022
+    image: docker.io/bitnami/minio:2024.5.28
     ports:
       - "9000:9000"
       - "9001:9001"
     volumes:
       - "minio_data:/minio"
     environment:
-      - MINIO_ROOT_USER=${POLAR_AWS_ACCESS_KEY_ID}
-      - MINIO_ROOT_PASSWORD=${POLAR_AWS_SECRET_ACCESS_KEY}
-      - MINIO_DEFAULT_BUCKETS=${POLAR_S3_FILES_BUCKET_NAME},test-${POLAR_S3_FILES_BUCKET_NAME}
+      - MINIO_ROOT_USER=${POLAR_MINIO_USER}
+      - MINIO_ROOT_PASSWORD=${POLAR_MINIO_PWD}
+
+  minio-setup:
+    image: docker.io/bitnami/minio-client:2024.5.24
+    depends_on:
+      - minio
+    volumes:
+      - ./.minio:/tmp/config
+    environment:
+      - MINIO_HOST=minio
+      - MINIO_ROOT_USER=${POLAR_MINIO_USER}
+      - MINIO_ROOT_PASSWORD=${POLAR_MINIO_PWD}
+      - BUCKET_NAME=${POLAR_S3_FILES_BUCKET_NAME}
+      - BUCKET_TESTING_NAME=testing-${POLAR_S3_FILES_BUCKET_NAME}
+      - ACCESS_KEY=${POLAR_AWS_ACCESS_KEY_ID}
+      - SECRET_ACCESS_KEY=${POLAR_AWS_SECRET_ACCESS_KEY}
+    entrypoint: [
+      "bash",
+      "-c",
+      "chmod +x /tmp/config/configure.sh && /tmp/config/configure.sh"
+    ]
 
 
 volumes:

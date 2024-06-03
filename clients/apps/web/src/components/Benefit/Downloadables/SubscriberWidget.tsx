@@ -3,6 +3,7 @@ import { BenefitDownloadablesSubscriber, DownloadableRead } from '@polar-sh/sdk'
 import { AnimatedIconButton } from '@/components/Feed/Posts/Post'
 import { useDownloadables } from '@/hooks/queries'
 import { ArrowDownward } from '@mui/icons-material'
+import { Pill } from 'polarkit/components/ui/atoms'
 import { useRef } from 'react'
 import { useHoverDirty } from 'react-use'
 
@@ -27,9 +28,16 @@ const DownloadableItem = ({
         <span className="min-w-0 truncate text-sm text-blue-500 hover:text-blue-400 dark:text-blue-400 dark:hover:text-blue-300">
           {downloadable.file.name}
         </span>
-        <span className="dark:text-polar-500 text-xs text-gray-500">
-          {downloadable.file.size_readable}
-        </span>
+        <div className="flex flex-row items-center gap-x-2 text-xs">
+          <span className="dark:text-polar-500 text-gray-500">
+            {downloadable.file.size_readable}
+          </span>
+          {historic && (
+            <Pill className="text-xxs" color="gray">
+              Legacy
+            </Pill>
+          )}
+        </div>
       </div>
       <AnimatedIconButton
         className="hidden md:flex"

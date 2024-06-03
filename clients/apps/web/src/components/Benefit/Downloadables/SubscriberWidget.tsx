@@ -2,9 +2,16 @@ import { BenefitDownloadablesSubscriber, DownloadableRead } from '@polar-sh/sdk'
 
 import { AnimatedIconButton } from '@/components/Feed/Posts/Post'
 import { useDownloadables } from '@/hooks/queries'
-import { ArrowDownward } from '@mui/icons-material'
+import { ArrowDownward, MoreVertOutlined } from '@mui/icons-material'
 import { Pill } from 'polarkit/components/ui/atoms'
-import { useRef } from 'react'
+import Button from 'polarkit/components/ui/atoms/button'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from 'polarkit/components/ui/dropdown-menu'
+import { useCallback, useRef } from 'react'
 import { useHoverDirty } from 'react-use'
 
 const DownloadableItem = ({
@@ -17,15 +24,14 @@ const DownloadableItem = ({
   const ref = useRef<HTMLAnchorElement>(null)
   const isHovered = useHoverDirty(ref)
 
+  const onCopySHA = useCallback(() => {
+    navigator.clipboard.writeText(downloadable.file.checksum_sha256_hex ?? '')
+  }, [downloadable])
+
   return (
-    <a
-      ref={ref}
-      className="flex w-full flex-row items-center justify-between gap-x-6"
-      href={downloadable.file.download.url}
-      download
-    >
-      <div className="flex w-full flex-col gap-y-1">
-        <span className="min-w-0 truncate text-sm text-blue-500 hover:text-blue-400 dark:text-blue-400 dark:hover:text-blue-300">
+    <div className="flex w-full flex-row items-center justify-between gap-x-6">
+      <div className="flex w-full min-w-0 flex-col gap-y-1">
+        <span className="min-w-0 truncate text-sm">
           {downloadable.file.name}
         </span>
         <div className="flex flex-row items-center gap-x-2 text-xs">
@@ -39,15 +45,45 @@ const DownloadableItem = ({
           )}
         </div>
       </div>
-      <AnimatedIconButton
-        className="hidden md:flex"
-        active={isHovered}
-        variant="secondary"
-        direction="vertical"
-      >
-        <ArrowDownward fontSize="inherit" />
-      </AnimatedIconButton>
-    </a>
+      <div className="flex flex-row items-center gap-x-2">
+        <DropdownMenu>
+          <DropdownMenuTrigger className="focus:outline-none">
+            <Button
+              className={
+                'border-none bg-transparent text-[16px] opacity-50 transition-opacity hover:opacity-100 dark:bg-transparent'
+              }
+              size="icon"
+              variant="secondary"
+            >
+              <MoreVertOutlined fontSize="inherit" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent
+            align="end"
+            className="dark:bg-polar-800 bg-gray-50 shadow-lg"
+          >
+            <DropdownMenuItem onClick={onCopySHA}>
+              Copy SHA256 Checksum
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+        <a
+          ref={ref}
+          className="flex flex-row items-center gap-x-2"
+          href={downloadable.file.download.url}
+          download
+        >
+          <AnimatedIconButton
+            className="hidden md:flex"
+            active={isHovered}
+            variant="secondary"
+            direction="vertical"
+          >
+            <ArrowDownward fontSize="inherit" />
+          </AnimatedIconButton>
+        </a>
+      </div>
+    </div>
   )
 }
 

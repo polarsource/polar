@@ -273,7 +273,9 @@ export const FileListItem = ({
               align="end"
               className="dark:bg-polar-800 bg-gray-50 shadow-lg"
             >
-              <DropdownMenuItem onClick={onCopySHA}>Copy SHA</DropdownMenuItem>
+              <DropdownMenuItem onClick={onCopySHA}>
+                Copy SHA256 Checksum
+              </DropdownMenuItem>
               <DropdownMenuItem onClick={showDeleteModal}>
                 Delete
               </DropdownMenuItem>

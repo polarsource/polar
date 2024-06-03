@@ -129,18 +129,21 @@ class Settings(BaseSettings):
     LOGFIRE_PROJECT_NAME: str = "polar"
 
     # AWS (File Downloads)
-    AWS_ACCESS_KEY_ID: str = ""
-    AWS_SECRET_ACCESS_KEY: str = ""
+    AWS_ACCESS_KEY_ID: str = "polar-development"
+    AWS_SECRET_ACCESS_KEY: str = "polar123456789"
     AWS_REGION: str = "us-east-2"
     AWS_SIGNATURE_VERSION: str = "v4"
 
     # Downloadable files
-    S3_FILES_BUCKET_NAME: str = "development-polar-s3"
+    S3_FILES_BUCKET_NAME: str = "polar-s3"
     S3_FILES_PRESIGN_TTL: int = 600  # 10 minutes
     S3_FILES_DOWNLOAD_SECRET: str = "supersecret"
     S3_FILES_DOWNLOAD_SALT: str = "saltysalty"
     # Override to http://127.0.0.1:9000 in .env during development
     S3_ENDPOINT_URL: str | None = None
+
+    MINIO_USER: str = "polar"
+    MINIO_PWD: str = "polarpolar"
 
     # Application behaviours
     API_PAGINATION_MAX_LIMIT: int = 100

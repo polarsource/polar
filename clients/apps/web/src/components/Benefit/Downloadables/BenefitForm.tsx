@@ -59,7 +59,7 @@ const DownloadablesForm = ({
   initialArchivedFiles,
 }: {
   organization: Organization
-  initialFiles: FileObject[]
+  initialFiles: FileRead[]
   initialArchivedFiles: { [key: string]: boolean }
 }) => {
   const { setValue } = useFormContext<BenefitDownloadablesCreate>()
@@ -144,10 +144,11 @@ const DownloadablesEditForm = ({
   const { getValues } = useFormContext<BenefitDownloadablesCreate>()
 
   const fileIds = getValues('properties.files')
-  const archivedFiles = getValues('properties.archived')
+  const archivedFiles = getValues('properties.archived') ?? {}
   const filesQuery = useFiles(organization.id, fileIds)
 
-  const files: FileRead[] = filesQuery?.data?.items
+  const files =
+    filesQuery?.data?.items.filter((v): v is FileRead => Boolean(v)) ?? []
 
   if (filesQuery.isLoading) {
     // TODO: Style me

@@ -39,12 +39,11 @@ export const FileList = ({
     handleDragStart,
     handleDragEnd,
     handleDragCancel,
-    updateItems,
   } = useDraggable(
     files,
     (updated) => {
       // convert our setFiles to one without callback
-      setFiles((prev) => updated)
+      setFiles(() => updated)
     },
     (files: FileObject[]) => {
       console.log('updated file orders', files)

@@ -1,13 +1,13 @@
 import { api } from '@/utils/api'
 import {
   FileCreate,
-  FileCreatePart,
   FileRead,
   FileServiceTypes,
   FileUpload,
-  FileUploadCompletedPart,
-  FileUploadPart,
   Organization,
+  S3FileCreatePart,
+  S3FileUploadCompletedPart,
+  S3FileUploadPart,
 } from '@polar-sh/sdk'
 
 const CHUNK_SIZE = 10000000 // 10MB
@@ -23,6 +23,14 @@ interface UploadProperties {
 }
 
 export class Upload {
+  organization: Organization
+  service: FileServiceTypes
+  file: File
+  buffer: ArrayBuffer
+  onFileCreate: (response: FileUpload) => void
+  onFileUploadProgress: (file: FileUpload, uploaded: number) => void
+  onFileUploaded: (response: FileRead) => void
+
   constructor({
     organization,
     service,
@@ -49,7 +57,7 @@ export class Upload {
 
   async create(): Promise<FileUpload> {
     const sha256base64 = await this.getSha256Base64(this.buffer)
-    const parts = await this.getMultiparts(this.file, this.buffer)
+    const parts = await this.getMultiparts()
     const params: FileCreate = {
       organization_id: this.organization.id,
       service: this.service,
@@ -65,9 +73,9 @@ export class Upload {
     })
   }
 
-  async getMultiparts(): Promise<Array<FileCreatePart>> {
+  async getMultiparts(): Promise<Array<S3FileCreatePart>> {
     const chunkCount = Math.floor(this.file.size / CHUNK_SIZE) + 1
-    const parts: Array<FileCreatePart> = []
+    const parts: Array<S3FileCreatePart> = []
 
     for (let i = 1; i <= chunkCount; i++) {
       const chunk_start = (i - 1) * CHUNK_SIZE
@@ -79,7 +87,7 @@ export class Upload {
 
       const chunkSha256base64 = await this.getSha256Base64(chunk)
 
-      let part: FileCreatePart = {
+      let part: S3FileCreatePart = {
         number: i,
         chunk_start: chunk_start,
         chunk_end: chunk_end,
@@ -94,9 +102,9 @@ export class Upload {
     parts,
     onProgress,
   }: {
-    parts: Array<FileUploadPart>
+    parts: Array<S3FileUploadPart>
     onProgress: (uploaded: number) => void
-  }): Promise<FileUploadCompletedPart[]> {
+  }): Promise<S3FileUploadCompletedPart[]> {
     const ret = []
     let uploaded = 0
     const partCount = parts.length
@@ -107,6 +115,7 @@ export class Upload {
      */
     for (let i = 0; i < partCount; i++) {
       const part = parts[i]
+      console.log(part)
       const completed = await this.upload({
         part,
         onProgress: (chunk_uploaded) => {
@@ -125,9 +134,9 @@ export class Upload {
     part,
     onProgress,
   }: {
-    part: FileUploadPart
+    part: S3FileUploadPart
     onProgress: (uploaded: number) => void
-  }): Promise<FileUploadCompletedPart> {
+  }): Promise<S3FileUploadCompletedPart> {
     const data = this.buffer.slice(part.chunk_start, part.chunk_end)
     let blob = new Blob([data], { type: this.file.type })
 
@@ -142,7 +151,7 @@ export class Upload {
               reject(new Error('ETag not found in response'))
               return
             }
-            const completed: FileUploadCompletedPart = {
+            const completed: S3FileUploadCompletedPart = {
               number: part.number,
               checksum_etag: etag,
             }
@@ -175,7 +184,7 @@ export class Upload {
 
   async complete(
     createFileResponse: FileUpload,
-    uploadedParts: FileUploadCompletedPart[],
+    uploadedParts: S3FileUploadCompletedPart[],
   ) {
     return api.files
       .uploaded({

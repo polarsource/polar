@@ -37,7 +37,7 @@ const buildFileObjects = <T extends FileRead | FileUpload>(
 interface FileUploadProps<T extends FileRead | FileUpload> {
   service: FileServiceTypes
   organization: Organization
-  initialFiles: T[]
+  initialFiles: FileRead[]
   onFilesUpdated: (files: FileObject<T>[]) => void
 }
 
@@ -48,7 +48,7 @@ export const useFileUpload = <T extends FileRead | FileUpload>({
   initialFiles = [],
 }: FileUploadProps<T>) => {
   const [files, setFilesState] = useState<FileObject<T>[]>(
-    buildFileObjects(initialFiles),
+    buildFileObjects(initialFiles) as unknown as FileObject<T>[],
   )
 
   const setFiles = (callback: (prev: FileObject<T>[]) => FileObject<T>[]) => {

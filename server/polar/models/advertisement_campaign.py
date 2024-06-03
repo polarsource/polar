@@ -1,10 +1,14 @@
+from typing import TYPE_CHECKING
 from uuid import UUID
 
 from sqlalchemy import ForeignKey, Integer, String
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.kit.db.models import RecordModel
 from polar.kit.extensions.sqlalchemy import PostgresUUID
+
+if TYPE_CHECKING:
+    from polar.models import User
 
 
 class AdvertisementCampaign(RecordModel):
@@ -15,6 +19,10 @@ class AdvertisementCampaign(RecordModel):
         ForeignKey("users.id"),
         nullable=False,
     )
+
+    @declared_attr
+    def user(cls) -> Mapped["User"]:
+        return relationship("User", lazy="raise")
 
     views: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     clicks: Mapped[int] = mapped_column(Integer, nullable=False, default=0)

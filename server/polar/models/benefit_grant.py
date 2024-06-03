@@ -106,7 +106,7 @@ class BenefitGrant(RecordModel):
 
     @declared_attr
     def benefit(cls) -> Mapped["Benefit"]:
-        return relationship("Benefit", lazy="raise")
+        return relationship("Benefit", lazy="raise", back_populates="grants")
 
     subscription_id: Mapped[UUID | None] = mapped_column(
         PostgresUUID,

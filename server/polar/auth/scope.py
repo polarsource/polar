@@ -36,6 +36,8 @@ class Scope(StrEnum):
     user_orders_read = "user:orders:read"
     user_subscriptions_read = "user:subscriptions:read"
     user_subscriptions_write = "user:subscriptions:write"
+    user_advertisement_campaigns_read = "user:advertisement_campaigns:read"
+    user_advertisement_campaigns_write = "user:advertisement_campaigns:write"
 
     @classmethod
     def __get_pydantic_json_schema__(

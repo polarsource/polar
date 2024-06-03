@@ -1,10 +1,6 @@
 from uuid import UUID
 
-from sqlalchemy import (
-    ForeignKey,
-    Integer,
-    String,
-)
+from sqlalchemy import ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from polar.kit.db.models import RecordModel
@@ -14,15 +10,9 @@ from polar.kit.extensions.sqlalchemy import PostgresUUID
 class AdvertisementCampaign(RecordModel):
     __tablename__ = "advertisement_campaigns"
 
-    subscription_id: Mapped[UUID] = mapped_column(
+    user_id: Mapped[UUID] = mapped_column(
         PostgresUUID,
-        ForeignKey("subscriptions.id"),
-        nullable=False,
-    )
-
-    benefit_id: Mapped[UUID] = mapped_column(
-        PostgresUUID,
-        ForeignKey("benefits.id"),
+        ForeignKey("users.id"),
         nullable=False,
     )
 

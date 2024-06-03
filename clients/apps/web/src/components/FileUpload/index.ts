@@ -11,12 +11,16 @@ import { useState } from 'react'
 import { useDropzone } from 'react-dropzone'
 import { Upload } from './Upload'
 
-export interface FileObject extends FileRead {
+export type FileObject<
+  T extends FileRead | FileUpload = FileRead | FileUpload,
+> = T & {
   isUploading: boolean
   uploadedBytes: number
 }
 
-const buildFileObject = (file: FileRead): FileObject => {
+const buildFileObject = <T extends FileRead | FileUpload>(
+  file: T,
+): FileObject<T> => {
   return {
     ...file,
     isUploading: false,
@@ -24,28 +28,30 @@ const buildFileObject = (file: FileRead): FileObject => {
   }
 }
 
-const buildFileObjects = (files: FileRead[]): FileObject[] => {
+const buildFileObjects = <T extends FileRead | FileUpload>(
+  files: T[],
+): FileObject<T>[] => {
   return files.map(buildFileObject)
 }
 
-interface FileUploadProps {
+interface FileUploadProps<T extends FileRead | FileUpload> {
   service: FileServiceTypes
   organization: Organization
-  initialFiles: FileRead[]
-  onFilesUpdated: (files: FileObject[]) => void
+  initialFiles: T[]
+  onFilesUpdated: (files: FileObject<T>[]) => void
 }
 
-export const useFileUpload = ({
+export const useFileUpload = <T extends FileRead | FileUpload>({
   service,
   organization,
   onFilesUpdated,
   initialFiles = [],
-}: FileUploadProps) => {
-  const [files, setFilesState] = useState<FileObject[]>(
+}: FileUploadProps<T>) => {
+  const [files, setFilesState] = useState<FileObject<T>[]>(
     buildFileObjects(initialFiles),
   )
 
-  const setFiles = (callback: (prev: FileObject[]) => FileObject[]) => {
+  const setFiles = (callback: (prev: FileObject<T>[]) => FileObject<T>[]) => {
     setFilesState((prev) => {
       const updated = callback(prev)
       if (onFilesUpdated) {
@@ -57,7 +63,7 @@ export const useFileUpload = ({
 
   const updateFile = (
     fileId: string,
-    callback: (prev: FileObject) => FileObject,
+    callback: (prev: FileObject<T>) => FileObject<T>,
   ) => {
     setFiles((prev) => {
       return prev.map((f) => {
@@ -79,7 +85,7 @@ export const useFileUpload = ({
     const newFile = buildFileObject(response)
     newFile.isUploading = true
     setFiles((prev) => {
-      return [...prev, newFile]
+      return [...prev, newFile as unknown as FileObject<T>]
     })
   }
 

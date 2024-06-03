@@ -10747,6 +10747,8 @@ export const Scope = {
     CREATORBENEFITSREAD: 'creator:benefits:read',
     CREATORBENEFITSWRITE: 'creator:benefits:write',
     ORDERSREAD: 'orders:read',
+    CREATORFILESREAD: 'creator:files:read',
+    CREATORFILESWRITE: 'creator:files:write',
     WEBHOOKSREAD: 'webhooks:read',
     WEBHOOKSWRITE: 'webhooks:write',
     USERBENEFITSREAD: 'user:benefits:read',
@@ -10755,9 +10757,7 @@ export const Scope = {
     USERSUBSCRIPTIONSWRITE: 'user:subscriptions:write',
     USERADVERTISEMENT_CAMPAIGNSREAD: 'user:advertisement_campaigns:read',
     USERADVERTISEMENT_CAMPAIGNSWRITE: 'user:advertisement_campaigns:write',
-    CREATORFILESREAD: 'creator:files:read',
-    CREATORFILESWRITE: 'creator:files:write',
-    BACKERFILESREAD: 'backer:files:read'
+    USERDOWNLOADABLESREAD: 'user:downloadables:read'
 } as const;
 export type Scope = typeof Scope[keyof typeof Scope];
 

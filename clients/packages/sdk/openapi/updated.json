@@ -7246,8 +7246,8 @@
                             "description": "Filter by the type of purchase the customer made.",
                             "default": [
                                 "order",
-                                "subscription",
-                                "donation"
+                                "donation",
+                                "subscription"
                             ],
                             "title": "Customer Types"
                         },
@@ -11527,8 +11527,8 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "creator:benefits:write",
-                            "creator:benefits:read"
+                            "creator:benefits:read",
+                            "creator:benefits:write"
                         ]
                     },
                     {
@@ -11747,8 +11747,8 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "creator:benefits:write",
-                            "creator:benefits:read"
+                            "creator:benefits:read",
+                            "creator:benefits:write"
                         ]
                     },
                     {
@@ -12043,8 +12043,8 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "creator:benefits:write",
-                            "creator:benefits:read"
+                            "creator:benefits:read",
+                            "creator:benefits:write"
                         ]
                     },
                     {
@@ -12197,8 +12197,8 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "webhooks:write",
-                            "webhooks:read"
+                            "webhooks:read",
+                            "webhooks:write"
                         ]
                     },
                     {
@@ -12368,8 +12368,8 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "webhooks:write",
-                            "webhooks:read"
+                            "webhooks:read",
+                            "webhooks:write"
                         ]
                     },
                     {
@@ -12604,8 +12604,8 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "webhooks:write",
-                            "webhooks:read"
+                            "webhooks:read",
+                            "webhooks:write"
                         ]
                     },
                     {
@@ -14151,7 +14151,7 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "backer:files:read"
+                            "user:downloadables:read"
                         ]
                     },
                     {
@@ -14264,7 +14264,7 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "backer:files:read"
+                            "user:downloadables:read"
                         ]
                     },
                     {
@@ -21913,7 +21913,7 @@
                     "scope": {
                         "type": "string",
                         "title": "Scope",
-                        "default": "openid profile email articles:read user:read organizations:read organizations:write creator:subscriptions:read creator:subscriptions:write creator:products:read creator:products:write creator:benefits:read creator:benefits:write orders:read webhooks:read webhooks:write user:benefits:read user:orders:read user:subscriptions:read user:subscriptions:write user:advertisement_campaigns:read user:advertisement_campaigns:write creator:files:read creator:files:write backer:files:read"
+                        "default": "openid profile email articles:read user:read organizations:read organizations:write creator:subscriptions:read creator:subscriptions:write creator:products:read creator:products:write creator:benefits:read creator:benefits:write orders:read creator:files:read creator:files:write webhooks:read webhooks:write user:benefits:read user:orders:read user:subscriptions:read user:subscriptions:write user:advertisement_campaigns:read user:advertisement_campaigns:write user:downloadables:read"
                     },
                     "client_name": {
                         "type": "string",
@@ -22074,7 +22074,7 @@
                     "scope": {
                         "type": "string",
                         "title": "Scope",
-                        "default": "openid profile email articles:read user:read organizations:read organizations:write creator:subscriptions:read creator:subscriptions:write creator:products:read creator:products:write creator:benefits:read creator:benefits:write orders:read webhooks:read webhooks:write user:benefits:read user:orders:read user:subscriptions:read user:subscriptions:write user:advertisement_campaigns:read user:advertisement_campaigns:write creator:files:read creator:files:write backer:files:read"
+                        "default": "openid profile email articles:read user:read organizations:read organizations:write creator:subscriptions:read creator:subscriptions:write creator:products:read creator:products:write creator:benefits:read creator:benefits:write orders:read creator:files:read creator:files:write webhooks:read webhooks:write user:benefits:read user:orders:read user:subscriptions:read user:subscriptions:write user:advertisement_campaigns:read user:advertisement_campaigns:write user:downloadables:read"
                     },
                     "client_name": {
                         "type": "string",
@@ -22195,7 +22195,7 @@
                     "scope": {
                         "type": "string",
                         "title": "Scope",
-                        "default": "openid profile email articles:read user:read organizations:read organizations:write creator:subscriptions:read creator:subscriptions:write creator:products:read creator:products:write creator:benefits:read creator:benefits:write orders:read webhooks:read webhooks:write user:benefits:read user:orders:read user:subscriptions:read user:subscriptions:write user:advertisement_campaigns:read user:advertisement_campaigns:write creator:files:read creator:files:write backer:files:read"
+                        "default": "openid profile email articles:read user:read organizations:read organizations:write creator:subscriptions:read creator:subscriptions:write creator:products:read creator:products:write creator:benefits:read creator:benefits:write orders:read creator:files:read creator:files:write webhooks:read webhooks:write user:benefits:read user:orders:read user:subscriptions:read user:subscriptions:write user:advertisement_campaigns:read user:advertisement_campaigns:write user:downloadables:read"
                     },
                     "client_name": {
                         "type": "string",
@@ -25549,6 +25549,8 @@
                     "creator:benefits:read",
                     "creator:benefits:write",
                     "orders:read",
+                    "creator:files:read",
+                    "creator:files:write",
                     "webhooks:read",
                     "webhooks:write",
                     "user:benefits:read",
@@ -25557,14 +25559,11 @@
                     "user:subscriptions:write",
                     "user:advertisement_campaigns:read",
                     "user:advertisement_campaigns:write",
-                    "creator:files:read",
-                    "creator:files:write",
-                    "backer:files:read"
+                    "user:downloadables:read"
                 ],
                 "title": "Scope",
                 "enumNames": {
                     "articles:read": "Articles Read",
-                    "backer:files:read": "Read & Download Files",
                     "creator:benefits:read": "Read benefits",
                     "creator:benefits:write": "Create or modify benefits",
                     "creator:files:read": "Read & Download Files",
@@ -25574,6 +25573,7 @@
                     "email": "Read your email address",
                     "openid": "OpenID",
                     "profile": "Read your profile",
+                    "user:downloadables:read": "Read Downloadable Files",
                     "user:read": "User Read",
                     "web_default": "Web Default",
                     "webhooks:read": "Read webhooks",

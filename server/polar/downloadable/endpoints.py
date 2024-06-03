@@ -25,7 +25,7 @@ router = APIRouter(prefix="/downloadables", tags=["downloadables"])
     response_model=ListResource[DownloadableRead],
 )
 async def list(
-    auth_subject: auth.BackerFilesRead,
+    auth_subject: auth.UserDownloadablesRead,
     pagination: PaginationParamsQuery,
     organization_id: UUID4 | None = Query(
         None,
@@ -67,7 +67,7 @@ async def list(
 )
 async def get(
     token: str,
-    auth_subject: auth.BackerFilesRead,
+    auth_subject: auth.UserDownloadablesRead,
     authz: Authz = Depends(Authz.authz),
     session: AsyncSession = Depends(get_db_session),
 ) -> RedirectResponse:

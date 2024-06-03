@@ -29,6 +29,9 @@ class Scope(StrEnum):
 
     creator_orders_read = "orders:read"
 
+    creator_files_read = "creator:files:read"
+    creator_files_write = "creator:files:write"
+
     webhooks_read = "webhooks:read"
     webhooks_write = "webhooks:write"
 
@@ -39,9 +42,7 @@ class Scope(StrEnum):
     user_advertisement_campaigns_read = "user:advertisement_campaigns:read"
     user_advertisement_campaigns_write = "user:advertisement_campaigns:write"
 
-    creator_files_read = "creator:files:read"
-    creator_files_write = "creator:files:write"
-    backer_files_read = "backer:files:read"
+    user_downloadables_read = "user:downloadables:read"
 
     @classmethod
     def __get_pydantic_json_schema__(
@@ -70,7 +71,7 @@ SCOPES_SUPPORTED_DISPLAY_NAMES: dict[Scope, str] = {
     Scope.webhooks_write: "Create or modify webhooks",
     Scope.creator_files_read: "Read & Download Files",
     Scope.creator_files_write: "Upload Files",
-    Scope.backer_files_read: "Read & Download Files",
+    Scope.user_downloadables_read: "Read Downloadable Files",
 }
 
 

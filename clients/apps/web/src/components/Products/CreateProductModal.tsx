@@ -165,28 +165,28 @@ export const CreateProductModal = ({
             below.
           </p>
         </div>
-        <div className="flex flex-col p-8">
+        <div className="flex flex-col gap-y-8 p-8">
           <Form {...form}>
             <form
               onSubmit={handleSubmit(onSubmit)}
               className="flex flex-col gap-y-8"
             >
               <ProductForm update={false} />
-              <ProductBenefitsForm
-                className="w-full"
-                organization={organization}
-                organizationBenefits={organizationBenefits.filter(
-                  (benefit) =>
-                    // Hide not selectable benefits unless they are already enabled
-                    benefit.selectable ||
-                    enabledBenefits.some((b) => b.id === benefit.id),
-                )}
-                benefits={enabledBenefits}
-                onSelectBenefit={onSelectBenefit}
-                onRemoveBenefit={onRemoveBenefit}
-              />
             </form>
           </Form>
+          <ProductBenefitsForm
+            className="w-full"
+            organization={organization}
+            organizationBenefits={organizationBenefits.filter(
+              (benefit) =>
+                // Hide not selectable benefits unless they are already enabled
+                benefit.selectable ||
+                enabledBenefits.some((b) => b.id === benefit.id),
+            )}
+            benefits={enabledBenefits}
+            onSelectBenefit={onSelectBenefit}
+            onRemoveBenefit={onRemoveBenefit}
+          />
         </div>
       </div>
       <div className="dark:bg-polar-900 dark:border-polar-700 flex flex-row items-center gap-2 border-t border-gray-100 bg-gray-50 p-8">

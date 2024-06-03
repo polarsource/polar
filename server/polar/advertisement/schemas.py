@@ -1,52 +1,10 @@
-from uuid import UUID
+from pydantic import UUID4, HttpUrl
 
-from pydantic import HttpUrl
-
-from polar.kit.schemas import Schema
+from polar.kit.schemas import TimestampedSchema
 
 
-class AdvertisementCampaign(Schema):
-    id: UUID
-    subscription_id: UUID
-    benefit_id: UUID
-
-    views: int
-    clicks: int
-
-    image_url: HttpUrl
-    image_url_dark: HttpUrl | None = None
-
-    text: str
-    link_url: HttpUrl
-
-
-class AdvertisementCampaignPublic(Schema):
-    id: UUID
-
-    image_url: HttpUrl
-    image_url_dark: HttpUrl | None = None
-
-    text: str
-    link_url: HttpUrl
-
-
-class AdvertisementDisplay(AdvertisementCampaignPublic):
-    height: int | None = None
-    width: int | None = None
-
-
-class CreateAdvertisementCampaign(Schema):
-    subscription_id: UUID
-    benefit_id: UUID
-
-    image_url: HttpUrl
-    image_url_dark: HttpUrl | None = None
-
-    text: str
-    link_url: HttpUrl
-
-
-class EditAdvertisementCampaign(Schema):
+class AdvertisementCampaign(TimestampedSchema):
+    id: UUID4
     image_url: HttpUrl
     image_url_dark: HttpUrl | None = None
     text: str

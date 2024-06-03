@@ -1,121 +1,109 @@
 import uuid
 from collections.abc import Sequence
+from enum import StrEnum
+from typing import Any
 
-from sqlalchemy import (
-    and_,
-    select,
-    update,
-)
+from sqlalchemy import UUID, Select, UnaryExpression, asc, desc, select, update
 
-from polar.advertisement.schemas import (
-    CreateAdvertisementCampaign,
-    EditAdvertisementCampaign,
-)
 from polar.kit.db.postgres import AsyncSession
-from polar.kit.utils import utc_now
-from polar.models import AdvertisementCampaign, BenefitGrant
+from polar.kit.pagination import PaginationParams, paginate
+from polar.kit.services import ResourceServiceReader
+from polar.kit.sorting import Sorting
+from polar.models import AdvertisementCampaign, Benefit, BenefitGrant
 
 
-class AdvertisementCampaignService:
-    async def get(
-        self, session: AsyncSession, id: uuid.UUID, allow_deleted: bool = False
+class SortProperty(StrEnum):
+    created_at = "created_at"
+    granted_at = "granted_at"
+    views = "views"
+    clicks = "clicks"
+
+
+class AdvertisementCampaignService(ResourceServiceReader[AdvertisementCampaign]):
+    async def list(
+        self,
+        session: AsyncSession,
+        *,
+        benefit_id: uuid.UUID,
+        pagination: PaginationParams,
+        sorting: list[Sorting[SortProperty]] = [(SortProperty.granted_at, False)],
+    ) -> tuple[Sequence[AdvertisementCampaign], int]:
+        statement = self._get_readable_advertisement_statement().where(
+            Benefit.id == benefit_id
+        )
+
+        order_by_clauses: list[UnaryExpression[Any]] = []
+        for criterion, is_desc in sorting:
+            clause_function = desc if is_desc else asc
+            if criterion == SortProperty.created_at:
+                order_by_clauses.append(
+                    clause_function(AdvertisementCampaign.created_at)
+                )
+            elif criterion == SortProperty.granted_at:
+                order_by_clauses.append(clause_function(BenefitGrant.granted_at))
+            elif criterion == SortProperty.views:
+                order_by_clauses.append(clause_function(AdvertisementCampaign.views))
+            elif criterion == SortProperty.clicks:
+                order_by_clauses.append(clause_function(AdvertisementCampaign.clicks))
+        statement = statement.order_by(*order_by_clauses)
+
+        results, count = await paginate(session, statement, pagination=pagination)
+
+        return results, count
+
+    async def get_by_id(
+        self, session: AsyncSession, id: uuid.UUID
     ) -> AdvertisementCampaign | None:
-        query = select(AdvertisementCampaign).where(
-            AdvertisementCampaign.id == id,
+        statement = self._get_readable_advertisement_statement().where(
+            AdvertisementCampaign.id == id
         )
 
-        if not allow_deleted:
-            query = query.where(AdvertisementCampaign.deleted_at.is_(None))
-
-        res = await session.execute(query)
-        return res.scalars().unique().one_or_none()
-
-    async def create(
-        self,
-        session: AsyncSession,
-        create: CreateAdvertisementCampaign,
-    ) -> AdvertisementCampaign:
-        campaign = AdvertisementCampaign(
-            subscription_id=create.subscription_id,
-            benefit_id=create.benefit_id,
-            image_url=str(create.image_url),
-            image_url_dark=str(create.image_url_dark)
-            if create.image_url_dark
-            else None,
-            text=create.text,
-            link_url=str(create.link_url),
-        )
-        session.add(campaign)
-        return campaign
-
-    async def edit(
-        self,
-        session: AsyncSession,
-        campaign: AdvertisementCampaign,
-        edit: EditAdvertisementCampaign,
-    ) -> AdvertisementCampaign:
-        campaign.image_url = str(edit.image_url)
-        campaign.image_url_dark = (
-            str(edit.image_url_dark) if edit.image_url_dark else None
-        )
-        campaign.link_url = str(edit.link_url)
-        campaign.text = edit.text
-        session.add(campaign)
-        return campaign
+        result = await session.execute(statement)
+        return result.scalar_one_or_none()
 
     async def track_view(
         self,
         session: AsyncSession,
-        campaign: AdvertisementCampaign,
-    ) -> None:
-        stmt = (
+        advertisement_campaign: AdvertisementCampaign,
+    ) -> AdvertisementCampaign:
+        statement = (
             update(AdvertisementCampaign)
-            .where(AdvertisementCampaign.id == campaign.id)
+            .where(AdvertisementCampaign.id == advertisement_campaign.id)
             .values({"views": AdvertisementCampaign.views + 1})
+            .returning(AdvertisementCampaign)
         )
 
-        await session.execute(stmt)
+        result = await session.execute(statement)
 
-    async def delete(
-        self,
-        session: AsyncSession,
-        campaign: AdvertisementCampaign,
-    ) -> AdvertisementCampaign:
-        campaign.deleted_at = utc_now()
-        session.add(campaign)
-        return campaign
+        return result.scalar_one()
 
-    async def search(
+    def _get_readable_advertisement_statement(
         self,
-        session: AsyncSession,
-        subscription_id: uuid.UUID | None = None,
-        benefit_id: uuid.UUID | None = None,
-    ) -> Sequence[AdvertisementCampaign]:
-        statement = (
+    ) -> Select[tuple[AdvertisementCampaign]]:
+        return (
             select(AdvertisementCampaign)
+            # Join with the latest benefit grant
             .join(
                 BenefitGrant,
-                onclause=and_(
-                    BenefitGrant.benefit_id == AdvertisementCampaign.benefit_id,
-                    BenefitGrant.subscription_id
-                    == AdvertisementCampaign.subscription_id,
-                ),
+                onclause=BenefitGrant.id
+                == select(BenefitGrant)
+                .correlate(AdvertisementCampaign)
+                .with_only_columns(BenefitGrant.id)
+                .where(
+                    BenefitGrant.deleted_at.is_(None),
+                    BenefitGrant.is_granted.is_(True),
+                    AdvertisementCampaign.id
+                    == BenefitGrant.properties["advertisement_campaign_id"].astext.cast(
+                        UUID
+                    ),
+                )
+                .order_by(BenefitGrant.granted_at.desc())
+                .limit(1)
+                .scalar_subquery(),
             )
-            .where(
-                AdvertisementCampaign.deleted_at.is_(None),
-                BenefitGrant.revoked_at.is_(None),
-            )
+            .join(Benefit, onclause=Benefit.id == BenefitGrant.benefit_id)
+            .where(AdvertisementCampaign.deleted_at.is_(None))
         )
 
-        if subscription_id:
-            statement = statement.where(
-                AdvertisementCampaign.subscription_id == subscription_id
-            )
-        if benefit_id:
-            statement = statement.where(AdvertisementCampaign.benefit_id == benefit_id)
 
-        res = await session.execute(statement)
-        return res.scalars().unique().all()
-
-
-advertisement_campaign_service = AdvertisementCampaignService()
+advertisement_campaign = AdvertisementCampaignService(AdvertisementCampaign)

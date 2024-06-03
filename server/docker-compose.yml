@@ -50,9 +50,10 @@ services:
     volumes:
       - "minio_data:/minio"
     environment:
-      - MINIO_ROOT_USER=${POLAR_MINIO_USER}
-      - MINIO_ROOT_PASSWORD=${POLAR_MINIO_PWD}
+      - MINIO_ROOT_USER=${POLAR_AWS_ACCESS_KEY_ID}
+      - MINIO_ROOT_PASSWORD=${POLAR_AWS_SECRET_ACCESS_KEY}
       - MINIO_DEFAULT_BUCKETS=${POLAR_S3_FILES_BUCKET_NAME},test-${POLAR_S3_FILES_BUCKET_NAME}
+
 
 volumes:
   postgres_data:

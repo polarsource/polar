@@ -21,6 +21,7 @@ import type {
   FreeSubscriptionUpgrade,
   HTTPValidationError,
   ListResourceAnnotatedUnionBenefitArticlesSubscriberBenefitAdsSubscriberBenefitDiscordSubscriberBenefitCustomSubscriberBenefitGitHubRepositorySubscriberDiscriminatorMergeJSONSchema,
+  ListResourceUserAdvertisementCampaign,
   ListResourceUserOrder,
   ListResourceUserSubscription,
   LogoutResponse,
@@ -28,6 +29,10 @@ import type {
   ProductPriceType,
   ResourceNotFound,
   ResponseUsersGetBenefit,
+  UserAdvertisementCampaign,
+  UserAdvertisementCampaignCreate,
+  UserAdvertisementCampaignEnable,
+  UserAdvertisementCampaignUpdate,
   UserFreeSubscriptionCreate,
   UserOrder,
   UserOrderInvoice,
@@ -44,8 +49,25 @@ export interface UsersApiCancelSubscriptionRequest {
     id: string;
 }
 
+export interface UsersApiCreateAdvertisementCampaignRequest {
+    userAdvertisementCampaignCreate: UserAdvertisementCampaignCreate;
+}
+
 export interface UsersApiCreateSubscriptionRequest {
     userFreeSubscriptionCreate: UserFreeSubscriptionCreate;
+}
+
+export interface UsersApiDeleteAdvertisementCampaignRequest {
+    id: string;
+}
+
+export interface UsersApiEnableAdvertisementCampaignRequest {
+    id: string;
+    userAdvertisementCampaignEnable: UserAdvertisementCampaignEnable;
+}
+
+export interface UsersApiGetAdvertisementCampaignRequest {
+    id: string;
 }
 
 export interface UsersApiGetBenefitRequest {
@@ -62,6 +84,12 @@ export interface UsersApiGetOrderInvoiceRequest {
 
 export interface UsersApiGetSubscriptionRequest {
     id: string;
+}
+
+export interface UsersApiListAdvertisementCampaignsRequest {
+    page?: number;
+    limit?: number;
+    sorting?: Array<string>;
 }
 
 export interface UsersApiListBenefitsRequest {
@@ -101,6 +129,11 @@ export interface UsersApiSetAccountRequest {
 
 export interface UsersApiSetAccount0Request {
     userSetAccount: UserSetAccount;
+}
+
+export interface UsersApiUpdateAdvertisementCampaignRequest {
+    id: string;
+    userAdvertisementCampaignUpdate: UserAdvertisementCampaignUpdate;
 }
 
 export interface UsersApiUpdatePreferencesRequest {
@@ -161,6 +194,52 @@ export class UsersApi extends runtime.BaseAPI {
      */
     async cancelSubscription(requestParameters: UsersApiCancelSubscriptionRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<UserSubscription> {
         const response = await this.cancelSubscriptionRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
+     * Create an advertisement campaign.
+     * Create Advertisement Campaign
+     */
+    async createAdvertisementCampaignRaw(requestParameters: UsersApiCreateAdvertisementCampaignRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<UserAdvertisementCampaign>> {
+        if (requestParameters['userAdvertisementCampaignCreate'] == null) {
+            throw new runtime.RequiredError(
+                'userAdvertisementCampaignCreate',
+                'Required parameter "userAdvertisementCampaignCreate" was null or undefined when calling createAdvertisementCampaign().'
+            );
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        headerParameters['Content-Type'] = 'application/json';
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("HTTPBearer", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+        const response = await this.request({
+            path: `/api/v1/users/advertisements/`,
+            method: 'POST',
+            headers: headerParameters,
+            query: queryParameters,
+            body: requestParameters['userAdvertisementCampaignCreate'],
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse(response);
+    }
+
+    /**
+     * Create an advertisement campaign.
+     * Create Advertisement Campaign
+     */
+    async createAdvertisementCampaign(requestParameters: UsersApiCreateAdvertisementCampaignRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<UserAdvertisementCampaign> {
+        const response = await this.createAdvertisementCampaignRaw(requestParameters, initOverrides);
         return await response.value();
     }
 
@@ -275,6 +354,155 @@ export class UsersApi extends runtime.BaseAPI {
      */
     async createSubscription(requestParameters: UsersApiCreateSubscriptionRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<UserSubscription> {
         const response = await this.createSubscriptionRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
+     * Delete an advertisement campaign.  It\'ll be automatically disabled on all granted benefits.
+     * Delete Advertisement Campaign
+     */
+    async deleteAdvertisementCampaignRaw(requestParameters: UsersApiDeleteAdvertisementCampaignRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<any>> {
+        if (requestParameters['id'] == null) {
+            throw new runtime.RequiredError(
+                'id',
+                'Required parameter "id" was null or undefined when calling deleteAdvertisementCampaign().'
+            );
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("HTTPBearer", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+        const response = await this.request({
+            path: `/api/v1/users/advertisements/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
+            method: 'DELETE',
+            headers: headerParameters,
+            query: queryParameters,
+        }, initOverrides);
+
+        if (this.isJsonMime(response.headers.get('content-type'))) {
+            return new runtime.JSONApiResponse<any>(response);
+        } else {
+            return new runtime.TextApiResponse(response) as any;
+        }
+    }
+
+    /**
+     * Delete an advertisement campaign.  It\'ll be automatically disabled on all granted benefits.
+     * Delete Advertisement Campaign
+     */
+    async deleteAdvertisementCampaign(requestParameters: UsersApiDeleteAdvertisementCampaignRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<any | null | undefined > {
+        const response = await this.deleteAdvertisementCampaignRaw(requestParameters, initOverrides);
+        switch (response.raw.status) {
+            case 200:
+                return await response.value();
+            case 204:
+                return null;
+            default:
+                return await response.value();
+        }
+    }
+
+    /**
+     * Enable an advertisement campaign on a granted benefit.
+     * Enable Advertisement Campaign
+     */
+    async enableAdvertisementCampaignRaw(requestParameters: UsersApiEnableAdvertisementCampaignRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<void>> {
+        if (requestParameters['id'] == null) {
+            throw new runtime.RequiredError(
+                'id',
+                'Required parameter "id" was null or undefined when calling enableAdvertisementCampaign().'
+            );
+        }
+
+        if (requestParameters['userAdvertisementCampaignEnable'] == null) {
+            throw new runtime.RequiredError(
+                'userAdvertisementCampaignEnable',
+                'Required parameter "userAdvertisementCampaignEnable" was null or undefined when calling enableAdvertisementCampaign().'
+            );
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        headerParameters['Content-Type'] = 'application/json';
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("HTTPBearer", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+        const response = await this.request({
+            path: `/api/v1/users/advertisements/{id}/enable`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
+            method: 'POST',
+            headers: headerParameters,
+            query: queryParameters,
+            body: requestParameters['userAdvertisementCampaignEnable'],
+        }, initOverrides);
+
+        return new runtime.VoidApiResponse(response);
+    }
+
+    /**
+     * Enable an advertisement campaign on a granted benefit.
+     * Enable Advertisement Campaign
+     */
+    async enableAdvertisementCampaign(requestParameters: UsersApiEnableAdvertisementCampaignRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<void> {
+        await this.enableAdvertisementCampaignRaw(requestParameters, initOverrides);
+    }
+
+    /**
+     * Get an advertisement campaign by ID.
+     * Get Advertisement Campaign
+     */
+    async getAdvertisementCampaignRaw(requestParameters: UsersApiGetAdvertisementCampaignRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<UserAdvertisementCampaign>> {
+        if (requestParameters['id'] == null) {
+            throw new runtime.RequiredError(
+                'id',
+                'Required parameter "id" was null or undefined when calling getAdvertisementCampaign().'
+            );
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("HTTPBearer", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+        const response = await this.request({
+            path: `/api/v1/users/advertisements/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
+            method: 'GET',
+            headers: headerParameters,
+            query: queryParameters,
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse(response);
+    }
+
+    /**
+     * Get an advertisement campaign by ID.
+     * Get Advertisement Campaign
+     */
+    async getAdvertisementCampaign(requestParameters: UsersApiGetAdvertisementCampaignRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<UserAdvertisementCampaign> {
+        const response = await this.getAdvertisementCampaignRaw(requestParameters, initOverrides);
         return await response.value();
     }
 
@@ -515,6 +743,54 @@ export class UsersApi extends runtime.BaseAPI {
      */
     async getSubscription(requestParameters: UsersApiGetSubscriptionRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<UserSubscription> {
         const response = await this.getSubscriptionRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
+     * List advertisement campaigns.
+     * List Advertisement Campaigns
+     */
+    async listAdvertisementCampaignsRaw(requestParameters: UsersApiListAdvertisementCampaignsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListResourceUserAdvertisementCampaign>> {
+        const queryParameters: any = {};
+
+        if (requestParameters['page'] != null) {
+            queryParameters['page'] = requestParameters['page'];
+        }
+
+        if (requestParameters['limit'] != null) {
+            queryParameters['limit'] = requestParameters['limit'];
+        }
+
+        if (requestParameters['sorting'] != null) {
+            queryParameters['sorting'] = requestParameters['sorting'];
+        }
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("HTTPBearer", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+        const response = await this.request({
+            path: `/api/v1/users/advertisements/`,
+            method: 'GET',
+            headers: headerParameters,
+            query: queryParameters,
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse(response);
+    }
+
+    /**
+     * List advertisement campaigns.
+     * List Advertisement Campaigns
+     */
+    async listAdvertisementCampaigns(requestParameters: UsersApiListAdvertisementCampaignsRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ListResourceUserAdvertisementCampaign> {
+        const response = await this.listAdvertisementCampaignsRaw(requestParameters, initOverrides);
         return await response.value();
     }
 
@@ -1007,6 +1283,59 @@ export class UsersApi extends runtime.BaseAPI {
      */
     async setAccount_6(requestParameters: UsersApiSetAccount0Request, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<UserRead> {
         const response = await this.setAccount_6Raw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
+     * Update an advertisement campaign.
+     * Update Advertisement Campaign
+     */
+    async updateAdvertisementCampaignRaw(requestParameters: UsersApiUpdateAdvertisementCampaignRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<UserAdvertisementCampaign>> {
+        if (requestParameters['id'] == null) {
+            throw new runtime.RequiredError(
+                'id',
+                'Required parameter "id" was null or undefined when calling updateAdvertisementCampaign().'
+            );
+        }
+
+        if (requestParameters['userAdvertisementCampaignUpdate'] == null) {
+            throw new runtime.RequiredError(
+                'userAdvertisementCampaignUpdate',
+                'Required parameter "userAdvertisementCampaignUpdate" was null or undefined when calling updateAdvertisementCampaign().'
+            );
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        headerParameters['Content-Type'] = 'application/json';
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("HTTPBearer", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+        const response = await this.request({
+            path: `/api/v1/users/advertisements/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
+            method: 'PATCH',
+            headers: headerParameters,
+            query: queryParameters,
+            body: requestParameters['userAdvertisementCampaignUpdate'],
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse(response);
+    }
+
+    /**
+     * Update an advertisement campaign.
+     * Update Advertisement Campaign
+     */
+    async updateAdvertisementCampaign(requestParameters: UsersApiUpdateAdvertisementCampaignRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<UserAdvertisementCampaign> {
+        const response = await this.updateAdvertisementCampaignRaw(requestParameters, initOverrides);
         return await response.value();
     }
 

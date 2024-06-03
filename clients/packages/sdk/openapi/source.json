@@ -475,11 +475,7 @@
                                 "type",
                                 "-type",
                                 "organization",
-                                "-organization",
-                                "order",
-                                "-order",
-                                "subscription",
-                                "-subscription"
+                                "-organization"
                             ],
                             "default": [
                                 "-granted_at"
@@ -1446,6 +1442,469 @@
                     },
                     "404": {
                         "description": "Subscription not found.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ResourceNotFound"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/users/advertisements/": {
+            "get": {
+                "tags": [
+                    "users"
+                ],
+                "summary": "List Advertisement Campaigns",
+                "description": "List advertisement campaigns.",
+                "operationId": "users:list_advertisement_campaigns",
+                "security": [
+                    {
+                        "OpenIdConnect": []
+                    },
+                    {
+                        "HTTPBearer": []
+                    },
+                    {
+                        "OpenIdConnect": [
+                            "user:advertisement_campaigns:read"
+                        ]
+                    },
+                    {
+                        "HTTPBearer": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "exclusiveMinimum": 0,
+                            "description": "Page number, defaults to 1.",
+                            "default": 1,
+                            "title": "Page"
+                        },
+                        "description": "Page number, defaults to 1."
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "exclusiveMinimum": 0,
+                            "description": "Size of a page, defaults to 10. Maximum is 100.",
+                            "default": 10,
+                            "title": "Limit"
+                        },
+                        "description": "Size of a page, defaults to 10. Maximum is 100."
+                    },
+                    {
+                        "name": "sorting",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "string"
+                                    }
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "description": "Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.",
+                            "type": "string",
+                            "enum": [
+                                "created_at",
+                                "-created_at",
+                                "views",
+                                "-views",
+                                "clicks",
+                                "-clicks"
+                            ],
+                            "default": [
+                                "-created_at"
+                            ],
+                            "title": "Sorting"
+                        },
+                        "description": "Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order."
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ListResource_UserAdvertisementCampaign_"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "users"
+                ],
+                "summary": "Create Advertisement Campaign",
+                "description": "Create an advertisement campaign.",
+                "operationId": "users:create_advertisement_campaign",
+                "security": [
+                    {
+                        "OpenIdConnect": []
+                    },
+                    {
+                        "HTTPBearer": []
+                    },
+                    {
+                        "OpenIdConnect": [
+                            "user:advertisement_campaigns:write"
+                        ]
+                    },
+                    {
+                        "HTTPBearer": []
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UserAdvertisementCampaignCreate"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Advertisement campaign created.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/UserAdvertisementCampaign"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/users/advertisements/{id}": {
+            "get": {
+                "tags": [
+                    "users"
+                ],
+                "summary": "Get Advertisement Campaign",
+                "description": "Get an advertisement campaign by ID.",
+                "operationId": "users:get_advertisement_campaign",
+                "security": [
+                    {
+                        "OpenIdConnect": []
+                    },
+                    {
+                        "HTTPBearer": []
+                    },
+                    {
+                        "OpenIdConnect": [
+                            "user:advertisement_campaigns:read"
+                        ]
+                    },
+                    {
+                        "HTTPBearer": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid4",
+                            "description": "The advertisement campaign ID.",
+                            "title": "Id"
+                        },
+                        "description": "The advertisement campaign ID."
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/UserAdvertisementCampaign"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Advertisement campaign not found.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ResourceNotFound"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "tags": [
+                    "users"
+                ],
+                "summary": "Update Advertisement Campaign",
+                "description": "Update an advertisement campaign.",
+                "operationId": "users:update_advertisement_campaign",
+                "security": [
+                    {
+                        "OpenIdConnect": []
+                    },
+                    {
+                        "HTTPBearer": []
+                    },
+                    {
+                        "OpenIdConnect": [
+                            "user:advertisement_campaigns:write"
+                        ]
+                    },
+                    {
+                        "HTTPBearer": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid4",
+                            "description": "The advertisement campaign ID.",
+                            "title": "Id"
+                        },
+                        "description": "The advertisement campaign ID."
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UserAdvertisementCampaignUpdate"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Advertisement campaign updated.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/UserAdvertisementCampaign"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Advertisement campaign not found.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ResourceNotFound"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "users"
+                ],
+                "summary": "Delete Advertisement Campaign",
+                "description": "Delete an advertisement campaign.\n\nIt'll be automatically disabled on all granted benefits.",
+                "operationId": "users:delete_advertisement_campaign",
+                "security": [
+                    {
+                        "OpenIdConnect": []
+                    },
+                    {
+                        "HTTPBearer": []
+                    },
+                    {
+                        "OpenIdConnect": [
+                            "user:advertisement_campaigns:write"
+                        ]
+                    },
+                    {
+                        "HTTPBearer": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid4",
+                            "description": "The advertisement campaign ID.",
+                            "title": "Id"
+                        },
+                        "description": "The advertisement campaign ID."
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "204": {
+                        "description": "Advertisement campaign deleted."
+                    },
+                    "404": {
+                        "description": "Advertisement campaign not found.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ResourceNotFound"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/users/advertisements/{id}/enable": {
+            "post": {
+                "tags": [
+                    "users"
+                ],
+                "summary": "Enable Advertisement Campaign",
+                "description": "Enable an advertisement campaign on a granted benefit.",
+                "operationId": "users:enable_advertisement_campaign",
+                "security": [
+                    {
+                        "OpenIdConnect": []
+                    },
+                    {
+                        "HTTPBearer": []
+                    },
+                    {
+                        "OpenIdConnect": [
+                            "user:advertisement_campaigns:write"
+                        ]
+                    },
+                    {
+                        "HTTPBearer": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid4",
+                            "description": "The advertisement campaign ID.",
+                            "title": "Id"
+                        },
+                        "description": "The advertisement campaign ID."
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UserAdvertisementCampaignEnable"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "204": {
+                        "description": "Advertisement campaign enabled on benefit."
+                    },
+                    "404": {
+                        "description": "Advertisement campaign not found.",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -6782,9 +7241,9 @@
                             },
                             "description": "Filter by the type of purchase the customer made.",
                             "default": [
+                                "order",
                                 "subscription",
-                                "donation",
-                                "order"
+                                "donation"
                             ],
                             "title": "Customer Types"
                         },
@@ -9419,88 +9878,14 @@
                 }
             }
         },
-        "/api/v1/advertisements/campaigns/search": {
+        "/api/v1/": {
             "get": {
                 "tags": [
                     "advertisements"
                 ],
-                "summary": "Search Campaigns",
-                "operationId": "advertisements:search_campaigns",
-                "security": [
-                    {
-                        "OpenIdConnect": []
-                    },
-                    {
-                        "HTTPBearer": []
-                    }
-                ],
-                "parameters": [
-                    {
-                        "name": "subscription_id",
-                        "in": "query",
-                        "required": false,
-                        "schema": {
-                            "anyOf": [
-                                {
-                                    "type": "string",
-                                    "format": "uuid"
-                                },
-                                {
-                                    "type": "null"
-                                }
-                            ],
-                            "title": "Subscription Id"
-                        }
-                    },
-                    {
-                        "name": "benefit_id",
-                        "in": "query",
-                        "required": false,
-                        "schema": {
-                            "anyOf": [
-                                {
-                                    "type": "string",
-                                    "format": "uuid"
-                                },
-                                {
-                                    "type": "null"
-                                }
-                            ],
-                            "title": "Benefit Id"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Successful Response",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/ListResource_AdvertisementCampaign_"
-                                }
-                            }
-                        }
-                    },
-                    "422": {
-                        "description": "Validation Error",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/HTTPValidationError"
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/advertisements/display/search": {
-            "get": {
-                "tags": [
-                    "advertisements"
-                ],
-                "summary": "Search Display",
-                "operationId": "advertisements:search_display",
+                "summary": "List Advertisement Campaigns",
+                "description": "List active advertisement campaigns for a benefit.",
+                "operationId": "advertisements:list_advertisement_campaigns",
                 "security": [
                     {
                         "OpenIdConnect": []
@@ -9517,8 +9902,71 @@
                         "schema": {
                             "type": "string",
                             "format": "uuid",
+                            "description": "The benefit ID to look up advertisements for.",
                             "title": "Benefit Id"
-                        }
+                        },
+                        "description": "The benefit ID to look up advertisements for."
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "exclusiveMinimum": 0,
+                            "description": "Page number, defaults to 1.",
+                            "default": 1,
+                            "title": "Page"
+                        },
+                        "description": "Page number, defaults to 1."
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "exclusiveMinimum": 0,
+                            "description": "Size of a page, defaults to 10. Maximum is 100.",
+                            "default": 10,
+                            "title": "Limit"
+                        },
+                        "description": "Size of a page, defaults to 10. Maximum is 100."
+                    },
+                    {
+                        "name": "sorting",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "string"
+                                    }
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "description": "Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.",
+                            "type": "string",
+                            "enum": [
+                                "created_at",
+                                "-created_at",
+                                "granted_at",
+                                "-granted_at",
+                                "views",
+                                "-views",
+                                "clicks",
+                                "-clicks"
+                            ],
+                            "default": [
+                                "granted_at"
+                            ],
+                            "title": "Sorting"
+                        },
+                        "description": "Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order."
                     }
                 ],
                 "responses": {
@@ -9527,7 +9975,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/ListResource_AdvertisementDisplay_"
+                                    "$ref": "#/components/schemas/AdvertisementCampaignListResource"
                                 }
                             }
                         }
@@ -9545,62 +9993,14 @@
                 }
             }
         },
-        "/api/v1/advertisements/campaigns": {
-            "post": {
-                "tags": [
-                    "advertisements"
-                ],
-                "summary": "Create Campaign",
-                "operationId": "advertisements:create_campaign",
-                "requestBody": {
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "#/components/schemas/CreateAdvertisementCampaign"
-                            }
-                        }
-                    },
-                    "required": true
-                },
-                "responses": {
-                    "200": {
-                        "description": "Successful Response",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/AdvertisementCampaign"
-                                }
-                            }
-                        }
-                    },
-                    "422": {
-                        "description": "Validation Error",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/HTTPValidationError"
-                                }
-                            }
-                        }
-                    }
-                },
-                "security": [
-                    {
-                        "OpenIdConnect": []
-                    },
-                    {
-                        "HTTPBearer": []
-                    }
-                ]
-            }
-        },
-        "/api/v1/advertisements/campaigns/{id}": {
+        "/api/v1/{id}": {
             "get": {
                 "tags": [
                     "advertisements"
                 ],
-                "summary": "Get Campaign",
-                "operationId": "advertisements:get_campaign",
+                "summary": "Get Advertisement Campaign",
+                "description": "Get an advertisement campaign by ID.",
+                "operationId": "advertisements:get_advertisement_campaign",
                 "security": [
                     {
                         "OpenIdConnect": []
@@ -9616,9 +10016,11 @@
                         "required": true,
                         "schema": {
                             "type": "string",
-                            "format": "uuid",
+                            "format": "uuid4",
+                            "description": "The advertisement campaign ID.",
                             "title": "Id"
-                        }
+                        },
+                        "description": "The advertisement campaign ID."
                     }
                 ],
                 "responses": {
@@ -9632,110 +10034,12 @@
                             }
                         }
                     },
-                    "422": {
-                        "description": "Validation Error",
+                    "404": {
+                        "description": "Advertisement campaign not found.",
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/HTTPValidationError"
-                                }
-                            }
-                        }
-                    }
-                }
-            },
-            "post": {
-                "tags": [
-                    "advertisements"
-                ],
-                "summary": "Edit Campaign",
-                "operationId": "advertisements:edit_campaign",
-                "security": [
-                    {
-                        "OpenIdConnect": []
-                    },
-                    {
-                        "HTTPBearer": []
-                    }
-                ],
-                "parameters": [
-                    {
-                        "name": "id",
-                        "in": "path",
-                        "required": true,
-                        "schema": {
-                            "type": "string",
-                            "format": "uuid",
-                            "title": "Id"
-                        }
-                    }
-                ],
-                "requestBody": {
-                    "required": true,
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "#/components/schemas/EditAdvertisementCampaign"
-                            }
-                        }
-                    }
-                },
-                "responses": {
-                    "200": {
-                        "description": "Successful Response",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/AdvertisementCampaign"
-                                }
-                            }
-                        }
-                    },
-                    "422": {
-                        "description": "Validation Error",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/HTTPValidationError"
-                                }
-                            }
-                        }
-                    }
-                }
-            },
-            "delete": {
-                "tags": [
-                    "advertisements"
-                ],
-                "summary": "Delete Campaign",
-                "operationId": "advertisements:delete_campaign",
-                "security": [
-                    {
-                        "OpenIdConnect": []
-                    },
-                    {
-                        "HTTPBearer": []
-                    }
-                ],
-                "parameters": [
-                    {
-                        "name": "id",
-                        "in": "path",
-                        "required": true,
-                        "schema": {
-                            "type": "string",
-                            "format": "uuid",
-                            "title": "Id"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Successful Response",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/AdvertisementCampaign"
+                                    "$ref": "#/components/schemas/ResourceNotFound"
                                 }
                             }
                         }
@@ -9753,13 +10057,14 @@
                 }
             }
         },
-        "/api/v1/advertisements/campaigns/{id}/track_view": {
+        "/api/v1/{id}/view": {
             "post": {
                 "tags": [
                     "advertisements"
                 ],
-                "summary": "Track View",
-                "operationId": "advertisements:track_view",
+                "summary": "Track Advertisement Campaign View",
+                "description": "Track a view on an advertisement campaign.",
+                "operationId": "advertisements:track_advertisement_campaign_view",
                 "security": [
                     {
                         "OpenIdConnect": []
@@ -9775,18 +10080,23 @@
                         "required": true,
                         "schema": {
                             "type": "string",
-                            "format": "uuid",
+                            "format": "uuid4",
+                            "description": "The advertisement campaign ID.",
                             "title": "Id"
-                        }
+                        },
+                        "description": "The advertisement campaign ID."
                     }
                 ],
                 "responses": {
-                    "200": {
-                        "description": "Successful Response",
+                    "204": {
+                        "description": "The view was successfully tracked."
+                    },
+                    "404": {
+                        "description": "Advertisement campaign not found.",
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/AdvertisementCampaignPublic"
+                                    "$ref": "#/components/schemas/ResourceNotFound"
                                 }
                             }
                         }
@@ -11213,8 +11523,8 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "creator:benefits:write",
-                            "creator:benefits:read"
+                            "creator:benefits:read",
+                            "creator:benefits:write"
                         ]
                     },
                     {
@@ -11426,8 +11736,8 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "creator:benefits:write",
-                            "creator:benefits:read"
+                            "creator:benefits:read",
+                            "creator:benefits:write"
                         ]
                     },
                     {
@@ -11713,8 +12023,8 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "creator:benefits:write",
-                            "creator:benefits:read"
+                            "creator:benefits:read",
+                            "creator:benefits:write"
                         ]
                     },
                     {
@@ -11867,8 +12177,8 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "webhooks:write",
-                            "webhooks:read"
+                            "webhooks:read",
+                            "webhooks:write"
                         ]
                     },
                     {
@@ -12038,8 +12348,8 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "webhooks:write",
-                            "webhooks:read"
+                            "webhooks:read",
+                            "webhooks:write"
                         ]
                     },
                     {
@@ -12274,8 +12584,8 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "webhooks:write",
-                            "webhooks:read"
+                            "webhooks:read",
+                            "webhooks:write"
                         ]
                     },
                     {
@@ -12440,8 +12750,8 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "creator:products:write",
-                            "creator:products:read"
+                            "creator:products:read",
+                            "creator:products:write"
                         ]
                     },
                     {
@@ -12665,8 +12975,8 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "creator:products:write",
-                            "creator:products:read"
+                            "creator:products:read",
+                            "creator:products:write"
                         ]
                     },
                     {
@@ -13934,28 +14244,29 @@
             },
             "AdvertisementCampaign": {
                 "properties": {
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "title": "Created At",
+                        "description": "Creation timestamp of the object."
+                    },
+                    "modified_at": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "date-time"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Modified At",
+                        "description": "Last modification timestamp of the object."
+                    },
                     "id": {
                         "type": "string",
-                        "format": "uuid",
+                        "format": "uuid4",
                         "title": "Id"
-                    },
-                    "subscription_id": {
-                        "type": "string",
-                        "format": "uuid",
-                        "title": "Subscription Id"
-                    },
-                    "benefit_id": {
-                        "type": "string",
-                        "format": "uuid",
-                        "title": "Benefit Id"
-                    },
-                    "views": {
-                        "type": "integer",
-                        "title": "Views"
-                    },
-                    "clicks": {
-                        "type": "integer",
-                        "title": "Clicks"
                     },
                     "image_url": {
                         "type": "string",
@@ -13992,136 +14303,52 @@
                 },
                 "type": "object",
                 "required": [
+                    "created_at",
                     "id",
-                    "subscription_id",
-                    "benefit_id",
-                    "views",
-                    "clicks",
                     "image_url",
                     "text",
                     "link_url"
                 ],
                 "title": "AdvertisementCampaign"
             },
-            "AdvertisementCampaignPublic": {
+            "AdvertisementCampaignListResource": {
                 "properties": {
-                    "id": {
-                        "type": "string",
-                        "format": "uuid",
-                        "title": "Id"
+                    "items": {
+                        "items": {
+                            "$ref": "#/components/schemas/AdvertisementCampaign"
+                        },
+                        "type": "array",
+                        "title": "Items",
+                        "default": []
                     },
-                    "image_url": {
-                        "type": "string",
-                        "maxLength": 2083,
-                        "minLength": 1,
-                        "format": "uri",
-                        "title": "Image Url"
+                    "pagination": {
+                        "$ref": "#/components/schemas/Pagination"
                     },
-                    "image_url_dark": {
-                        "anyOf": [
-                            {
-                                "type": "string",
-                                "maxLength": 2083,
-                                "minLength": 1,
-                                "format": "uri"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Image Url Dark"
-                    },
-                    "text": {
-                        "type": "string",
-                        "title": "Text"
-                    },
-                    "link_url": {
-                        "type": "string",
-                        "maxLength": 2083,
-                        "minLength": 1,
-                        "format": "uri",
-                        "title": "Link Url"
-                    }
-                },
-                "type": "object",
-                "required": [
-                    "id",
-                    "image_url",
-                    "text",
-                    "link_url"
-                ],
-                "title": "AdvertisementCampaignPublic"
-            },
-            "AdvertisementDisplay": {
-                "properties": {
-                    "id": {
-                        "type": "string",
-                        "format": "uuid",
-                        "title": "Id"
-                    },
-                    "image_url": {
-                        "type": "string",
-                        "maxLength": 2083,
-                        "minLength": 1,
-                        "format": "uri",
-                        "title": "Image Url"
-                    },
-                    "image_url_dark": {
-                        "anyOf": [
-                            {
-                                "type": "string",
-                                "maxLength": 2083,
-                                "minLength": 1,
-                                "format": "uri"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Image Url Dark"
-                    },
-                    "text": {
-                        "type": "string",
-                        "title": "Text"
-                    },
-                    "link_url": {
-                        "type": "string",
-                        "maxLength": 2083,
-                        "minLength": 1,
-                        "format": "uri",
-                        "title": "Link Url"
-                    },
-                    "height": {
-                        "anyOf": [
+                    "dimensions": {
+                        "prefixItems": [
                             {
                                 "type": "integer"
                             },
                             {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Height"
-                    },
-                    "width": {
-                        "anyOf": [
-                            {
                                 "type": "integer"
-                            },
-                            {
-                                "type": "null"
                             }
                         ],
-                        "title": "Width"
+                        "items": {
+                            "type": "integer"
+                        },
+                        "type": "array",
+                        "maxItems": 2,
+                        "minItems": 2,
+                        "title": "Dimensions",
+                        "description": "The dimensions (width, height) in pixels of the advertisement images."
                     }
                 },
                 "type": "object",
                 "required": [
-                    "id",
-                    "image_url",
-                    "text",
-                    "link_url"
+                    "pagination",
+                    "dimensions"
                 ],
-                "title": "AdvertisementDisplay"
+                "title": "AdvertisementCampaignListResource"
             },
             "AlreadyCanceledSubscription": {
                 "properties": {
@@ -15964,6 +16191,13 @@
                     },
                     "properties": {
                         "$ref": "#/components/schemas/BenefitAdsProperties"
+                    },
+                    "grants": {
+                        "items": {
+                            "$ref": "#/components/schemas/BenefitGrantAds"
+                        },
+                        "type": "array",
+                        "title": "Grants"
                     }
                 },
                 "type": "object",
@@ -15975,7 +16209,8 @@
                     "selectable",
                     "deletable",
                     "organization_id",
-                    "properties"
+                    "properties",
+                    "grants"
                 ],
                 "title": "BenefitAdsSubscriber"
             },
@@ -16501,6 +16736,13 @@
                         "title": "Organization Id",
                         "description": "The ID of the organization owning the benefit."
                     },
+                    "grants": {
+                        "items": {
+                            "$ref": "#/components/schemas/BenefitGrant"
+                        },
+                        "type": "array",
+                        "title": "Grants"
+                    },
                     "properties": {
                         "$ref": "#/components/schemas/BenefitCustomSubscriberProperties"
                     }
@@ -16514,6 +16756,7 @@
                     "selectable",
                     "deletable",
                     "organization_id",
+                    "grants",
                     "properties"
                 ],
                 "title": "BenefitCustomSubscriber"
@@ -17401,11 +17644,39 @@
                         "title": "Is Revoked",
                         "description": "Whether the benefit is revoked."
                     },
+                    "properties": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/BenefitGrantProperties"
+                            }
+                        ],
+                        "description": "The properties of the grant."
+                    },
                     "subscription_id": {
-                        "type": "string",
-                        "format": "uuid4",
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "uuid4"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
                         "title": "Subscription Id",
                         "description": "The ID of the subscription that granted this benefit."
+                    },
+                    "order_id": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "uuid4"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Order Id",
+                        "description": "The ID of the order that granted this benefit."
                     },
                     "user_id": {
                         "type": "string",
@@ -17426,12 +17697,154 @@
                     "id",
                     "is_granted",
                     "is_revoked",
-                    "subscription_id",
+                    "properties",
                     "user_id",
                     "benefit_id"
                 ],
                 "title": "BenefitGrant",
                 "description": "A grant of a benefit to a user."
+            },
+            "BenefitGrantAds": {
+                "properties": {
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "title": "Created At",
+                        "description": "Creation timestamp of the object."
+                    },
+                    "modified_at": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "date-time"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Modified At",
+                        "description": "Last modification timestamp of the object."
+                    },
+                    "id": {
+                        "type": "string",
+                        "format": "uuid4",
+                        "title": "Id",
+                        "description": "The ID of the grant."
+                    },
+                    "granted_at": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "date-time"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Granted At",
+                        "description": "The timestamp when the benefit was granted. If `None`, the benefit is not granted."
+                    },
+                    "is_granted": {
+                        "type": "boolean",
+                        "title": "Is Granted",
+                        "description": "Whether the benefit is granted."
+                    },
+                    "revoked_at": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "date-time"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Revoked At",
+                        "description": "The timestamp when the benefit was revoked. If `None`, the benefit is not revoked."
+                    },
+                    "is_revoked": {
+                        "type": "boolean",
+                        "title": "Is Revoked",
+                        "description": "Whether the benefit is revoked."
+                    },
+                    "properties": {
+                        "$ref": "#/components/schemas/BenefitGrantAdsProperties"
+                    },
+                    "subscription_id": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "uuid4"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Subscription Id",
+                        "description": "The ID of the subscription that granted this benefit."
+                    },
+                    "order_id": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "uuid4"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Order Id",
+                        "description": "The ID of the order that granted this benefit."
+                    },
+                    "user_id": {
+                        "type": "string",
+                        "format": "uuid4",
+                        "title": "User Id",
+                        "description": "The ID of the user concerned by this grant."
+                    },
+                    "benefit_id": {
+                        "type": "string",
+                        "format": "uuid4",
+                        "title": "Benefit Id",
+                        "description": "The ID of the benefit concerned by this grant."
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "created_at",
+                    "id",
+                    "is_granted",
+                    "is_revoked",
+                    "properties",
+                    "user_id",
+                    "benefit_id"
+                ],
+                "title": "BenefitGrantAds"
+            },
+            "BenefitGrantAdsProperties": {
+                "properties": {
+                    "advertisement_campaign_id": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "uuid4"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Advertisement Campaign Id",
+                        "description": "The ID of the enabled advertisement campaign for this benefit grant."
+                    }
+                },
+                "type": "object",
+                "title": "BenefitGrantAdsProperties"
+            },
+            "BenefitGrantProperties": {
+                "properties": {},
+                "type": "object",
+                "title": "BenefitGrantProperties",
+                "description": "Properties for a benefit grant."
             },
             "BenefitPreconditionErrorNotification": {
                 "properties": {
@@ -17717,61 +18130,6 @@
                     "share_thousands"
                 ],
                 "title": "ConfirmIssueSplit"
-            },
-            "CreateAdvertisementCampaign": {
-                "properties": {
-                    "subscription_id": {
-                        "type": "string",
-                        "format": "uuid",
-                        "title": "Subscription Id"
-                    },
-                    "benefit_id": {
-                        "type": "string",
-                        "format": "uuid",
-                        "title": "Benefit Id"
-                    },
-                    "image_url": {
-                        "type": "string",
-                        "maxLength": 2083,
-                        "minLength": 1,
-                        "format": "uri",
-                        "title": "Image Url"
-                    },
-                    "image_url_dark": {
-                        "anyOf": [
-                            {
-                                "type": "string",
-                                "maxLength": 2083,
-                                "minLength": 1,
-                                "format": "uri"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Image Url Dark"
-                    },
-                    "text": {
-                        "type": "string",
-                        "title": "Text"
-                    },
-                    "link_url": {
-                        "type": "string",
-                        "maxLength": 2083,
-                        "minLength": 1,
-                        "format": "uri",
-                        "title": "Link Url"
-                    }
-                },
-                "type": "object",
-                "required": [
-                    "subscription_id",
-                    "benefit_id",
-                    "image_url",
-                    "text",
-                    "link_url"
-                ],
-                "title": "CreateAdvertisementCampaign"
             },
             "CreatePersonalAccessToken": {
                 "properties": {
@@ -18499,49 +18857,6 @@
                     "avatar_url"
                 ],
                 "title": "DonationUser"
-            },
-            "EditAdvertisementCampaign": {
-                "properties": {
-                    "image_url": {
-                        "type": "string",
-                        "maxLength": 2083,
-                        "minLength": 1,
-                        "format": "uri",
-                        "title": "Image Url"
-                    },
-                    "image_url_dark": {
-                        "anyOf": [
-                            {
-                                "type": "string",
-                                "maxLength": 2083,
-                                "minLength": 1,
-                                "format": "uri"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Image Url Dark"
-                    },
-                    "text": {
-                        "type": "string",
-                        "title": "Text"
-                    },
-                    "link_url": {
-                        "type": "string",
-                        "maxLength": 2083,
-                        "minLength": 1,
-                        "format": "uri",
-                        "title": "Link Url"
-                    }
-                },
-                "type": "object",
-                "required": [
-                    "image_url",
-                    "text",
-                    "link_url"
-                ],
-                "title": "EditAdvertisementCampaign"
             },
             "Entry": {
                 "properties": {
@@ -19505,46 +19820,6 @@
                 ],
                 "title": "ListResource[Account]"
             },
-            "ListResource_AdvertisementCampaign_": {
-                "properties": {
-                    "items": {
-                        "items": {
-                            "$ref": "#/components/schemas/AdvertisementCampaign"
-                        },
-                        "type": "array",
-                        "title": "Items",
-                        "default": []
-                    },
-                    "pagination": {
-                        "$ref": "#/components/schemas/Pagination"
-                    }
-                },
-                "type": "object",
-                "required": [
-                    "pagination"
-                ],
-                "title": "ListResource[AdvertisementCampaign]"
-            },
-            "ListResource_AdvertisementDisplay_": {
-                "properties": {
-                    "items": {
-                        "items": {
-                            "$ref": "#/components/schemas/AdvertisementDisplay"
-                        },
-                        "type": "array",
-                        "title": "Items",
-                        "default": []
-                    },
-                    "pagination": {
-                        "$ref": "#/components/schemas/Pagination"
-                    }
-                },
-                "type": "object",
-                "required": [
-                    "pagination"
-                ],
-                "title": "ListResource[AdvertisementDisplay]"
-            },
             "ListResource_Annotated_Union_BenefitArticlesSubscriber__BenefitAdsSubscriber__BenefitDiscordSubscriber__BenefitCustomSubscriber__BenefitGitHubRepositorySubscriber___Discriminator__MergeJSONSchema__": {
                 "properties": {
                     "items": {
@@ -20067,6 +20342,26 @@
                     "pagination"
                 ],
                 "title": "ListResource[Union[BenefitArticles, BenefitAds, BenefitCustom, BenefitDiscord, BenefitGitHubRepository]]"
+            },
+            "ListResource_UserAdvertisementCampaign_": {
+                "properties": {
+                    "items": {
+                        "items": {
+                            "$ref": "#/components/schemas/UserAdvertisementCampaign"
+                        },
+                        "type": "array",
+                        "title": "Items",
+                        "default": []
+                    },
+                    "pagination": {
+                        "$ref": "#/components/schemas/Pagination"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "pagination"
+                ],
+                "title": "ListResource[UserAdvertisementCampaign]"
             },
             "ListResource_UserOrder_": {
                 "properties": {
@@ -21211,7 +21506,7 @@
                     "scope": {
                         "type": "string",
                         "title": "Scope",
-                        "default": "openid profile email articles:read user:read organizations:read organizations:write creator:subscriptions:read creator:subscriptions:write creator:products:read creator:products:write creator:benefits:read creator:benefits:write orders:read webhooks:read webhooks:write user:benefits:read user:orders:read user:subscriptions:read user:subscriptions:write"
+                        "default": "openid profile email articles:read user:read organizations:read organizations:write creator:subscriptions:read creator:subscriptions:write creator:products:read creator:products:write creator:benefits:read creator:benefits:write orders:read webhooks:read webhooks:write user:benefits:read user:orders:read user:subscriptions:read user:subscriptions:write user:advertisement_campaigns:read user:advertisement_campaigns:write"
                     },
                     "client_name": {
                         "type": "string",
@@ -21372,7 +21667,7 @@
                     "scope": {
                         "type": "string",
                         "title": "Scope",
-                        "default": "openid profile email articles:read user:read organizations:read organizations:write creator:subscriptions:read creator:subscriptions:write creator:products:read creator:products:write creator:benefits:read creator:benefits:write orders:read webhooks:read webhooks:write user:benefits:read user:orders:read user:subscriptions:read user:subscriptions:write"
+                        "default": "openid profile email articles:read user:read organizations:read organizations:write creator:subscriptions:read creator:subscriptions:write creator:products:read creator:products:write creator:benefits:read creator:benefits:write orders:read webhooks:read webhooks:write user:benefits:read user:orders:read user:subscriptions:read user:subscriptions:write user:advertisement_campaigns:read user:advertisement_campaigns:write"
                     },
                     "client_name": {
                         "type": "string",
@@ -21493,7 +21788,7 @@
                     "scope": {
                         "type": "string",
                         "title": "Scope",
-                        "default": "openid profile email articles:read user:read organizations:read organizations:write creator:subscriptions:read creator:subscriptions:write creator:products:read creator:products:write creator:benefits:read creator:benefits:write orders:read webhooks:read webhooks:write user:benefits:read user:orders:read user:subscriptions:read user:subscriptions:write"
+                        "default": "openid profile email articles:read user:read organizations:read organizations:write creator:subscriptions:read creator:subscriptions:write creator:products:read creator:products:write creator:benefits:read creator:benefits:write orders:read webhooks:read webhooks:write user:benefits:read user:orders:read user:subscriptions:read user:subscriptions:write user:advertisement_campaigns:read user:advertisement_campaigns:write"
                     },
                     "client_name": {
                         "type": "string",
@@ -25381,7 +25676,9 @@
                     "user:benefits:read",
                     "user:orders:read",
                     "user:subscriptions:read",
-                    "user:subscriptions:write"
+                    "user:subscriptions:write",
+                    "user:advertisement_campaigns:read",
+                    "user:advertisement_campaigns:write"
                 ],
                 "title": "Scope",
                 "enumNames": {
@@ -27262,6 +27559,207 @@
                     "avatar_url"
                 ],
                 "title": "User"
+            },
+            "UserAdvertisementCampaign": {
+                "properties": {
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "title": "Created At",
+                        "description": "Creation timestamp of the object."
+                    },
+                    "modified_at": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "date-time"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Modified At",
+                        "description": "Last modification timestamp of the object."
+                    },
+                    "id": {
+                        "type": "string",
+                        "format": "uuid4",
+                        "title": "Id"
+                    },
+                    "user_id": {
+                        "type": "string",
+                        "format": "uuid4",
+                        "title": "User Id"
+                    },
+                    "views": {
+                        "type": "integer",
+                        "title": "Views"
+                    },
+                    "clicks": {
+                        "type": "integer",
+                        "title": "Clicks"
+                    },
+                    "image_url": {
+                        "type": "string",
+                        "maxLength": 2083,
+                        "minLength": 1,
+                        "format": "uri",
+                        "title": "Image Url"
+                    },
+                    "image_url_dark": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "maxLength": 2083,
+                                "minLength": 1,
+                                "format": "uri"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Image Url Dark"
+                    },
+                    "text": {
+                        "type": "string",
+                        "title": "Text"
+                    },
+                    "link_url": {
+                        "type": "string",
+                        "maxLength": 2083,
+                        "minLength": 1,
+                        "format": "uri",
+                        "title": "Link Url"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "created_at",
+                    "id",
+                    "user_id",
+                    "views",
+                    "clicks",
+                    "image_url",
+                    "text",
+                    "link_url"
+                ],
+                "title": "UserAdvertisementCampaign"
+            },
+            "UserAdvertisementCampaignCreate": {
+                "properties": {
+                    "image_url": {
+                        "type": "string",
+                        "maxLength": 2083,
+                        "minLength": 1,
+                        "format": "uri",
+                        "title": "Image Url"
+                    },
+                    "image_url_dark": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "maxLength": 2083,
+                                "minLength": 1,
+                                "format": "uri"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Image Url Dark"
+                    },
+                    "text": {
+                        "type": "string",
+                        "title": "Text"
+                    },
+                    "link_url": {
+                        "type": "string",
+                        "maxLength": 2083,
+                        "minLength": 1,
+                        "format": "uri",
+                        "title": "Link Url"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "image_url",
+                    "text",
+                    "link_url"
+                ],
+                "title": "UserAdvertisementCampaignCreate"
+            },
+            "UserAdvertisementCampaignEnable": {
+                "properties": {
+                    "benefit_id": {
+                        "type": "string",
+                        "format": "uuid4",
+                        "title": "Benefit Id"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "benefit_id"
+                ],
+                "title": "UserAdvertisementCampaignEnable"
+            },
+            "UserAdvertisementCampaignUpdate": {
+                "properties": {
+                    "image_url": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "maxLength": 2083,
+                                "minLength": 1,
+                                "format": "uri"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Image Url"
+                    },
+                    "image_url_dark": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "maxLength": 2083,
+                                "minLength": 1,
+                                "format": "uri"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Image Url Dark"
+                    },
+                    "text": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Text"
+                    },
+                    "link_url": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "maxLength": 2083,
+                                "minLength": 1,
+                                "format": "uri"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Link Url"
+                    }
+                },
+                "type": "object",
+                "title": "UserAdvertisementCampaignUpdate"
             },
             "UserBase": {
                 "properties": {

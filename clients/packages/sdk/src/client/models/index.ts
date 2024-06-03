@@ -129,35 +129,23 @@ export type AccountType = typeof AccountType[keyof typeof AccountType];
  */
 export interface AdvertisementCampaign {
     /**
+     * Creation timestamp of the object.
+     * @type {string}
+     * @memberof AdvertisementCampaign
+     */
+    created_at: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof AdvertisementCampaign
+     */
+    modified_at?: string;
+    /**
      * 
      * @type {string}
      * @memberof AdvertisementCampaign
      */
     id: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof AdvertisementCampaign
-     */
-    subscription_id: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof AdvertisementCampaign
-     */
-    benefit_id: string;
-    /**
-     * 
-     * @type {number}
-     * @memberof AdvertisementCampaign
-     */
-    views: number;
-    /**
-     * 
-     * @type {number}
-     * @memberof AdvertisementCampaign
-     */
-    clicks: number;
     /**
      * 
      * @type {string}
@@ -186,88 +174,27 @@ export interface AdvertisementCampaign {
 /**
  * 
  * @export
- * @interface AdvertisementCampaignPublic
+ * @interface AdvertisementCampaignListResource
  */
-export interface AdvertisementCampaignPublic {
+export interface AdvertisementCampaignListResource {
     /**
      * 
-     * @type {string}
-     * @memberof AdvertisementCampaignPublic
+     * @type {Array<AdvertisementCampaign>}
+     * @memberof AdvertisementCampaignListResource
      */
-    id: string;
+    items?: Array<AdvertisementCampaign>;
     /**
      * 
-     * @type {string}
-     * @memberof AdvertisementCampaignPublic
+     * @type {Pagination}
+     * @memberof AdvertisementCampaignListResource
      */
-    image_url: string;
+    pagination: Pagination;
     /**
-     * 
-     * @type {string}
-     * @memberof AdvertisementCampaignPublic
+     * The dimensions (width, height) in pixels of the advertisement images.
+     * @type {Array<number>}
+     * @memberof AdvertisementCampaignListResource
      */
-    image_url_dark?: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof AdvertisementCampaignPublic
-     */
-    text: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof AdvertisementCampaignPublic
-     */
-    link_url: string;
-}
-/**
- * 
- * @export
- * @interface AdvertisementDisplay
- */
-export interface AdvertisementDisplay {
-    /**
-     * 
-     * @type {string}
-     * @memberof AdvertisementDisplay
-     */
-    id: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof AdvertisementDisplay
-     */
-    image_url: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof AdvertisementDisplay
-     */
-    image_url_dark?: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof AdvertisementDisplay
-     */
-    text: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof AdvertisementDisplay
-     */
-    link_url: string;
-    /**
-     * 
-     * @type {number}
-     * @memberof AdvertisementDisplay
-     */
-    height?: number;
-    /**
-     * 
-     * @type {number}
-     * @memberof AdvertisementDisplay
-     */
-    width?: number;
+    dimensions: Array<number>;
 }
 /**
  * 
@@ -2209,6 +2136,12 @@ export interface BenefitAdsSubscriber {
      * @memberof BenefitAdsSubscriber
      */
     properties: BenefitAdsProperties;
+    /**
+     * 
+     * @type {Array<BenefitGrantAds>}
+     * @memberof BenefitAdsSubscriber
+     */
+    grants: Array<BenefitGrantAds>;
 }
 
 
@@ -2708,6 +2641,12 @@ export interface BenefitCustomSubscriber {
      * @memberof BenefitCustomSubscriber
      */
     organization_id: string;
+    /**
+     * 
+     * @type {Array<BenefitGrant>}
+     * @memberof BenefitCustomSubscriber
+     */
+    grants: Array<BenefitGrant>;
     /**
      * 
      * @type {BenefitCustomSubscriberProperties}
@@ -3428,11 +3367,23 @@ export interface BenefitGrant {
      */
     is_revoked: boolean;
     /**
-     * The ID of the subscription that granted this benefit.
+     * The properties of the grant.
+     * @type {object}
+     * @memberof BenefitGrant
+     */
+    properties: object;
+    /**
+     * 
      * @type {string}
      * @memberof BenefitGrant
      */
-    subscription_id: string;
+    subscription_id?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitGrant
+     */
+    order_id?: string;
     /**
      * The ID of the user concerned by this grant.
      * @type {string}
@@ -3445,6 +3396,98 @@ export interface BenefitGrant {
      * @memberof BenefitGrant
      */
     benefit_id: string;
+}
+/**
+ * 
+ * @export
+ * @interface BenefitGrantAds
+ */
+export interface BenefitGrantAds {
+    /**
+     * Creation timestamp of the object.
+     * @type {string}
+     * @memberof BenefitGrantAds
+     */
+    created_at: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitGrantAds
+     */
+    modified_at?: string;
+    /**
+     * The ID of the grant.
+     * @type {string}
+     * @memberof BenefitGrantAds
+     */
+    id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitGrantAds
+     */
+    granted_at?: string;
+    /**
+     * Whether the benefit is granted.
+     * @type {boolean}
+     * @memberof BenefitGrantAds
+     */
+    is_granted: boolean;
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitGrantAds
+     */
+    revoked_at?: string;
+    /**
+     * Whether the benefit is revoked.
+     * @type {boolean}
+     * @memberof BenefitGrantAds
+     */
+    is_revoked: boolean;
+    /**
+     * 
+     * @type {BenefitGrantAdsProperties}
+     * @memberof BenefitGrantAds
+     */
+    properties: BenefitGrantAdsProperties;
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitGrantAds
+     */
+    subscription_id?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitGrantAds
+     */
+    order_id?: string;
+    /**
+     * The ID of the user concerned by this grant.
+     * @type {string}
+     * @memberof BenefitGrantAds
+     */
+    user_id: string;
+    /**
+     * The ID of the benefit concerned by this grant.
+     * @type {string}
+     * @memberof BenefitGrantAds
+     */
+    benefit_id: string;
+}
+/**
+ * 
+ * @export
+ * @interface BenefitGrantAdsProperties
+ */
+export interface BenefitGrantAdsProperties {
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitGrantAdsProperties
+     */
+    advertisement_campaign_id?: string;
 }
 /**
  * 
@@ -3686,49 +3729,6 @@ export interface ConfirmIssueSplit {
      * @memberof ConfirmIssueSplit
      */
     share_thousands: number;
-}
-/**
- * 
- * @export
- * @interface CreateAdvertisementCampaign
- */
-export interface CreateAdvertisementCampaign {
-    /**
-     * 
-     * @type {string}
-     * @memberof CreateAdvertisementCampaign
-     */
-    subscription_id: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof CreateAdvertisementCampaign
-     */
-    benefit_id: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof CreateAdvertisementCampaign
-     */
-    image_url: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof CreateAdvertisementCampaign
-     */
-    image_url_dark?: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof CreateAdvertisementCampaign
-     */
-    text: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof CreateAdvertisementCampaign
-     */
-    link_url: string;
 }
 /**
  * 
@@ -4316,37 +4316,6 @@ export interface DonationUser {
  */
 export type Donor = DonationOrganization | DonationUser;
 
-/**
- * 
- * @export
- * @interface EditAdvertisementCampaign
- */
-export interface EditAdvertisementCampaign {
-    /**
-     * 
-     * @type {string}
-     * @memberof EditAdvertisementCampaign
-     */
-    image_url: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof EditAdvertisementCampaign
-     */
-    image_url_dark?: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof EditAdvertisementCampaign
-     */
-    text: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof EditAdvertisementCampaign
-     */
-    link_url: string;
-}
 /**
  * 
  * @export
@@ -5030,44 +4999,6 @@ export interface ListResourceAccount {
 /**
  * 
  * @export
- * @interface ListResourceAdvertisementCampaign
- */
-export interface ListResourceAdvertisementCampaign {
-    /**
-     * 
-     * @type {Array<AdvertisementCampaign>}
-     * @memberof ListResourceAdvertisementCampaign
-     */
-    items?: Array<AdvertisementCampaign>;
-    /**
-     * 
-     * @type {Pagination}
-     * @memberof ListResourceAdvertisementCampaign
-     */
-    pagination: Pagination;
-}
-/**
- * 
- * @export
- * @interface ListResourceAdvertisementDisplay
- */
-export interface ListResourceAdvertisementDisplay {
-    /**
-     * 
-     * @type {Array<AdvertisementDisplay>}
-     * @memberof ListResourceAdvertisementDisplay
-     */
-    items?: Array<AdvertisementDisplay>;
-    /**
-     * 
-     * @type {Pagination}
-     * @memberof ListResourceAdvertisementDisplay
-     */
-    pagination: Pagination;
-}
-/**
- * 
- * @export
  * @interface ListResourceAnnotatedUnionBenefitArticlesSubscriberBenefitAdsSubscriberBenefitDiscordSubscriberBenefitCustomSubscriberBenefitGitHubRepositorySubscriberDiscriminatorMergeJSONSchema
  */
 export interface ListResourceAnnotatedUnionBenefitArticlesSubscriberBenefitAdsSubscriberBenefitDiscordSubscriberBenefitCustomSubscriberBenefitGitHubRepositorySubscriberDiscriminatorMergeJSONSchema {
@@ -5518,6 +5449,25 @@ export interface ListResourceUnionBenefitArticlesBenefitAdsBenefitCustomBenefitD
      * 
      * @type {Pagination}
      * @memberof ListResourceUnionBenefitArticlesBenefitAdsBenefitCustomBenefitDiscordBenefitGitHubRepository
+     */
+    pagination: Pagination;
+}
+/**
+ * 
+ * @export
+ * @interface ListResourceUserAdvertisementCampaign
+ */
+export interface ListResourceUserAdvertisementCampaign {
+    /**
+     * 
+     * @type {Array<UserAdvertisementCampaign>}
+     * @memberof ListResourceUserAdvertisementCampaign
+     */
+    items?: Array<UserAdvertisementCampaign>;
+    /**
+     * 
+     * @type {Pagination}
+     * @memberof ListResourceUserAdvertisementCampaign
      */
     pagination: Pagination;
 }
@@ -9836,7 +9786,9 @@ export const Scope = {
     USERBENEFITSREAD: 'user:benefits:read',
     USERORDERSREAD: 'user:orders:read',
     USERSUBSCRIPTIONSREAD: 'user:subscriptions:read',
-    USERSUBSCRIPTIONSWRITE: 'user:subscriptions:write'
+    USERSUBSCRIPTIONSWRITE: 'user:subscriptions:write',
+    USERADVERTISEMENT_CAMPAIGNSREAD: 'user:advertisement_campaigns:read',
+    USERADVERTISEMENT_CAMPAIGNSWRITE: 'user:advertisement_campaigns:write'
 } as const;
 export type Scope = typeof Scope[keyof typeof Scope];
 
@@ -11250,6 +11202,148 @@ export interface User {
      * @memberof User
      */
     avatar_url: string;
+}
+/**
+ * 
+ * @export
+ * @interface UserAdvertisementCampaign
+ */
+export interface UserAdvertisementCampaign {
+    /**
+     * Creation timestamp of the object.
+     * @type {string}
+     * @memberof UserAdvertisementCampaign
+     */
+    created_at: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof UserAdvertisementCampaign
+     */
+    modified_at?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof UserAdvertisementCampaign
+     */
+    id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof UserAdvertisementCampaign
+     */
+    user_id: string;
+    /**
+     * 
+     * @type {number}
+     * @memberof UserAdvertisementCampaign
+     */
+    views: number;
+    /**
+     * 
+     * @type {number}
+     * @memberof UserAdvertisementCampaign
+     */
+    clicks: number;
+    /**
+     * 
+     * @type {string}
+     * @memberof UserAdvertisementCampaign
+     */
+    image_url: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof UserAdvertisementCampaign
+     */
+    image_url_dark?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof UserAdvertisementCampaign
+     */
+    text: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof UserAdvertisementCampaign
+     */
+    link_url: string;
+}
+/**
+ * 
+ * @export
+ * @interface UserAdvertisementCampaignCreate
+ */
+export interface UserAdvertisementCampaignCreate {
+    /**
+     * 
+     * @type {string}
+     * @memberof UserAdvertisementCampaignCreate
+     */
+    image_url: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof UserAdvertisementCampaignCreate
+     */
+    image_url_dark?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof UserAdvertisementCampaignCreate
+     */
+    text: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof UserAdvertisementCampaignCreate
+     */
+    link_url: string;
+}
+/**
+ * 
+ * @export
+ * @interface UserAdvertisementCampaignEnable
+ */
+export interface UserAdvertisementCampaignEnable {
+    /**
+     * 
+     * @type {string}
+     * @memberof UserAdvertisementCampaignEnable
+     */
+    benefit_id: string;
+}
+/**
+ * 
+ * @export
+ * @interface UserAdvertisementCampaignUpdate
+ */
+export interface UserAdvertisementCampaignUpdate {
+    /**
+     * 
+     * @type {string}
+     * @memberof UserAdvertisementCampaignUpdate
+     */
+    image_url?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof UserAdvertisementCampaignUpdate
+     */
+    image_url_dark?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof UserAdvertisementCampaignUpdate
+     */
+    text?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof UserAdvertisementCampaignUpdate
+     */
+    link_url?: string;
 }
 /**
  * 

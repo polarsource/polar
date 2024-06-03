@@ -4,6 +4,7 @@ import ClientPage from './ClientPage'
 export default async function Page() {
   const api = getServerSideAPI()
   const subscriptions = await api.users.listSubscriptions({
+    active: true,
     limit: 100,
   })
 

@@ -40,6 +40,7 @@ import {
   useFieldArray,
   useFormContext,
 } from 'react-hook-form'
+import { twMerge } from 'tailwind-merge'
 import SubscriptionGroupIcon from '../Subscriptions/SubscriptionGroupIcon'
 import ProductPriceTypeIcon from './ProductPriceTypeIcon'
 
@@ -90,11 +91,11 @@ const ProductPriceItem: React.FC<ProductPriceItemProps> = ({
                       <>
                         {recurringInterval ===
                           ProductPriceRecurringInterval.MONTH && (
-                          <span>/mo</span>
+                          <span className="text-sm">/month</span>
                         )}
                         {recurringInterval ===
                           ProductPriceRecurringInterval.YEAR && (
-                          <span>/year</span>
+                          <span className="text-sm">/year</span>
                         )}
                       </>
                     }
@@ -253,6 +254,7 @@ const ProductForm: React.FC<ProductFormProps> = ({ update, isFreeTier }) => {
             <FormLabel>Pricing</FormLabel>
             {!update && isFeatureEnabled('products') && (
               <ToggleGroup
+                className="gap-4"
                 type="single"
                 value={pricingType}
                 onValueChange={(value: ProductPriceType) =>
@@ -261,7 +263,11 @@ const ProductForm: React.FC<ProductFormProps> = ({ update, isFreeTier }) => {
               >
                 <ToggleGroupItem
                   value={ProductPriceType.ONE_TIME}
-                  className="h-20 w-full flex-col items-start border"
+                  className={twMerge(
+                    'h-20 w-full flex-col items-start gap-2 rounded-xl border',
+                    pricingType === ProductPriceType.ONE_TIME &&
+                      'border-transparent',
+                  )}
                 >
                   <div className="flex items-center gap-2">
                     <ProductPriceTypeIcon
@@ -273,7 +279,11 @@ const ProductForm: React.FC<ProductFormProps> = ({ update, isFreeTier }) => {
                 </ToggleGroupItem>
                 <ToggleGroupItem
                   value={ProductPriceType.RECURRING}
-                  className="h-20 w-full flex-col items-start border"
+                  className={twMerge(
+                    'h-20 w-full flex-col items-start gap-2 rounded-xl border',
+                    pricingType === ProductPriceType.RECURRING &&
+                      'border-transparent',
+                  )}
                 >
                   <div className="flex items-center gap-2">
                     <ProductPriceTypeIcon

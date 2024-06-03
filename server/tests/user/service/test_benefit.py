@@ -79,8 +79,6 @@ class TestList:
             [("granted_at", True)],
             [("type", True)],
             [("organization", False)],
-            [("order", False)],
-            [("subscription", False)],
         ],
     )
     @pytest.mark.auth
@@ -136,7 +134,7 @@ class TestGetById:
         assert result is None
 
     @pytest.mark.auth
-    async def test_user_revoled(
+    async def test_user_revoked(
         self,
         auth_subject: AuthSubject[User],
         save_fixture: SaveFixture,
@@ -168,14 +166,24 @@ class TestGetById:
         subscription: Subscription,
         benefit_organization: Benefit,
         user: User,
+        user_second: User,
     ) -> None:
-        await create_benefit_grant(
+        user_grant = await create_benefit_grant(
             save_fixture,
             user,
             benefit_organization,
             granted=True,
             subscription=subscription,
         )
+        await create_benefit_grant(
+            save_fixture,
+            user_second,
+            benefit_organization,
+            granted=True,
+            subscription=subscription,
+        )
+
+        session.expunge_all()
 
         result = await user_benefit_service.get_by_id(
             session, auth_subject, benefit_organization.id
@@ -183,3 +191,6 @@ class TestGetById:
 
         assert result is not None
         assert result.id == benefit_organization.id
+
+        assert len(result.grants) == 1
+        assert result.grants[0].id == user_grant.id

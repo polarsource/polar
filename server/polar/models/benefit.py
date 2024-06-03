@@ -4,14 +4,14 @@ from uuid import UUID
 
 from sqlalchemy import Boolean, ForeignKey, String, Text
 from sqlalchemy.dialects.postgresql import JSONB
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.exceptions import PolarError
 from polar.kit.db.models import RecordModel
 from polar.kit.extensions.sqlalchemy import PostgresUUID
 
 if TYPE_CHECKING:
-    from polar.models import Organization
+    from polar.models import BenefitGrant, Organization
 
 
 class TaxApplicationMustBeSpecified(PolarError):
@@ -90,6 +90,12 @@ class Benefit(RecordModel):
         PostgresUUID, ForeignKey("organizations.id", ondelete="cascade"), nullable=False
     )
     organization: Mapped["Organization"] = relationship("Organization", lazy="raise")
+
+    @declared_attr
+    def grants(cls) -> Mapped["list[BenefitGrant]"]:
+        return relationship(
+            "BenefitGrant", lazy="selectin", back_populates="benefit", viewonly=True
+        )
 
     __mapper_args__ = {
         "polymorphic_on": "type",

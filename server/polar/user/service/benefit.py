@@ -3,7 +3,8 @@ from collections.abc import Sequence
 from enum import StrEnum
 from typing import Any
 
-from sqlalchemy import Select, UnaryExpression, and_, asc, desc, select
+from sqlalchemy import Select, UnaryExpression, asc, desc, select
+from sqlalchemy.orm import selectinload
 
 from polar.auth.models import AuthSubject
 from polar.exceptions import PolarError
@@ -27,8 +28,6 @@ class SortProperty(StrEnum):
     granted_at = "granted_at"
     type = "type"
     organization = "organization"
-    order = "order"
-    subscription = "subscription"
 
 
 class UserBenefitService(ResourceServiceReader[Benefit]):
@@ -53,15 +52,42 @@ class UserBenefitService(ResourceServiceReader[Benefit]):
             statement = statement.where(Benefit.organization_id == organization_id)
 
         if order_id is not None:
-            statement = statement.where(BenefitGrant.order_id == order_id)
+            statement = statement.where(
+                Benefit.id.in_(
+                    select(BenefitGrant.benefit_id).where(
+                        BenefitGrant.order_id == order_id
+                    )
+                )
+            )
 
         if subscription_id is not None:
-            statement = statement.where(BenefitGrant.subscription_id == subscription_id)
+            statement = statement.where(
+                Benefit.id.in_(
+                    select(BenefitGrant.benefit_id).where(
+                        BenefitGrant.subscription_id == subscription_id
+                    )
+                )
+            )
 
         order_by_clauses: list[UnaryExpression[Any]] = []
         for criterion, is_desc in sorting:
             clause_function = desc if is_desc else asc
             if criterion == SortProperty.granted_at:
+                # Join only the most recent/oldest grant
+                statement = statement.join(
+                    BenefitGrant,
+                    onclause=BenefitGrant.id
+                    == select(BenefitGrant)
+                    .correlate(Benefit)
+                    .with_only_columns(BenefitGrant.id)
+                    .where(
+                        BenefitGrant.benefit_id == Benefit.id,
+                        BenefitGrant.is_granted.is_(True),
+                    )
+                    .order_by(clause_function(BenefitGrant.granted_at))
+                    .limit(1)
+                    .scalar_subquery(),
+                )
                 order_by_clauses.append(clause_function(BenefitGrant.granted_at))
             elif criterion == SortProperty.type:
                 order_by_clauses.append(clause_function(Benefit.type))
@@ -70,10 +96,6 @@ class UserBenefitService(ResourceServiceReader[Benefit]):
                     Organization, onclause=Benefit.organization_id == Organization.id
                 )
                 order_by_clauses.append(clause_function(Organization.name))
-            elif criterion == SortProperty.order:
-                order_by_clauses.append(clause_function(BenefitGrant.order_id))
-            elif criterion == SortProperty.subscription:
-                order_by_clauses.append(clause_function(BenefitGrant.subscription_id))
         statement = statement.order_by(*order_by_clauses)
 
         return await paginate(session, statement, pagination=pagination)
@@ -96,14 +118,23 @@ class UserBenefitService(ResourceServiceReader[Benefit]):
     ) -> Select[tuple[Benefit]]:
         statement = (
             select(Benefit)
-            .join(
-                BenefitGrant,
-                onclause=and_(
-                    BenefitGrant.benefit_id == Benefit.id,
-                    BenefitGrant.user_id == auth_subject.subject.id,
+            .where(
+                Benefit.deleted_at.is_(None),
+                Benefit.id.in_(
+                    select(BenefitGrant.benefit_id).where(
+                        BenefitGrant.user_id == auth_subject.subject.id,
+                        BenefitGrant.is_granted.is_(True),
+                    )
                 ),
             )
-            .where(Benefit.deleted_at.is_(None), BenefitGrant.is_granted.is_(True))
+            .options(
+                selectinload(
+                    Benefit.grants.and_(
+                        BenefitGrant.user_id == auth_subject.subject.id,
+                        BenefitGrant.is_granted.is_(True),
+                    )
+                )
+            )
         )
         return statement
 

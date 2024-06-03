@@ -246,7 +246,7 @@ export const FileListItem = ({
           <Editable
             className="w-full truncate text-sm font-medium"
             onUpdate={(updated) => update({ name: updated })}
-            enabled={file.is_uploaded}
+            enabled={file.is_uploaded ?? false}
           >
             {file.name}
           </Editable>

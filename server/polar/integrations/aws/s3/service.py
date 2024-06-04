@@ -1,6 +1,7 @@
 import base64
 import mimetypes
 from datetime import datetime, timedelta
+from typing import TYPE_CHECKING, Any, cast
 
 import structlog
 
@@ -19,6 +20,9 @@ from .schemas import (
     get_downloadable_content_disposition,
 )
 
+if TYPE_CHECKING:
+    from mypy_boto3_s3.client import S3Client
+
 log = structlog.get_logger()
 
 
@@ -27,7 +31,7 @@ class S3Service:
         self,
         bucket: str,
         presign_ttl: int = 600,
-        client=client,
+        client: "S3Client" = client,
     ):
         self.bucket = bucket
         self.presign_ttl = presign_ttl
@@ -150,7 +154,7 @@ class S3Service:
         if not head:
             raise S3FileError("No metadata from S3")
 
-        file = S3File.from_head(data.path, head)
+        file = S3File.from_head(data.path, cast(dict[str, Any], head))
         return file
 
     def generate_presigned_download_url(

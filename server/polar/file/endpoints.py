@@ -1,4 +1,4 @@
-from typing import Annotated
+from typing import Annotated, TypeAlias
 
 import structlog
 from fastapi import APIRouter, Depends, Path, Query
@@ -35,6 +35,13 @@ FileNotFoundResponse = {
 }
 
 
+# We want to name our endpoint `list` to offer a nice SDK
+# via our OpenAPI generator. However, mypy then asssumes we
+# refer to our endpoint if we use `list[UUID4]` for `ids`.
+# So we define a TypeAlias to circumvent that.
+ListOfFileIDs: TypeAlias = list[UUID4]
+
+
 @router.get(
     "",
     tags=[Tags.PUBLIC],
@@ -44,7 +51,7 @@ async def list(
     auth_subject: auth.CreatorFilesWrite,
     pagination: PaginationParamsQuery,
     organization_id: UUID4 | None = None,
-    ids: list[UUID4] | None = Query(
+    ids: ListOfFileIDs | None = Query(
         None,
         description=("List of file IDs to get. "),
     ),

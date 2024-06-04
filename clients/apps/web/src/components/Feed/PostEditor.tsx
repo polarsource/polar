@@ -195,31 +195,35 @@ const Sidebar = () => {
 
   return (
     <div>
-      <div className="sticky top-24 hidden w-full min-w-[250px] max-w-[280px] flex-col gap-y-4 lg:flex">
+      <div className="sticky top-52 hidden w-full min-w-[250px] max-w-[280px] flex-col gap-y-4 lg:flex">
         <ShadowBoxOnMd className="dark:border-polar-800 w-full md:p-8 dark:border">
           <div className="flex flex-col gap-y-6">
             <div className="flex flex-col gap-y-2">
-              <div className="flex flex-col gap-y-2">
-                <h3 className="text-sm">Components</h3>
-                <Button
-                  variant={'outline'}
-                  size={'sm'}
-                  fullWidth={true}
-                  onClick={insertPaywall}
-                >
-                  <span className="whitespace-nowrap text-center">Paywall</span>
-                </Button>
+              <div className="flex flex-col gap-y-4">
+                <h3 className="dark:text-white">Components</h3>
+                <div className="flex flex-col gap-y-2">
+                  <Button
+                    variant={'outline'}
+                    size={'sm'}
+                    fullWidth={true}
+                    onClick={insertPaywall}
+                  >
+                    <span className="whitespace-nowrap text-center">
+                      Paywall
+                    </span>
+                  </Button>
 
-                <Button
-                  variant={'outline'}
-                  size={'sm'}
-                  fullWidth={true}
-                  onClick={insertSubscribeNow}
-                >
-                  <span className="flex-1 whitespace-nowrap text-center">
-                    Subscribe Now
-                  </span>
-                </Button>
+                  <Button
+                    variant={'outline'}
+                    size={'sm'}
+                    fullWidth={true}
+                    onClick={insertSubscribeNow}
+                  >
+                    <span className="flex-1 whitespace-nowrap text-center">
+                      Subscribe Now
+                    </span>
+                  </Button>
+                </div>
               </div>
             </div>
 

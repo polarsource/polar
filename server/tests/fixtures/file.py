@@ -6,8 +6,11 @@ from pathlib import Path
 from typing import Any
 from uuid import UUID
 
+import boto3
 import pytest_asyncio
+from botocore.config import Config
 
+from polar.config import settings
 from polar.integrations.aws.s3.schemas import S3FileUploadPart
 
 pwd = Path(__file__).parent.absolute()
@@ -73,6 +76,32 @@ class TestFile:
                 ]
             },
         }
+
+
+@pytest_asyncio.fixture(scope="session", autouse=True)
+async def empty_test_bucket() -> None:
+    if not settings.S3_ENDPOINT_URL:
+        raise RuntimeError("S3_ENDPOINT_URL not set")
+
+    if not settings.S3_ENDPOINT_URL.startswith("http://127.0.0.1:9000"):
+        raise RuntimeError("S3_ENDPOINT_URL not local development")
+
+    if not settings.S3_FILES_BUCKET_NAME.startswith("testing"):
+        raise RuntimeError("S3_FILES_BUCKET_NAME not a test bucket")
+
+    s3 = boto3.resource(
+        "s3",
+        endpoint_url=settings.S3_ENDPOINT_URL,
+        # Use MinIO development (admin) credentials
+        aws_access_key_id=settings.MINIO_USER,
+        aws_secret_access_key=settings.MINIO_PWD,
+        config=Config(
+            signature_version=settings.AWS_SIGNATURE_VERSION,
+        ),
+    )
+
+    bucket = s3.Bucket(settings.S3_FILES_BUCKET_NAME)
+    bucket.object_versions.delete()
 
 
 @pytest_asyncio.fixture(scope="function")

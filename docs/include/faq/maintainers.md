@@ -189,7 +189,7 @@ our thinking behind it.
 
 ### How do I receive funding & when are funds paid out?
 
-Checkout our [Payout](/payment/#payouts) documentation for full details on this topic.
+Checkout [our Payout documentation](/docs/overview/payments-taxes#fees--payouts-creators) for full details on this topic.
 
 ---
 

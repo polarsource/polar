@@ -68,7 +68,7 @@ class ResendEmailSender(EmailSender):
         reply_to_name: str | None = None,
         reply_to_email_addr: str | None = None,
     ) -> None:
-        params = {
+        params: resend.Emails.SendParams = {
             "from": f"{from_name} <{from_email_addr}>",
             "to": [to_email_addr],
             "subject": subject,

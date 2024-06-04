@@ -66,7 +66,7 @@ class TestEndpoints:
         upload = await minio_client.put(upload_url, content=chunk, headers=part.headers)
 
         assert upload.status_code == 200
-        etag = upload.headers.get("ETag", None)
+        etag = upload.headers.get("ETag")
         assert etag
         return S3FileUploadCompletedPart(
             number=part.number,
@@ -128,7 +128,7 @@ class TestEndpoints:
             json=logo_png.build_create_payload(organization_id),
         )
         created = self.ensure_expected_create_response(
-            response, organization_id, file=logo_png, parts=1
+            response, organization_id, file=logo_png
         )
         assert created.extension == "png"
 
@@ -151,7 +151,7 @@ class TestEndpoints:
             json=logo_jpg.build_create_payload(organization_id),
         )
         created = self.ensure_expected_create_response(
-            response, organization_id, file=logo_jpg, parts=1
+            response, organization_id, file=logo_jpg
         )
         assert created.extension == "jpg"
 
@@ -184,7 +184,7 @@ class TestEndpoints:
             json=logo_jpg.build_create_payload(organization_id),
         )
         created = self.ensure_expected_create_response(
-            response, organization_id, file=logo_jpg, parts=1
+            response, organization_id, file=logo_jpg
         )
         assert created.extension == "jpg"
 
@@ -244,8 +244,9 @@ class TestEndpoints:
             json=logo_jpg.build_create_payload(organization_id),
         )
         created = self.ensure_expected_create_response(
-            response, organization_id, file=logo_jpg, parts=1
+            response, organization_id, file=logo_jpg
         )
+
         assert created.extension == "jpg"
 
         uploaded_parts = await self.upload_multiparts_and_test(created, file=logo_jpg)
@@ -253,9 +254,11 @@ class TestEndpoints:
         payload = FileUploadCompleted(
             id=created.upload.id, path=created.path, parts=uploaded_parts
         )
+        payload_json = payload.model_dump(mode="json")
+
         completed = await client.post(
             f"/api/v1/files/{created.id}/uploaded",
-            json=payload.model_dump(),
+            json=payload_json,
         )
 
         assert completed.status_code == 200

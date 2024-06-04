@@ -163,10 +163,9 @@ class S3Service:
         return cast(dict[str, Any], head)
 
     def complete_multipart_upload(self, data: S3FileUploadCompleted) -> S3File:
+        boto_arguments = data.get_boto3_arguments()
         response = self.client.complete_multipart_upload(
-            Bucket=self.bucket,
-            Key=data.path,
-            **data.get_boto3_arguments(),
+            Bucket=self.bucket, Key=data.path, **boto_arguments
         )
         if not response:
             raise S3FileError("No response from S3")

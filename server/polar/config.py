@@ -124,9 +124,6 @@ class Settings(BaseSettings):
     # Loops
     LOOPS_API_KEY: str | None = None
 
-    # Prometheus
-    PROMETHEUS_EXPORTER_HTTP_PASSWORD: str = ""
-
     # Logfire
     LOGFIRE_TOKEN: str | None = None
     LOGFIRE_PROJECT_NAME: str = "polar"

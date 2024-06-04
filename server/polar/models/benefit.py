@@ -95,7 +95,7 @@ class Benefit(RecordModel):
     @declared_attr
     def grants(cls) -> Mapped["list[BenefitGrant]"]:
         return relationship(
-            "BenefitGrant", lazy="selectin", back_populates="benefit", viewonly=True
+            "BenefitGrant", lazy="raise", back_populates="benefit", viewonly=True
         )
 
     __mapper_args__ = {

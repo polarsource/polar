@@ -394,10 +394,59 @@ benefit_schema_map: dict[BenefitType, type[Benefit]] = {
     BenefitType.github_repository: BenefitGitHubRepository,
 }
 
+
+class BenefitGrantProperties(Schema):
+    """
+    Properties for a benefit grant.
+    """
+
+
+class BenefitGrant(TimestampedSchema):
+    """
+    A grant of a benefit to a user.
+    """
+
+    id: UUID4 = Field(description="The ID of the grant.")
+    granted_at: datetime | None = Field(
+        None,
+        description=(
+            "The timestamp when the benefit was granted. "
+            "If `None`, the benefit is not granted."
+        ),
+    )
+    is_granted: bool = Field(description="Whether the benefit is granted.")
+    revoked_at: datetime | None = Field(
+        None,
+        description=(
+            "The timestamp when the benefit was revoked. "
+            "If `None`, the benefit is not revoked."
+        ),
+    )
+    is_revoked: bool = Field(description="Whether the benefit is revoked.")
+    properties: BenefitGrantProperties = Field(
+        description="The properties of the grant."
+    )
+    subscription_id: UUID4 | None = Field(
+        default=None,
+        description="The ID of the subscription that granted this benefit.",
+    )
+    order_id: UUID4 | None = Field(
+        default=None, description="The ID of the order that granted this benefit."
+    )
+    user_id: UUID4 = Field(description="The ID of the user concerned by this grant.")
+    benefit_id: UUID4 = Field(
+        description="The ID of the benefit concerned by this grant."
+    )
+
+
 # BenefitSubscriber
 
 
-class BenefitCustomSubscriber(BenefitBase):
+class BenefitSubscriberBase(BenefitBase):
+    grants: list[BenefitGrant]
+
+
+class BenefitCustomSubscriber(BenefitSubscriberBase):
     type: Literal[BenefitType.custom]
     properties: BenefitCustomSubscriberProperties
 
@@ -407,9 +456,21 @@ class BenefitArticlesSubscriber(BenefitBase):
     properties: BenefitArticlesSubscriberProperties
 
 
+class BenefitGrantAdsProperties(BenefitGrantProperties):
+    advertisement_campaign_id: UUID4 | None = Field(
+        None,
+        description="The ID of the enabled advertisement campaign for this benefit grant.",
+    )
+
+
+class BenefitGrantAds(BenefitGrant):
+    properties: BenefitGrantAdsProperties
+
+
 class BenefitAdsSubscriber(BenefitBase):
     type: Literal[BenefitType.ads]
     properties: BenefitAdsProperties
+    grants: list[BenefitGrantAds]
 
 
 class BenefitDiscordSubscriber(BenefitBase):
@@ -436,34 +497,3 @@ BenefitSubscriberAdapter = TypeAdapter[BenefitSubscriber](BenefitSubscriber)
 
 # Properties that are public (included in Product endpoints)
 BenefitPublic = BenefitBase | BenefitArticles
-
-
-class BenefitGrant(TimestampedSchema):
-    """
-    A grant of a benefit to a user.
-    """
-
-    id: UUID4 = Field(description="The ID of the grant.")
-    granted_at: datetime | None = Field(
-        None,
-        description=(
-            "The timestamp when the benefit was granted. "
-            "If `None`, the benefit is not granted."
-        ),
-    )
-    is_granted: bool = Field(description="Whether the benefit is granted.")
-    revoked_at: datetime | None = Field(
-        None,
-        description=(
-            "The timestamp when the benefit was revoked. "
-            "If `None`, the benefit is not revoked."
-        ),
-    )
-    is_revoked: bool = Field(description="Whether the benefit is revoked.")
-    subscription_id: UUID4 = Field(
-        description="The ID of the subscription that granted this benefit."
-    )
-    user_id: UUID4 = Field(description="The ID of the user concerned by this grant.")
-    benefit_id: UUID4 = Field(
-        description="The ID of the benefit concerned by this grant."
-    )

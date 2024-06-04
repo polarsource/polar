@@ -32,7 +32,7 @@ import { BrandingMenu } from './Public/BrandingMenu'
 
 const GitHubAppUpsell = () => {
   return (
-    <div className="m-4 flex flex-row gap-y-8 rounded-3xl bg-gradient-to-r from-blue-200 to-blue-400 p-6 text-white">
+    <div className="dark:border-polar-700 m-4 flex flex-row gap-y-8 rounded-3xl bg-gradient-to-r from-blue-200 to-blue-400 p-6 text-white dark:border dark:from-transparent dark:to-transparent">
       <div className="flex w-full flex-col gap-y-4">
         <GitHub fontSize="large" />
         <h3 className="leading-snug [text-wrap:balance]">

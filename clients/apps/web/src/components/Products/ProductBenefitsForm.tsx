@@ -4,6 +4,7 @@ import { BenefitPublicInner, Organization } from '@polar-sh/sdk'
 import { useSearchParams } from 'next/navigation'
 import { Switch } from 'polarkit/components/ui/atoms'
 import Button from 'polarkit/components/ui/atoms/button'
+import { List, ListItem } from 'polarkit/components/ui/atoms/list'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -51,12 +52,7 @@ const BenefitRow = ({
 
   return (
     <div
-      className={twMerge(
-        'flex flex-row items-center justify-between rounded-xl px-3 py-2',
-        checked
-          ? 'bg-blue-50 text-blue-500 dark:bg-blue-950 dark:text-blue-200'
-          : 'dark:text-polar-500 dark:bg-polar-700 bg-gray-100 text-gray-500',
-      )}
+      className={twMerge('flex w-full flex-row items-center justify-between')}
     >
       <div className={twMerge('flex flex-row items-center gap-x-3')}>
         {resolveBenefitIcon(benefit)}
@@ -155,7 +151,6 @@ const ProductBenefitsForm = ({
           <h2 className="dark:text-polar-50 text-gray-950">Benefits</h2>
           <Button
             size="sm"
-            variant="secondary"
             className="self-start"
             onClick={toggle}
             type="button"
@@ -167,15 +162,22 @@ const ProductBenefitsForm = ({
           <div className="flex flex-col gap-y-4">
             <div className="flex flex-col gap-2">
               {organizationBenefits.length > 0 ? (
-                organizationBenefits.map((benefit) => (
-                  <BenefitRow
-                    key={benefit.id}
-                    organization={organization}
-                    benefit={benefit}
-                    checked={benefits.some((b) => b.id === benefit.id)}
-                    onCheckedChange={handleCheckedChange(benefit)}
-                  />
-                ))
+                <List size="small">
+                  {organizationBenefits.map((benefit) => (
+                    <ListItem
+                      key={benefit.id}
+                      size="small"
+                      selected={benefits.some((b) => b.id === benefit.id)}
+                    >
+                      <BenefitRow
+                        organization={organization}
+                        benefit={benefit}
+                        checked={benefits.some((b) => b.id === benefit.id)}
+                        onCheckedChange={handleCheckedChange(benefit)}
+                      />
+                    </ListItem>
+                  ))}
+                </List>
               ) : (
                 <div className="dark:text-polar-400 flex flex-col items-center gap-y-6 py-12 text-gray-400">
                   <LoyaltyOutlined fontSize="large" />

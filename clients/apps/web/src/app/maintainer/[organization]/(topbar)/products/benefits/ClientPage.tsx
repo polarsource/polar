@@ -21,6 +21,7 @@ import { encode } from 'html-entities'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import Button from 'polarkit/components/ui/atoms/button'
+import { List, ListItem } from 'polarkit/components/ui/atoms/list'
 import { ShadowBoxOnMd } from 'polarkit/components/ui/atoms/shadowbox'
 import {
   DropdownMenu,
@@ -61,34 +62,27 @@ const ClientPage = ({ organization }: { organization: Organization }) => {
     setSelectedBenefit(benefits?.items?.[0])
   }, [benefits])
 
-  const handleSelectBenefit = useCallback(
-    (benefit: BenefitPublicInner) => () => {
-      setSelectedBenefit(benefit)
-    },
-    [],
-  )
-
   return (
     <DashboardBody className="flex flex-col gap-y-8">
       <div className="flex flex-row items-start gap-x-8">
-        <div className="flex w-2/3 flex-col gap-y-6">
+        <div className="flex w-2/3 flex-col gap-y-8">
           <div className="flex flex-row items-center justify-between">
             <h2 className="text-lg font-medium">Benefits</h2>
             <Button className="h-8 w-8 rounded-full" onClick={toggle}>
               <AddOutlined fontSize="inherit" />
             </Button>
           </div>
-          <div className="flex flex-col gap-y-2">
+          <List>
             {benefits?.items?.map((benefit) => (
-              <BenefitRow
-                organization={organization}
-                benefit={benefit}
-                selected={selectedBenefit?.id === benefit.id}
-                handleSelectBenefit={handleSelectBenefit}
+              <ListItem
                 key={benefit.id}
-              />
+                selected={selectedBenefit?.id === benefit.id}
+                onSelect={() => setSelectedBenefit(benefit)}
+              >
+                <BenefitRow organization={organization} benefit={benefit} />
+              </ListItem>
             ))}
-          </div>
+          </List>
           {benefitsIsFetched ? (
             <RecommendedBenefits
               existingBenefits={benefits?.items ?? []}
@@ -159,21 +153,15 @@ export default ClientPage
 interface BenefitRowProps {
   benefit: BenefitPublicInner
   organization: Organization
-  selected: boolean
-  handleSelectBenefit: (benefit: BenefitPublicInner) => () => void
 }
 
-const BenefitRow = ({
-  benefit,
-  handleSelectBenefit,
-  organization,
-  selected,
-}: BenefitRowProps) => {
+const BenefitRow = ({ benefit, organization }: BenefitRowProps) => {
   const {
     isShown: isEditShown,
     toggle: toggleEdit,
     hide: hideEdit,
   } = useModal()
+
   const {
     isShown: isDeleteShown,
     hide: hideDelete,
@@ -187,22 +175,8 @@ const BenefitRow = ({
   }, [deleteBenefit, benefit])
 
   return (
-    <div
-      className={twMerge(
-        'dark:hover:bg-polar-700 dark:bg-polar-800 flex cursor-pointer flex-row justify-between gap-x-8 rounded-2xl bg-white px-4 py-3 transition-colors hover:bg-gray-50',
-        selected &&
-          'bg-blue-50 hover:bg-blue-100 dark:bg-blue-950 dark:hover:bg-blue-900',
-      )}
-      onClick={handleSelectBenefit(benefit)}
-    >
-      <div
-        className={twMerge(
-          'flex flex-row items-center gap-x-3',
-          selected
-            ? 'text-blue-500 dark:text-blue-400'
-            : 'dark:text-polar-500 text-gray-500',
-        )}
-      >
+    <div className="flex w-full flex-row items-center justify-between">
+      <div className={twMerge('flex flex-row items-center gap-x-3')}>
         {resolveBenefitIcon(benefit, 'inherit')}
         <span className="text-sm">{benefit.description}</span>
       </div>
@@ -366,11 +340,10 @@ const RecommendedBenefits = ({
   return (
     <div className="flex flex-col gap-y-4">
       <h2 className="text-md font-medium">Recommended benefits</h2>
-      <div className="flex flex-col gap-y-2">
+      <List>
         {!hasDiscord && (
-          <BenefitSuggestionRow
-            icon={<DiscordIcon />}
-            onClick={() => {
+          <ListItem
+            onSelect={() => {
               setCreateModalDefaultValues({
                 description: 'Invite to community Discord server',
                 type: BenefitType.DISCORD,
@@ -378,14 +351,15 @@ const RecommendedBenefits = ({
               openCreateBenefitModal()
             }}
           >
-            Invite to community Discord server
-          </BenefitSuggestionRow>
+            <BenefitSuggestionRow icon={<DiscordIcon />}>
+              Invite to community Discord server
+            </BenefitSuggestionRow>
+          </ListItem>
         )}
 
         {!hasAds && (
-          <BenefitSuggestionRow
-            icon={<WebOutlined className="h-4 w-4" fontSize="inherit" />}
-            onClick={() => {
+          <ListItem
+            onSelect={() => {
               setCreateModalDefaultValues({
                 description: 'Logo in README',
                 type: BenefitType.ADS,
@@ -393,10 +367,14 @@ const RecommendedBenefits = ({
               openCreateBenefitModal()
             }}
           >
-            Logo in README
-          </BenefitSuggestionRow>
+            <BenefitSuggestionRow
+              icon={<WebOutlined className="h-4 w-4" fontSize="inherit" />}
+            >
+              Logo in README
+            </BenefitSuggestionRow>
+          </ListItem>
         )}
-      </div>
+      </List>
     </div>
   )
 }
@@ -404,21 +382,14 @@ const RecommendedBenefits = ({
 const BenefitSuggestionRow = ({
   icon,
   children,
-  onClick,
 }: {
   children: React.ReactNode
   icon: React.ReactNode
-  onClick: () => void
 }) => {
   return (
-    <div
-      className="dark:hover:bg-polar-700 dark:bg-polar-800 dark:text-polar-500 flex cursor-pointer flex-row justify-between gap-x-8 rounded-2xl bg-white p-5 text-gray-500 transition-colors hover:bg-gray-50"
-      onClick={onClick}
-    >
-      <div className="flex flex-row items-center gap-x-3">
-        {icon}
-        <span className="text-sm">{children}</span>
-      </div>
+    <div className="flex w-full flex-row items-center gap-x-3">
+      {icon}
+      <span className="text-sm">{children}</span>
     </div>
   )
 }

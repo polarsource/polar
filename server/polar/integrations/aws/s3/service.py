@@ -4,6 +4,7 @@ from datetime import datetime, timedelta
 from typing import TYPE_CHECKING, Any, cast
 
 import structlog
+from botocore.client import ClientError
 
 from polar.kit.utils import generate_uuid, utc_now
 
@@ -138,6 +139,29 @@ class S3Service:
             )
         return ret
 
+    def get_object_or_raise(self, path: str, s3_version_id: str = "") -> dict[str, Any]:
+        try:
+            obj = self.client.get_object(
+                Bucket=self.bucket,
+                Key=path,
+                VersionId=s3_version_id,
+                ChecksumMode="ENABLED",
+            )
+        except ClientError:
+            raise S3FileError("No object on S3")
+
+        return cast(dict[str, Any], obj)
+
+    def get_head_or_raise(self, path: str, s3_version_id: str = "") -> dict[str, Any]:
+        try:
+            head = self.client.head_object(
+                Bucket=self.bucket, Key=path, VersionId=s3_version_id
+            )
+        except ClientError:
+            raise S3FileError("No metadata from S3")
+
+        return cast(dict[str, Any], head)
+
     def complete_multipart_upload(self, data: S3FileUploadCompleted) -> S3File:
         response = self.client.complete_multipart_upload(
             Bucket=self.bucket,
@@ -148,13 +172,8 @@ class S3Service:
             raise S3FileError("No response from S3")
 
         version_id = response.get("VersionId", "")
-        head = self.client.head_object(
-            Bucket=self.bucket, Key=data.path, VersionId=version_id
-        )
-        if not head:
-            raise S3FileError("No metadata from S3")
-
-        file = S3File.from_head(data.path, cast(dict[str, Any], head))
+        head = self.get_head_or_raise(data.path, s3_version_id=version_id)
+        file = S3File.from_head(data.path, head)
         return file
 
     def generate_presigned_download_url(

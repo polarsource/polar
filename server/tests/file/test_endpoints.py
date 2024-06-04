@@ -1,10 +1,10 @@
 import base64
 from typing import Any
-from urllib.parse import parse_qs, urlparse
+from urllib.parse import parse_qs, urlencode, urlparse
 from uuid import UUID
 
 import pytest
-from httpx import AsyncClient, Response
+from httpx import AsyncClient, ReadError, Response
 
 from polar.auth.models import AuthSubject
 from polar.config import settings
@@ -74,6 +74,7 @@ class TestEndpoints:
         upload = await minio_client.put(
             upload_url, content=chunk, headers=part["headers"]
         )
+
         assert upload.status_code == 200
         etag = upload.headers.get("ETag", None)
         assert etag
@@ -84,7 +85,10 @@ class TestEndpoints:
         )
 
     async def upload_multiparts_and_test(
-        self, upload_id: str, parts: S3FileUploadMultipart, file: TestFile
+        self,
+        upload_id: str,
+        parts: S3FileUploadMultipart,
+        file: TestFile,
     ) -> list[S3FileUploadCompletedPart]:
         completed = []
         async with AsyncClient() as minio_client:
@@ -172,9 +176,74 @@ class TestEndpoints:
 
         # S3 object is not available until we fully complete it
         with pytest.raises(S3FileError):
-            s3_head = s3_service.get_head_or_raise(upload_path)
+            s3_service.get_head_or_raise(upload_path)
 
         record = await file_service.get(session, file_id, allow_deleted=True)
+        assert record
+        assert record.is_uploaded is False
+
+    @pytest.mark.http_auto_expunge
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+    )
+    async def test_upload_without_signature(
+        self,
+        client: AsyncClient,
+        auth_subject: AuthSubject[User],
+        session: AsyncSession,
+        user_organization_admin: UserOrganization,
+        logo_jpg: TestFile,
+    ) -> None:
+        organization_id = user_organization_admin.organization_id
+
+        response = await client.post(
+            "/api/v1/files/",
+            json=logo_jpg.build_create_payload(organization_id),
+        )
+        data = self.ensure_expected_create_response(
+            response, organization_id, file=logo_jpg, parts=1
+        )
+        assert data["extension"] == "jpg"
+
+        file_id = data["id"]
+        upload_id = data["upload"]["id"]
+        upload_path = data["upload"]["path"]
+        upload_parts = data["upload"]["parts"]
+        part = upload_parts[0]
+
+        upload_url = part["url"]
+        url = urlparse(upload_url)
+        qs = parse_qs(url.query)
+
+        tampered_query = urlencode(
+            {
+                "uploadId": upload_id,
+                "partNumber": qs["partNumber"][0],
+                "X-Amz-Algorithm": qs["X-Amz-Algorithm"][0],
+                "X-Amz-Credential": qs["X-Amz-Credential"][0],
+                "X-Amz-Date": qs["X-Amz-Date"][0],
+                "X-Amz-Expires": qs["X-Amz-Expires"][0],
+                "X-Amz-SignedHeaders": qs["X-Amz-SignedHeaders"][0],
+                "X-Amz-Signature": "i-am-a-hacker",
+            }
+        )
+        tampered_url = f"{url.scheme}://{url.netloc}{url.path}?{tampered_query}"
+
+        async with AsyncClient() as minio_client:
+            # TODO:
+            # Investigate this issue with httpx raising ReadError instead
+            # of handling the denied request
+            with pytest.raises(ReadError):
+                await minio_client.put(
+                    tampered_url, content=logo_jpg.data, headers=part["headers"]
+                )
+
+        # S3 object is definitely not available
+        with pytest.raises(S3FileError):
+            s3_service.get_head_or_raise(upload_path)
+
+        record = await file_service.get(session, file_id, allow_deleted=True)
+        assert record
         assert record.is_uploaded is False
 
     @pytest.mark.http_auto_expunge

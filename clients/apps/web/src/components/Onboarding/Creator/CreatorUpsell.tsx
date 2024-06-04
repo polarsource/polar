@@ -229,7 +229,7 @@ export const UpsellStep = ({
       className="relative"
       target={newTab ? '_blank' : '_self'}
     >
-      <ShadowBox className="dark:hover:bg-polar-800 relative flex h-full flex-row items-end justify-between transition-colors hover:bg-blue-50">
+      <ShadowBox className="dark:hover:bg-polar-900 relative flex h-full flex-row items-end justify-between transition-colors hover:bg-blue-50">
         <div className="flex flex-row gap-x-6 pr-4 lg:w-3/4 lg:pr-0">
           <div>{icon}</div>
           <div className="flex flex-col gap-y-2">

@@ -142,7 +142,7 @@ const PostCard = ({ icon, title, description, link }: PostCardProps) => {
 
   return (
     <Link ref={ref} href={link}>
-      <Card className="dark:hover:bg-polar-800 relative flex h-full flex-col transition-colors hover:bg-gray-50">
+      <Card className="dark:hover:bg-polar-900 relative flex h-full flex-col transition-colors hover:bg-gray-50">
         <CardHeader className="gap-y-4 pb-4">
           {icon}
           <h3 className="text-2xl font-bold">{title}</h3>
@@ -177,7 +177,7 @@ const DraftPost = ({
     <Link
       ref={ref}
       href={`/maintainer/${organization.name}/posts/${draft.slug}`}
-      className="dark:text-polar-50 dark:border-polar-800 dark:bg-polar-900 dark:hover:bg-polar-800 flex flex-row items-center justify-between gap-x-8 rounded-2xl border border-gray-100 bg-white px-6 py-4 text-gray-950 shadow-sm transition-colors hover:bg-gray-50"
+      className="dark:text-polar-50 dark:border-polar-800 dark:bg-polar-900 dark:hover:bg-polar-900 flex flex-row items-center justify-between gap-x-8 rounded-2xl border border-gray-100 bg-white px-6 py-4 text-gray-950 shadow-sm transition-colors hover:bg-gray-50"
     >
       <div className="flex flex-1 flex-col overflow-hidden">
         <h3 className="w-full truncate text-lg font-medium">{draft.title}</h3>

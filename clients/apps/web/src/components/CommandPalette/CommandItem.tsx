@@ -31,7 +31,7 @@ export const CommandItem = ({
     <div
       ref={ref}
       className={twMerge(
-        'dark:hover:bg-polar-800 group flex scroll-m-4 flex-col gap-y-1 rounded-2xl border border-transparent px-4 py-3 text-sm hover:cursor-pointer hover:bg-white dark:border-transparent',
+        'dark:hover:bg-polar-900 group flex scroll-m-4 flex-col gap-y-1 rounded-2xl border border-transparent px-4 py-3 text-sm hover:cursor-pointer hover:bg-white dark:border-transparent',
         active
           ? 'dark:bg-polar-800 dark:border-polar-700 bg-white shadow-sm'
           : '',

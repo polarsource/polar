@@ -205,7 +205,7 @@ export const HeaderPill = (props: {
       className={twMerge(
         props.active
           ? ' dark:bg-polar-800 dark:ring-polar-700 bg-white shadow dark:ring-1'
-          : ' dark:bg-polar-900 dark:hover:bg-polar-800/50 dark:ring-polar-700 border bg-transparent hover:bg-gray-100/50 dark:ring-1',
+          : ' dark:bg-polar-900 dark:hover:bg-polar-900/50 dark:ring-polar-700 border bg-transparent hover:bg-gray-100/50 dark:ring-1',
         'transition-background relative flex w-full max-w-[300px] flex-col rounded-xl px-5 py-4 duration-200',
       )}
     >

@@ -44,7 +44,7 @@ export const CommandPalette = ({ organization, hide }: CommandPaletteProps) => {
       organization={organization}
       hideCommandPalette={hide}
     >
-      <div className="dark:bg-polar-950 bg-gray-75 flex w-full flex-grow flex-col overflow-hidden rounded-3xl">
+      <div className="dark:bg-polar-950 bg-gray-75 dark:porder-polar-700 flex w-full flex-grow flex-col overflow-hidden rounded-3xl dark:border">
         <CommandPaletteInput />
         <CommandPaletteContainer />
       </div>

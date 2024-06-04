@@ -11,7 +11,12 @@ import pytest_asyncio
 from botocore.config import Config
 
 from polar.config import settings
-from polar.integrations.aws.s3.schemas import S3FileUploadPart
+from polar.file.schemas import FileCreate
+from polar.integrations.aws.s3.schemas import (
+    S3FileCreateMultipart,
+    S3FileCreatePart,
+    S3FileUploadPart,
+)
 
 pwd = Path(__file__).parent.absolute()
 
@@ -58,24 +63,43 @@ class TestFile:
     def get_chunk(self, part: S3FileUploadPart) -> bytes:
         return self.data[part.chunk_start : part.chunk_end]
 
-    def build_create_payload(self, organization_id: UUID) -> dict[str, Any]:
-        return {
-            "organization_id": str(organization_id),
-            "name": self.name,
-            "mime_type": self.mime_type,
-            "size": self.size,
-            "checksum_sha256_base64": self.base64,
-            "upload": {
-                "parts": [
-                    {
-                        "number": 1,
-                        "chunk_start": 0,
-                        "chunk_end": self.size,
-                        "checksum_sha256_base64": self.base64,
-                    },
-                ]
-            },
-        }
+    def build_create_part(self, number: int, parts: int) -> S3FileCreatePart:
+        chunk_size = self.size // parts
+        chunk_start = (number - 1) * chunk_size
+        chunk_end = number * chunk_size
+        if number == parts:
+            chunk_end = self.size
+
+        chunk = self.data[chunk_start:chunk_end]
+        h = hashlib.sha256()
+        h.update(chunk)
+        chunk_base64 = base64.b64encode(h.digest()).decode("utf-8")
+
+        return S3FileCreatePart(
+            number=number,
+            chunk_start=chunk_start,
+            chunk_end=chunk_end,
+            checksum_sha256_base64=chunk_base64,
+        )
+
+    def build_create_payload(
+        self, organization_id: UUID, parts: int = 1
+    ) -> dict[str, Any]:
+        create_parts = []
+        for i in range(parts):
+            part = self.build_create_part(i + 1, parts)
+            create_parts.append(part)
+
+        create = FileCreate(
+            organization_id=organization_id,
+            name=self.name,
+            mime_type=self.mime_type,
+            size=self.size,
+            checksum_sha256_base64=self.base64,
+            upload=S3FileCreateMultipart(parts=create_parts),
+        )
+        data = create.model_dump(mode="json")
+        return data
 
 
 @pytest_asyncio.fixture(scope="session", autouse=True)

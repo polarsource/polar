@@ -4,44 +4,25 @@ import { AutoAwesome } from '@mui/icons-material'
 import { UserBenefit } from '@polar-sh/sdk'
 import { usePathname } from 'next/navigation'
 import Button from 'polarkit/components/ui/atoms/button'
-import { useCallback } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { useBenefitActions } from './useBenefitAction'
 import { benefitsDisplayNames, resolveBenefitIcon } from './utils'
 
 interface BenefitRowProps {
   benefit: UserBenefit
-  selected?: boolean
-  onSelect?: (benefit: UserBenefit) => void
 }
 
-export const BenefitRow = ({
-  benefit,
-  selected,
-  onSelect,
-}: BenefitRowProps) => {
+export const BenefitRow = ({ benefit }: BenefitRowProps) => {
   const benefitActions = useBenefitActions(benefit)
   const discordAccount = useDiscordAccount()
   const gitHubAccount = useGitHubAccount()
   const pathname = usePathname()
 
-  const handleClick = useCallback(() => {
-    onSelect?.(benefit)
-  }, [benefit, onSelect])
-
   return (
-    <div
-      className={twMerge(
-        'dark:hover:bg-polar-800 hover:bg-gray-75 flex flex-row justify-between gap-x-8 rounded-2xl border border-gray-100 bg-white px-4 py-3 transition-colors dark:border-transparent dark:bg-transparent',
-        selected &&
-          'dark:bg-polar-800 dark:border-polar-700 border-blue-100 bg-blue-50 hover:bg-blue-100',
-        onSelect && 'cursor-pointer',
-      )}
-      onClick={handleClick}
-    >
+    <div className={twMerge('flex w-full flex-row justify-between gap-x-8')}>
       <div className="flex flex-row items-center gap-x-4">
-        <div className="flex flex-row items-center gap-x-2 text-xs text-blue-500 dark:text-blue-400">
-          <span className="flex h-10 w-10 flex-row items-center justify-center rounded-full bg-blue-50 text-sm dark:bg-blue-950">
+        <div className="flex flex-row items-center gap-x-2 text-xs text-blue-500 dark:text-white">
+          <span className="dark:bg-polar-700 flex h-8 w-8 flex-row items-center justify-center rounded-full bg-blue-50 text-sm">
             {resolveBenefitIcon(benefit, 'small')}
           </span>
         </div>

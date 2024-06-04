@@ -13,6 +13,7 @@
     "./components/ui/atoms/countrypicker": "./src/components/ui/atoms/CountryPicker.tsx",
     "./components/ui/atoms/datatable": "./src/components/ui/atoms/datatable/index.ts",
     "./components/ui/atoms/input": "./src/components/ui/atoms/Input.tsx",
+    "./components/ui/atoms/list": "./src/components/ui/atoms/List.tsx",
     "./components/ui/atoms/moneyinput": "./src/components/ui/atoms/MoneyInput.tsx",
     "./components/ui/atoms/select": "./src/components/ui/atoms/Select.tsx",
     "./components/ui/atoms/shadowbox": "./src/components/ui/atoms/ShadowBox.tsx",

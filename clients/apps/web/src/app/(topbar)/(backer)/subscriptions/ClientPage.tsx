@@ -230,7 +230,7 @@ const Subscription = ({
             {benefits?.items
               ?.filter((benefit) => {
                 if (benefit.type === BenefitType.DOWNLOADABLES) {
-                  return isFeatureEnabled('benefit-files-download')
+                  return isFeatureEnabled('benefit-downloadables')
                 }
                 return true
               })

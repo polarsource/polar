@@ -14,10 +14,12 @@ export async function GET(req: NextRequest) {
     return notFound()
   }
 
-  const ad = await getServerSideAPI().advertisements.trackView(
-    { id: id },
-    { cache: 'no-cache' },
-  )
+  const api = getServerSideAPI()
+
+  const [ad, _] = await Promise.all([
+    api.advertisements.getAdvertisementCampaign({ id: id }),
+    api.advertisements.trackAdvertisementCampaignView({ id: id }),
+  ])
 
   const url = dark && ad.image_url_dark ? ad.image_url_dark : ad.image_url
 

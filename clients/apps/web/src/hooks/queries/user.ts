@@ -1,8 +1,12 @@
 import { api, queryClient } from '@/utils/api'
 import {
+  UserAdvertisementCampaignCreate,
+  UserAdvertisementCampaignUpdate,
   UserFreeSubscriptionCreate,
   UserRead,
   UserUpdateSettings,
+  UsersApiEnableAdvertisementCampaignRequest,
+  UsersApiListAdvertisementCampaignsRequest,
   UsersApiListBenefitsRequest,
   UsersApiListOrdersRequest,
   UsersApiListSubscriptionsRequest,
@@ -136,4 +140,74 @@ export const useUserBenefits = (parameters: UsersApiListBenefitsRequest = {}) =>
     queryKey: ['user', 'benefits', parameters],
     queryFn: () => api.users.listBenefits(parameters),
     retry: defaultRetry,
+  })
+
+export const useUserAdvertisementCampaigns = (
+  parameters: UsersApiListAdvertisementCampaignsRequest = {},
+) =>
+  useQuery({
+    queryKey: ['user', 'advertisementCampaigns', parameters],
+    queryFn: () => api.users.listAdvertisementCampaigns(parameters),
+    retry: defaultRetry,
+  })
+
+export const useUserCreateAdvertisementCampaign = () =>
+  useMutation({
+    mutationFn: (
+      userAdvertisementCampaignCreate: UserAdvertisementCampaignCreate,
+    ) => {
+      return api.users.createAdvertisementCampaign({
+        userAdvertisementCampaignCreate,
+      })
+    },
+    onSuccess: (_result, _variables, _ctx) => {
+      queryClient.invalidateQueries({
+        queryKey: ['user', 'advertisementCampaigns'],
+      })
+    },
+  })
+
+export const useUserUpdateAdvertisementCampaign = (id: string) =>
+  useMutation({
+    mutationFn: (
+      userAdvertisementCampaignUpdate: UserAdvertisementCampaignUpdate,
+    ) => {
+      return api.users.updateAdvertisementCampaign({
+        id,
+        userAdvertisementCampaignUpdate,
+      })
+    },
+    onSuccess: (_result, _variables, _ctx) => {
+      queryClient.invalidateQueries({
+        queryKey: ['user', 'advertisementCampaigns'],
+      })
+    },
+  })
+
+export const useUserEnableAdvertisementCampaign = () =>
+  useMutation({
+    mutationFn: (
+      requestParameters: UsersApiEnableAdvertisementCampaignRequest,
+    ) => {
+      return api.users.enableAdvertisementCampaign(requestParameters)
+    },
+    onSuccess: (_result, _variables, _ctx) => {
+      queryClient.invalidateQueries({
+        queryKey: ['user', 'benefits'],
+      })
+    },
+  })
+
+export const useUserDeleteAdvertisementCampaign = (id: string) =>
+  useMutation({
+    mutationFn: () => {
+      return api.users.deleteAdvertisementCampaign({
+        id,
+      })
+    },
+    onSuccess: (_result, _variables, _ctx) => {
+      queryClient.invalidateQueries({
+        queryKey: ['user', 'advertisementCampaigns'],
+      })
+    },
   })

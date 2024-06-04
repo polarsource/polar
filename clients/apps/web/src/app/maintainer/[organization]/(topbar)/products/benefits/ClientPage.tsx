@@ -279,9 +279,7 @@ const AdsBenefitContent = ({ benefit }: { benefit: BenefitPublicInner }) => {
       }
 
       const image_url = `https://polar.sh/embed/ad?id=${a.id}`
-      ad += `<img src="${image_url}" alt="${encode(a.text)}" height="${
-        a.height
-      }" width="${a.width}" />`
+      ad += `<img src="${image_url}" alt="${encode(a.text)}" height="${height}" width="${width}" />`
 
       ad += `</picture></a>`
 

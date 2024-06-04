@@ -21,9 +21,12 @@ const ImageUpload = ({
 }) => {
   const inputFileRef = useRef<HTMLInputElement>(null)
 
-  const [imagePreviewSrc, setImagePreviewSrc] = useState<string | undefined>(
-    defaultValue,
-  )
+  const [imagePreviewSrc, setImagePreviewSrc] = useState<string | undefined>()
+
+  console.log(defaultValue)
+  useEffect(() => {
+    setImagePreviewSrc(defaultValue)
+  }, [defaultValue])
 
   const [isLoading, setIsLoading] = useState(false)
 

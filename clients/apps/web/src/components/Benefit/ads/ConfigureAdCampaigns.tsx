@@ -1,19 +1,28 @@
 import ImageUpload from '@/components/Form/ImageUpload'
 import {
-  useAdvertisementCampaigns,
-  useCreateAdvertisementCampaigns,
-  useDeleteAdvertisementCampaigns,
-  useEditAdvertisementCampaigns,
+  useUserAdvertisementCampaigns,
+  useUserCreateAdvertisementCampaign,
+  useUserDeleteAdvertisementCampaign,
+  useUserEnableAdvertisementCampaign,
+  useUserUpdateAdvertisementCampaign,
 } from '@/hooks/queries'
 import {
   AdvertisementCampaign,
-  CreateAdvertisementCampaign,
-  EditAdvertisementCampaign,
-  UserBenefit,
-  UserSubscription,
+  BenefitAdsSubscriber,
+  UserAdvertisementCampaign,
+  UserAdvertisementCampaignCreate,
+  UserAdvertisementCampaignUpdate,
 } from '@polar-sh/sdk'
 import Button from 'polarkit/components/ui/atoms/button'
 import Input from 'polarkit/components/ui/atoms/input'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectSeparator,
+  SelectTrigger,
+  SelectValue,
+} from 'polarkit/components/ui/atoms/select'
 import {
   Form,
   FormControl,
@@ -22,32 +31,106 @@ import {
   FormLabel,
   FormMessage,
 } from 'polarkit/components/ui/form'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useForm, useFormContext } from 'react-hook-form'
 
 const ConfigureAdCampaigns = ({
   benefit,
-  subscription,
 }: {
-  benefit: UserBenefit
-  subscription: UserSubscription
+  benefit: BenefitAdsSubscriber
 }) => {
-  const campaigns = useAdvertisementCampaigns(subscription.id, benefit.id)
+  const { data: campaigns } = useUserAdvertisementCampaigns({ limit: 100 })
+  const benefitCampaignId = useMemo(
+    () =>
+      benefit.grants.length > 0
+        ? benefit.grants[0].properties.advertisement_campaign_id
+        : undefined,
+    [benefit.grants],
+  )
+  const [selectedCampaign, setSelectedCampaign] = useState<
+    UserAdvertisementCampaign | undefined
+  >()
+  const [create, setCreate] = useState(false)
 
-  const camps = campaigns.data?.items ?? []
+  const form = useForm<
+    UserAdvertisementCampaignCreate | UserAdvertisementCampaignUpdate
+  >()
+  const { reset } = form
 
-  const hasCampaign = camps.length !== 0
+  const onSelectCampaign = useCallback(
+    (value: string | 'create') => {
+      if (value === 'create') {
+        setCreate(true)
+        setSelectedCampaign(undefined)
+        reset({
+          image_url: undefined,
+          image_url_dark: undefined,
+          link_url: undefined,
+          text: undefined,
+        })
+      } else {
+        setCreate(false)
+        const campaign = campaigns?.items?.find((c) => c.id === value)
+        setSelectedCampaign(campaign)
+        reset({ ...campaign })
+      }
+    },
+    [campaigns, reset],
+  )
+
+  useEffect(() => {
+    if (!benefitCampaignId) {
+      return
+    }
+    onSelectCampaign(benefitCampaignId)
+  }, [benefitCampaignId, onSelectCampaign])
+
+  const enable = useUserEnableAdvertisementCampaign()
+  const onSubmit = useCallback(
+    async (campaign: UserAdvertisementCampaign) => {
+      await enable.mutateAsync({
+        id: campaign.id,
+        userAdvertisementCampaignEnable: { benefit_id: benefit.id },
+      })
+      setCreate(false)
+      setSelectedCampaign(campaign)
+      reset(campaign)
+    },
+    [enable, benefit, reset],
+  )
 
   return (
-    <div>
-      {hasCampaign ? (
-        <>
-          {camps.map((c) => (
-            <EditCampaign campaign={c} key={c.id} benefit={benefit} />
+    <div className="relative flex w-full flex-col gap-y-6">
+      <h1 className="font-medium">Configure Ad</h1>
+      <Select
+        value={create ? 'create' : selectedCampaign?.id}
+        onValueChange={onSelectCampaign}
+      >
+        <SelectTrigger>
+          <SelectValue placeholder="Select an existing campaign" />
+        </SelectTrigger>
+        <SelectContent>
+          {campaigns?.items?.map((campaign) => (
+            <SelectItem key={campaign.id} value={campaign.id}>
+              {campaign.text}
+            </SelectItem>
           ))}
-        </>
-      ) : (
-        <CreateCampaign subscription={subscription} benefit={benefit} />
-      )}
+          {campaigns?.items && campaigns?.items?.length > 0 && (
+            <SelectSeparator />
+          )}
+          <SelectItem value="create">Create New Campaign</SelectItem>
+        </SelectContent>
+      </Select>
+      <Form {...form}>
+        {selectedCampaign && (
+          <EditCampaign
+            campaign={selectedCampaign}
+            benefit={benefit}
+            onSubmit={onSubmit}
+          />
+        )}
+        {create && <CreateCampaign benefit={benefit} onSubmit={onSubmit} />}
+      </Form>
     </div>
   )
 }
@@ -56,69 +139,56 @@ export default ConfigureAdCampaigns
 
 const CreateCampaign = ({
   benefit,
-  subscription,
+  onSubmit: _onSubmit,
 }: {
-  benefit: UserBenefit
-  subscription: UserSubscription
+  benefit: BenefitAdsSubscriber
+  onSubmit: (campaign: UserAdvertisementCampaign) => Promise<void>
 }) => {
-  const create = useCreateAdvertisementCampaigns()
+  const create = useUserCreateAdvertisementCampaign()
 
-  const form = useForm<CreateAdvertisementCampaign>({
-    defaultValues: {
-      subscription_id: subscription.id,
-      benefit_id: benefit.id,
-    },
-  })
+  const form = useFormContext<UserAdvertisementCampaignCreate>()
   const { handleSubmit } = form
 
-  const onSubmit = async (
-    createAdvertisementCampaign: CreateAdvertisementCampaign,
-  ) => {
-    await create.mutateAsync({
-      createAdvertisementCampaign,
-    })
-  }
-
-  if (!('image_height' in benefit.properties)) {
-    return <></>
-  }
+  const onSubmit = useCallback(
+    async (
+      userAdvertisementCampaignCreate: UserAdvertisementCampaignCreate,
+    ) => {
+      const campaign = await create.mutateAsync(userAdvertisementCampaignCreate)
+      await _onSubmit(campaign)
+    },
+    [create, _onSubmit],
+  )
 
   return (
-    <div>
-      <Form {...form}>
-        <div className="flex flex-col items-start justify-between gap-12 md:flex-row">
-          <div className="relative flex w-full flex-col gap-y-12 ">
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-              <div className="mb-8 flex items-center justify-between">
-                <h1 className="font-medium">Configure Ad</h1>
-              </div>
+    <div className="flex flex-col items-start justify-between gap-12 md:flex-row">
+      <div className="relative flex w-full flex-col">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+          <div className="grid grid-cols-2 gap-4">
+            <FormImage
+              height={benefit.properties.image_height ?? 100}
+              width={benefit.properties.image_width ?? 240}
+              name="image_url"
+              title="Light Mode"
+              description="Image used for light mode"
+              required={true}
+            />
 
-              <FormImage
-                height={benefit.properties.image_height ?? 100}
-                width={benefit.properties.image_width ?? 240}
-                name="image_url"
-                title="Light Mode"
-                description="Image used for light mode"
-                required={true}
-              />
-
-              <FormImage
-                height={benefit.properties.image_height ?? 100}
-                width={benefit.properties.image_width ?? 240}
-                name="image_url_dark"
-                title="Dark Mode"
-                description="Image used for dark mode"
-                required={false}
-              />
-
-              <FormLinkURL />
-              <FormText />
-
-              <Button type="submit">Create</Button>
-            </form>
+            <FormImage
+              height={benefit.properties.image_height ?? 100}
+              width={benefit.properties.image_width ?? 240}
+              name="image_url_dark"
+              title="Dark Mode"
+              description="Image used for dark mode"
+              required={false}
+            />
           </div>
-        </div>
-      </Form>
+
+          <FormLinkURL />
+          <FormText />
+
+          <Button type="submit">Create</Button>
+        </form>
+      </div>
     </div>
   )
 }
@@ -126,86 +196,75 @@ const CreateCampaign = ({
 const EditCampaign = ({
   campaign,
   benefit,
+  onSubmit: _onSubmit,
 }: {
   campaign: AdvertisementCampaign
-  benefit: UserBenefit
+  benefit: BenefitAdsSubscriber
+  onSubmit: (campaign: UserAdvertisementCampaign) => Promise<void>
 }) => {
-  const edit = useEditAdvertisementCampaigns()
-  const deleteAd = useDeleteAdvertisementCampaigns()
+  const edit = useUserUpdateAdvertisementCampaign(campaign.id)
+  const deleteAd = useUserDeleteAdvertisementCampaign(campaign.id)
 
-  const form = useForm<EditAdvertisementCampaign>({
-    defaultValues: {
-      ...campaign,
-    },
-  })
+  const form = useFormContext<UserAdvertisementCampaignUpdate>()
   const { handleSubmit } = form
 
-  const onSubmit = async (
-    editAdvertisementCampaign: EditAdvertisementCampaign,
-  ) => {
-    await edit.mutateAsync({
-      id: campaign.id,
-      editAdvertisementCampaign,
-    })
-  }
+  const onSubmit = useCallback(
+    async (
+      userAdvertisementCampaignUpdate: UserAdvertisementCampaignUpdate,
+    ) => {
+      const updatedCampaign = await edit.mutateAsync(
+        userAdvertisementCampaignUpdate,
+      )
+      await _onSubmit(updatedCampaign)
+    },
+    [edit, _onSubmit],
+  )
 
   const onDelete = async () => {
-    await deleteAd.mutateAsync({
-      id: campaign.id,
-    })
-  }
-
-  if (!('image_height' in benefit.properties)) {
-    return <></>
+    await deleteAd.mutateAsync()
   }
 
   return (
-    <div>
-      <Form {...form}>
-        <div className="flex flex-col items-start justify-between gap-12 md:flex-row">
-          <div className="relative flex w-full flex-col gap-y-12 md:w-2/3">
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-              <div className="mb-8 flex items-center justify-between">
-                <h1 className="text-lg font-medium">Update Ad</h1>
-              </div>
+    <div className="flex flex-col items-start justify-between gap-12 md:flex-row">
+      <div className="relative flex w-full flex-col gap-y-12">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+          <div className="grid grid-cols-2 gap-4">
+            <FormImage
+              height={benefit.properties.image_height ?? 100}
+              width={benefit.properties.image_width ?? 240}
+              name="image_url"
+              title="Light Mode"
+              description="Image used for light mode"
+              required={true}
+            />
 
-              <FormImage
-                height={benefit.properties.image_height ?? 100}
-                width={benefit.properties.image_width ?? 240}
-                name="image_url"
-                title="Light Mode"
-                description="Image used for light mode"
-                required={true}
-              />
-
-              <FormImage
-                height={benefit.properties.image_height ?? 100}
-                width={benefit.properties.image_width ?? 240}
-                name="image_url_dark"
-                title="Dark Mode"
-                description="Image used for dark mode"
-                required={false}
-              />
-
-              <FormLinkURL />
-              <FormText />
-
-              <div className="flex gap-2">
-                <Button type="submit" loading={edit.isPending}>
-                  Save
-                </Button>
-                <Button
-                  variant={'destructive'}
-                  onClick={onDelete}
-                  loading={deleteAd.isPending}
-                >
-                  Remove Ad
-                </Button>
-              </div>
-            </form>
+            <FormImage
+              height={benefit.properties.image_height ?? 100}
+              width={benefit.properties.image_width ?? 240}
+              name="image_url_dark"
+              title="Dark Mode"
+              description="Image used for dark mode"
+              required={false}
+            />
           </div>
-        </div>
-      </Form>
+
+          <FormLinkURL />
+          <FormText />
+
+          <div className="flex gap-2">
+            <Button type="submit" loading={edit.isPending}>
+              Save
+            </Button>
+            <Button
+              variant={'destructive'}
+              onClick={onDelete}
+              loading={deleteAd.isPending}
+            >
+              Remove Ad
+            </Button>
+          </div>
+        </form>
+      </div>
     </div>
   )
 }
@@ -225,7 +284,7 @@ const FormImage = ({
   description?: string
   required: boolean
 }) => {
-  const { control } = useFormContext<CreateAdvertisementCampaign>()
+  const { control } = useFormContext<UserAdvertisementCampaignCreate>()
 
   const expectedSizes = [
     [width, height],
@@ -287,7 +346,7 @@ const FormImage = ({
 }
 
 const FormLinkURL = ({}) => {
-  const { control } = useFormContext<CreateAdvertisementCampaign>()
+  const { control } = useFormContext<UserAdvertisementCampaignCreate>()
   return (
     <FormField
       control={control}
@@ -304,11 +363,7 @@ const FormLinkURL = ({}) => {
               <FormLabel>Link</FormLabel>
             </div>
             <FormControl>
-              <Input
-                type="text"
-                onChange={field.onChange}
-                defaultValue={field.value}
-              />
+              <Input type="text" {...field} />
             </FormControl>
             <FormMessage />
           </FormItem>
@@ -319,7 +374,7 @@ const FormLinkURL = ({}) => {
 }
 
 const FormText = ({}) => {
-  const { control } = useFormContext<CreateAdvertisementCampaign>()
+  const { control } = useFormContext<UserAdvertisementCampaignCreate>()
   return (
     <FormField
       control={control}
@@ -335,11 +390,7 @@ const FormText = ({}) => {
               <FormLabel>Text</FormLabel>
             </div>
             <FormControl>
-              <Input
-                type="text"
-                onChange={field.onChange}
-                defaultValue={field.value}
-              />
+              <Input type="text" {...field} />
             </FormControl>
             <FormMessage />
           </FormItem>

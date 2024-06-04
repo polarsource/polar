@@ -23,6 +23,7 @@ const EmailAd = (props: {
 
   const idx = Math.floor(Math.random() * data.ads.length)
   const ad = data.ads[idx]
+  const [width, height] = data.dimensions
 
   return (
     <>
@@ -39,8 +40,8 @@ const EmailAd = (props: {
             <img
               src={`/embed/ad?id=${ad.id}`}
               alt={ad.text}
-              height={ad.height}
-              width={ad.width}
+              height={height}
+              width={width}
             />
           </picture>
         </a>

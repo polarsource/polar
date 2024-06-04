@@ -1,5 +1,4 @@
 import base64
-from typing import Any
 from urllib.parse import parse_qs, urlencode, urlparse
 from uuid import UUID
 
@@ -8,13 +7,13 @@ from httpx import AsyncClient, ReadError, Response
 
 from polar.auth.models import AuthSubject
 from polar.config import settings
+from polar.file.schemas import FileRead, FileUpload, FileUploadCompleted
 from polar.file.service import file as file_service
 from polar.file.service import s3_service
 from polar.integrations.aws.s3.exceptions import S3FileError
 from polar.integrations.aws.s3.schemas import (
     S3FileUploadCompleted,
     S3FileUploadCompletedPart,
-    S3FileUploadMultipart,
     S3FileUploadPart,
 )
 from polar.models import Organization, User, UserOrganization
@@ -29,26 +28,19 @@ class TestEndpoints:
 
     def ensure_expected_create_response(
         self, response: Response, organization_id: UUID, file: TestFile, parts: int = 1
-    ) -> dict[str, Any]:
+    ) -> FileUpload:
         assert response.status_code == 200
         data = response.json()
+        valid = FileUpload(**data)
 
-        assert data["id"] is not None
-        assert data["is_uploaded"] is False
-        assert data["organization_id"] == str(organization_id)
-        assert data["name"] == file.name
-        assert data["size"] == file.size
-        assert data["mime_type"] == file.mime_type
-        assert data["checksum_sha256_base64"] == file.base64
-        assert data["checksum_sha256_hex"] == file.hex
-        assert data["upload"]["id"]
-        assert len(data["upload"]["parts"]) == parts
-        for part in data["upload"]["parts"]:
-            assert part["url"]
-            assert part["expires_at"]
-            assert part["headers"]
-
-        return data
+        assert valid.is_uploaded is False
+        assert valid.name == file.name
+        assert valid.size == file.size
+        assert valid.mime_type == file.mime_type
+        assert valid.checksum_sha256_base64 == file.base64
+        assert valid.checksum_sha256_hex == file.hex
+        assert len(valid.upload.parts) == parts
+        return valid
 
     async def upload_part_and_test(
         self,
@@ -57,45 +49,42 @@ class TestEndpoints:
         part: S3FileUploadPart,
         file: TestFile,
     ) -> S3FileUploadCompletedPart:
-        upload_url = part["url"]
+        upload_url = part.url
         url = urlparse(upload_url)
         params = parse_qs(url.query)
 
         def p(name: str) -> str:
             return params[name][0]
 
-        assert int(p("partNumber")) == part["number"]
+        assert int(p("partNumber")) == part.number
         assert p("uploadId") == upload_id
         assert p("X-Amz-Signature")
         assert int(p("X-Amz-Expires")) == settings.S3_FILES_PRESIGN_TTL
 
         chunk = file.get_chunk(part)
 
-        upload = await minio_client.put(
-            upload_url, content=chunk, headers=part["headers"]
-        )
+        upload = await minio_client.put(upload_url, content=chunk, headers=part.headers)
 
         assert upload.status_code == 200
         etag = upload.headers.get("ETag", None)
         assert etag
-        return dict(
-            number=part["number"],
+        return S3FileUploadCompletedPart(
+            number=part.number,
             checksum_etag=etag,
-            checksum_sha256_base64=part.get("checksum_sha256_base64", None),
+            checksum_sha256_base64=part.checksum_sha256_base64,
         )
 
     async def upload_multiparts_and_test(
         self,
-        upload_id: str,
-        parts: S3FileUploadMultipart,
+        created: FileUpload,
         file: TestFile,
     ) -> list[S3FileUploadCompletedPart]:
         completed = []
         async with AsyncClient() as minio_client:
-            for part in parts:
+            for part in created.upload.parts:
                 uploaded = await self.upload_part_and_test(
                     minio_client,
-                    upload_id,
+                    created.upload.id,
                     part=part,
                     file=file,
                 )
@@ -138,10 +127,10 @@ class TestEndpoints:
             "/api/v1/files/",
             json=logo_png.build_create_payload(organization_id),
         )
-        data = self.ensure_expected_create_response(
+        created = self.ensure_expected_create_response(
             response, organization_id, file=logo_png, parts=1
         )
-        assert data["extension"] == "png"
+        assert created.extension == "png"
 
     @pytest.mark.http_auto_expunge
     @pytest.mark.auth(
@@ -161,24 +150,18 @@ class TestEndpoints:
             "/api/v1/files/",
             json=logo_jpg.build_create_payload(organization_id),
         )
-        data = self.ensure_expected_create_response(
+        created = self.ensure_expected_create_response(
             response, organization_id, file=logo_jpg, parts=1
         )
-        assert data["extension"] == "jpg"
+        assert created.extension == "jpg"
 
-        file_id = data["id"]
-        upload_id = data["upload"]["id"]
-        upload_path = data["upload"]["path"]
-        upload_parts = data["upload"]["parts"]
-        uploaded = await self.upload_multiparts_and_test(
-            upload_id, upload_parts, file=logo_jpg
-        )
+        await self.upload_multiparts_and_test(created, file=logo_jpg)
 
         # S3 object is not available until we fully complete it
         with pytest.raises(S3FileError):
-            s3_service.get_head_or_raise(upload_path)
+            s3_service.get_head_or_raise(created.path)
 
-        record = await file_service.get(session, file_id, allow_deleted=True)
+        record = await file_service.get(session, created.id, allow_deleted=True)
         assert record
         assert record.is_uploaded is False
 
@@ -200,24 +183,20 @@ class TestEndpoints:
             "/api/v1/files/",
             json=logo_jpg.build_create_payload(organization_id),
         )
-        data = self.ensure_expected_create_response(
+        created = self.ensure_expected_create_response(
             response, organization_id, file=logo_jpg, parts=1
         )
-        assert data["extension"] == "jpg"
+        assert created.extension == "jpg"
 
-        file_id = data["id"]
-        upload_id = data["upload"]["id"]
-        upload_path = data["upload"]["path"]
-        upload_parts = data["upload"]["parts"]
-        part = upload_parts[0]
+        part = created.upload.parts[0]
 
-        upload_url = part["url"]
+        upload_url = part.url
         url = urlparse(upload_url)
         qs = parse_qs(url.query)
 
         tampered_query = urlencode(
             {
-                "uploadId": upload_id,
+                "uploadId": created.upload.id,
                 "partNumber": qs["partNumber"][0],
                 "X-Amz-Algorithm": qs["X-Amz-Algorithm"][0],
                 "X-Amz-Credential": qs["X-Amz-Credential"][0],
@@ -230,19 +209,19 @@ class TestEndpoints:
         tampered_url = f"{url.scheme}://{url.netloc}{url.path}?{tampered_query}"
 
         async with AsyncClient() as minio_client:
-            # TODO:
+            # TODO
             # Investigate this issue with httpx raising ReadError instead
             # of handling the denied request
             with pytest.raises(ReadError):
                 await minio_client.put(
-                    tampered_url, content=logo_jpg.data, headers=part["headers"]
+                    tampered_url, content=logo_jpg.data, headers=part.headers
                 )
 
         # S3 object is definitely not available
         with pytest.raises(S3FileError):
-            s3_service.get_head_or_raise(upload_path)
+            s3_service.get_head_or_raise(created.path)
 
-        record = await file_service.get(session, file_id, allow_deleted=True)
+        record = await file_service.get(session, created.id, allow_deleted=True)
         assert record
         assert record.is_uploaded is False
 
@@ -264,44 +243,44 @@ class TestEndpoints:
             "/api/v1/files/",
             json=logo_jpg.build_create_payload(organization_id),
         )
-        data = self.ensure_expected_create_response(
+        created = self.ensure_expected_create_response(
             response, organization_id, file=logo_jpg, parts=1
         )
-        assert data["extension"] == "jpg"
+        assert created.extension == "jpg"
 
-        file_id = data["id"]
-        upload_id = data["upload"]["id"]
-        upload_path = data["upload"]["path"]
-        upload_parts = data["upload"]["parts"]
-        uploaded = await self.upload_multiparts_and_test(
-            upload_id, upload_parts, file=logo_jpg
+        uploaded_parts = await self.upload_multiparts_and_test(created, file=logo_jpg)
+
+        payload = FileUploadCompleted(
+            id=created.upload.id, path=created.path, parts=uploaded_parts
         )
-
         completed = await client.post(
-            f"/api/v1/files/{file_id}/uploaded",
-            json={"id": upload_id, "path": upload_path, "parts": uploaded},
+            f"/api/v1/files/{created.id}/uploaded",
+            json=payload.model_dump(),
         )
 
         assert completed.status_code == 200
         upload_data = completed.json()
-        assert upload_data["id"] == file_id
-        assert upload_data["is_uploaded"] is True
-        s3_object = s3_service.get_object_or_raise(upload_path)
+        uploaded = FileRead(**upload_data)
+
+        assert uploaded.id == created.id
+        assert uploaded.is_uploaded is True
+        s3_object = s3_service.get_object_or_raise(uploaded.path)
         metadata = s3_object["Metadata"]
 
-        assert s3_object["ETag"] == upload_data["checksum_etag"]
-        assert metadata["polar-id"] == file_id
-        assert metadata["polar-organization-id"] == str(organization_id)
-        assert metadata["polar-name"] == data["name"]
-        assert metadata["polar-extension"] == data["extension"]
+        assert s3_object["ETag"] == uploaded.checksum_etag
+        assert metadata["polar-id"] == str(uploaded.id)
+        assert metadata["polar-organization-id"] == str(uploaded.organization_id)
+        assert metadata["polar-name"] == uploaded.name
+        assert metadata["polar-extension"] == uploaded.extension
         assert metadata["polar-size"] == str(logo_jpg.size)
         assert s3_object["ContentLength"] == logo_jpg.size
         assert s3_object["ContentType"] == logo_jpg.mime_type
 
         digests = []
-        for part in uploaded:
-            checksum_sha256_base64 = part.get("checksum_sha256_base64")
-            digests.append(base64.b64decode(checksum_sha256_base64))
+        for part in uploaded_parts:
+            checksum_sha256_base64 = part.checksum_sha256_base64
+            if checksum_sha256_base64:
+                digests.append(base64.b64decode(checksum_sha256_base64))
 
         valid_s3_checksum = S3FileUploadCompleted.generate_base64_multipart_checksum(
             digests
@@ -309,5 +288,6 @@ class TestEndpoints:
         # S3 stores checksums as <Checksum>-<PartCount>
         assert s3_object["ChecksumSHA256"].split("-")[0] == valid_s3_checksum
 
-        record = await file_service.get(session, file_id, allow_deleted=True)
+        record = await file_service.get(session, created.id, allow_deleted=True)
+        assert record
         assert record.is_uploaded is True

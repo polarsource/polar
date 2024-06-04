@@ -107,7 +107,7 @@ export default function ClientPage() {
       )}
       <div className="flex flex-row items-center justify-between">
         <h1 className="text-lg">Overview</h1>
-        <div className="flex w-1/3 flex-row items-center justify-end gap-2 md:w-1/5">
+        <div className="flex w-1/3 flex-row items-center justify-end gap-6 md:w-1/5">
           {isFeatureEnabled('products') && (
             <ProductPriceTypeSelect
               value={productPriceType}

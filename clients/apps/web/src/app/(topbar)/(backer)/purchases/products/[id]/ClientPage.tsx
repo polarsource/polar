@@ -46,35 +46,48 @@ const ClientPage = ({ order }: { order: UserOrder }) => {
         <ArrowBackOutlined fontSize="inherit" />
         <span>Back to Purchases</span>
       </Link>
-      <div className="flex h-full flex-grow flex-row items-start gap-x-12">
-        <div className="flex w-full flex-col gap-8 md:w-full">
+      <div className="flex h-full flex-grow flex-col-reverse gap-12 md:flex-row md:items-start">
+        <div className="flex w-full flex-col gap-8 md:w-2/3">
+          <ShadowBox className="flex flex-col gap-6 ring-gray-100">
+            <h1 className="text-2xl font-medium">{order.product.name}</h1>
+            {order.product.description ? (
+              <div className="prose dark:prose-invert prose-headings:mt-8 prose-headings:font-semibold prose-headings:text-black prose-h1:text-3xl prose-h2:text-2xl prose-h3:text-xl prose-h4:text-lg prose-h5:text-md prose-h6:text-sm dark:prose-headings:text-polar-50 dark:text-polar-300 max-w-4xl text-gray-800">
+                <Markdown
+                  options={{
+                    ...previewOpts,
+                    overrides: {
+                      ...previewOpts.overrides,
+                      a: (props) => (
+                        <a {...props} rel="noopener noreferrer nofollow" />
+                      ),
+                    },
+                  }}
+                >
+                  {order.product.description}
+                </Markdown>
+              </div>
+            ) : (
+              <></>
+            )}
+          </ShadowBox>
           {benefits?.items && (
             <ShadowBox className="flex flex-col gap-6 ring-gray-100">
-              {benefits.items.map((benefit) => (
-                <>
+              <h3 className="text-lg font-medium">Benefits</h3>
+              <div className="flex flex-col gap-4">
+                {benefits.items.map((benefit) => (
                   <BenefitRow
                     key={benefit.id}
                     benefit={benefit}
                     selected={benefit.id === selectedBenefit?.id}
                     onSelect={() => setSelectedBenefit(benefit)}
                   />
-                </>
-              ))}
+                ))}
+              </div>
             </ShadowBox>
           )}
-          <InlineModal
-            isShown={selectedBenefit !== null}
-            hide={() => setSelectedBenefit(null)}
-            modalContent={
-              <div className="px-8 py-10">
-                {selectedBenefit && (
-                  <BenefitDetails benefit={selectedBenefit} />
-                )}
-              </div>
-            }
-          />
         </div>
-        <div className="flex w-full max-w-[340px] flex-col gap-8">
+
+        <div className="flex w-full flex-col gap-8 md:max-w-[340px]">
           <ShadowBox className="flex flex-col gap-8 md:ring-gray-100">
             <h3 className="text-lg font-medium">{order.product.name}</h3>
             <div className="flex flex-col gap-4">
@@ -114,30 +127,17 @@ const ClientPage = ({ order }: { order: UserOrder }) => {
               )}
             </div>
           </ShadowBox>
-          <div className="flex flex-col gap-y-4">
-            {/* {'media' in order.product && order.product.media.length && (
-            <Slideshow images={order.product.media} />
-          )} */}
-            <ShadowBox className="flex flex-col gap-6 ring-gray-100">
-              <div className="prose dark:prose-invert prose-headings:mt-8 prose-headings:font-semibold prose-headings:text-black prose-h1:text-3xl prose-h2:text-2xl prose-h3:text-xl prose-h4:text-lg prose-h5:text-md prose-h6:text-sm dark:prose-headings:text-polar-50 dark:text-polar-300 max-w-4xl text-gray-800">
-                <Markdown
-                  options={{
-                    ...previewOpts,
-                    overrides: {
-                      ...previewOpts.overrides,
-                      a: (props) => (
-                        <a {...props} rel="noopener noreferrer nofollow" />
-                      ),
-                    },
-                  }}
-                >
-                  {order.product.description ?? ''}
-                </Markdown>
-              </div>
-            </ShadowBox>
-          </div>
         </div>
       </div>
+      <InlineModal
+        isShown={selectedBenefit !== null}
+        hide={() => setSelectedBenefit(null)}
+        modalContent={
+          <div className="px-8 py-10">
+            {selectedBenefit && <BenefitDetails benefit={selectedBenefit} />}
+          </div>
+        }
+      />
     </div>
   )
 }

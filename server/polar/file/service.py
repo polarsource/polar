@@ -110,7 +110,6 @@ class FileService(ResourceService[File, FileCreate, FileUpdate]):
         assert instance.id is not None
 
         return FileUpload(
-            is_enabled=instance.is_enabled,
             is_uploaded=instance.is_uploaded,
             service=create_schema.service,
             **upload.model_dump(),

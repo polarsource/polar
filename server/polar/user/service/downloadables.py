@@ -173,7 +173,7 @@ class DownloadableService(
     def create_download_token(self, downloadable: Downloadable) -> DownloadableURL:
         expires_at = utc_now() + timedelta(seconds=settings.S3_FILES_PRESIGN_TTL)
 
-        last_downloaded_at = 0
+        last_downloaded_at = 0.0
         if downloadable.last_downloaded_at:
             last_downloaded_at = downloadable.last_downloaded_at.timestamp()
 
@@ -218,7 +218,7 @@ class DownloadableService(
             file=file_schema,
         )
 
-    def _get_base_query(self, user: User) -> sql.Select:
+    def _get_base_query(self, user: User) -> sql.Select[tuple[Downloadable]]:
         statement = (
             sql.select(Downloadable)
             .join(File)

@@ -33,7 +33,7 @@ const TopbarNavigation = ({
             className={twMerge(
               'flex flex-shrink-0 items-center gap-x-2 rounded-full border border-transparent px-4 py-2 transition-colors',
               n.isActive
-                ? 'bg-blue-50 text-blue-500 dark:bg-blue-950 dark:text-blue-300'
+                ? 'dark:bg-polar-700 bg-blue-50 text-blue-500 dark:text-white'
                 : 'dark:text-polar-500 dark:hover:text-polar-300 text-gray-500 hover:text-blue-500',
             )}
             href={n.link}

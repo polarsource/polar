@@ -67,7 +67,7 @@ const OverviewPage: React.FC<OverviewPageProps> = ({
         <Card className="shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between space-y-0">
             <div className="font-medium">Goal</div>
-            <span className="text-blue-500">
+            <span className="text-blue-500 dark:text-white">
               <FlagOutlined className="h-6 w-6" />
             </span>
           </CardHeader>

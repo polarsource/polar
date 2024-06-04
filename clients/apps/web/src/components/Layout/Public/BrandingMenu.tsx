@@ -65,7 +65,7 @@ export const BrandingMenu = ({
             ) : (
               <LogoIcon
                 className={twMerge(
-                  'text-blue-500 dark:text-blue-400',
+                  'text-blue-500 dark:text-white',
                   logoClassName,
                 )}
                 size={size ?? 42}

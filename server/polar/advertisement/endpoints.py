@@ -12,7 +12,7 @@ from polar.models import AdvertisementCampaign as AdvertisementCampaignModel
 from polar.postgres import AsyncSession, get_db_session
 from polar.tags.api import Tags
 
-from .schemas import AdvertisementCampaign
+from .schemas import AdvertisementCampaign, AdvertisementCampaignListResource
 from .service import SortProperty
 from .service import advertisement_campaign as advertisement_campaign_service
 
@@ -35,7 +35,7 @@ ListSorting = Annotated[
 ]
 
 
-@router.get("/", response_model=ListResource[AdvertisementCampaign], tags=[Tags.PUBLIC])
+@router.get("/", response_model=AdvertisementCampaignListResource, tags=[Tags.PUBLIC])
 async def list_advertisement_campaigns(
     pagination: PaginationParamsQuery,
     sorting: ListSorting,
@@ -43,7 +43,7 @@ async def list_advertisement_campaigns(
         description="The benefit ID to look up advertisements for."
     ),
     session: AsyncSession = Depends(get_db_session),
-) -> ListResource[AdvertisementCampaign]:
+) -> AdvertisementCampaignListResource:
     """List active advertisement campaigns for a benefit."""
     results, count = await advertisement_campaign_service.list(
         session,
@@ -52,10 +52,22 @@ async def list_advertisement_campaigns(
         sorting=sorting,
     )
 
-    return ListResource.from_paginated_results(
-        [AdvertisementCampaign.model_validate(result) for result in results],
+    list_resource = ListResource.from_paginated_results(
+        [
+            AdvertisementCampaign.model_validate(advertisement_campaign)
+            for advertisement_campaign, _ in results
+        ],
         count,
         pagination,
+    )
+    benefit = results[0][1]
+    return AdvertisementCampaignListResource(
+        items=list_resource.items,
+        pagination=list_resource.pagination,
+        dimensions=(
+            benefit.properties["image_width"],
+            benefit.properties["image_height"],
+        ),
     )
 
 

@@ -58,7 +58,8 @@ class BenefitArticlesProperties(BenefitProperties):
 
 
 class BenefitAdsProperties(BenefitProperties):
-    pass
+    image_height: int
+    image_width: int
 
 
 class BenefitGitHubRepositoryProperties(BenefitProperties):

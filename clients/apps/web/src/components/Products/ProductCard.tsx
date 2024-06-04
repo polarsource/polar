@@ -52,7 +52,7 @@ export const ProductCard = ({
         {organization && showOrganization && (
           <div className="flex flex-row items-center gap-x-2">
             <Avatar
-              className="h-4 w-4"
+              className="h-6 w-6"
               avatar_url={organization.avatar_url}
               name={organization.name}
             />

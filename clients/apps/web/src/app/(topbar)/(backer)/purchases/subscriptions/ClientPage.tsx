@@ -1,14 +1,16 @@
 'use client'
 
 import Pagination from '@/components/Pagination/Pagination'
-import { ProductCard } from '@/components/Products/ProductCard'
 import { PurchasesQueryParametersContext } from '@/components/Purchases/PurchasesQueryParametersContext'
 import PurchaseSidebar from '@/components/Purchases/PurchasesSidebar'
-import { useUserSubscriptions } from '@/hooks/queries'
+import SubscriptionGroupIcon from '@/components/Subscriptions/SubscriptionGroupIcon'
+import { useOrganization, useUserSubscriptions } from '@/hooks/queries'
+import { getCentsInDollarString } from '@/utils/money'
 import { DiamondOutlined } from '@mui/icons-material'
 import { UserSubscription } from '@polar-sh/sdk'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
+import { List, ListItem } from 'polarkit/components/ui/atoms/list'
 import { Checkbox } from 'polarkit/components/ui/checkbox'
 import { useCallback, useContext } from 'react'
 
@@ -70,12 +72,21 @@ export default function ClientPage() {
           </div>
         </div>
       ) : (
-        <div className="flex flex-col">
-          <div className="grid h-full grid-cols-1 gap-6 md:grid-cols-3">
+        <div className="flex w-full flex-col gap-y-6">
+          <h3 className="text-lg">Subscriptions</h3>
+          <List className="w-full">
             {subscriptions?.items?.map((order) => (
-              <SubscriptionItem key={order.id} subscription={order} />
+              <Link
+                key={order.id}
+                className="flex w-full flex-row items-center justify-between"
+                href={`/purchases/subscriptions/${order.id}`}
+              >
+                <ListItem className="w-full">
+                  <SubscriptionItem subscription={order} />
+                </ListItem>
+              </Link>
             ))}
-          </div>
+          </List>
           <Pagination
             currentPage={purchaseParameters.page}
             totalCount={subscriptions?.pagination.total_count || 0}
@@ -94,14 +105,45 @@ const SubscriptionItem = ({
 }: {
   subscription: UserSubscription
 }) => {
+  const { data: organization } = useOrganization(
+    subscription.product.organization_id,
+  )
+
+  if (!organization) {
+    return null
+  }
+
   return (
-    <Link href={`/purchases/subscriptions/${subscription.id}`}>
-      <ProductCard
-        key={subscription.id}
-        product={subscription.product}
-        price={subscription.price}
-        showOrganization
-      />
-    </Link>
+    <div className="flex w-full flex-row items-center justify-between">
+      <div className="flex flex-row items-baseline gap-x-2">
+        <div className="flex flex-row items-center gap-4">
+          <SubscriptionGroupIcon
+            className="text-xl"
+            type={subscription.product.type}
+          />
+          <div className="flex flex-row items-baseline gap-3">
+            <h3>{subscription.product.name}</h3>
+            {organization && (
+              <>
+                <span className="dark:text-polar-500 text-gray-500">·</span>
+                <span className="dark:text-polar-500 text-gray-500">
+                  {organization.name}
+                </span>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+      <div className="flex flex-row items-baseline gap-4">
+        <span className="dark:text-polar-500 capitalize text-gray-500">
+          {subscription.status}
+        </span>
+        <span>
+          {subscription.price
+            ? `$${getCentsInDollarString(subscription.price?.price_amount ?? 0)}`
+            : 'Free'}
+        </span>
+      </div>
+    </div>
   )
 }

@@ -17,9 +17,9 @@ export const ResponseContainer = ({
   const triggerClassName = 'py-1'
 
   return (
-    <div className="dark:bg-polar-900 flex h-full w-full flex-col rounded-3xl bg-gray-50 shadow-sm">
+    <div className="dark:border-polar-700 flex h-full w-full flex-col rounded-3xl bg-white shadow-sm dark:border dark:bg-transparent dark:shadow-none">
       <Tabs defaultValue={Object.keys(responses)[0]}>
-        <div className="dark:border-polar-800 flex w-full flex-row items-center justify-between border-b border-gray-100 px-5 py-1">
+        <div className="dark:border-polar-700 flex w-full flex-row items-center justify-between border-b border-gray-100 px-5 py-1">
           <span className="text-sm text-black dark:text-white">Responses</span>
           <TabsList className="flex flex-row items-center rounded-none py-3">
             {Object.keys(responses).map((statusCode) => (

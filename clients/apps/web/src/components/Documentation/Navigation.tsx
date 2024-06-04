@@ -292,8 +292,10 @@ const CollapsibleSection = ({
   return (
     <div
       className={twMerge(
-        'dark:hover:bg-polar-700 hover:bg-gray-75 group -mx-4 -my-2 flex flex-col gap-y-2 rounded-xl px-4 py-2 transition-colors duration-100',
-        (isOpen || active) && 'bg-gray-75 dark:bg-polar-700',
+        'hover:bg-gray-75 group -mx-4 -my-2 flex flex-col gap-y-2 rounded-xl px-4 py-2 transition-colors duration-100 dark:border dark:border-transparent',
+        isOpen || active
+          ? 'bg-gray-75 dark:border-polar-700 dark:bg-transparent'
+          : 'dark:hover:bg-polar-800',
       )}
     >
       <div

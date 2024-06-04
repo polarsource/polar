@@ -109,7 +109,7 @@ async def create_advertisement_campaign(
     response_model=UserAdvertisementCampaign,
     tags=[Tags.PUBLIC],
     responses={
-        200: {"description": "Advertisement campaign  updated."},
+        200: {"description": "Advertisement campaign updated."},
         404: AdvertisementCampaignNotFound,
     },
 )

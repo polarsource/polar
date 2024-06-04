@@ -142,10 +142,9 @@ class UserAdvertisementService(ResourceServiceReader[AdvertisementCampaign]):
             # Those are guaranteed by the query in get_by_id, but let's be explicit
             assert grant.user_id == auth_subject.subject.id
             assert grant.is_granted
-
-            grant.properties["advertisement_campaign_id"] = str(
-                advertisement_campaign.id
-            )
+            grant.properties = {
+                "advertisement_campaign_id": str(advertisement_campaign.id)
+            }
             session.add(grant)
             updated_grants.append(grant)
 

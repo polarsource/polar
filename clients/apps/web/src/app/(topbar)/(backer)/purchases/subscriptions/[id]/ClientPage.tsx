@@ -21,6 +21,7 @@ import Markdown from 'markdown-to-jsx'
 import Link from 'next/link'
 import { FormattedDateTime } from 'polarkit/components/ui/atoms'
 import Button from 'polarkit/components/ui/atoms/button'
+import { List, ListItem } from 'polarkit/components/ui/atoms/list'
 import ShadowBox from 'polarkit/components/ui/atoms/shadowbox'
 import { useCallback, useState } from 'react'
 
@@ -98,19 +99,20 @@ const ClientPage = ({ subscription }: { subscription: UserSubscription }) => {
             )}
           </ShadowBox>
           {benefits?.items && (
-            <ShadowBox className="flex flex-col gap-6 ring-gray-100">
+            <div className="flex flex-col gap-4">
               <h3 className="text-lg font-medium">Benefits</h3>
-              <div className="flex flex-col gap-4">
+              <List>
                 {benefits.items.map((benefit) => (
-                  <BenefitRow
+                  <ListItem
                     key={benefit.id}
-                    benefit={benefit}
                     selected={benefit.id === selectedBenefit?.id}
                     onSelect={() => setSelectedBenefit(benefit)}
-                  />
+                  >
+                    <BenefitRow benefit={benefit} />
+                  </ListItem>
                 ))}
-              </div>
-            </ShadowBox>
+              </List>
+            </div>
           )}
         </div>
 

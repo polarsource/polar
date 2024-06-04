@@ -202,44 +202,42 @@ const ClientPage = ({ subscription }: { subscription: UserSubscription }) => {
           </ShadowBox>
           <div className="flex flex-col gap-y-4">
             <h3 className="font-medium">Invoices</h3>
-            <ShadowBox className="flex flex-col gap-y-4">
-              <>
-                {orders?.items &&
-                  orders.items.length > 0 &&
-                  orders.items?.map((order) => (
-                    <div
-                      key={order.id}
-                      className="flex flex-row items-center justify-between"
-                    >
-                      <div className="flex flex-col">
-                        <span className="text-sm">
-                          <FormattedDateTime
-                            datetime={order.created_at}
-                            dateStyle="medium"
-                            resolution="day"
-                          />
-                        </span>
-                        <span className="dark:text-polar-500 text-sm text-gray-500">
-                          {formatCurrencyAndAmount(
-                            order.amount,
-                            order.currency,
-                            0,
-                          )}
-                        </span>
-                      </div>
-                      <Button
-                        className="h-8 w-8 rounded-full"
-                        variant="secondary"
-                        onClick={() => openInvoice(order)}
-                        loading={orderInvoiceMutation.isPending}
-                        disabled={orderInvoiceMutation.isPending}
-                      >
-                        <ReceiptOutlined fontSize="inherit" />
-                      </Button>
+            <List>
+              {orders?.items &&
+                orders.items.length > 0 &&
+                orders.items?.map((order) => (
+                  <ListItem
+                    key={order.id}
+                    className="flex flex-row items-center justify-between"
+                  >
+                    <div className="flex flex-col">
+                      <span className="text-sm">
+                        <FormattedDateTime
+                          datetime={order.created_at}
+                          dateStyle="medium"
+                          resolution="day"
+                        />
+                      </span>
+                      <span className="dark:text-polar-500 text-sm text-gray-500">
+                        {formatCurrencyAndAmount(
+                          order.amount,
+                          order.currency,
+                          0,
+                        )}
+                      </span>
                     </div>
-                  ))}
-              </>
-            </ShadowBox>
+                    <Button
+                      className="h-8 w-8 rounded-full"
+                      variant="secondary"
+                      onClick={() => openInvoice(order)}
+                      loading={orderInvoiceMutation.isPending}
+                      disabled={orderInvoiceMutation.isPending}
+                    >
+                      <ReceiptOutlined fontSize="inherit" />
+                    </Button>
+                  </ListItem>
+                ))}
+            </List>
           </div>
         </div>
       </div>

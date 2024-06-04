@@ -215,11 +215,14 @@ const renderArticle = async (
   // Fetch and create ads context
   const benefitIds = parseBenefitIdsFromBody(article.body)
   const ads = await Promise.all(
-    benefitIds.map((id) => api.advertisements.searchDisplay({ benefitId: id })),
+    benefitIds.map((id) =>
+      api.advertisements.listAdvertisementCampaigns({ benefitId: id }),
+    ),
   )
   const adsContext = benefitIds.map((id, idx) => ({
     benefitId: id,
     ads: ads[idx].items ?? [],
+    dimensions: ads[idx].dimensions as [number, number],
   }))
 
   const html = render(

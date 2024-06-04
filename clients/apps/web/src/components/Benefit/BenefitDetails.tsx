@@ -6,6 +6,7 @@ import { useOrganization } from '@/hooks/queries'
 import { UserBenefit } from '@polar-sh/sdk'
 import Link from 'next/link'
 import Button from 'polarkit/components/ui/atoms/button'
+import ConfigureAdCampaigns from './ads/ConfigureAdCampaigns'
 
 interface BenefitDetailsProps {
   benefit: UserBenefit
@@ -67,10 +68,9 @@ const BenefitDetails = ({ benefit }: BenefitDetailsProps) => {
         <GitHubRepoWidget benefit={benefit} />
       )}
 
-      {/* FIXME: Ads support for any product */}
-      {/* {benefit.type === 'ads' ? (
-        <ConfigureAdCampaigns benefit={benefit} subscription={subscription} />
-      ) : null} */}
+      {benefit.type === 'ads' ? (
+        <ConfigureAdCampaigns benefit={benefit} />
+      ) : null}
     </div>
   )
 }

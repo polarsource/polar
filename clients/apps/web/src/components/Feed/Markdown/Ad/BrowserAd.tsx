@@ -18,6 +18,7 @@ const BrowserAd = (props: { subscriptionBenefitId: string }) => {
 
   const idx = Math.floor(Math.random() * display.data.items.length)
   const ad = display.data.items[idx]
+  const [adWidth, adHeight] = display.data.dimensions
 
   return (
     <>
@@ -34,8 +35,8 @@ const BrowserAd = (props: { subscriptionBenefitId: string }) => {
             <img
               src={`/embed/ad?id=${ad.id}`}
               alt={ad.text}
-              height={ad.height}
-              width={ad.width}
+              height={adHeight}
+              width={adWidth}
             />
           </picture>
         </a>

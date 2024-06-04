@@ -80,7 +80,7 @@ class FileDownload(S3FileDownload):
             download=S3DownloadURL(
                 url=url,
                 expires_at=expires_at,
-            )
+            ),
         )
 
 

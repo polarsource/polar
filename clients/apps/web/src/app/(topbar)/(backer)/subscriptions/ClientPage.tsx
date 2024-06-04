@@ -18,7 +18,7 @@ import { useRouter } from 'next/navigation'
 import { FormattedDateTime } from 'polarkit/components/ui/atoms'
 import Avatar from 'polarkit/components/ui/atoms/avatar'
 import Button from 'polarkit/components/ui/atoms/button'
-import { ListItem } from 'polarkit/components/ui/atoms/list'
+import { List, ListItem } from 'polarkit/components/ui/atoms/list'
 import { ShadowBoxOnMd } from 'polarkit/components/ui/atoms/shadowbox'
 import {
   DropdownMenu,
@@ -64,19 +64,21 @@ const ClientPage = ({
         <h3 className="text-lg">My Subscriptions</h3>
       </div>
       <div className="relative flex w-full flex-row items-start gap-x-12">
-        <div className="dark:border-polar-800 dark:divide-polar-800 dark:bg-polar-900 flex w-2/3 flex-col divide-y divide-gray-100 overflow-hidden rounded-2xl border border-gray-100  bg-white">
+        <List className="w-2/3">
           {subscriptions.map((subscription) => (
-            <Subscription
-              key={subscription.id}
-              subscription={subscription}
-              selectedBenefit={selectedBenefit}
-              onSelectBenefit={(b) => {
-                setSelectedBenefit(b)
-                setSelectedBenefitSubscription(subscription)
-              }}
-            />
+            <ListItem key={subscription.id}>
+              <Subscription
+                key={subscription.id}
+                subscription={subscription}
+                selectedBenefit={selectedBenefit}
+                onSelectBenefit={(b) => {
+                  setSelectedBenefit(b)
+                  setSelectedBenefitSubscription(subscription)
+                }}
+              />
+            </ListItem>
           ))}
-        </div>
+        </List>
 
         {selectedBenefitSubscription && selectedBenefit ? (
           <BenefitContextWidget
@@ -128,13 +130,10 @@ const Subscription = ({
   }
 
   return (
-    <div className="flex flex-col">
+    <div className="flex w-full flex-col gap-y-4">
       <div
         className={twMerge(
-          'flex cursor-pointer flex-row items-center justify-between px-4 py-3 transition-colors',
-          expanded
-            ? 'dark:bg-polar-800 bg-gray-50'
-            : 'dark:hover:bg-polar-800 hover:bg-gray-50',
+          'flex cursor-pointer flex-row items-center justify-between',
         )}
         onClick={() => setExpanded((expanded) => !expanded)}
       >
@@ -220,7 +219,7 @@ const Subscription = ({
         </div>
       </div>
       {expanded && (
-        <div className="dark:bg-polar-900 flex flex-col gap-y-4 bg-white px-6 py-4">
+        <div className="flex flex-col gap-y-4 py-4">
           <h2 className="font-medium">Benefits</h2>
           <StaggerReveal
             key={subscription.product_id}

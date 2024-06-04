@@ -9,7 +9,8 @@ from polar.kit.db.postgres import AsyncSession
 from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.services import ResourceServiceReader
 from polar.kit.sorting import Sorting
-from polar.models import AdvertisementCampaign, Benefit, BenefitGrant
+from polar.models import AdvertisementCampaign, BenefitGrant
+from polar.models.benefit import BenefitAds
 
 
 class SortProperty(StrEnum):
@@ -27,9 +28,11 @@ class AdvertisementCampaignService(ResourceServiceReader[AdvertisementCampaign])
         benefit_id: uuid.UUID,
         pagination: PaginationParams,
         sorting: list[Sorting[SortProperty]] = [(SortProperty.granted_at, False)],
-    ) -> tuple[Sequence[AdvertisementCampaign], int]:
-        statement = self._get_readable_advertisement_statement().where(
-            Benefit.id == benefit_id
+    ) -> tuple[Sequence[tuple[AdvertisementCampaign, BenefitAds]], int]:
+        statement = (
+            self._get_readable_advertisement_statement()
+            .where(BenefitAds.id == benefit_id)
+            .add_columns(BenefitAds)
         )
 
         order_by_clauses: list[UnaryExpression[Any]] = []
@@ -101,7 +104,7 @@ class AdvertisementCampaignService(ResourceServiceReader[AdvertisementCampaign])
                 .limit(1)
                 .scalar_subquery(),
             )
-            .join(Benefit, onclause=Benefit.id == BenefitGrant.benefit_id)
+            .join(BenefitAds, onclause=BenefitAds.id == BenefitGrant.benefit_id)
             .where(AdvertisementCampaign.deleted_at.is_(None))
         )
 

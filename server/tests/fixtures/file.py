@@ -4,9 +4,9 @@ import mimetypes
 from functools import cached_property
 from pathlib import Path
 from typing import Any
+from uuid import UUID
 
 import pytest_asyncio
-from pydantic import UUID4
 
 from polar.integrations.aws.s3.schemas import S3FileUploadPart
 
@@ -53,11 +53,9 @@ class TestFile:
         return mimetype
 
     def get_chunk(self, part: S3FileUploadPart) -> bytes:
-        chunk_start = part["chunk_start"]
-        chunk_end = part["chunk_end"]
-        return self.data[chunk_start:chunk_end]
+        return self.data[part.chunk_start : part.chunk_end]
 
-    def build_create_payload(self, organization_id: UUID4) -> dict[str, Any]:
+    def build_create_payload(self, organization_id: UUID) -> dict[str, Any]:
         return {
             "organization_id": str(organization_id),
             "name": self.name,

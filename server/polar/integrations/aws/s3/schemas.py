@@ -145,30 +145,8 @@ class S3FileUploadCompleted(Schema):
     path: str
     parts: list[S3FileUploadCompletedPart]
 
-    def get_boto3_arguments(self) -> dict[str, Any]:
-        parts = []
-        checksum_validate = []
-        for part in self.parts:
-            data = dict(
-                ETag=part.checksum_etag,
-                PartNumber=part.number,
-            )
-            if part.checksum_sha256_base64:
-                data["ChecksumSHA256"] = part.checksum_sha256_base64
-                digest = base64.b64decode(part.checksum_sha256_base64)
-                checksum_validate.append(digest)
-
-            parts.append(data)
-
-        ret = dict(
-            UploadId=self.id,
-            MultipartUpload=dict(
-                Parts=parts,
-            ),
-        )
-        if not checksum_validate:
-            return ret
-
+    @staticmethod
+    def generate_base64_multipart_checksum(checksum_digests: list[bytes]) -> str:
         # S3 SHA-256 BASE64 validation for multipart upload is special.
         # It's not the same as SHA-256 BASE64 on the entire file contents.
         #
@@ -182,9 +160,37 @@ class S3FileUploadCompleted(Schema):
         # We only use this for S3 validation. Our SHA-256 base64 & hexdigest in
         # the database is for the entire file contents to support regular
         # client-side validation post download.
-        concatenated = b"".join(checksum_validate)
+        concatenated = b"".join(checksum_digests)
         digest = hashlib.sha256(concatenated).digest()
-        ret["ChecksumSHA256"] = base64.b64encode(digest).decode("utf-8")
+        return base64.b64encode(digest).decode("utf-8")
+
+    def get_boto3_arguments(self) -> dict[str, Any]:
+        parts = []
+        checksum_digests = []
+        for part in self.parts:
+            data = dict(
+                ETag=part.checksum_etag,
+                PartNumber=part.number,
+            )
+            if part.checksum_sha256_base64:
+                data["ChecksumSHA256"] = part.checksum_sha256_base64
+                digest = base64.b64decode(part.checksum_sha256_base64)
+                checksum_digests.append(digest)
+
+            parts.append(data)
+
+        ret = dict(
+            UploadId=self.id,
+            MultipartUpload=dict(
+                Parts=parts,
+            ),
+        )
+        if not checksum_digests:
+            return ret
+
+        ret["ChecksumSHA256"] = self.generate_base64_multipart_checksum(
+            checksum_digests
+        )
         return ret
 
 

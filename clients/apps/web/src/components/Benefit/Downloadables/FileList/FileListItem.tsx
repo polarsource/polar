@@ -12,7 +12,13 @@ import {
 } from '@mui/icons-material'
 import { FileRead } from '@polar-sh/sdk'
 import { Switch } from 'polarkit/components/ui/atoms'
-import { FormEventHandler, useCallback, useRef, useState } from 'react'
+import {
+  FocusEvent,
+  FormEventHandler,
+  useCallback,
+  useRef,
+  useState,
+} from 'react'
 import { twMerge } from 'tailwind-merge'
 
 import { usePatchFile } from '@/hooks/queries'
@@ -79,20 +85,41 @@ const FileUploadProgress = ({ file }: { file: FileObject }) => {
   )
 }
 
-const Editable = ({
+const FilenameEditor = ({
+  name,
   className,
-  children,
   enabled,
   onUpdate,
 }: {
+  name: string
   className?: string
-  children: React.ReactNode
   enabled: boolean
   onUpdate: (updated: string) => void
 }) => {
   const paragraphRef = useRef<HTMLParagraphElement>(null)
 
   const [isDirty, setIsDirty] = useState(false)
+
+  // Mimic macOS behavior when editing a filename.
+  // Highlighting everything except extension.
+  const selectNameBeforeExtension = (e: FocusEvent<HTMLParagraphElement>) => {
+    const range = document.createRange()
+    const textNode = e.target.firstChild
+    if (!textNode) return
+
+    const text = e.target.innerText
+    range.setStart(textNode, 0)
+
+    const extensionIndex = text.lastIndexOf('.')
+    const ending = extensionIndex > 0 ? extensionIndex : text.length
+    range.setEnd(textNode, ending)
+
+    const sel = window.getSelection()
+    if (sel) {
+      sel.removeAllRanges()
+      sel.addRange(range)
+    }
+  }
 
   const update = useCallback(
     (updated: string) => {
@@ -120,21 +147,26 @@ const Editable = ({
 
   return (
     <>
-      <p
-        ref={paragraphRef}
-        className={className}
-        suppressContentEditableWarning
-        contentEditable={enabled}
-        onBlur={onBlur}
-        onKeyDown={(e) => {
-          onEditableChanged(e)
-          if (e.key === 'Enter') {
-            e.preventDefault()
-          }
-        }}
-      >
-        {children}
-      </p>
+      <div className={twMerge('flex flex-row', className)}>
+        <p
+          ref={paragraphRef}
+          suppressContentEditableWarning
+          contentEditable={enabled}
+          onFocus={(e) => {
+            selectNameBeforeExtension(e)
+          }}
+          onBlur={onBlur}
+          onKeyDown={(e) => {
+            onEditableChanged(e)
+            if (e.key === 'Enter') {
+              e.preventDefault()
+              e.currentTarget.blur()
+            }
+          }}
+        >
+          {name}
+        </p>
+      </div>
     </>
   )
 }
@@ -243,13 +275,12 @@ export const FileListItem = ({
           <FilePreview file={file} />
         </div>
         <div className="dark:text-polar-50 flex w-full min-w-0 flex-grow flex-col gap-y-1 text-gray-950">
-          <Editable
-            className="w-full truncate text-sm font-medium"
+          <FilenameEditor
+            name={file.name}
+            className="text-sm font-medium"
             onUpdate={(updated) => update({ name: updated })}
             enabled={file.is_uploaded ?? false}
-          >
-            {file.name}
-          </Editable>
+          />
           {!isUploading && <FileUploadDetails file={file} />}
           {isUploading && <FileUploadProgress file={file} />}
         </div>

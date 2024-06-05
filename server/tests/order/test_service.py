@@ -27,7 +27,7 @@ from polar.models.subscription import SubscriptionStatus
 from polar.models.transaction import TransactionType
 from polar.order.schemas import OrdersStatisticsPeriod
 from polar.order.service import (
-    InvoiceWithNoOrMultipleLines,
+    CantDetermineInvoicePrice,
     NotAnOrderInvoice,
     ProductPriceDoesNotExist,
 )
@@ -51,7 +51,7 @@ def construct_stripe_invoice(
     charge_id: str = "CHARGE_ID",
     subscription_id: str | None = "SUBSCRIPTION_ID",
     customer_id: str = "CUSTOMER_ID",
-    lines: list[str] = ["PRICE_ID"],
+    lines: list[tuple[str, bool]] = [("PRICE_ID", False)],
     metadata: dict[str, str] = {},
 ) -> stripe_lib.Invoice:
     return stripe_lib.Invoice.construct_from(
@@ -63,7 +63,12 @@ def construct_stripe_invoice(
             "charge": charge_id,
             "subscription": subscription_id,
             "customer": customer_id,
-            "lines": {"data": [{"price": {"id": price_id}} for price_id in lines]},
+            "lines": {
+                "data": [
+                    {"price": {"id": price_id}, "proration": proration}
+                    for price_id, proration in lines
+                ]
+            },
             "metadata": metadata,
         },
         None,
@@ -626,10 +631,19 @@ class TestCreateOrderFromStripe:
         with pytest.raises(NotAnOrderInvoice):
             await order_service.create_order_from_stripe(session, invoice=invoice)
 
-    @pytest.mark.parametrize("lines", ([], ["PRICE_1", "PRICE_2"]))
-    async def test_invalid_lines(self, lines: list[str], session: AsyncSession) -> None:
+    @pytest.mark.parametrize(
+        "lines",
+        (
+            [],
+            [("PRICE_1", True), ("PRICE_2", True)],
+            [("PRICE_1", False), ("PRICE_2", False)],
+        ),
+    )
+    async def test_invalid_lines(
+        self, lines: list[tuple[str, bool]], session: AsyncSession
+    ) -> None:
         invoice = construct_stripe_invoice(lines=lines)
-        with pytest.raises(InvoiceWithNoOrMultipleLines):
+        with pytest.raises(CantDetermineInvoicePrice):
             await order_service.create_order_from_stripe(session, invoice=invoice)
 
     async def test_not_existing_product_price(self, session: AsyncSession) -> None:
@@ -647,7 +661,7 @@ class TestCreateOrderFromStripe:
     ) -> None:
         invoice = construct_stripe_invoice(
             subscription_id=subscription.stripe_subscription_id,
-            lines=[product.prices[0].stripe_price_id],
+            lines=[(product.prices[0].stripe_price_id, False)],
         )
 
         payment_transaction = await create_transaction(
@@ -679,6 +693,37 @@ class TestCreateOrderFromStripe:
 
         enqueue_job_mock.assert_not_called()
 
+    async def test_subscription_proration(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        subscription: Subscription,
+        product: Product,
+    ) -> None:
+        invoice = construct_stripe_invoice(
+            subscription_id=subscription.stripe_subscription_id,
+            lines=[
+                ("PRICE_1", True),
+                ("PRICE_2", True),
+                (product.prices[0].stripe_price_id, False),
+            ],
+        )
+
+        payment_transaction = await create_transaction(
+            save_fixture, type=TransactionType.payment
+        )
+        payment_transaction.charge_id = "CHARGE_ID"
+        await save_fixture(payment_transaction)
+
+        order = await order_service.create_order_from_stripe(session, invoice=invoice)
+
+        assert order.amount == invoice.total - (invoice.tax or 0)
+        assert order.user.id == subscription.user_id
+        assert order.product == product
+        assert order.product_price == product.prices[0]
+        assert order.subscription == subscription
+        assert order.user.stripe_customer_id == invoice.customer
+
     async def test_subscription_with_account(
         self,
         enqueue_job_mock: AsyncMock,
@@ -691,7 +736,7 @@ class TestCreateOrderFromStripe:
     ) -> None:
         invoice = construct_stripe_invoice(
             subscription_id=subscription.stripe_subscription_id,
-            lines=[product.prices[0].stripe_price_id],
+            lines=[(product.prices[0].stripe_price_id, False)],
         )
         invoice_total = invoice.total - (invoice.tax or 0)
 
@@ -767,7 +812,8 @@ class TestCreateOrderFromStripe:
         user: User,
     ) -> None:
         invoice = construct_stripe_invoice(
-            lines=[product_one_time.prices[0].stripe_price_id], subscription_id=None
+            lines=[(product_one_time.prices[0].stripe_price_id, False)],
+            subscription_id=None,
         )
         invoice_total = invoice.total - (invoice.tax or 0)
 

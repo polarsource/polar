@@ -5,7 +5,7 @@ import pytest
 import pytest_asyncio
 
 from polar.auth.models import AuthSubject
-from polar.metrics.schemas import Interval
+from polar.metrics.service import Interval
 from polar.metrics.service import metrics as metrics_service
 from polar.models import Order, Organization, Product, Subscription, User
 from polar.models.subscription import SubscriptionStatus
@@ -80,17 +80,16 @@ async def _create_orders_and_subscriptions(
 
     orders: dict[str, Order] = {}
     for key, order_fixture in order_fixtures.items():
+        order_subscription: Subscription | None = None
         if subscription_id := order_fixture.get("subscription_id"):
-            subscription = subscriptions[subscription_id]
-        else:
-            subscription = None
+            order_subscription = subscriptions[subscription_id]
         order = await create_order(
             save_fixture,
             product=product,
             user=user,
             amount=order_fixture["amount"],
             created_at=_date_to_datetime(order_fixture["created_at"]),
-            subscription=subscription,
+            subscription=order_subscription,
         )
         orders[key] = order
 
@@ -135,7 +134,7 @@ class TestGetMetrics:
         expected_count: int,
         session: AsyncSession,
         auth_subject: AuthSubject[User | Organization],
-    ):
+    ) -> None:
         metrics = await metrics_service.get_metrics(
             session,
             auth_subject,
@@ -143,7 +142,7 @@ class TestGetMetrics:
             end_date=date(2024, 12, 31),
             interval=interval,
         )
-        assert len(metrics) == expected_count
+        assert len(metrics.periods) == expected_count
 
     @pytest.mark.auth
     async def test_values(
@@ -151,7 +150,7 @@ class TestGetMetrics:
         session: AsyncSession,
         auth_subject: AuthSubject[User],
         orders_and_subscriptions: tuple[dict[str, Subscription], dict[str, Order]],
-    ):
+    ) -> None:
         metrics = await metrics_service.get_metrics(
             session,
             auth_subject,
@@ -160,71 +159,35 @@ class TestGetMetrics:
             interval=Interval.day,
         )
 
-        jan_1 = metrics[0]
-        (
-            _,
-            orders,
-            revenue,
-            average_order_value,
-            one_time_products,
-            one_time_products_revenue,
-            new_subscriptions,
-            new_subscriptions_revenue,
-            renewed_subscriptions,
-            renewed_subscriptions_revenue,
-        ) = jan_1
-        assert orders == 2
-        assert revenue == 200_00
-        assert average_order_value == 100_00
-        assert one_time_products == 1
-        assert one_time_products_revenue == 100_00
-        assert new_subscriptions == 1
-        assert new_subscriptions_revenue == 100_00
-        assert renewed_subscriptions == 0
-        assert renewed_subscriptions_revenue == 0
+        jan_1 = metrics.periods[0]
+        assert jan_1.orders == 2
+        assert jan_1.revenue == 200_00
+        assert jan_1.average_order_value == 100_00
+        assert jan_1.one_time_products == 1
+        assert jan_1.one_time_products_revenue == 100_00
+        assert jan_1.new_subscriptions == 1
+        assert jan_1.new_subscriptions_revenue == 100_00
+        assert jan_1.renewed_subscriptions == 0
+        assert jan_1.renewed_subscriptions_revenue == 0
 
-        feb_1 = metrics[31]
-        (
-            _,
-            orders,
-            revenue,
-            average_order_value,
-            one_time_products,
-            one_time_products_revenue,
-            new_subscriptions,
-            new_subscriptions_revenue,
-            renewed_subscriptions,
-            renewed_subscriptions_revenue,
-        ) = feb_1
-        assert orders == 1
-        assert revenue == 100_00
-        assert average_order_value == 100_00
-        assert one_time_products == 0
-        assert one_time_products_revenue == 0
-        assert new_subscriptions == 0
-        assert new_subscriptions_revenue == 0
-        assert renewed_subscriptions == 1
-        assert renewed_subscriptions_revenue == 100_00
+        feb_1 = metrics.periods[31]
+        assert feb_1.orders == 1
+        assert feb_1.revenue == 100_00
+        assert feb_1.average_order_value == 100_00
+        assert feb_1.one_time_products == 0
+        assert feb_1.one_time_products_revenue == 0
+        assert feb_1.new_subscriptions == 0
+        assert feb_1.new_subscriptions_revenue == 0
+        assert feb_1.renewed_subscriptions == 1
+        assert feb_1.renewed_subscriptions_revenue == 100_00
 
-        jun_1 = metrics[152]
-        (
-            _,
-            orders,
-            revenue,
-            average_order_value,
-            one_time_products,
-            one_time_products_revenue,
-            new_subscriptions,
-            new_subscriptions_revenue,
-            renewed_subscriptions,
-            renewed_subscriptions_revenue,
-        ) = jun_1
-        assert orders == 1
-        assert revenue == 100_00
-        assert average_order_value == 100_00
-        assert one_time_products == 0
-        assert one_time_products_revenue == 0
-        assert new_subscriptions == 1
-        assert new_subscriptions_revenue == 100_00
-        assert renewed_subscriptions == 0
-        assert renewed_subscriptions_revenue == 0
+        jun_1 = metrics.periods[152]
+        assert jun_1.orders == 1
+        assert jun_1.revenue == 100_00
+        assert jun_1.average_order_value == 100_00
+        assert jun_1.one_time_products == 0
+        assert jun_1.one_time_products_revenue == 0
+        assert jun_1.new_subscriptions == 1
+        assert jun_1.new_subscriptions_revenue == 100_00
+        assert jun_1.renewed_subscriptions == 0
+        assert jun_1.renewed_subscriptions_revenue == 0

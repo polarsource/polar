@@ -1,40 +1,40 @@
 import uuid
-from collections.abc import Callable
 from datetime import UTC, date, datetime
+from enum import StrEnum
 
-from sqlalchemy import ColumnElement, Integer, cte, func, select
+from sqlalchemy import (
+    ColumnElement,
+    Function,
+    SQLColumnExpression,
+    TextClause,
+    cte,
+    func,
+    select,
+    text,
+)
 
 from polar.auth.models import AuthSubject
 from polar.models import Order, Organization, Subscription, User
 from polar.postgres import AsyncSession
 
-from .schemas import Interval
+from .metrics import METRICS
+from .schemas import MetricsPeriod, MetricsResponse
 
-METRICS: dict[str, Callable[[ColumnElement[datetime]], ColumnElement[int]]] = {
-    "orders": lambda t: func.count(Order.id),
-    "revenue": lambda t: func.sum(Order.amount),
-    "average_order_value": lambda t: func.cast(
-        func.ceil(func.avg(Order.amount)), Integer
-    ),
-    "one_time_products": lambda t: func.count(Order.id).filter(
-        Order.subscription_id.is_(None)
-    ),
-    "one_time_products_revenue": lambda t: func.sum(Order.amount).filter(
-        Order.subscription_id.is_(None)
-    ),
-    "new_subscriptions": lambda t: func.count(Subscription.id).filter(
-        func.date_trunc("day", Subscription.started_at) == func.date_trunc("day", t)
-    ),
-    "new_subscriptions_revenue": lambda t: func.sum(Order.amount).filter(
-        func.date_trunc("day", Subscription.started_at) == func.date_trunc("day", t)
-    ),
-    "renewed_subscriptions": lambda t: func.count(Subscription.id).filter(
-        func.date_trunc("day", Subscription.started_at) != func.date_trunc("day", t)
-    ),
-    "renewed_subscriptions_revenue": lambda t: func.sum(Order.amount).filter(
-        func.date_trunc("day", Subscription.started_at) != func.date_trunc("day", t)
-    ),
-}
+
+class Interval(StrEnum):
+    year = "year"
+    month = "month"
+    week = "week"
+    day = "day"
+    hour = "hour"
+
+    def sql_interval(self) -> TextClause:
+        return text(f"'1 {self.value}'::interval")
+
+    def sql_date_trunc(
+        self, column: SQLColumnExpression[datetime]
+    ) -> Function[datetime]:
+        return func.date_trunc(self.value, column)
 
 
 class MetricsService:
@@ -48,7 +48,7 @@ class MetricsService:
         interval: Interval,
         organization_id: uuid.UUID | None = None,
         product_id: uuid.UUID | None = None,
-    ):
+    ) -> MetricsResponse:
         start_timestamp = datetime(
             start_date.year, start_date.month, start_date.day, 0, 0, 0, 0, UTC
         )
@@ -68,8 +68,10 @@ class MetricsService:
             select(
                 timestamp_column.label("timestamp"),
                 *(
-                    func.coalesce(metric(timestamp_column), 0).label(metric_name)
-                    for metric_name, metric in METRICS.items()
+                    func.coalesce(metric.get_sql_expression(timestamp_column), 0).label(
+                        metric.slug
+                    )
+                    for metric in METRICS
                 ),
             )
             .select_from(
@@ -88,8 +90,13 @@ class MetricsService:
             .order_by(timestamp_column.asc())
         )
 
-        result = await session.execute(statement)
-        return list(result.all())
+        result = await session.stream(statement)
+        periods: list[MetricsPeriod] = []
+        async for row in result:
+            periods.append(MetricsPeriod(**row._asdict()))
+        return MetricsResponse.model_validate(
+            {"periods": periods, "metrics": {m.slug: m for m in METRICS}}
+        )
 
 
 metrics = MetricsService()

@@ -38,7 +38,7 @@ export const ListItem = ({
   return (
     <div
       className={twMerge(
-        'flex flex-row items-center justify-between bg-gray-50 dark:bg-transparent',
+        'bg-gray-75 flex flex-row items-center justify-between dark:bg-transparent',
         selected
           ? 'dark:bg-polar-800 bg-white'
           : 'dark:hover:bg-polar-900 hover:bg-white',

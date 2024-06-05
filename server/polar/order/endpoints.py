@@ -13,7 +13,7 @@ from polar.tags.api import Tags
 
 from . import auth, sorting
 from .schemas import Order as OrderSchema
-from .schemas import OrderInvoice, OrdersStatistics
+from .schemas import OrderInvoice
 from .service import order as order_service
 
 router = APIRouter(prefix="/orders", tags=["orders"])
@@ -61,25 +61,6 @@ async def list_orders(
         count,
         pagination,
     )
-
-
-@router.get("/statistics", response_model=OrdersStatistics, tags=[Tags.PUBLIC])
-async def get_orders_statistics(
-    auth_subject: auth.OrdersRead,
-    organization_id: UUID4 | None = Query(
-        None, description="Filter by organization ID."
-    ),
-    product_id: UUID4 | None = Query(None, description="Filter by product ID."),
-    session: AsyncSession = Depends(get_db_session),
-) -> OrdersStatistics:
-    """Get monthly data about your orders and earnings."""
-    periods = await order_service.get_statistics_periods(
-        session,
-        auth_subject,
-        organization_id=organization_id,
-        product_id=product_id,
-    )
-    return OrdersStatistics(periods=periods)
 
 
 @router.get(

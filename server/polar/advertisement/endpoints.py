@@ -18,7 +18,7 @@ from .service import advertisement_campaign as advertisement_campaign_service
 
 log = structlog.get_logger()
 
-router = APIRouter(tags=["advertisements"])
+router = APIRouter(prefix="/advertisements", tags=["advertisements"])
 
 AdvertisementCampaignID = Annotated[
     UUID4, Path(description="The advertisement campaign ID.")

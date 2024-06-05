@@ -1,6 +1,9 @@
 'use client'
 
-import { resolveBenefitIcon } from '@/components/Benefit/utils'
+import {
+  resolveBenefitIcon,
+  resolveBenefitTypeDisplayName,
+} from '@/components/Benefit/utils'
 import { previewOpts } from '@/components/Feed/Markdown/BrowserRender'
 import CheckoutButton from '@/components/Products/CheckoutButton'
 import ProductPrices from '@/components/Products/ProductPrices'
@@ -8,6 +11,7 @@ import { Slideshow } from '@/components/Products/Slideshow'
 import { dummyMedia } from '@/hooks/queries/dummy_products'
 import { Organization, Product } from '@polar-sh/sdk'
 import Markdown from 'markdown-to-jsx'
+import { List, ListItem } from 'polarkit/components/ui/atoms/list'
 import ShadowBox from 'polarkit/components/ui/atoms/shadowbox'
 
 export default function ClientPage({
@@ -59,17 +63,23 @@ export default function ClientPage({
             <div className="flex flex-col gap-2">
               <h1 className="dark:text-polar-50 font-medium">You get</h1>
             </div>
-            <div className="flex flex-col gap-2">
+            <List size="small">
               {product.benefits.map((benefit) => (
-                <div
+                <ListItem
                   key={benefit.id}
-                  className="flex flex-row items-center gap-3 rounded-xl bg-blue-50 px-4 py-2.5 text-blue-500 dark:bg-blue-950 dark:text-blue-200"
+                  className="justify-start gap-x-4"
+                  size="small"
                 >
                   {resolveBenefitIcon(benefit, 'small', 'h-5 w-5')}
-                  <span className="text-sm">{benefit.description}</span>
-                </div>
+                  <div className="flex flex-col">
+                    <span className="text-sm">{benefit.description}</span>
+                    <span className="dark:text-polar-500 text-xs text-gray-500">
+                      {resolveBenefitTypeDisplayName(benefit.type)}
+                    </span>
+                  </div>
+                </ListItem>
               ))}
-            </div>
+            </List>
           </div>
           <div className="flex flex-col gap-2">
             <CheckoutButton

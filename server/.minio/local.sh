@@ -9,4 +9,4 @@ do
   sleep 1;
 done;
 
-bash ./configure.sh
+bash $1

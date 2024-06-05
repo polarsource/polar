@@ -5,7 +5,7 @@ import pytest
 import pytest_asyncio
 
 from polar.auth.models import AuthSubject
-from polar.metrics.service import Interval
+from polar.metrics.queries import Interval
 from polar.metrics.service import metrics as metrics_service
 from polar.models import Order, Organization, Product, Subscription, User
 from polar.models.subscription import SubscriptionStatus
@@ -169,6 +169,7 @@ class TestGetMetrics:
         assert jan_1.new_subscriptions_revenue == 100_00
         assert jan_1.renewed_subscriptions == 0
         assert jan_1.renewed_subscriptions_revenue == 0
+        assert jan_1.active_subscriptions == 1
 
         feb_1 = metrics.periods[31]
         assert feb_1.orders == 1
@@ -180,6 +181,7 @@ class TestGetMetrics:
         assert feb_1.new_subscriptions_revenue == 0
         assert feb_1.renewed_subscriptions == 1
         assert feb_1.renewed_subscriptions_revenue == 100_00
+        assert feb_1.active_subscriptions == 1
 
         jun_1 = metrics.periods[152]
         assert jun_1.orders == 1
@@ -191,3 +193,4 @@ class TestGetMetrics:
         assert jun_1.new_subscriptions_revenue == 100_00
         assert jun_1.renewed_subscriptions == 0
         assert jun_1.renewed_subscriptions_revenue == 0
+        assert jun_1.active_subscriptions == 2

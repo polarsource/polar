@@ -6,6 +6,8 @@ from sqlalchemy import ColumnElement, Integer, func
 
 from polar.models import Order, Subscription
 
+from .queries import MetricQuery
+
 
 class MetricType(StrEnum):
     scalar = "scalar"
@@ -16,6 +18,7 @@ class Metric(Protocol):
     slug: ClassVar[str]
     display_name: ClassVar[str]
     type: ClassVar[MetricType]
+    query: ClassVar[MetricQuery]
 
     @classmethod
     def get_sql_expression(cls, t: ColumnElement[datetime]) -> ColumnElement[int]: ...
@@ -25,6 +28,7 @@ class OrdersMetric(Metric):
     slug = "orders"
     display_name = "Orders"
     type = MetricType.scalar
+    query = MetricQuery.orders
 
     @classmethod
     def get_sql_expression(cls, t: ColumnElement[datetime]) -> ColumnElement[int]:
@@ -35,6 +39,7 @@ class RevenueMetric(Metric):
     slug = "revenue"
     display_name = "Revenue"
     type = MetricType.currency
+    query = MetricQuery.orders
 
     @classmethod
     def get_sql_expression(cls, t: ColumnElement[datetime]) -> ColumnElement[int]:
@@ -45,6 +50,7 @@ class AverageOrderValueMetric(Metric):
     slug = "average_order_value"
     display_name = "Average Order Value"
     type = MetricType.scalar
+    query = MetricQuery.orders
 
     @classmethod
     def get_sql_expression(cls, t: ColumnElement[datetime]) -> ColumnElement[int]:
@@ -55,6 +61,7 @@ class OneTimeProductsMetric(Metric):
     slug = "one_time_products"
     display_name = "One-Time Products"
     type = MetricType.scalar
+    query = MetricQuery.orders
 
     @classmethod
     def get_sql_expression(cls, t: ColumnElement[datetime]) -> ColumnElement[int]:
@@ -65,6 +72,7 @@ class OneTimeProductsRevenueMetric(Metric):
     slug = "one_time_products_revenue"
     display_name = "One-Time Products Revenue"
     type = MetricType.currency
+    query = MetricQuery.orders
 
     @classmethod
     def get_sql_expression(cls, t: ColumnElement[datetime]) -> ColumnElement[int]:
@@ -75,6 +83,7 @@ class NewSubscriptionsMetric(Metric):
     slug = "new_subscriptions"
     display_name = "New Subscriptions"
     type = MetricType.scalar
+    query = MetricQuery.orders
 
     @classmethod
     def get_sql_expression(cls, t: ColumnElement[datetime]) -> ColumnElement[int]:
@@ -87,6 +96,7 @@ class NewSubscriptionsRevenueMetric(Metric):
     slug = "new_subscriptions_revenue"
     display_name = "New Subscriptions Revenue"
     type = MetricType.currency
+    query = MetricQuery.orders
 
     @classmethod
     def get_sql_expression(cls, t: ColumnElement[datetime]) -> ColumnElement[int]:
@@ -99,6 +109,7 @@ class RenewedSubscriptionsMetric(Metric):
     slug = "renewed_subscriptions"
     display_name = "Renewed Subscriptions"
     type = MetricType.scalar
+    query = MetricQuery.orders
 
     @classmethod
     def get_sql_expression(cls, t: ColumnElement[datetime]) -> ColumnElement[int]:
@@ -111,12 +122,24 @@ class RenewedSubscriptionsRevenueMetric(Metric):
     slug = "renewed_subscriptions_revenue"
     display_name = "Renewed Subscriptions Revenue"
     type = MetricType.currency
+    query = MetricQuery.orders
 
     @classmethod
     def get_sql_expression(cls, t: ColumnElement[datetime]) -> ColumnElement[int]:
         return func.sum(Order.amount).filter(
             func.date_trunc("day", Subscription.started_at) != func.date_trunc("day", t)
         )
+
+
+class ActiveSubscriptionsMetric(Metric):
+    slug = "active_subscriptions"
+    display_name = "Active Subscriptions"
+    type = MetricType.scalar
+    query = MetricQuery.active_subscriptions
+
+    @classmethod
+    def get_sql_expression(cls, t: ColumnElement[datetime]) -> ColumnElement[int]:
+        return func.count(Subscription.id)
 
 
 METRICS: list[type[Metric]] = [
@@ -129,6 +152,7 @@ METRICS: list[type[Metric]] = [
     NewSubscriptionsRevenueMetric,
     RenewedSubscriptionsMetric,
     RenewedSubscriptionsRevenueMetric,
+    ActiveSubscriptionsMetric,
 ]
 
-__all__ = ["MetricType", "METRICS"]
+__all__ = ["MetricType", "Metric", "METRICS"]

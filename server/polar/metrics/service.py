@@ -1,40 +1,15 @@
 import uuid
 from datetime import UTC, date, datetime
-from enum import StrEnum
 
-from sqlalchemy import (
-    ColumnElement,
-    Function,
-    SQLColumnExpression,
-    TextClause,
-    cte,
-    func,
-    select,
-    text,
-)
+from sqlalchemy import ColumnElement, FromClause, select
 
 from polar.auth.models import AuthSubject
-from polar.models import Order, Organization, Subscription, User
+from polar.models import Organization, User
 from polar.postgres import AsyncSession
 
 from .metrics import METRICS
+from .queries import QUERIES, Interval, get_timestamp_series_cte
 from .schemas import MetricsPeriod, MetricsResponse
-
-
-class Interval(StrEnum):
-    year = "year"
-    month = "month"
-    week = "week"
-    day = "day"
-    hour = "hour"
-
-    def sql_interval(self) -> TextClause:
-        return text(f"'1 {self.value}'::interval")
-
-    def sql_date_trunc(
-        self, column: SQLColumnExpression[datetime]
-    ) -> Function[datetime]:
-        return func.date_trunc(self.value, column)
 
 
 class MetricsService:
@@ -56,39 +31,30 @@ class MetricsService:
             end_date.year, end_date.month, end_date.day, 23, 59, 59, 999999, UTC
         )
 
-        timestamp_series = cte(
-            select(
-                func.generate_series(
-                    start_timestamp, end_timestamp, interval.sql_interval()
-                ).column_valued("timestamp")
-            )
+        timestamp_series = get_timestamp_series_cte(
+            start_timestamp, end_timestamp, interval
         )
         timestamp_column: ColumnElement[datetime] = timestamp_series.c.timestamp
+
+        queries = [query(timestamp_series, interval, METRICS) for query in QUERIES]
+
+        from_query: FromClause = timestamp_series
+        for query in queries:
+            from_query = from_query.join(
+                query,
+                onclause=query.c.timestamp == timestamp_column,
+            )
+
         statement = (
             select(
                 timestamp_column.label("timestamp"),
-                *(
-                    func.coalesce(metric.get_sql_expression(timestamp_column), 0).label(
-                        metric.slug
-                    )
-                    for metric in METRICS
-                ),
+                *queries,
             )
-            .select_from(
-                timestamp_series.join(
-                    Order,
-                    isouter=True,
-                    onclause=interval.sql_date_trunc(Order.created_at)
-                    == interval.sql_date_trunc(timestamp_column),
-                ).join(
-                    Subscription,
-                    isouter=True,
-                    onclause=Order.subscription_id == Subscription.id,
-                )
-            )
-            .group_by(timestamp_column)
+            .select_from(from_query)
             .order_by(timestamp_column.asc())
         )
+
+        print(statement)
 
         result = await session.stream(statement)
         periods: list[MetricsPeriod] = []

@@ -54,8 +54,6 @@ class MetricsService:
             .order_by(timestamp_column.asc())
         )
 
-        print(statement)
-
         result = await session.stream(statement)
         periods: list[MetricsPeriod] = []
         async for row in result:

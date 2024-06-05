@@ -4,7 +4,7 @@ from typing import ClassVar, Protocol
 
 from sqlalchemy import ColumnElement, Integer, func
 
-from polar.models import Order, Subscription
+from polar.models import Order, ProductPrice, Subscription
 
 from .queries import MetricQuery
 
@@ -142,6 +142,17 @@ class ActiveSubscriptionsMetric(Metric):
         return func.count(Subscription.id)
 
 
+class MonthlyRecurringRevenueMetric(Metric):
+    slug = "monthly_recurring_revenue"
+    display_name = "Monthly Recurring Revenue"
+    type = MetricType.currency
+    query = MetricQuery.active_subscriptions
+
+    @classmethod
+    def get_sql_expression(cls, t: ColumnElement[datetime]) -> ColumnElement[int]:
+        return func.coalesce(func.sum(ProductPrice.price_amount), 0)
+
+
 METRICS: list[type[Metric]] = [
     OrdersMetric,
     RevenueMetric,
@@ -153,6 +164,7 @@ METRICS: list[type[Metric]] = [
     RenewedSubscriptionsMetric,
     RenewedSubscriptionsRevenueMetric,
     ActiveSubscriptionsMetric,
+    MonthlyRecurringRevenueMetric,
 ]
 
 __all__ = ["MetricType", "Metric", "METRICS"]

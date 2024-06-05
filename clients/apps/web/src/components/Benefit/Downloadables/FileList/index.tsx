@@ -45,9 +45,7 @@ export const FileList = ({
       // convert our setFiles to one without callback
       setFiles(() => updated)
     },
-    (files: FileObject[]) => {
-      console.log('updated file orders', files)
-    },
+    (_: FileObject[]) => {},
   )
 
   if (files.length === 0) {

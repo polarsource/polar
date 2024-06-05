@@ -23,7 +23,6 @@ const ImageUpload = ({
 
   const [imagePreviewSrc, setImagePreviewSrc] = useState<string | undefined>()
 
-  console.log(defaultValue)
   useEffect(() => {
     setImagePreviewSrc(defaultValue)
   }, [defaultValue])

@@ -23,7 +23,6 @@ export const useDraggable = <T extends Draggable[]>(
   const sensors = useSensors(useSensor(MouseSensor), useSensor(TouchSensor))
 
   function handleDragStart(event: DragStartEvent) {
-    console.log('dragstart', event)
     setActiveId(event.active.id)
   }
 

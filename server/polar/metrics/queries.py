@@ -1,7 +1,8 @@
-from collections.abc import Callable, Generator
+import uuid
+from collections.abc import Generator
 from datetime import datetime
 from enum import StrEnum
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, Protocol, cast
 
 from sqlalchemy import (
     CTE,
@@ -77,15 +78,17 @@ def _get_metrics_columns(
     )
 
 
-QueryCallable = Callable[
-    [
-        CTE,
-        Interval,
-        AuthSubject[User | Organization],
-        list["type[Metric]"],
-    ],
-    CTE,
-]
+class QueryCallable(Protocol):
+    def __call__(
+        self,
+        timestamp_series: CTE,
+        interval: Interval,
+        auth_subject: AuthSubject[User | Organization],
+        metrics: list["type[Metric]"],
+        *,
+        organization_id: uuid.UUID | None = None,
+        product_id: uuid.UUID | None = None,
+    ) -> CTE: ...
 
 
 def get_orders_cte(
@@ -93,6 +96,9 @@ def get_orders_cte(
     interval: Interval,
     auth_subject: AuthSubject[User | Organization],
     metrics: list["type[Metric]"],
+    *,
+    organization_id: uuid.UUID | None = None,
+    product_id: uuid.UUID | None = None,
 ) -> CTE:
     timestamp_column: ColumnElement[datetime] = timestamp_series.c.timestamp
 
@@ -112,6 +118,16 @@ def get_orders_cte(
     elif is_organization(auth_subject):
         readable_orders_statement = readable_orders_statement.where(
             Product.organization_id == auth_subject.subject.id
+        )
+
+    if organization_id is not None:
+        readable_orders_statement = readable_orders_statement.where(
+            Product.organization_id == organization_id
+        )
+
+    if product_id is not None:
+        readable_orders_statement = readable_orders_statement.where(
+            Order.product_id == product_id
         )
 
     return cte(
@@ -144,6 +160,9 @@ def get_active_subscriptions_cte(
     interval: Interval,
     auth_subject: AuthSubject[User | Organization],
     metrics: list["type[Metric]"],
+    *,
+    organization_id: uuid.UUID | None = None,
+    product_id: uuid.UUID | None = None,
 ) -> CTE:
     timestamp_column: ColumnElement[datetime] = timestamp_series.c.timestamp
 
@@ -163,6 +182,16 @@ def get_active_subscriptions_cte(
     elif is_organization(auth_subject):
         readable_subscriptions_statement = readable_subscriptions_statement.where(
             Product.organization_id == auth_subject.subject.id
+        )
+
+    if organization_id is not None:
+        readable_subscriptions_statement = readable_subscriptions_statement.where(
+            Product.organization_id == organization_id
+        )
+
+    if product_id is not None:
+        readable_subscriptions_statement = readable_subscriptions_statement.where(
+            Subscription.product_id == product_id
         )
 
     return cte(

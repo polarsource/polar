@@ -37,7 +37,14 @@ class MetricsService:
         timestamp_column: ColumnElement[datetime] = timestamp_series.c.timestamp
 
         queries = [
-            query(timestamp_series, interval, auth_subject, METRICS)
+            query(
+                timestamp_series,
+                interval,
+                auth_subject,
+                METRICS,
+                organization_id=organization_id,
+                product_id=product_id,
+            )
             for query in QUERIES
         ]
 

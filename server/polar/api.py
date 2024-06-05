@@ -20,6 +20,7 @@ from polar.integrations.github_repository_benefit.endpoints import (
 from polar.integrations.stripe.endpoints import router as stripe_router
 from polar.issue.endpoints import router as issue_router
 from polar.magic_link.endpoints import router as magic_link_router
+from polar.metrics.endpoints import router as metrics_router
 from polar.notifications.endpoints import router as notifications_router
 from polar.oauth2.endpoints.oauth2 import router as oauth2_router
 from polar.order.endpoints import router as order_router
@@ -112,3 +113,5 @@ router.include_router(order_router)
 router.include_router(checkout_router)
 # /files
 router.include_router(files_router)
+# /metrics
+router.include_router(metrics_router)

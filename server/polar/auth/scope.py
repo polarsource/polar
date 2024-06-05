@@ -32,6 +32,8 @@ class Scope(StrEnum):
     creator_files_read = "creator:files:read"
     creator_files_write = "creator:files:write"
 
+    creator_metrics_read = "metrics:read"
+
     webhooks_read = "webhooks:read"
     webhooks_write = "webhooks:write"
 

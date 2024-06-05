@@ -71,7 +71,7 @@ services:
     entrypoint: [
       "bash",
       "-c",
-      "chmod +x /tmp/config/configure.sh && /tmp/config/configure.sh"
+      "chmod +x /tmp/config/local.sh && /tmp/config/local.sh"
     ]
 
 

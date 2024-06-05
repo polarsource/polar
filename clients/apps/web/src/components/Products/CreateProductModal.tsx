@@ -153,47 +153,45 @@ export const CreateProductModal = ({
   }, [newProduct, saveDraft])
 
   return (
-    <div className="flex h-full flex-col">
-      <div className="flex h-full flex-col">
-        <div className="flex flex-col gap-y-4">
-          <InlineModalHeader hide={hide}>
-            <h3>Create Product</h3>
-          </InlineModalHeader>
-          <p className="dark:text-polar-500 px-8 text-sm leading-relaxed text-gray-500">
-            Products are benefits which can be purchased at a fixed price.
-            Configure the product metadata and select benefits you want to grant
-            below.
-          </p>
-        </div>
-        <div className="flex flex-col gap-y-8 p-8">
-          <Form {...form}>
-            <form
-              onSubmit={handleSubmit(onSubmit)}
-              className="flex flex-col gap-y-8"
-            >
-              <ProductForm update={false} />
-            </form>
-          </Form>
-          <ProductBenefitsForm
-            className="w-full"
-            organization={organization}
-            organizationBenefits={organizationBenefits.filter(
-              (benefit) =>
-                // Hide not selectable benefits unless they are already enabled
-                benefit.selectable ||
-                enabledBenefits.some((b) => b.id === benefit.id),
-            )}
-            benefits={enabledBenefits}
-            onSelectBenefit={onSelectBenefit}
-            onRemoveBenefit={onRemoveBenefit}
-          />
-        </div>
-        <div className="flex flex-row items-center gap-2 p-8">
-          <Button onClick={handleSubmit(onSubmit)}>Create Product</Button>
-          <Button variant="ghost" onClick={hide}>
-            Cancel
-          </Button>
-        </div>
+    <div className="flex h-full flex-col overflow-y-auto">
+      <div className="flex flex-col gap-y-4">
+        <InlineModalHeader hide={hide}>
+          <h3>Create Product</h3>
+        </InlineModalHeader>
+        <p className="dark:text-polar-500 px-8 text-sm leading-relaxed text-gray-500">
+          Products are benefits which can be purchased at a fixed price.
+          Configure the product metadata and select benefits you want to grant
+          below.
+        </p>
+      </div>
+      <div className="flex flex-col gap-y-8 p-8">
+        <Form {...form}>
+          <form
+            onSubmit={handleSubmit(onSubmit)}
+            className="flex flex-col gap-y-8"
+          >
+            <ProductForm update={false} />
+          </form>
+        </Form>
+        <ProductBenefitsForm
+          className="w-full"
+          organization={organization}
+          organizationBenefits={organizationBenefits.filter(
+            (benefit) =>
+              // Hide not selectable benefits unless they are already enabled
+              benefit.selectable ||
+              enabledBenefits.some((b) => b.id === benefit.id),
+          )}
+          benefits={enabledBenefits}
+          onSelectBenefit={onSelectBenefit}
+          onRemoveBenefit={onRemoveBenefit}
+        />
+      </div>
+      <div className="flex flex-row items-center gap-2 p-8">
+        <Button onClick={handleSubmit(onSubmit)}>Create Product</Button>
+        <Button variant="ghost" onClick={hide}>
+          Cancel
+        </Button>
       </div>
     </div>
   )

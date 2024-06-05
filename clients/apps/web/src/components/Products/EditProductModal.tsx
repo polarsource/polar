@@ -157,74 +157,72 @@ export const EditProductModal = ({
   }, [product, updateProduct, organization, hide])
 
   return (
-    <div className="flex h-full flex-col">
-      <div className="flex h-full flex-col">
-        <div className="flex flex-col gap-y-4">
-          <InlineModalHeader hide={hide}>
-            <h3>Edit Product</h3>
-          </InlineModalHeader>
-        </div>
-        <div className="flex flex-col gap-y-8 p-8">
-          <Form {...form}>
-            <form
-              onSubmit={handleSubmit(onSubmit)}
-              className="flex flex-col gap-y-8"
-            >
-              <ProductForm update={true} isFreeTier={isFreeTier} />
-            </form>
-          </Form>
-          <ProductBenefitsForm
-            className="w-full"
-            organization={organization}
-            organizationBenefits={organizationBenefits.filter(
-              (benefit) =>
-                // Hide not selectable benefits unless they are already enabled
-                (benefit.selectable ||
-                  enabledBenefits.some((b) => b.id === benefit.id)) &&
-                // Hide premium articles benefit on free tier
-                (!isFreeTier || !isPremiumArticlesBenefit(benefit)),
-            )}
-            benefits={enabledBenefits}
-            onSelectBenefit={onSelectBenefit}
-            onRemoveBenefit={onRemoveBenefit}
-          />
-          {!isFreeTier && (
-            <>
-              <ShadowBox className="flex flex-col gap-6 p-6">
-                <div className="flex flex-col gap-y-2">
-                  <h3 className="text-sm font-medium">Archive Product</h3>
-                  <p className="dark:text-polar-500 text-sm text-gray-500">
-                    Archiving a product will not affect its current customers,
-                    only prevent new subscribers and purchases.
-                  </p>
-                </div>
-                <Button
-                  className="self-start"
-                  variant="destructive"
-                  onClick={showArchiveModal}
-                  size="sm"
-                >
-                  Archive
-                </Button>
-              </ShadowBox>
-              <ConfirmModal
-                title="Archive Product"
-                description="Archiving a product will not affect its current customers, only prevent new subscribers and purchases."
-                onConfirm={handleArchiveProduct}
-                isShown={isArchiveModalShown}
-                hide={hideArchiveModal}
-                destructiveText="Archive"
-                destructive
-              />
-            </>
+    <div className="flex h-full flex-col overflow-y-auto">
+      <div className="flex flex-col gap-y-4">
+        <InlineModalHeader hide={hide}>
+          <h3>Edit Product</h3>
+        </InlineModalHeader>
+      </div>
+      <div className="flex flex-col gap-y-8 p-8">
+        <Form {...form}>
+          <form
+            onSubmit={handleSubmit(onSubmit)}
+            className="flex flex-col gap-y-8"
+          >
+            <ProductForm update={true} isFreeTier={isFreeTier} />
+          </form>
+        </Form>
+        <ProductBenefitsForm
+          className="w-full"
+          organization={organization}
+          organizationBenefits={organizationBenefits.filter(
+            (benefit) =>
+              // Hide not selectable benefits unless they are already enabled
+              (benefit.selectable ||
+                enabledBenefits.some((b) => b.id === benefit.id)) &&
+              // Hide premium articles benefit on free tier
+              (!isFreeTier || !isPremiumArticlesBenefit(benefit)),
           )}
-        </div>
-        <div className="flex flex-row items-center gap-2 p-8">
-          <Button onClick={handleSubmit(onSubmit)}>Save Product</Button>
-          <Button variant="ghost" onClick={hide}>
-            Cancel
-          </Button>
-        </div>
+          benefits={enabledBenefits}
+          onSelectBenefit={onSelectBenefit}
+          onRemoveBenefit={onRemoveBenefit}
+        />
+        {!isFreeTier && (
+          <>
+            <ShadowBox className="flex flex-col gap-6 p-6">
+              <div className="flex flex-col gap-y-2">
+                <h3 className="text-sm font-medium">Archive Product</h3>
+                <p className="dark:text-polar-500 text-sm text-gray-500">
+                  Archiving a product will not affect its current customers,
+                  only prevent new subscribers and purchases.
+                </p>
+              </div>
+              <Button
+                className="self-start"
+                variant="destructive"
+                onClick={showArchiveModal}
+                size="sm"
+              >
+                Archive
+              </Button>
+            </ShadowBox>
+            <ConfirmModal
+              title="Archive Product"
+              description="Archiving a product will not affect its current customers, only prevent new subscribers and purchases."
+              onConfirm={handleArchiveProduct}
+              isShown={isArchiveModalShown}
+              hide={hideArchiveModal}
+              destructiveText="Archive"
+              destructive
+            />
+          </>
+        )}
+      </div>
+      <div className="flex flex-row items-center gap-2 p-8">
+        <Button onClick={handleSubmit(onSubmit)}>Save Product</Button>
+        <Button variant="ghost" onClick={hide}>
+          Cancel
+        </Button>
       </div>
     </div>
   )

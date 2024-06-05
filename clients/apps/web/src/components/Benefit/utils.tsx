@@ -1,7 +1,7 @@
 import {
   CheckOutlined,
   GitHub,
-  ShortTextOutlined,
+  StickyNote2Outlined,
   WebOutlined,
 } from '@mui/icons-material'
 import { BenefitArticles, BenefitPublicInner, BenefitType } from '@polar-sh/sdk'
@@ -17,7 +17,7 @@ export const resolveBenefitIcon = (
   const cn = twMerge('h-4 w-4', className)
   switch (benefit?.type) {
     case BenefitType.ARTICLES:
-      return <ShortTextOutlined className={cn} fontSize={fontSize} />
+      return <StickyNote2Outlined className={cn} fontSize={fontSize} />
     case BenefitType.ADS:
       return <WebOutlined className={cn} fontSize={fontSize} />
     case BenefitType.DISCORD:
@@ -26,6 +26,21 @@ export const resolveBenefitIcon = (
       return <GitHub className={cn} fontSize={fontSize} />
     default:
       return <CheckOutlined className={cn} fontSize={fontSize} />
+  }
+}
+
+export const resolveBenefitTypeDisplayName = (type: BenefitType) => {
+  switch (type) {
+    case BenefitType.ARTICLES:
+      return 'Newsletter'
+    case BenefitType.ADS:
+      return 'Advertisement Spot'
+    case BenefitType.DISCORD:
+      return 'Discord Server Invite'
+    case BenefitType.GITHUB_REPOSITORY:
+      return 'GitHub Repository Access'
+    default:
+      return 'Custom'
   }
 }
 

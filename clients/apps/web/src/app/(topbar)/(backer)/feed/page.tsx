@@ -7,21 +7,14 @@ import {
 } from '@/components/Dashboard/Upsell'
 import { FeaturedCreators } from '@/components/Feed/FeaturedCreators'
 import { Feed } from '@/components/Feed/Feed'
-import { MySubscriptions } from '@/components/Feed/MySubscriptions'
 import { useAuth, useGitHubAccount, usePersonalOrganization } from '@/hooks'
-import {
-  useListAdminOrganizations,
-  useSearchArticles,
-  useUserSubscriptions,
-} from '@/hooks/queries'
+import { useListAdminOrganizations, useSearchArticles } from '@/hooks/queries'
 import { useEffect } from 'react'
 
 export default function Page() {
   const { authenticated, reloadUser } = useAuth()
   const { isLoading: adminOrgsAreLoading } = useListAdminOrganizations()
   const personalOrg = usePersonalOrganization()
-
-  const userSubscriptions = useUserSubscriptions({ active: true, limit: 100 })
 
   // Reload user on page load to make sure that the github oauth data is up to date
   useEffect(() => {
@@ -45,8 +38,6 @@ export default function Page() {
   const shouldShowMaintainerUpsell =
     authenticated && !listOrganizationQuery.isLoading && !personalOrg
 
-  const subscriptionsToRender = userSubscriptions.data?.items ?? []
-
   return (
     <div className="relative flex h-full flex-col md:flex-row md:gap-x-24 md:pt-6">
       <div className="flex w-full flex-col gap-y-8 pb-12 md:w-full">
@@ -61,9 +52,6 @@ export default function Page() {
           <CreatePostUpsell />
         ) : null}
         <FeaturedCreators />
-        {subscriptionsToRender.length > 0 && (
-          <MySubscriptions subscriptions={subscriptionsToRender} />
-        )}
       </div>
     </div>
   )

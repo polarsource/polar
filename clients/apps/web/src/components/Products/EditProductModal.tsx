@@ -15,6 +15,7 @@ import {
   ValidationError,
 } from '@polar-sh/sdk'
 import Button from 'polarkit/components/ui/atoms/button'
+import ShadowBox from 'polarkit/components/ui/atoms/shadowbox'
 import { Form } from 'polarkit/components/ui/form'
 import { useCallback, useMemo, useState } from 'react'
 import { useForm } from 'react-hook-form'
@@ -157,7 +158,7 @@ export const EditProductModal = ({
 
   return (
     <div className="flex h-full flex-col">
-      <div className="flex h-full flex-col overflow-y-auto">
+      <div className="flex h-full flex-col">
         <div className="flex flex-col gap-y-4">
           <InlineModalHeader hide={hide}>
             <h3>Edit Product</h3>
@@ -189,7 +190,7 @@ export const EditProductModal = ({
           />
           {!isFreeTier && (
             <>
-              <div className="dark:bg-polar-700 flex w-full flex-col space-y-4 rounded-2xl bg-gray-100 p-6">
+              <ShadowBox className="flex flex-col gap-6 p-6">
                 <div className="flex flex-col gap-y-2">
                   <h3 className="text-sm font-medium">Archive Product</h3>
                   <p className="dark:text-polar-500 text-sm text-gray-500">
@@ -205,7 +206,7 @@ export const EditProductModal = ({
                 >
                   Archive
                 </Button>
-              </div>
+              </ShadowBox>
               <ConfirmModal
                 title="Archive Product"
                 description="Archiving a product will not affect its current customers, only prevent new subscribers and purchases."
@@ -218,12 +219,12 @@ export const EditProductModal = ({
             </>
           )}
         </div>
-      </div>
-      <div className="dark:bg-polar-900 dark:border-polar-700 flex flex-row items-center gap-2 border-t border-gray-100 bg-gray-50 p-8">
-        <Button onClick={handleSubmit(onSubmit)}>Save Product</Button>
-        <Button variant="ghost" onClick={hide}>
-          Cancel
-        </Button>
+        <div className="flex flex-row items-center gap-2 p-8">
+          <Button onClick={handleSubmit(onSubmit)}>Save Product</Button>
+          <Button variant="ghost" onClick={hide}>
+            Cancel
+          </Button>
+        </div>
       </div>
     </div>
   )

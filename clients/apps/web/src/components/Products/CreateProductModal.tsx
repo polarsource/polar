@@ -154,7 +154,7 @@ export const CreateProductModal = ({
 
   return (
     <div className="flex h-full flex-col">
-      <div className="flex h-full flex-col overflow-y-auto">
+      <div className="flex h-full flex-col">
         <div className="flex flex-col gap-y-4">
           <InlineModalHeader hide={hide}>
             <h3>Create Product</h3>
@@ -188,12 +188,12 @@ export const CreateProductModal = ({
             onRemoveBenefit={onRemoveBenefit}
           />
         </div>
-      </div>
-      <div className="dark:bg-polar-900 dark:border-polar-700 flex flex-row items-center gap-2 border-t border-gray-100 bg-gray-50 p-8">
-        <Button onClick={handleSubmit(onSubmit)}>Create Product</Button>
-        <Button variant="ghost" onClick={hide}>
-          Cancel
-        </Button>
+        <div className="flex flex-row items-center gap-2 p-8">
+          <Button onClick={handleSubmit(onSubmit)}>Create Product</Button>
+          <Button variant="ghost" onClick={hide}>
+            Cancel
+          </Button>
+        </div>
       </div>
     </div>
   )

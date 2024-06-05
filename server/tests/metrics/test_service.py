@@ -7,10 +7,18 @@ import pytest_asyncio
 from polar.auth.models import AuthSubject
 from polar.metrics.queries import Interval
 from polar.metrics.service import metrics as metrics_service
-from polar.models import Order, Organization, Product, Subscription, User
+from polar.models import (
+    Order,
+    Organization,
+    Product,
+    Subscription,
+    User,
+    UserOrganization,
+)
 from polar.models.product_price import ProductPriceRecurringInterval, ProductPriceType
 from polar.models.subscription import SubscriptionStatus
 from polar.postgres import AsyncSession
+from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     create_order,
@@ -177,11 +185,14 @@ class TestGetMetrics:
         )
         assert len(metrics.periods) == expected_count
 
-    @pytest.mark.auth
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"), AuthSubjectFixture(subject="organization")
+    )
     async def test_values(
         self,
         session: AsyncSession,
-        auth_subject: AuthSubject[User],
+        auth_subject: AuthSubject[User | Organization],
+        user_organization_admin: UserOrganization,
         fixtures: tuple[dict[str, Subscription], dict[str, Order]],
     ) -> None:
         metrics = await metrics_service.get_metrics(
@@ -243,3 +254,31 @@ class TestGetMetrics:
         assert dec_31.renewed_subscriptions_revenue == 0
         assert dec_31.active_subscriptions == 2
         assert dec_31.monthly_recurring_revenue == 200_00
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="user_second"))
+    async def test_not_authorized(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        fixtures: tuple[dict[str, Subscription], dict[str, Order]],
+    ) -> None:
+        metrics = await metrics_service.get_metrics(
+            session,
+            auth_subject,
+            start_date=date(2024, 1, 1),
+            end_date=date(2024, 12, 31),
+            interval=Interval.day,
+        )
+
+        for period in metrics.periods:
+            assert period.orders == 0
+            assert period.revenue == 0
+            assert period.average_order_value == 0
+            assert period.one_time_products == 0
+            assert period.one_time_products_revenue == 0
+            assert period.new_subscriptions == 0
+            assert period.new_subscriptions_revenue == 0
+            assert period.renewed_subscriptions == 0
+            assert period.renewed_subscriptions_revenue == 0
+            assert period.active_subscriptions == 0
+            assert period.monthly_recurring_revenue == 0

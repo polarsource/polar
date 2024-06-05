@@ -36,7 +36,10 @@ class MetricsService:
         )
         timestamp_column: ColumnElement[datetime] = timestamp_series.c.timestamp
 
-        queries = [query(timestamp_series, interval, METRICS) for query in QUERIES]
+        queries = [
+            query(timestamp_series, interval, auth_subject, METRICS)
+            for query in QUERIES
+        ]
 
         from_query: FromClause = timestamp_series
         for query in queries:

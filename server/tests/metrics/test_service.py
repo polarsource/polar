@@ -353,3 +353,34 @@ class TestGetMetrics:
         assert dec_31.renewed_subscriptions_revenue == 0
         assert dec_31.active_subscriptions == 0
         assert dec_31.monthly_recurring_revenue == 0
+
+    @pytest.mark.auth()
+    async def test_values_year_interval(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        user_organization_admin: UserOrganization,
+        fixtures: tuple[dict[str, Subscription], dict[str, Order]],
+    ) -> None:
+        metrics = await metrics_service.get_metrics(
+            session,
+            auth_subject,
+            start_date=date(2024, 1, 1),
+            end_date=date(2024, 12, 31),
+            interval=Interval.year,
+        )
+
+        assert len(metrics.periods) == 1
+
+        period = metrics.periods[0]
+        assert period.orders == 4
+        assert period.revenue == 400_00
+        assert period.average_order_value == 100_00
+        assert period.one_time_products == 1
+        assert period.one_time_products_revenue == 100_00
+        assert period.new_subscriptions == 2
+        assert period.new_subscriptions_revenue == 300_00
+        assert period.renewed_subscriptions == 0
+        assert period.renewed_subscriptions_revenue == 0
+        assert period.active_subscriptions == 2
+        assert period.monthly_recurring_revenue == 200_00

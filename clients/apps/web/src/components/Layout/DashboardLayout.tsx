@@ -145,7 +145,7 @@ const DashboardLayout = (props: PropsWithChildren<{ className?: string }>) => {
         </div>
         <div
           className={twMerge(
-            'dark:bg-polar-950 bg-gray-75 relative flex h-full w-full translate-x-0 flex-row overflow-hidden pt-8 md:pt-0',
+            'dark:bg-polar-950 relative flex h-full w-full translate-x-0 flex-row overflow-hidden bg-white pt-8 md:pt-0',
             props.className,
           )}
         >

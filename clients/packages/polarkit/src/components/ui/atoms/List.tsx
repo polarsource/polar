@@ -38,10 +38,10 @@ export const ListItem = ({
   return (
     <div
       className={twMerge(
-        'flex flex-row items-center justify-between bg-white dark:bg-transparent',
+        'flex flex-row items-center justify-between bg-gray-50 dark:bg-transparent',
         selected
-          ? 'dark:bg-polar-800 bg-blue-50'
-          : 'dark:hover:bg-polar-900 hover:bg-gray-50',
+          ? 'dark:bg-polar-800 bg-white'
+          : 'dark:hover:bg-polar-900 hover:bg-white',
         onSelect && 'cursor-pointer',
         size === 'default' ? 'px-6 py-4' : 'px-4 py-2',
         className,

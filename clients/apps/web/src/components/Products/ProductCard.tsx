@@ -30,7 +30,7 @@ export const ProductCard = ({
     showOrganization,
   )
   return (
-    <div className="dark:border-polar-700 dark:hover:bg-polar-900 flex h-full w-full flex-col gap-6 rounded-3xl border border-transparent bg-white p-6 shadow-sm transition-colors hover:bg-gray-50 dark:bg-transparent">
+    <div className="dark:border-polar-700 dark:hover:bg-polar-800 flex h-full w-full flex-col gap-6 rounded-3xl border border-gray-100 p-6 transition-colors hover:bg-gray-50">
       {isFeatureEnabled('products') && (
         <>
           {dummyMedia.length > 0 ? (

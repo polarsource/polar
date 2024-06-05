@@ -85,8 +85,10 @@ export const Upsell = ({
   children,
 }: PropsWithChildren<{ title: string; description: string }>) => {
   return (
-    <div className="dark:border-polar-700 dark:text-polar-400 flex flex-col gap-y-6 rounded-3xl bg-white p-6 shadow-2xl dark:border dark:bg-transparent dark:shadow-none">
-      <h3 className="dark:text-polar-50 font-medium text-gray-950">{title}</h3>
+    <div className="dark:border-polar-700 dark:text-polar-400 bg-gray-75 flex flex-col gap-y-6 rounded-3xl p-6 dark:border dark:bg-transparent">
+      <h3 className="dark:text-polar-50 text-lg font-medium text-gray-950">
+        {title}
+      </h3>
       <p className="dark:text-polar-300 -mt-2 text-sm text-gray-500">
         {description}
       </p>

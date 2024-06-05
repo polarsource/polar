@@ -14,7 +14,7 @@ import {
 import { useCallback, useRef } from 'react'
 import { useHoverDirty } from 'react-use'
 
-const DownloadableItem = ({
+export const DownloadableItem = ({
   downloadable,
   historic,
 }: {

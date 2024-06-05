@@ -94,7 +94,6 @@ jobs:
         env:
           MINIO_ROOT_USER: polar
           MINIO_ROOT_PASSWORD: polarpolar
-        entrypoint: "bash server/.minio/github.sh"
         options: >-
           --health-cmd "curl -I http://127.0.0.1:9000/minio/health/live"
           --health-interval 10s
@@ -102,6 +101,10 @@ jobs:
           --health-retries 5
 
     steps:
+      - name: 💿 MinIO Setup
+        working-directory: ./server
+        run:  bash .minio/github.sh
+
       - uses: actions/checkout@v3
       - name: Install poetry
         run: pipx install poetry

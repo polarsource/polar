@@ -134,7 +134,7 @@ const SubscriptionItem = ({
           </div>
         </div>
       </div>
-      <div className="flex flex-row items-baseline gap-4">
+      <div className="flex flex-row items-baseline gap-4 text-sm">
         <span className="dark:text-polar-500 capitalize text-gray-500">
           {subscription.status}
         </span>

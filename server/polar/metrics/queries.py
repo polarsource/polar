@@ -17,7 +17,7 @@ from sqlalchemy import (
     text,
 )
 
-from polar.models import Order, Subscription
+from polar.models import Order, ProductPrice, Subscription
 
 if TYPE_CHECKING:
     from .metrics import Metric
@@ -135,6 +135,10 @@ def get_active_subscriptions_cte(
                         > interval.sql_date_trunc(timestamp_column),
                     ),
                 ),
+            ).join(
+                ProductPrice,
+                isouter=True,
+                onclause=Subscription.price_id == ProductPrice.id,
             )
         )
         .group_by(timestamp_column)

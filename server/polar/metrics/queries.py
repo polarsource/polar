@@ -69,10 +69,13 @@ def get_timestamp_series_cte(
 def _get_metrics_columns(
     metric_cte: MetricQuery,
     timestamp_column: ColumnElement[datetime],
+    interval: Interval,
     metrics: list["type[Metric]"],
 ) -> Generator[ColumnElement[int], None, None]:
     return (
-        func.coalesce(metric.get_sql_expression(timestamp_column), 0).label(metric.slug)
+        func.coalesce(metric.get_sql_expression(timestamp_column, interval), 0).label(
+            metric.slug
+        )
         for metric in metrics
         if metric.query == metric_cte
     )
@@ -133,7 +136,9 @@ def get_orders_cte(
     return cte(
         select(
             timestamp_column.label("timestamp"),
-            *_get_metrics_columns(MetricQuery.orders, timestamp_column, metrics),
+            *_get_metrics_columns(
+                MetricQuery.orders, timestamp_column, interval, metrics
+            ),
         )
         .select_from(
             timestamp_series.join(
@@ -198,7 +203,7 @@ def get_active_subscriptions_cte(
         select(
             timestamp_column.label("timestamp"),
             *_get_metrics_columns(
-                MetricQuery.active_subscriptions, timestamp_column, metrics
+                MetricQuery.active_subscriptions, timestamp_column, interval, metrics
             ),
         )
         .select_from(

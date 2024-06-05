@@ -1,12 +1,12 @@
 from datetime import datetime
 from enum import StrEnum
-from typing import ClassVar, Protocol
+from typing import ClassVar, Protocol, cast
 
-from sqlalchemy import ColumnElement, Integer, func
+from sqlalchemy import ColumnElement, Integer, SQLColumnExpression, func
 
 from polar.models import Order, ProductPrice, Subscription
 
-from .queries import MetricQuery
+from .queries import Interval, MetricQuery
 
 
 class MetricType(StrEnum):
@@ -21,7 +21,9 @@ class Metric(Protocol):
     query: ClassVar[MetricQuery]
 
     @classmethod
-    def get_sql_expression(cls, t: ColumnElement[datetime]) -> ColumnElement[int]: ...
+    def get_sql_expression(
+        cls, t: ColumnElement[datetime], i: Interval
+    ) -> ColumnElement[int]: ...
 
 
 class OrdersMetric(Metric):
@@ -31,7 +33,9 @@ class OrdersMetric(Metric):
     query = MetricQuery.orders
 
     @classmethod
-    def get_sql_expression(cls, t: ColumnElement[datetime]) -> ColumnElement[int]:
+    def get_sql_expression(
+        cls, t: ColumnElement[datetime], i: Interval
+    ) -> ColumnElement[int]:
         return func.count(Order.id)
 
 
@@ -42,7 +46,9 @@ class RevenueMetric(Metric):
     query = MetricQuery.orders
 
     @classmethod
-    def get_sql_expression(cls, t: ColumnElement[datetime]) -> ColumnElement[int]:
+    def get_sql_expression(
+        cls, t: ColumnElement[datetime], i: Interval
+    ) -> ColumnElement[int]:
         return func.sum(Order.amount)
 
 
@@ -53,7 +59,9 @@ class AverageOrderValueMetric(Metric):
     query = MetricQuery.orders
 
     @classmethod
-    def get_sql_expression(cls, t: ColumnElement[datetime]) -> ColumnElement[int]:
+    def get_sql_expression(
+        cls, t: ColumnElement[datetime], i: Interval
+    ) -> ColumnElement[int]:
         return func.cast(func.ceil(func.avg(Order.amount)), Integer)
 
 
@@ -64,7 +72,9 @@ class OneTimeProductsMetric(Metric):
     query = MetricQuery.orders
 
     @classmethod
-    def get_sql_expression(cls, t: ColumnElement[datetime]) -> ColumnElement[int]:
+    def get_sql_expression(
+        cls, t: ColumnElement[datetime], i: Interval
+    ) -> ColumnElement[int]:
         return func.count(Order.id).filter(Order.subscription_id.is_(None))
 
 
@@ -75,7 +85,9 @@ class OneTimeProductsRevenueMetric(Metric):
     query = MetricQuery.orders
 
     @classmethod
-    def get_sql_expression(cls, t: ColumnElement[datetime]) -> ColumnElement[int]:
+    def get_sql_expression(
+        cls, t: ColumnElement[datetime], i: Interval
+    ) -> ColumnElement[int]:
         return func.sum(Order.amount).filter(Order.subscription_id.is_(None))
 
 
@@ -83,12 +95,17 @@ class NewSubscriptionsMetric(Metric):
     slug = "new_subscriptions"
     display_name = "New Subscriptions"
     type = MetricType.scalar
-    query = MetricQuery.orders
+    query = MetricQuery.active_subscriptions
 
     @classmethod
-    def get_sql_expression(cls, t: ColumnElement[datetime]) -> ColumnElement[int]:
-        return func.count(Subscription.id).filter(
-            func.date_trunc("day", Subscription.started_at) == func.date_trunc("day", t)
+    def get_sql_expression(
+        cls, t: ColumnElement[datetime], i: Interval
+    ) -> ColumnElement[int]:
+        return func.count(Subscription.id.distinct()).filter(
+            i.sql_date_trunc(
+                cast(SQLColumnExpression[datetime], Subscription.started_at)
+            )
+            == i.sql_date_trunc(t)
         )
 
 
@@ -99,9 +116,14 @@ class NewSubscriptionsRevenueMetric(Metric):
     query = MetricQuery.orders
 
     @classmethod
-    def get_sql_expression(cls, t: ColumnElement[datetime]) -> ColumnElement[int]:
+    def get_sql_expression(
+        cls, t: ColumnElement[datetime], i: Interval
+    ) -> ColumnElement[int]:
         return func.sum(Order.amount).filter(
-            func.date_trunc("day", Subscription.started_at) == func.date_trunc("day", t)
+            i.sql_date_trunc(
+                cast(SQLColumnExpression[datetime], Subscription.started_at)
+            )
+            == i.sql_date_trunc(t)
         )
 
 
@@ -112,9 +134,14 @@ class RenewedSubscriptionsMetric(Metric):
     query = MetricQuery.orders
 
     @classmethod
-    def get_sql_expression(cls, t: ColumnElement[datetime]) -> ColumnElement[int]:
-        return func.count(Subscription.id).filter(
-            func.date_trunc("day", Subscription.started_at) != func.date_trunc("day", t)
+    def get_sql_expression(
+        cls, t: ColumnElement[datetime], i: Interval
+    ) -> ColumnElement[int]:
+        return func.count(Subscription.id.distinct()).filter(
+            i.sql_date_trunc(
+                cast(SQLColumnExpression[datetime], Subscription.started_at)
+            )
+            != i.sql_date_trunc(t)
         )
 
 
@@ -125,9 +152,14 @@ class RenewedSubscriptionsRevenueMetric(Metric):
     query = MetricQuery.orders
 
     @classmethod
-    def get_sql_expression(cls, t: ColumnElement[datetime]) -> ColumnElement[int]:
+    def get_sql_expression(
+        cls, t: ColumnElement[datetime], i: Interval
+    ) -> ColumnElement[int]:
         return func.sum(Order.amount).filter(
-            func.date_trunc("day", Subscription.started_at) != func.date_trunc("day", t)
+            i.sql_date_trunc(
+                cast(SQLColumnExpression[datetime], Subscription.started_at)
+            )
+            != i.sql_date_trunc(t)
         )
 
 
@@ -138,7 +170,9 @@ class ActiveSubscriptionsMetric(Metric):
     query = MetricQuery.active_subscriptions
 
     @classmethod
-    def get_sql_expression(cls, t: ColumnElement[datetime]) -> ColumnElement[int]:
+    def get_sql_expression(
+        cls, t: ColumnElement[datetime], i: Interval
+    ) -> ColumnElement[int]:
         return func.count(Subscription.id)
 
 
@@ -149,7 +183,9 @@ class MonthlyRecurringRevenueMetric(Metric):
     query = MetricQuery.active_subscriptions
 
     @classmethod
-    def get_sql_expression(cls, t: ColumnElement[datetime]) -> ColumnElement[int]:
+    def get_sql_expression(
+        cls, t: ColumnElement[datetime], i: Interval
+    ) -> ColumnElement[int]:
         return func.coalesce(func.sum(ProductPrice.price_amount), 0)
 
 

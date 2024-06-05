@@ -5,7 +5,7 @@ import structlog
 
 from polar.config import settings
 from polar.exceptions import ResourceNotFound
-from polar.integrations.aws.s3 import S3FileError, S3Service, S3UnsupportedFile
+from polar.integrations.aws.s3 import S3FileError, S3Service
 from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.services import ResourceService
 from polar.kit.utils import utc_now
@@ -27,9 +27,6 @@ log = structlog.get_logger()
 
 
 class FileError(S3FileError): ...
-
-
-class UnsupportedFile(S3UnsupportedFile): ...
 
 
 class FileNotFound(ResourceNotFound): ...

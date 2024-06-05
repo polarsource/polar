@@ -58,12 +58,16 @@ export class Upload {
   async create(): Promise<FileUpload> {
     const sha256base64 = await this.getSha256Base64(this.buffer)
     const parts = await this.getMultiparts()
+    const mimeType = this.file.type
+      ? this.file.type
+      : 'application/octet-stream'
+
     const params: FileCreate = {
       organization_id: this.organization.id,
       service: this.service,
       name: this.file.name,
       size: this.file.size,
-      mime_type: this.file.type,
+      mime_type: mimeType,
       checksum_sha256_base64: sha256base64,
       upload: { parts: parts },
     }

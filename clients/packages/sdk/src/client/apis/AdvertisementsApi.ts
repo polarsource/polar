@@ -66,7 +66,7 @@ export class AdvertisementsApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
+            path: `/api/v1/advertisements/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
@@ -125,7 +125,7 @@ export class AdvertisementsApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/`,
+            path: `/api/v1/advertisements/`,
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
@@ -168,7 +168,7 @@ export class AdvertisementsApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/{id}/view`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
+            path: `/api/v1/advertisements/{id}/view`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,

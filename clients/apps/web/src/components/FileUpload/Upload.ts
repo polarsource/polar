@@ -1,3 +1,5 @@
+'use client'
+
 import { api } from '@/utils/api'
 import {
   FileCreate,
@@ -171,6 +173,7 @@ export class Upload {
       }
 
       xhr.open('PUT', part.url, true)
+      xhr.setRequestHeader('Origin', window.location.origin)
       if (part.headers) {
         for (const [header, value] of Object.entries(part.headers)) {
           xhr.setRequestHeader(header, value)

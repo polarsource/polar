@@ -129,7 +129,6 @@ class TestEndpoints:
         created = self.ensure_expected_create_response(
             response, organization_id, file=logo_png
         )
-        assert created.extension == "png"
 
     @pytest.mark.http_auto_expunge
     @pytest.mark.auth(
@@ -152,7 +151,6 @@ class TestEndpoints:
         created = self.ensure_expected_create_response(
             response, organization_id, file=logo_jpg
         )
-        assert created.extension == "jpg"
 
         await self.upload_multiparts_and_test(created, file=logo_jpg)
 
@@ -185,7 +183,6 @@ class TestEndpoints:
         created = self.ensure_expected_create_response(
             response, organization_id, file=logo_jpg
         )
-        assert created.extension == "jpg"
 
         part = created.upload.parts[0]
 
@@ -252,8 +249,6 @@ class TestEndpoints:
             response, organization_id, file=logo_jpg
         )
 
-        assert created.extension == "jpg"
-
         uploaded_parts = await self.upload_multiparts_and_test(created, file=logo_jpg)
 
         payload = FileUploadCompleted(
@@ -279,7 +274,6 @@ class TestEndpoints:
         assert metadata["polar-id"] == str(uploaded.id)
         assert metadata["polar-organization-id"] == str(uploaded.organization_id)
         assert metadata["polar-name"] == uploaded.name
-        assert metadata["polar-extension"] == uploaded.extension
         assert metadata["polar-size"] == str(logo_jpg.size)
         assert s3_object["ContentLength"] == logo_jpg.size
         assert s3_object["ContentType"] == logo_jpg.mime_type

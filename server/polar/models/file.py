@@ -45,7 +45,6 @@ class File(RecordModel):
         return relationship("Organization", lazy="raise")
 
     name: Mapped[str] = mapped_column(String, nullable=False)
-    extension: Mapped[str] = mapped_column(String, nullable=False)
     version: Mapped[str | None] = mapped_column(String, nullable=True)
     path: Mapped[str] = mapped_column(String, nullable=False)
     mime_type: Mapped[str] = mapped_column(String, nullable=False)

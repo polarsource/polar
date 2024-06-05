@@ -1,5 +1,4 @@
 import base64
-import mimetypes
 from datetime import datetime, timedelta
 from typing import TYPE_CHECKING, Any, cast
 
@@ -9,7 +8,7 @@ from botocore.client import ClientError
 from polar.kit.utils import generate_uuid, utc_now
 
 from .client import client
-from .exceptions import S3FileError, S3UnsupportedFile
+from .exceptions import S3FileError
 from .schemas import (
     S3File,
     S3FileCreate,
@@ -44,20 +43,17 @@ class S3Service:
         if not data.organization_id:
             raise S3FileError("Organization ID is required")
 
-        extension = mimetypes.guess_extension(data.mime_type)
-        if not extension:
-            raise S3UnsupportedFile("Cannot determine file extension")
-
         file_uuid = generate_uuid()
-        filename = f"{file_uuid}{extension}"
+        # Each organization gets its own directory
+        # Containing one directory per file: {file_uuid}/{data.name}
+        # Allowing multiple files to be named the same.
+        path = f"{namespace}/{data.organization_id}/{file_uuid}/{data.name}"
 
         file = S3File(
             id=file_uuid,
             organization_id=data.organization_id,
             name=data.name,
-            extension=extension[1:],
-            # Each organization gets its own directory
-            path=f"{namespace}/{data.organization_id}/{filename}",
+            path=path,
             mime_type=data.mime_type,
             size=data.size,
         )

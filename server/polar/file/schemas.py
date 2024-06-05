@@ -32,7 +32,6 @@ class FileRead(S3File):
             id=record.id,
             organization_id=record.organization_id,
             name=record.name,
-            extension=record.extension,
             path=record.path,
             mime_type=record.mime_type,
             size=record.size,

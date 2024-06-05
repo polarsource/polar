@@ -51,7 +51,6 @@ class S3File(Schema, validate_assignment=True):
     organization_id: UUID4
 
     name: str
-    extension: str
     path: str
     mime_type: str
     size: int
@@ -78,7 +77,6 @@ class S3File(Schema, validate_assignment=True):
             "polar-id": str(self.id),
             "polar-organization-id": str(self.organization_id),
             "polar-name": self.name,
-            "polar-extension": self.extension,
             "polar-size": str(self.size),
         }
         if self.checksum_sha256_base64:
@@ -95,7 +93,6 @@ class S3File(Schema, validate_assignment=True):
             id=metadata.get("polar-id"),
             organization_id=metadata.get("polar-organization-id"),
             name=metadata.get("polar-name"),
-            extension=metadata.get("polar-extension"),
             path=path,
             mime_type=head.get("ContentType", None),
             size=metadata.get("polar-size"),

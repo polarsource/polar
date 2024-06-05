@@ -25,7 +25,6 @@ from tests.fixtures.file import TestFile
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
 class TestEndpoints:
-
     def ensure_expected_create_response(
         self, response: Response, organization_id: UUID, file: TestFile, parts: int = 1
     ) -> FileUpload:

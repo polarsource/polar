@@ -191,7 +191,7 @@ export const CreateProductModal = ({
       </div>
       <div className="dark:bg-polar-900 dark:border-polar-700 flex flex-row items-center gap-2 border-t border-gray-100 bg-gray-50 p-8">
         <Button onClick={handleSubmit(onSubmit)}>Create Product</Button>
-        <Button variant="secondary" onClick={hide}>
+        <Button variant="ghost" onClick={hide}>
           Cancel
         </Button>
       </div>

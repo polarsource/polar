@@ -115,7 +115,6 @@ export class Upload {
      */
     for (let i = 0; i < partCount; i++) {
       const part = parts[i]
-      console.log(part)
       const completed = await this.upload({
         part,
         onProgress: (chunk_uploaded) => {

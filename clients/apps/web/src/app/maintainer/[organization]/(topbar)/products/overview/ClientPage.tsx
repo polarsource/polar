@@ -10,15 +10,12 @@ import ProductPriceTypeSelect from '@/components/Products/ProductPriceTypeSelect
 import { useCurrentOrgAndRepoFromURL } from '@/hooks'
 import { useProduct, useProducts } from '@/hooks/queries/products'
 import { isFeatureEnabled } from '@/utils/feature-flags'
-import {
-  AddOutlined,
-  CloseOutlined,
-  DiamondOutlined,
-} from '@mui/icons-material'
+import { AddOutlined, CloseOutlined } from '@mui/icons-material'
 import { ProductPriceType } from '@polar-sh/sdk'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Button from 'polarkit/components/ui/atoms/button'
+import ShadowBox from 'polarkit/components/ui/atoms/shadowbox'
 import { useCallback, useEffect, useState } from 'react'
 
 export default function ClientPage() {
@@ -85,25 +82,24 @@ export default function ClientPage() {
   return (
     <DashboardBody className="flex flex-col gap-8">
       {!dismissedAnnouncement && (
-        <div className="flex flex-row gap-y-8 rounded-3xl bg-gradient-to-r from-blue-200 to-blue-400 p-6 text-white">
+        <ShadowBox className="relative">
           <div className="flex w-full flex-col gap-y-4">
-            <DiamondOutlined fontSize="large" />
             <h3 className="text-xl leading-normal [text-wrap:balance]">
-              Subscription Tiers management has been moved!
+              Subscription Tiers management has a new home
             </h3>
-            <p className="">
+            <p className="dark:text-polar-500 w-1/2 text-balance text-gray-500">
               Your Subscription Tiers are now managed from the new Products
-              section. Soon, we&apos;ll also add support to one-time purchase
+              section. Soon, we&apos;ll also add support for one-time purchase
               products and more!
             </p>
           </div>
           <div
-            className="cursor-pointer hover:text-gray-300"
+            className="absolute right-6 top-6 cursor-pointer hover:text-gray-300"
             onClick={dismissAnnouncement}
           >
             <CloseOutlined fontSize="inherit" />
           </div>
-        </div>
+        </ShadowBox>
       )}
       <div className="flex flex-row items-center justify-between">
         <h1 className="text-lg">Overview</h1>

@@ -43,7 +43,7 @@ services:
       - "6380:6380"
 
   minio:
-    image: docker.io/bitnami/minio:2024.5.28
+    image: bitnami/minio:2024.5.28
     ports:
       - "9000:9000"
       - "9001:9001"
@@ -54,7 +54,7 @@ services:
       - MINIO_ROOT_PASSWORD=${POLAR_MINIO_PWD}
 
   minio-setup:
-    image: docker.io/bitnami/minio-client:2024.5.24
+    image: bitnami/minio-client:2024.5.24
     depends_on:
       - minio
     volumes:

@@ -42,6 +42,8 @@ export const resolveBenefitTypeDisplayName = (type: BenefitType) => {
       return 'Discord Server Invite'
     case BenefitType.GITHUB_REPOSITORY:
       return 'GitHub Repository Access'
+    case BenefitType.DOWNLOADABLES:
+      return 'Downloadable Files'
     default:
       return 'Custom'
   }

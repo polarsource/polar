@@ -184,7 +184,7 @@ const BenefitsUpsell = () => {
           {MOCKED_PRODUCTS.map((tier) => (
             <motion.div key={tier.id} className="w-[300px]">
               <SubscriptionTierCard
-                className="dark:ring-polar-700 h-full border-none ring-1 ring-gray-100"
+                className="dark:ring-polar-700 h-full border-none bg-white ring-1 ring-gray-100"
                 variant="small"
                 subscriptionTier={tier}
               />
@@ -388,7 +388,7 @@ const DevelopersUpsell = () => {
     return (
       <Link
         href={href}
-        className="dark:bg-polar-900 flex flex-col items-center gap-y-6 bg-gray-100 p-8"
+        className="dark:bg-polar-900 flex flex-col items-center gap-y-6 bg-white p-8"
       >
         <Avatar className="h-16 w-16" avatar_url={avatarUrl} name={name} />
         <div className="flex flex-col items-center gap-y-2 text-center">

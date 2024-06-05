@@ -36,6 +36,7 @@ const AnonymousCheckoutButton: React.FC<
         className={variant === 'outline' ? buttonClasses : ''}
         fullWidth
         variant={variant}
+        size="lg"
       >
         {children}
       </Button>
@@ -146,6 +147,7 @@ const AuthenticatedCheckoutButton: React.FC<
                 fullWidth
                 disabled
                 variant={variant}
+                size="lg"
               >
                 Subscribed
               </Button>
@@ -157,6 +159,7 @@ const AuthenticatedCheckoutButton: React.FC<
                   fullWidth
                   variant={variant}
                   onClick={() => onUpgrade()}
+                  size="lg"
                 >
                   {isDowngrade ? 'Downgrade' : 'Upgrade'}
                 </Button>
@@ -191,6 +194,7 @@ const AuthenticatedCheckoutButton: React.FC<
                   className={variant === 'outline' ? buttonClasses : ''}
                   fullWidth
                   variant={variant}
+                  size="lg"
                 >
                   {children}
                 </Button>
@@ -203,6 +207,7 @@ const AuthenticatedCheckoutButton: React.FC<
             disabled={true}
             loading={true}
             value={'outline'}
+            size="lg"
           ></Button>
         )}
       </div>

@@ -1,11 +1,15 @@
 'use client'
 
-import { resolveBenefitIcon } from '@/components/Benefit/utils'
+import {
+  resolveBenefitIcon,
+  resolveBenefitTypeDisplayName,
+} from '@/components/Benefit/utils'
 import GitHubIcon from '@/components/Icons/GitHubIcon'
 import { useOrganization } from '@/hooks/queries'
 import { UserBenefit } from '@polar-sh/sdk'
 import Link from 'next/link'
 import Button from 'polarkit/components/ui/atoms/button'
+import DownloadablesSubscriberWidget from './Downloadables/SubscriberWidget'
 import ConfigureAdCampaigns from './ads/ConfigureAdCampaigns'
 
 interface BenefitDetailsProps {
@@ -49,9 +53,7 @@ const BenefitDetails = ({ benefit }: BenefitDetailsProps) => {
           </span>
         </div>
         <h2 className="font-medium capitalize">
-          {benefit.type === 'github_repository'
-            ? 'GitHub Repository Access'
-            : benefit.type}
+          {resolveBenefitTypeDisplayName(benefit.type)}
         </h2>
       </div>
       <p className="dark:text-polar-500 text-sm text-gray-500">
@@ -70,6 +72,10 @@ const BenefitDetails = ({ benefit }: BenefitDetailsProps) => {
 
       {benefit.type === 'ads' ? (
         <ConfigureAdCampaigns benefit={benefit} />
+      ) : null}
+
+      {benefit.type === 'downloadables' ? (
+        <DownloadablesSubscriberWidget benefit={benefit} />
       ) : null}
     </div>
   )

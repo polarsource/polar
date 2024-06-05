@@ -47,7 +47,7 @@ const SubscriptionsMetric: React.FC<SubscriptionsMetricProps> = ({
     [data, dataFormatter],
   )
   return (
-    <Card className="shadow-sm">
+    <Card>
       <CardHeader className="flex flex-row items-center justify-between space-y-0">
         <div className="font-medium">{title}</div>
         <span className="text-blue-500 dark:text-white">

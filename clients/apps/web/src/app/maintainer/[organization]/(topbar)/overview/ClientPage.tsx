@@ -64,7 +64,7 @@ const OverviewPage: React.FC<OverviewPageProps> = ({
           data={lastPeriod?.earnings ?? 0}
           hasPayoutAccount={organization.account_id !== null}
         />
-        <Card className="shadow-sm">
+        <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0">
             <div className="font-medium">Goal</div>
             <span className="text-blue-500 dark:text-white">

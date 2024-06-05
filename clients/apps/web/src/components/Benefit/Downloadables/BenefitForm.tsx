@@ -68,14 +68,6 @@ const DownloadablesForm = ({
     [key: string]: boolean
   }>(initialArchivedFiles ?? {})
 
-  /**
-   * TODO
-   *
-   * Update design
-   * Update benefit file properties to include enabled: true/false
-   * Sortable files
-   */
-
   const setFormFiles = (formFiles: FileObject[]) => {
     const files = []
 

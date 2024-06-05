@@ -208,13 +208,19 @@ class TestEndpoints:
         tampered_url = f"{url.scheme}://{url.netloc}{url.path}?{tampered_query}"
 
         async with AsyncClient() as minio_client:
-            # TODO
-            # Investigate this issue with httpx raising ReadError instead
-            # of handling the denied request
-            with pytest.raises(ReadError):
-                await minio_client.put(
+            try:
+                failed = False
+                res = await minio_client.put(
                     tampered_url, content=logo_jpg.data, headers=part.headers
                 )
+                # TODO
+                # Investigate this issue with httpx raising ReadError instead
+                # of handling the denied request (sometimes)
+                failed = res.status_code != 200
+            except ReadError:
+                failed = True
+
+            assert failed
 
         # S3 object is definitely not available
         with pytest.raises(S3FileError):

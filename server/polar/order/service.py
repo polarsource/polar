@@ -67,11 +67,11 @@ class NotAnOrderInvoice(OrderError):
         super().__init__(message)
 
 
-class InvoiceWithNoOrMultipleLines(OrderError):
+class CantDetermineInvoicePrice(OrderError):
     def __init__(self, invoice_id: str) -> None:
         self.invoice_id = invoice_id
         message = (
-            f"Received invoice {invoice_id} from Stripe with no or multiple lines."
+            f"Received invoice {invoice_id} from Stripe, but can't determine the price."
         )
         super().__init__(message)
 
@@ -302,11 +302,13 @@ class OrderService(ResourceServiceReader[Order]):
         assert invoice.charge is not None
 
         # Get price and product
-        if len(invoice.lines.data) != 1:
-            raise InvoiceWithNoOrMultipleLines(invoice.id)
-        line = invoice.lines.data[0]
-        assert line.price is not None
-        stripe_price_id = line.price.id
+        stripe_price_ids = set[str]()
+        for line in invoice.lines.data:
+            if not line.proration and line.price is not None:
+                stripe_price_ids.add(line.price.id)
+        if len(stripe_price_ids) != 1:
+            raise CantDetermineInvoicePrice(invoice.id)
+        stripe_price_id = stripe_price_ids.pop()
         product_price = await product_price_service.get_by_stripe_price_id(
             session, stripe_price_id
         )

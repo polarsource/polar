@@ -337,10 +337,6 @@ const BenefitContextWidget = ({
         <ConfigureAdCampaigns benefit={benefit} />
       ) : null}
 
-      {benefit.type === 'ads' ? (
-        <ConfigureAdCampaigns benefit={benefit} />
-      ) : null}
-
       {benefit.type === 'downloadables' ? (
         <DownloadablesSubscriberWidget benefit={benefit} />
       ) : null}

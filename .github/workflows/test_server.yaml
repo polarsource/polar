@@ -102,6 +102,20 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
+
+      - name: 💿 MinIO Setup
+        working-directory: ./server/.minio
+        env:
+          MINIO_HOST: 127.0.0.1
+          MINIO_ROOT_USER: polar
+          MINIO_ROOT_PASSWORD: polarpolar
+          ACCESS_KEY: polar-development
+          SECRET_ACCESS_KEY: polar123456789
+          BUCKET_NAME: polar-s3
+          BUCKET_TESTING_NAME: testing-polar-s3
+          POLICY_FILE: policy.json
+        run:  bash github.sh
+
       - name: Install poetry
         run: pipx install poetry
       - uses: actions/setup-python@v4
@@ -136,11 +150,6 @@ jobs:
         env:
           POLAR_ENV: testing
         run:  poetry run alembic check
-
-      - name: 💿 MinIO Setup
-        working-directory: ./server/.minio
-        run:  bash github.sh
-
 
       - name: 🐍 Run tests (pytest)
         working-directory: ./server

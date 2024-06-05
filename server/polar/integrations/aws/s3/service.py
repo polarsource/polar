@@ -66,7 +66,6 @@ class S3Service:
         multipart_upload = self.client.create_multipart_upload(
             Bucket=self.bucket,
             Key=file.path,
-            ContentDisposition=get_downloadable_content_disposition(file.name),
             ContentType=file.mime_type,
             ChecksumAlgorithm="SHA256",
             Metadata=file.to_metadata(),

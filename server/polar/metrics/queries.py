@@ -17,7 +17,16 @@ from sqlalchemy import (
     text,
 )
 
-from polar.models import Order, ProductPrice, Subscription
+from polar.auth.models import AuthSubject, is_organization, is_user
+from polar.models import (
+    Order,
+    Organization,
+    Product,
+    ProductPrice,
+    Subscription,
+    User,
+    UserOrganization,
+)
 
 if TYPE_CHECKING:
     from .metrics import Metric
@@ -72,6 +81,7 @@ QueryCallable = Callable[
     [
         CTE,
         Interval,
+        AuthSubject[User | Organization],
         list["type[Metric]"],
     ],
     CTE,
@@ -79,9 +89,31 @@ QueryCallable = Callable[
 
 
 def get_orders_cte(
-    timestamp_series: CTE, interval: Interval, metrics: list["type[Metric]"]
+    timestamp_series: CTE,
+    interval: Interval,
+    auth_subject: AuthSubject[User | Organization],
+    metrics: list["type[Metric]"],
 ) -> CTE:
     timestamp_column: ColumnElement[datetime] = timestamp_series.c.timestamp
+
+    readable_orders_statement = select(Order.id).join(
+        Product, onclause=Order.product_id == Product.id
+    )
+    if is_user(auth_subject):
+        readable_orders_statement = readable_orders_statement.where(
+            Product.organization_id.in_(
+                select(UserOrganization.organization_id).where(
+                    UserOrganization.user_id == auth_subject.subject.id,
+                    UserOrganization.deleted_at.is_(None),
+                    UserOrganization.is_admin.is_(True),
+                )
+            )
+        )
+    elif is_organization(auth_subject):
+        readable_orders_statement = readable_orders_statement.where(
+            Product.organization_id == auth_subject.subject.id
+        )
+
     return cte(
         select(
             timestamp_column.label("timestamp"),
@@ -91,8 +123,11 @@ def get_orders_cte(
             timestamp_series.join(
                 Order,
                 isouter=True,
-                onclause=interval.sql_date_trunc(Order.created_at)
-                == interval.sql_date_trunc(timestamp_column),
+                onclause=and_(
+                    interval.sql_date_trunc(Order.created_at)
+                    == interval.sql_date_trunc(timestamp_column),
+                    Order.id.in_(readable_orders_statement),
+                ),
             ).join(
                 Subscription,
                 isouter=True,
@@ -105,9 +140,31 @@ def get_orders_cte(
 
 
 def get_active_subscriptions_cte(
-    timestamp_series: CTE, interval: Interval, metrics: list["type[Metric]"]
+    timestamp_series: CTE,
+    interval: Interval,
+    auth_subject: AuthSubject[User | Organization],
+    metrics: list["type[Metric]"],
 ) -> CTE:
     timestamp_column: ColumnElement[datetime] = timestamp_series.c.timestamp
+
+    readable_subscriptions_statement = select(Subscription.id).join(
+        Product, onclause=Subscription.product_id == Product.id
+    )
+    if is_user(auth_subject):
+        readable_subscriptions_statement = readable_subscriptions_statement.where(
+            Product.organization_id.in_(
+                select(UserOrganization.organization_id).where(
+                    UserOrganization.user_id == auth_subject.subject.id,
+                    UserOrganization.deleted_at.is_(None),
+                    UserOrganization.is_admin.is_(True),
+                )
+            )
+        )
+    elif is_organization(auth_subject):
+        readable_subscriptions_statement = readable_subscriptions_statement.where(
+            Product.organization_id == auth_subject.subject.id
+        )
+
     return cte(
         select(
             timestamp_column.label("timestamp"),
@@ -134,6 +191,7 @@ def get_active_subscriptions_cte(
                         )
                         > interval.sql_date_trunc(timestamp_column),
                     ),
+                    Subscription.id.in_(readable_subscriptions_statement),
                 ),
             ).join(
                 ProductPrice,

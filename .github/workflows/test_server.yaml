@@ -101,10 +101,6 @@ jobs:
           --health-retries 5
 
     steps:
-      - name: 💿 MinIO Setup
-        working-directory: ./server
-        run:  bash .minio/github.sh
-
       - uses: actions/checkout@v3
       - name: Install poetry
         run: pipx install poetry
@@ -140,6 +136,11 @@ jobs:
         env:
           POLAR_ENV: testing
         run:  poetry run alembic check
+
+      - name: 💿 MinIO Setup
+        working-directory: ./server/.minio
+        run:  bash github.sh
+
 
       - name: 🐍 Run tests (pytest)
         working-directory: ./server

@@ -57,6 +57,7 @@ export const useSections = (): Section[] => {
       const [ancestor] = path.replace('/api/v1/', '').split('/').filter(Boolean)
 
       switch (ancestor) {
+        case undefined:
         case 'readyz':
         case 'healthz':
         case 'backoffice':

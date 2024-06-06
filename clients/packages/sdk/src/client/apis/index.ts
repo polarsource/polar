@@ -19,6 +19,7 @@ export * from './IntegrationsGithubRepositoryBenefitApi';
 export * from './IntegrationsStripeApi';
 export * from './IssuesApi';
 export * from './MagicLinkApi';
+export * from './MetricsApi';
 export * from './NotificationsApi';
 export * from './Oauth2Api';
 export * from './OrdersApi';

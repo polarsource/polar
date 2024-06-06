@@ -17,6 +17,7 @@ apis/IntegrationsGithubRepositoryBenefitApi.ts
 apis/IntegrationsStripeApi.ts
 apis/IssuesApi.ts
 apis/MagicLinkApi.ts
+apis/MetricsApi.ts
 apis/NotificationsApi.ts
 apis/Oauth2Api.ts
 apis/OrdersApi.ts

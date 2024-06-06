@@ -16,6 +16,7 @@ from polar.kit.sorting import Sorting
 from polar.kit.utils import utc_now
 from polar.models import Organization, Product, ProductPrice, Subscription, User
 from polar.models.product import SubscriptionTierType
+from polar.models.product_price import ProductPriceType
 from polar.models.subscription import SubscriptionStatus
 from polar.product.service.product import product as product_service
 from polar.product.service.product_price import product_price as product_price_service
@@ -236,6 +237,18 @@ class UserSubscriptionService(ResourceServiceReader[Subscription]):
                         "type": "value_error",
                         "loc": ("body", "product_price_id"),
                         "msg": "Price is archived.",
+                        "input": subscription_update.product_price_id,
+                    }
+                ]
+            )
+
+        if price.type != ProductPriceType.recurring:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "product_price_id"),
+                        "msg": "Price is not recurring.",
                         "input": subscription_update.product_price_id,
                     }
                 ]

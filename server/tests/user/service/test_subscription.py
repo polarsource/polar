@@ -9,7 +9,8 @@ from polar.auth.models import Anonymous, AuthSubject
 from polar.exceptions import PolarRequestValidationError
 from polar.integrations.stripe.service import StripeService
 from polar.kit.pagination import PaginationParams
-from polar.models import Product, Subscription, User
+from polar.models import Organization, Product, Subscription, User
+from polar.models.product_price import ProductPriceType
 from polar.models.subscription import SubscriptionStatus
 from polar.postgres import AsyncSession
 from polar.subscription.service import AlreadySubscribed
@@ -27,6 +28,8 @@ from polar.user.service.subscription import (
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     create_active_subscription,
+    create_product,
+    create_product_price,
     create_subscription,
 )
 
@@ -254,6 +257,24 @@ class TestUpdate:
                 subscription_update=UserSubscriptionUpdate(
                     product_price_id=uuid.uuid4()
                 ),
+            )
+
+    async def test_not_recurring_price(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        subscription: Subscription,
+    ) -> None:
+        product = await create_product(save_fixture, organization=organization)
+        price = await create_product_price(
+            save_fixture, product=product, type=ProductPriceType.one_time
+        )
+        with pytest.raises(PolarRequestValidationError):
+            await user_subscription_service.update(
+                session,
+                subscription=subscription,
+                subscription_update=UserSubscriptionUpdate(product_price_id=price.id),
             )
 
     async def test_extraneous_tier(

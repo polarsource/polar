@@ -223,7 +223,7 @@ def get_active_subscriptions_cte(
                         interval.sql_date_trunc(
                             cast(SQLColumnExpression[datetime], Subscription.ended_at)
                         )
-                        > interval.sql_date_trunc(timestamp_column),
+                        >= interval.sql_date_trunc(timestamp_column),
                     ),
                     Subscription.id.in_(readable_subscriptions_statement),
                 ),

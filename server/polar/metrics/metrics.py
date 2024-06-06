@@ -101,7 +101,7 @@ class NewSubscriptionsMetric(Metric):
     def get_sql_expression(
         cls, t: ColumnElement[datetime], i: Interval
     ) -> ColumnElement[int]:
-        return func.count(Subscription.id.distinct()).filter(
+        return func.count(Subscription.id).filter(
             i.sql_date_trunc(
                 cast(SQLColumnExpression[datetime], Subscription.started_at)
             )

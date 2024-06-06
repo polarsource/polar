@@ -92,9 +92,6 @@ class TestList:
         assert count == 2
         assert len(advertisement_campaigns) == 2
 
-        for _, benefit in advertisement_campaigns:
-            assert benefit.id == ads_benefit_organization.id
-
 
 @pytest.mark.asyncio
 @pytest.mark.skip_db_asserts

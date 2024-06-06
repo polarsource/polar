@@ -12,6 +12,7 @@ import {
   FilesApi,
   FundingApi,
   HealthApi,
+  MetricsApi,
   IntegrationsDiscordApi,
   IntegrationsGithubApi,
   IntegrationsGithubRepositoryBenefitApi,
@@ -54,6 +55,7 @@ export class PolarAPI {
   public readonly integrationsGitHubRepositoryBenefit: IntegrationsGithubRepositoryBenefitApi
   public readonly issues: IssuesApi
   public readonly magicLink: MagicLinkApi
+  public readonly metrics: MetricsApi
   public readonly notifications: NotificationsApi
   public readonly oauth2: Oauth2Api
   public readonly orders: OrdersApi
@@ -92,6 +94,7 @@ export class PolarAPI {
       new IntegrationsGithubRepositoryBenefitApi(config)
     this.issues = new IssuesApi(config)
     this.magicLink = new MagicLinkApi(config)
+    this.metrics = new MetricsApi(config)
     this.notifications = new NotificationsApi(config)
     this.oauth2 = new Oauth2Api(config)
     this.orders = new OrdersApi(config)

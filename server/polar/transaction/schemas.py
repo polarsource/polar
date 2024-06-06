@@ -1,11 +1,11 @@
-from pydantic import UUID4
+from pydantic import UUID4, Field
 
 from polar.enums import Platforms
 from polar.kit.schemas import Schema, TimestampedSchema
 from polar.models.pledge import PledgeState
 from polar.models.product import SubscriptionTierType
-from polar.models.product_price import ProductPriceRecurringInterval, ProductPriceType
 from polar.models.transaction import PaymentProcessor, PlatformFeeType, TransactionType
+from polar.product.schemas import ProductPrice
 
 
 class TransactionRepository(TimestampedSchema):
@@ -60,19 +60,13 @@ class TransactionIssueReward(TimestampedSchema):
 
 class TransactionProduct(TimestampedSchema):
     id: UUID4
-    type: SubscriptionTierType
     name: str
     organization_id: UUID4 | None = None
     organization: TransactionOrganization | None = None
+    type: SubscriptionTierType | None = Field(default=None, deprecated=True)
 
 
-class TransactionProductPrice(TimestampedSchema):
-    id: UUID4
-    type: ProductPriceType
-    recurring_interval: ProductPriceRecurringInterval
-    price_amount: int
-    price_currency: str
-    is_archived: bool
+TransactionProductPrice = ProductPrice
 
 
 class TransactionOrder(TimestampedSchema):

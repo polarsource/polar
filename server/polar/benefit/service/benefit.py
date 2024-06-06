@@ -1,6 +1,6 @@
 import uuid
 from collections.abc import Sequence
-from typing import Any
+from typing import Any, TypeVar, overload
 
 from pydantic import BaseModel
 from sqlalchemy import Select, delete, select
@@ -30,27 +30,56 @@ from ..benefits import get_benefit_service
 from ..schemas import BenefitCreate, BenefitUpdate
 from .benefit_grant import benefit_grant as benefit_grant_service
 
+B = TypeVar("B", bound=Benefit)
+
 
 class BenefitError(PolarError): ...
 
 
 class BenefitService(ResourceService[Benefit, BenefitCreate, BenefitUpdate]):
+    @overload
     async def get(
         self,
         session: AsyncSession,
         id: uuid.UUID,
         allow_deleted: bool = False,
         loaded: bool = False,
-    ) -> Benefit | None:
-        query = select(Benefit).where(Benefit.id == id)
+        *,
+        class_: None = None,
+    ) -> Benefit | None: ...
+
+    @overload
+    async def get(
+        self,
+        session: AsyncSession,
+        id: uuid.UUID,
+        allow_deleted: bool = False,
+        loaded: bool = False,
+        *,
+        class_: type[B] | None = None,
+    ) -> B | None: ...
+
+    async def get(
+        self,
+        session: AsyncSession,
+        id: uuid.UUID,
+        allow_deleted: bool = False,
+        loaded: bool = False,
+        *,
+        class_: Any = None,
+    ) -> Any | None:
+        if class_ is None:
+            class_ = Benefit
+
+        query = select(class_).where(class_.id == id)
         if not allow_deleted:
-            query = query.where(Benefit.deleted_at.is_(None))
+            query = query.where(class_.deleted_at.is_(None))
 
         if loaded:
-            query = query.options(joinedload(Benefit.organization))
+            query = query.options(joinedload(class_.organization))
 
         res = await session.execute(query)
-        return res.scalars().unique().one_or_none()
+        return res.scalar_one_or_none()
 
     async def list(
         self,

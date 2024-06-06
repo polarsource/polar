@@ -4,11 +4,13 @@ import structlog
 from fastapi import Depends, Path, Query
 from pydantic import UUID4
 
-from polar.exceptions import ResourceNotFound
+from polar.benefit.service.benefit import benefit as benefit_service
+from polar.exceptions import PolarRequestValidationError, ResourceNotFound
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.routing import APIRouter
 from polar.kit.sorting import Sorting, SortingGetter
 from polar.models import AdvertisementCampaign as AdvertisementCampaignModel
+from polar.models.benefit import BenefitAds
 from polar.postgres import AsyncSession, get_db_session
 from polar.tags.api import Tags
 
@@ -45,9 +47,22 @@ async def list_advertisement_campaigns(
     session: AsyncSession = Depends(get_db_session),
 ) -> AdvertisementCampaignListResource:
     """List active advertisement campaigns for a benefit."""
+    benefit = await benefit_service.get(session, benefit_id, class_=BenefitAds)
+    if benefit is None:
+        raise PolarRequestValidationError(
+            [
+                {
+                    "type": "value_error",
+                    "loc": ("query", "benefit_id"),
+                    "msg": "Benefit not found.",
+                    "input": benefit_id,
+                }
+            ]
+        )
+
     results, count = await advertisement_campaign_service.list(
         session,
-        benefit_id=benefit_id,
+        benefit_id=benefit.id,
         pagination=pagination,
         sorting=sorting,
     )
@@ -55,12 +70,12 @@ async def list_advertisement_campaigns(
     list_resource = ListResource.from_paginated_results(
         [
             AdvertisementCampaign.model_validate(advertisement_campaign)
-            for advertisement_campaign, _ in results
+            for advertisement_campaign in results
         ],
         count,
         pagination,
     )
-    benefit = results[0][1]
+
     return AdvertisementCampaignListResource(
         items=list_resource.items,
         pagination=list_resource.pagination,

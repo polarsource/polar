@@ -28,11 +28,9 @@ class AdvertisementCampaignService(ResourceServiceReader[AdvertisementCampaign])
         benefit_id: uuid.UUID,
         pagination: PaginationParams,
         sorting: list[Sorting[SortProperty]] = [(SortProperty.granted_at, False)],
-    ) -> tuple[Sequence[tuple[AdvertisementCampaign, BenefitAds]], int]:
-        statement = (
-            self._get_readable_advertisement_statement()
-            .where(BenefitAds.id == benefit_id)
-            .add_columns(BenefitAds)
+    ) -> tuple[Sequence[AdvertisementCampaign], int]:
+        statement = self._get_readable_advertisement_statement().where(
+            BenefitAds.id == benefit_id
         )
 
         order_by_clauses: list[UnaryExpression[Any]] = []

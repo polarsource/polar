@@ -56,6 +56,49 @@ interface AuthenticatedCheckoutButtonProps {
 const AuthenticatedCheckoutButton: React.FC<
   React.PropsWithChildren<AuthenticatedCheckoutButtonProps>
 > = ({
+  user,
+  product,
+  price,
+  organization,
+  checkoutPath,
+  variant = 'outline',
+  children,
+}) => {
+  return price.type === ProductPriceType.RECURRING ? (
+    <AuthenticatedRecurringCheckoutButton
+      user={user}
+      product={product}
+      price={price as ProductPriceRecurring}
+      organization={organization}
+      checkoutPath={checkoutPath}
+      variant={variant}
+    />
+  ) : (
+    <Link className="w-full" href={`${checkoutPath}?price=${price.id}`}>
+      <Button
+        className={variant === 'outline' ? buttonClasses : ''}
+        fullWidth
+        variant={variant}
+        size="lg"
+      >
+        {children}
+      </Button>
+    </Link>
+  )
+}
+
+interface AuthenticatedRecurringCheckoutButtonProps {
+  user: UserRead
+  product: Product
+  price: ProductPriceRecurring
+  organization: Organization
+  checkoutPath: string
+  variant?: ButtonProps['variant']
+}
+
+const AuthenticatedRecurringCheckoutButton: React.FC<
+  React.PropsWithChildren<AuthenticatedRecurringCheckoutButtonProps>
+> = ({
   product,
   price,
   organization,

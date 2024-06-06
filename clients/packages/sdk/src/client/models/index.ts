@@ -4857,12 +4857,6 @@ export interface FileDownload {
      * @type {string}
      * @memberof FileDownload
      */
-    extension: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof FileDownload
-     */
     path: string;
     /**
      * 
@@ -5014,12 +5008,6 @@ export interface FileRead {
      * @type {string}
      * @memberof FileRead
      */
-    extension: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof FileRead
-     */
     path: string;
     /**
      * 
@@ -5128,12 +5116,6 @@ export interface FileUpload {
      * @memberof FileUpload
      */
     name: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof FileUpload
-     */
-    extension: string;
     /**
      * 
      * @type {string}
@@ -5421,6 +5403,20 @@ export const InstallationCreatePlatformEnum = {
     GITHUB: 'github'
 } as const;
 export type InstallationCreatePlatformEnum = typeof InstallationCreatePlatformEnum[keyof typeof InstallationCreatePlatformEnum];
+
+
+/**
+ * 
+ * @export
+ */
+export const Interval = {
+    YEAR: 'year',
+    MONTH: 'month',
+    WEEK: 'week',
+    DAY: 'day',
+    HOUR: 'hour'
+} as const;
+export type Interval = typeof Interval[keyof typeof Interval];
 
 /**
  * 
@@ -7324,6 +7320,213 @@ export interface MaintainerPledgedIssuePendingNotificationPayload {
 /**
  * 
  * @export
+ * @interface Metric
+ */
+export interface Metric {
+    /**
+     * 
+     * @type {string}
+     * @memberof Metric
+     */
+    slug: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof Metric
+     */
+    display_name: string;
+    /**
+     * 
+     * @type {MetricType}
+     * @memberof Metric
+     */
+    type: MetricType;
+}
+/**
+ * 
+ * @export
+ * @interface MetricPeriod
+ */
+export interface MetricPeriod {
+    /**
+     * 
+     * @type {string}
+     * @memberof MetricPeriod
+     */
+    timestamp: string;
+    /**
+     * 
+     * @type {number}
+     * @memberof MetricPeriod
+     */
+    orders: number;
+    /**
+     * 
+     * @type {number}
+     * @memberof MetricPeriod
+     */
+    revenue: number;
+    /**
+     * 
+     * @type {number}
+     * @memberof MetricPeriod
+     */
+    average_order_value: number;
+    /**
+     * 
+     * @type {number}
+     * @memberof MetricPeriod
+     */
+    one_time_products: number;
+    /**
+     * 
+     * @type {number}
+     * @memberof MetricPeriod
+     */
+    one_time_products_revenue: number;
+    /**
+     * 
+     * @type {number}
+     * @memberof MetricPeriod
+     */
+    new_subscriptions: number;
+    /**
+     * 
+     * @type {number}
+     * @memberof MetricPeriod
+     */
+    new_subscriptions_revenue: number;
+    /**
+     * 
+     * @type {number}
+     * @memberof MetricPeriod
+     */
+    renewed_subscriptions: number;
+    /**
+     * 
+     * @type {number}
+     * @memberof MetricPeriod
+     */
+    renewed_subscriptions_revenue: number;
+    /**
+     * 
+     * @type {number}
+     * @memberof MetricPeriod
+     */
+    active_subscriptions: number;
+    /**
+     * 
+     * @type {number}
+     * @memberof MetricPeriod
+     */
+    monthly_recurring_revenue: number;
+}
+
+/**
+ * 
+ * @export
+ */
+export const MetricType = {
+    SCALAR: 'scalar',
+    CURRENCY: 'currency'
+} as const;
+export type MetricType = typeof MetricType[keyof typeof MetricType];
+
+/**
+ * 
+ * @export
+ * @interface Metrics
+ */
+export interface Metrics {
+    /**
+     * 
+     * @type {Metric}
+     * @memberof Metrics
+     */
+    orders: Metric;
+    /**
+     * 
+     * @type {Metric}
+     * @memberof Metrics
+     */
+    revenue: Metric;
+    /**
+     * 
+     * @type {Metric}
+     * @memberof Metrics
+     */
+    average_order_value: Metric;
+    /**
+     * 
+     * @type {Metric}
+     * @memberof Metrics
+     */
+    one_time_products: Metric;
+    /**
+     * 
+     * @type {Metric}
+     * @memberof Metrics
+     */
+    one_time_products_revenue: Metric;
+    /**
+     * 
+     * @type {Metric}
+     * @memberof Metrics
+     */
+    new_subscriptions: Metric;
+    /**
+     * 
+     * @type {Metric}
+     * @memberof Metrics
+     */
+    new_subscriptions_revenue: Metric;
+    /**
+     * 
+     * @type {Metric}
+     * @memberof Metrics
+     */
+    renewed_subscriptions: Metric;
+    /**
+     * 
+     * @type {Metric}
+     * @memberof Metrics
+     */
+    renewed_subscriptions_revenue: Metric;
+    /**
+     * 
+     * @type {Metric}
+     * @memberof Metrics
+     */
+    active_subscriptions: Metric;
+    /**
+     * 
+     * @type {Metric}
+     * @memberof Metrics
+     */
+    monthly_recurring_revenue: Metric;
+}
+/**
+ * 
+ * @export
+ * @interface MetricsResponse
+ */
+export interface MetricsResponse {
+    /**
+     * 
+     * @type {Array<MetricPeriod>}
+     * @memberof MetricsResponse
+     */
+    periods: Array<MetricPeriod>;
+    /**
+     * 
+     * @type {Metrics}
+     * @memberof MetricsResponse
+     */
+    metrics: Metrics;
+}
+/**
+ * 
+ * @export
  * @interface NotPermitted
  */
 export interface NotPermitted {
@@ -8114,56 +8317,6 @@ export interface OrderUser {
      * @memberof OrderUser
      */
     avatar_url?: string;
-}
-/**
- * 
- * @export
- * @interface OrdersStatistics
- */
-export interface OrdersStatistics {
-    /**
-     * 
-     * @type {Array<OrdersStatisticsPeriod>}
-     * @memberof OrdersStatistics
-     */
-    periods: Array<OrdersStatisticsPeriod>;
-}
-/**
- * 
- * @export
- * @interface OrdersStatisticsPeriod
- */
-export interface OrdersStatisticsPeriod {
-    /**
-     * 
-     * @type {string}
-     * @memberof OrdersStatisticsPeriod
-     */
-    date: string;
-    /**
-     * 
-     * @type {number}
-     * @memberof OrdersStatisticsPeriod
-     */
-    orders: number;
-    /**
-     * 
-     * @type {number}
-     * @memberof OrdersStatisticsPeriod
-     */
-    earnings: number;
-    /**
-     * 
-     * @type {number}
-     * @memberof OrdersStatisticsPeriod
-     */
-    expected_orders: number;
-    /**
-     * 
-     * @type {number}
-     * @memberof OrdersStatisticsPeriod
-     */
-    expected_earnings: number;
 }
 /**
  * 
@@ -10749,6 +10902,7 @@ export const Scope = {
     ORDERSREAD: 'orders:read',
     CREATORFILESREAD: 'creator:files:read',
     CREATORFILESWRITE: 'creator:files:write',
+    METRICSREAD: 'metrics:read',
     WEBHOOKSREAD: 'webhooks:read',
     WEBHOOKSWRITE: 'webhooks:write',
     USERBENEFITSREAD: 'user:benefits:read',
@@ -11819,10 +11973,10 @@ export interface TransactionOrder {
     product: TransactionProduct;
     /**
      * 
-     * @type {TransactionProductPrice}
+     * @type {ProductPrice}
      * @memberof TransactionOrder
      */
-    product_price: TransactionProductPrice;
+    product_price: ProductPrice;
     /**
      * 
      * @type {string}
@@ -11942,12 +12096,6 @@ export interface TransactionProduct {
     id: string;
     /**
      * 
-     * @type {SubscriptionTierType}
-     * @memberof TransactionProduct
-     */
-    type: SubscriptionTierType;
-    /**
-     * 
      * @type {string}
      * @memberof TransactionProduct
      */
@@ -11964,61 +12112,12 @@ export interface TransactionProduct {
      * @memberof TransactionProduct
      */
     organization?: TransactionOrganization;
-}
-/**
- * 
- * @export
- * @interface TransactionProductPrice
- */
-export interface TransactionProductPrice {
-    /**
-     * Creation timestamp of the object.
-     * @type {string}
-     * @memberof TransactionProductPrice
-     */
-    created_at: string;
     /**
      * 
-     * @type {string}
-     * @memberof TransactionProductPrice
+     * @type {SubscriptionTierType}
+     * @memberof TransactionProduct
      */
-    modified_at?: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof TransactionProductPrice
-     */
-    id: string;
-    /**
-     * 
-     * @type {ProductPriceType}
-     * @memberof TransactionProductPrice
-     */
-    type: ProductPriceType;
-    /**
-     * 
-     * @type {ProductPriceRecurringInterval}
-     * @memberof TransactionProductPrice
-     */
-    recurring_interval: ProductPriceRecurringInterval;
-    /**
-     * 
-     * @type {number}
-     * @memberof TransactionProductPrice
-     */
-    price_amount: number;
-    /**
-     * 
-     * @type {string}
-     * @memberof TransactionProductPrice
-     */
-    price_currency: string;
-    /**
-     * 
-     * @type {boolean}
-     * @memberof TransactionProductPrice
-     */
-    is_archived: boolean;
+    type?: SubscriptionTierType;
 }
 /**
  * 

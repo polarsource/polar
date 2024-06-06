@@ -19,7 +19,6 @@ import type {
   ListResourceOrder,
   Order,
   OrderInvoice,
-  OrdersStatistics,
   ProductPriceType,
   ResourceNotFound,
 } from '../models/index';
@@ -30,11 +29,6 @@ export interface OrdersApiGetOrderRequest {
 
 export interface OrdersApiGetOrderInvoiceRequest {
     id: string;
-}
-
-export interface OrdersApiGetOrdersStatisticsRequest {
-    organizationId?: string;
-    productId?: string;
 }
 
 export interface OrdersApiListOrdersRequest {
@@ -135,50 +129,6 @@ export class OrdersApi extends runtime.BaseAPI {
      */
     async getOrderInvoice(requestParameters: OrdersApiGetOrderInvoiceRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<OrderInvoice> {
         const response = await this.getOrderInvoiceRaw(requestParameters, initOverrides);
-        return await response.value();
-    }
-
-    /**
-     * Get monthly data about your orders and earnings.
-     * Get Orders Statistics
-     */
-    async getOrdersStatisticsRaw(requestParameters: OrdersApiGetOrdersStatisticsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<OrdersStatistics>> {
-        const queryParameters: any = {};
-
-        if (requestParameters['organizationId'] != null) {
-            queryParameters['organization_id'] = requestParameters['organizationId'];
-        }
-
-        if (requestParameters['productId'] != null) {
-            queryParameters['product_id'] = requestParameters['productId'];
-        }
-
-        const headerParameters: runtime.HTTPHeaders = {};
-
-        if (this.configuration && this.configuration.accessToken) {
-            const token = this.configuration.accessToken;
-            const tokenString = await token("HTTPBearer", []);
-
-            if (tokenString) {
-                headerParameters["Authorization"] = `Bearer ${tokenString}`;
-            }
-        }
-        const response = await this.request({
-            path: `/api/v1/orders/statistics`,
-            method: 'GET',
-            headers: headerParameters,
-            query: queryParameters,
-        }, initOverrides);
-
-        return new runtime.JSONApiResponse(response);
-    }
-
-    /**
-     * Get monthly data about your orders and earnings.
-     * Get Orders Statistics
-     */
-    async getOrdersStatistics(requestParameters: OrdersApiGetOrdersStatisticsRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<OrdersStatistics> {
-        const response = await this.getOrdersStatisticsRaw(requestParameters, initOverrides);
         return await response.value();
     }
 

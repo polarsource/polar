@@ -7012,8 +7012,8 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "organizations:write",
-                            "organizations:read"
+                            "organizations:read",
+                            "organizations:write"
                         ]
                     },
                     {
@@ -7075,8 +7075,8 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "organizations:write",
-                            "organizations:read"
+                            "organizations:read",
+                            "organizations:write"
                         ]
                     },
                     {
@@ -7158,8 +7158,8 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "organizations:write",
-                            "organizations:read"
+                            "organizations:read",
+                            "organizations:write"
                         ]
                     },
                     {
@@ -7260,8 +7260,8 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "organizations:write",
-                            "organizations:read"
+                            "organizations:read",
+                            "organizations:write"
                         ]
                     },
                     {
@@ -7395,8 +7395,8 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "organizations:write",
-                            "organizations:read"
+                            "organizations:read",
+                            "organizations:write"
                         ]
                     },
                     {
@@ -7428,9 +7428,9 @@
                             },
                             "description": "Filter by the type of purchase the customer made.",
                             "default": [
+                                "donation",
                                 "subscription",
-                                "order",
-                                "donation"
+                                "order"
                             ],
                             "title": "Customer Types"
                         },
@@ -7899,8 +7899,8 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "creator:subscriptions:write",
-                            "creator:subscriptions:read"
+                            "creator:subscriptions:read",
+                            "creator:subscriptions:write"
                         ]
                     },
                     {
@@ -8048,8 +8048,8 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "creator:subscriptions:write",
-                            "creator:subscriptions:read"
+                            "creator:subscriptions:read",
+                            "creator:subscriptions:write"
                         ]
                     },
                     {
@@ -8478,8 +8478,8 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "creator:subscriptions:write",
-                            "creator:subscriptions:read"
+                            "creator:subscriptions:read",
+                            "creator:subscriptions:write"
                         ]
                     },
                     {
@@ -11710,8 +11710,8 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "creator:benefits:write",
-                            "creator:benefits:read"
+                            "creator:benefits:read",
+                            "creator:benefits:write"
                         ]
                     },
                     {
@@ -11930,8 +11930,8 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "creator:benefits:write",
-                            "creator:benefits:read"
+                            "creator:benefits:read",
+                            "creator:benefits:write"
                         ]
                     },
                     {
@@ -12226,8 +12226,8 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "creator:benefits:write",
-                            "creator:benefits:read"
+                            "creator:benefits:read",
+                            "creator:benefits:write"
                         ]
                     },
                     {
@@ -12380,8 +12380,8 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "webhooks:write",
-                            "webhooks:read"
+                            "webhooks:read",
+                            "webhooks:write"
                         ]
                     },
                     {
@@ -12551,8 +12551,8 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "webhooks:write",
-                            "webhooks:read"
+                            "webhooks:read",
+                            "webhooks:write"
                         ]
                     },
                     {
@@ -12787,8 +12787,8 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "webhooks:write",
-                            "webhooks:read"
+                            "webhooks:read",
+                            "webhooks:write"
                         ]
                     },
                     {
@@ -13604,94 +13604,6 @@
                 }
             }
         },
-        "/api/v1/orders/statistics": {
-            "get": {
-                "tags": [
-                    "orders"
-                ],
-                "summary": "Get Orders Statistics",
-                "description": "Get monthly data about your orders and earnings.",
-                "operationId": "orders:get_orders_statistics",
-                "security": [
-                    {
-                        "OpenIdConnect": []
-                    },
-                    {
-                        "HTTPBearer": []
-                    },
-                    {
-                        "OpenIdConnect": [
-                            "orders:read"
-                        ]
-                    },
-                    {
-                        "HTTPBearer": []
-                    }
-                ],
-                "parameters": [
-                    {
-                        "name": "organization_id",
-                        "in": "query",
-                        "required": false,
-                        "schema": {
-                            "anyOf": [
-                                {
-                                    "type": "string",
-                                    "format": "uuid4"
-                                },
-                                {
-                                    "type": "null"
-                                }
-                            ],
-                            "description": "Filter by organization ID.",
-                            "title": "Organization Id"
-                        },
-                        "description": "Filter by organization ID."
-                    },
-                    {
-                        "name": "product_id",
-                        "in": "query",
-                        "required": false,
-                        "schema": {
-                            "anyOf": [
-                                {
-                                    "type": "string",
-                                    "format": "uuid4"
-                                },
-                                {
-                                    "type": "null"
-                                }
-                            ],
-                            "description": "Filter by product ID.",
-                            "title": "Product Id"
-                        },
-                        "description": "Filter by product ID."
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Successful Response",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/OrdersStatistics"
-                                }
-                            }
-                        }
-                    },
-                    "422": {
-                        "description": "Validation Error",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/HTTPValidationError"
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        },
         "/api/v1/orders/{id}": {
             "get": {
                 "tags": [
@@ -14301,6 +14213,132 @@
                             "application/json": {
                                 "schema": {
                                     "$ref": "#/components/schemas/FileNotFound"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/metrics/": {
+            "get": {
+                "tags": [
+                    "metrics"
+                ],
+                "summary": "Get Metrics",
+                "operationId": "metrics:get_metrics",
+                "security": [
+                    {
+                        "OpenIdConnect": []
+                    },
+                    {
+                        "HTTPBearer": []
+                    },
+                    {
+                        "OpenIdConnect": [
+                            "metrics:read"
+                        ]
+                    },
+                    {
+                        "HTTPBearer": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "start_date",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "date",
+                            "description": "Start date.",
+                            "title": "Start Date"
+                        },
+                        "description": "Start date."
+                    },
+                    {
+                        "name": "end_date",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "date",
+                            "description": "End date.",
+                            "title": "End Date"
+                        },
+                        "description": "End date."
+                    },
+                    {
+                        "name": "interval",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/components/schemas/Interval"
+                                }
+                            ],
+                            "description": "Interval between two timestamps.",
+                            "title": "Interval"
+                        },
+                        "description": "Interval between two timestamps."
+                    },
+                    {
+                        "name": "organization_id",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string",
+                                    "format": "uuid4"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "description": "Filter by organization ID.",
+                            "title": "Organization Id"
+                        },
+                        "description": "Filter by organization ID."
+                    },
+                    {
+                        "name": "product_id",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string",
+                                    "format": "uuid4"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "description": "Filter by product ID.",
+                            "title": "Product Id"
+                        },
+                        "description": "Filter by product ID."
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/MetricsResponse"
                                 }
                             }
                         }
@@ -20047,10 +20085,6 @@
                         "type": "string",
                         "title": "Name"
                     },
-                    "extension": {
-                        "type": "string",
-                        "title": "Extension"
-                    },
                     "path": {
                         "type": "string",
                         "title": "Path"
@@ -20157,7 +20191,6 @@
                     "id",
                     "organization_id",
                     "name",
-                    "extension",
                     "path",
                     "mime_type",
                     "size",
@@ -20233,10 +20266,6 @@
                     "name": {
                         "type": "string",
                         "title": "Name"
-                    },
-                    "extension": {
-                        "type": "string",
-                        "title": "Extension"
                     },
                     "path": {
                         "type": "string",
@@ -20346,7 +20375,6 @@
                     "id",
                     "organization_id",
                     "name",
-                    "extension",
                     "path",
                     "mime_type",
                     "size",
@@ -20380,10 +20408,6 @@
                     "name": {
                         "type": "string",
                         "title": "Name"
-                    },
-                    "extension": {
-                        "type": "string",
-                        "title": "Extension"
                     },
                     "path": {
                         "type": "string",
@@ -20492,7 +20516,6 @@
                     "id",
                     "organization_id",
                     "name",
-                    "extension",
                     "path",
                     "mime_type",
                     "size",
@@ -20698,6 +20721,17 @@
                     "external_id"
                 ],
                 "title": "InstallationCreate"
+            },
+            "Interval": {
+                "type": "string",
+                "enum": [
+                    "year",
+                    "month",
+                    "week",
+                    "day",
+                    "hour"
+                ],
+                "title": "Interval"
             },
             "Issue-Input": {
                 "properties": {
@@ -22843,6 +22877,177 @@
                 ],
                 "title": "MaintainerPledgedIssuePendingNotificationPayload"
             },
+            "Metric": {
+                "properties": {
+                    "slug": {
+                        "type": "string",
+                        "title": "Slug"
+                    },
+                    "display_name": {
+                        "type": "string",
+                        "title": "Display Name"
+                    },
+                    "type": {
+                        "$ref": "#/components/schemas/MetricType"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "slug",
+                    "display_name",
+                    "type"
+                ],
+                "title": "Metric"
+            },
+            "MetricPeriod": {
+                "properties": {
+                    "timestamp": {
+                        "type": "string",
+                        "format": "date-time",
+                        "title": "Timestamp"
+                    },
+                    "orders": {
+                        "type": "integer",
+                        "title": "Orders"
+                    },
+                    "revenue": {
+                        "type": "integer",
+                        "title": "Revenue"
+                    },
+                    "average_order_value": {
+                        "type": "integer",
+                        "title": "Average Order Value"
+                    },
+                    "one_time_products": {
+                        "type": "integer",
+                        "title": "One Time Products"
+                    },
+                    "one_time_products_revenue": {
+                        "type": "integer",
+                        "title": "One Time Products Revenue"
+                    },
+                    "new_subscriptions": {
+                        "type": "integer",
+                        "title": "New Subscriptions"
+                    },
+                    "new_subscriptions_revenue": {
+                        "type": "integer",
+                        "title": "New Subscriptions Revenue"
+                    },
+                    "renewed_subscriptions": {
+                        "type": "integer",
+                        "title": "Renewed Subscriptions"
+                    },
+                    "renewed_subscriptions_revenue": {
+                        "type": "integer",
+                        "title": "Renewed Subscriptions Revenue"
+                    },
+                    "active_subscriptions": {
+                        "type": "integer",
+                        "title": "Active Subscriptions"
+                    },
+                    "monthly_recurring_revenue": {
+                        "type": "integer",
+                        "title": "Monthly Recurring Revenue"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "timestamp",
+                    "orders",
+                    "revenue",
+                    "average_order_value",
+                    "one_time_products",
+                    "one_time_products_revenue",
+                    "new_subscriptions",
+                    "new_subscriptions_revenue",
+                    "renewed_subscriptions",
+                    "renewed_subscriptions_revenue",
+                    "active_subscriptions",
+                    "monthly_recurring_revenue"
+                ],
+                "title": "MetricPeriod"
+            },
+            "MetricType": {
+                "type": "string",
+                "enum": [
+                    "scalar",
+                    "currency"
+                ],
+                "title": "MetricType"
+            },
+            "Metrics": {
+                "properties": {
+                    "orders": {
+                        "$ref": "#/components/schemas/Metric"
+                    },
+                    "revenue": {
+                        "$ref": "#/components/schemas/Metric"
+                    },
+                    "average_order_value": {
+                        "$ref": "#/components/schemas/Metric"
+                    },
+                    "one_time_products": {
+                        "$ref": "#/components/schemas/Metric"
+                    },
+                    "one_time_products_revenue": {
+                        "$ref": "#/components/schemas/Metric"
+                    },
+                    "new_subscriptions": {
+                        "$ref": "#/components/schemas/Metric"
+                    },
+                    "new_subscriptions_revenue": {
+                        "$ref": "#/components/schemas/Metric"
+                    },
+                    "renewed_subscriptions": {
+                        "$ref": "#/components/schemas/Metric"
+                    },
+                    "renewed_subscriptions_revenue": {
+                        "$ref": "#/components/schemas/Metric"
+                    },
+                    "active_subscriptions": {
+                        "$ref": "#/components/schemas/Metric"
+                    },
+                    "monthly_recurring_revenue": {
+                        "$ref": "#/components/schemas/Metric"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "orders",
+                    "revenue",
+                    "average_order_value",
+                    "one_time_products",
+                    "one_time_products_revenue",
+                    "new_subscriptions",
+                    "new_subscriptions_revenue",
+                    "renewed_subscriptions",
+                    "renewed_subscriptions_revenue",
+                    "active_subscriptions",
+                    "monthly_recurring_revenue"
+                ],
+                "title": "Metrics"
+            },
+            "MetricsResponse": {
+                "properties": {
+                    "periods": {
+                        "items": {
+                            "$ref": "#/components/schemas/MetricPeriod"
+                        },
+                        "type": "array",
+                        "title": "Periods"
+                    },
+                    "metrics": {
+                        "$ref": "#/components/schemas/Metrics"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "periods",
+                    "metrics"
+                ],
+                "title": "MetricsResponse"
+            },
             "NotPermitted": {
                 "properties": {
                     "type": {
@@ -23027,7 +23232,7 @@
                     "scope": {
                         "type": "string",
                         "title": "Scope",
-                        "default": "openid profile email articles:read user:read organizations:read organizations:write creator:subscriptions:read creator:subscriptions:write creator:products:read creator:products:write creator:benefits:read creator:benefits:write orders:read creator:files:read creator:files:write webhooks:read webhooks:write user:benefits:read user:orders:read user:subscriptions:read user:subscriptions:write user:advertisement_campaigns:read user:advertisement_campaigns:write user:downloadables:read"
+                        "default": "openid profile email articles:read user:read organizations:read organizations:write creator:subscriptions:read creator:subscriptions:write creator:products:read creator:products:write creator:benefits:read creator:benefits:write orders:read creator:files:read creator:files:write metrics:read webhooks:read webhooks:write user:benefits:read user:orders:read user:subscriptions:read user:subscriptions:write user:advertisement_campaigns:read user:advertisement_campaigns:write user:downloadables:read"
                     },
                     "client_name": {
                         "type": "string",
@@ -23188,7 +23393,7 @@
                     "scope": {
                         "type": "string",
                         "title": "Scope",
-                        "default": "openid profile email articles:read user:read organizations:read organizations:write creator:subscriptions:read creator:subscriptions:write creator:products:read creator:products:write creator:benefits:read creator:benefits:write orders:read creator:files:read creator:files:write webhooks:read webhooks:write user:benefits:read user:orders:read user:subscriptions:read user:subscriptions:write user:advertisement_campaigns:read user:advertisement_campaigns:write user:downloadables:read"
+                        "default": "openid profile email articles:read user:read organizations:read organizations:write creator:subscriptions:read creator:subscriptions:write creator:products:read creator:products:write creator:benefits:read creator:benefits:write orders:read creator:files:read creator:files:write metrics:read webhooks:read webhooks:write user:benefits:read user:orders:read user:subscriptions:read user:subscriptions:write user:advertisement_campaigns:read user:advertisement_campaigns:write user:downloadables:read"
                     },
                     "client_name": {
                         "type": "string",
@@ -23309,7 +23514,7 @@
                     "scope": {
                         "type": "string",
                         "title": "Scope",
-                        "default": "openid profile email articles:read user:read organizations:read organizations:write creator:subscriptions:read creator:subscriptions:write creator:products:read creator:products:write creator:benefits:read creator:benefits:write orders:read creator:files:read creator:files:write webhooks:read webhooks:write user:benefits:read user:orders:read user:subscriptions:read user:subscriptions:write user:advertisement_campaigns:read user:advertisement_campaigns:write user:downloadables:read"
+                        "default": "openid profile email articles:read user:read organizations:read organizations:write creator:subscriptions:read creator:subscriptions:write creator:products:read creator:products:write creator:benefits:read creator:benefits:write orders:read creator:files:read creator:files:write metrics:read webhooks:read webhooks:write user:benefits:read user:orders:read user:subscriptions:read user:subscriptions:write user:advertisement_campaigns:read user:advertisement_campaigns:write user:downloadables:read"
                     },
                     "client_name": {
                         "type": "string",
@@ -23912,56 +24117,6 @@
                     "public_name"
                 ],
                 "title": "OrderUser"
-            },
-            "OrdersStatistics": {
-                "properties": {
-                    "periods": {
-                        "items": {
-                            "$ref": "#/components/schemas/OrdersStatisticsPeriod"
-                        },
-                        "type": "array",
-                        "title": "Periods"
-                    }
-                },
-                "type": "object",
-                "required": [
-                    "periods"
-                ],
-                "title": "OrdersStatistics"
-            },
-            "OrdersStatisticsPeriod": {
-                "properties": {
-                    "date": {
-                        "type": "string",
-                        "format": "date",
-                        "title": "Date"
-                    },
-                    "orders": {
-                        "type": "integer",
-                        "title": "Orders"
-                    },
-                    "earnings": {
-                        "type": "integer",
-                        "title": "Earnings"
-                    },
-                    "expected_orders": {
-                        "type": "integer",
-                        "title": "Expected Orders"
-                    },
-                    "expected_earnings": {
-                        "type": "integer",
-                        "title": "Expected Earnings"
-                    }
-                },
-                "type": "object",
-                "required": [
-                    "date",
-                    "orders",
-                    "earnings",
-                    "expected_orders",
-                    "expected_earnings"
-                ],
-                "title": "OrdersStatisticsPeriod"
             },
             "Organization": {
                 "properties": {
@@ -27381,6 +27536,7 @@
                     "orders:read",
                     "creator:files:read",
                     "creator:files:write",
+                    "metrics:read",
                     "webhooks:read",
                     "webhooks:write",
                     "user:benefits:read",
@@ -28869,7 +29025,22 @@
                         "$ref": "#/components/schemas/TransactionProduct"
                     },
                     "product_price": {
-                        "$ref": "#/components/schemas/TransactionProductPrice"
+                        "oneOf": [
+                            {
+                                "$ref": "#/components/schemas/ProductPriceRecurring"
+                            },
+                            {
+                                "$ref": "#/components/schemas/ProductPriceOneTime"
+                            }
+                        ],
+                        "title": "Product Price",
+                        "discriminator": {
+                            "propertyName": "type",
+                            "mapping": {
+                                "one_time": "#/components/schemas/ProductPriceOneTime",
+                                "recurring": "#/components/schemas/ProductPriceRecurring"
+                            }
+                        }
                     },
                     "subscription_id": {
                         "anyOf": [
@@ -29014,9 +29185,6 @@
                         "format": "uuid4",
                         "title": "Id"
                     },
-                    "type": {
-                        "$ref": "#/components/schemas/SubscriptionTierType"
-                    },
                     "name": {
                         "type": "string",
                         "title": "Name"
@@ -29042,73 +29210,26 @@
                                 "type": "null"
                             }
                         ]
-                    }
-                },
-                "type": "object",
-                "required": [
-                    "created_at",
-                    "id",
-                    "type",
-                    "name"
-                ],
-                "title": "TransactionProduct"
-            },
-            "TransactionProductPrice": {
-                "properties": {
-                    "created_at": {
-                        "type": "string",
-                        "format": "date-time",
-                        "title": "Created At",
-                        "description": "Creation timestamp of the object."
                     },
-                    "modified_at": {
+                    "type": {
                         "anyOf": [
                             {
-                                "type": "string",
-                                "format": "date-time"
+                                "$ref": "#/components/schemas/SubscriptionTierType"
                             },
                             {
                                 "type": "null"
                             }
                         ],
-                        "title": "Modified At",
-                        "description": "Last modification timestamp of the object."
-                    },
-                    "id": {
-                        "type": "string",
-                        "format": "uuid4",
-                        "title": "Id"
-                    },
-                    "type": {
-                        "$ref": "#/components/schemas/ProductPriceType"
-                    },
-                    "recurring_interval": {
-                        "$ref": "#/components/schemas/ProductPriceRecurringInterval"
-                    },
-                    "price_amount": {
-                        "type": "integer",
-                        "title": "Price Amount"
-                    },
-                    "price_currency": {
-                        "type": "string",
-                        "title": "Price Currency"
-                    },
-                    "is_archived": {
-                        "type": "boolean",
-                        "title": "Is Archived"
+                        "deprecated": true
                     }
                 },
                 "type": "object",
                 "required": [
                     "created_at",
                     "id",
-                    "type",
-                    "recurring_interval",
-                    "price_amount",
-                    "price_currency",
-                    "is_archived"
+                    "name"
                 ],
-                "title": "TransactionProductPrice"
+                "title": "TransactionProduct"
             },
             "TransactionRepository": {
                 "properties": {

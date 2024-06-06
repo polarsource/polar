@@ -1,11 +1,11 @@
 'use client'
 
 import Pagination from '@/components/Pagination/Pagination'
+import ProductPriceLabel from '@/components/Products/ProductPriceLabel'
 import { PurchasesQueryParametersContext } from '@/components/Purchases/PurchasesQueryParametersContext'
 import PurchaseSidebar from '@/components/Purchases/PurchasesSidebar'
 import SubscriptionGroupIcon from '@/components/Subscriptions/SubscriptionGroupIcon'
 import { useOrganization, useUserSubscriptions } from '@/hooks/queries'
-import { getCentsInDollarString } from '@/utils/money'
 import { DiamondOutlined } from '@mui/icons-material'
 import { UserSubscription } from '@polar-sh/sdk'
 import Link from 'next/link'
@@ -139,9 +139,11 @@ const SubscriptionItem = ({
           {subscription.status}
         </span>
         <span>
-          {subscription.price
-            ? `$${getCentsInDollarString(subscription.price?.price_amount ?? 0)}`
-            : 'Free'}
+          {subscription.price ? (
+            <ProductPriceLabel price={subscription.price} />
+          ) : (
+            'Free'
+          )}
         </span>
       </div>
     </div>

@@ -1,5 +1,6 @@
 import {
   Platforms,
+  ProductPrice,
   Transaction,
   TransactionDonation,
   TransactionIssue,
@@ -8,7 +9,6 @@ import {
   TransactionOrganization,
   TransactionPledge,
   TransactionProduct,
-  TransactionProductPrice,
   TransactionRepository,
 } from '@polar-sh/sdk'
 import type { Meta, StoryObj } from '@storybook/react'
@@ -112,7 +112,7 @@ const product: TransactionProduct = {
   organization,
 }
 
-const product_price: TransactionProductPrice = {
+const product_price: ProductPrice = {
   created_at: '',
   id: '',
   type: 'recurring',

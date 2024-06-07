@@ -55,7 +55,7 @@ export default function ClientPage({
             <h1 className="text-5xl font-light text-blue-500 dark:text-blue-400">
               <ProductPrices prices={product.prices} />
             </h1>
-            <p className="dark:text-white0 text-sm text-gray-400">
+            <p className="dark:text-polar-500 text-sm text-gray-400">
               Before VAT and taxes
             </p>
           </div>
@@ -74,7 +74,7 @@ export default function ClientPage({
                     {resolveBenefitIcon(benefit, 'small', 'h-5 w-5')}
                     <div className="flex flex-col">
                       <span className="text-sm">{benefit.description}</span>
-                      <span className="dark:text-white0 text-xs text-gray-500">
+                      <span className="dark:text-polar-500 text-xs text-gray-500">
                         {resolveBenefitTypeDisplayName(benefit.type)}
                       </span>
                     </div>

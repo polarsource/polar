@@ -80,7 +80,7 @@ export const HighlightedTiersEditor = ({
               <span>Configure</span>
             </div>
           </div>
-          <p className="dark:text-white0 text-sm text-gray-500">
+          <p className="dark:text-polar-500 text-sm text-gray-500">
             Highlight subscription tiers to feature them on your profile
           </p>
         </div>
@@ -95,7 +95,7 @@ export const HighlightedTiersEditor = ({
               <span>View all</span>
             </Link>
           </div>
-          <p className="dark:text-white0 text-sm text-gray-500">
+          <p className="dark:text-polar-500 text-sm text-gray-500">
             Support {organization.name} with a subscription & receive unique
             benefits in return
           </p>

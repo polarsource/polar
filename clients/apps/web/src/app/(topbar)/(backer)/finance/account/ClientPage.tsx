@@ -74,7 +74,7 @@ export default function ClientPage() {
           <div className="flex flex-row items-center justify-between">
             <div className="flex flex-col gap-y-2">
               <h2 className="text-lg font-medium">All payout accounts</h2>
-              <p className="dark:text-white0 text-sm text-gray-500">
+              <p className="dark:text-polar-500 text-sm text-gray-500">
                 Payout accounts you manage
               </p>
             </div>

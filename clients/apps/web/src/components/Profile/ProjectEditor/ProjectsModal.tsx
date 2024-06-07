@@ -76,7 +76,7 @@ export const ProjectsModal = ({
       </div>
       <div className="flex flex-col gap-y-2">
         <h3>Featured Projects</h3>
-        <p className="dark:text-white0 text-sm text-gray-500">
+        <p className="dark:text-polar-500 text-sm text-gray-500">
           Select which projects you&apos;d like to highlight. The project must
           belong to an organization that exists on the Polar platform.
         </p>
@@ -180,7 +180,7 @@ const ProjectRow = ({
         <span>{repository.name}</span>
       </div>
       <div className="flex flex-row items-center gap-x-4">
-        <span className="dark:text-white0 flex flex-row items-center gap-x-1.5 text-sm text-gray-500">
+        <span className="dark:text-polar-500 flex flex-row items-center gap-x-1.5 text-sm text-gray-500">
           <StarIcon className="h-4 w-4" />
           <span className="pt-.5">
             {formatStarsNumber(repository.stars ?? 0)}

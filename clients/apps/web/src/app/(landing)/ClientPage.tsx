@@ -125,7 +125,7 @@ const HeroSection = () => {
             userSignupType={UserSignupType.MAINTAINER}
             returnTo="/maintainer"
           />
-          <p className="dark:text-white0 text-xs leading-normal text-gray-400">
+          <p className="dark:text-polar-500 text-xs leading-normal text-gray-400">
             By using Polar you agree to our{' '}
             <BlueLink href="/legal/terms" target="_blank">
               Terms of Service
@@ -393,7 +393,7 @@ const DevelopersUpsell = () => {
         <Avatar className="h-16 w-16" avatar_url={avatarUrl} name={name} />
         <div className="flex flex-col items-center gap-y-2 text-center">
           <h3 className="font-medium text-gray-950 dark:text-white">{name}</h3>
-          <p className="dark:text-white0 text-sm text-gray-500">
+          <p className="dark:text-polar-500 text-sm text-gray-500">
             {description}
           </p>
         </div>
@@ -482,7 +482,7 @@ const DevelopersUpsell = () => {
           <h1 className="text-pretty text-4xl leading-tight text-gray-950 dark:text-white">
             Serving world-class developers
           </h1>
-          <p className="dark:text-white0 text-xl leading-relaxed text-gray-500">
+          <p className="dark:text-polar-500 text-xl leading-relaxed text-gray-500">
             We&apos;re proud to support incredible developers and open source
             initiatives that are shaping the future.
           </p>
@@ -524,7 +524,7 @@ const Pricing = () => {
         <span className="text-blue-500 dark:text-blue-400">{children}</span>
         <div className="flex flex-col gap-2">
           <h1 className="text-xl leading-snug">{title}</h1>
-          <p className="dark:text-white0 text-lg text-gray-500">
+          <p className="dark:text-polar-500 text-lg text-gray-500">
             {description}
           </p>
         </div>

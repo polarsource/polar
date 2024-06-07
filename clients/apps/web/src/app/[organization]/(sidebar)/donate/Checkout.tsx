@@ -239,7 +239,7 @@ const Checkout = ({
 
   return (
     <>
-      <div className="dark:text-white0 space-y-2 text-sm text-gray-500">
+      <div className="dark:text-polar-500 space-y-2 text-sm text-gray-500">
         <Form {...form}>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
             <DonationAmount />

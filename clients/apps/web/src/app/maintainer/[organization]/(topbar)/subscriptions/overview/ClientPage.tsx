@@ -301,7 +301,7 @@ const ClientPage: React.FC<SubscriptionsOverviewProps> = ({
           <Card>
             <CardHeader>
               <div className="text-lg font-medium">Subscription Activity</div>
-              <div className="dark:text-white0 text-gray-400">
+              <div className="dark:text-polar-500 text-gray-400">
                 The last 5 subscribers
               </div>
             </CardHeader>
@@ -326,7 +326,7 @@ const ClientPage: React.FC<SubscriptionsOverviewProps> = ({
                                 <div className="font-medium">
                                   {subscription.user.github_username}
                                 </div>
-                                <div className="dark:text-white0 text-xs text-gray-400">
+                                <div className="dark:text-polar-500 text-xs text-gray-400">
                                   {subscription.user.email}
                                 </div>
                               </>
@@ -337,7 +337,7 @@ const ClientPage: React.FC<SubscriptionsOverviewProps> = ({
                             )}
                           </>
 
-                          <div className="dark:text-white0 text-xs text-gray-400">
+                          <div className="dark:text-polar-500 text-xs text-gray-400">
                             <FormattedDateTime
                               datetime={subscription.started_at as string}
                             />
@@ -355,7 +355,7 @@ const ClientPage: React.FC<SubscriptionsOverviewProps> = ({
                 </>
               ) : (
                 <>
-                  <div className="dark:text-white0 text-sm text-gray-400">
+                  <div className="dark:text-polar-500 text-sm text-gray-400">
                     {subscriptionTierType
                       ? ` You don't have any
                     ${tiersTypeDisplayNames[subscriptionTierType]} subscribers,

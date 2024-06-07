@@ -176,7 +176,7 @@ const ClientPage = () => {
               ) : null}
 
               {showNoPostsYet ? (
-                <div className="dark:text-white0 flex h-full flex-col items-center gap-y-4 pt-32 text-gray-500">
+                <div className="dark:text-polar-500 flex h-full flex-col items-center gap-y-4 pt-32 text-gray-500">
                   <StickyNote2Outlined fontSize="large" />
                   <div className="flex flex-col items-center gap-y-2">
                     <h3 className="p-2 text-lg font-medium">No posts yet</h3>

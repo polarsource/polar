@@ -126,7 +126,7 @@ const OrganizationSelect = ({
           </Select>
 
           {attributePledgeTo && (
-            <div className="dark:text-white0 mt-2 text-xs text-gray-400">
+            <div className="dark:text-polar-500 mt-2 text-xs text-gray-400">
               By pledging on behalf of{' '}
               {attributePledgeTo.pretty_name || attributePledgeTo.name}, you
               confirm are authorized to do so on their behalf.

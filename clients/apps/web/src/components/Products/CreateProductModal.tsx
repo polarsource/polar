@@ -156,7 +156,7 @@ export const CreateProductModal = ({
         <InlineModalHeader hide={hide}>
           <h3>Create Product</h3>
         </InlineModalHeader>
-        <p className="dark:text-white0 px-8 text-sm leading-relaxed text-gray-500">
+        <p className="dark:text-polar-500 px-8 text-sm leading-relaxed text-gray-500">
           Products are benefits which can be purchased at a fixed price.
           Configure the product metadata and select benefits you want to grant
           below.

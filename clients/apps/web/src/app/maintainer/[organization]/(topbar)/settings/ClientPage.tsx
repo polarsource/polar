@@ -133,14 +133,14 @@ const PaymentMethodSettings = ({
     <ShadowBox>
       <>
         {credits && credits.amount.amount < 0 ? (
-          <div className="dark:text-white0 space-y-2 p-4 text-sm text-gray-500">
+          <div className="dark:text-polar-500 space-y-2 p-4 text-sm text-gray-500">
             {org.name} has $
             {getCentsInDollarString(credits.amount.amount * -1, true, true)} in
             prepaid credits that will automatically be applied on future
             invoices.
           </div>
         ) : null}
-        <div className="dark:text-white0 space-y-2 p-4 text-sm text-gray-500">
+        <div className="dark:text-polar-500 space-y-2 p-4 text-sm text-gray-500">
           <Form {...form}>
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
               <BillingEmail />

@@ -106,7 +106,7 @@ export default function EditWebhookModal({
               <h3 className="font-medium text-gray-950 dark:text-white">
                 Delete
               </h3>
-              <p className="dark:text-white0 text-sm text-gray-500">
+              <p className="dark:text-polar-500 text-sm text-gray-500">
                 This action will delete the endpoint configuration and stop
                 sending webhooks to it
               </p>

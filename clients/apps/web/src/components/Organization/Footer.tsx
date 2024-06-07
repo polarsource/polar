@@ -29,7 +29,7 @@ const Footer = ({
           <span className="text-blue-500 dark:text-blue-400">
             <LogoType width={120} />
           </span>
-          <span className="dark:text-white0 text-gray-500">
+          <span className="dark:text-polar-500 text-gray-500">
             &copy; Polar Software Inc. {new Date().getFullYear()}
           </span>
         </div>
@@ -105,7 +105,7 @@ export default Footer
 const FooterLink = (props: PropsWithChildren<LinkProps>) => {
   return (
     <Link
-      className="dark:text-white0 dark:hover:text-polar-50 flex flex-row items-center gap-x-1 text-gray-500 transition-colors hover:text-gray-300"
+      className="dark:text-polar-500 dark:hover:text-polar-50 flex flex-row items-center gap-x-1 text-gray-500 transition-colors hover:text-gray-300"
       {...props}
     >
       {props.children}

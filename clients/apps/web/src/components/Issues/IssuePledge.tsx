@@ -94,7 +94,7 @@ const IssuePledge = (props: Props) => {
                 </div>
               )}
               {confirmPledgeIsLoading && (
-                <span className="dark:text-white0 text-sm font-medium text-gray-600">
+                <span className="dark:text-polar-500 text-sm font-medium text-gray-600">
                   Loading...
                 </span>
               )}

@@ -74,7 +74,7 @@ export default function LongformPost({
         </div>
         <div>
           <time
-            className="dark:text-white0 text-gray-500"
+            className="dark:text-polar-500 text-gray-500"
             dateTime={publishedDate?.toISOString()}
           >
             {publishedDateText}

@@ -41,7 +41,7 @@ export const ProjectCard = ({
           : {}
       }
       className={twMerge(
-        'dark:text-white0 transition-color dark:hover:text-polar-300 dark:hover:bg-polar-900 transition-color flex flex-col gap-y-2 rounded-3xl text-gray-500 hover:bg-gray-50 hover:text-gray-600',
+        'dark:text-polar-500 transition-color dark:hover:text-polar-300 dark:hover:bg-polar-900 transition-color flex flex-col gap-y-2 rounded-3xl text-gray-500 hover:bg-gray-50 hover:text-gray-600',
         sortable?.isDragging && 'opacity-30',
         className,
       )}
@@ -58,10 +58,10 @@ export const ProjectCard = ({
             <h3 className="truncate text-lg text-gray-950 dark:text-white">
               {repository.organization.id !== organization.id ? (
                 <span className="flex flex-row items-baseline gap-x-1">
-                  <span className="dark:text-white0 text-gray-500">
+                  <span className="dark:text-polar-500 text-gray-500">
                     {repository.organization.name}
                   </span>
-                  <span className="dark:text-white0 text-gray-500">/</span>
+                  <span className="dark:text-polar-500 text-gray-500">/</span>
                   <span>{repository.name}</span>
                 </span>
               ) : (

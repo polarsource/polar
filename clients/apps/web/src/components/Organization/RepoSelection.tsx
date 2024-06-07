@@ -190,7 +190,7 @@ const SelectedEmpty = ({
 const RepoIcon = () => {
   return (
     <svg
-      className="dark:text-white0 text-gray-400"
+      className="dark:text-polar-500 text-gray-400"
       width="17"
       height="18"
       viewBox="0 0 17 18"

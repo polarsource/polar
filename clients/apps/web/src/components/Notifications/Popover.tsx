@@ -111,7 +111,7 @@ const Popover = () => {
     <>
       <div className="flex">
         <NotificationsOutlined
-          className="dark:text-white0 dark:hover:text-polar-300 h-6 w-6 cursor-pointer text-gray-500 transition-colors duration-100 hover:text-gray-900"
+          className="dark:text-polar-500 dark:hover:text-polar-300 h-6 w-6 cursor-pointer text-gray-500 transition-colors duration-100 hover:text-gray-900"
           aria-hidden="true"
           onMouseDown={clickBell}
         />

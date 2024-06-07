@@ -66,7 +66,7 @@ export default function ClientPage() {
             <h3 className="p-2 text-xl font-medium">
               You have no subscription
             </h3>
-            <p className="dark:text-white0 min-w-0 truncate text-base text-gray-500">
+            <p className="dark:text-polar-500 min-w-0 truncate text-base text-gray-500">
               Subscribe to creators & unlock benefits as a bonus
             </p>
           </div>
@@ -125,8 +125,8 @@ const SubscriptionItem = ({
             <h3>{subscription.product.name}</h3>
             {organization && (
               <>
-                <span className="dark:text-white0 text-gray-500">·</span>
-                <span className="dark:text-white0 text-gray-500">
+                <span className="dark:text-polar-500 text-gray-500">·</span>
+                <span className="dark:text-polar-500 text-gray-500">
                   {organization.name}
                 </span>
               </>
@@ -135,7 +135,7 @@ const SubscriptionItem = ({
         </div>
       </div>
       <div className="flex flex-row items-baseline gap-4 text-sm">
-        <span className="dark:text-white0 capitalize text-gray-500">
+        <span className="dark:text-polar-500 capitalize text-gray-500">
           {subscription.status}
         </span>
         <span>

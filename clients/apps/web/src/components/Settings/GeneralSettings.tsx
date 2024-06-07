@@ -66,7 +66,7 @@ const GeneralSettings = () => {
       <div className="flex flex-row items-start justify-between">
         <div className="flex flex-col gap-y-1">
           <h3>Theme</h3>
-          <p className="dark:text-polar-500 text-sm text-gray-400">
+          <p className="dark:text-white0 text-sm text-gray-400">
             Override your browser&apos;s preferred theme settings
           </p>
         </div>

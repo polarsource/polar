@@ -103,10 +103,10 @@ export default function EditWebhookModal({
         <ShadowBoxOnMd className="flex flex-col gap-y-8 md:bg-gray-100">
           <div className="flex flex-row items-start justify-between">
             <div className="flex flex-col gap-y-1">
-              <h3 className="dark:text-polar-50 font-medium text-gray-950">
+              <h3 className="font-medium text-gray-950 dark:text-white">
                 Delete
               </h3>
-              <p className="dark:text-polar-500 text-sm text-gray-500">
+              <p className="dark:text-white0 text-sm text-gray-500">
                 This action will delete the endpoint configuration and stop
                 sending webhooks to it
               </p>

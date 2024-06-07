@@ -92,7 +92,7 @@ export const OrganizationPublicSidebar = ({
           avatar_url={organization.avatar_url}
         />
         <div className="flex flex-col md:gap-y-2">
-          <h1 className="dark:text-polar-50 text-xl text-gray-800 md:text-2xl">
+          <h1 className="text-xl text-gray-800 md:text-2xl dark:text-white">
             {organization.pretty_name ?? organization.name}
           </h1>
           {organization.pretty_name && (
@@ -113,7 +113,7 @@ export const OrganizationPublicSidebar = ({
       >
         <div className="flex w-full flex-col gap-y-6">
           <DescriptionEditor
-            className="dark:text-polar-500 text-md text-start leading-relaxed text-gray-500"
+            className="dark:text-white0 text-md text-start leading-relaxed text-gray-500"
             description={
               organization.profile_settings?.description ??
               organization.bio ??
@@ -278,7 +278,7 @@ const RssModal = ({
   return (
     <>
       <ModalHeader className="px-8 py-4" hide={hide}>
-        <h3 className="dark:text-polar-50 text-lg font-medium text-gray-950">
+        <h3 className="text-lg font-medium text-gray-950 dark:text-white">
           Subscribe to {organization.pretty_name || organization.name} via RSS
         </h3>
       </ModalHeader>
@@ -289,7 +289,7 @@ const RssModal = ({
               {currentUser ? 'Your feed URL' : 'Feed URL'}
             </span>
             {currentUser ? (
-              <p className="text-polar-500 dark:text-polar-500 text-sm">
+              <p className="text-polar-500 dark:text-white0 text-sm">
                 This URL is personal, keep it safe.
               </p>
             ) : null}

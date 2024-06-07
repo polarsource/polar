@@ -46,7 +46,7 @@ const ImportSubscribersModal = ({
   return (
     <>
       <ModalHeader className="px-8 py-4" hide={hide}>
-        <h3 className="dark:text-polar-50 text-lg font-medium text-gray-950">
+        <h3 className="text-lg font-medium text-gray-950 dark:text-white">
           Import subscribers
         </h3>
       </ModalHeader>
@@ -54,7 +54,7 @@ const ImportSubscribersModal = ({
         <div className="flex flex-col gap-y-4">
           <div className="flex flex-col gap-y-2">
             <span className="font-medium">Import from CSV</span>
-            <p className="text-polar-500 dark:text-polar-500 text-sm">
+            <p className="text-polar-500 dark:text-white0 text-sm">
               Import your subscribers from other platforms (Substack, Patreon,
               etc)
             </p>

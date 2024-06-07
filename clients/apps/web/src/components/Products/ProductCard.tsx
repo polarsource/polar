@@ -43,7 +43,7 @@ export const ProductCard = ({
             />
           ) : (
             <div className="dark:bg-polar-900 flex aspect-square w-full flex-col items-center justify-center rounded-2xl bg-gray-100">
-              <PanoramaOutlined className="dark:text-polar-500 text-gray-500" />
+              <PanoramaOutlined className="dark:text-white0 text-gray-500" />
             </div>
           )}
         </>
@@ -62,7 +62,7 @@ export const ProductCard = ({
           </div>
         )}
         <div className="flex flex-col gap-y-2">
-          <h3 className="dark:text-polar-50 line-clamp-2 flex items-center justify-between gap-1 font-medium leading-snug text-gray-950">
+          <h3 className="line-clamp-2 flex items-center justify-between gap-1 font-medium leading-snug text-gray-950 dark:text-white">
             {product.name}
             <SubscriptionGroupIcon type={product.type} className="text-xl" />
           </h3>

@@ -192,7 +192,7 @@ export const EditProductModal = ({
             <ShadowBox className="flex flex-col gap-6 p-6">
               <div className="flex flex-col gap-y-2">
                 <h3 className="text-sm font-medium">Archive Product</h3>
-                <p className="dark:text-polar-500 text-sm text-gray-500">
+                <p className="dark:text-white0 text-sm text-gray-500">
                   Archiving a product will not affect its current customers,
                   only prevent new subscribers and purchases.
                 </p>

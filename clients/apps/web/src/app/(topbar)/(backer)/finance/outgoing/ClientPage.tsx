@@ -75,7 +75,7 @@ export default function ClientPage({
         <div className="mb-8 flex flex-row items-center justify-between">
           <div className="flex flex-col gap-y-2">
             <h2 className="text-lg font-medium capitalize">Transactions</h2>
-            <p className="dark:text-polar-500 text-sm text-gray-500">
+            <p className="dark:text-white0 text-sm text-gray-500">
               Payments made to maintainers on Polar
             </p>
           </div>

@@ -176,10 +176,10 @@ export default function Page() {
           <div className="flex h-full w-fit flex-col items-center justify-center gap-y-16 md:my-0">
             <div className="flex max-w-lg flex-col items-center gap-y-8">
               <LogoIcon className="h-16 w-16 text-blue-500" />
-              <h3 className="dark:text-polar-50 text-3xl text-gray-950">
+              <h3 className="dark:text-white text-3xl text-gray-950">
                 Polar for Organizations
               </h3>
-              <p className="dark:text-polar-500 text-center leading-relaxed text-gray-500">
+              <p className="dark:text-white0 text-center leading-relaxed text-gray-500">
                 Setup funding for your projects, or give members the ability to
                 fund projects on behalf of your organization
               </p>

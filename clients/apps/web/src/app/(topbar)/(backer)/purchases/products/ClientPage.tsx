@@ -42,7 +42,7 @@ export default function ClientPage() {
           <DiamondOutlined fontSize="inherit" />
           <div className="flex flex-col items-center gap-y-2">
             <h3 className="p-2 text-xl font-medium">You have no purchase</h3>
-            <p className="dark:text-polar-500 min-w-0 truncate text-base text-gray-500">
+            <p className="dark:text-white0 min-w-0 truncate text-base text-gray-500">
               Buy products from creators & unlock benefits as a bonus
             </p>
           </div>

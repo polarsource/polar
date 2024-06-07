@@ -68,7 +68,7 @@ const DashboardProfileDropdown = ({ className = '' }) => {
           onClick={() => setOpen(true)}
         >
           <Profile name={current.name} avatar_url={current.avatar_url} />
-          <ChevronUpDownIcon className="dark:text-polar-500 h-5 w-5 flex-shrink-0 text-gray-400" />
+          <ChevronUpDownIcon className="dark:text-white0 h-5 w-5 flex-shrink-0 text-gray-400" />
         </div>
 
         {isOpen && (

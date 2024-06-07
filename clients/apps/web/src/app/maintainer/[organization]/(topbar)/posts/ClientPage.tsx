@@ -129,7 +129,7 @@ const ClientPage = () => {
             <StickyNote2Outlined fontSize="inherit" />
           </span>
           <div className="flex flex-col items-center gap-4 text-center">
-            <h2 className="dark:text-polar-50 text-2xl font-medium text-gray-950">
+            <h2 className="text-2xl font-medium text-gray-950 dark:text-white">
               Newsletter
             </h2>
             <h2 className="text-lg">
@@ -150,7 +150,7 @@ const ClientPage = () => {
         <div className="mb-24 flex w-full flex-col-reverse items-start gap-y-12 xl:flex-row xl:gap-x-12 xl:gap-y-0">
           <div className="flex w-full flex-1 flex-col gap-y-8">
             <div className="flex flex-row items-center justify-between">
-              <h3 className="dark:text-polar-50 text-lg font-medium text-gray-950">
+              <h3 className="text-lg font-medium text-gray-950 dark:text-white">
                 Overview
               </h3>
               <Link
@@ -176,7 +176,7 @@ const ClientPage = () => {
               ) : null}
 
               {showNoPostsYet ? (
-                <div className="dark:text-polar-500 flex h-full flex-col items-center gap-y-4 pt-32 text-gray-500">
+                <div className="dark:text-white0 flex h-full flex-col items-center gap-y-4 pt-32 text-gray-500">
                   <StickyNote2Outlined fontSize="large" />
                   <div className="flex flex-col items-center gap-y-2">
                     <h3 className="p-2 text-lg font-medium">No posts yet</h3>
@@ -190,7 +190,7 @@ const ClientPage = () => {
             </div>
           </div>
           <div className="lx:overflow-auto flex w-full max-w-[360px] flex-col gap-y-8 overflow-hidden xl:sticky xl:top-8 xl:w-fit xl:flex-shrink-0">
-            <h3 className="dark:text-polar-50 text-lg font-medium text-gray-950">
+            <h3 className="text-lg font-medium text-gray-950 dark:text-white">
               Analytics
             </h3>
             <div className="flex w-full overflow-x-auto md:overflow-hidden">
@@ -275,7 +275,7 @@ const PostItem = (post: Article) => {
         )}
       >
         <div className="flex w-full flex-col gap-y-6">
-          <h3 className="dark:text-polar-50 text-lg font-medium text-gray-950">
+          <h3 className="text-lg font-medium text-gray-950 dark:text-white">
             {post.title}
           </h3>
           <div className="prose prose-headings:font-medium prose-headings:first:mt-0 prose-p:first:mt-0 prose-img:first:mt-0 prose-p:last:mb-0 dark:prose-pre:bg-polar-800 prose-pre:bg-gray-100 dark:prose-invert prose-pre:rounded-2xl dark:prose-headings:text-white prose-p:text-gray-700 prose-img:rounded-2xl dark:prose-p:text-polar-200 dark:text-polar-200 prose-a:text-blue-500 hover:prose-a:text-blue-400 dark:hover:prose-a:text-blue-300 dark:prose-a:text-blue-400 prose-a:no-underline prose-code:before:content-none prose-code:after:content-none prose-code:bg-gray-100 dark:prose-code:bg-polar-700 prose-code:font-normal prose-code:rounded-sm prose-code:px-1.5 prose-code:py-1 w-full max-w-none text-gray-600">

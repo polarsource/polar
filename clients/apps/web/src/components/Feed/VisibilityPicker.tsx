@@ -30,7 +30,7 @@ export const VisibilityPicker = ({
     <div className="flex flex-col gap-y-4">
       <div className="flex flex-col gap-y-2">
         <span className="font-medium">Visibility</span>
-        <p className="text-polar-500 dark:text-polar-500 text-sm">
+        <p className="text-polar-500 dark:text-white0 text-sm">
           Determines the visibility of this post for eligible subscribers
         </p>
       </div>
@@ -49,7 +49,7 @@ export const VisibilityPicker = ({
                   'capitalize',
                   disabled
                     ? 'dark:text-polar-600 text-gray-300'
-                    : 'dark:text-polar-50 text-gray-950',
+                    : 'text-gray-950 dark:text-white',
                 )}
                 htmlFor={v}
               >

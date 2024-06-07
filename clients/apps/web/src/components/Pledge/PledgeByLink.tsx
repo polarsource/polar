@@ -44,7 +44,7 @@ const PledgeByLink = ({
   return (
     <>
       <div className="mx-auto mt-12 w-full p-6 md:mt-24 md:w-[826px]">
-        <h1 className="dark:text-polar-50 text-center text-3xl font-normal text-gray-800 md:text-4xl">
+        <h1 className="text-center text-3xl font-normal text-gray-800 md:text-4xl dark:text-white">
           Back an issue
         </h1>
 

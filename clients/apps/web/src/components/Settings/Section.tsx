@@ -17,9 +17,7 @@ export const SectionDescription = ({
     <div className="flex-shrink-0 xl:w-60">
       <h2 className="mb-2 font-medium">{title}</h2>
       {description && (
-        <p className="dark:text-polar-500 text-sm text-gray-500">
-          {description}
-        </p>
+        <p className="dark:text-white0 text-sm text-gray-500">{description}</p>
       )}
     </div>
   )

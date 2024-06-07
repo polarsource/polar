@@ -55,7 +55,7 @@ const ClientPage = ({
       <BoltOutlined fontSize="inherit" />
       <div className="flex flex-col items-center gap-y-2">
         <h3 className="p-2 text-xl font-medium">You have no subscriptions</h3>
-        <p className="dark:text-polar-500 min-w-0 truncate text-base text-gray-500">
+        <p className="dark:text-white0 min-w-0 truncate text-base text-gray-500">
           Subscribe to creators & unlock benefits as a bonus
         </p>
       </div>
@@ -149,7 +149,7 @@ const Subscription = ({
           </div>
           <div className="flex flex-row gap-x-4">
             <Link
-              className="dark:text-polar-50 flex flex-row items-center gap-x-2 text-gray-950"
+              className="flex flex-row items-center gap-x-2 text-gray-950 dark:text-white"
               href={organizationPageLink(org)}
             >
               <h3 className="text-sm">{org.name}</h3>
@@ -319,7 +319,7 @@ const BenefitContextWidget = ({
             : benefit.type}
         </h2>
       </div>
-      <p className="dark:text-polar-500 text-sm text-gray-500">
+      <p className="dark:text-white0 text-sm text-gray-500">
         {benefit.description}
       </p>
       {benefit.type === 'custom' && benefit.properties.note && (

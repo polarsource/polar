@@ -239,7 +239,7 @@ const Checkout = ({
 
   return (
     <>
-      <div className="dark:text-polar-500 space-y-2 text-sm text-gray-500">
+      <div className="dark:text-white0 space-y-2 text-sm text-gray-500">
         <Form {...form}>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
             <DonationAmount />
@@ -291,7 +291,7 @@ const DonationAmount = () => {
         render={({ field }) => (
           <FormItem className="flex flex-col items-start justify-between">
             <div className="flex flex-col gap-y-2">
-              <FormLabel className="dark:text-polar-50 text-gray-950">
+              <FormLabel className="text-gray-950 dark:text-white">
                 Amount
               </FormLabel>
               <FormMessage />
@@ -335,7 +335,7 @@ const Email = () => {
         render={({ field }) => (
           <FormItem className="flex flex-col items-start justify-between">
             <div className="flex flex-col gap-y-2">
-              <FormLabel className="dark:text-polar-50 text-gray-950">
+              <FormLabel className="text-gray-950 dark:text-white">
                 Email
               </FormLabel>
               <FormMessage />
@@ -366,7 +366,7 @@ const Message = () => {
         render={({ field }) => (
           <FormItem className="flex flex-col items-start justify-between">
             <div className="flex flex-col gap-y-2">
-              <FormLabel className="dark:text-polar-50 text-gray-950">
+              <FormLabel className="text-gray-950 dark:text-white">
                 Message
               </FormLabel>
               <FormMessage />
@@ -394,7 +394,7 @@ const Issue = ({ issue }: { issue: Issue }) => {
         render={() => (
           <FormItem className="flex flex-col items-start justify-between">
             <div className="flex flex-col gap-y-2">
-              <FormLabel className="dark:text-polar-50 text-gray-950">
+              <FormLabel className="text-gray-950 dark:text-white">
                 Issue
               </FormLabel>
               <FormMessage />
@@ -588,7 +588,7 @@ const SelectPaymentMethod = ({
       <div className="flex flex-col gap-y-2">
         <label
           htmlFor="payment_method"
-          className="dark:text-polar-50 text-sm font-medium leading-none text-gray-950 peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+          className="text-sm font-medium leading-none text-gray-950 peer-disabled:cursor-not-allowed peer-disabled:opacity-70 dark:text-white"
         >
           Payment method
         </label>

@@ -7,7 +7,7 @@ const OnboardingAddBadge = () => {
   return (
     <div className="dark:bg-polar-800 dark:ring-polar-700 grid overflow-hidden rounded-2xl bg-white shadow-sm lg:grid-cols-2 dark:ring-1">
       <div className="px-6 py-4">
-        <h2 className="dark:text-polar-50 font-medium text-gray-900">
+        <h2 className="font-medium text-gray-900 dark:text-white">
           Add the Polar badge to an issue to promote funding.
         </h2>
         <p className="dark:text-polar-300 mt-2 flex flex-wrap items-center text-sm text-gray-500">

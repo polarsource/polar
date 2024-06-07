@@ -141,7 +141,7 @@ const SubscriptionTierCard: React.FC<SubscriptionTierCardProps> = ({
       <CardHeader className="grow gap-y-6 p-0">
         <div className="flex flex-col gap-y-4">
           <div className="flex flex-row items-center justify-between">
-            <span className="dark:text-polar-500 text-xs text-gray-500">
+            <span className="dark:text-white0 text-xs text-gray-500">
               {audience}
             </span>
             {draggable && (
@@ -185,7 +185,7 @@ const SubscriptionTierCard: React.FC<SubscriptionTierCardProps> = ({
                 price.price_currency,
                 0,
               )}
-              <span className="dark:text-polar-500 ml-2 text-xl font-normal text-gray-500">
+              <span className="dark:text-white0 ml-2 text-xl font-normal text-gray-500">
                 {recurringBillingLabel}
               </span>
             </div>
@@ -194,7 +194,7 @@ const SubscriptionTierCard: React.FC<SubscriptionTierCardProps> = ({
             <p
               className={twMerge(
                 variantStyles[variant].description,
-                'dark:text-polar-500 leading-relaxed text-gray-500',
+                'dark:text-white0 leading-relaxed text-gray-500',
               )}
             >
               {subscriptionTier.description}

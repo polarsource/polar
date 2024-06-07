@@ -126,7 +126,7 @@ const ClientPage = ({ subscription }: { subscription: UserSubscription }) => {
                 )}
               </h1>
               {!isCanceled && subscription.started_at && (
-                <p className="dark:text-polar-500 text-sm text-gray-400">
+                <p className="dark:text-white0 text-sm text-gray-400">
                   Subscribed since{' '}
                   {new Date(subscription.started_at).toLocaleDateString(
                     'en-US',
@@ -142,7 +142,7 @@ const ClientPage = ({ subscription }: { subscription: UserSubscription }) => {
                 !subscription.ended_at &&
                 subscription.cancel_at_period_end &&
                 subscription.current_period_end && (
-                  <p className="dark:text-polar-500 text-sm text-gray-400">
+                  <p className="dark:text-white0 text-sm text-gray-400">
                     Will be canceled at{' '}
                     {new Date(
                       subscription.current_period_end,
@@ -154,7 +154,7 @@ const ClientPage = ({ subscription }: { subscription: UserSubscription }) => {
                   </p>
                 )}
               {isCanceled && subscription.ended_at && (
-                <p className="dark:text-polar-500 text-sm text-gray-400">
+                <p className="dark:text-white0 text-sm text-gray-400">
                   Canceled since{' '}
                   {new Date(subscription.ended_at).toLocaleDateString('en-US', {
                     year: 'numeric',
@@ -218,7 +218,7 @@ const ClientPage = ({ subscription }: { subscription: UserSubscription }) => {
                           resolution="day"
                         />
                       </span>
-                      <span className="dark:text-polar-500 text-sm text-gray-500">
+                      <span className="dark:text-white0 text-sm text-gray-500">
                         {formatCurrencyAndAmount(
                           order.amount,
                           order.currency,

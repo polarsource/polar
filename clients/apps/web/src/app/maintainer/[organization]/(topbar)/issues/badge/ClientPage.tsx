@@ -57,7 +57,7 @@ const Section = ({ children }: { children: ReactElement }) => {
 
 const SectionDescription = ({ title }: { title: string }) => {
   return (
-    <h2 className="dark:text-polar-50 text-lg font-medium text-gray-950">
+    <h2 className="text-lg font-medium text-gray-950 dark:text-white">
       {title}
     </h2>
   )

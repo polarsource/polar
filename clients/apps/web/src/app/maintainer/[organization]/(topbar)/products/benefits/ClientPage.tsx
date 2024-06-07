@@ -116,7 +116,7 @@ const ClientPage = ({ organization }: { organization: Organization }) => {
                     >
                       <ListItem className="text-sm" size="small">
                         <span>{product.name}</span>
-                        <span className="dark:text-polar-500 text-xs text-gray-500">
+                        <span className="dark:text-white0 text-xs text-gray-500">
                           {product.benefits.length > 0
                             ? `${product.benefits.length} ${product.benefits.length === 1 ? 'Benefit' : 'Benefits'}`
                             : null}

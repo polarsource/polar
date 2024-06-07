@@ -75,7 +75,7 @@ export const DateTimePicker = ({
           <Button
             variant={'outline'}
             className={twMerge(
-              'dark:bg-polar-800 dark:border-polar-600 dark:placeholder:text-polar-500 dark:text-polar-50 h-10 w-[280px] justify-start rounded-lg border-gray-200 bg-transparent text-left font-normal shadow-sm',
+              'dark:bg-polar-800 dark:border-polar-600 dark:placeholder:text-polar-500 h-10 w-[280px] justify-start rounded-lg border-gray-200 bg-transparent text-left font-normal shadow-sm dark:text-white',
               !date && 'text-muted-foreground',
             )}
           >

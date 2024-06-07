@@ -148,7 +148,7 @@ const ProductBenefitsForm = ({
     <>
       <div className={twMerge('flex w-full flex-col gap-y-6', className)}>
         <div className="flex flex-row items-center justify-between">
-          <h2 className="dark:text-polar-50 text-gray-950">Benefits</h2>
+          <h2 className="text-gray-950 dark:text-white">Benefits</h2>
           <Button
             size="sm"
             className="self-start"

@@ -27,7 +27,7 @@ const MaintainerNavigation = () => {
                 'flex items-center gap-x-3 rounded-lg border border-transparent px-4 transition-colors',
                 n.isActive
                   ? 'text-blue-500 dark:text-blue-400'
-                  : 'dark:text-polar-500 dark:hover:text-polar-200 text-gray-700 hover:text-blue-500',
+                  : 'dark:text-white0 dark:hover:text-polar-200 text-gray-700 hover:text-blue-500',
               )}
               href={n.link}
             >

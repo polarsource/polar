@@ -183,19 +183,19 @@ const NotLoggedInBanner = () => {
       <div className="flex flex-col gap-2">
         <div className="flex items-center gap-2">
           <UserCircleIcon className="dark:text-polar-400 h-5 w-5 text-gray-500" />
-          <div className="dark:text-polar-500 text-xs font-semibold text-gray-600">
+          <div className="dark:text-white0 text-xs font-semibold text-gray-600">
             Show profile in connection with funding
           </div>
         </div>
         <div className="flex items-center gap-2">
           <BellIcon className="h-5 w-5 text-gray-500" />
-          <div className="dark:text-polar-500 text-xs text-gray-600">
+          <div className="dark:text-white0 text-xs text-gray-600">
             + Track funding on funded issue
           </div>
         </div>
         <div className="flex items-center gap-2">
           <LogoIcon className="h-5 w-5" />
-          <div className="dark:text-polar-500 text-xs text-gray-600">
+          <div className="dark:text-white0 text-xs text-gray-600">
             + Polar account for future funding & rewards
           </div>
         </div>

@@ -30,7 +30,7 @@ export const BenefitRow = ({ benefit }: BenefitRowProps) => {
           <h3 className="text-sm font-medium capitalize">
             {benefitsDisplayNames[benefit.type]}
           </h3>
-          <p className="dark:text-polar-500 flex flex-row gap-x-1 truncate text-sm text-gray-500">
+          <p className="dark:text-white0 flex flex-row gap-x-1 truncate text-sm text-gray-500">
             {benefit.description}
           </p>
         </div>

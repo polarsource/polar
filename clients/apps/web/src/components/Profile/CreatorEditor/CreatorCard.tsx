@@ -37,7 +37,7 @@ export const CreatorCard = ({
           : {}
       }
       className={twMerge(
-        'dark:text-polar-500 dark:hover:text-polar-300 transition-color dark:hover:bg-polar-900 flex flex-col rounded-3xl text-gray-500 hover:bg-gray-50 hover:text-gray-600',
+        'dark:text-white0 dark:hover:text-polar-300 transition-color dark:hover:bg-polar-900 flex flex-col rounded-3xl text-gray-500 hover:bg-gray-50 hover:text-gray-600',
         sortable?.isDragging && 'opacity-30',
         className,
       )}
@@ -50,7 +50,7 @@ export const CreatorCard = ({
             name={organization.name}
           />
           <div className="flex flex-col">
-            <h3 className="dark:text-polar-50 text-gray-950">
+            <h3 className="text-gray-950 dark:text-white">
               {organization.pretty_name || organization.name}
             </h3>
             {organization.pretty_name && (

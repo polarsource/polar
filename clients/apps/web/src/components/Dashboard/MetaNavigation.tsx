@@ -9,7 +9,7 @@ const MetaNavigation = () => {
           <a
             className={twMerge(
               'flex items-center gap-x-2 rounded-xl px-6 transition-colors',
-              'dark:text-polar-500 text-gray-500 hover:text-blue-700 dark:hover:text-blue-400',
+              'dark:text-white0 text-gray-500 hover:text-blue-700 dark:hover:text-blue-400',
             )}
             href={n.link}
             target="_blank"

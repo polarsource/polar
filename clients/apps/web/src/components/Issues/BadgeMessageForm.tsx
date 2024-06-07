@@ -87,7 +87,7 @@ const BadgeMessageForm = (props: {
     <div className="flex flex-col space-y-4">
       <div className="text-gray flex items-center justify-between">
         <div>
-          <div className="dark:text-polar-50 text-sm font-medium">
+          <div className="text-sm font-medium dark:text-white">
             {props.title ?? 'Customize embed'}
           </div>
           {props.subtitle && (
@@ -148,7 +148,7 @@ const BadgeMessageForm = (props: {
           <div className="flex max-w-[300px] flex-col space-y-2 py-4">
             <label
               htmlFor="fundingGoal"
-              className="dark:text-polar-50 text-sm font-medium"
+              className="text-sm font-medium dark:text-white"
             >
               Set funding goal
             </label>

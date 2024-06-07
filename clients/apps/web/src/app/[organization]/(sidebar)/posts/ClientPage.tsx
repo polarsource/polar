@@ -77,7 +77,7 @@ const ClientPage = ({
                       <h3 className="p-2 text-lg font-medium">
                         {organization.name} is typing...
                       </h3>
-                      <p className="dark:text-polar-500 w-full min-w-0 text-gray-500">
+                      <p className="dark:text-white0 w-full min-w-0 text-gray-500">
                         Start building a community & newsletter by writing your
                         first post – your hello world on Polar
                       </p>
@@ -93,7 +93,7 @@ const ClientPage = ({
                       <h3 className="p-2 text-lg font-medium">
                         {organization.name} is typing...
                       </h3>
-                      <p className="dark:text-polar-500 w-full min-w-0 text-gray-500">
+                      <p className="dark:text-white0 w-full min-w-0 text-gray-500">
                         Subscribe to {organization.name} to get future posts
                         fresh out of the press.
                       </p>

@@ -57,7 +57,7 @@ export const Left = ({ children }: { children: React.ReactNode }) => {
 
 export const Badge = ({ children }: { children: React.ReactNode }) => {
   return (
-    <p className="dark:text-polar-50 inline-flex space-x-2 overflow-hidden text-xs text-gray-500">
+    <p className="inline-flex space-x-2 overflow-hidden text-xs text-gray-500 dark:text-white">
       <span className="dark:bg-polar-500 dark:border-polar-400/50 rounded-full border border-gray-200 bg-gray-100 px-2">
         {children}
       </span>

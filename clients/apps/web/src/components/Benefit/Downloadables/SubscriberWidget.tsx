@@ -35,7 +35,7 @@ export const DownloadableItem = ({
           {downloadable.file.name}
         </span>
         <div className="flex flex-row items-center gap-x-2 text-xs">
-          <span className="dark:text-polar-500 text-gray-500">
+          <span className="dark:text-white0 text-gray-500">
             {downloadable.file.size_readable}
           </span>
           {historic && (

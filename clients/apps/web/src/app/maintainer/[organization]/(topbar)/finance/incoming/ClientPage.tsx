@@ -121,7 +121,7 @@ export default function ClientPage({
               <h2 className="text-lg font-medium capitalize">
                 {params?.get('type') ?? 'Transactions'}
               </h2>
-              <p className="dark:text-polar-500 text-sm text-gray-500">
+              <p className="dark:text-white0 text-sm text-gray-500">
                 {params?.get('type') === 'payouts'
                   ? 'Made from your account to your bank account'
                   : 'Made from Polar to your account'}

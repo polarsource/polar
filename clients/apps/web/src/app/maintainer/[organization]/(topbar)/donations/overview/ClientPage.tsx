@@ -87,7 +87,7 @@ export default function ClientPage({
             <VolunteerActivismOutlined fontSize="inherit" />
           </span>
           <div className="flex flex-col items-center gap-4 text-center">
-            <h2 className="dark:text-polar-50 text-2xl font-medium text-gray-950">
+            <h2 className="text-2xl font-medium text-gray-950 dark:text-white">
               Donations
             </h2>
             <h2 className="text-lg">
@@ -197,7 +197,7 @@ const DonationActivity = ({ donations }: { donations: Donation[] }) => {
     <Card>
       <CardHeader>
         <div className="text-lg font-medium">Donation Activity</div>
-        <div className="dark:text-polar-500 text-gray-400">
+        <div className="dark:text-white0 text-gray-400">
           The last 5 donations
         </div>
       </CardHeader>
@@ -246,7 +246,7 @@ const DonationActivity = ({ donations }: { donations: Donation[] }) => {
                   <div className="fw-medium">{donation.email}</div>
                 )}
 
-                <div className="dark:text-polar-500 text-xs text-gray-400">
+                <div className="dark:text-white0 text-xs text-gray-400">
                   <FormattedDateTime datetime={donation.created_at} />
                 </div>
               </div>

@@ -9,7 +9,7 @@ const Login = ({ returnTo }: { returnTo?: string }) => {
         <div className="md:dark:bg-polar-900 flex w-full flex-col justify-between gap-8 p-16 md:aspect-square md:bg-white">
           <div className="flex flex-col gap-y-4">
             <div className="flex flex-col gap-4">
-              <h2 className="dark:text-polar-50 text-3xl text-blue-500">
+              <h2 className="text-3xl text-blue-500 dark:text-white">
                 Welcome to Polar
               </h2>
               <h2 className="dark:text-polar-400 text-xl text-gray-500">
@@ -31,7 +31,7 @@ const Login = ({ returnTo }: { returnTo?: string }) => {
               <LabeledSeparator label="Or" />
               <MagicLinkLoginForm returnTo={returnTo} />
             </div>
-            <div className="dark:text-polar-500 text-sm text-gray-400">
+            <div className="dark:text-white0 text-sm text-gray-400">
               By using Polar you agree to our{' '}
               <a
                 className="dark:text-polar-300 text-gray-600"

@@ -70,7 +70,7 @@ export const LinkCard = ({
           : {}
       }
       className={twMerge(
-        'dark:text-polar-500 transition-color dark:hover:text-polar-300 dark:hover:bg-polar-900 transition-color flex flex-col gap-y-2 rounded-3xl text-gray-500 hover:bg-gray-50 hover:text-gray-600',
+        'dark:text-white0 transition-color dark:hover:text-polar-300 dark:hover:bg-polar-900 transition-color flex flex-col gap-y-2 rounded-3xl text-gray-500 hover:bg-gray-50 hover:text-gray-600',
         sortable?.isDragging && 'opacity-30',
         className,
       )}
@@ -113,14 +113,14 @@ export const LinkCard = ({
           )}
         </CardHeader>
         <CardContent className="flex h-full grow flex-col flex-wrap gap-y-2 px-6 py-0 pb-2">
-          <h3 className="dark:text-polar-50 line-clamp-2 text-gray-950">
+          <h3 className="line-clamp-2 text-gray-950 dark:text-white">
             {opengraph?.ogTitle ?? url.hostname.replace('www.', '')}
           </h3>
         </CardContent>
       </Link>
       <CardFooter className="flex flex-row flex-wrap items-center justify-between gap-4 p-6 pt-0">
         {opengraph && (
-          <p className="dark:text-polar-500 text-sm text-gray-500">
+          <p className="dark:text-white0 text-sm text-gray-500">
             {url.hostname.replace('www.', '')}
           </p>
         )}

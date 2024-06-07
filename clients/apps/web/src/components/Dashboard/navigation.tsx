@@ -206,7 +206,7 @@ const maintainerRoutesList = (org: Organization): Route[] => [
     title: 'Sales',
     icon: <ShoppingCartOutlined className="h-5 w-5" fontSize="inherit" />,
     postIcon: undefined,
-    link: `/maintainer/${org.name}/sales/orders`,
+    link: `/maintainer/${org.name}/sales/overview`,
     checkIsActive: (currentRoute: string): boolean => {
       return currentRoute.startsWith(`/maintainer/${org.name}/sales`)
     },
@@ -214,6 +214,10 @@ const maintainerRoutesList = (org: Organization): Route[] => [
       return isFeatureEnabled('products')
     },
     subs: [
+      {
+        title: 'Overview',
+        link: `/maintainer/${org.name}/sales/overview`,
+      },
       {
         title: 'Orders',
         link: `/maintainer/${org.name}/sales/orders`,

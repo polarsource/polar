@@ -161,12 +161,18 @@ export default function ClientPage({
   return (
     <DashboardBody>
       <div className="flex flex-col gap-8">
-        <div className="flex items-center gap-2">
-          <div className="w-1/6">
+        <div className="flex flex-col items-center gap-2 lg:flex-row">
+          <div className="w-full lg:w-1/6">
             <IntervalPicker interval={interval} onChange={onIntervalChange} />
           </div>
-          <DateRangePicker date={dateRange} onDateChange={onDateChange} />
-          <div className="w-1/6">
+          <div className="w-full lg:w-1/4">
+            <DateRangePicker
+              date={dateRange}
+              onDateChange={onDateChange}
+              className="w-full"
+            />
+          </div>
+          <div className="w-full lg:w-1/6">
             <ProductSelect
               productsByPriceType={productsByPriceType}
               value={productSelectValue}

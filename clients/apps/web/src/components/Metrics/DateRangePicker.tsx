@@ -53,7 +53,7 @@ const DateRangePicker: React.FC<DateRangePickerProps> = ({
             id="date"
             variant={'outline'}
             className={twMerge(
-              'h-10 w-[300px] justify-start rounded-md text-left font-normal',
+              'h-10 justify-start rounded-md text-left font-normal',
               !date && 'text-muted-foreground',
             )}
           >

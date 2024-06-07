@@ -7318,25 +7318,25 @@ export interface MaintainerPledgedIssuePendingNotificationPayload {
     maintainer_has_account: boolean;
 }
 /**
- * 
+ * Information about a metric.
  * @export
  * @interface Metric
  */
 export interface Metric {
     /**
-     * 
+     * Unique identifier for the metric.
      * @type {string}
      * @memberof Metric
      */
     slug: string;
     /**
-     * 
+     * Human-readable name for the metric.
      * @type {string}
      * @memberof Metric
      */
     display_name: string;
     /**
-     * 
+     * Type of the metric, useful to know the unit or format of the value.
      * @type {MetricType}
      * @memberof Metric
      */
@@ -7349,7 +7349,7 @@ export interface Metric {
  */
 export interface MetricPeriod {
     /**
-     * 
+     * Timestamp of this period data.
      * @type {string}
      * @memberof MetricPeriod
      */
@@ -7506,19 +7506,19 @@ export interface Metrics {
     monthly_recurring_revenue: Metric;
 }
 /**
- * 
+ * Metrics response schema.
  * @export
  * @interface MetricsResponse
  */
 export interface MetricsResponse {
     /**
-     * 
+     * List of data for each timestamp.
      * @type {Array<MetricPeriod>}
      * @memberof MetricsResponse
      */
     periods: Array<MetricPeriod>;
     /**
-     * 
+     * Information about the returned metrics.
      * @type {Metrics}
      * @memberof MetricsResponse
      */

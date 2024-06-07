@@ -7012,8 +7012,8 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "organizations:write",
-                            "organizations:read"
+                            "organizations:read",
+                            "organizations:write"
                         ]
                     },
                     {
@@ -7075,8 +7075,8 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "organizations:write",
-                            "organizations:read"
+                            "organizations:read",
+                            "organizations:write"
                         ]
                     },
                     {
@@ -7158,8 +7158,8 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "organizations:write",
-                            "organizations:read"
+                            "organizations:read",
+                            "organizations:write"
                         ]
                     },
                     {
@@ -7260,8 +7260,8 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "organizations:write",
-                            "organizations:read"
+                            "organizations:read",
+                            "organizations:write"
                         ]
                     },
                     {
@@ -7395,8 +7395,8 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "organizations:write",
-                            "organizations:read"
+                            "organizations:read",
+                            "organizations:write"
                         ]
                     },
                     {
@@ -7428,9 +7428,9 @@
                             },
                             "description": "Filter by the type of purchase the customer made.",
                             "default": [
-                                "order",
                                 "donation",
-                                "subscription"
+                                "subscription",
+                                "order"
                             ],
                             "title": "Customer Types"
                         },
@@ -7899,8 +7899,8 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "creator:subscriptions:write",
-                            "creator:subscriptions:read"
+                            "creator:subscriptions:read",
+                            "creator:subscriptions:write"
                         ]
                     },
                     {
@@ -8048,8 +8048,8 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "creator:subscriptions:write",
-                            "creator:subscriptions:read"
+                            "creator:subscriptions:read",
+                            "creator:subscriptions:write"
                         ]
                     },
                     {
@@ -8478,8 +8478,8 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "creator:subscriptions:write",
-                            "creator:subscriptions:read"
+                            "creator:subscriptions:read",
+                            "creator:subscriptions:write"
                         ]
                     },
                     {
@@ -11710,8 +11710,8 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "creator:benefits:write",
-                            "creator:benefits:read"
+                            "creator:benefits:read",
+                            "creator:benefits:write"
                         ]
                     },
                     {
@@ -11930,8 +11930,8 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "creator:benefits:write",
-                            "creator:benefits:read"
+                            "creator:benefits:read",
+                            "creator:benefits:write"
                         ]
                     },
                     {
@@ -12226,8 +12226,8 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "creator:benefits:write",
-                            "creator:benefits:read"
+                            "creator:benefits:read",
+                            "creator:benefits:write"
                         ]
                     },
                     {
@@ -12380,8 +12380,8 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "webhooks:read",
-                            "webhooks:write"
+                            "webhooks:write",
+                            "webhooks:read"
                         ]
                     },
                     {
@@ -12551,8 +12551,8 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "webhooks:read",
-                            "webhooks:write"
+                            "webhooks:write",
+                            "webhooks:read"
                         ]
                     },
                     {
@@ -12787,8 +12787,8 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "webhooks:read",
-                            "webhooks:write"
+                            "webhooks:write",
+                            "webhooks:read"
                         ]
                     },
                     {
@@ -12953,8 +12953,8 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "creator:products:read",
-                            "creator:products:write"
+                            "creator:products:write",
+                            "creator:products:read"
                         ]
                     },
                     {
@@ -13178,8 +13178,8 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "creator:products:read",
-                            "creator:products:write"
+                            "creator:products:write",
+                            "creator:products:read"
                         ]
                     },
                     {
@@ -14236,6 +14236,7 @@
                     "metrics"
                 ],
                 "summary": "Get Metrics",
+                "description": "Get metrics about your orders and subscriptions.",
                 "operationId": "metrics:get_metrics",
                 "security": [
                     {
@@ -14330,6 +14331,24 @@
                             "title": "Product Id"
                         },
                         "description": "Filter by product ID."
+                    },
+                    {
+                        "name": "product_price_type",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "$ref": "#/components/schemas/ProductPriceType"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "description": "Filter by product price type. `recurring` will filter data corresponding to subscriptions creations or renewals. `one_time` will filter data corresponding to one-time purchases.",
+                            "title": "Product Price Type"
+                        },
+                        "description": "Filter by product price type. `recurring` will filter data corresponding to subscriptions creations or renewals. `one_time` will filter data corresponding to one-time purchases."
                     }
                 ],
                 "responses": {
@@ -22881,14 +22900,21 @@
                 "properties": {
                     "slug": {
                         "type": "string",
-                        "title": "Slug"
+                        "title": "Slug",
+                        "description": "Unique identifier for the metric."
                     },
                     "display_name": {
                         "type": "string",
-                        "title": "Display Name"
+                        "title": "Display Name",
+                        "description": "Human-readable name for the metric."
                     },
                     "type": {
-                        "$ref": "#/components/schemas/MetricType"
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/MetricType"
+                            }
+                        ],
+                        "description": "Type of the metric, useful to know the unit or format of the value."
                     }
                 },
                 "type": "object",
@@ -22897,14 +22923,16 @@
                     "display_name",
                     "type"
                 ],
-                "title": "Metric"
+                "title": "Metric",
+                "description": "Information about a metric."
             },
             "MetricPeriod": {
                 "properties": {
                     "timestamp": {
                         "type": "string",
                         "format": "date-time",
-                        "title": "Timestamp"
+                        "title": "Timestamp",
+                        "description": "Timestamp of this period data."
                     },
                     "orders": {
                         "type": "integer",
@@ -23035,10 +23063,16 @@
                             "$ref": "#/components/schemas/MetricPeriod"
                         },
                         "type": "array",
-                        "title": "Periods"
+                        "title": "Periods",
+                        "description": "List of data for each timestamp."
                     },
                     "metrics": {
-                        "$ref": "#/components/schemas/Metrics"
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/Metrics"
+                            }
+                        ],
+                        "description": "Information about the returned metrics."
                     }
                 },
                 "type": "object",
@@ -23046,7 +23080,8 @@
                     "periods",
                     "metrics"
                 ],
-                "title": "MetricsResponse"
+                "title": "MetricsResponse",
+                "description": "Metrics response schema."
             },
             "NotPermitted": {
                 "properties": {

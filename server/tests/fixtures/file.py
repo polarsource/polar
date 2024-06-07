@@ -12,6 +12,7 @@ import pytest_asyncio
 from botocore.config import Config
 from httpx import AsyncClient, Response
 
+from polar.auth.models import AuthSubject
 from polar.config import settings
 from polar.file.schemas import FileCreate, FileRead, FileUpload, FileUploadCompleted
 from polar.file.service import s3_service
@@ -22,7 +23,7 @@ from polar.integrations.aws.s3.schemas import (
     S3FileUploadCompletedPart,
     S3FileUploadPart,
 )
-from polar.models import Organization
+from polar.models import Organization, User, UserOrganization
 
 pwd = Path(__file__).parent.absolute()
 
@@ -263,14 +264,47 @@ async def empty_test_bucket() -> None:
     bucket.object_versions.delete()
 
 
+async def uploaded_fixture(
+    client: AsyncClient,
+    organization_id: UUID,
+    file: TestFile,
+) -> FileRead:
+    created = await file.create(client, organization_id)
+    uploaded = await file.upload(created)
+    completed = await file.complete(client, created, uploaded)
+    return completed
+
+
 @pytest_asyncio.fixture(scope="function")
 def logo_png() -> TestFile:
     return TestFile("logo.png")
 
 
 @pytest_asyncio.fixture(scope="function")
+async def uploaded_logo_png(
+    client: AsyncClient,
+    auth_subject: AuthSubject[User],
+    user_organization_admin: UserOrganization,
+    predictable_organization: Organization,
+) -> FileRead:
+    img = TestFile("logo.png")
+    return await uploaded_fixture(client, user_organization_admin.organization_id, img)
+
+
+@pytest_asyncio.fixture(scope="function")
 def logo_jpg() -> TestFile:
     return TestFile("logo.jpg")
+
+
+@pytest_asyncio.fixture(scope="function")
+async def uploaded_logo_jpg(
+    client: AsyncClient,
+    auth_subject: AuthSubject[User],
+    user_organization_admin: UserOrganization,
+    predictable_organization: Organization,
+) -> FileRead:
+    img = TestFile("logo.jpg")
+    return await uploaded_fixture(client, user_organization_admin.organization_id, img)
 
 
 @pytest_asyncio.fixture(scope="function")

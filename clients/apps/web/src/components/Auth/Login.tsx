@@ -4,11 +4,11 @@ import MagicLinkLoginForm from '../Auth/MagicLinkLoginForm'
 
 const Login = ({ returnTo }: { returnTo?: string }) => {
   return (
-    <div className="dark:bg-polar-950 flex h-screen w-full grow items-center justify-center bg-gray-100">
+    <div className="flex h-screen w-full grow items-center justify-center">
       <div className="flex w-full max-w-md flex-col justify-between gap-8 p-16">
         <div className="flex flex-col gap-y-4">
-          <div className="flex flex-col gap-4">
-            <h2 className="text-2xl text-blue-500 dark:text-white">
+          <div className="flex flex-col gap-2">
+            <h2 className="text-2xl text-black dark:text-white">
               Welcome to Polar
             </h2>
             <h2 className="dark:text-polar-400 text-lg text-gray-500">

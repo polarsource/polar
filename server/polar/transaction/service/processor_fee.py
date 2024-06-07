@@ -32,7 +32,7 @@ def _get_stripe_processor_fee_type(description: str) -> ProcessorFeeType:
         return ProcessorFeeType.subscription
     if "automatic tax" in description:
         return ProcessorFeeType.tax
-    if "invoicing" in description:
+    if "invoicing" in description or "post payment invoices" in description:
         return ProcessorFeeType.invoice
     raise UnsupportedStripeFeeType(description)
 

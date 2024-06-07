@@ -31,11 +31,11 @@ export default async function Page({
   const today = new Date()
   const currentMonthStart = startOfMonth(today)
   const currentMonthEnd = endOfMonth(today)
-  const sixMonthsAgo = subMonths(currentMonthStart, 6)
+  const threeMonthsAgo = subMonths(currentMonthStart, 3)
 
   const startDate = searchParams.start_date
     ? new Date(searchParams.start_date)
-    : sixMonthsAgo
+    : threeMonthsAgo
   const endDate = searchParams.end_date
     ? new Date(searchParams.end_date)
     : currentMonthEnd

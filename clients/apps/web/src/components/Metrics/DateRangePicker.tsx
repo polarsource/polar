@@ -76,7 +76,7 @@ const DateRangePicker: React.FC<DateRangePickerProps> = ({
           <Calendar
             initialFocus
             mode="range"
-            defaultMonth={internalDate?.from}
+            defaultMonth={internalDate?.to}
             selected={internalDate}
             onSelect={setInternalDate}
             numberOfMonths={2}

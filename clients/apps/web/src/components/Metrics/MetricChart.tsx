@@ -180,6 +180,7 @@ const MetricChart: React.FC<MetricChartProps> = ({
           tickFormat: valueFormatter,
           label: null,
           stroke: 'none',
+          fontFamily: 'Inter',
         }),
         Plot.areaY(data, {
           x: 'timestamp',

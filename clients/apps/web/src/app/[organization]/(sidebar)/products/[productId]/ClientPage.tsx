@@ -59,28 +59,32 @@ export default function ClientPage({
               Before VAT and taxes
             </p>
           </div>
-          <div className="flex flex-col gap-4">
-            <div className="flex flex-col gap-2">
-              <h1 className="dark:text-polar-50 font-medium">You get</h1>
+          {product.benefits.length > 0 ? (
+            <div className="flex flex-col gap-4">
+              <div className="flex flex-col gap-2">
+                <h1 className="dark:text-polar-50 font-medium">You get</h1>
+              </div>
+              <List size="small">
+                {product.benefits.map((benefit) => (
+                  <ListItem
+                    key={benefit.id}
+                    className="justify-start gap-x-4"
+                    size="small"
+                  >
+                    {resolveBenefitIcon(benefit, 'small', 'h-5 w-5')}
+                    <div className="flex flex-col">
+                      <span className="text-sm">{benefit.description}</span>
+                      <span className="dark:text-polar-500 text-xs text-gray-500">
+                        {resolveBenefitTypeDisplayName(benefit.type)}
+                      </span>
+                    </div>
+                  </ListItem>
+                ))}
+              </List>
             </div>
-            <List size="small">
-              {product.benefits.map((benefit) => (
-                <ListItem
-                  key={benefit.id}
-                  className="justify-start gap-x-4"
-                  size="small"
-                >
-                  {resolveBenefitIcon(benefit, 'small', 'h-5 w-5')}
-                  <div className="flex flex-col">
-                    <span className="text-sm">{benefit.description}</span>
-                    <span className="dark:text-polar-500 text-xs text-gray-500">
-                      {resolveBenefitTypeDisplayName(benefit.type)}
-                    </span>
-                  </div>
-                </ListItem>
-              ))}
-            </List>
-          </div>
+          ) : (
+            <></>
+          )}
           <div className="flex flex-col gap-2">
             <CheckoutButton
               product={product}

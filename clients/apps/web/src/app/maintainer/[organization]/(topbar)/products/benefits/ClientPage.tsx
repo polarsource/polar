@@ -106,23 +106,30 @@ const ClientPage = ({ organization }: { organization: Organization }) => {
 
             <div className="flex flex-col gap-y-4">
               <h3 className="font-medium">Products</h3>
-              <div className="flex flex-col gap-y-2">
-                {benefitProducts?.items?.length ? (
-                  benefitProducts.items.map((product) => (
+
+              {benefitProducts?.items?.length ? (
+                <List size="small">
+                  {benefitProducts.items.map((product) => (
                     <Link
                       key={product.id}
                       href={`/maintainer/${organization.name}/products/overview?product=${product.id}`}
-                      className="dark:bg-polar-800 dark:hover:bg-polar-700 -mx-2 flex flex-row items-center gap-x-2 rounded-xl bg-gray-100 px-4 py-3 transition-colors hover:bg-blue-50 hover:text-blue-500"
                     >
-                      <span className="text-sm">{product.name}</span>
+                      <ListItem className="text-sm" size="small">
+                        <span>{product.name}</span>
+                        <span className="dark:text-polar-500 text-xs text-gray-500">
+                          {product.benefits.length > 0
+                            ? `${product.benefits.length} ${product.benefits.length === 1 ? 'Benefit' : 'Benefits'}`
+                            : null}
+                        </span>
+                      </ListItem>
                     </Link>
-                  ))
-                ) : (
-                  <span className="text-sm text-gray-500">
-                    Benefit not tied to any product
-                  </span>
-                )}
-              </div>
+                  ))}
+                </List>
+              ) : (
+                <span className="text-sm text-gray-500">
+                  Benefit not tied to any product
+                </span>
+              )}
             </div>
 
             {selectedBenefit.type === 'ads' ? (

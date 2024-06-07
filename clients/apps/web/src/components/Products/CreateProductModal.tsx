@@ -20,7 +20,6 @@ import Button from 'polarkit/components/ui/atoms/button'
 import { Form } from 'polarkit/components/ui/form'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useForm } from 'react-hook-form'
-import { isPremiumArticlesBenefit } from '../Benefit/utils'
 import { InlineModalHeader } from '../Modal/InlineModal'
 import ProductBenefitsForm from './ProductBenefitsForm'
 import ProductForm from './ProductForm'
@@ -50,8 +49,7 @@ export const CreateProductModal = ({
 
   const [enabledBenefitIds, setEnabledBenefitIds] = useState<
     BenefitPublicInner['id'][]
-    // Pre-select premium articles benefit
-  >(organizationBenefits.filter(isPremiumArticlesBenefit).map(({ id }) => id))
+  >([])
 
   const form = useForm<ProductCreate>({
     defaultValues: {

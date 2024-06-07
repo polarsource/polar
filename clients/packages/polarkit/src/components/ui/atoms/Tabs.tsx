@@ -38,7 +38,7 @@ const TabsTrigger = React.forwardRef<
   <TabsTriggerPrimitive
     ref={ref}
     className={twMerge(
-      'dark:data-[state=active]:bg-polar-700 dark:hover:text-polar-50 text-gray-400 hover:text-blue-500 data-[state=active]:rounded-full data-[state=active]:bg-blue-50 data-[state=active]:text-blue-500 data-[state=active]:shadow-none dark:text-white dark:data-[state=active]:text-white',
+      'dark:data-[state=active]:bg-polar-700 dark:hover:text-polar-50 dark:text-polar-500 text-gray-400 hover:text-blue-500 data-[state=active]:rounded-full data-[state=active]:bg-blue-50 data-[state=active]:text-blue-500 data-[state=active]:shadow-none dark:data-[state=active]:text-white',
       size === 'default' ? 'text-sm' : 'text-xs',
       className,
     )}

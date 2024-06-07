@@ -55,7 +55,7 @@ class RevenueMetric(Metric):
 class AverageOrderValueMetric(Metric):
     slug = "average_order_value"
     display_name = "Average Order Value"
-    type = MetricType.scalar
+    type = MetricType.currency
     query = MetricQuery.orders
 
     @classmethod

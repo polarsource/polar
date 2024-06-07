@@ -140,7 +140,7 @@ export const APIContainer = ({
             </TabsTrigger>
           </div>
           <Button
-            className="dark:text-white0 text-gray-500 transition-colors hover:text-blue-500 dark:hover:text-blue-400"
+            className="dark:text-polar-500 text-gray-500 transition-colors hover:text-blue-500 dark:hover:text-blue-400"
             variant="ghost"
             size="icon"
             onClick={handleCopyToClipboard}

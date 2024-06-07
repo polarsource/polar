@@ -236,7 +236,7 @@ export const UpsellStep = ({
             <h3 className="mt-0 text-lg font-medium [text-wrap:balance]">
               {title}
             </h3>
-            <p className="dark:text-white0 text-gray-500 [text-wrap:pretty]">
+            <p className="dark:text-polar-500 text-gray-500 [text-wrap:pretty]">
               {description}
             </p>
           </div>
@@ -244,7 +244,7 @@ export const UpsellStep = ({
       </ShadowBox>
 
       <div
-        className="dark:text-white0 dark:hover:text-polar-300 absolute right-4 top-4 cursor-pointer p-2 text-gray-300 hover:text-gray-500"
+        className="dark:text-polar-500 dark:hover:text-polar-300 absolute right-4 top-4 cursor-pointer p-2 text-gray-300 hover:text-gray-500"
         onClick={handleDismiss}
       >
         <CloseOutlined fontSize="inherit" />

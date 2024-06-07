@@ -179,7 +179,7 @@ export default function Page() {
               <h3 className="dark:text-white text-3xl text-gray-950">
                 Polar for Organizations
               </h3>
-              <p className="dark:text-white0 text-center leading-relaxed text-gray-500">
+              <p className="dark:text-polar-500 text-center leading-relaxed text-gray-500">
                 Setup funding for your projects, or give members the ability to
                 fund projects on behalf of your organization
               </p>

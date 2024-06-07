@@ -70,7 +70,7 @@ export const AccountSetup: React.FC<AccoutSetupProps> = ({
       <div className="flex flex-row items-center justify-between">
         <div className="flex flex-col gap-y-2">
           <h2 className="text-lg font-medium">Payout account</h2>
-          <p className="dark:text-white0 text-sm text-gray-500">
+          <p className="dark:text-polar-500 text-sm text-gray-500">
             Account where you can receive money transfers from Polar
           </p>
         </div>
@@ -166,7 +166,7 @@ export const AccountSetup: React.FC<AccoutSetupProps> = ({
                                         ]
                                       }
                                     </div>
-                                    <div className="dark:text-white0 text-sm text-gray-700">
+                                    <div className="dark:text-polar-500 text-sm text-gray-700">
                                       <AccountAssociations
                                         account={account}
                                         prefix="Used by"

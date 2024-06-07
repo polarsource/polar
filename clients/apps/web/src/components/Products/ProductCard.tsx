@@ -43,7 +43,7 @@ export const ProductCard = ({
             />
           ) : (
             <div className="dark:bg-polar-900 flex aspect-square w-full flex-col items-center justify-center rounded-2xl bg-gray-100">
-              <PanoramaOutlined className="dark:text-white0 text-gray-500" />
+              <PanoramaOutlined className="dark:text-polar-500 text-gray-500" />
             </div>
           )}
         </>

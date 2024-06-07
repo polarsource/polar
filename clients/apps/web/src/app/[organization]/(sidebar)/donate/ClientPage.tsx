@@ -39,14 +39,14 @@ const ClientPage = ({
                 <h2 className="text-xl">Donate</h2>
 
                 {issue ? (
-                  <p className="dark:text-white0 text-gray-500">
+                  <p className="dark:text-polar-500 text-gray-500">
                     Say thanks with a donation to{' '}
                     {organization.pretty_name ?? organization.name} for fixing{' '}
                     {issue.repository.organization.name}/{issue.repository.name}
                     #{issue.number}
                   </p>
                 ) : (
-                  <p className="dark:text-white0 text-gray-500">
+                  <p className="dark:text-polar-500 text-gray-500">
                     Say thanks with a donation to{' '}
                     {organization.pretty_name ?? organization.name}
                   </p>

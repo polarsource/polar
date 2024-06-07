@@ -87,7 +87,7 @@ export default function ClientPage() {
             <h3 className="text-xl leading-normal [text-wrap:balance]">
               Subscription Tiers management has a new home
             </h3>
-            <p className="dark:text-white0 w-1/2 text-balance text-gray-500">
+            <p className="dark:text-polar-500 w-1/2 text-balance text-gray-500">
               Your Subscription Tiers are now managed from the new Products
               section. Soon, we&apos;ll also add support for one-time purchase
               products and more!

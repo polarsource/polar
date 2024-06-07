@@ -44,7 +44,7 @@ export const CommandItem = ({
             'dark:group-hover:text-polar-50 font-medium capitalize transition-colors group-hover:text-gray-950',
             active
               ? 'text-gray-950 dark:text-white'
-              : 'dark:text-white0 text-gray-500',
+              : 'dark:text-polar-500 text-gray-500',
           )}
         >
           {command}
@@ -55,7 +55,7 @@ export const CommandItem = ({
         className={twMerge(
           'dark:group-hover:text-polar-500 truncate text-sm transition-colors group-hover:text-gray-500',
           active
-            ? 'dark:text-white0 text-gray-500'
+            ? 'dark:text-polar-500 text-gray-500'
             : 'dark:text-polar-600 text-gray-400',
         )}
       >

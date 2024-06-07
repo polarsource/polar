@@ -53,7 +53,7 @@ export const HighlightedPost = ({ post }: HighlightedPostProps) => {
       )}
       <header className="flex flex-col items-center gap-y-4">
         <time
-          className="dark:text-white0 text-gray-500"
+          className="dark:text-polar-500 text-gray-500"
           dateTime={publishedDate?.toISOString()}
         >
           {publishedDateText}
@@ -61,7 +61,7 @@ export const HighlightedPost = ({ post }: HighlightedPostProps) => {
         <h1 className="text-center text-2xl !font-semibold !leading-relaxed [text-wrap:balance] md:text-3xl">
           {post.title}
         </h1>
-        <p className="dark:text-white0 dark:group-hover:text-polar-200 line-clamp-2 max-w-2xl text-center leading-loose text-gray-500 transition-colors duration-500 [text-wrap:pretty] group-hover:text-gray-800">
+        <p className="dark:text-polar-500 dark:group-hover:text-polar-200 line-clamp-2 max-w-2xl text-center leading-loose text-gray-500 transition-colors duration-500 [text-wrap:pretty] group-hover:text-gray-800">
           {post.og_description ?? <PreviewText article={post} />}
         </p>
         <Button variant="ghost">

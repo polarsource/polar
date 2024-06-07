@@ -16,7 +16,7 @@ interface AccountsListProps {
 const AccountsList = ({ accounts, returnPath }: AccountsListProps) => {
   return (
     <table className="-mx-4 w-full text-left">
-      <thead className="dark:text-white0 text-gray-500">
+      <thead className="dark:text-polar-500 text-gray-500">
         <tr className="text-sm">
           <th
             scope="col"

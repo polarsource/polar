@@ -51,7 +51,7 @@ export const LinksModal = ({ links, hideModal, setLinks }: LinksModalProps) => {
       </div>
       <div className="flex flex-col gap-y-2">
         <h3>Links</h3>
-        <p className="dark:text-white0 text-sm text-gray-500">
+        <p className="dark:text-polar-500 text-sm text-gray-500">
           Add links to resources that you want to surface on the profile.
           READMEs, blog posts, or websites are great examples.
         </p>

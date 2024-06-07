@@ -31,7 +31,7 @@ export const AudiencePicker = () => {
               <div className="flex flex-col gap-y-4">
                 <div className="flex flex-col gap-y-2">
                   <span className="font-medium">Audience</span>
-                  <p className="text-polar-500 dark:text-white0 text-sm">
+                  <p className="text-polar-500 dark:text-polar-500 text-sm">
                     Pick which audience you want to publish this post to
                   </p>
                 </div>

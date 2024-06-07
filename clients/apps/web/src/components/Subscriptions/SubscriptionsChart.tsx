@@ -207,7 +207,7 @@ export function Chart<T extends ChartData, K extends keyof T>({
 
   return (
     <div
-      className="dark:text-white0 text-gray-300"
+      className="dark:text-polar-500 text-gray-300"
       ref={setContainerRef}
       onMouseLeave={onMouseLeave}
     />

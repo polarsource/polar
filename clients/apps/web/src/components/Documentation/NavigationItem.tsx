@@ -29,7 +29,7 @@ export const NaviagtionItem = ({
         '-mx-3 flex flex-row items-center gap-x-3 rounded-lg px-3 py-2 text-sm transition-colors hover:text-blue-500 dark:hover:text-white',
         fallbackActive
           ? 'dark:bg-polar-800 bg-blue-50 text-blue-500 dark:text-white'
-          : 'dark:text-white0 text-gray-500',
+          : 'dark:text-polar-500 text-gray-500',
         className,
       )}
     >

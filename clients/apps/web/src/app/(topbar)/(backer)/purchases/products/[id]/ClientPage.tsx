@@ -96,7 +96,7 @@ const ClientPage = ({ order }: { order: UserOrder }) => {
               <h1 className="text-5xl font-light text-blue-500 dark:text-blue-400">
                 {formatCurrencyAndAmount(order.amount, order.currency, 0)}
               </h1>
-              <p className="dark:text-white0 text-sm text-gray-400">
+              <p className="dark:text-polar-500 text-sm text-gray-400">
                 Purchased on{' '}
                 {new Date(order.created_at).toLocaleDateString('en-US', {
                   year: 'numeric',

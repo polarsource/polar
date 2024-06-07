@@ -73,7 +73,7 @@ export const CreatorsModal = ({
       </div>
       <div className="flex flex-col gap-y-2">
         <h3>Featured Developers</h3>
-        <p className="dark:text-white0 text-sm text-gray-500">
+        <p className="dark:text-polar-500 text-sm text-gray-500">
           Select developers that you want to feature on the profile. The
           developer must be on Polar.
         </p>

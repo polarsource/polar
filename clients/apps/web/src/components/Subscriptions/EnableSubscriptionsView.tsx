@@ -41,7 +41,7 @@ export const EnableSubscriptionsView = ({
 
   return (
     <EmptyLayout>
-      <div className="dark:text-white0 flex flex-col items-center justify-center space-y-10 py-96 text-gray-500">
+      <div className="dark:text-polar-500 flex flex-col items-center justify-center space-y-10 py-96 text-gray-500">
         <span className="text-6xl text-blue-400">
           <Bolt fontSize="inherit" />
         </span>

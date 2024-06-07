@@ -36,7 +36,7 @@ export const PublishShareModal = ({
               <h2 className="text-xl font-medium text-gray-950 dark:text-white">
                 Your post was successfully published!
               </h2>
-              <p className="dark:text-white0 text-gray-500">
+              <p className="dark:text-polar-500 text-gray-500">
                 Let the world know about it
               </p>
             </div>

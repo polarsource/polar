@@ -92,7 +92,7 @@ const ClientPage = ({
   const PostsEmptyState = () => {
     return isAdmin ? (
       <div className="flex flex-col gap-y-6">
-        <p className="dark:text-white0 text-gray-500">
+        <p className="dark:text-polar-500 text-gray-500">
           Build out an audience by writing posts and share it with your
           subscribers
         </p>
@@ -105,7 +105,7 @@ const ClientPage = ({
           <h3 className="p-2 text-lg font-medium">
             {organization.name} is typing...
           </h3>
-          <p className="dark:text-white0 w-full min-w-0 text-gray-500">
+          <p className="dark:text-polar-500 w-full min-w-0 text-gray-500">
             Subscribe to {organization.name} to get future posts fresh out of
             the press.
           </p>
@@ -295,7 +295,7 @@ const DonationsFeed = ({ donations }: DonationsFeedProps) => {
                 </p>
               )}
               {donation.created_at && (
-                <span className="dark:text-white0 text-xs text-gray-500">
+                <span className="dark:text-polar-500 text-xs text-gray-500">
                   {new Date(donation.created_at).toLocaleDateString('en-US', {
                     year: 'numeric',
                     month: 'long',

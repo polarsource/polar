@@ -171,7 +171,7 @@ export default function ClientPage({
           onClick={toggleFeature}
         />
       </StaggerReveal>
-      <p className="dark:text-white0 text-center text-sm text-gray-500">
+      <p className="dark:text-polar-500 text-center text-sm text-gray-500">
         Don&apos;t worry - you can enable any of these features later
       </p>
       <Button
@@ -237,7 +237,7 @@ const OnboardingCard = ({
           )}
         </CardHeader>
         <CardContent className="h-full">
-          <p className="dark:text-white0 text-gray-500">{description}</p>
+          <p className="dark:text-polar-500 text-gray-500">{description}</p>
         </CardContent>
       </Card>
     </StaggerReveal.Child>
@@ -274,7 +274,7 @@ const FeatureItem = ({
           'flex flex-row items-baseline gap-x-4',
           active
             ? 'text-black dark:text-white'
-            : 'dark:text-white0 text-gray-500',
+            : 'dark:text-polar-500 text-gray-500',
         )}
       >
         <span
@@ -286,7 +286,9 @@ const FeatureItem = ({
           {icon}
         </span>
         <span className={twMerge(active && 'font-medium')}>{name}</span>
-        <p className="dark:text-white0 text-sm text-gray-500">{description}</p>
+        <p className="dark:text-polar-500 text-sm text-gray-500">
+          {description}
+        </p>
       </div>
       {active && (
         <Button

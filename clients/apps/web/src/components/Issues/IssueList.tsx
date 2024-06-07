@@ -249,7 +249,7 @@ export const Header = (props: {
               </span>
             ) : (
               <MagnifyingGlassIcon
-                className="dark:text-white0 h-6 w-6 pl-1 text-lg text-gray-500"
+                className="dark:text-polar-500 h-6 w-6 pl-1 text-lg text-gray-500"
                 aria-hidden="true"
               />
             )

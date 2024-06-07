@@ -113,7 +113,7 @@ export const OrganizationPublicSidebar = ({
       >
         <div className="flex w-full flex-col gap-y-6">
           <DescriptionEditor
-            className="dark:text-white0 text-md text-start leading-relaxed text-gray-500"
+            className="dark:text-polar-500 text-md text-start leading-relaxed text-gray-500"
             description={
               organization.profile_settings?.description ??
               organization.bio ??
@@ -289,7 +289,7 @@ const RssModal = ({
               {currentUser ? 'Your feed URL' : 'Feed URL'}
             </span>
             {currentUser ? (
-              <p className="text-polar-500 dark:text-white0 text-sm">
+              <p className="text-polar-500 dark:text-polar-500 text-sm">
                 This URL is personal, keep it safe.
               </p>
             ) : null}

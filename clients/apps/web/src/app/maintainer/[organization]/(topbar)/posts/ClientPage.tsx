@@ -269,13 +269,13 @@ const PostItem = (post: Article) => {
     >
       <div
         className={twMerge(
-          'dark:bg-polar-900 dark:border-polar-800 dark:hover:bg-polar-900 flex flex-col justify-between gap-x-8 gap-y-6 rounded-3xl border border-gray-100 bg-white p-6 shadow-sm transition-colors hover:bg-gray-50',
+          'dark:border-polar-800 dark:hover:bg-polar-900 flex flex-col justify-between gap-x-8 gap-y-6 rounded-3xl border border-gray-100 p-8 shadow-sm transition-colors hover:bg-gray-50',
           post.paid_subscribers_only &&
             'border-white bg-gradient-to-l from-blue-50/80 to-transparent hover:from-blue-100 dark:from-blue-800/20 dark:hover:from-blue-800/30',
         )}
       >
         <div className="flex w-full flex-col gap-y-6">
-          <h3 className="text-lg font-medium text-gray-950 dark:text-white">
+          <h3 className="text-xl font-medium text-gray-950 dark:text-white">
             {post.title}
           </h3>
           <div className="prose prose-headings:font-medium prose-headings:first:mt-0 prose-p:first:mt-0 prose-img:first:mt-0 prose-p:last:mb-0 dark:prose-pre:bg-polar-800 prose-pre:bg-gray-100 dark:prose-invert prose-pre:rounded-2xl dark:prose-headings:text-white prose-p:text-gray-700 prose-img:rounded-2xl dark:prose-p:text-polar-200 dark:text-polar-200 prose-a:text-blue-500 hover:prose-a:text-blue-400 dark:hover:prose-a:text-blue-300 dark:prose-a:text-blue-400 prose-a:no-underline prose-code:before:content-none prose-code:after:content-none prose-code:bg-gray-100 dark:prose-code:bg-polar-700 prose-code:font-normal prose-code:rounded-sm prose-code:px-1.5 prose-code:py-1 w-full max-w-none text-gray-600">

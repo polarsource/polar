@@ -1,5 +1,10 @@
 import { getServerSideAPI } from '@/utils/api/serverside'
-import { Interval, MetricPeriod, Platforms } from '@polar-sh/sdk'
+import {
+  Interval,
+  MetricPeriod,
+  Platforms,
+  ProductPriceType,
+} from '@polar-sh/sdk'
 import { endOfMonth, startOfMonth, subMonths } from 'date-fns'
 import ClientPage from './ClientPage'
 
@@ -12,6 +17,8 @@ export default async function Page({
     start_date?: string
     end_date?: string
     interval?: Interval
+    product_id?: string
+    product_price_type?: ProductPriceType
     focus?: keyof Omit<MetricPeriod, 'timestamp'>
   }
 }) {
@@ -41,6 +48,8 @@ export default async function Page({
       startDate={startDate}
       endDate={endDate}
       interval={interval}
+      productId={searchParams.product_id}
+      productPriceType={searchParams.product_price_type}
       focus={focus}
     />
   )

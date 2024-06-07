@@ -1,6 +1,12 @@
 import { api } from '@/utils/api'
 import { toISODate } from '@/utils/metrics'
-import { Interval, MetricPeriod, Metrics, ResponseError } from '@polar-sh/sdk'
+import {
+  Interval,
+  MetricPeriod,
+  Metrics,
+  ProductPriceType,
+  ResponseError,
+} from '@polar-sh/sdk'
 import { UseQueryResult, useQuery } from '@tanstack/react-query'
 import { defaultRetry } from './retry'
 
@@ -10,6 +16,7 @@ interface GetMetricsRequest {
   interval: Interval
   organizationId?: string
   productId?: string
+  productPriceType?: ProductPriceType
 }
 
 // @ts-ignore

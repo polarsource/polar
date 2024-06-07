@@ -126,7 +126,7 @@ export const OrganizationPublicSidebar = ({
             failed={updateOrganizationMutation.isError}
             maxLength={160}
           />
-          <div className="flex flex-row flex-wrap items-center gap-2.5 text-lg">
+          <div className="flex flex-row flex-wrap items-center gap-3 text-lg">
             <SocialLink href={`https://github.com/${organization.name}`}>
               <GitHubIcon width={20} height={20} />
             </SocialLink>
@@ -150,20 +150,20 @@ export const OrganizationPublicSidebar = ({
             )}
             {organization.blog && (
               <SocialLink href={externalURL(organization.blog)}>
-                <LanguageOutlined fontSize="inherit" />
+                <LanguageOutlined fontSize="small" />
               </SocialLink>
             )}
             {organization.email && (
               <SocialLink href={`mailto:${organization.email}`}>
-                <MailOutline fontSize="inherit" />
+                <MailOutline fontSize="small" />
               </SocialLink>
             )}
             <Button
-              className="dark:bg-polar-700 dark:hover:bg-polar-600 dark:text-polar-200 flex h-10 w-10 flex-col items-center justify-center rounded-full border-none bg-blue-50 text-blue-500 transition-colors hover:bg-blue-100"
+              className="dark:bg-transparent p-0 dark:hover:bg-transparent dark:text-polar-400 dark:hover:text-white flex flex-col items-center justify-center rounded-full border-none bg-transparent text-gray-500 hover:text-blue-500 transition-colors hover:bg-transparent"
               onClick={showRssModal}
               variant="secondary"
             >
-              <RssIcon className="h-4 w-4" />
+              <RssIcon className="h-5 w-5" />
             </Button>
           </div>
         </div>
@@ -230,7 +230,7 @@ const SocialLink = (props: PropsWithChildren<{ href: string }>) => {
     <Link
       target="_blank"
       rel="noopener nofollow"
-      className="dark:bg-polar-700 dark:hover:bg-polar-600 dark:text-polar-200 flex h-10 w-10 flex-col items-center justify-center rounded-full bg-blue-50 text-blue-500 transition-colors hover:bg-blue-100"
+      className="dark:bg-transparent dark:text-polar-400 dark:hover:text-white flex flex-col items-center justify-center rounded-full bg-transparent text-gray-500 hover:text-blue-500 transition-colors hover:bg-transparent"
       href={props.href}
     >
       {props.children}

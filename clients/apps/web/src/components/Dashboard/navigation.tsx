@@ -8,7 +8,6 @@ import {
   AttachMoneyOutlined,
   Bolt,
   BoltOutlined,
-  CropFreeOutlined,
   DiamondOutlined,
   Face,
   FavoriteBorderOutlined,
@@ -275,12 +274,10 @@ const maintainerRoutesList = (org: Organization): Route[] => [
       {
         title: 'Overview',
         link: `/maintainer/${org.name}/issues/overview`,
-        icon: <HowToVoteOutlined fontSize="inherit" />,
       },
       {
         title: 'Badge',
         link: `/maintainer/${org.name}/issues/badge`,
-        icon: <CropFreeOutlined fontSize="inherit" />,
       },
     ],
   },

@@ -122,21 +122,21 @@ export const EditProductModal = ({
     [organizationBenefits, enabledBenefitIds],
   )
 
-  // const benefitsAdded = useMemo(
-  //   () =>
-  //     enabledBenefits.filter(
-  //       (benefit) => !product.benefits.some(({ id }) => id === benefit.id),
-  //     ),
-  //   [enabledBenefits, product],
-  // )
+  const benefitsAdded = useMemo(
+    () =>
+      enabledBenefits.filter(
+        (benefit) => !product.benefits.some(({ id }) => id === benefit.id),
+      ),
+    [enabledBenefits, product],
+  )
 
-  // const benefitsRemoved = useMemo(
-  //   () =>
-  //     product.benefits.filter(
-  //       (benefit) => !enabledBenefits.some(({ id }) => id === benefit.id),
-  //     ),
-  //   [enabledBenefits, product],
-  // )
+  const benefitsRemoved = useMemo(
+    () =>
+      product.benefits.filter(
+        (benefit) => !enabledBenefits.some(({ id }) => id === benefit.id),
+      ),
+    [enabledBenefits, product],
+  )
 
   const {
     isShown: isArchiveModalShown,
@@ -187,6 +187,26 @@ export const EditProductModal = ({
           onSelectBenefit={onSelectBenefit}
           onRemoveBenefit={onRemoveBenefit}
         />
+        {(benefitsAdded.length > 0 || benefitsRemoved.length > 0) && (
+          <div className="rounded-2xl bg-yellow-50 p-8 px-4 py-3 text-sm text-yellow-500 dark:bg-yellow-950">
+            Existing customers will immediately{' '}
+            {benefitsAdded.length > 0 && (
+              <>
+                get access to{' '}
+                {benefitsAdded.map((benefit) => benefit.description).join(', ')}
+              </>
+            )}
+            {benefitsRemoved.length > 0 && (
+              <>
+                {benefitsAdded.length > 0 && ' and '}lose access to{' '}
+                {benefitsRemoved
+                  .map((benefit) => benefit.description)
+                  .join(', ')}
+              </>
+            )}
+            .
+          </div>
+        )}
         {!isFreeTier && (
           <>
             <ShadowBox className="flex flex-col gap-6 p-6">

@@ -1,11 +1,9 @@
 from urllib.parse import parse_qs, urlencode, urlparse
-from uuid import UUID
 
 import pytest
-from httpx import AsyncClient, ReadError, Response
+from httpx import AsyncClient, ReadError
 
 from polar.auth.models import AuthSubject
-from polar.file.schemas import FileUpload
 from polar.file.service import file as file_service
 from polar.file.service import s3_service
 from polar.integrations.aws.s3.exceptions import S3FileError
@@ -18,22 +16,6 @@ from tests.fixtures.file import TestFile
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
 class TestEndpoints:
-    def ensure_expected_create_response(
-        self, response: Response, organization_id: UUID, file: TestFile, parts: int = 1
-    ) -> FileUpload:
-        assert response.status_code == 200
-        data = response.json()
-        valid = FileUpload(**data)
-
-        assert valid.is_uploaded is False
-        assert valid.name == file.name
-        assert valid.size == file.size
-        assert valid.mime_type == file.mime_type
-        assert valid.checksum_sha256_base64 == file.base64
-        assert valid.checksum_sha256_hex == file.hex
-        assert len(valid.upload.parts) == parts
-        return valid
-
     async def test_anonymous_create_401(
         self, client: AsyncClient, organization: Organization
     ) -> None:

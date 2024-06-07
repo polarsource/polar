@@ -16,6 +16,7 @@ import {
   CardFooter,
   CardHeader,
 } from 'polarkit/components/ui/atoms/card'
+import { List, ListItem } from 'polarkit/components/ui/atoms/list'
 import { useRef } from 'react'
 import { useHoverDirty } from 'react-use'
 
@@ -102,11 +103,13 @@ export const PostWizard = () => {
                 {drafts.length} Unpublished
                 {drafts.length === 1 ? ' Post' : ' Posts'}
               </h3>
-              <div className="flex flex-col gap-y-2">
+              <List>
                 {drafts.map((draft) => (
-                  <DraftPost key={draft.id} organization={org} draft={draft} />
+                  <ListItem key={draft.id}>
+                    <DraftPost organization={org} draft={draft} />
+                  </ListItem>
                 ))}
-              </div>
+              </List>
             </div>
           )}
         </div>
@@ -177,7 +180,7 @@ const DraftPost = ({
     <Link
       ref={ref}
       href={`/maintainer/${organization.name}/posts/${draft.slug}`}
-      className="dark:text-polar-50 dark:border-polar-800 dark:bg-polar-900 dark:hover:bg-polar-900 flex flex-row items-center justify-between gap-x-8 rounded-2xl border border-gray-100 bg-white px-6 py-4 text-gray-950 shadow-sm transition-colors hover:bg-gray-50"
+      className="flex w-full flex-row items-center justify-between"
     >
       <div className="flex flex-1 flex-col overflow-hidden">
         <h3 className="w-full truncate text-lg font-medium">{draft.title}</h3>

@@ -3,7 +3,7 @@ from datetime import timedelta
 from uuid import UUID
 
 import structlog
-from itsdangerous import SignatureExpired, URLSafeTimedSerializer
+from itsdangerous import BadSignature, SignatureExpired, URLSafeTimedSerializer
 from sqlalchemy.orm import contains_eager
 
 from polar.config import settings
@@ -198,6 +198,8 @@ class DownloadableService(
             id = UUID(unpacked["id"])
         except SignatureExpired:
             raise ResourceUnavailable()
+        except BadSignature:
+            raise ResourceNotFound()
         except KeyError:
             raise BadRequest()
 

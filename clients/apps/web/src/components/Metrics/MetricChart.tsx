@@ -1,9 +1,9 @@
 import { ParsedMetricPeriod } from '@/hooks/queries'
-import { formatCurrencyAndAmount } from '@/utils/money'
+import { getValueFormatter } from '@/utils/metrics'
 import * as Plot from '@observablehq/plot'
-import { Interval, Metric, MetricType } from '@polar-sh/sdk'
+import { Interval, Metric } from '@polar-sh/sdk'
 import * as d3 from 'd3'
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 
 const primaryColor = 'rgb(0 98 255)'
 const gradientId = 'chart-gradient'
@@ -41,6 +41,35 @@ const createAreaGradient = (id: string) => {
   return defs
 }
 
+class Callback extends Plot.Dot {
+  private callbackFunction: (index: number | undefined) => void
+
+  public constructor(
+    data: Plot.Data,
+    options: Plot.DotOptions,
+    callbackFunction: (data: any) => void,
+  ) {
+    // @ts-ignore
+    super(data, options)
+    this.callbackFunction = callbackFunction
+  }
+
+  // @ts-ignore
+  public render(
+    index: number[],
+    _scales: Plot.ScaleFunctions,
+    _values: Plot.ChannelValues,
+    _dimensions: Plot.Dimensions,
+    _context: Plot.Context,
+    _next?: Plot.RenderFunction,
+  ): SVGElement | null {
+    if (index.length) {
+      this.callbackFunction(index[0])
+    }
+    return null
+  }
+}
+
 const getTicks = (timestamps: Date[], maxTicks: number = 10): Date[] => {
   const step = Math.ceil(timestamps.length / maxTicks)
   return timestamps.filter((_, index) => index % step === 0)
@@ -70,24 +99,13 @@ const getTickFormat = (
   }
 }
 
-const getValueFormatter = (metric: Metric): ((value: number) => string) => {
-  const numberFormat = new Intl.NumberFormat(undefined, {
-    maximumFractionDigits: 0,
-  })
-  switch (metric.type) {
-    case MetricType.CURRENCY:
-      return (value: number) => formatCurrencyAndAmount(value, 'usd', 0)
-    case MetricType.SCALAR:
-      return (value: number) => numberFormat.format(value)
-  }
-}
-
 interface MetricChartProps {
   data: ParsedMetricPeriod[]
   interval: Interval
   metric: Metric
   height?: number
   maxTicks?: number
+  onDataIndexHover?: (index: number | undefined) => void
 }
 
 const MetricChart: React.FC<MetricChartProps> = ({
@@ -96,6 +114,7 @@ const MetricChart: React.FC<MetricChartProps> = ({
   metric,
   height: _height,
   maxTicks: _maxTicks,
+  onDataIndexHover,
 }) => {
   const [width, setWidth] = useState(0)
   const height = useMemo(() => _height || 150, [_height])
@@ -130,6 +149,12 @@ const MetricChart: React.FC<MetricChartProps> = ({
       }
     }
   }, [containerRef])
+
+  const onMouseLeave = useCallback(() => {
+    if (onDataIndexHover) {
+      onDataIndexHover(undefined)
+    }
+  }, [onDataIndexHover])
 
   useEffect(() => {
     if (!containerRef) {
@@ -169,9 +194,18 @@ const MetricChart: React.FC<MetricChartProps> = ({
           stroke: primaryColor,
           strokeWidth: 2,
         }),
+        Plot.ruleX(
+          data,
+          Plot.pointerX({
+            x: 'timestamp',
+            stroke: primaryColor,
+            strokeOpacity: 0.5,
+            strokeWidth: 2,
+          }),
+        ),
         Plot.dot(
           data,
-          Plot.pointerY({
+          Plot.pointerX({
             x: 'timestamp',
             y: metric.slug,
             fill: primaryColor,
@@ -179,24 +213,21 @@ const MetricChart: React.FC<MetricChartProps> = ({
             r: 5,
           }),
         ),
-        Plot.ruleX(
-          data,
-          Plot.pointerY({
-            x: 'timestamp',
-            stroke: primaryColor,
-            strokeOpacity: 0.5,
-            strokeWidth: 2,
-          }),
-        ),
-        Plot.tip(
-          data,
-          Plot.pointerY({
-            x: 'timestamp',
-            y: metric.slug,
-            title: (d) =>
-              `${metric.display_name}\n${valueFormatter(d[metric.slug])}`,
-          }),
-        ),
+        ...(onDataIndexHover
+          ? [
+              new Callback(
+                data,
+                Plot.pointerX({
+                  x: 'timestamp',
+                  y: metric.slug,
+                  fill: primaryColor,
+                  fillOpacity: 0.5,
+                  r: 5,
+                }),
+                onDataIndexHover,
+              ),
+            ]
+          : []),
       ],
     })
     containerRef.append(plot)
@@ -211,9 +242,12 @@ const MetricChart: React.FC<MetricChartProps> = ({
     valueFormatter,
     width,
     height,
+    onDataIndexHover,
   ])
 
-  return <div className="w-full" ref={setContainerRef} />
+  return (
+    <div className="w-full" ref={setContainerRef} onMouseLeave={onMouseLeave} />
+  )
 }
 
 export default MetricChart

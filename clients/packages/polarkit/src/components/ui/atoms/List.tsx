@@ -7,7 +7,7 @@ export interface ListProps extends PropsWithChildren {
 }
 
 export const List = ({ children, className, size = 'default' }: ListProps) => {
-  return (
+  return children ? (
     <div
       className={twMerge(
         'dark:divide-polar-700 dark:border-polar-700 flex flex-col divide-y divide-gray-100 overflow-hidden border border-gray-100',
@@ -17,7 +17,7 @@ export const List = ({ children, className, size = 'default' }: ListProps) => {
     >
       {children}
     </div>
-  )
+  ) : null
 }
 
 export interface ListItemProps extends PropsWithChildren {

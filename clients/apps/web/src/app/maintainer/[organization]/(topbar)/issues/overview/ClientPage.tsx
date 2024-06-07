@@ -15,7 +15,6 @@ import { HowToVoteOutlined } from '@mui/icons-material'
 import { IssueSortBy, Organization, Repository } from '@polar-sh/sdk'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { ShadowBoxOnMd } from 'polarkit/components/ui/atoms/shadowbox'
-import { Separator } from 'polarkit/components/ui/separator'
 import {
   Dispatch,
   SetStateAction,
@@ -230,7 +229,6 @@ const OrganizationIssues = ({
       {!currentOrg.has_app_installed && <GitHubAppInstallationUpsell />}
       {showAddBadgeBanner && <OnboardingAddBadge />}
       <ShadowBoxOnMd className="md:rounded-3xl md:px-12 md:py-8">
-        <h2 className="mb-6 text-lg font-medium">Issues Overview</h2>
         <div className="-mx-6 space-y-8">
           <div className="mx-6">
             <RepoPickerHeader
@@ -244,10 +242,6 @@ const OrganizationIssues = ({
                 spinner={dashboardQuery.isInitialLoading}
               />
             </RepoPickerHeader>
-          </div>
-
-          <div className="px-6">
-            <Separator />
           </div>
 
           {haveIssues ? (

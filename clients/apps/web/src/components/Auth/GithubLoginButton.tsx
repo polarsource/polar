@@ -28,7 +28,7 @@ const GithubLoginButton = (props: {
     <a
       href={authorizeURL}
       className={twMerge(
-        `flex content-center items-center justify-center rounded-full bg-gradient-to-r from-blue-300 to-blue-700 text-white transition-opacity duration-100 hover:bg-blue-400 hover:opacity-85 dark:bg-blue-500 dark:text-white dark:hover:bg-blue-400 dark:hover:text-white
+        `flex content-center items-center justify-center rounded-full bg-blue-500 text-white transition-opacity duration-100 hover:bg-blue-400 hover:opacity-85 dark:bg-blue-500 dark:text-white dark:hover:bg-blue-400 dark:hover:text-white
         ${props.size === 'large' ? largeStyle : smallStyle}
         ${props.fullWidth ? 'w-full' : ''}
       `,

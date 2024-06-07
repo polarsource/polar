@@ -28,6 +28,7 @@ from polar.models import (
     User,
     UserOrganization,
 )
+from polar.models.product_price import ProductPriceType
 
 if TYPE_CHECKING:
     from .metrics import Metric
@@ -91,6 +92,7 @@ class QueryCallable(Protocol):
         *,
         organization_id: uuid.UUID | None = None,
         product_id: uuid.UUID | None = None,
+        product_price_type: ProductPriceType | None = None,
     ) -> CTE: ...
 
 
@@ -102,6 +104,7 @@ def get_orders_cte(
     *,
     organization_id: uuid.UUID | None = None,
     product_id: uuid.UUID | None = None,
+    product_price_type: ProductPriceType | None = None,
 ) -> CTE:
     timestamp_column: ColumnElement[datetime] = timestamp_series.c.timestamp
 
@@ -132,6 +135,12 @@ def get_orders_cte(
         readable_orders_statement = readable_orders_statement.where(
             Order.product_id == product_id
         )
+
+    if product_price_type is not None:
+        readable_orders_statement = readable_orders_statement.join(
+            ProductPrice,
+            onclause=Order.product_price_id == ProductPrice.id,
+        ).where(ProductPrice.type == product_price_type)
 
     return cte(
         select(
@@ -168,6 +177,7 @@ def get_active_subscriptions_cte(
     *,
     organization_id: uuid.UUID | None = None,
     product_id: uuid.UUID | None = None,
+    product_price_type: ProductPriceType | None = None,
 ) -> CTE:
     timestamp_column: ColumnElement[datetime] = timestamp_series.c.timestamp
 
@@ -198,6 +208,12 @@ def get_active_subscriptions_cte(
         readable_subscriptions_statement = readable_subscriptions_statement.where(
             Subscription.product_id == product_id
         )
+
+    if product_price_type is not None:
+        readable_subscriptions_statement = readable_subscriptions_statement.join(
+            ProductPrice,
+            onclause=Subscription.price_id == ProductPrice.id,
+        ).where(ProductPrice.type == product_price_type)
 
     return cte(
         select(

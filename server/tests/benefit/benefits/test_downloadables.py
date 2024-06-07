@@ -60,7 +60,6 @@ class TestDownloadblesBenefit:
         uploaded_logo_jpg: FileRead,
         uploaded_logo_png: FileRead,
     ) -> None:
-
         files = [
             uploaded_logo_jpg,
             uploaded_logo_png,

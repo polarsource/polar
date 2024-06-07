@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-from pydantic import create_model
+from pydantic import Field, create_model
 
 from polar.kit.schemas import Schema
 
@@ -9,9 +9,15 @@ from .metrics import METRICS, MetricType
 
 
 class Metric(Schema):
-    slug: str
-    display_name: str
-    type: MetricType
+    """Information about a metric."""
+
+    slug: str = Field(description="Unique identifier for the metric.")
+    display_name: str = Field(description="Human-readable name for the metric.")
+    type: MetricType = Field(
+        description=(
+            "Type of the metric, useful to know the unit or format of the value."
+        )
+    )
 
 
 if TYPE_CHECKING:
@@ -26,7 +32,13 @@ else:
 
 
 class MetricsPeriodBase(Schema):
-    timestamp: datetime
+    """
+    A period of time with metrics data.
+
+    It maps each metric slug to its value for this timestamp.
+    """
+
+    timestamp: datetime = Field(description="Timestamp of this period data.")
 
 
 if TYPE_CHECKING:
@@ -43,5 +55,7 @@ else:
 
 
 class MetricsResponse(Schema):
-    periods: list[MetricsPeriod]
-    metrics: Metrics
+    """Metrics response schema."""
+
+    periods: list[MetricsPeriod] = Field(description="List of data for each timestamp.")
+    metrics: Metrics = Field(description="Information about the returned metrics.")

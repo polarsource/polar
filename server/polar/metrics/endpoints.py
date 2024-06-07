@@ -37,6 +37,7 @@ async def get_metrics(
     ),
     session: AsyncSession = Depends(get_db_session),
 ) -> MetricsResponse:
+    """Get metrics about your orders and subscriptions."""
     return await metrics_service.get_metrics(
         session,
         auth_subject,

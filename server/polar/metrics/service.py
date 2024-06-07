@@ -5,6 +5,7 @@ from sqlalchemy import ColumnElement, FromClause, select
 
 from polar.auth.models import AuthSubject
 from polar.models import Organization, User
+from polar.models.product_price import ProductPriceType
 from polar.postgres import AsyncSession
 
 from .metrics import METRICS
@@ -23,6 +24,7 @@ class MetricsService:
         interval: Interval,
         organization_id: uuid.UUID | None = None,
         product_id: uuid.UUID | None = None,
+        product_price_type: ProductPriceType | None = None,
     ) -> MetricsResponse:
         start_timestamp = datetime(
             start_date.year, start_date.month, start_date.day, 0, 0, 0, 0, UTC
@@ -44,6 +46,7 @@ class MetricsService:
                 METRICS,
                 organization_id=organization_id,
                 product_id=product_id,
+                product_price_type=product_price_type,
             )
             for query in QUERIES
         ]

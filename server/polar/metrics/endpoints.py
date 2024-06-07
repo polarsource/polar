@@ -4,6 +4,7 @@ from fastapi import Depends, Query
 from pydantic import UUID4
 
 from polar.kit.routing import APIRouter
+from polar.models.product_price import ProductPriceType
 from polar.postgres import AsyncSession, get_db_session
 from polar.tags.api import Tags
 
@@ -25,6 +26,15 @@ async def get_metrics(
         None, description="Filter by organization ID."
     ),
     product_id: UUID4 | None = Query(None, description="Filter by product ID."),
+    product_price_type: ProductPriceType | None = Query(
+        None,
+        description=(
+            "Filter by product price type. "
+            "`recurring` will filter data corresponding "
+            "to subscriptions creations or renewals. "
+            "`one_time` will filter data corresponding to one-time purchases."
+        ),
+    ),
     session: AsyncSession = Depends(get_db_session),
 ) -> MetricsResponse:
     return await metrics_service.get_metrics(
@@ -35,4 +45,5 @@ async def get_metrics(
         interval=interval,
         organization_id=organization_id,
         product_id=product_id,
+        product_price_type=product_price_type,
     )

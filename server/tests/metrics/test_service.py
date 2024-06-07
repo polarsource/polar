@@ -358,6 +358,77 @@ class TestGetMetrics:
         assert dec_31.active_subscriptions == 0
         assert dec_31.monthly_recurring_revenue == 0
 
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"), AuthSubjectFixture(subject="organization")
+    )
+    async def test_product_type_filter(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        user_organization_admin: UserOrganization,
+        fixtures: tuple[dict[str, Subscription], dict[str, Order]],
+    ) -> None:
+        metrics = await metrics_service.get_metrics(
+            session,
+            auth_subject,
+            start_date=date(2024, 1, 1),
+            end_date=date(2024, 12, 31),
+            interval=Interval.day,
+            product_price_type=ProductPriceType.one_time,
+        )
+
+        jan_1 = metrics.periods[0]
+        assert jan_1.orders == 1
+        assert jan_1.revenue == 100_00
+        assert jan_1.average_order_value == 100_00
+        assert jan_1.one_time_products == 1
+        assert jan_1.one_time_products_revenue == 100_00
+        assert jan_1.new_subscriptions == 0
+        assert jan_1.new_subscriptions_revenue == 0
+        assert jan_1.renewed_subscriptions == 0
+        assert jan_1.renewed_subscriptions_revenue == 0
+        assert jan_1.active_subscriptions == 0
+        assert jan_1.monthly_recurring_revenue == 0
+
+        feb_1 = metrics.periods[31]
+        assert feb_1.orders == 0
+        assert feb_1.revenue == 0
+        assert feb_1.average_order_value == 0
+        assert feb_1.one_time_products == 0
+        assert feb_1.one_time_products_revenue == 0
+        assert feb_1.new_subscriptions == 0
+        assert feb_1.new_subscriptions_revenue == 0
+        assert feb_1.renewed_subscriptions == 0
+        assert feb_1.renewed_subscriptions_revenue == 0
+        assert feb_1.active_subscriptions == 0
+        assert feb_1.monthly_recurring_revenue == 0
+
+        jun_1 = metrics.periods[152]
+        assert jun_1.orders == 0
+        assert jun_1.revenue == 0
+        assert jun_1.average_order_value == 0
+        assert jun_1.one_time_products == 0
+        assert jun_1.one_time_products_revenue == 0
+        assert jun_1.new_subscriptions == 0
+        assert jun_1.new_subscriptions_revenue == 0
+        assert jun_1.renewed_subscriptions == 0
+        assert jun_1.renewed_subscriptions_revenue == 0
+        assert jun_1.active_subscriptions == 0
+        assert jun_1.monthly_recurring_revenue == 0
+
+        dec_31 = metrics.periods[-1]
+        assert dec_31.orders == 0
+        assert dec_31.revenue == 0
+        assert dec_31.average_order_value == 0
+        assert dec_31.one_time_products == 0
+        assert dec_31.one_time_products_revenue == 0
+        assert dec_31.new_subscriptions == 0
+        assert dec_31.new_subscriptions_revenue == 0
+        assert dec_31.renewed_subscriptions == 0
+        assert dec_31.renewed_subscriptions_revenue == 0
+        assert dec_31.active_subscriptions == 0
+        assert dec_31.monthly_recurring_revenue == 0
+
     @pytest.mark.auth
     async def test_values_year_interval(
         self,

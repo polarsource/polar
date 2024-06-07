@@ -15,6 +15,7 @@ import {
   CardFooter,
   CardHeader,
 } from 'polarkit/components/ui/atoms/card'
+import { List, ListItem } from 'polarkit/components/ui/atoms/list'
 
 interface RepositoriesOverviewProps {
   organization: Organization
@@ -47,7 +48,7 @@ export const ClientPage = ({
                 href={organizationPageLink(organization, repository.name)}
                 key={repository.id}
               >
-                <Card className="dark:hover:bg-polar-900 dark:text-white0 dark:hover:text-polar-300 transition-color flex h-full flex-col rounded-2xl text-gray-500 duration-100 hover:bg-gray-50 hover:text-gray-600">
+                <Card className="dark:hover:bg-polar-900 dark:text-white0 dark:hover:text-polar-300 transition-color flex h-full flex-col rounded-3xl text-gray-500 duration-100 hover:bg-gray-50 hover:text-gray-600">
                   <CardHeader className="flex flex-row justify-between p-6">
                     <div className="flex flex-row items-baseline gap-x-3">
                       <span className="text-[20px] text-blue-500">
@@ -92,40 +93,41 @@ export const ClientPage = ({
             ))}
           </div>
           {repositoriesAsList.length > 0 && (
-            <div className="dark:border-polar-700 dark:divide-polar-700 dark:bg-polar-900 flex flex-col divide-y divide-gray-100 overflow-hidden rounded-2xl border border-gray-100 bg-white">
+            <List>
               {repositoriesAsList.map((repository) => (
                 <Link
-                  className="dark:hover:bg-polar-900 transition-colors duration-100 hover:bg-gray-50"
                   key={repository.id}
                   href={organizationPageLink(organization, repository.name)}
                 >
-                  <div className="flex flex-col gap-y-2 p-6">
-                    <span className="flex flex-row gap-x-4">
-                      <h3 className="dark:text-white">{repository.name}</h3>
-                      {repository.license ? (
-                        <Pill className="grow-0 px-3" color="blue">
-                          {repository.license}
-                        </Pill>
-                      ) : (
-                        <Pill className="grow-0 px-3" color="gray">
-                          Unlicensed
-                        </Pill>
+                  <ListItem>
+                    <div className="flex flex-col gap-y-2">
+                      <span className="flex flex-row gap-x-4">
+                        <h3 className="dark:text-white">{repository.name}</h3>
+                        {repository.license ? (
+                          <Pill className="grow-0 px-3" color="blue">
+                            {repository.license}
+                          </Pill>
+                        ) : (
+                          <Pill className="grow-0 px-3" color="gray">
+                            Unlicensed
+                          </Pill>
+                        )}
+                        {repository.visibility === Visibility.PRIVATE ? (
+                          <Pill className="grow-0 px-3" color="gray">
+                            Private
+                          </Pill>
+                        ) : null}
+                      </span>
+                      {repository.description && (
+                        <p className="dark:text-white0 text-sm text-gray-400">
+                          {repository.description}
+                        </p>
                       )}
-                      {repository.visibility === Visibility.PRIVATE ? (
-                        <Pill className="grow-0 px-3" color="gray">
-                          Private
-                        </Pill>
-                      ) : null}
-                    </span>
-                    {repository.description && (
-                      <p className="dark:text-white0 text-sm text-gray-400">
-                        {repository.description}
-                      </p>
-                    )}
-                  </div>
+                    </div>
+                  </ListItem>
                 </Link>
               ))}
-            </div>
+            </List>
           )}
         </div>
       ) : (

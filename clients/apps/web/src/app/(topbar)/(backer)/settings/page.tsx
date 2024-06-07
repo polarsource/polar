@@ -21,6 +21,7 @@ export default function Page() {
   return (
     <div className="relative z-0">
       <div className="mb-24 flex flex-col gap-y-8">
+        <h1 className="text-2xl">Settings</h1>
         <div className="flex flex-col gap-y-4">
           <Section>
             <SectionDescription title="General" description="" />

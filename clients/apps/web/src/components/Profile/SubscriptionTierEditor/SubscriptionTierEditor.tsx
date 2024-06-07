@@ -75,7 +75,7 @@ export const SubscriptionTierEditor = ({
             fontSize="large"
           />
           <h2 className="text-xl">Subscriptions</h2>
-          <p className="dark:text-polar-500 text-center text-gray-500 [text-wrap:balance]">
+          <p className="dark:text-white0 text-center text-gray-500 [text-wrap:balance]">
             Support {repository.name} with a subscription & receive unique
             benefits in return
           </p>

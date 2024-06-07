@@ -60,7 +60,7 @@ export const DescriptionEditor = ({
       <p
         ref={paragraphRef}
         className={twMerge(
-          'dark:text-polar-50 w-full text-pretty break-words text-3xl !font-normal leading-normal text-gray-950 focus-visible:outline-0',
+          'w-full text-pretty break-words text-3xl !font-normal leading-normal text-gray-950 focus-visible:outline-0 dark:text-white',
           showLength ? 'pb-4' : '',
           className,
         )}
@@ -91,7 +91,7 @@ export const DescriptionEditor = ({
       {loading ? (
         <div className="absolute right-2 top-2">
           <SpinnerNoMargin
-            className={twMerge('dark:text-polar-50 h-4 w-4 text-gray-950')}
+            className={twMerge('h-4 w-4 text-gray-950 dark:text-white')}
           />
         </div>
       ) : null}

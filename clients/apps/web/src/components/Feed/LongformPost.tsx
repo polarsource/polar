@@ -74,7 +74,7 @@ export default function LongformPost({
         </div>
         <div>
           <time
-            className="dark:text-polar-500 text-gray-500"
+            className="dark:text-white0 text-gray-500"
             dateTime={publishedDate?.toISOString()}
           >
             {publishedDateText}
@@ -92,9 +92,7 @@ export default function LongformPost({
               avatar_url={article.byline.avatar_url}
               name={article.byline.name}
             />
-            <h3 className="text-md dark:text-polar-50">
-              {article.byline.name}
-            </h3>
+            <h3 className="text-md dark:text-white">{article.byline.name}</h3>
           </div>
         </div>
       </header>

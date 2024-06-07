@@ -12,7 +12,7 @@ const Recommended = () => {
       <ShadowBoxOnMd>
         <>
           <div className="space-y-2 pb-4">
-            <h1 className="dark:text-polar-50 text-lg text-gray-900">
+            <h1 className="text-lg text-gray-900 dark:text-white">
               Recommended issues
             </h1>
             <p className="dark:text-polar-400 text-sm text-gray-500">

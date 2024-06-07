@@ -75,7 +75,7 @@ const CommandPaletteInput = () => {
         </div>
       )}
       <input
-        className="dark:text-polar-50 dark:placeholder:text-polar-500 w-full border-none bg-transparent p-0 text-lg text-gray-950 placeholder:text-gray-400 focus:border-none focus:outline-none focus:ring-0"
+        className="dark:placeholder:text-polar-500 w-full border-none bg-transparent p-0 text-lg text-gray-950 placeholder:text-gray-400 focus:border-none focus:outline-none focus:ring-0 dark:text-white"
         placeholder="Search for commands, APIs & documentation..."
         value={input}
         onChange={(e) => setInput(e.target.value)}

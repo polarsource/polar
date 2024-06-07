@@ -428,7 +428,7 @@ const ProductForm: React.FC<ProductFormProps> = ({ update, isFreeTier }) => {
                     Highlight this tier
                   </FormLabel>
                 </FormItem>
-                <p className="dark:text-polar-500 text-sm text-gray-500">
+                <p className="dark:text-white0 text-sm text-gray-500">
                   Highlighted tiers are shown on the public overview page. Only
                   one tier can be highlighted per tier type.
                 </p>

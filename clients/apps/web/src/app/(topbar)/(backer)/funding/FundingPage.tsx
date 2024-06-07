@@ -62,7 +62,7 @@ const FundingPage = () => {
 
         {totalCount !== undefined && totalCount > 0 && (
           <ShadowBoxOnMd className="flex flex-col gap-y-4">
-            <h1 className="dark:text-polar-50 text-lg text-gray-950">
+            <h1 className="text-lg text-gray-950 dark:text-white">
               Funded issues
             </h1>
             <IssueList

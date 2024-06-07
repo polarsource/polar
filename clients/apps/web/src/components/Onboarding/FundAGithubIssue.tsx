@@ -36,7 +36,7 @@ const FundAGithubIssue = () => {
   return (
     <>
       <ShadowBoxOnMd className="flex flex-col gap-y-4">
-        <h2 className="dark:text-polar-50 text-lg text-gray-900">
+        <h2 className="text-lg text-gray-900 dark:text-white">
           Fund a GitHub issue
         </h2>
         <p className="dark:text-polar-400 flex-1 overflow-hidden text-sm text-gray-500">

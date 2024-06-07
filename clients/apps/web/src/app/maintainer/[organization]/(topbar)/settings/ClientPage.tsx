@@ -133,14 +133,14 @@ const PaymentMethodSettings = ({
     <ShadowBox>
       <>
         {credits && credits.amount.amount < 0 ? (
-          <div className="dark:text-polar-500 space-y-2 p-4 text-sm text-gray-500">
+          <div className="dark:text-white0 space-y-2 p-4 text-sm text-gray-500">
             {org.name} has $
             {getCentsInDollarString(credits.amount.amount * -1, true, true)} in
             prepaid credits that will automatically be applied on future
             invoices.
           </div>
         ) : null}
-        <div className="dark:text-polar-500 space-y-2 p-4 text-sm text-gray-500">
+        <div className="dark:text-white0 space-y-2 p-4 text-sm text-gray-500">
           <Form {...form}>
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
               <BillingEmail />
@@ -193,7 +193,7 @@ const BillingEmail = () => {
         render={({ field }) => (
           <FormItem className="flex flex-row items-center justify-between">
             <div className="flex flex-col gap-y-2">
-              <FormLabel className="dark:text-polar-50 text-gray-950">
+              <FormLabel className="text-gray-950 dark:text-white">
                 Billing email
               </FormLabel>
               <p className="text-sm">
@@ -230,7 +230,7 @@ const TotalMonthlySpendingLimit = () => {
           return (
             <FormItem className="flex flex-row items-center justify-between">
               <div className="flex flex-col gap-y-2">
-                <FormLabel className="dark:text-polar-50 text-gray-950">
+                <FormLabel className="text-gray-950 dark:text-white">
                   Spending Limit
                 </FormLabel>
                 <p className="text-sm">An optional monthly limit for funds</p>
@@ -277,7 +277,7 @@ const PerUserMonthlySpendingLimit = () => {
         render={({ field }) => (
           <FormItem className="flex flex-row items-center justify-between">
             <div className="flex flex-col gap-y-2">
-              <FormLabel className="dark:text-polar-50 text-gray-950">
+              <FormLabel className="text-gray-950 dark:text-white">
                 Member Spending Limit
               </FormLabel>
               <p className="text-sm">

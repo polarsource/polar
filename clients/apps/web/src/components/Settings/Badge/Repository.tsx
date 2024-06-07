@@ -71,7 +71,7 @@ const EmbedSetting = ({
   const getTabClasses = (active: boolean) => {
     return twMerge(
       active
-        ? 'bg-white rounded-lg text-gray-900 shadow dark:bg-polar-600 dark:text-polar-50'
+        ? 'bg-white rounded-lg text-gray-900 shadow dark:bg-polar-600 dark:text-white'
         : '',
       'cursor-pointer py-1.5 px-2.5 rounded-lg',
     )

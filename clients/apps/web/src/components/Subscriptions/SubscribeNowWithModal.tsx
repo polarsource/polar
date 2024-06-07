@@ -288,7 +288,7 @@ const AnonymousSubscribeModalContent = ({
   return (
     <>
       <ModalHeader hide={hide}>
-        <h3 className="dark:text-polar-50 text-center text-lg font-medium text-gray-950 ">
+        <h3 className="text-center text-lg font-medium text-gray-950 dark:text-white ">
           Subscribe to {organization.pretty_name || organization.name}
         </h3>
       </ModalHeader>

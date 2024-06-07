@@ -48,7 +48,7 @@ export const SubscriptionTiersModal = ({
       </div>
       <div className="flex flex-col gap-y-2">
         <h3>Highlighted Subscription Tiers</h3>
-        <p className="dark:text-polar-500 text-sm text-gray-500">
+        <p className="dark:text-white0 text-sm text-gray-500">
           Select subscription tiers that you want to highlight on the project
           profile. You can select up to 3 tiers.
         </p>
@@ -89,7 +89,7 @@ const SubscriptionTierRow = ({
   deselectTier: (subscriptionTier: Product) => void
 }) => {
   return (
-    <div className="dark:hover:bg-polar-700 dark:text-polar-50 flex flex-row items-center justify-between gap-x-2 rounded-lg px-4 py-3 text-sm text-gray-950 hover:bg-gray-100">
+    <div className="dark:hover:bg-polar-700 flex flex-row items-center justify-between gap-x-2 rounded-lg px-4 py-3 text-sm text-gray-950 hover:bg-gray-100 dark:text-white">
       <div className="flex flex-row items-center gap-x-2">
         <SubscriptionGroupIcon type={subscriptionTier.type} />
         <span>{subscriptionTier.name}</span>

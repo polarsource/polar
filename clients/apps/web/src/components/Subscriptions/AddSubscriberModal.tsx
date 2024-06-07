@@ -62,7 +62,7 @@ const AddSubscriberModal = ({
   return (
     <>
       <ModalHeader className="px-8 py-4" hide={() => hide(false)}>
-        <h3 className="dark:text-polar-50 text-lg font-medium text-gray-950">
+        <h3 className="text-lg font-medium text-gray-950 dark:text-white">
           Add subscriber
         </h3>
       </ModalHeader>

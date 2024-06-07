@@ -34,7 +34,7 @@ const DropzoneView = ({
             : 'dark:bg-polar-700 bg-gray-100',
         )}
       >
-        <div className="dark:text-polar-500 text-center text-gray-700">
+        <div className="dark:text-white0 text-center text-gray-700">
           <div className="mb-4">
             <FileUploadIcon fontSize="large" />
           </div>

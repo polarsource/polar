@@ -36,7 +36,7 @@ export const Feed = () => {
         <StickyNote2Outlined fontSize="large" />
         <div className="flex flex-col items-center gap-y-2">
           <h3 className="p-2 text-lg font-medium">No posts found</h3>
-          <p className="dark:text-polar-500 min-w-0 truncate text-gray-500">
+          <p className="dark:text-white0 min-w-0 truncate text-gray-500">
             Newsletters from creators you subscribe to will appear here
           </p>
         </div>

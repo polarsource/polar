@@ -24,9 +24,7 @@ export const CommandPaletteTrigger = ({
     >
       <div className="flex flex-row items-center gap-x-2">
         <SearchOutlined fontSize="inherit" />
-        <span className="dark:text-polar-500 text-sm text-gray-500">
-          {title}
-        </span>
+        <span className="dark:text-white0 text-sm text-gray-500">{title}</span>
       </div>
       <div
         className={twMerge(

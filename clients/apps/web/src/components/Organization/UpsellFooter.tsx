@@ -36,7 +36,7 @@ export const UpsellFooter = ({ wide }: { wide?: boolean }) => {
           <div className="flex flex-col gap-y-7 text-sm">
             <HiveOutlined className="text-blue-500 dark:text-blue-400" />
             <div className="flex flex-col gap-y-3">
-              <h3 className="dark:text-polar-50 text-base font-medium text-gray-950">
+              <h3 className="text-base font-medium text-gray-950 dark:text-white">
                 Creator
               </h3>
               <p className="dark:text-polar-400 leading-relaxed text-gray-500">
@@ -55,7 +55,7 @@ export const UpsellFooter = ({ wide }: { wide?: boolean }) => {
           <div className="flex flex-col gap-y-7 text-sm">
             <FavoriteBorderOutlined className="text-blue-500 dark:text-blue-400" />
             <div className="flex flex-col gap-y-3">
-              <h3 className="dark:text-polar-50 text-base font-medium text-gray-950">
+              <h3 className="text-base font-medium text-gray-950 dark:text-white">
                 Backer
               </h3>
               <p className="dark:text-polar-400 leading-relaxed text-gray-500">

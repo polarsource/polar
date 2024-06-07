@@ -21,7 +21,7 @@ const LabeledRadioButton = (props: {
             onClick={() => props.onSelected(v.label)}
             className={twMerge(
               v.selected
-                ? 'dark:bg-polar-600 dark:text-polar-50 rounded-lg bg-white text-gray-900 shadow'
+                ? 'dark:bg-polar-600 rounded-lg bg-white text-gray-900 shadow dark:text-white'
                 : '',
               'cursor-pointer rounded-lg px-2.5 py-1.5',
             )}

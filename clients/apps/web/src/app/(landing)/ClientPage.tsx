@@ -109,7 +109,7 @@ const HeroSection = () => {
         viewport={{ once: true }}
       >
         <div className="flex flex-col gap-y-8">
-          <h1 className="dark:text-polar-50 text-pretty text-4xl leading-tight text-gray-950">
+          <h1 className="text-pretty text-4xl leading-tight text-gray-950 dark:text-white">
             From a first donation to IPO
           </h1>
           <p className="text-xl leading-relaxed text-gray-500">
@@ -125,7 +125,7 @@ const HeroSection = () => {
             userSignupType={UserSignupType.MAINTAINER}
             returnTo="/maintainer"
           />
-          <p className="dark:text-polar-500 text-xs leading-normal text-gray-400">
+          <p className="dark:text-white0 text-xs leading-normal text-gray-400">
             By using Polar you agree to our{' '}
             <BlueLink href="/legal/terms" target="_blank">
               Terms of Service
@@ -194,7 +194,7 @@ const BenefitsUpsell = () => {
       </div>
       <div className="flex w-full flex-col gap-y-12 px-8 py-24 pr-6 md:w-3/5 md:px-20 md:pr-24">
         <div className="flex flex-col gap-y-8">
-          <h1 className="dark:text-polar-50 text-pretty text-4xl leading-tight text-gray-950">
+          <h1 className="text-pretty text-4xl leading-tight text-gray-950 dark:text-white">
             Powerful & automatic subscription benefits
           </h1>
           <p className="dark:text-polar-400 text-pretty text-lg text-gray-600">
@@ -205,9 +205,9 @@ const BenefitsUpsell = () => {
         <div className="flex flex-col gap-y-8">
           <ul className="flex flex-col gap-y-4">
             <li className="flex flex-row gap-x-4">
-              <StickyNote2Outlined className="dark:text-polar-50 text-gray-950" />
+              <StickyNote2Outlined className="text-gray-950 dark:text-white" />
               <div className="flex flex-col">
-                <span className="dark:text-polar-50 font-medium text-gray-950">
+                <span className="font-medium text-gray-950 dark:text-white">
                   Premium posts & newsletter
                 </span>
                 <p className="dark:text-polar-400 text-sm text-gray-500">
@@ -220,10 +220,10 @@ const BenefitsUpsell = () => {
               <GitHubIcon
                 width={25}
                 height={25}
-                className="dark:text-polar-50 text-gray-950"
+                className="text-gray-950 dark:text-white"
               />
               <div className="flex flex-col">
-                <span className="dark:text-polar-50 font-medium text-gray-950">
+                <span className="font-medium text-gray-950 dark:text-white">
                   Access to private GitHub repositories
                 </span>
                 <p className="dark:text-polar-400 text-sm text-gray-500">
@@ -234,10 +234,10 @@ const BenefitsUpsell = () => {
             <li className="flex flex-row gap-x-4">
               <DiscordIcon
                 size={25}
-                className="dark:text-polar-50 text-gray-950"
+                className="text-gray-950 dark:text-white"
               />
               <div className="flex flex-col">
-                <span className="dark:text-polar-50 font-medium text-gray-950">
+                <span className="font-medium text-gray-950 dark:text-white">
                   Discord invites
                 </span>
                 <p className="dark:text-polar-400 text-sm text-gray-500">
@@ -247,9 +247,9 @@ const BenefitsUpsell = () => {
               </div>
             </li>
             <li className="flex flex-row gap-x-4">
-              <BoltOutlined className="dark:text-polar-50 text-gray-950" />
+              <BoltOutlined className="text-gray-950 dark:text-white" />
               <div className="flex flex-col">
-                <span className="dark:text-polar-50 font-medium text-gray-950">
+                <span className="font-medium text-gray-950 dark:text-white">
                   Sponsorship 2.0
                 </span>
                 <p className="dark:text-polar-400 text-sm text-gray-500">
@@ -287,7 +287,7 @@ const FeaturesUpsell = () => {
       >
         <div className="flex w-full flex-col items-center justify-center gap-y-4">
           <Icon className="text-blue-500 dark:text-blue-400" fontSize="large" />
-          <h3 className="dark:text-polar-50 text-pretty text-xl font-medium text-gray-950">
+          <h3 className="text-pretty text-xl font-medium text-gray-950 dark:text-white">
             {title}
           </h3>
           <p className="dark:text-polar-400 text-pretty text-gray-500">
@@ -392,10 +392,8 @@ const DevelopersUpsell = () => {
       >
         <Avatar className="h-16 w-16" avatar_url={avatarUrl} name={name} />
         <div className="flex flex-col items-center gap-y-2 text-center">
-          <h3 className="dark:text-polar-50 font-medium text-gray-950">
-            {name}
-          </h3>
-          <p className="dark:text-polar-500 text-sm text-gray-500">
+          <h3 className="font-medium text-gray-950 dark:text-white">{name}</h3>
+          <p className="dark:text-white0 text-sm text-gray-500">
             {description}
           </p>
         </div>
@@ -481,10 +479,10 @@ const DevelopersUpsell = () => {
       <AnimatedSeparator className="md:hidden" orientation="horizontal" />
       <div className="flex flex-col gap-y-12 px-6 py-16 md:w-1/2 md:px-16">
         <div className="flex flex-col gap-y-8">
-          <h1 className="dark:text-polar-50 text-pretty text-4xl leading-tight text-gray-950">
+          <h1 className="text-pretty text-4xl leading-tight text-gray-950 dark:text-white">
             Serving world-class developers
           </h1>
-          <p className="dark:text-polar-500 text-xl leading-relaxed text-gray-500">
+          <p className="dark:text-white0 text-xl leading-relaxed text-gray-500">
             We&apos;re proud to support incredible developers and open source
             initiatives that are shaping the future.
           </p>
@@ -526,7 +524,7 @@ const Pricing = () => {
         <span className="text-blue-500 dark:text-blue-400">{children}</span>
         <div className="flex flex-col gap-2">
           <h1 className="text-xl leading-snug">{title}</h1>
-          <p className="dark:text-polar-500 text-lg text-gray-500">
+          <p className="dark:text-white0 text-lg text-gray-500">
             {description}
           </p>
         </div>
@@ -543,7 +541,7 @@ const Pricing = () => {
       whileInView="animate"
       viewport={{ once: true }}
     >
-      <h1 className="dark:text-polar-50 px-6 py-24 text-4xl text-gray-950 md:px-16 md:text-center">
+      <h1 className="px-6 py-24 text-4xl text-gray-950 md:px-16 md:text-center dark:text-white">
         Pricing
       </h1>
 
@@ -587,7 +585,7 @@ const SignUpBanner = () => {
       whileInView="animate"
       viewport={{ once: true }}
     >
-      <h1 className="dark:text-polar-50 text-center text-4xl leading-snug text-gray-950">
+      <h1 className="text-center text-4xl leading-snug text-gray-950 dark:text-white">
         We&apos;ve run out of sales pitches
       </h1>
 

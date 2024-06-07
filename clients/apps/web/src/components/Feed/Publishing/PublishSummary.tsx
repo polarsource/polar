@@ -83,7 +83,7 @@ export const PublishSummary = ({ article, isSaving }: ArticleSummaryProps) => {
         {publishedAtDate ? (
           <div className="flex flex-col gap-y-2">
             <div className="flex flex-col text-sm">
-              <h3 className="dark:text-polar-50 font-medium text-gray-950">
+              <h3 className="font-medium text-gray-950 dark:text-white">
                 Your Timezone
               </h3>
               <p className="dark:text-polar-400 text-gray-600">
@@ -101,9 +101,7 @@ export const PublishSummary = ({ article, isSaving }: ArticleSummaryProps) => {
               </p>
             </div>
             <div className="flex flex-col text-sm">
-              <h3 className="dark:text-polar-50 font-medium text-gray-950">
-                UTC
-              </h3>
+              <h3 className="font-medium text-gray-950 dark:text-white">UTC</h3>
               <p className="dark:text-polar-400 text-gray-600">
                 {publishedAtDate.toLocaleDateString(undefined, {
                   year: 'numeric',

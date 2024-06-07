@@ -172,7 +172,7 @@ const ClientPage = ({
                   />
                   <span className="flex flex-row flex-wrap gap-2">
                     <Link
-                      className="dark:text-polar-500 text-wrap text-gray-500 transition-colors hover:text-blue-500 dark:hover:text-blue-400"
+                      className="dark:text-white0 text-wrap text-gray-500 transition-colors hover:text-blue-500 dark:hover:text-blue-400"
                       href={organizationPageLink(organization)}
                     >
                       {repository.organization.name}
@@ -282,7 +282,7 @@ const ClientPage = ({
                         className="flex w-full flex-col gap-1 transition-opacity hover:opacity-70"
                       >
                         <h3 className="line-clamp-2">{post.title}</h3>
-                        <span className="dark:text-polar-500 text-sm text-gray-500">
+                        <span className="dark:text-white0 text-sm text-gray-500">
                           {new Date(post.published_at ?? 0).toLocaleDateString(
                             'en-US',
                             {

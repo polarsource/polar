@@ -50,7 +50,7 @@ export default function ClientPage() {
     <DashboardBody>
       <div className="flex flex-col gap-y-8">
         <div className="flex items-start justify-between">
-          <p className="dark:text-polar-500 text-sm text-gray-400">
+          <p className="dark:text-white0 text-sm text-gray-400">
             Members & their roles are synced from the underlying GitHub
             organization
           </p>

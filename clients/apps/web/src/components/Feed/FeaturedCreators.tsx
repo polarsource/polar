@@ -57,7 +57,7 @@ export const FeaturedCreators = () => {
     <div className="flex flex-col gap-y-6">
       <div className="flex flex-col gap-y-2">
         <h3>Highlighted Creators</h3>
-        <p className="dark:text-polar-500 text-sm text-gray-500">
+        <p className="dark:text-white0 text-sm text-gray-500">
           Handpicked creators from the Polar community
         </p>
       </div>
@@ -131,7 +131,7 @@ const FeaturedCreator = ({
         />
         <div className="flex flex-col gap-y-1">
           <span className="text-sm">{creator.name}</span>
-          <p className="dark:text-polar-500 text-xs text-gray-500">
+          <p className="dark:text-white0 text-xs text-gray-500">
             {creator.bio}
           </p>
         </div>

@@ -49,7 +49,7 @@ export const ResponseContainer = ({
               className="p-2 py-0"
             >
               {schema ? (
-                <pre className="dark:text-polar-50 max-h-72 select-text overflow-auto p-4 font-mono text-xs leading-normal text-gray-900">
+                <pre className="max-h-72 select-text overflow-auto p-4 font-mono text-xs leading-normal text-gray-900 dark:text-white">
                   {JSON.stringify(resolveValue(schema), null, 2)}
                 </pre>
               ) : undefined}

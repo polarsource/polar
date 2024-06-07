@@ -97,7 +97,7 @@ const FAQSection = (props: {
   return (
     <>
       <div className="mb-10">
-        <h3 className="dark:text-polar-50 text-lg font-medium text-gray-950">
+        <h3 className="text-lg font-medium text-gray-950 dark:text-white">
           {props.title}
         </h3>
         <p className="mb-2 text-gray-500">{props.subtitle}</p>
@@ -121,7 +121,7 @@ const FAQ: NextLayoutComponentType = () => {
       <div className="w-full">
         <div className="relative mb-8 flex items-center">
           <div className="dark:border-polar-700 flex-grow border-t border-gray-200"></div>
-          <span className="dark:text-polar-500 mx-4 flex-shrink text-gray-500">
+          <span className="dark:text-white0 mx-4 flex-shrink text-gray-500">
             FAQ
           </span>
           <div className="dark:border-polar-700 flex-grow border-t border-gray-200"></div>

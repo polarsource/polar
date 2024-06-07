@@ -140,7 +140,7 @@ export const APIContainer = ({
             </TabsTrigger>
           </div>
           <Button
-            className="dark:text-polar-500 text-gray-500 transition-colors hover:text-blue-500 dark:hover:text-blue-400"
+            className="dark:text-white0 text-gray-500 transition-colors hover:text-blue-500 dark:hover:text-blue-400"
             variant="ghost"
             size="icon"
             onClick={handleCopyToClipboard}
@@ -169,12 +169,12 @@ export const APIContainer = ({
           </Button>
         </TabsList>
         <TabsContent value="curl" className="p-2 py-0">
-          <pre className="dark:text-polar-50 select-text overflow-auto p-4 font-mono text-xs leading-normal text-gray-900">
+          <pre className="select-text overflow-auto p-4 font-mono text-xs leading-normal text-gray-900 dark:text-white">
             {curlCommand}
           </pre>
         </TabsContent>
         <TabsContent value="nodejs" className="p-2 py-0">
-          <pre className="dark:text-polar-50 select-text overflow-auto p-4 font-mono text-xs leading-normal text-gray-900">
+          <pre className="select-text overflow-auto p-4 font-mono text-xs leading-normal text-gray-900 dark:text-white">
             {nodeJSCommand}
           </pre>
         </TabsContent>

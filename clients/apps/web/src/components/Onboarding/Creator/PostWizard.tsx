@@ -151,7 +151,7 @@ const PostCard = ({ icon, title, description, link }: PostCardProps) => {
           <h3 className="text-2xl font-bold">{title}</h3>
         </CardHeader>
         <CardContent className="h-full">
-          <p className="dark:text-polar-500 text-gray-500">{description}</p>
+          <p className="dark:text-white0 text-gray-500">{description}</p>
         </CardContent>
         <CardFooter>
           <AnimatedIconButton
@@ -184,7 +184,7 @@ const DraftPost = ({
     >
       <div className="flex flex-1 flex-col overflow-hidden">
         <h3 className="w-full truncate text-lg font-medium">{draft.title}</h3>
-        <span className="dark:text-polar-500 text-sm capitalize text-gray-500">
+        <span className="dark:text-white0 text-sm capitalize text-gray-500">
           {draft.visibility}
         </span>
       </div>

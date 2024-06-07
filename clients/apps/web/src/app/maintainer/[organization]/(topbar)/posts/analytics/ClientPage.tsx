@@ -44,7 +44,7 @@ const ClientPage = () => {
         <div className="items mb-24 flex w-full flex-col items-start gap-12">
           <div className="flex w-full flex-col gap-y-8 overflow-hidden">
             <div className="flex flex-row items-center justify-between">
-              <h3 className="dark:text-polar-50 text-lg font-medium text-gray-950">
+              <h3 className="text-lg font-medium text-gray-950 dark:text-white">
                 Traffic
               </h3>
             </div>
@@ -58,7 +58,7 @@ const ClientPage = () => {
 
           <div className="flex w-full flex-col gap-y-8 overflow-hidden">
             <div className="flex flex-row items-center justify-between">
-              <h3 className="dark:text-polar-50 text-lg font-medium text-gray-950">
+              <h3 className="text-lg font-medium text-gray-950 dark:text-white">
                 Top Referrers
               </h3>
             </div>

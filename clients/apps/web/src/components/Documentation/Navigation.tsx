@@ -304,13 +304,13 @@ const CollapsibleSection = ({
       >
         <h2
           className={twMerge(
-            'dark:text-polar-500 dark:group-hover:text-polar-50 text-sm capitalize text-gray-500 transition-colors group-hover:text-black',
-            (isOpen || active) && 'dark:text-polar-50 text-black',
+            'dark:text-white0 dark:group-hover:text-polar-50 text-sm capitalize text-gray-500 transition-colors group-hover:text-black',
+            (isOpen || active) && 'text-black dark:text-white',
           )}
         >
           {title}
         </h2>
-        <span className="dark:text-polar-500 text-gray-500">
+        <span className="dark:text-white0 text-gray-500">
           <AnimatePresence mode="popLayout">
             {isOpen ? (
               <motion.div

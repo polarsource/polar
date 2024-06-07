@@ -141,7 +141,7 @@ const PostBody = (props: FeedPost & { isHovered: boolean }) => {
       )}
     >
       <Link
-        className="dark:text-polar-50 hover:dark:text-polar-100 flex flex-col flex-wrap pt-2 text-2xl font-medium text-gray-950 [text-wrap:pretty] hover:text-gray-900"
+        className="hover:dark:text-polar-100 flex flex-col flex-wrap pt-2 text-2xl font-medium text-gray-950 [text-wrap:pretty] hover:text-gray-900 dark:text-white"
         href={articleHref(props.article)}
       >
         {props.article.title}

@@ -56,7 +56,7 @@ const FilePreview = ({ file }: { file: FileObject }) => {
   }, [file])
 
   return (
-    <div className="dark:bg-polar-600 dark:text-polar-50 flex h-10 w-10 flex-shrink-0 flex-col items-center justify-center rounded-full bg-blue-50 text-blue-500">
+    <div className="dark:bg-polar-600 flex h-10 w-10 flex-shrink-0 flex-col items-center justify-center rounded-full bg-blue-50 text-blue-500 dark:text-white">
       {icon}
     </div>
   )
@@ -173,7 +173,7 @@ const FilenameEditor = ({
 
 const FileUploadDetails = ({ file }: { file: FileObject }) => {
   return (
-    <div className="dark:text-polar-500 text-gray-500">
+    <div className="dark:text-white0 text-gray-500">
       <p className="text-xs">{file.size_readable}</p>
     </div>
   )
@@ -253,7 +253,7 @@ export const FileListItem = ({
     <div
       ref={sortable ? sortable.setNodeRef : undefined}
       className={twMerge(
-        'dark:hover:bg-polar-700 dark:text-polar-500 hover:bg-gray-75 flex flex-row items-center justify-between gap-x-8 gap-y-2 rounded-xl px-4 py-2 text-gray-500 transition-colors',
+        'dark:hover:bg-polar-700 dark:text-white0 hover:bg-gray-75 flex flex-row items-center justify-between gap-x-8 gap-y-2 rounded-xl px-4 py-2 text-gray-500 transition-colors',
         sortable?.isDragging && 'opacity-30',
       )}
       style={
@@ -274,7 +274,7 @@ export const FileListItem = ({
         >
           <FilePreview file={file} />
         </div>
-        <div className="dark:text-polar-50 flex w-full min-w-0 flex-grow flex-col gap-y-1 text-gray-950">
+        <div className="flex w-full min-w-0 flex-grow flex-col gap-y-1 text-gray-950 dark:text-white">
           <FilenameEditor
             name={file.name}
             className="text-sm font-medium"

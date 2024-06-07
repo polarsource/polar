@@ -163,7 +163,7 @@ export const PublishSettings = ({ article }: PublishModalContentProps) => {
               <>
                 <div className="flex flex-col gap-y-2">
                   <span className="font-medium">Social metadata</span>
-                  <p className="text-polar-500 dark:text-polar-500 text-sm">
+                  <p className="text-polar-500 dark:text-white0 text-sm">
                     Customize the image and description used when sharing this
                     post on other platforms.
                   </p>
@@ -180,10 +180,10 @@ export const PublishSettings = ({ article }: PublishModalContentProps) => {
             <ShadowBoxOnMd className="flex flex-col gap-y-8">
               <div className="flex flex-row items-start justify-between">
                 <div className="flex flex-col gap-y-1">
-                  <h3 className="dark:text-polar-50 font-medium text-gray-950">
+                  <h3 className="font-medium text-gray-950 dark:text-white">
                     Archive
                   </h3>
-                  <p className="dark:text-polar-500 text-sm text-gray-500">
+                  <p className="dark:text-white0 text-sm text-gray-500">
                     This action will unpublish the post & permanently remove it
                   </p>
                 </div>
@@ -268,7 +268,7 @@ const FormSlug = (props: { article: Article }) => {
           <FormItem>
             <div className="flex flex-col gap-2">
               <FormLabel>Slug</FormLabel>
-              <p className="text-polar-500 dark:text-polar-500 text-sm">
+              <p className="text-polar-500 dark:text-white0 text-sm">
                 Change the slug of the article. The slug is used in public URLs.
               </p>
             </div>
@@ -315,7 +315,7 @@ const FormNotifySubscribers = (props: { article: Article }) => {
             <FormItem>
               <div className="flex flex-col gap-2">
                 <FormLabel>Email</FormLabel>
-                <p className="text-polar-500 dark:text-polar-500 text-sm">
+                <p className="text-polar-500 dark:text-white0 text-sm">
                   This post has been sent to {props.article.email_sent_to_count}{' '}
                   {props.article.email_sent_to_count === 1
                     ? 'subscriber'
@@ -342,7 +342,7 @@ const FormNotifySubscribers = (props: { article: Article }) => {
           <FormItem>
             <div className="flex flex-col gap-2">
               <FormLabel>Email</FormLabel>
-              <p className="text-polar-500 dark:text-polar-500 text-sm">
+              <p className="text-polar-500 dark:text-white0 text-sm">
                 Send to subscribers when a post is published
               </p>
             </div>

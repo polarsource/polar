@@ -59,11 +59,11 @@ const IssueCard = ({
   return (
     <div className="dark:divide-polar-700 divide-y-[1px] divide-gray-200">
       <div className="space-y-4 pb-4">
-        <h1 className="dark:text-polar-50 text-center text-4xl text-gray-900 sm:text-left">
+        <h1 className="text-center text-4xl text-gray-900 sm:text-left dark:text-white">
           {generateMarkdownTitle(issue.title)}
         </h1>
         {/* Issue details */}
-        <div className="dark:text-polar-500 grid grid-cols-1 text-gray-600 sm:grid-cols-3">
+        <div className="dark:text-white0 grid grid-cols-1 text-gray-600 sm:grid-cols-3">
           {/* Left part */}
           <div className="col-span-1 flex	flex-row items-center justify-center gap-2 sm:col-span-2 sm:justify-start	">
             <div>
@@ -88,7 +88,7 @@ const IssueCard = ({
                 </a>
               </div>
             )}
-            <div className="dark:text-polar-500 whitespace-nowrap text-gray-400">
+            <div className="dark:text-white0 whitespace-nowrap text-gray-400">
               <PolarTimeAgo date={new Date(issue.issue_created_at)} />
             </div>
           </div>
@@ -144,7 +144,7 @@ const IssueCard = ({
               />
             </Link>
           </div>
-          <div className="dark:text-polar-500 flex flex-col justify-center text-gray-500">
+          <div className="dark:text-white0 flex flex-col justify-center text-gray-500">
             <div className="flex flex-row items-center">
               <Link href={organizationPageLink(organization)}>
                 {organization.name}

@@ -18,6 +18,7 @@ import type {
   HTTPValidationError,
   Interval,
   MetricsResponse,
+  ProductPriceType,
 } from '../models/index';
 
 export interface MetricsApiGetMetricsRequest {
@@ -26,6 +27,7 @@ export interface MetricsApiGetMetricsRequest {
     interval: Interval;
     organizationId?: string;
     productId?: string;
+    productPriceType?: ProductPriceType;
 }
 
 /**
@@ -34,6 +36,7 @@ export interface MetricsApiGetMetricsRequest {
 export class MetricsApi extends runtime.BaseAPI {
 
     /**
+     * Get metrics about your orders and subscriptions.
      * Get Metrics
      */
     async getMetricsRaw(requestParameters: MetricsApiGetMetricsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<MetricsResponse>> {
@@ -80,6 +83,10 @@ export class MetricsApi extends runtime.BaseAPI {
             queryParameters['product_id'] = requestParameters['productId'];
         }
 
+        if (requestParameters['productPriceType'] != null) {
+            queryParameters['product_price_type'] = requestParameters['productPriceType'];
+        }
+
         const headerParameters: runtime.HTTPHeaders = {};
 
         if (this.configuration && this.configuration.accessToken) {
@@ -101,6 +108,7 @@ export class MetricsApi extends runtime.BaseAPI {
     }
 
     /**
+     * Get metrics about your orders and subscriptions.
      * Get Metrics
      */
     async getMetrics(requestParameters: MetricsApiGetMetricsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<MetricsResponse> {

@@ -192,7 +192,7 @@ export default function ClientPage({
                 focused={true}
               />
             </div>
-            <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+            <div className="grid grid-cols-1 gap-12 lg:grid-cols-2">
               {Object.values(data.metrics)
                 .filter((metric) => metric.slug !== focus)
                 .map((metric) => (

@@ -6,6 +6,7 @@ import { CloseOutlined, HiveOutlined } from '@mui/icons-material'
 import { Platforms, Repository } from '@polar-sh/sdk'
 import Button from 'polarkit/components/ui/atoms/button'
 import Input from 'polarkit/components/ui/atoms/input'
+import { List, ListItem } from 'polarkit/components/ui/atoms/list'
 import { Checkbox } from 'polarkit/components/ui/checkbox'
 import { Banner } from 'polarkit/components/ui/molecules'
 import { useState } from 'react'
@@ -99,31 +100,40 @@ export const ProjectsModal = ({
       </div>
       {extraRepositories.length > 0 && (
         <div className="flex flex-col gap-y-4">
-          <div className="flex flex-col">
+          <List size='small'>
             {extraRepositories.map((repository) => (
-              <SearchedProjectRow
-                key={repository.id}
-                repository={repository}
-                onRemove={removeRepository}
-              />
+              <ListItem key={repository.id} size='small'>
+                <SearchedProjectRow
+                  repository={repository}
+                  onRemove={removeRepository}
+                />
+              </ListItem>
             ))}
-          </div>
+          </List>
         </div>
       )}
       <div className="flex w-full flex-col gap-y-8">
-        <div className="flex max-h-[320px] w-full flex-col overflow-y-auto">
+        <List className="flex max-h-[320px] w-full flex-col overflow-y-auto" 
+              size='small'>
           {repositories.map((repository) => (
-            <ProjectRow
+           <ListItem 
               key={repository.id}
+              size='small'
+              selected={featuredRepositories.some(
+                (repo) => repo.id === repository.id,
+           )}
+           >
+             <ProjectRow
               repository={repository}
               selected={featuredRepositories.some(
                 (repo) => repo.id === repository.id,
-              )}
+           )}
               selectRepository={addRepository}
               deselectRepository={removeRepository}
             />
+            </ListItem>
           ))}
-        </div>
+        </List>
       </div>
     </div>
   )
@@ -137,7 +147,7 @@ const SearchedProjectRow = ({
   onRemove: (repository: Repository) => void
 }) => {
   return (
-    <div className="dark:hover:bg-polar-700 flex flex-row items-center justify-between gap-x-2 rounded-lg px-4 py-3 text-sm text-gray-950 hover:bg-gray-100 dark:text-white">
+    <div className="w-full text-sm flex flex-row items-center justify-between gap-x-2">
       <div className="flex flex-row items-center gap-x-2">
         <HiveOutlined
           className="text-blue-500 dark:text-blue-400"
@@ -171,7 +181,7 @@ const ProjectRow = ({
   deselectRepository: (repository: Repository) => void
 }) => {
   return (
-    <div className="dark:hover:bg-polar-700 flex flex-row items-center justify-between gap-x-2 rounded-lg px-4 py-3 text-sm text-gray-950 hover:bg-gray-100 dark:text-white">
+    <div className="flex flex-row items-center justify-between gap-x-2 w-full text-sm">
       <div className="flex flex-row items-center gap-x-2">
         <HiveOutlined
           className="text-blue-500 dark:text-blue-400"

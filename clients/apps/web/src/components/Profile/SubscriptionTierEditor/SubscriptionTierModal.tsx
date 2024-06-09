@@ -2,6 +2,7 @@ import SubscriptionGroupIcon from '@/components/Subscriptions/SubscriptionGroupI
 import { CloseOutlined } from '@mui/icons-material'
 import { Product } from '@polar-sh/sdk'
 import Button from 'polarkit/components/ui/atoms/button'
+import { List, ListItem } from 'polarkit/components/ui/atoms/list'
 import { Checkbox } from 'polarkit/components/ui/checkbox'
 
 export interface SubscriptionTiersModalProps {
@@ -57,10 +58,15 @@ export const SubscriptionTiersModal = ({
         <div className="flex max-h-[420px] w-full flex-col gap-y-6 overflow-y-auto">
           <div className="flex flex-col gap-y-4">
             <h3>Subscriptions</h3>
-            <div className="flex flex-col">
+            <List className="flex flex-col">
               {subscriptionTiers.map((subscriptionTier) => (
-                <SubscriptionTierRow
-                  key={subscriptionTier.id}
+                <ListItem 
+                key={subscriptionTier.id}
+                selected={selectedSubscriptionTiers.some(
+                  (tier) => tier.id === subscriptionTier.id,
+                )}
+                >
+                  <SubscriptionTierRow
                   subscriptionTier={subscriptionTier}
                   selected={selectedSubscriptionTiers.some(
                     (tier) => tier.id === subscriptionTier.id,
@@ -68,8 +74,9 @@ export const SubscriptionTiersModal = ({
                   selectTier={addSubscriptionTier}
                   deselectTier={removeSubscriptionTier}
                 />
+                </ListItem>
               ))}
-            </div>
+            </List>
           </div>
         </div>
       </div>
@@ -89,7 +96,7 @@ const SubscriptionTierRow = ({
   deselectTier: (subscriptionTier: Product) => void
 }) => {
   return (
-    <div className="dark:hover:bg-polar-700 flex flex-row items-center justify-between gap-x-2 rounded-lg px-4 py-3 text-sm text-gray-950 hover:bg-gray-100 dark:text-white">
+    <div className="flex flex-row items-center justify-between gap-x-2 text-sm w-full">
       <div className="flex flex-row items-center gap-x-2">
         <SubscriptionGroupIcon type={subscriptionTier.type} />
         <span>{subscriptionTier.name}</span>

@@ -10,9 +10,9 @@ import { Organization, Platforms, Product } from '@polar-sh/sdk'
 import Avatar from 'polarkit/components/ui/atoms/avatar'
 import Button from 'polarkit/components/ui/atoms/button'
 import Input from 'polarkit/components/ui/atoms/input'
+import { List, ListItem } from 'polarkit/components/ui/atoms/list'
 import { Checkbox } from 'polarkit/components/ui/checkbox'
 import { Banner } from 'polarkit/components/ui/molecules'
-import { Separator } from 'polarkit/components/ui/separator'
 import { useState } from 'react'
 
 export interface CreatorsModalProps {
@@ -96,26 +96,31 @@ export const CreatorsModal = ({
           {creators.length > 0 && (
             <div className="flex flex-col gap-y-4">
               <h3>Selected Developers</h3>
-              <div className="flex flex-col">
+              <List size='small'>
                 {creators.map((creator) => (
-                  <CreatorRow
-                    key={creator.id}
+                  <ListItem 
+                  key={creator.id} size="small">
+                    <CreatorRow
                     organizationId={creator.id}
                     onRemove={removeCreator}
                   />
+                  </ListItem>
                 ))}
-              </div>
+              </List>
             </div>
           )}
           {subscriptions.length > 0 && (
-            <>
-              <Separator className="dark:bg-polar-600" />
               <div className="flex flex-col gap-y-4">
                 <h3>Subscriptions</h3>
-                <div className="flex flex-col">
+                <List size='small'>
                   {subscriptions.map((subscription) => (
-                    <SubscriptionOrganization
-                      key={subscription.product.id}
+                    <ListItem 
+                    key={subscription.product.id}
+                    selected={creators.some(
+                      (creator) =>
+                        creator.id === subscription.product.organization_id,
+                    )} size='small'>
+                      <SubscriptionOrganization
                       subscriptionTier={subscription.product}
                       selected={creators.some(
                         (creator) =>
@@ -124,10 +129,10 @@ export const CreatorsModal = ({
                       selectOrganization={setCreators}
                       deselectOrganization={removeCreator}
                     />
+                    </ListItem>
                   ))}
-                </div>
+                </List>
               </div>
-            </>
           )}
         </div>
       </div>
@@ -149,7 +154,7 @@ const CreatorRow = ({
   }
 
   return (
-    <div className="dark:hover:bg-polar-700 flex flex-row items-center justify-between gap-x-2 rounded-lg px-4 py-3 text-sm text-gray-950 hover:bg-gray-100 dark:text-white">
+    <div className="flex flex-row items-center justify-between gap-x-2 w-full text-sm">
       <div className="flex flex-row items-center gap-x-2">
         <Avatar
           className="h-8 w-8"
@@ -192,7 +197,7 @@ const SubscriptionOrganization = ({
   }
 
   return (
-    <div className="dark:hover:bg-polar-700 flex flex-row items-center justify-between gap-x-2 rounded-lg px-4 py-3 text-sm text-gray-950 hover:bg-gray-100 dark:text-white">
+    <div className="flex flex-row items-center justify-between gap-x-2 w-full text-sm">
       <div className="flex flex-row items-center gap-x-2">
         <Avatar
           className="h-8 w-8"

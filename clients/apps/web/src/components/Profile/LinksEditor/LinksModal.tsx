@@ -106,7 +106,7 @@ const LinkRow = ({
   }, [link])
 
   return (
-    <div className="dark:hover:bg-polar-700 flex flex-row items-center justify-between gap-x-4 rounded-lg px-4 py-3 text-gray-950 hover:bg-gray-100 dark:text-white">
+    <div className="dark:hover:bg-polar-800 flex flex-row items-center justify-between gap-x-4 rounded-lg px-4 py-3 text-gray-950 hover:bg-gray-100 dark:text-white">
       <div className="flex w-full min-w-0 flex-shrink flex-row items-center gap-x-4">
         {url && (
           <img

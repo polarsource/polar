@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion'
+import Button from 'polarkit/components/ui/atoms/button'
 import React, {
   FunctionComponent,
   MouseEvent,
@@ -57,7 +58,7 @@ export const Modal: FunctionComponent<ModalProps> = ({
           onKeyDown={onKeyDown}
         >
           <div
-            className="flex h-full flex-col items-center bg-black/50 p-2 md:w-full"
+            className="flex h-full flex-col items-center bg-black/70 p-2 md:w-full"
             onClick={(e) => {
               e.preventDefault()
               e.stopPropagation()
@@ -67,7 +68,7 @@ export const Modal: FunctionComponent<ModalProps> = ({
             <div className="block h-[80px] w-2 lg:max-h-[10%] lg:grow-[2]"></div>
             <motion.div
               className={twMerge(
-                'dark:bg-polar-800 relative z-10 flex max-h-full w-full flex-col overflow-hidden rounded-3xl bg-white shadow lg:w-[800px] lg:max-w-full',
+                'dark:bg-polar-950 dark:border-polar-800 dark:border relative z-10 flex max-h-full w-full flex-col overflow-hidden rounded-3xl bg-white shadow lg:w-[800px] lg:max-w-full',
                 className,
               )}
               initial={{ opacity: 0, scale: 0.99 }}
@@ -109,15 +110,13 @@ export const CloseButton = (props: {
   hide: () => void
 }) => {
   return (
-    <button
-      className={twMerge(
-        'dark:text-polar-100 dark:hover:text-polar-300 text-black hover:text-gray-800',
-        props.className,
-      )}
+    <Button
+      variant="ghost"
+      size="icon"
       onClick={() => props.hide()}
     >
       <XIcon />
-    </button>
+    </Button>
   )
 }
 

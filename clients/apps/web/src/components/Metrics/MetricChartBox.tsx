@@ -7,7 +7,7 @@ import {
   CardContent,
   CardHeader,
 } from 'polarkit/components/ui/atoms/card'
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import MetricChart from './MetricChart'
 
@@ -35,22 +35,23 @@ const MetricChartBox: React.FC<MetricChartBoxProps> = ({
     () => getTimestampFormatter(interval),
     [interval],
   )
-  const [hoverValueLabel, setHoverValueLabel] = useState<string | null>(null)
-  const [hoveredIndex, setHoveredIndex] = useState<number>(data.length - 1)
-  useEffect(() => {
-    console.log(hoveredIndex)
-    const period = data[hoveredIndex]
-    if (!period) {
-      return
-    }
+  const getHoverValueLabel = useCallback(
+    (index: number | undefined) => {
+      const hoveredIndex = index === undefined ? data.length - 1 : index
+      const period = data[hoveredIndex]
+        ? data[hoveredIndex]
+        : data[data.length - 1]
+      const timestamp = period.timestamp
+      const value =
+        period[metric.slug as keyof Omit<ParsedMetricPeriod, 'timestamp'>]
+      return `${valueFormatter(value)} at ${timestampFormatter(timestamp)}`
+    },
+    [data, metric, valueFormatter, timestampFormatter],
+  )
 
-    const timestamp = period.timestamp
-    const value =
-      period[metric.slug as keyof Omit<ParsedMetricPeriod, 'timestamp'>]
-    setHoverValueLabel(
-      `${valueFormatter(value)} at ${timestampFormatter(timestamp)}`,
-    )
-  }, [hoveredIndex, data, metric, valueFormatter, timestampFormatter])
+  const [hoverValueLabel, setHoverValueLabel] = useState<string>(
+    getHoverValueLabel(undefined),
+  )
 
   return (
     <Card>
@@ -79,7 +80,7 @@ const MetricChartBox: React.FC<MetricChartBoxProps> = ({
           height={height}
           maxTicks={maxTicks}
           onDataIndexHover={(index) =>
-            setHoveredIndex(index !== undefined ? index : data.length - 1)
+            setHoverValueLabel(getHoverValueLabel(index))
           }
         />
       </CardContent>

@@ -7506,6 +7506,75 @@ export interface Metrics {
     monthly_recurring_revenue: Metric;
 }
 /**
+ * Date interval limit to get metrics for a given interval.
+ * @export
+ * @interface MetricsIntervalLimit
+ */
+export interface MetricsIntervalLimit {
+    /**
+     * Maximum number of days for this interval.
+     * @type {number}
+     * @memberof MetricsIntervalLimit
+     */
+    max_days: number;
+}
+/**
+ * Date interval limits to get metrics for each interval.
+ * @export
+ * @interface MetricsIntervalsLimits
+ */
+export interface MetricsIntervalsLimits {
+    /**
+     * Limits for the hour interval.
+     * @type {MetricsIntervalLimit}
+     * @memberof MetricsIntervalsLimits
+     */
+    hour: MetricsIntervalLimit;
+    /**
+     * Limits for the day interval.
+     * @type {MetricsIntervalLimit}
+     * @memberof MetricsIntervalsLimits
+     */
+    day: MetricsIntervalLimit;
+    /**
+     * Limits for the week interval.
+     * @type {MetricsIntervalLimit}
+     * @memberof MetricsIntervalsLimits
+     */
+    week: MetricsIntervalLimit;
+    /**
+     * Limits for the month interval.
+     * @type {MetricsIntervalLimit}
+     * @memberof MetricsIntervalsLimits
+     */
+    month: MetricsIntervalLimit;
+    /**
+     * Limits for the year interval.
+     * @type {MetricsIntervalLimit}
+     * @memberof MetricsIntervalsLimits
+     */
+    year: MetricsIntervalLimit;
+}
+/**
+ * Date limits to get metrics.
+ * @export
+ * @interface MetricsLimits
+ */
+export interface MetricsLimits {
+    /**
+     * Minimum date to get metrics.
+     * @type {string}
+     * @memberof MetricsLimits
+     */
+    min_date: string;
+    /**
+     * Limits for each interval.
+     * @type {MetricsIntervalsLimits}
+     * @memberof MetricsLimits
+     */
+    intervals: MetricsIntervalsLimits;
+}
+/**
  * Metrics response schema.
  * @export
  * @interface MetricsResponse

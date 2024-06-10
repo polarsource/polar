@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import date, datetime
 from typing import TYPE_CHECKING
 
 from pydantic import Field, create_model
@@ -59,3 +59,26 @@ class MetricsResponse(Schema):
 
     periods: list[MetricsPeriod] = Field(description="List of data for each timestamp.")
     metrics: Metrics = Field(description="Information about the returned metrics.")
+
+
+class MetricsIntervalLimit(Schema):
+    """Date interval limit to get metrics for a given interval."""
+
+    max_days: int = Field(description="Maximum number of days for this interval.")
+
+
+class MetricsIntervalsLimits(Schema):
+    """Date interval limits to get metrics for each interval."""
+
+    hour: MetricsIntervalLimit = Field(description="Limits for the hour interval.")
+    day: MetricsIntervalLimit = Field(description="Limits for the day interval.")
+    week: MetricsIntervalLimit = Field(description="Limits for the week interval.")
+    month: MetricsIntervalLimit = Field(description="Limits for the month interval.")
+    year: MetricsIntervalLimit = Field(description="Limits for the year interval.")
+
+
+class MetricsLimits(Schema):
+    """Date limits to get metrics."""
+
+    min_date: date = Field(description="Minimum date to get metrics.")
+    intervals: MetricsIntervalsLimits = Field(description="Limits for each interval.")

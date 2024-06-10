@@ -3,14 +3,16 @@ from datetime import date
 from fastapi import Depends, Query
 from pydantic import UUID4
 
+from polar.exceptions import PolarRequestValidationError
 from polar.kit.routing import APIRouter
 from polar.models.product_price import ProductPriceType
 from polar.postgres import AsyncSession, get_db_session
 from polar.tags.api import Tags
 
 from . import auth
+from .limits import MAX_INTERVAL_DAYS, MIN_DATE, is_under_limits
 from .queries import Interval
-from .schemas import MetricsResponse
+from .schemas import MetricsLimits, MetricsResponse
 from .service import metrics as metrics_service
 
 router = APIRouter(prefix="/metrics", tags=["metrics"])
@@ -19,7 +21,11 @@ router = APIRouter(prefix="/metrics", tags=["metrics"])
 @router.get("/", response_model=MetricsResponse, tags=[Tags.PUBLIC])
 async def get_metrics(
     auth_subject: auth.MetricsRead,
-    start_date: date = Query(..., description="Start date."),
+    start_date: date = Query(
+        ...,
+        description="Start date.",
+        ge=MIN_DATE,  # type: ignore
+    ),
     end_date: date = Query(..., description="End date."),
     interval: Interval = Query(..., description="Interval between two timestamps."),
     organization_id: UUID4 | None = Query(
@@ -38,6 +44,22 @@ async def get_metrics(
     session: AsyncSession = Depends(get_db_session),
 ) -> MetricsResponse:
     """Get metrics about your orders and subscriptions."""
+
+    if not is_under_limits(start_date, end_date, interval):
+        raise PolarRequestValidationError(
+            [
+                {
+                    "loc": ("query",),
+                    "msg": (
+                        "The interval is too big. "
+                        "Try to change the interval or reduce the date range."
+                    ),
+                    "type": "value_error",
+                    "input": (start_date, end_date, interval),
+                }
+            ]
+        )
+
     return await metrics_service.get_metrics(
         session,
         auth_subject,
@@ -47,4 +69,18 @@ async def get_metrics(
         organization_id=organization_id,
         product_id=product_id,
         product_price_type=product_price_type,
+    )
+
+
+@router.get("/limits", response_model=MetricsLimits, tags=[Tags.PUBLIC])
+async def get_metrics_limits(auth_subject: auth.MetricsRead) -> MetricsLimits:
+    """Get the interval limits for the metrics endpoint."""
+    return MetricsLimits.model_validate(
+        {
+            "min_date": MIN_DATE,
+            "intervals": {
+                interval.value: {"max_days": days}
+                for interval, days in MAX_INTERVAL_DAYS.items()
+            },
+        }
     )

@@ -3,7 +3,6 @@
 import { Section } from '@/components/Landing/Section'
 import { BrandingMenu } from '@/components/Layout/Public/BrandingMenu'
 import Footer from '@/components/Organization/Footer'
-import { StarOutlineOutlined } from '@mui/icons-material'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
@@ -34,14 +33,6 @@ const LandingPageTopbar = () => {
       <BrandingMenu className="hidden md:block" logoVariant="logotype" />
       <BrandingMenu className="md:hidden" />
       <div className="flex flex-row items-center gap-x-6">
-        <Link href="https://github.com/polarsource/polar" target="_blank">
-          <Button className="bg-blue-50 px-3 py-4" variant="secondary">
-            <div className="flex flex-row items-center gap-x-2">
-              <StarOutlineOutlined fontSize="inherit" />
-              <span>Star on GitHub</span>
-            </div>
-          </Button>
-        </Link>
         <Link href="/login">
           <Button>Login</Button>
         </Link>

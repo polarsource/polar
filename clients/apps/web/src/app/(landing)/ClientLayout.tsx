@@ -29,8 +29,11 @@ export default function Layout({ children }: PropsWithChildren) {
 
 const LandingPageTopbar = () => {
   return (
-    <div className="flex flex-row items-center justify-between bg-transparent py-8">
-      <BrandingMenu className="hidden md:block" logoVariant="logotype" />
+    <div className="relative flex flex-row items-center justify-end bg-transparent py-16">
+      <BrandingMenu
+        className="absolute left-1/2 hidden -translate-x-1/2 md:block"
+        size={70}
+      />
       <BrandingMenu className="md:hidden" />
       <div className="flex flex-row items-center gap-x-6">
         <Link href="/login">

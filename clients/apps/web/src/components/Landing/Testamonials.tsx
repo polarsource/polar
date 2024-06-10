@@ -11,8 +11,10 @@ const testamonials = [
       'https://pbs.twimg.com/profile_images/1141762999838842880/64_Y4_XB_400x400.jpg',
     text: (
       <>
-        <p>I&apos;ve joined Polar as an advisor!</p>
         <p className="dark:text-polar-200 text-gray-500">
+          I&apos;ve joined Polar as an advisor!
+        </p>
+        <p>
           I think it benefits everyone for devs to have more options to get paid
           to work on their passions, to support upstreams, and for users to have
           more confidence/transparency in the software they&apos;re
@@ -78,61 +80,61 @@ const testamonials = [
 
 export const Testamonials = () => {
   return (
-    <Section className="dark:border-polar-700 mx-12 flex-col divide-y overflow-hidden rounded-3xl border px-0 md:px-0">
-      <h3 className="p-12 text-2xl leading-relaxed">
-        Why developers choose Polar
-      </h3>
-      <Link
-        className="hover:bg-gray-75 dark:hover:bg-polar-900 flex flex-col gap-y-6 p-12 transition-colors"
-        href={testamonials[0].link}
-        target="_blank"
-      >
-        <div className="flex flex-col gap-y-4 text-lg md:w-2/3">
-          {testamonials[0].text}
-        </div>
-        <div className="flex flex-row items-center gap-x-4">
-          <Avatar
-            className="h-10 w-10"
-            avatar_url={testamonials[0].avatar}
-            name={testamonials[0].name}
-          />
-
-          <div className="flex flex-col text-sm">
-            <span>{testamonials[0].name}</span>
-            <span className="dark:text-polar-500 text-gray-500">
-              {testamonials[0].company}
-            </span>
+    <Section className="mx-12 gap-y-16 px-0 md:px-0">
+      <h3 className="text-4xl leading-relaxed">Why developers choose Polar</h3>
+      <div className="dark:border-polar-700 flex flex-col divide-y overflow-hidden rounded-3xl border">
+        <Link
+          className="hover:bg-gray-75 dark:hover:bg-polar-900 flex flex-col gap-y-6 p-12 transition-colors"
+          href={testamonials[0].link}
+          target="_blank"
+        >
+          <div className="flex flex-col gap-y-4 text-lg md:w-2/3">
+            {testamonials[0].text}
           </div>
-        </div>
-      </Link>
-      <div className="flex flex-col items-center divide-y md:flex-row md:divide-x md:divide-y-0">
-        {testamonials.slice(1).map((testamonial) => (
-          <Link
-            key={testamonial.name}
-            className="flex h-full flex-col md:w-1/3"
-            href={testamonial.link}
-            target="_blank"
-          >
-            <div className="hover:bg-gray-75 dark:hover:bg-polar-900 group relative flex h-full w-full flex-col gap-y-8 rounded-none border-none p-12 transition-colors">
-              <div className="flex h-full flex-col gap-y-4 leading-relaxed">
-                {testamonial.text}
-              </div>
-              <div className="flex flex-row items-center gap-x-4 space-y-0">
-                <Avatar
-                  className="h-10 w-10"
-                  avatar_url={testamonial.avatar}
-                  name={testamonial.name}
-                />
-                <div className="flex flex-col text-sm">
-                  <span>{testamonial.name}</span>
-                  <span className="dark:text-polar-500 text-gray-500">
-                    {testamonial.company}
-                  </span>
+          <div className="flex flex-row items-center gap-x-4">
+            <Avatar
+              className="h-10 w-10"
+              avatar_url={testamonials[0].avatar}
+              name={testamonials[0].name}
+            />
+
+            <div className="flex flex-col text-sm">
+              <span>{testamonials[0].name}</span>
+              <span className="dark:text-polar-500 text-gray-500">
+                {testamonials[0].company}
+              </span>
+            </div>
+          </div>
+        </Link>
+        <div className="flex flex-col items-center divide-y md:flex-row md:divide-x md:divide-y-0">
+          {testamonials.slice(1).map((testamonial) => (
+            <Link
+              key={testamonial.name}
+              className="flex h-full flex-col md:w-1/3"
+              href={testamonial.link}
+              target="_blank"
+            >
+              <div className="hover:bg-gray-75 dark:hover:bg-polar-900 group relative flex h-full w-full flex-col gap-y-8 rounded-none border-none p-12 transition-colors">
+                <div className="flex h-full flex-col gap-y-4 leading-relaxed">
+                  {testamonial.text}
+                </div>
+                <div className="flex flex-row items-center gap-x-4 space-y-0">
+                  <Avatar
+                    className="h-10 w-10"
+                    avatar_url={testamonial.avatar}
+                    name={testamonial.name}
+                  />
+                  <div className="flex flex-col text-sm">
+                    <span>{testamonial.name}</span>
+                    <span className="dark:text-polar-500 text-gray-500">
+                      {testamonial.company}
+                    </span>
+                  </div>
                 </div>
               </div>
-            </div>
-          </Link>
-        ))}
+            </Link>
+          ))}
+        </div>
       </div>
     </Section>
   )

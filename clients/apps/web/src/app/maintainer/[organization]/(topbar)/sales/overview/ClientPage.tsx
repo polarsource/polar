@@ -9,7 +9,7 @@ import ProductSelect, {
 } from '@/components/Products/ProductSelect'
 import { useProductsByPriceType } from '@/hooks/products'
 import { useMetrics } from '@/hooks/queries'
-import { toISODate } from '@/utils/metrics'
+import { fromISODate, toISODate } from '@/utils/metrics'
 import {
   Interval,
   MetricPeriod,
@@ -42,7 +42,7 @@ export default function ClientPage({
   const router = useRouter()
   const productsByPriceType = useProductsByPriceType(organization.id)
 
-  const minDate = useMemo(() => new Date(limits.min_date), [limits])
+  const minDate = useMemo(() => fromISODate(limits.min_date), [limits])
   const maxDaysRange = useMemo(
     () => limits.intervals[interval].max_days,
     [interval, limits],

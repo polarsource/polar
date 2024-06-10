@@ -9,7 +9,6 @@ import Link from 'next/link'
 import {
   Card,
   CardContent,
-  CardFooter,
   CardHeader,
 } from 'polarkit/components/ui/atoms/card'
 import { List, ListItem } from 'polarkit/components/ui/atoms/list'
@@ -26,7 +25,7 @@ interface FeatureItemProps {
 const FeatureItem = ({ title, icon, description, link }: FeatureItemProps) => {
   return (
     <Link className="group flex h-full flex-col" href={link}>
-      <Card className="hover:bg-gray-75 dark:hover:bg-polar-900 flex h-full flex-col transition-colors">
+      <Card className="hover:bg-gray-75 dark:hover:bg-polar-900 flex h-full flex-col border-none transition-colors dark:border-none">
         <CardHeader className="flex flex-row items-center gap-x-4 space-y-0 pb-4">
           <span className="dark:bg-polar-800 dark flex h-10 w-10 flex-col items-center justify-center rounded-xl bg-gray-200 transition-colors group-hover:bg-black group-hover:text-white dark:group-hover:bg-white dark:group-hover:text-black">
             {icon}
@@ -38,10 +37,6 @@ const FeatureItem = ({ title, icon, description, link }: FeatureItemProps) => {
             {description}
           </p>
         </CardContent>
-        <CardFooter className="dark:text-polar-200 flex flex-row items-center gap-x-2 text-sm text-gray-500 group-hover:text-black dark:group-hover:text-white">
-          <span className="text-sm">Learn More</span>
-          <ArrowForward fontSize="inherit" />
-        </CardFooter>
       </Card>
     </Link>
   )
@@ -49,37 +44,35 @@ const FeatureItem = ({ title, icon, description, link }: FeatureItemProps) => {
 
 const items = [
   {
-    title: 'From Idea to Funding',
+    title: 'From an idea to funding',
     description:
       'We offer a wide array of monetization tools for your project, from one-time payments & recurring subscriptions to donations.',
     content: (
-      <div className="flex flex-col gap-y-12">
-        <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
-          <FeatureItem
-            icon={<HowToVoteOutlined fontSize="small" />}
-            title="Issue Funding"
-            description="Polar allows you to fund issues in your repository. You can create a badge for a GitHub issue and allow your community to fund it."
-            link="/docs/overview/issue-funding/overview"
-          />
-          <FeatureItem
-            icon={<FavoriteBorderOutlined fontSize="small" />}
-            title="Rewards"
-            description="Setup & promote an upfront reward to potential contributors, on your GitHub issues."
-            link="/docs/overview/issue-funding/reward-contributors"
-          />
-          <FeatureItem
-            icon={<AttachMoneyOutlined fontSize="small" />}
-            title="Donations"
-            description="Makes it a piece of cake for your supporters to donate."
-            link="/docs/overview/donations"
-          />
-          <FeatureItem
-            icon={<AllInclusiveOutlined fontSize="small" />}
-            title="Subscriptions"
-            description="Offer paid subscription tiers, with associated benefits that you give in return."
-            link="/docs/overview/subscriptions"
-          />
-        </div>
+      <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
+        <FeatureItem
+          icon={<HowToVoteOutlined fontSize="small" />}
+          title="Issue Funding"
+          description="Polar allows you to fund issues in your repository. You can create a badge for a GitHub issue and allow your community to fund it."
+          link="/docs/overview/issue-funding/overview"
+        />
+        <FeatureItem
+          icon={<FavoriteBorderOutlined fontSize="small" />}
+          title="Rewards"
+          description="Setup & promote an upfront reward to potential contributors, on your GitHub issues."
+          link="/docs/overview/issue-funding/reward-contributors"
+        />
+        <FeatureItem
+          icon={<AttachMoneyOutlined fontSize="small" />}
+          title="Donations"
+          description="Makes it a piece of cake for your supporters to donate."
+          link="/docs/overview/donations"
+        />
+        <FeatureItem
+          icon={<AllInclusiveOutlined fontSize="small" />}
+          title="Subscriptions"
+          description="Offer paid subscription tiers, with associated benefits that you give in return."
+          link="/docs/overview/subscriptions"
+        />
       </div>
     ),
   },
@@ -87,9 +80,25 @@ const items = [
     title: 'Turn your passion into a Business',
     description:
       'Take your project to the next level with Products. Sell licenses, access to private repositories, or any other digital product you can think of.',
+    content: (
+      <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
+        <FeatureItem
+          icon={<HowToVoteOutlined fontSize="small" />}
+          title="Benefits"
+          description="A powerful service which can be tied to Products & Subscriptions to offer exclusive benefits for your supporters."
+          link="/docs/overview/issue-funding/overview"
+        />
+        <FeatureItem
+          icon={<FavoriteBorderOutlined fontSize="small" />}
+          title="Products"
+          description="Sell licenses, access to private repositories, or any other digital product you can think of."
+          link="/docs/overview/issue-funding/reward-contributors"
+        />
+      </div>
+    ),
   },
   {
-    title: 'We handle your taxes',
+    title: 'We take care of your taxes',
     description: `We're the merchant of record, handling boilerplate (billing, receipts, customer accounts etc) & your headaches (sales tax, VAT).`,
   },
   {
@@ -107,12 +116,12 @@ export const Journey = () => {
   const [selectedIndex, setSelectedIndex] = useState(0)
 
   return (
-    <Section className="gap-y-16">
-      <h3 className="text-4xl leading-relaxed">
+    <Section className="gap-y-16 py-24" wrapperClassName="relative">
+      <h3 className="z-10 text-4xl leading-relaxed">
         Focus on your passion —<br />
         while we build infrastructure to get you paid
       </h3>
-      <div className="flex flex-row gap-x-16">
+      <div className="z-10 flex flex-row gap-x-16">
         <div className="flex w-1/3 flex-col">
           <List>
             {items.map((item, index) => (
@@ -157,7 +166,7 @@ const JourneyItem = ({
     >
       <div className="flex flex-row gap-x-6">
         <ArrowForward className="text-black dark:text-white" fontSize="small" />
-        <div className="-mt-1 flex flex-col gap-y-2">
+        <div className="-mt-1 flex flex-col gap-y-4">
           <h3 className="text-lg">{title}</h3>
           {active && (
             <div className="dark:text-polar-200 flex flex-col text-sm leading-relaxed text-gray-500">

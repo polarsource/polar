@@ -9,13 +9,13 @@ export const Section = ({
   return (
     <div
       className={twMerge(
-        'flex h-fit w-full max-w-[100vw] flex-row justify-stretch md:max-w-7xl',
+        'flex w-full flex-col items-center justify-stretch',
         wrapperClassName,
       )}
     >
       <div
         className={twMerge(
-          'flex w-full flex-grow flex-col px-6 md:px-12',
+          'flex w-full max-w-[100vw] flex-col px-6 py-16 md:max-w-7xl md:px-12',
           className,
         )}
       >

@@ -81,7 +81,9 @@ const testamonials = [
 export const Testamonials = () => {
   return (
     <Section className="mx-12 gap-y-16 px-0 md:px-0">
-      <h3 className="text-4xl leading-relaxed">Why developers choose Polar</h3>
+      <h3 className="text-center text-4xl leading-relaxed">
+        Why developers choose Polar
+      </h3>
       <div className="dark:border-polar-700 flex flex-col divide-y overflow-hidden rounded-3xl border">
         <Link
           className="hover:bg-gray-75 dark:hover:bg-polar-900 flex flex-col gap-y-6 p-12 transition-colors"

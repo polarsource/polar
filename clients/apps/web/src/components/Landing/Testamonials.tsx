@@ -6,6 +6,7 @@ const testamonials = [
   {
     link: 'https://x.com/mitchellh/status/1775925951668552005',
     name: 'Mitchell Hashimoto',
+    company: 'Ghostty',
     avatar:
       'https://pbs.twimg.com/profile_images/1141762999838842880/64_Y4_XB_400x400.jpg',
     text: (
@@ -23,6 +24,7 @@ const testamonials = [
   {
     link: 'https://x.com/awesomekling/status/1794769509305528625',
     name: 'Andreas Kling',
+    company: 'SerenityOS & Ladybird',
     avatar:
       'https://pbs.twimg.com/profile_images/1743699387165925376/-Zd5Bwsi_400x400.jpg',
     text: (
@@ -43,6 +45,7 @@ const testamonials = [
     name: 'Christoph Nakazawa',
     avatar:
       'https://pbs.twimg.com/profile_images/1189537722286952449/OrscO0bD_400x400.jpg',
+    company: 'Athena Crisis',
     text: (
       <>
         <p className="dark:text-polar-200 text-gray-500">
@@ -56,6 +59,7 @@ const testamonials = [
   {
     link: 'https://x.com/samuel_colvin/status/1676167205715582978',
     name: 'Samuel Colvin',
+    company: 'Pydantic',
     avatar:
       'https://pbs.twimg.com/profile_images/1678332260569710594/of0Ed11O_400x400.jpg',
     text: (
@@ -74,13 +78,13 @@ const testamonials = [
 
 export const Testamonials = () => {
   return (
-    <Section className="dark:border-polar-700 mx-12 flex-col divide-y overflow-hidden rounded-3xl border md:px-0">
+    <Section className="dark:border-polar-700 mx-12 flex-col divide-y overflow-hidden rounded-3xl border px-0 md:px-0">
       <Link
         className="hover:bg-gray-75 dark:hover:bg-polar-900 flex flex-col gap-y-6 p-8 transition-colors"
         href={testamonials[0].link}
         target="_blank"
       >
-        <div className="flex w-2/3 flex-col gap-y-4 text-lg">
+        <div className="flex flex-col gap-y-4 text-lg md:w-2/3">
           {testamonials[0].text}
         </div>
         <div className="flex flex-row items-center gap-x-4">
@@ -92,14 +96,17 @@ export const Testamonials = () => {
 
           <div className="flex flex-col text-sm">
             <span>{testamonials[0].name}</span>
+            <span className="dark:text-polar-500 text-gray-500">
+              {testamonials[0].company}
+            </span>
           </div>
         </div>
       </Link>
-      <div className="flex flex-row items-center divide-x">
+      <div className="flex flex-col items-center divide-y md:flex-row md:divide-x md:divide-y-0">
         {testamonials.slice(1).map((testamonial) => (
           <Link
             key={testamonial.name}
-            className="flex h-full w-1/3 flex-col"
+            className="flex h-full flex-col md:w-1/3"
             href={testamonial.link}
             target="_blank"
           >
@@ -115,6 +122,9 @@ export const Testamonials = () => {
                 />
                 <div className="flex flex-col text-sm">
                   <span>{testamonial.name}</span>
+                  <span className="dark:text-polar-500 text-gray-500">
+                    {testamonial.company}
+                  </span>
                 </div>
               </div>
             </div>

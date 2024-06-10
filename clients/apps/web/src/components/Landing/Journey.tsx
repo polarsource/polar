@@ -16,32 +16,30 @@ const items = [
   {
     title: 'From Idea to Funding',
     description:
-      'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Praesent aliquet in urna ut porta. Cras at libero vitae erat cursus dapibus. Sed quis volutpat lectus.',
+      'We offer a wide array of monetization tools for your project, from one-time payments & recurring subscriptions to donations. We handle all the complexity of payments, so you can focus on building your project.',
   },
   {
     title: 'Build a Community from Day 1',
     description:
-      'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Praesent aliquet in urna ut porta. Cras at libero vitae erat cursus dapibus. Sed quis volutpat lectus.',
+      'Polar offers a seamless service to enable your community to pool funding towards issues - helping support, upvote and fund the most impactful efforts. You can also easily reward contributors a share of the funding once the issue is completed.',
   },
   {
-    title: 'Start a Business',
+    title: 'Turn your passion into a Business',
     description:
-      'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Praesent aliquet in urna ut porta. Cras at libero vitae erat cursus dapibus. Sed quis volutpat lectus.',
+      'Take your project to the next level by operating your project as a business. With Products, you can sell licenses, access to private repositories, or any other digital product you can think of.',
   },
   {
     title: 'We handle your taxes',
-    description:
-      'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Praesent aliquet in urna ut porta. Cras at libero vitae erat cursus dapibus. Sed quis volutpat lectus.',
+    description: `We're the merchant of record, handling boilerplate (billing, receipts, customer accounts etc) & your headaches (sales tax, VAT).`,
   },
   {
     title: 'Deeply integrated with GitHub',
-    description:
-      'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Praesent aliquet in urna ut porta. Cras at libero vitae erat cursus dapibus. Sed quis volutpat lectus.',
+    description: `Polar is built on top of GitHub, so you can easily integrate with your existing workflow. We're also proud to be an official GitHub funding option.`,
   },
   {
     title: 'Built entirely Open Source',
     description:
-      'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Praesent aliquet in urna ut porta. Cras at libero vitae erat cursus dapibus. Sed quis volutpat lectus.',
+      'We believe in transparency and trust, so we open sourced our entire platform. You can find our code on GitHub.',
   },
 ]
 
@@ -50,7 +48,7 @@ export const Journey = () => {
 
   return (
     <Section className="gap-y-24">
-      <h3 className="text-5xl font-light leading-relaxed">
+      <h3 className="text-4xl leading-relaxed">
         Focus on your passion —<br />
         while we build infrastructure to get you paid
       </h3>

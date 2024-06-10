@@ -7,7 +7,10 @@ $CMD_MC admin user add polar $ACCESS_KEY $SECRET_ACCESS_KEY
 $CMD_MC admin policy create polar polar-development $POLICY_FILE
 $CMD_MC admin policy attach polar polar-development --user $ACCESS_KEY
 
-# Create development & testing buckets
+# Create buckets
 $CMD_MC mb polar/$BUCKET_NAME --with-versioning --ignore-existing
-$CMD_MC mb polar/$BUCKET_TESTING_NAME --with-versioning --ignore-existing
 
+$CMD_MC mb polar/$PUBLIC_BUCKET_NAME --with-versioning --ignore-existing
+$CMD_MC anonymous set download polar/$PUBLIC_BUCKET_NAME
+
+$CMD_MC mb polar/$BUCKET_TESTING_NAME --with-versioning --ignore-existing

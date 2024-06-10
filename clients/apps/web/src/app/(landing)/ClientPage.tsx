@@ -5,7 +5,7 @@ import { Separator } from 'polarkit/components/ui/separator'
 
 export default function Page() {
   return (
-    <div className="flex flex-col items-center md:gap-y-32">
+    <div className="flex flex-col items-center">
       <Hero />
       <Separator className="w-screen" />
       <Journey />

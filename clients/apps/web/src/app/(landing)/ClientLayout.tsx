@@ -18,7 +18,10 @@ export default function Layout({ children }: PropsWithChildren) {
 
   return (
     <div className="flex w-full flex-col items-center">
-      <Section>
+      <Section
+        wrapperClassName="sticky top-0 z-20 dark:bg-polar-950 bg-white"
+        className="pb-4"
+      >
         <LandingPageTopbar />
       </Section>
       {children}
@@ -29,11 +32,15 @@ export default function Layout({ children }: PropsWithChildren) {
 
 const LandingPageTopbar = () => {
   return (
-    <div className="relative flex flex-row items-center justify-end bg-transparent py-16">
-      <BrandingMenu
-        className="absolute left-1/2 hidden -translate-x-1/2 md:block"
-        size={70}
-      />
+    <div className="relative flex flex-row items-center justify-between bg-transparent">
+      <div className="absolute left-1/2 flex -translate-x-1/2 flex-row items-center gap-x-12 text-sm">
+        <Link href="/login">Platform</Link>
+        <Link href="/login">Documentation</Link>
+        <Link href="https://github.com/polarsource/polar" target="_blank">
+          Open Source
+        </Link>
+      </div>
+      <BrandingMenu className="md:block" size={50} />
       <BrandingMenu className="md:hidden" />
       <div className="flex flex-row items-center gap-x-6">
         <Link href="/login">

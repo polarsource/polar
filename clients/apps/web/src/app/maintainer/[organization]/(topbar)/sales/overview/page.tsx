@@ -1,5 +1,5 @@
 import { getServerSideAPI } from '@/utils/api/serverside'
-import { toISODate } from '@/utils/metrics'
+import { fromISODate, toISODate } from '@/utils/metrics'
 import {
   Interval,
   MetricPeriod,
@@ -43,16 +43,28 @@ export default async function Page({
   const defaultEndDate = endOfMonth(today)
 
   const interval = searchParams.interval || defaultInterval
+
+  if (!Object.values(Interval).includes(interval)) {
+    const urlSearchParams = new URLSearchParams({
+      ...searchParams,
+      interval: defaultInterval,
+    })
+    redirect(
+      `/maintainer/${organization.name}/sales/overview?${urlSearchParams}`,
+      RedirectType.replace,
+    )
+  }
+
   const startDate = searchParams.start_date
-    ? new Date(searchParams.start_date)
+    ? fromISODate(searchParams.start_date)
     : defaultStartDate
   const endDate = searchParams.end_date
-    ? new Date(searchParams.end_date)
+    ? fromISODate(searchParams.end_date)
     : defaultEndDate
 
   const limits = await api.metrics.getMetricsLimits()
-  const minDate = new Date(limits.min_date)
-  const maxDate = addDays(startDate, limits.intervals[interval].max_days)
+  const minDate = fromISODate(limits.min_date)
+  const maxDate = addDays(startDate, limits.intervals[interval].max_days - 1)
 
   if (startDate < minDate || endDate > maxDate) {
     const urlSearchParams = new URLSearchParams({

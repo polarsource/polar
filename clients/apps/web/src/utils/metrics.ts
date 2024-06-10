@@ -1,8 +1,12 @@
 import { Interval, Metric, MetricType } from '@polar-sh/sdk'
 import format from 'date-fns/format'
+import parse from 'date-fns/parse'
 import { formatCurrencyAndAmount } from './money'
 
 export const toISODate = (date: Date) => format(date, 'yyyy-MM-dd')
+
+export const fromISODate = (date: string) =>
+  parse(date, 'yyyy-MM-dd', new Date('1970-01-01T12:00:00Z'))
 
 export const getValueFormatter = (
   metric: Metric,

@@ -1,5 +1,6 @@
 'use client'
 
+import { Section } from '@/components/Landing/Section'
 import { BrandingMenu } from '@/components/Layout/Public/BrandingMenu'
 import Footer from '@/components/Organization/Footer'
 import { StarOutlineOutlined } from '@mui/icons-material'
@@ -17,13 +18,11 @@ export default function Layout({ children }: PropsWithChildren) {
   }, [pathname])
 
   return (
-    <div className="flex w-full flex-col items-center gap-y-12">
-      <div className="flex h-fit w-full max-w-[100vw] flex-row justify-stretch md:max-w-7xl">
-        <div className="flex w-full flex-grow flex-col">
-          <LandingPageTopbar />
-          {children}
-        </div>
-      </div>
+    <div className="flex w-full flex-col items-center">
+      <Section>
+        <LandingPageTopbar />
+      </Section>
+      {children}
       <LandingPageFooter />
     </div>
   )
@@ -31,26 +30,20 @@ export default function Layout({ children }: PropsWithChildren) {
 
 const LandingPageTopbar = () => {
   return (
-    <div className="flex flex-row items-center justify-between bg-transparent px-8 py-8 md:px-12">
+    <div className="flex flex-row items-center justify-between bg-transparent py-8">
       <BrandingMenu className="hidden md:block" logoVariant="logotype" />
       <BrandingMenu className="md:hidden" />
       <div className="flex flex-row items-center gap-x-6">
         <Link href="https://github.com/polarsource/polar" target="_blank">
-          <Button
-            className="rounded-lg bg-blue-50 px-3 py-4"
-            variant="secondary"
-          >
+          <Button className="bg-blue-50 px-3 py-4" variant="secondary">
             <div className="flex flex-row items-center gap-x-2">
-              <StarOutlineOutlined fontSize="small" />
+              <StarOutlineOutlined fontSize="inherit" />
               <span>Star on GitHub</span>
             </div>
           </Button>
         </Link>
-        <Link
-          href="/login"
-          className="text-blue-500 hover:text-blue-400 dark:text-blue-400 dark:hover:text-blue-300"
-        >
-          Login
+        <Link href="/login">
+          <Button>Login</Button>
         </Link>
       </div>
     </div>
@@ -60,7 +53,7 @@ const LandingPageTopbar = () => {
 const LandingPageFooter = () => {
   return (
     <motion.div
-      className="dark:bg-polar-900 flex w-full flex-col items-center justify-center bg-white"
+      className="dark:bg-polar-900 mt-24 flex w-full flex-col items-center justify-center bg-white"
       initial="initial"
       variants={{ initial: { opacity: 0 }, animate: { opacity: 1 } }}
       transition={{ duration: 0.5, ease: 'easeInOut' }}

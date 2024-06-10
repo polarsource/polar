@@ -1,13 +1,16 @@
 import { Hero } from '@/components/Landing/Hero'
 import { Journey } from '@/components/Landing/Journey'
 import { Testamonials } from '@/components/Landing/Testamonials'
+import { Separator } from 'polarkit/components/ui/separator'
 
 export default function Page() {
   return (
-    <div className="flex flex-col md:gap-y-16">
+    <div className="flex flex-col items-center md:gap-y-32">
       <Hero />
-      <Testamonials />
+      <Separator className="w-screen" />
       <Journey />
+      <Separator className="w-screen" />
+      <Testamonials />
     </div>
   )
 }

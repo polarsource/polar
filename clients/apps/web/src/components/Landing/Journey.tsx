@@ -28,7 +28,7 @@ const FeatureItem = ({ title, icon, description, link }: FeatureItemProps) => {
     <Link className="group flex h-full flex-col" href={link}>
       <Card className="hover:bg-gray-75 dark:hover:bg-polar-900 flex h-full flex-col transition-colors">
         <CardHeader className="flex flex-row items-center gap-x-4 space-y-0 pb-4">
-          <span className="dark:bg-polar-800 flex h-10 w-10 flex-col items-center justify-center rounded-xl bg-gray-200 group-hover:text-blue-500">
+          <span className="dark:bg-polar-800 dark flex h-10 w-10 flex-col items-center justify-center rounded-xl bg-gray-200 transition-colors group-hover:bg-black group-hover:text-white dark:group-hover:bg-white dark:group-hover:text-black">
             {icon}
           </span>
           <h3 className="text-lg leading-snug">{title}</h3>
@@ -38,7 +38,7 @@ const FeatureItem = ({ title, icon, description, link }: FeatureItemProps) => {
             {description}
           </p>
         </CardContent>
-        <CardFooter className="dark:text-polar-200 flex flex-row items-center gap-x-2 text-gray-500 group-hover:text-black dark:group-hover:text-white">
+        <CardFooter className="dark:text-polar-200 flex flex-row items-center gap-x-2 text-sm text-gray-500 group-hover:text-black dark:group-hover:text-white">
           <span className="text-sm">Learn More</span>
           <ArrowForward fontSize="inherit" />
         </CardFooter>
@@ -54,13 +54,6 @@ const items = [
       'We offer a wide array of monetization tools for your project, from one-time payments & recurring subscriptions to donations.',
     content: (
       <div className="flex flex-col gap-y-12">
-        <div className="flex flex-col gap-y-4">
-          <h2 className="text-2xl">From Idea to Funding</h2>
-          <p className="dark:text-polar-200 text-lg text-gray-500">
-            Use any of Polar&apos;s built-in monetization capabilities to
-            capture funding for your project
-          </p>
-        </div>
         <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
           <FeatureItem
             icon={<HowToVoteOutlined fontSize="small" />}
@@ -77,7 +70,7 @@ const items = [
           <FeatureItem
             icon={<AttachMoneyOutlined fontSize="small" />}
             title="Donations"
-            description="Receive donations from your supporters."
+            description="Makes it a piece of cake for your supporters to donate."
             link="/docs/overview/donations"
           />
           <FeatureItem
@@ -104,7 +97,7 @@ const items = [
     description: `Polar is built on top of GitHub, so you can easily integrate with your existing workflow. We're also proud to be an official GitHub funding option.`,
   },
   {
-    title: 'Developers in the front seat',
+    title: 'Developer Experience in the front seat',
     description:
       'We believe in transparency and trust, so we open sourced our entire platform. You can find our code on GitHub.',
   },
@@ -114,7 +107,7 @@ export const Journey = () => {
   const [selectedIndex, setSelectedIndex] = useState(0)
 
   return (
-    <Section className="gap-y-24">
+    <Section className="gap-y-16">
       <h3 className="text-4xl leading-relaxed">
         Focus on your passion —<br />
         while we build infrastructure to get you paid
@@ -162,15 +155,17 @@ const JourneyItem = ({
       selected={active}
       onSelect={onClick}
     >
-      <div className="flex flex-row items-center gap-x-6">
+      <div className="flex flex-row gap-x-6">
         <ArrowForward className="text-black dark:text-white" fontSize="small" />
-        <h3 className="text-lg">{title}</h3>
-      </div>
-      {active && (
-        <div className="dark:text-polar-200 ml-9 flex flex-col text-sm leading-relaxed text-gray-500">
-          {description}
+        <div className="-mt-1 flex flex-col gap-y-2">
+          <h3 className="text-lg">{title}</h3>
+          {active && (
+            <div className="dark:text-polar-200 flex flex-col text-sm leading-relaxed text-gray-500">
+              {description}
+            </div>
+          )}
         </div>
-      )}
+      </div>
     </ListItem>
   )
 }

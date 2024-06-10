@@ -17,6 +17,7 @@ import * as runtime from '../runtime';
 import type {
   HTTPValidationError,
   Interval,
+  MetricsLimits,
   MetricsResponse,
   ProductPriceType,
 } from '../models/index';
@@ -113,6 +114,42 @@ export class MetricsApi extends runtime.BaseAPI {
      */
     async getMetrics(requestParameters: MetricsApiGetMetricsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<MetricsResponse> {
         const response = await this.getMetricsRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
+     * Get the interval limits for the metrics endpoint.
+     * Get Metrics Limits
+     */
+    async getMetricsLimitsRaw(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<MetricsLimits>> {
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("HTTPBearer", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+        const response = await this.request({
+            path: `/api/v1/metrics/limits`,
+            method: 'GET',
+            headers: headerParameters,
+            query: queryParameters,
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse(response);
+    }
+
+    /**
+     * Get the interval limits for the metrics endpoint.
+     * Get Metrics Limits
+     */
+    async getMetricsLimits(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<MetricsLimits> {
+        const response = await this.getMetricsLimitsRaw(initOverrides);
         return await response.value();
     }
 

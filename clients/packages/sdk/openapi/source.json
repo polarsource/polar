@@ -7012,8 +7012,8 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "organizations:read",
-                            "organizations:write"
+                            "organizations:write",
+                            "organizations:read"
                         ]
                     },
                     {
@@ -7075,8 +7075,8 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "organizations:read",
-                            "organizations:write"
+                            "organizations:write",
+                            "organizations:read"
                         ]
                     },
                     {
@@ -7158,8 +7158,8 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "organizations:read",
-                            "organizations:write"
+                            "organizations:write",
+                            "organizations:read"
                         ]
                     },
                     {
@@ -7260,8 +7260,8 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "organizations:read",
-                            "organizations:write"
+                            "organizations:write",
+                            "organizations:read"
                         ]
                     },
                     {
@@ -7395,8 +7395,8 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "organizations:read",
-                            "organizations:write"
+                            "organizations:write",
+                            "organizations:read"
                         ]
                     },
                     {
@@ -7429,8 +7429,8 @@
                             "description": "Filter by the type of purchase the customer made.",
                             "default": [
                                 "donation",
-                                "subscription",
-                                "order"
+                                "order",
+                                "subscription"
                             ],
                             "title": "Customer Types"
                         },
@@ -11710,8 +11710,8 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "creator:benefits:read",
-                            "creator:benefits:write"
+                            "creator:benefits:write",
+                            "creator:benefits:read"
                         ]
                     },
                     {
@@ -11930,8 +11930,8 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "creator:benefits:read",
-                            "creator:benefits:write"
+                            "creator:benefits:write",
+                            "creator:benefits:read"
                         ]
                     },
                     {
@@ -12226,8 +12226,8 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "creator:benefits:read",
-                            "creator:benefits:write"
+                            "creator:benefits:write",
+                            "creator:benefits:read"
                         ]
                     },
                     {
@@ -14262,6 +14262,7 @@
                         "schema": {
                             "type": "string",
                             "format": "date",
+                            "minimum": "2023-01-01",
                             "description": "Start date.",
                             "title": "Start Date"
                         },
@@ -14373,6 +14374,44 @@
                         }
                     }
                 }
+            }
+        },
+        "/api/v1/metrics/limits": {
+            "get": {
+                "tags": [
+                    "metrics"
+                ],
+                "summary": "Get Metrics Limits",
+                "description": "Get the interval limits for the metrics endpoint.",
+                "operationId": "metrics:get_metrics_limits",
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/MetricsLimits"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "OpenIdConnect": []
+                    },
+                    {
+                        "HTTPBearer": []
+                    },
+                    {
+                        "OpenIdConnect": [
+                            "metrics:read"
+                        ]
+                    },
+                    {
+                        "HTTPBearer": []
+                    }
+                ]
             }
         }
     },
@@ -23055,6 +23094,100 @@
                     "monthly_recurring_revenue"
                 ],
                 "title": "Metrics"
+            },
+            "MetricsIntervalLimit": {
+                "properties": {
+                    "max_days": {
+                        "type": "integer",
+                        "title": "Max Days",
+                        "description": "Maximum number of days for this interval."
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "max_days"
+                ],
+                "title": "MetricsIntervalLimit",
+                "description": "Date interval limit to get metrics for a given interval."
+            },
+            "MetricsIntervalsLimits": {
+                "properties": {
+                    "hour": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/MetricsIntervalLimit"
+                            }
+                        ],
+                        "description": "Limits for the hour interval."
+                    },
+                    "day": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/MetricsIntervalLimit"
+                            }
+                        ],
+                        "description": "Limits for the day interval."
+                    },
+                    "week": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/MetricsIntervalLimit"
+                            }
+                        ],
+                        "description": "Limits for the week interval."
+                    },
+                    "month": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/MetricsIntervalLimit"
+                            }
+                        ],
+                        "description": "Limits for the month interval."
+                    },
+                    "year": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/MetricsIntervalLimit"
+                            }
+                        ],
+                        "description": "Limits for the year interval."
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "hour",
+                    "day",
+                    "week",
+                    "month",
+                    "year"
+                ],
+                "title": "MetricsIntervalsLimits",
+                "description": "Date interval limits to get metrics for each interval."
+            },
+            "MetricsLimits": {
+                "properties": {
+                    "min_date": {
+                        "type": "string",
+                        "format": "date",
+                        "title": "Min Date",
+                        "description": "Minimum date to get metrics."
+                    },
+                    "intervals": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/MetricsIntervalsLimits"
+                            }
+                        ],
+                        "description": "Limits for each interval."
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "min_date",
+                    "intervals"
+                ],
+                "title": "MetricsLimits",
+                "description": "Date limits to get metrics."
             },
             "MetricsResponse": {
                 "properties": {

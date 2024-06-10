@@ -13,6 +13,7 @@ import { toISODate } from '@/utils/metrics'
 import {
   Interval,
   MetricPeriod,
+  MetricsLimits,
   Organization,
   ProductPriceType,
 } from '@polar-sh/sdk'
@@ -21,6 +22,7 @@ import { useCallback, useMemo } from 'react'
 
 export default function ClientPage({
   organization,
+  limits,
   startDate,
   endDate,
   interval,
@@ -29,6 +31,7 @@ export default function ClientPage({
   focus,
 }: {
   organization: Organization
+  limits: MetricsLimits
   startDate: Date
   endDate: Date
   interval: Interval
@@ -38,6 +41,12 @@ export default function ClientPage({
 }) {
   const router = useRouter()
   const productsByPriceType = useProductsByPriceType(organization.id)
+
+  const minDate = useMemo(() => new Date(limits.min_date), [limits])
+  const maxDaysRange = useMemo(
+    () => limits.intervals[interval].max_days,
+    [interval, limits],
+  )
 
   const { data } = useMetrics({
     startDate,
@@ -169,6 +178,8 @@ export default function ClientPage({
             <DateRangePicker
               date={dateRange}
               onDateChange={onDateChange}
+              maxDaysRange={maxDaysRange}
+              minDate={minDate}
               className="w-full"
             />
           </div>

@@ -136,6 +136,7 @@ class Settings(BaseSettings):
 
     # Downloadable files
     S3_FILES_BUCKET_NAME: str = "polar-s3"
+    S3_FILES_PUBLIC_BUCKET_NAME: str = "polar-s3-public"
     S3_FILES_PRESIGN_TTL: int = 600  # 10 minutes
     S3_FILES_DOWNLOAD_SECRET: str = "supersecret"
     S3_FILES_DOWNLOAD_SALT: str = "saltysalty"

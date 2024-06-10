@@ -25,12 +25,16 @@ export type DateRange = {
 interface DateRangePickerProps extends React.HTMLAttributes<HTMLDivElement> {
   date: DateRange
   onDateChange: (v: DateRange) => void
+  maxDaysRange?: number
+  minDate?: Date
 }
 
 const DateRangePicker: React.FC<DateRangePickerProps> = ({
   className,
   date,
   onDateChange,
+  maxDaysRange,
+  minDate,
 }) => {
   const [internalDate, setInternalDate] = React.useState<
     InternalDateRange | undefined
@@ -78,6 +82,8 @@ const DateRangePicker: React.FC<DateRangePickerProps> = ({
             mode="range"
             defaultMonth={internalDate?.to}
             selected={internalDate}
+            max={maxDaysRange}
+            disabled={minDate ? { before: minDate } : undefined}
             onSelect={setInternalDate}
             numberOfMonths={2}
           />

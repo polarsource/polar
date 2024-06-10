@@ -1,11 +1,20 @@
 import { getServerSideAPI } from '@/utils/api/serverside'
+import { toISODate } from '@/utils/metrics'
 import {
   Interval,
   MetricPeriod,
   Platforms,
   ProductPriceType,
 } from '@polar-sh/sdk'
-import { endOfMonth, startOfMonth, subMonths } from 'date-fns'
+import {
+  addDays,
+  endOfMonth,
+  max,
+  min,
+  startOfMonth,
+  subMonths,
+} from 'date-fns'
+import { RedirectType, redirect } from 'next/navigation'
 import ClientPage from './ClientPage'
 
 export default async function Page({
@@ -28,23 +37,41 @@ export default async function Page({
     platform: Platforms.GITHUB,
   })
 
+  const defaultInterval = Interval.MONTH
   const today = new Date()
-  const currentMonthStart = startOfMonth(today)
-  const currentMonthEnd = endOfMonth(today)
-  const threeMonthsAgo = subMonths(currentMonthStart, 3)
+  const defaultStartDate = subMonths(startOfMonth(today), 3)
+  const defaultEndDate = endOfMonth(today)
 
+  const interval = searchParams.interval || defaultInterval
   const startDate = searchParams.start_date
     ? new Date(searchParams.start_date)
-    : threeMonthsAgo
+    : defaultStartDate
   const endDate = searchParams.end_date
     ? new Date(searchParams.end_date)
-    : currentMonthEnd
-  const interval = searchParams.interval || Interval.MONTH
+    : defaultEndDate
+
+  const limits = await api.metrics.getMetricsLimits()
+  const minDate = new Date(limits.min_date)
+  const maxDate = addDays(startDate, limits.intervals[interval].max_days)
+
+  if (startDate < minDate || endDate > maxDate) {
+    const urlSearchParams = new URLSearchParams({
+      ...searchParams,
+      start_date: toISODate(max([minDate, startDate])),
+      end_date: toISODate(min([endDate, maxDate])),
+    })
+    redirect(
+      `/maintainer/${organization.name}/sales/overview?${urlSearchParams}`,
+      RedirectType.replace,
+    )
+  }
+
   const focus = searchParams.focus || 'revenue'
 
   return (
     <ClientPage
       organization={organization}
+      limits={limits}
       startDate={startDate}
       endDate={endDate}
       interval={interval}

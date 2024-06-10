@@ -1,32 +1,99 @@
-import { ArrowForward } from '@mui/icons-material'
+import {
+  AllInclusiveOutlined,
+  ArrowForward,
+  AttachMoneyOutlined,
+  FavoriteBorderOutlined,
+  HowToVoteOutlined,
+} from '@mui/icons-material'
+import Link from 'next/link'
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+} from 'polarkit/components/ui/atoms/card'
 import { List, ListItem } from 'polarkit/components/ui/atoms/list'
 import { PropsWithChildren, useState } from 'react'
+import { twMerge } from 'tailwind-merge'
 import { Section } from './Section'
+interface FeatureItemProps {
+  icon: JSX.Element
+  title: string
+  description: string
+  link: string
+}
 
-const codeExample = `curl -X POST \
-
-https://api.polar.sh/api/v1/issues/123/add_badge \
-
--H "Content-type: application/json" \
--H "Accept: application/json" \
--H "Authorization: Bearer <token>" \
-`
+const FeatureItem = ({ title, icon, description, link }: FeatureItemProps) => {
+  return (
+    <Link className="group flex h-full flex-col" href={link}>
+      <Card className="hover:bg-gray-75 dark:hover:bg-polar-900 flex h-full flex-col transition-colors">
+        <CardHeader className="flex flex-row items-center gap-x-4 space-y-0 pb-4">
+          <span className="dark:bg-polar-800 flex h-10 w-10 flex-col items-center justify-center rounded-xl bg-gray-200 group-hover:text-blue-500">
+            {icon}
+          </span>
+          <h3 className="text-lg leading-snug">{title}</h3>
+        </CardHeader>
+        <CardContent className="flex h-full flex-col gap-y-4 pb-6">
+          <p className="dark:text-polar-200 h-full leading-relaxed text-gray-500 group-hover:text-black dark:group-hover:text-white">
+            {description}
+          </p>
+        </CardContent>
+        <CardFooter className="dark:text-polar-200 flex flex-row items-center gap-x-2 text-gray-500 group-hover:text-black dark:group-hover:text-white">
+          <span className="text-sm">Learn More</span>
+          <ArrowForward fontSize="inherit" />
+        </CardFooter>
+      </Card>
+    </Link>
+  )
+}
 
 const items = [
   {
     title: 'From Idea to Funding',
     description:
-      'We offer a wide array of monetization tools for your project, from one-time payments & recurring subscriptions to donations. We handle all the complexity of payments, so you can focus on building your project.',
-  },
-  {
-    title: 'Build a Community from Day 1',
-    description:
-      'Polar offers a seamless service to enable your community to pool funding towards issues - helping support, upvote and fund the most impactful efforts. You can also easily reward contributors a share of the funding once the issue is completed.',
+      'We offer a wide array of monetization tools for your project, from one-time payments & recurring subscriptions to donations.',
+    content: (
+      <div className="flex flex-col gap-y-12">
+        <div className="flex flex-col gap-y-4">
+          <h2 className="text-2xl">From Idea to Funding</h2>
+          <p className="dark:text-polar-200 text-lg text-gray-500">
+            Use any of Polar&apos;s built-in monetization capabilities to
+            capture funding for your project
+          </p>
+        </div>
+        <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
+          <FeatureItem
+            icon={<HowToVoteOutlined fontSize="small" />}
+            title="Issue Funding"
+            description="Polar allows you to fund issues in your repository. You can create a badge for a GitHub issue and allow your community to fund it."
+            link="/docs/overview/issue-funding/overview"
+          />
+          <FeatureItem
+            icon={<FavoriteBorderOutlined fontSize="small" />}
+            title="Rewards"
+            description="Setup & promote an upfront reward to potential contributors, on your GitHub issues."
+            link="/docs/overview/issue-funding/reward-contributors"
+          />
+          <FeatureItem
+            icon={<AttachMoneyOutlined fontSize="small" />}
+            title="Donations"
+            description="Receive donations from your supporters."
+            link="/docs/overview/donations"
+          />
+          <FeatureItem
+            icon={<AllInclusiveOutlined fontSize="small" />}
+            title="Subscriptions"
+            description="Offer paid subscription tiers, with associated benefits that you give in return."
+            link="/docs/overview/subscriptions"
+          />
+        </div>
+      </div>
+    ),
   },
   {
     title: 'Turn your passion into a Business',
     description:
-      'Take your project to the next level by operating your project as a business. With Products, you can sell licenses, access to private repositories, or any other digital product you can think of.',
+      'Take your project to the next level with Products. Sell licenses, access to private repositories, or any other digital product you can think of.',
   },
   {
     title: 'We handle your taxes',
@@ -37,7 +104,7 @@ const items = [
     description: `Polar is built on top of GitHub, so you can easily integrate with your existing workflow. We're also proud to be an official GitHub funding option.`,
   },
   {
-    title: 'Built entirely Open Source',
+    title: 'Developers in the front seat',
     description:
       'We believe in transparency and trust, so we open sourced our entire platform. You can find our code on GitHub.',
   },
@@ -52,11 +119,11 @@ export const Journey = () => {
         Focus on your passion —<br />
         while we build infrastructure to get you paid
       </h3>
-      <div className="flex flex-row gap-x-24">
-        <div className="flex w-1/2 flex-col">
+      <div className="flex flex-row gap-x-16">
+        <div className="flex w-1/3 flex-col">
           <List>
             {items.map((item, index) => (
-              <FeatureItem
+              <JourneyItem
                 key={item.title}
                 title={item.title}
                 description={item.description}
@@ -66,19 +133,15 @@ export const Journey = () => {
             ))}
           </List>
         </div>
-        <div className="flex w-1/2 flex-col items-center justify-center">
-          <div className="flex flex-col rounded-3xl border p-8 font-mono">
-            <pre className="select-text overflow-auto text-wrap p-4 font-mono text-xs leading-loose text-gray-900 dark:text-white">
-              {codeExample}
-            </pre>
-          </div>
+        <div className="flex w-2/3 flex-col">
+          {items[selectedIndex].content}
         </div>
       </div>
     </Section>
   )
 }
 
-const FeatureItem = ({
+const JourneyItem = ({
   title,
   description,
   children,
@@ -92,16 +155,19 @@ const FeatureItem = ({
 }>) => {
   return (
     <ListItem
-      className="hover:bg-gray-75 dark:hover:bg-polar-900 flex flex-col items-start gap-y-4 p-6 dark:bg-transparent"
+      className={twMerge(
+        'hover:bg-gray-75 dark:hover:bg-polar-900 flex flex-col items-start gap-y-4 p-6',
+        active && 'dark:bg-polar-900',
+      )}
       selected={active}
       onSelect={onClick}
     >
-      <div className="flex flex-row items-center gap-x-4">
+      <div className="flex flex-row items-center gap-x-6">
         <ArrowForward className="text-black dark:text-white" fontSize="small" />
         <h3 className="text-lg">{title}</h3>
       </div>
       {active && (
-        <div className="dark:text-polar-200 flex flex-col text-sm leading-relaxed text-gray-500">
+        <div className="dark:text-polar-200 ml-9 flex flex-col text-sm leading-relaxed text-gray-500">
           {description}
         </div>
       )}

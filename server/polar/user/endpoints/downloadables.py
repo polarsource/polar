@@ -3,15 +3,12 @@ from fastapi import APIRouter, Depends, Query
 from fastapi.responses import RedirectResponse
 from pydantic import UUID4
 
-from polar.authz.service import Authz
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.postgres import AsyncSession, get_db_session
 from polar.tags.api import Tags
 
 from .. import auth
-from ..schemas.downloadables import (
-    DownloadableRead,
-)
+from ..schemas.downloadables import DownloadableRead
 from ..service.downloadables import downloadable as downloadable_service
 
 log = structlog.get_logger()
@@ -20,7 +17,7 @@ router = APIRouter(prefix="/downloadables", tags=["downloadables"])
 
 
 @router.get(
-    "",
+    "/",
     tags=[Tags.PUBLIC],
     response_model=ListResource[DownloadableRead],
 )
@@ -35,7 +32,6 @@ async def list_downloadables(
         None,
         description=("Filter by given benefit ID. "),
     ),
-    authz: Authz = Depends(Authz.authz),
     session: AsyncSession = Depends(get_db_session),
 ) -> ListResource[DownloadableRead]:
     subject = auth_subject.subject
@@ -68,7 +64,6 @@ async def list_downloadables(
 async def get_downloadable(
     token: str,
     auth_subject: auth.UserDownloadablesRead,
-    authz: Authz = Depends(Authz.authz),
     session: AsyncSession = Depends(get_db_session),
 ) -> RedirectResponse:
     subject = auth_subject.subject

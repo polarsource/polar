@@ -158,7 +158,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         query = query.options(
             joinedload(Subscription.user),
             joinedload(Subscription.price),
-            joinedload(Subscription.product),
+            joinedload(Subscription.product).selectinload(Product.product_medias),
         )
 
         res = await session.execute(query)
@@ -229,7 +229,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         statement = statement.order_by(*order_by_clauses)
 
         statement = statement.options(
-            contains_eager(Subscription.product),
+            contains_eager(Subscription.product).selectinload(Product.product_medias),
             contains_eager(Subscription.price),
             contains_eager(Subscription.user),
         )

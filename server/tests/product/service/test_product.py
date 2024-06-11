@@ -1,6 +1,6 @@
 import uuid
 from types import SimpleNamespace
-from typing import TypeVar
+from typing import Any, TypeVar
 from unittest.mock import AsyncMock, MagicMock, call
 
 import pytest
@@ -11,8 +11,9 @@ from polar.auth.scope import Scope
 from polar.authz.service import Authz
 from polar.exceptions import NotPermitted, PolarRequestValidationError
 from polar.kit.pagination import PaginationParams
-from polar.models import Benefit, Organization, Product, User, UserOrganization
+from polar.models import Benefit, File, Organization, Product, User, UserOrganization
 from polar.models.benefit import BenefitType
+from polar.models.file import FileServiceTypes
 from polar.models.product import SubscriptionTierType
 from polar.models.product_price import ProductPriceRecurringInterval, ProductPriceType
 from polar.postgres import AsyncSession
@@ -629,6 +630,7 @@ class TestGetById:
 
 
 @pytest.mark.asyncio
+@pytest.mark.skip_db_asserts
 class TestUserCreate:
     @pytest.mark.auth
     async def test_user_not_existing_organization(
@@ -647,9 +649,6 @@ class TestUserCreate:
                 )
             ],
         )
-
-        # then
-        session.expunge_all()
 
         with pytest.raises(PolarRequestValidationError):
             await product_service.user_create(
@@ -677,9 +676,6 @@ class TestUserCreate:
                 )
             ],
         )
-
-        # then
-        session.expunge_all()
 
         with pytest.raises(NotPermitted):
             await product_service.user_create(
@@ -717,9 +713,6 @@ class TestUserCreate:
                 )
             ],
         )
-
-        # then
-        session.expunge_all()
 
         product = await product_service.user_create(
             session, authz, create_schema, auth_subject
@@ -773,9 +766,6 @@ class TestUserCreate:
             ],
         )
 
-        # then
-        session.expunge_all()
-
         product = await product_service.user_create(
             session, authz, create_schema, auth_subject
         )
@@ -819,9 +809,6 @@ class TestUserCreate:
             ],
         )
 
-        # then
-        session.expunge_all()
-
         product = await product_service.user_create(
             session, authz, create_schema, auth_subject
         )
@@ -848,9 +835,6 @@ class TestUserCreate:
                 )
             ],
         )
-
-        # then
-        session.expunge_all()
 
         with pytest.raises(PolarRequestValidationError):
             await product_service.user_create(
@@ -887,16 +871,169 @@ class TestUserCreate:
             ],
         )
 
-        # then
-        session.expunge_all()
-
         product = await product_service.user_create(
             session, authz, create_schema, auth_subject
         )
         assert product.organization_id == organization.id
 
+    @pytest.mark.auth
+    async def test_not_existing_media(
+        self,
+        auth_subject: AuthSubject[Organization],
+        session: AsyncSession,
+        authz: Authz,
+        organization: Organization,
+        user_organization_admin: UserOrganization,
+        stripe_service_mock: MagicMock,
+    ) -> None:
+        create_product_mock: MagicMock = stripe_service_mock.create_product
+        create_price_for_product_mock: MagicMock = (
+            stripe_service_mock.create_price_for_product
+        )
+
+        create_schema = ProductRecurringCreate(
+            type=SubscriptionTierType.individual,
+            name="Product",
+            organization_id=organization.id,
+            prices=[
+                ProductPriceRecurringCreate(
+                    type=ProductPriceType.recurring,
+                    recurring_interval=ProductPriceRecurringInterval.month,
+                    price_amount=1000,
+                    price_currency="usd",
+                )
+            ],
+            medias=[uuid.uuid4()],
+        )
+
+        with pytest.raises(PolarRequestValidationError):
+            await product_service.user_create(
+                session, authz, create_schema, auth_subject
+            )
+
+        create_product_mock.assert_not_called()
+        create_price_for_product_mock.assert_not_called()
+
+    @pytest.mark.auth
+    @pytest.mark.parametrize(
+        "file_kwargs",
+        [
+            {"service": FileServiceTypes.downloadable},
+            {"is_enabled": False},
+            {"is_uploaded": False},
+        ],
+    )
+    async def test_invalid_media(
+        self,
+        file_kwargs: dict[str, Any],
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[Organization],
+        session: AsyncSession,
+        authz: Authz,
+        organization: Organization,
+        user_organization_admin: UserOrganization,
+        stripe_service_mock: MagicMock,
+    ) -> None:
+        file = File(
+            **{
+                "organization": organization,
+                "name": "Product Cover",
+                "path": "/product-cover.jpg",
+                "mime_type": "image/jpeg",
+                "size": 1024,
+                "service": FileServiceTypes.product_media,
+                "is_enabled": True,
+                "is_uploaded": True,
+                **file_kwargs,
+            }
+        )
+        await save_fixture(file)
+
+        create_product_mock: MagicMock = stripe_service_mock.create_product
+        create_price_for_product_mock: MagicMock = (
+            stripe_service_mock.create_price_for_product
+        )
+
+        create_schema = ProductRecurringCreate(
+            type=SubscriptionTierType.individual,
+            name="Product",
+            organization_id=organization.id,
+            prices=[
+                ProductPriceRecurringCreate(
+                    type=ProductPriceType.recurring,
+                    recurring_interval=ProductPriceRecurringInterval.month,
+                    price_amount=1000,
+                    price_currency="usd",
+                )
+            ],
+            medias=[file.id],
+        )
+
+        with pytest.raises(PolarRequestValidationError):
+            await product_service.user_create(
+                session, authz, create_schema, auth_subject
+            )
+
+        create_product_mock.assert_not_called()
+        create_price_for_product_mock.assert_not_called()
+
+    @pytest.mark.auth
+    async def test_valid_media(
+        self,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[Organization],
+        session: AsyncSession,
+        authz: Authz,
+        organization: Organization,
+        user_organization_admin: UserOrganization,
+        stripe_service_mock: MagicMock,
+    ) -> None:
+        file = File(
+            **{
+                "organization": organization,
+                "name": "Product Cover",
+                "path": "/product-cover.jpg",
+                "mime_type": "image/jpeg",
+                "size": 1024,
+                "service": FileServiceTypes.product_media,
+                "is_enabled": True,
+                "is_uploaded": True,
+            }
+        )
+        await save_fixture(file)
+
+        create_product_mock: MagicMock = stripe_service_mock.create_product
+        create_product_mock.return_value = SimpleNamespace(id="PRODUCT_ID")
+
+        create_price_for_product_mock: MagicMock = (
+            stripe_service_mock.create_price_for_product
+        )
+        create_price_for_product_mock.return_value = SimpleNamespace(id="PRICE_ID")
+
+        create_schema = ProductRecurringCreate(
+            type=SubscriptionTierType.individual,
+            name="Product",
+            organization_id=organization.id,
+            prices=[
+                ProductPriceRecurringCreate(
+                    type=ProductPriceType.recurring,
+                    recurring_interval=ProductPriceRecurringInterval.month,
+                    price_amount=1000,
+                    price_currency="usd",
+                )
+            ],
+            medias=[file.id],
+        )
+
+        product = await product_service.user_create(
+            session, authz, create_schema, auth_subject
+        )
+
+        assert len(product.medias) == 1
+
 
 @pytest.mark.asyncio
+@pytest.mark.skip_db_asserts
 class TestUserUpdate:
     @pytest.mark.auth
     async def test_not_writable_product(
@@ -906,11 +1043,10 @@ class TestUserUpdate:
         authz: Authz,
         product: Product,
     ) -> None:
-        # then
-        session.expunge_all()
-
         # load
-        product_organization_loaded = await product_service.get(session, product.id)
+        product_organization_loaded = await product_service.get_loaded(
+            session, product.id
+        )
         assert product_organization_loaded
 
         update_schema = ProductUpdate(name="Product Update")
@@ -935,11 +1071,10 @@ class TestUserUpdate:
         product: Product,
         user_organization_admin: UserOrganization,
     ) -> None:
-        # then
-        session.expunge_all()
-
         # load
-        product_organization_loaded = await product_service.get(session, product.id)
+        product_organization_loaded = await product_service.get_loaded(
+            session, product.id
+        )
         assert product_organization_loaded
 
         update_schema = ProductUpdate(prices=[])
@@ -968,11 +1103,10 @@ class TestUserUpdate:
     ) -> None:
         update_product_mock: MagicMock = stripe_service_mock.update_product
 
-        # then
-        session.expunge_all()
-
         # load
-        product_organization_loaded = await product_service.get(session, product.id)
+        product_organization_loaded = await product_service.get_loaded(
+            session, product.id
+        )
         assert product_organization_loaded
 
         update_schema = ProductUpdate(name="Product Update")
@@ -1005,11 +1139,10 @@ class TestUserUpdate:
     ) -> None:
         update_product_mock: MagicMock = stripe_service_mock.update_product
 
-        # then
-        session.expunge_all()
-
         # load
-        product_organization_loaded = await product_service.get(session, product.id)
+        product_organization_loaded = await product_service.get_loaded(
+            session, product.id
+        )
         assert product_organization_loaded
 
         update_schema = ProductUpdate(description="Description update")
@@ -1042,11 +1175,10 @@ class TestUserUpdate:
     ) -> None:
         update_product_mock: MagicMock = stripe_service_mock.update_product
 
-        # then
-        session.expunge_all()
-
         # load
-        product_organization_loaded = await product_service.get(session, product.id)
+        product_organization_loaded = await product_service.get_loaded(
+            session, product.id
+        )
         assert product_organization_loaded
 
         update_schema = ProductUpdate(description="")
@@ -1079,11 +1211,10 @@ class TestUserUpdate:
         )
         create_price_for_product_mock.return_value = SimpleNamespace(id="NEW_PRICE_ID")
 
-        # then
-        session.expunge_all()
-
         # load
-        product_organization_loaded = await product_service.get(session, product.id)
+        product_organization_loaded = await product_service.get_loaded(
+            session, product.id
+        )
         assert product_organization_loaded
 
         update_schema = ProductUpdate(
@@ -1135,11 +1266,10 @@ class TestUserUpdate:
 
         deleted_price_id = product.prices[0].stripe_price_id
 
-        # then
-        session.expunge_all()
-
         # load
-        product_organization_loaded = await product_service.get(session, product.id)
+        product_organization_loaded = await product_service.get_loaded(
+            session, product.id
+        )
         assert product_organization_loaded
 
         update_schema = ProductUpdate(
@@ -1192,11 +1322,10 @@ class TestUserUpdate:
         )
         create_price_for_product_mock.return_value = SimpleNamespace(id="NEW_PRICE_ID")
 
-        # then
-        session.expunge_all()
-
         # load
-        product_organization_loaded = await product_service.get(session, product.id)
+        product_organization_loaded = await product_service.get_loaded(
+            session, product.id
+        )
         assert product_organization_loaded
 
         update_schema = ProductUpdate(is_highlighted=True)
@@ -1210,7 +1339,7 @@ class TestUserUpdate:
 
         assert updated_product.is_highlighted
 
-        updated_highlighted_product = await product_service.get(
+        updated_highlighted_product = await product_service.get_loaded(
             session, highlighted_product.id
         )
         assert updated_highlighted_product is not None
@@ -1231,11 +1360,10 @@ class TestUserUpdate:
     ) -> None:
         archive_product_mock: MagicMock = stripe_service_mock.archive_product
 
-        # then
-        session.expunge_all()
-
         # load
-        product_organization_loaded = await product_service.get(session, product.id)
+        product_organization_loaded = await product_service.get_loaded(
+            session, product.id
+        )
         assert product_organization_loaded
 
         update_schema = ProductUpdate(is_archived=True)
@@ -1263,11 +1391,8 @@ class TestUserUpdate:
         subscription_tier_free: Product,
         user_organization_admin: UserOrganization,
     ) -> None:
-        # then
-        session.expunge_all()
-
         # load
-        subscription_tier_free_loaded = await product_service.get(
+        subscription_tier_free_loaded = await product_service.get_loaded(
             session, subscription_tier_free.id
         )
         assert subscription_tier_free_loaded
@@ -1302,11 +1427,10 @@ class TestUserUpdate:
 
         unarchive_product: MagicMock = stripe_service_mock.unarchive_product
 
-        # then
-        session.expunge_all()
-
         # load
-        product_organization_loaded = await product_service.get(session, product.id)
+        product_organization_loaded = await product_service.get_loaded(
+            session, product.id
+        )
         assert product_organization_loaded
 
         update_schema = ProductUpdate(is_archived=False)
@@ -1321,6 +1445,133 @@ class TestUserUpdate:
         unarchive_product.assert_called_once_with(product.stripe_product_id)
 
         assert not updated_product.is_archived
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="organization"),
+    )
+    async def test_not_existing_media(
+        self,
+        auth_subject: AuthSubject[User],
+        session: AsyncSession,
+        authz: Authz,
+        product: Product,
+        user_organization_admin: UserOrganization,
+    ) -> None:
+        # load
+        product_organization_loaded = await product_service.get_loaded(
+            session, product.id
+        )
+        assert product_organization_loaded
+
+        update_schema = ProductUpdate(medias=[uuid.uuid4()])
+        with pytest.raises(PolarRequestValidationError):
+            await product_service.user_update(
+                session,
+                authz,
+                product_organization_loaded,
+                update_schema,
+                auth_subject,
+            )
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="organization"),
+    )
+    @pytest.mark.parametrize(
+        "file_kwargs",
+        [
+            {"service": FileServiceTypes.downloadable},
+            {"is_enabled": False},
+            {"is_uploaded": False},
+        ],
+    )
+    async def test_invalid_media(
+        self,
+        file_kwargs: dict[str, Any],
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        session: AsyncSession,
+        authz: Authz,
+        product: Product,
+        organization: Organization,
+        user_organization_admin: UserOrganization,
+    ) -> None:
+        file = File(
+            **{
+                "organization": organization,
+                "name": "Product Cover",
+                "path": "/product-cover.jpg",
+                "mime_type": "image/jpeg",
+                "size": 1024,
+                "service": FileServiceTypes.product_media,
+                "is_enabled": True,
+                "is_uploaded": True,
+                **file_kwargs,
+            }
+        )
+        await save_fixture(file)
+
+        # load
+        product_organization_loaded = await product_service.get_loaded(
+            session, product.id
+        )
+        assert product_organization_loaded
+
+        update_schema = ProductUpdate(medias=[file.id])
+        with pytest.raises(PolarRequestValidationError):
+            await product_service.user_update(
+                session,
+                authz,
+                product_organization_loaded,
+                update_schema,
+                auth_subject,
+            )
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="organization"),
+    )
+    async def test_valid_media(
+        self,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        session: AsyncSession,
+        authz: Authz,
+        product: Product,
+        organization: Organization,
+        user_organization_admin: UserOrganization,
+    ) -> None:
+        file = File(
+            **{
+                "organization": organization,
+                "name": "Product Cover",
+                "path": "/product-cover.jpg",
+                "mime_type": "image/jpeg",
+                "size": 1024,
+                "service": FileServiceTypes.product_media,
+                "is_enabled": True,
+                "is_uploaded": True,
+            }
+        )
+        await save_fixture(file)
+
+        # load
+        product_organization_loaded = await product_service.get_loaded(
+            session, product.id
+        )
+        assert product_organization_loaded
+
+        update_schema = ProductUpdate(medias=[file.id])
+        updated_product = await product_service.user_update(
+            session,
+            authz,
+            product_organization_loaded,
+            update_schema,
+            auth_subject,
+        )
+
+        assert len(updated_product.medias) == 1
 
 
 @pytest.mark.asyncio

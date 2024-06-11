@@ -5,12 +5,13 @@ from typing import Any, List, Literal, TypeVar  # noqa: UP035
 import stripe
 from sqlalchemy import Select, and_, case, or_, select, update
 from sqlalchemy.exc import InvalidRequestError
-from sqlalchemy.orm import contains_eager, joinedload
+from sqlalchemy.orm import contains_eager, joinedload, selectinload
 
 from polar.auth.models import AuthSubject, Subject, is_organization, is_user
 from polar.authz.service import AccessType, Authz
 from polar.benefit.service.benefit import benefit as benefit_service
 from polar.exceptions import NotPermitted, PolarError, PolarRequestValidationError
+from polar.file.service import file as file_service
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.pagination import PaginationParams, paginate
@@ -20,6 +21,7 @@ from polar.models import (
     Organization,
     Product,
     ProductBenefit,
+    ProductMedia,
     ProductPrice,
     User,
     UserOrganization,
@@ -115,6 +117,10 @@ class ProductService(ResourceService[Product, ProductCreate, ProductUpdate]):
             Product.created_at,
         )
 
+        statement = statement.options(
+            selectinload(Product.product_medias),
+        )
+
         return await paginate(session, statement, pagination=pagination)
 
     async def get_by_id(
@@ -123,7 +129,10 @@ class ProductService(ResourceService[Product, ProductCreate, ProductUpdate]):
         statement = (
             self._get_readable_product_statement(auth_subject)
             .where(Product.id == id, Product.deleted_at.is_(None))
-            .options(contains_eager(Product.organization))
+            .options(
+                contains_eager(Product.organization),
+                selectinload(Product.product_medias),
+            )
             .limit(1)
         )
 
@@ -136,7 +145,9 @@ class ProductService(ResourceService[Product, ProductCreate, ProductUpdate]):
         statement = (
             select(Product)
             .where(Product.id == id)
-            .options(joinedload(Product.organization))
+            .options(
+                joinedload(Product.organization), selectinload(Product.product_medias)
+            )
             .limit(1)
         )
 
@@ -184,11 +195,30 @@ class ProductService(ResourceService[Product, ProductCreate, ProductUpdate]):
             organization=organization,
             prices=[],
             product_benefits=[],
-            **create_schema.model_dump(exclude={"organization_id", "prices"}),
+            product_medias=[],
+            **create_schema.model_dump(exclude={"organization_id", "prices", "medias"}),
         )
         session.add(product)
         await session.flush()
         assert product.id is not None
+
+        if create_schema.medias is not None:
+            for order, file_id in enumerate(create_schema.medias):
+                file = await file_service.get_selectable_product_media_file(
+                    session, file_id, organization_id=product.organization_id
+                )
+                if file is None:
+                    raise PolarRequestValidationError(
+                        [
+                            {
+                                "type": "value_error",
+                                "loc": ("body", "medias", order),
+                                "msg": "File does not exist or is not yet uploaded.",
+                                "input": file_id,
+                            }
+                        ]
+                    )
+                product.product_medias.append(ProductMedia(file=file, order=order))
 
         metadata: dict[str, str] = {"product_id": str(product.id)}
         metadata["organization_id"] = str(organization.id)
@@ -253,6 +283,29 @@ class ProductService(ResourceService[Product, ProductCreate, ProductUpdate]):
                         }
                     ]
                 )
+
+        if update_schema.medias is not None:
+            nested = await session.begin_nested()
+            product.medias = []
+            await session.flush()
+
+            for order, file_id in enumerate(update_schema.medias):
+                file = await file_service.get_selectable_product_media_file(
+                    session, file_id, organization_id=product.organization_id
+                )
+                if file is None:
+                    await nested.rollback()
+                    raise PolarRequestValidationError(
+                        [
+                            {
+                                "type": "value_error",
+                                "loc": ("body", "medias", order),
+                                "msg": "File does not exist or is not yet uploaded.",
+                                "input": file_id,
+                            }
+                        ]
+                    )
+                product.product_medias.append(ProductMedia(file=file, order=order))
 
         if product.is_archived and update_schema.is_archived is False:
             product = await self._unarchive(product)
@@ -327,7 +380,7 @@ class ProductService(ResourceService[Product, ProductCreate, ProductUpdate]):
             product = await self._archive(product)
 
         for attr, value in update_schema.model_dump(
-            exclude_unset=True, exclude_none=True, exclude={"prices"}
+            exclude_unset=True, exclude_none=True, exclude={"prices", "medias"}
         ).items():
             setattr(product, attr, value)
 

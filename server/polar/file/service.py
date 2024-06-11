@@ -7,8 +7,7 @@ from polar.exceptions import ResourceNotFound
 from polar.integrations.aws.s3 import S3FileError
 from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.services import ResourceServiceReader
-from polar.kit.utils import utc_now
-from polar.models import Organization
+from polar.models import Organization, ProductMedia
 from polar.models.file import File, ProductMediaFile
 from polar.postgres import AsyncSession, sql
 
@@ -142,16 +141,14 @@ class FileService(ResourceServiceReader[File]):
         )
         return FileDownload.from_presigned(file, url=url, expires_at=expires_at)
 
-    async def delete(
-        self,
-        session: AsyncSession,
-        *,
-        file: File,
-    ) -> bool:
-        file.deleted_at = utc_now()
+    async def delete(self, session: AsyncSession, *, file: File) -> bool:
+        file.set_deleted_at()
         session.add(file)
-        await session.flush()
         assert file.deleted_at is not None
+
+        # Delete ProductMedia association table records
+        statement = sql.delete(ProductMedia).where(ProductMedia.file_id == file.id)
+        await session.execute(statement)
 
         s3_service = S3_SERVICES[file.service]
         deleted = s3_service.delete_file(file.path)

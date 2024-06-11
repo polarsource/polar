@@ -77,7 +77,11 @@ class UserSubscriptionService(ResourceServiceReader[Subscription]):
         statement = (
             statement.join(Product, onclause=Subscription.product_id == Product.id)
             .join(Organization, onclause=Product.organization_id == Organization.id)
-            .options(contains_eager(Subscription.product))
+            .options(
+                contains_eager(Subscription.product).selectinload(
+                    Product.product_medias
+                ),
+            )
         )
 
         SubscriptionProductPrice = aliased(ProductPrice)
@@ -136,7 +140,7 @@ class UserSubscriptionService(ResourceServiceReader[Subscription]):
             self._get_readable_subscription_statement(auth_subject)
             .where(Subscription.id == id)
             .options(
-                joinedload(Subscription.product),
+                joinedload(Subscription.product).selectinload(Product.product_medias),
                 joinedload(Subscription.price),
             )
         )

@@ -4587,6 +4587,184 @@ export interface DonationUser {
 export type Donor = DonationOrganization | DonationUser;
 
 /**
+ * Schema to create a file to be associated with the downloadables benefit.
+ * @export
+ * @interface DownloadableFileCreate
+ */
+export interface DownloadableFileCreate {
+    /**
+     * 
+     * @type {string}
+     * @memberof DownloadableFileCreate
+     */
+    organization_id?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof DownloadableFileCreate
+     */
+    name: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof DownloadableFileCreate
+     */
+    mime_type: string;
+    /**
+     * 
+     * @type {number}
+     * @memberof DownloadableFileCreate
+     */
+    size: number;
+    /**
+     * 
+     * @type {string}
+     * @memberof DownloadableFileCreate
+     */
+    checksum_sha256_base64?: string;
+    /**
+     * 
+     * @type {S3FileCreateMultipart}
+     * @memberof DownloadableFileCreate
+     */
+    upload: S3FileCreateMultipart;
+    /**
+     * 
+     * @type {string}
+     * @memberof DownloadableFileCreate
+     */
+    service: DownloadableFileCreateServiceEnum;
+    /**
+     * 
+     * @type {string}
+     * @memberof DownloadableFileCreate
+     */
+    version?: string;
+}
+
+
+/**
+ * @export
+ */
+export const DownloadableFileCreateServiceEnum = {
+    DOWNLOADABLE: 'downloadable'
+} as const;
+export type DownloadableFileCreateServiceEnum = typeof DownloadableFileCreateServiceEnum[keyof typeof DownloadableFileCreateServiceEnum];
+
+/**
+ * File to be associated with the downloadables benefit.
+ * @export
+ * @interface DownloadableFileRead
+ */
+export interface DownloadableFileRead {
+    /**
+     * 
+     * @type {string}
+     * @memberof DownloadableFileRead
+     */
+    id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof DownloadableFileRead
+     */
+    organization_id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof DownloadableFileRead
+     */
+    name: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof DownloadableFileRead
+     */
+    path: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof DownloadableFileRead
+     */
+    mime_type: string;
+    /**
+     * 
+     * @type {number}
+     * @memberof DownloadableFileRead
+     */
+    size: number;
+    /**
+     * 
+     * @type {string}
+     * @memberof DownloadableFileRead
+     */
+    storage_version?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof DownloadableFileRead
+     */
+    checksum_etag?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof DownloadableFileRead
+     */
+    checksum_sha256_base64?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof DownloadableFileRead
+     */
+    checksum_sha256_hex?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof DownloadableFileRead
+     */
+    last_modified_at?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof DownloadableFileRead
+     */
+    version?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof DownloadableFileRead
+     */
+    service: DownloadableFileReadServiceEnum;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof DownloadableFileRead
+     */
+    is_uploaded: boolean;
+    /**
+     * 
+     * @type {string}
+     * @memberof DownloadableFileRead
+     */
+    created_at: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof DownloadableFileRead
+     */
+    readonly size_readable: string;
+}
+
+
+/**
+ * @export
+ */
+export const DownloadableFileReadServiceEnum = {
+    DOWNLOADABLE: 'downloadable'
+} as const;
+export type DownloadableFileReadServiceEnum = typeof DownloadableFileReadServiceEnum[keyof typeof DownloadableFileReadServiceEnum];
+
+/**
  * 
  * @export
  * @interface DownloadableRead
@@ -4774,60 +4952,11 @@ export interface ExternalGitHubPullRequestReference {
     state: string;
 }
 /**
+ * @type FileCreate
  * 
  * @export
- * @interface FileCreate
  */
-export interface FileCreate {
-    /**
-     * 
-     * @type {string}
-     * @memberof FileCreate
-     */
-    organization_id: string | null;
-    /**
-     * 
-     * @type {string}
-     * @memberof FileCreate
-     */
-    name: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof FileCreate
-     */
-    mime_type: string;
-    /**
-     * 
-     * @type {number}
-     * @memberof FileCreate
-     */
-    size: number;
-    /**
-     * 
-     * @type {string}
-     * @memberof FileCreate
-     */
-    checksum_sha256_base64: string | null;
-    /**
-     * 
-     * @type {S3FileCreateMultipart}
-     * @memberof FileCreate
-     */
-    upload: S3FileCreateMultipart;
-    /**
-     * 
-     * @type {string}
-     * @memberof FileCreate
-     */
-    version?: string;
-    /**
-     * 
-     * @type {FileServiceTypes}
-     * @memberof FileCreate
-     */
-    service?: FileServiceTypes;
-}
+export type FileCreate = { service: 'downloadable' } & DownloadableFileCreate | { service: 'product_media' } & ProductMediaFileCreate;
 /**
  * 
  * @export
@@ -4870,12 +4999,6 @@ export interface FileDownload {
      * @memberof FileDownload
      */
     size: number;
-    /**
-     * 
-     * @type {string}
-     * @memberof FileDownload
-     */
-    size_readable?: string;
     /**
      * 
      * @type {string}
@@ -4930,6 +5053,12 @@ export interface FileDownload {
      * @memberof FileDownload
      */
     service: FileServiceTypes;
+    /**
+     * 
+     * @type {string}
+     * @memberof FileDownload
+     */
+    readonly size_readable: string;
 }
 /**
  * 
@@ -4980,115 +5109,19 @@ export interface FilePatch {
     version?: string;
 }
 /**
+ * @type FileRead
  * 
  * @export
- * @interface FileRead
  */
-export interface FileRead {
-    /**
-     * 
-     * @type {string}
-     * @memberof FileRead
-     */
-    id: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof FileRead
-     */
-    organization_id: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof FileRead
-     */
-    name: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof FileRead
-     */
-    path: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof FileRead
-     */
-    mime_type: string;
-    /**
-     * 
-     * @type {number}
-     * @memberof FileRead
-     */
-    size: number;
-    /**
-     * 
-     * @type {string}
-     * @memberof FileRead
-     */
-    size_readable?: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof FileRead
-     */
-    storage_version?: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof FileRead
-     */
-    checksum_etag?: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof FileRead
-     */
-    checksum_sha256_base64?: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof FileRead
-     */
-    checksum_sha256_hex?: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof FileRead
-     */
-    last_modified_at?: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof FileRead
-     */
-    version: string | null;
-    /**
-     * 
-     * @type {FileServiceTypes}
-     * @memberof FileRead
-     */
-    service: FileServiceTypes;
-    /**
-     * 
-     * @type {boolean}
-     * @memberof FileRead
-     */
-    is_uploaded: boolean;
-    /**
-     * 
-     * @type {string}
-     * @memberof FileRead
-     */
-    created_at: string;
-}
+export type FileRead = { service: 'downloadable' } & DownloadableFileRead | { service: 'product_media' } & ProductMediaFileRead;
 
 /**
  * 
  * @export
  */
 export const FileServiceTypes = {
-    DOWNLOADABLE: 'downloadable'
+    DOWNLOADABLE: 'downloadable',
+    PRODUCT_MEDIA: 'product_media'
 } as const;
 export type FileServiceTypes = typeof FileServiceTypes[keyof typeof FileServiceTypes];
 
@@ -5134,12 +5167,6 @@ export interface FileUpload {
      * @memberof FileUpload
      */
     size: number;
-    /**
-     * 
-     * @type {string}
-     * @memberof FileUpload
-     */
-    size_readable?: string;
     /**
      * 
      * @type {string}
@@ -5194,6 +5221,12 @@ export interface FileUpload {
      * @memberof FileUpload
      */
     service: FileServiceTypes;
+    /**
+     * 
+     * @type {string}
+     * @memberof FileUpload
+     */
+    readonly size_readable: string;
 }
 /**
  * 
@@ -5774,6 +5807,25 @@ export interface ListResourceAnnotatedUnionBenefitArticlesSubscriberBenefitAdsSu
 /**
  * 
  * @export
+ * @interface ListResourceAnnotatedUnionDownloadableFileReadProductMediaFileReadDiscriminatorMergeJSONSchema
+ */
+export interface ListResourceAnnotatedUnionDownloadableFileReadProductMediaFileReadDiscriminatorMergeJSONSchema {
+    /**
+     * 
+     * @type {Array<FileRead>}
+     * @memberof ListResourceAnnotatedUnionDownloadableFileReadProductMediaFileReadDiscriminatorMergeJSONSchema
+     */
+    items?: Array<FileRead>;
+    /**
+     * 
+     * @type {Pagination}
+     * @memberof ListResourceAnnotatedUnionDownloadableFileReadProductMediaFileReadDiscriminatorMergeJSONSchema
+     */
+    pagination: Pagination;
+}
+/**
+ * 
+ * @export
  * @interface ListResourceArticle
  */
 export interface ListResourceArticle {
@@ -5863,25 +5915,6 @@ export interface ListResourceDownloadableRead {
      * 
      * @type {Pagination}
      * @memberof ListResourceDownloadableRead
-     */
-    pagination: Pagination;
-}
-/**
- * 
- * @export
- * @interface ListResourceFileRead
- */
-export interface ListResourceFileRead {
-    /**
-     * 
-     * @type {Array<FileRead>}
-     * @memberof ListResourceFileRead
-     */
-    items?: Array<FileRead>;
-    /**
-     * 
-     * @type {Pagination}
-     * @memberof ListResourceFileRead
      */
     pagination: Pagination;
 }
@@ -9658,6 +9691,12 @@ export interface Product {
      * @memberof Product
      */
     benefits: Array<BenefitPublicInner>;
+    /**
+     * The medias associated to the product.
+     * @type {Array<ProductMediaFileRead>}
+     * @memberof Product
+     */
+    medias: Array<ProductMediaFileRead>;
 }
 /**
  * Schema to update the benefits granted by a product.
@@ -9677,6 +9716,190 @@ export interface ProductBenefitsUpdate {
  * @export
  */
 export type ProductCreate = ProductOneTimeCreate | ProductRecurringCreate;
+
+/**
+ * Schema to create a file to be used as a product media file.
+ * @export
+ * @interface ProductMediaFileCreate
+ */
+export interface ProductMediaFileCreate {
+    /**
+     * 
+     * @type {string}
+     * @memberof ProductMediaFileCreate
+     */
+    organization_id?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof ProductMediaFileCreate
+     */
+    name: string;
+    /**
+     * MIME type of the file. Only images are supported for this type of file.
+     * @type {string}
+     * @memberof ProductMediaFileCreate
+     */
+    mime_type: string;
+    /**
+     * Size of the file. A maximum of 10 MB is allowed for this type of file.
+     * @type {number}
+     * @memberof ProductMediaFileCreate
+     */
+    size: number;
+    /**
+     * 
+     * @type {string}
+     * @memberof ProductMediaFileCreate
+     */
+    checksum_sha256_base64?: string;
+    /**
+     * 
+     * @type {S3FileCreateMultipart}
+     * @memberof ProductMediaFileCreate
+     */
+    upload: S3FileCreateMultipart;
+    /**
+     * 
+     * @type {string}
+     * @memberof ProductMediaFileCreate
+     */
+    service: ProductMediaFileCreateServiceEnum;
+    /**
+     * 
+     * @type {string}
+     * @memberof ProductMediaFileCreate
+     */
+    version?: string;
+}
+
+
+/**
+ * @export
+ */
+export const ProductMediaFileCreateServiceEnum = {
+    PRODUCT_MEDIA: 'product_media'
+} as const;
+export type ProductMediaFileCreateServiceEnum = typeof ProductMediaFileCreateServiceEnum[keyof typeof ProductMediaFileCreateServiceEnum];
+
+/**
+ * File to be used as a product media file.
+ * @export
+ * @interface ProductMediaFileRead
+ */
+export interface ProductMediaFileRead {
+    /**
+     * 
+     * @type {string}
+     * @memberof ProductMediaFileRead
+     */
+    id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof ProductMediaFileRead
+     */
+    organization_id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof ProductMediaFileRead
+     */
+    name: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof ProductMediaFileRead
+     */
+    path: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof ProductMediaFileRead
+     */
+    mime_type: string;
+    /**
+     * 
+     * @type {number}
+     * @memberof ProductMediaFileRead
+     */
+    size: number;
+    /**
+     * 
+     * @type {string}
+     * @memberof ProductMediaFileRead
+     */
+    storage_version?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof ProductMediaFileRead
+     */
+    checksum_etag?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof ProductMediaFileRead
+     */
+    checksum_sha256_base64?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof ProductMediaFileRead
+     */
+    checksum_sha256_hex?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof ProductMediaFileRead
+     */
+    last_modified_at?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof ProductMediaFileRead
+     */
+    version?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof ProductMediaFileRead
+     */
+    service: ProductMediaFileReadServiceEnum;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof ProductMediaFileRead
+     */
+    is_uploaded: boolean;
+    /**
+     * 
+     * @type {string}
+     * @memberof ProductMediaFileRead
+     */
+    created_at: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof ProductMediaFileRead
+     */
+    readonly size_readable: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof ProductMediaFileRead
+     */
+    readonly public_url: string;
+}
+
+
+/**
+ * @export
+ */
+export const ProductMediaFileReadServiceEnum = {
+    PRODUCT_MEDIA: 'product_media'
+} as const;
+export type ProductMediaFileReadServiceEnum = typeof ProductMediaFileReadServiceEnum[keyof typeof ProductMediaFileReadServiceEnum];
 
 /**
  * Schema to create a one-time product.
@@ -9702,6 +9925,12 @@ export interface ProductOneTimeCreate {
      * @memberof ProductOneTimeCreate
      */
     prices: Array<ProductPriceOneTimeCreate>;
+    /**
+     * 
+     * @type {Array<string>}
+     * @memberof ProductOneTimeCreate
+     */
+    medias?: Array<string>;
     /**
      * 
      * @type {string}
@@ -9963,6 +10192,12 @@ export interface ProductRecurringCreate {
     prices: Array<ProductPriceRecurringCreate>;
     /**
      * 
+     * @type {Array<string>}
+     * @memberof ProductRecurringCreate
+     */
+    medias?: Array<string>;
+    /**
+     * 
      * @type {string}
      * @memberof ProductRecurringCreate
      */
@@ -10029,6 +10264,12 @@ export interface ProductUpdate {
      * @memberof ProductUpdate
      */
     prices?: Array<ProductUpdatePricesInner>;
+    /**
+     * 
+     * @type {Array<string>}
+     * @memberof ProductUpdate
+     */
+    medias?: Array<string>;
 }
 /**
  * @type ProductUpdatePricesInner
@@ -10586,6 +10827,18 @@ export type ResponseBenefitsGetBenefit = BenefitAds | BenefitArticles | BenefitC
 export type ResponseBenefitsUpdateBenefit = BenefitAds | BenefitArticles | BenefitCustom | BenefitDiscord | BenefitDownloadables | BenefitGitHubRepository;
 
 /**
+ * @type ResponseFilesUpdate
+ * 
+ * @export
+ */
+export type ResponseFilesUpdate = { service: 'downloadable' } & DownloadableFileRead | { service: 'product_media' } & ProductMediaFileRead;
+/**
+ * @type ResponseFilesUploaded
+ * 
+ * @export
+ */
+export type ResponseFilesUploaded = { service: 'downloadable' } & DownloadableFileRead | { service: 'product_media' } & ProductMediaFileRead;
+/**
  * @type ResponseOauth2Oauth2Authorize
  * 
  * @export
@@ -10846,7 +11099,7 @@ export interface S3FileCreatePart {
      * @type {string}
      * @memberof S3FileCreatePart
      */
-    checksum_sha256_base64: string | null;
+    checksum_sha256_base64?: string;
 }
 /**
  * 
@@ -10927,7 +11180,7 @@ export interface S3FileUploadPart {
      * @type {string}
      * @memberof S3FileUploadPart
      */
-    checksum_sha256_base64: string | null;
+    checksum_sha256_base64?: string;
     /**
      * 
      * @type {string}
@@ -12720,6 +12973,12 @@ export interface UserOrderProduct {
      * @memberof UserOrderProduct
      */
     benefits: Array<BenefitPublicInner>;
+    /**
+     * The medias associated to the product.
+     * @type {Array<ProductMediaFileRead>}
+     * @memberof UserOrderProduct
+     */
+    medias: Array<ProductMediaFileRead>;
 }
 /**
  * 
@@ -13111,6 +13370,12 @@ export interface UserSubscriptionProduct {
      * @memberof UserSubscriptionProduct
      */
     benefits: Array<BenefitPublicInner>;
+    /**
+     * The medias associated to the product.
+     * @type {Array<ProductMediaFileRead>}
+     * @memberof UserSubscriptionProduct
+     */
+    medias: Array<ProductMediaFileRead>;
 }
 /**
  * 

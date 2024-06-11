@@ -113,7 +113,7 @@ export class DownloadablesApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/users/downloadables`,
+            path: `/api/v1/users/downloadables/`,
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,

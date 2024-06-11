@@ -4,8 +4,8 @@ import pytest
 from httpx import AsyncClient, ReadError
 
 from polar.auth.models import AuthSubject
+from polar.file.s3 import S3_SERVICES
 from polar.file.service import file as file_service
-from polar.file.service import s3_service
 from polar.integrations.aws.s3.exceptions import S3FileError
 from polar.models import Organization, User, UserOrganization
 from polar.postgres import AsyncSession
@@ -68,6 +68,7 @@ class TestEndpoints:
 
         # S3 object is not available until we fully complete it
         with pytest.raises(S3FileError):
+            s3_service = S3_SERVICES[created.service]
             s3_service.get_head_or_raise(created.path)
 
         record = await file_service.get(session, created.id, allow_deleted=True)
@@ -126,6 +127,7 @@ class TestEndpoints:
 
         # S3 object is definitely not available
         with pytest.raises(S3FileError):
+            s3_service = S3_SERVICES[created.service]
             s3_service.get_head_or_raise(created.path)
 
         record = await file_service.get(session, created.id, allow_deleted=True)

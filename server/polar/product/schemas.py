@@ -3,6 +3,7 @@ from typing import Annotated, Literal
 from pydantic import UUID4, AfterValidator, Discriminator, Field
 
 from polar.benefit.schemas import BenefitPublic
+from polar.file.schemas import ProductMediaFileRead
 from polar.kit.schemas import (
     EmptyStrToNoneValidator,
     MergeJSONSchema,
@@ -118,6 +119,14 @@ class ProductCreateBase(Schema):
     prices: ProductPriceRecurringCreateList | ProductPriceOneTimeCreateList = Field(
         ..., description="List of available prices for this product."
     )
+    medias: list[UUID4] | None = Field(
+        default=None,
+        description=(
+            "List of file IDs. "
+            "Each one must be on the same organization as the product, "
+            "of type `product_media` and correctly uploaded."
+        ),
+    )
     organization_id: UUID4 | None = Field(
         default=None,
         description=(
@@ -195,6 +204,14 @@ class ProductUpdate(Schema):
             "List of available prices for this product. "
             "If you want to keep existing prices, include them in the list "
             "as an `ExistingProductPrice` object."
+        ),
+    )
+    medias: list[UUID4] | None = Field(
+        default=None,
+        description=(
+            "List of file IDs. "
+            "Each one must be on the same organization as the product, "
+            "of type `product_media` and correctly uploaded."
         ),
     )
 
@@ -279,4 +296,7 @@ class Product(ProductBase):
     )
     benefits: list[BenefitPublic] = Field(
         title="BenefitPublic", description="The benefits granted by the product."
+    )
+    medias: list[ProductMediaFileRead] = Field(
+        description="The medias associated to the product."
     )

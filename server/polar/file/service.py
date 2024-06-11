@@ -3,22 +3,20 @@ from uuid import UUID
 
 import structlog
 
-from polar.config import settings
 from polar.exceptions import ResourceNotFound
-from polar.integrations.aws.s3 import S3FileError, S3Service
+from polar.integrations.aws.s3 import S3FileError
 from polar.kit.pagination import PaginationParams, paginate
-from polar.kit.services import ResourceService
+from polar.kit.services import ResourceServiceReader
 from polar.kit.utils import utc_now
 from polar.models import Organization
-from polar.models.file import File
+from polar.models.file import File, ProductMediaFile
 from polar.postgres import AsyncSession, sql
 
+from .s3 import S3_SERVICES
 from .schemas import (
     FileCreate,
     FileDownload,
     FilePatch,
-    FileRead,
-    FileUpdate,
     FileUpload,
     FileUploadCompleted,
 )
@@ -32,13 +30,7 @@ class FileError(S3FileError): ...
 class FileNotFound(ResourceNotFound): ...
 
 
-s3_service = S3Service(
-    bucket=settings.S3_FILES_BUCKET_NAME,
-    presign_ttl=settings.S3_FILES_PRESIGN_TTL,
-)
-
-
-class FileService(ResourceService[File, FileCreate, FileUpdate]):
+class FileService(ResourceServiceReader[File]):
     async def get_list(
         self,
         session: AsyncSession,
@@ -91,6 +83,7 @@ class FileService(ResourceService[File, FileCreate, FileUpdate]):
         organization: Organization,
         create_schema: FileCreate,
     ) -> FileUpload:
+        s3_service = S3_SERVICES[create_schema.service]
         upload = s3_service.create_multipart_upload(
             create_schema, namespace=create_schema.service.value
         )
@@ -118,7 +111,8 @@ class FileService(ResourceService[File, FileCreate, FileUpdate]):
         *,
         file: File,
         completed_schema: FileUploadCompleted,
-    ) -> FileRead:
+    ) -> File:
+        s3_service = S3_SERVICES[file.service]
         s3file = s3_service.complete_multipart_upload(completed_schema)
 
         file.is_uploaded = True
@@ -137,18 +131,10 @@ class FileService(ResourceService[File, FileCreate, FileUpdate]):
         assert file.checksum_etag is not None
         assert file.last_modified_at is not None
 
-        return FileRead.from_db(file)
-
-    def generate_downloadable_schemas(
-        self, files: Sequence[File]
-    ) -> list[FileDownload]:
-        items = []
-        for file in files:
-            item = self.generate_downloadable_schema(file)
-            items.append(item)
-        return items
+        return file
 
     def generate_downloadable_schema(self, file: File) -> FileDownload:
+        s3_service = S3_SERVICES[file.service]
         url, expires_at = s3_service.generate_presigned_download_url(
             path=file.path,
             filename=file.name,
@@ -167,9 +153,27 @@ class FileService(ResourceService[File, FileCreate, FileUpdate]):
         await session.flush()
         assert file.deleted_at is not None
 
+        s3_service = S3_SERVICES[file.service]
         deleted = s3_service.delete_file(file.path)
         log.info("file.delete", file_id=file.id, s3_deleted=deleted)
         return True
+
+    async def get_selectable_product_media_file(
+        self,
+        session: AsyncSession,
+        id: UUID,
+        *,
+        organization_id: UUID,
+    ) -> ProductMediaFile | None:
+        statement = sql.select(ProductMediaFile).where(
+            File.id == id,
+            File.organization_id == organization_id,
+            File.is_uploaded.is_(True),
+            File.is_enabled.is_(True),
+            File.deleted_at.is_(None),
+        )
+        result = await session.execute(statement)
+        return result.scalar_one_or_none()
 
 
 file = FileService(File)

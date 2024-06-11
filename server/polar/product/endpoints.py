@@ -10,11 +10,11 @@ from polar.kit.routing import APIRouter
 from polar.models import Product
 from polar.models.product import SubscriptionTierType
 from polar.postgres import AsyncSession, get_db_session
-from polar.product.schemas import Product as ProductSchema
-from polar.product.schemas import ProductBenefitsUpdate, ProductCreate, ProductUpdate
 from polar.tags.api import Tags
 
 from . import auth
+from .schemas import Product as ProductSchema
+from .schemas import ProductBenefitsUpdate, ProductCreate, ProductUpdate
 from .service.product import product as product_service
 
 router = APIRouter(prefix="/products", tags=["products"])
@@ -148,7 +148,7 @@ async def update_product(
     response_model=ProductSchema,
     tags=[Tags.PUBLIC],
     responses={
-        200: {"description": "Product updated."},
+        200: {"description": "Product benefits updated."},
         403: {
             "description": "You don't have the permission to update this product.",
             "model": NotPermitted.schema(),

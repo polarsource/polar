@@ -7,7 +7,7 @@ from pydantic import UUID4
 from polar.authz.service import AccessType, Authz
 from polar.exceptions import NotPermitted
 from polar.kit.pagination import ListResource, PaginationParamsQuery
-from polar.models import Organization
+from polar.models import File, Organization
 from polar.organization.resolver import get_payload_organization
 from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession, get_db_session
@@ -18,6 +18,7 @@ from .schemas import (
     FileCreate,
     FilePatch,
     FileRead,
+    FileReadAdapter,
     FileUpload,
     FileUploadCompleted,
 )
@@ -43,7 +44,7 @@ ListOfFileIDs: TypeAlias = list[UUID4]
 
 
 @router.get(
-    "",
+    "/",
     tags=[Tags.PUBLIC],
     response_model=ListResource[FileRead],
 )
@@ -76,7 +77,7 @@ async def list(
         session, organization_id=organization_id, ids=ids, pagination=pagination
     )
     return ListResource.from_paginated_results(
-        [FileRead.from_db(result) for result in results],
+        [FileReadAdapter.validate_python(result) for result in results],
         count,
         pagination,
     )
@@ -88,22 +89,22 @@ async def list(
     response_model=FileUpload,
 )
 async def create(
-    file: FileCreate,
+    file_create: FileCreate,
     auth_subject: auth.CreatorFilesWrite,
     authz: Authz = Depends(Authz.authz),
     session: AsyncSession = Depends(get_db_session),
 ) -> FileUpload:
     subject = auth_subject.subject
 
-    organization = await get_payload_organization(session, auth_subject, file)
+    organization = await get_payload_organization(session, auth_subject, file_create)
     if not await authz.can(subject, AccessType.write, organization):
         raise NotPermitted()
 
-    file.organization_id = organization.id
+    file_create.organization_id = organization.id
     return await file_service.generate_presigned_upload(
         session,
         organization=organization,
-        create_schema=file,
+        create_schema=file_create,
     )
 
 
@@ -118,7 +119,7 @@ async def uploaded(
     auth_subject: auth.CreatorFilesWrite,
     authz: Authz = Depends(Authz.authz),
     session: AsyncSession = Depends(get_db_session),
-) -> FileRead:
+) -> File:
     subject = auth_subject.subject
 
     file = await file_service.get(session, id)
@@ -149,7 +150,7 @@ async def update(
     patches: FilePatch,
     authz: Authz = Depends(Authz.authz),
     session: AsyncSession = Depends(get_db_session),
-) -> FileRead:
+) -> File:
     subject = auth_subject.subject
 
     file = await file_service.get(session, id)
@@ -163,8 +164,7 @@ async def update(
     if not await authz.can(subject, AccessType.write, organization):
         raise NotPermitted()
 
-    updated = await file_service.patch(session, file=file, patches=patches)
-    return FileRead.from_db(updated)
+    return await file_service.patch(session, file=file, patches=patches)
 
 
 @router.delete(

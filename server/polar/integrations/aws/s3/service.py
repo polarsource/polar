@@ -2,12 +2,13 @@ import base64
 from datetime import datetime, timedelta
 from typing import TYPE_CHECKING, Any, cast
 
+import botocore
 import structlog
 from botocore.client import ClientError
 
 from polar.kit.utils import generate_uuid, utc_now
 
-from .client import client
+from .client import client, get_client
 from .exceptions import S3FileError
 from .schemas import (
     S3File,
@@ -194,6 +195,15 @@ class S3Service:
 
         presign_expires_at = presign_from + timedelta(seconds=expires_in)
         return (signed_download_url, presign_expires_at)
+
+    def get_public_url(self, path: str) -> str:
+        # This is apparently the *only* way to get a public URL with boto3,
+        # apart from building a URL manually 🙄
+        # Ref: https://stackoverflow.com/a/48197923
+        unsigned_client = get_client(signature_version=botocore.UNSIGNED)
+        return unsigned_client.generate_presigned_url(
+            "get_object", ExpiresIn=0, Params=dict(Bucket=self.bucket, Key=path)
+        )
 
     def delete_file(self, path: str) -> bool:
         deleted = self.client.delete_object(Bucket=self.bucket, Key=path)

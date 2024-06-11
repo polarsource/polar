@@ -3,7 +3,7 @@ import hashlib
 from datetime import datetime
 from typing import Any, Self
 
-from pydantic import UUID4, model_validator
+from pydantic import UUID4, computed_field
 
 from polar.kit.schemas import Schema
 from polar.kit.utils import human_readable_size
@@ -18,7 +18,7 @@ class S3FileCreatePart(Schema):
     chunk_start: int
     chunk_end: int
 
-    checksum_sha256_base64: str | None
+    checksum_sha256_base64: str | None = None
 
     def get_boto3_arguments(self) -> dict[str, Any]:
         if not self.checksum_sha256_base64:
@@ -36,12 +36,12 @@ class S3FileCreateMultipart(Schema):
 
 
 class S3FileCreate(Schema):
-    organization_id: UUID4 | None
+    organization_id: UUID4 | None = None
     name: str
     mime_type: str
     size: int
 
-    checksum_sha256_base64: str | None
+    checksum_sha256_base64: str | None = None
 
     upload: S3FileCreateMultipart
 
@@ -55,8 +55,6 @@ class S3File(Schema, validate_assignment=True):
     mime_type: str
     size: int
 
-    size_readable: str | None = None
-
     # Provided by AWS S3
     storage_version: str | None = None
     checksum_etag: str | None = None
@@ -67,10 +65,10 @@ class S3File(Schema, validate_assignment=True):
 
     last_modified_at: datetime | None = None
 
-    @model_validator(mode="before")
-    def post_update(cls, values: dict[str, Any]) -> dict[str, Any]:
-        values["size_readable"] = human_readable_size(float(values["size"]))
-        return values
+    @computed_field  # type: ignore[misc]
+    @property
+    def size_readable(self) -> str:
+        return human_readable_size(self.size)
 
     def to_metadata(self) -> dict[str, str]:
         metadata = {

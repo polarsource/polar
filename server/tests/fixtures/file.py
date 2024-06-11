@@ -14,8 +14,14 @@ from httpx import AsyncClient, Response
 
 from polar.auth.models import AuthSubject
 from polar.config import settings
-from polar.file.schemas import FileCreate, FileRead, FileUpload, FileUploadCompleted
-from polar.file.service import s3_service
+from polar.file.s3 import S3_SERVICES
+from polar.file.schemas import (
+    DownloadableFileCreate,
+    FileRead,
+    FileReadAdapter,
+    FileUpload,
+    FileUploadCompleted,
+)
 from polar.integrations.aws.s3.schemas import (
     S3FileCreateMultipart,
     S3FileCreatePart,
@@ -24,6 +30,7 @@ from polar.integrations.aws.s3.schemas import (
     S3FileUploadPart,
 )
 from polar.models import Organization, User, UserOrganization
+from polar.models.file import FileServiceTypes
 
 pwd = Path(__file__).parent.absolute()
 
@@ -91,7 +98,8 @@ class TestFile:
             part = self.build_create_part(i + 1, parts)
             create_parts.append(part)
 
-        create = FileCreate(
+        create = DownloadableFileCreate(
+            service=FileServiceTypes.downloadable,
             organization_id=organization_id,
             name=self.name,
             mime_type=self.mime_type,
@@ -209,10 +217,11 @@ class TestFile:
 
         assert response.status_code == 200
         data = response.json()
-        completed = FileRead(**data)
+        completed = FileReadAdapter.validate_python(data)
 
         assert completed.id == created.id
         assert completed.is_uploaded is True
+        s3_service = S3_SERVICES[completed.service]
         s3_object = s3_service.get_object_or_raise(completed.path)
         metadata = s3_object["Metadata"]
 

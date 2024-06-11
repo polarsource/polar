@@ -50,6 +50,17 @@ class TestEndpoints:
         await logo_png.create(client, organization_id)
 
     @pytest.mark.http_auto_expunge
+    @pytest.mark.auth
+    async def test_create_downloadable_with_non_ascii_name(
+        self,
+        client: AsyncClient,
+        user_organization_admin: UserOrganization,
+        non_ascii_file_name: TestFile,
+    ) -> None:
+        organization_id = user_organization_admin.organization_id
+        await non_ascii_file_name.create(client, organization_id)
+
+    @pytest.mark.http_auto_expunge
     @pytest.mark.auth(
         AuthSubjectFixture(subject="user"),
     )

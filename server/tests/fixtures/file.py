@@ -290,6 +290,11 @@ def logo_png() -> TestFile:
 
 
 @pytest_asyncio.fixture(scope="function")
+def non_ascii_file_name() -> TestFile:
+    return TestFile("étonnante-🦄.png")
+
+
+@pytest_asyncio.fixture(scope="function")
 async def uploaded_logo_png(
     client: AsyncClient,
     auth_subject: AuthSubject[User],

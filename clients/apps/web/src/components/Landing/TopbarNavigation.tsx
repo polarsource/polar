@@ -20,7 +20,7 @@ const PopoverLinkItem = ({
       className="dark:hover:bg-polar-800 group flex flex-col gap-y-1 rounded-xl px-3 py-2 hover:bg-gray-100"
       href={link}
     >
-      <span className="dark:text-polar-200 flex flex-row items-center gap-x-2 text-gray-700 group-hover:text-black dark:group-hover:text-white">
+      <span className="flex flex-row items-center gap-x-2">
         <ArrowForward fontSize="inherit" />
         <h3 className="text-sm">{title}</h3>
       </span>
@@ -44,14 +44,9 @@ const PlatformPopover = () => {
             <h3 className="ml-3 text-lg">Features</h3>
             <div className="flex flex-col">
               <PopoverLinkItem
-                title="Issue Funding"
+                title="Issue Funding & Rewards"
                 description="Crowdfunded GitHub issues on steroids"
                 link="/issue-funding"
-              />
-              <PopoverLinkItem
-                title="Rewards"
-                description="Share funding with your contributors"
-                link="/rewards"
               />
               <PopoverLinkItem
                 title="Donations"
@@ -73,30 +68,50 @@ const PlatformPopover = () => {
                 description="Reach your community with insightful posts"
                 link="/newsletters"
               />
+              <PopoverLinkItem
+                title="Public Page"
+                description="A home for your profile on Polar"
+                link="/newsletters"
+              />
             </div>
           </div>
           <div className="flex w-1/2 flex-col gap-y-4 pl-8">
-            <h3 className="ml-3 text-lg">Company</h3>
+            <h3 className="ml-3 text-lg">Benefits</h3>
             <div className="flex flex-col">
               <PopoverLinkItem
-                title="Our Mission"
-                description="Empowering maintainers to become entrepreneurs"
-                link="/our-mission"
+                title="Introducing Benefits"
+                description="Offer exclusive benefits to your supporters"
+                link="#"
               />
               <PopoverLinkItem
-                title="Careers"
-                description="Come & do your life's best work"
-                link="/careers"
+                title="Private GitHub Repositories"
+                description="Grant access to private repositories"
+                link="#"
               />
               <PopoverLinkItem
-                title="Community"
-                description="Join our community of entrepreneurs"
-                link="/community"
+                title="Discord Server Access"
+                description="Automatic Discord role assignment"
+                link="#"
               />
               <PopoverLinkItem
-                title="Brand Guidelines"
-                description="Get your hands on our brand assets"
-                link="/brand"
+                title="File Downloads"
+                description="Access to exclusive file downloads"
+                link="#"
+              />
+              <PopoverLinkItem
+                title="Advertisements"
+                description="Promote your supporters in READMEs & Newsletters"
+                link="#"
+              />
+              <PopoverLinkItem
+                title="Premium Newsletters"
+                description="Early & private access to newsletters"
+                link="#"
+              />
+              <PopoverLinkItem
+                title="Custom"
+                description="Offer custom benefits for your special usecase"
+                link="#"
               />
             </div>
           </div>
@@ -112,7 +127,10 @@ const DocumentationPopover = () => {
       <PopoverTrigger className="dark:hover:bg-polar-800 rounded-full px-4 py-2">
         Documentation
       </PopoverTrigger>
-      <PopoverContent className="flex w-[920px] flex-row divide-x rounded-3xl p-6 dark:text-white">
+      <PopoverContent
+        className="flex w-[920px] flex-row divide-x rounded-3xl p-6 dark:text-white"
+        sideOffset={20}
+      >
         <div className="flex w-1/2 flex-col gap-y-4 pr-8">
           <h3 className="ml-3 text-lg">Documentation</h3>
           <div className="flex flex-col">

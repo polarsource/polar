@@ -28,6 +28,7 @@ from .pledge import Pledge
 from .pledge_transaction import PledgeTransaction
 from .product import Product
 from .product_benefit import ProductBenefit
+from .product_media import ProductMedia
 from .product_price import ProductPrice
 from .pull_request import PullRequest
 from .repository import Repository
@@ -43,6 +44,8 @@ from .webhook_event import WebhookEvent
 from .webhook_notifications import WebhookNotification
 
 __all__ = [
+    "Model",
+    "TimestampedModel",
     "Account",
     "AdvertisementCampaign",
     "Article",
@@ -50,6 +53,8 @@ __all__ = [
     "Benefit",
     "BenefitGrant",
     "Donation",
+    "Downloadable",
+    "File",
     "HeldBalance",
     "Invite",
     "Issue",
@@ -57,7 +62,6 @@ __all__ = [
     "IssueReference",
     "IssueReward",
     "MagicLink",
-    "Model",
     "Notification",
     "OAuth2AuthorizationCode",
     "OAuth2Client",
@@ -69,13 +73,13 @@ __all__ = [
     "PersonalAccessToken",
     "Pledge",
     "PledgeTransaction",
+    "Product",
+    "ProductBenefit",
+    "ProductMedia",
+    "ProductPrice",
     "PullRequest",
     "Repository",
     "Subscription",
-    "Product",
-    "ProductBenefit",
-    "ProductPrice",
-    "TimestampedModel",
     "Traffic",
     "Transaction",
     "User",
@@ -85,6 +89,4 @@ __all__ = [
     "WebhookEndpoint",
     "WebhookEvent",
     "WebhookNotification",
-    "File",
-    "Downloadable",
 ]

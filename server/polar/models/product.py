@@ -16,7 +16,8 @@ from polar.models.product_price import ProductPriceType
 from .product_price import ProductPrice
 
 if TYPE_CHECKING:
-    from polar.models import Benefit, Organization, ProductBenefit
+    from polar.models import Benefit, Organization, ProductBenefit, ProductMedia
+    from polar.models.file import ProductMediaFile
 
 
 class SubscriptionTierType(StrEnum):
@@ -86,6 +87,17 @@ class Product(RecordModel):
 
     benefits: AssociationProxy[list["Benefit"]] = association_proxy(
         "product_benefits", "benefit"
+    )
+
+    product_medias: Mapped[list["ProductMedia"]] = relationship(
+        lazy="raise",
+        order_by="ProductMedia.order",
+        cascade="all, delete-orphan",
+        back_populates="product",
+    )
+
+    medias: AssociationProxy[list["ProductMediaFile"]] = association_proxy(
+        "product_medias", "file"
     )
 
     @property

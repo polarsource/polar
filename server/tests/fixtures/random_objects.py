@@ -486,7 +486,9 @@ async def create_product(
         all_prices=[],
         prices=[],
         product_benefits=[],
+        product_medias=[],
     )
+    await save_fixture(product)
 
     for price, price_type, recurring_interval in prices:
         product_price = await create_product_price(
@@ -499,7 +501,6 @@ async def create_product(
         product.prices.append(product_price)
         product.all_prices.append(product_price)
 
-    await save_fixture(product)
     return product
 
 

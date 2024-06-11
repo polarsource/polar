@@ -24,7 +24,7 @@ import { ConfirmModal } from '../Modal/ConfirmModal'
 import { InlineModalHeader } from '../Modal/InlineModal'
 import { useModal } from '../Modal/useModal'
 import ProductBenefitsForm from './ProductBenefitsForm'
-import ProductForm from './ProductForm'
+import ProductForm, { ProductFullMediasMixin } from './ProductForm'
 
 export interface EditProductModalProps {
   product: Product
@@ -48,9 +48,11 @@ export const EditProductModal = ({
     BenefitPublicInner['id'][]
   >(product.benefits.map((benefit) => benefit.id) ?? [])
 
-  const form = useForm<ProductUpdate>({
+  const form = useForm<ProductUpdate & ProductFullMediasMixin>({
     defaultValues: {
       ...product,
+      medias: product.medias.map((media) => media.id),
+      full_medias: product.medias,
     },
   })
 
@@ -60,11 +62,15 @@ export const EditProductModal = ({
   const updateBenefits = useUpdateProductBenefits(organization.id)
 
   const onSubmit = useCallback(
-    async (productUpdate: ProductUpdate) => {
+    async (productUpdate: ProductUpdate & ProductFullMediasMixin) => {
       try {
+        const { full_medias, ...productUpdateRest } = productUpdate
         await updateProduct.mutateAsync({
           id: product.id,
-          productUpdate,
+          productUpdate: {
+            ...productUpdateRest,
+            medias: full_medias.map((media) => media.id),
+          },
         })
         await updateBenefits.mutateAsync({
           id: product.id,
@@ -169,7 +175,11 @@ export const EditProductModal = ({
             onSubmit={handleSubmit(onSubmit)}
             className="flex flex-col gap-y-8"
           >
-            <ProductForm update={true} isFreeTier={isFreeTier} />
+            <ProductForm
+              organization={organization}
+              update={true}
+              isFreeTier={isFreeTier}
+            />
           </form>
         </Form>
         <ProductBenefitsForm

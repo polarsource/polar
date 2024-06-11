@@ -4,8 +4,10 @@ import { isFeatureEnabled } from '@/utils/feature-flags'
 import { ErrorMessage } from '@hookform/error-message'
 import { ClearOutlined } from '@mui/icons-material'
 import {
+  Organization,
   PricesInner,
   ProductCreate,
+  ProductMediaFileRead,
   ProductPriceRecurringInterval,
   ProductPriceType,
   ProductUpdate,
@@ -42,11 +44,19 @@ import {
 } from 'react-hook-form'
 import { twMerge } from 'tailwind-merge'
 import SubscriptionGroupIcon from '../Subscriptions/SubscriptionGroupIcon'
+import ProductMediasField from './ProductMediasField'
 import ProductPriceTypeIcon from './ProductPriceTypeIcon'
+
+export interface ProductFullMediasMixin {
+  full_medias: ProductMediaFileRead[]
+}
+
+export type ProductFormType = (ProductCreate | ProductUpdate) &
+  ProductFullMediasMixin
 
 interface ProductPriceItemProps {
   index: number
-  fieldArray: UseFieldArrayReturn<ProductCreate | ProductUpdate, 'prices', 'id'>
+  fieldArray: UseFieldArrayReturn<ProductFormType, 'prices', 'id'>
   deletable: boolean
 }
 
@@ -55,9 +65,8 @@ const ProductPriceItem: React.FC<ProductPriceItemProps> = ({
   fieldArray,
   deletable,
 }) => {
-  const { control, register, watch, setValue } = useFormContext<
-    ProductCreate | ProductUpdate
-  >()
+  const { control, register, watch, setValue } =
+    useFormContext<ProductFormType>()
   const { remove } = fieldArray
   const recurringInterval = watch(`prices.${index}.recurring_interval`)
 
@@ -127,16 +136,21 @@ const ProductPriceItem: React.FC<ProductPriceItemProps> = ({
 }
 
 interface ProductFormProps {
+  organization: Organization
   update?: boolean
   isFreeTier?: boolean
 }
 
-const ProductForm: React.FC<ProductFormProps> = ({ update, isFreeTier }) => {
+const ProductForm: React.FC<ProductFormProps> = ({
+  organization,
+  update,
+  isFreeTier,
+}) => {
   const {
     control,
     formState: { errors },
     clearErrors,
-  } = useFormContext<ProductCreate | ProductUpdate>()
+  } = useFormContext<ProductFormType>()
 
   const pricesFieldArray = useFieldArray({
     control,
@@ -357,25 +371,25 @@ const ProductForm: React.FC<ProductFormProps> = ({ update, isFreeTier }) => {
           </div>
         </>
       )}
-      {/* <FormField
+      <FormField
         control={control}
-        name="media"
-        render={({ field }) => (
+        name="full_medias"
+        render={({ field, formState: {} }) => (
           <FormItem className="flex flex-col gap-2">
             <div className="flex flex-row items-center justify-between">
               <FormLabel>Media</FormLabel>
             </div>
             <FormControl>
-              <ImageUpload
-                width={1000}
-                height={1000}
-                onUploaded={field.onChange}
+              <ProductMediasField
+                organization={organization}
+                value={field.value}
+                onChange={field.onChange}
               />
             </FormControl>
             <FormMessage />
           </FormItem>
         )}
-      /> */}
+      />
       {!update && pricingType === ProductPriceType.RECURRING && (
         <FormField
           control={control}

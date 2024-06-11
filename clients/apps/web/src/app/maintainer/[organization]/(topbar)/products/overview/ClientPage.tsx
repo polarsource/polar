@@ -36,6 +36,12 @@ export default function ClientPage() {
   } = useModal()
 
   useEffect(() => {
+    if (searchParams?.has('create_benefit') && !searchParams?.has('product')) {
+      showCreateProductModal()
+    }
+  }, [searchParams, showCreateProductModal])
+
+  useEffect(() => {
     if (searchParams?.has('product')) {
       showEditProductModal()
     } else {

@@ -1,8 +1,12 @@
-import { ArticleCreate, ProductCreate } from '@polar-sh/sdk'
+import {
+  ArticleCreate,
+  ProductCreate,
+  ProductMediaFileRead,
+} from '@polar-sh/sdk'
 import { StateCreator } from 'zustand'
 
 interface FormDrafts {
-  ProductCreate?: ProductCreate
+  ProductCreate?: ProductCreate & { full_medias: ProductMediaFileRead[] }
   ArticleCreate?: Pick<ArticleCreate, 'title' | 'body'>
 }
 

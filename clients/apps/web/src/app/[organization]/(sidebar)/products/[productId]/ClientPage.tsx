@@ -8,7 +8,6 @@ import { previewOpts } from '@/components/Feed/Markdown/BrowserRender'
 import CheckoutButton from '@/components/Products/CheckoutButton'
 import ProductPrices from '@/components/Products/ProductPrices'
 import { Slideshow } from '@/components/Products/Slideshow'
-import { dummyMedia } from '@/hooks/queries/dummy_products'
 import { Organization, Product } from '@polar-sh/sdk'
 import Markdown from 'markdown-to-jsx'
 import { List, ListItem } from 'polarkit/components/ui/atoms/list'
@@ -24,7 +23,11 @@ export default function ClientPage({
   return (
     <div className="flex flex-col items-start gap-8 pb-8 md:flex-row md:gap-12 md:pb-0">
       <div className="flex flex-col gap-8 md:w-2/3">
-        <Slideshow images={dummyMedia} />
+        {product.medias.length > 0 && (
+          <Slideshow
+            images={product.medias.map(({ public_url }) => public_url)}
+          />
+        )}
         <ShadowBox className="flex flex-col gap-6 ring-gray-100">
           <h1 className="text-2xl font-medium">{product.name}</h1>
           {product.description ? (

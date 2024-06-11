@@ -23,9 +23,9 @@ export const Hero = () => {
           Earn a living on your passion projects
         </h1>
         <div className="flex flex-col gap-y-4">
-          <p className="dark:text-polar-200 text-balance text-xl leading-loose text-gray-500">
+          <p className="text-balance text-xl leading-loose">
             With a funding & monetization platform for open source & indie
-            developers.
+            developers
           </p>
           <p className="dark:text-polar-500 text-xs leading-normal text-gray-400">
             By using Polar you agree to our{' '}

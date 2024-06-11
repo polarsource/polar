@@ -1,12 +1,10 @@
 'use client'
 
 import { useOrganization } from '@/hooks/queries'
-import { dummyMedia } from '@/hooks/queries/dummy_products'
 import { isFeatureEnabled } from '@/utils/feature-flags'
 import { PanoramaOutlined } from '@mui/icons-material'
 import { Product, ProductPrice } from '@polar-sh/sdk'
 import Markdown from 'markdown-to-jsx'
-import Image from 'next/image'
 import { Pill } from 'polarkit/components/ui/atoms'
 import Avatar from 'polarkit/components/ui/atoms/avatar'
 import { markdownOpts } from '../Feed/Markdown/markdown'
@@ -33,13 +31,14 @@ export const ProductCard = ({
     <div className="dark:border-polar-700 dark:hover:bg-polar-800 flex h-full w-full flex-col gap-6 rounded-3xl border border-gray-100 p-6 transition-colors hover:bg-gray-50">
       {isFeatureEnabled('products') && (
         <>
-          {dummyMedia.length > 0 ? (
-            <Image
+          {product.medias.length > 0 ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
               className="aspect-square w-full rounded-2xl bg-gray-100 object-cover"
-              alt={`${product.name} product image`}
+              alt={product.medias[0].name}
               width={600}
               height={600}
-              src={dummyMedia[0]}
+              src={product.medias[0].public_url}
             />
           ) : (
             <div className="dark:bg-polar-900 flex aspect-square w-full flex-col items-center justify-center rounded-2xl bg-gray-100">

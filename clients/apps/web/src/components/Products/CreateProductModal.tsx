@@ -22,7 +22,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { InlineModalHeader } from '../Modal/InlineModal'
 import ProductBenefitsForm from './ProductBenefitsForm'
-import ProductForm from './ProductForm'
+import ProductForm, { ProductFullMediasMixin } from './ProductForm'
 
 export interface CreateProductModalProps {
   organization: Organization
@@ -51,27 +51,29 @@ export const CreateProductModal = ({
     BenefitPublicInner['id'][]
   >([])
 
-  const form = useForm<ProductCreate>({
+  const form = useForm<ProductCreate & ProductFullMediasMixin>({
     defaultValues: {
+      ...{
+        prices: (!isFeatureEnabled('products') ||
+        productPriceType === ProductPriceType.RECURRING
+          ? [
+              {
+                type: ProductPriceType.RECURRING,
+                recurring_interval: ProductPriceRecurringInterval.MONTH,
+                price_amount: undefined,
+                price_currency: 'usd',
+              },
+            ]
+          : [
+              {
+                type: ProductPriceType.ONE_TIME,
+                price_amount: undefined,
+                price_currency: 'usd',
+              },
+            ]) as any,
+      },
       ...(savedFormValues ? savedFormValues : {}),
       organization_id: organization.id,
-      prices: (!isFeatureEnabled('products') ||
-      productPriceType === ProductPriceType.RECURRING
-        ? [
-            {
-              type: ProductPriceType.RECURRING,
-              recurring_interval: ProductPriceRecurringInterval.MONTH,
-              price_amount: undefined,
-              price_currency: 'usd',
-            },
-          ]
-        : [
-            {
-              type: ProductPriceType.ONE_TIME,
-              price_amount: undefined,
-              price_currency: 'usd',
-            },
-          ]) as any,
     },
   })
   const { handleSubmit, watch, setError } = form
@@ -81,9 +83,13 @@ export const CreateProductModal = ({
   const updateBenefits = useUpdateProductBenefits(organization.id)
 
   const onSubmit = useCallback(
-    async (productCreate: ProductCreate) => {
+    async (productCreate: ProductCreate & ProductFullMediasMixin) => {
       try {
-        const product = await createProduct.mutateAsync(productCreate)
+        const { full_medias, ...productCreateRest } = productCreate
+        const product = await createProduct.mutateAsync({
+          ...productCreateRest,
+          medias: full_medias.map((media) => media.id),
+        })
         await updateBenefits.mutateAsync({
           id: product.id,
           productBenefitsUpdate: {
@@ -168,7 +174,7 @@ export const CreateProductModal = ({
             onSubmit={handleSubmit(onSubmit)}
             className="flex flex-col gap-y-8"
           >
-            <ProductForm update={false} />
+            <ProductForm organization={organization} update={false} />
           </form>
         </Form>
         <ProductBenefitsForm

@@ -1,9 +1,9 @@
 import { FileObject } from '@/components/FileUpload'
+import { useDraggable } from '@/hooks/draggable'
 import { DndContext, DragOverlay, closestCenter } from '@dnd-kit/core'
 import { SortableContext, rectSortingStrategy } from '@dnd-kit/sortable'
 import { twMerge } from 'tailwind-merge'
 import { DraggableFileListItem, FileListItem } from './FileListItem'
-import { useDraggable } from './useDraggable'
 
 export const FileList = ({
   files,

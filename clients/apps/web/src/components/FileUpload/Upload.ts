@@ -17,7 +17,7 @@ interface UploadProperties {
   service: FileServiceTypes
   file: File
   buffer: ArrayBuffer
-  onFileCreate: (response: FileUpload) => void
+  onFileCreate: (response: FileUpload, buffer: ArrayBuffer) => void
   onFileUploadProgress: (file: FileUpload, uploaded: number) => void
   onFileUploaded: (response: FileRead) => void
 }
@@ -27,7 +27,7 @@ export class Upload {
   service: FileServiceTypes
   file: File
   buffer: ArrayBuffer
-  onFileCreate: (response: FileUpload) => void
+  onFileCreate: (response: FileUpload, buffer: ArrayBuffer) => void
   onFileUploadProgress: (file: FileUpload, uploaded: number) => void
   onFileUploaded: (response: FileRead) => void
 
@@ -206,7 +206,7 @@ export class Upload {
     const upload = createFileResponse?.upload
     if (!upload) return
 
-    this.onFileCreate(createFileResponse)
+    this.onFileCreate(createFileResponse, this.buffer)
 
     const uploadedParts = await this.uploadMultiparts({
       parts: upload.parts,

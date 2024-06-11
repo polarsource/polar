@@ -1,6 +1,6 @@
 import { PropsWithChildren } from 'react'
-import ClientLayout from './ClientLayout'
+import LandingLayout from '../../components/Landing/LandingLayout'
 
 export default function Layout({ children }: PropsWithChildren) {
-  return <ClientLayout>{children}</ClientLayout>
+  return <LandingLayout>{children}</LandingLayout>
 }

@@ -5,6 +5,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from 'polarkit/components/ui/popover'
+import { useState } from 'react'
 
 const PopoverLinkItem = ({
   title,
@@ -32,9 +33,19 @@ const PopoverLinkItem = ({
 }
 
 const PlatformPopover = () => {
+  const [isOpen, setIsOpen] = useState(false)
+
   return (
-    <Popover>
-      <PopoverTrigger className="dark:hover:bg-polar-800 data-[state=open]:bg-polar-800 rounded-full px-4 py-2">
+    <Popover open={isOpen} onOpenChange={setIsOpen}>
+      <PopoverTrigger
+        className="dark:hover:bg-polar-800 data-[state=open]:bg-polar-800 rounded-full px-4 py-2"
+        onMouseEnter={() => {
+          setIsOpen(true)
+        }}
+        onMouseLeave={() => {
+          setIsOpen(false)
+        }}
+      >
         Platform
         <PopoverContent
           className="flex w-[920px] flex-row divide-x rounded-3xl p-6 dark:text-white"
@@ -124,64 +135,64 @@ const PlatformPopover = () => {
 const DocumentationPopover = () => {
   return (
     <Popover>
-      <PopoverTrigger className="dark:hover:bg-polar-800 rounded-full px-4 py-2">
+      <PopoverTrigger className="dark:hover:bg-polar-800 data-[state=open]:bg-polar-800 rounded-full px-4 py-2">
         Documentation
+        <PopoverContent
+          className="flex w-[920px] flex-row divide-x rounded-3xl p-6 dark:text-white"
+          sideOffset={20}
+        >
+          <div className="flex w-1/2 flex-col gap-y-4 pr-8">
+            <h3 className="ml-3 text-lg">Documentation</h3>
+            <div className="flex flex-col">
+              <PopoverLinkItem
+                title="Getting Started"
+                description="Start your journey with Polar"
+                link="/docs/overview"
+              />
+              <PopoverLinkItem
+                title="Guides"
+                description="Learn how to use Polar"
+                link="/docs/guides"
+              />
+              <PopoverLinkItem
+                title="FAQ"
+                description="Frequently Asked Questions"
+                link="/docs/overview/faq/for-maintainers"
+              />
+              <PopoverLinkItem
+                title="Support"
+                description="Get help from the Polar team"
+                link="/docs/overview/support"
+              />
+            </div>
+          </div>
+          <div className="flex w-1/2 flex-col gap-y-4 pl-8">
+            <h3 className="ml-3 text-lg">API</h3>
+            <div className="flex flex-col">
+              <PopoverLinkItem
+                title="API Reference"
+                description="Integrate Polar with your application"
+                link="/docs/api-reference/introduction"
+              />
+              <PopoverLinkItem
+                title="Polar SDK"
+                description="Our very own TypeScript SDK"
+                link="/docs/api-reference/polar-sdk"
+              />
+              <PopoverLinkItem
+                title="GitHub Actions"
+                description="Use Polar in your CI/CD pipeline"
+                link="/docs/api-reference/github-actions"
+              />
+              <PopoverLinkItem
+                title="OAuth"
+                description="Authentication with the Polar API"
+                link="/docs/api-reference/github-actions"
+              />
+            </div>
+          </div>
+        </PopoverContent>
       </PopoverTrigger>
-      <PopoverContent
-        className="flex w-[920px] flex-row divide-x rounded-3xl p-6 dark:text-white"
-        sideOffset={20}
-      >
-        <div className="flex w-1/2 flex-col gap-y-4 pr-8">
-          <h3 className="ml-3 text-lg">Documentation</h3>
-          <div className="flex flex-col">
-            <PopoverLinkItem
-              title="Getting Started"
-              description="Start your journey with Polar"
-              link="/docs/overview"
-            />
-            <PopoverLinkItem
-              title="Guides"
-              description="Learn how to use Polar"
-              link="/docs/guides"
-            />
-            <PopoverLinkItem
-              title="FAQ"
-              description="Frequently Asked Questions"
-              link="/docs/overview/faq/for-maintainers"
-            />
-            <PopoverLinkItem
-              title="Support"
-              description="Get help from the Polar team"
-              link="/docs/overview/support"
-            />
-          </div>
-        </div>
-        <div className="flex w-1/2 flex-col gap-y-4 pl-8">
-          <h3 className="ml-3 text-lg">API</h3>
-          <div className="flex flex-col">
-            <PopoverLinkItem
-              title="API Reference"
-              description="Integrate Polar with your application"
-              link="/docs/api-reference/introduction"
-            />
-            <PopoverLinkItem
-              title="Polar SDK"
-              description="Our very own TypeScript SDK"
-              link="/docs/api-reference/polar-sdk"
-            />
-            <PopoverLinkItem
-              title="GitHub Actions"
-              description="Use Polar in your CI/CD pipeline"
-              link="/docs/api-reference/github-actions"
-            />
-            <PopoverLinkItem
-              title="OAuth"
-              description="Authentication with the Polar API"
-              link="/docs/api-reference/github-actions"
-            />
-          </div>
-        </div>
-      </PopoverContent>
     </Popover>
   )
 }

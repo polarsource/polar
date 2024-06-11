@@ -1,4 +1,4 @@
-import { Product } from "@polar-sh/sdk";
+import { Product } from '@polar-sh/sdk'
 
 export const MOCKED_PRODUCTS: Partial<Product>[] = [
   {

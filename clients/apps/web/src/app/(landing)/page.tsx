@@ -1,5 +1,5 @@
 import { Metadata } from 'next'
-import ClientPage from './ClientPage'
+import LandingPage from '../../components/Landing/LandingPage'
 
 export const metadata: Metadata = {
   title: 'Polar — A creator platform for developers',
@@ -32,5 +32,5 @@ export const metadata: Metadata = {
 }
 
 export default function Page() {
-  return <ClientPage />
+  return <LandingPage />
 }

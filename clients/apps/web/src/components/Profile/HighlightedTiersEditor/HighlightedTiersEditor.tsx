@@ -265,6 +265,7 @@ const useCreateBaselineTier = (
           recurring_interval: 'month',
         },
       ],
+      medias: [],
       created_at: new Date().toISOString(),
       is_highlighted: false,
       is_archived: false,

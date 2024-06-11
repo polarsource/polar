@@ -67,6 +67,7 @@ export const Default: Story = {
             recurring_interval: 'month',
           },
         ],
+        medias: [],
         description: 'Free',
         created_at: '2021-10-08T11:17:14.000Z',
         is_archived: false,

@@ -5,6 +5,7 @@ import {
   FavoriteBorderOutlined,
   HowToVoteOutlined,
 } from '@mui/icons-material'
+import { motion } from 'framer-motion'
 import Link from 'next/link'
 import {
   Card,
@@ -14,9 +15,10 @@ import {
 import { List, ListItem } from 'polarkit/components/ui/atoms/list'
 import { PropsWithChildren, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
+import { StaggerReveal } from '../Shared/StaggerReveal'
 import { Section } from './Section'
 interface FeatureItemProps {
-  icon: JSX.Element
+  icon?: JSX.Element
   title: string
   description: string
   link: string
@@ -24,31 +26,37 @@ interface FeatureItemProps {
 
 const FeatureItem = ({ title, icon, description, link }: FeatureItemProps) => {
   return (
-    <Link className="group flex h-full flex-col" href={link}>
-      <Card className="hover:bg-gray-75 dark:hover:bg-polar-900 flex h-full flex-col border-none transition-colors dark:border-none">
-        <CardHeader className="flex flex-row items-center gap-x-4 space-y-0 pb-4">
-          <span className="dark:bg-polar-800 dark flex h-10 w-10 flex-col items-center justify-center rounded-xl bg-gray-200 transition-colors group-hover:bg-black group-hover:text-white dark:group-hover:bg-white dark:group-hover:text-black">
-            {icon}
-          </span>
-          <h3 className="text-lg leading-snug">{title}</h3>
-        </CardHeader>
-        <CardContent className="flex h-full flex-col gap-y-4 pb-6">
-          <p className="dark:text-polar-200 h-full leading-relaxed text-gray-500 group-hover:text-black dark:group-hover:text-white">
-            {description}
-          </p>
-        </CardContent>
-      </Card>
-    </Link>
+    <StaggerReveal.Child key={title}>
+      <Link className="group flex h-full flex-col" href={link}>
+        <Card className="hover:bg-gray-75 dark:hover:bg-polar-900 flex h-full flex-col border-none transition-colors dark:border-none">
+          <CardHeader className="flex flex-row items-center gap-x-4 space-y-0 pb-4">
+            {icon ? (
+              <span className="dark:bg-polar-800 dark flex h-10 w-10 flex-col items-center justify-center rounded-xl bg-gray-200 transition-colors group-hover:bg-black group-hover:text-white dark:group-hover:bg-white dark:group-hover:text-black">
+                {icon}
+              </span>
+            ) : (
+              <div className="-mr-4 h-10" />
+            )}
+            <h3 className="text-lg leading-snug">{title}</h3>
+          </CardHeader>
+          <CardContent className="flex h-full flex-col gap-y-4 pb-6">
+            <p className="dark:text-polar-200 h-full leading-relaxed text-gray-500 group-hover:text-black dark:group-hover:text-white">
+              {description}
+            </p>
+          </CardContent>
+        </Card>
+      </Link>
+    </StaggerReveal.Child>
   )
 }
 
 const items = [
   {
-    title: 'From an idea to funding',
+    title: 'From idea to funding',
     description:
       'We offer a wide array of monetization tools for your project, from one-time payments & recurring subscriptions to donations.',
     content: (
-      <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
+      <StaggerReveal className="grid grid-cols-1 gap-8 md:grid-cols-2">
         <FeatureItem
           icon={<HowToVoteOutlined fontSize="small" />}
           title="Issue Funding"
@@ -73,7 +81,7 @@ const items = [
           description="Offer paid subscription tiers, with associated benefits that you give in return."
           link="/docs/overview/subscriptions"
         />
-      </div>
+      </StaggerReveal>
     ),
   },
   {
@@ -81,7 +89,7 @@ const items = [
     description:
       'Take your project to the next level with Products. Sell licenses, access to private repositories, or any other digital product you can think of.',
     content: (
-      <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
+      <StaggerReveal className="grid grid-cols-1 gap-8 md:grid-cols-2">
         <FeatureItem
           icon={<HowToVoteOutlined fontSize="small" />}
           title="Benefits"
@@ -94,7 +102,7 @@ const items = [
           description="Sell licenses, access to private repositories, or any other digital product you can think of."
           link="/docs/overview/issue-funding/reward-contributors"
         />
-      </div>
+      </StaggerReveal>
     ),
   },
   {
@@ -109,6 +117,21 @@ const items = [
     title: 'Developer Experience in the front seat',
     description:
       'We believe in transparency and trust, so we open sourced our entire platform. You can find our code on GitHub.',
+    content: (
+      <StaggerReveal className="grid grid-cols-1 gap-8 md:grid-cols-2">
+        <FeatureItem
+          title="⌘K Anywhere"
+          description="Reach into API documentation, quick navigation, and more with a single keystroke."
+          link="/docs/overview/issue-funding/overview"
+        />
+        <FeatureItem
+          icon={<FavoriteBorderOutlined fontSize="small" />}
+          title="Products"
+          description="Sell licenses, access to private repositories, or any other digital product you can think of."
+          link="/docs/overview/issue-funding/reward-contributors"
+        />
+      </StaggerReveal>
+    ),
   },
 ]
 
@@ -146,7 +169,6 @@ export const Journey = () => {
 const JourneyItem = ({
   title,
   description,
-  children,
   active,
   onClick,
 }: PropsWithChildren<{
@@ -169,9 +191,14 @@ const JourneyItem = ({
         <div className="-mt-1 flex flex-col gap-y-4">
           <h3 className="text-lg">{title}</h3>
           {active && (
-            <div className="dark:text-polar-200 flex flex-col text-sm leading-relaxed text-gray-500">
+            <motion.div
+              className="dark:text-polar-200 flex flex-col text-sm leading-relaxed text-gray-500"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.5 }}
+            >
               {description}
-            </div>
+            </motion.div>
           )}
         </div>
       </div>

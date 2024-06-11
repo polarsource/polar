@@ -80,9 +80,9 @@ const testamonials = [
 
 export const Testamonials = () => {
   return (
-    <Section className="mx-12 gap-y-16 px-0 md:px-0">
+    <Section className="gap-y-16">
       <h3 className="text-center text-4xl leading-relaxed">
-        Why developers choose Polar
+        Why developers use Polar
       </h3>
       <div className="dark:border-polar-700 flex flex-col divide-y overflow-hidden rounded-3xl border">
         <Link
@@ -108,15 +108,15 @@ export const Testamonials = () => {
             </div>
           </div>
         </Link>
-        <div className="flex flex-col items-center divide-y md:flex-row md:divide-x md:divide-y-0">
+        <div className="flex flex-col divide-y md:flex-row md:divide-x md:divide-y-0">
           {testamonials.slice(1).map((testamonial) => (
             <Link
               key={testamonial.name}
-              className="flex h-full flex-col md:w-1/3"
+              className="hover:bg-gray-75 dark:hover:bg-polar-900 group relative flex flex-col transition-colors md:w-1/3"
               href={testamonial.link}
               target="_blank"
             >
-              <div className="hover:bg-gray-75 dark:hover:bg-polar-900 group relative flex h-full w-full flex-col gap-y-8 rounded-none border-none p-12 transition-colors">
+              <div className=" flex h-full w-full flex-col gap-y-8 rounded-none border-none p-12">
                 <div className="flex h-full flex-col gap-y-4 leading-relaxed">
                   {testamonial.text}
                 </div>

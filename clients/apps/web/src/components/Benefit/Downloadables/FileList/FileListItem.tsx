@@ -236,6 +236,12 @@ export const FileListItem = ({
     navigator.clipboard.writeText(file.checksum_sha256_hex ?? '')
   }, [file])
 
+  const onCopySHACommand = useCallback(() => {
+    navigator.clipboard.writeText(
+      `echo "${file.checksum_sha256_hex} ${file.name}" | sha256sum -c`,
+    )
+  }, [file])
+
   const isUploading = useMemo(() => file.isUploading, [file])
 
   let isEnabled = useMemo(() => {
@@ -304,9 +310,16 @@ export const FileListItem = ({
               align="end"
               className="dark:bg-polar-800 bg-gray-50 shadow-lg"
             >
-              <DropdownMenuItem onClick={onCopySHA}>
-                Copy SHA256 Checksum
-              </DropdownMenuItem>
+              {file.checksum_sha256_hex && (
+                <>
+                  <DropdownMenuItem onClick={onCopySHA}>
+                    Copy SHA256 Checksum
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={onCopySHACommand}>
+                    Copy SHA256 Checksum command
+                  </DropdownMenuItem>
+                </>
+              )}
               <DropdownMenuItem onClick={showDeleteModal}>
                 Delete
               </DropdownMenuItem>

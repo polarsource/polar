@@ -74,7 +74,7 @@ class S3File(Schema, validate_assignment=True):
         metadata = {
             "polar-id": str(self.id),
             "polar-organization-id": str(self.organization_id),
-            "polar-name": self.name,
+            "polar-name": self.name.encode("ascii", "ignore").decode("ascii"),
             "polar-size": str(self.size),
         }
         if self.checksum_sha256_base64:

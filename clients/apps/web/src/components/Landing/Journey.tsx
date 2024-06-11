@@ -2,47 +2,58 @@
 
 import {
   AllInclusiveOutlined,
-  ArrowForward,
   AttachMoneyOutlined,
-  FavoriteBorderOutlined,
+  DiamondOutlined,
+  HiveOutlined,
   HowToVoteOutlined,
+  ReceiptLongOutlined,
+  TrendingUpOutlined,
 } from '@mui/icons-material'
-import { motion } from 'framer-motion'
 import Link from 'next/link'
 import {
   Card,
   CardContent,
   CardHeader,
 } from 'polarkit/components/ui/atoms/card'
-import { List, ListItem } from 'polarkit/components/ui/atoms/list'
-import { PropsWithChildren, useState } from 'react'
+import { List } from 'polarkit/components/ui/atoms/list'
+import React from 'react'
 import { twMerge } from 'tailwind-merge'
 import { StaggerReveal } from '../Shared/StaggerReveal'
 import { Section } from './Section'
 interface FeatureItemProps {
+  className?: string
   icon?: JSX.Element
   title: string
   description: string
   link: string
 }
 
-const FeatureItem = ({ title, icon, description, link }: FeatureItemProps) => {
+const FeatureItem = ({
+  title,
+  icon,
+  description,
+  link,
+  className,
+}: FeatureItemProps) => {
   return (
     <StaggerReveal.Child key={title}>
-      <Link className="group flex h-full flex-col" href={link}>
-        <Card className="hover:bg-gray-75 dark:hover:bg-polar-900 flex h-full flex-col border-none transition-colors dark:border-none">
-          <CardHeader className="flex flex-row items-center gap-x-4 space-y-0 pb-4">
+      <Link
+        className={twMerge('group flex h-full flex-col', className)}
+        href={link}
+      >
+        <Card className="hover:bg-gray-75 dark:hover:bg-polar-900 flex h-full flex-col rounded-none border-none transition-colors dark:border-none">
+          <CardHeader className="flex flex-row items-center gap-x-3 space-y-0 pb-4">
             {icon ? (
-              <span className="dark:bg-polar-800 dark flex h-10 w-10 flex-col items-center justify-center rounded-xl bg-gray-200 transition-colors group-hover:bg-black group-hover:text-white dark:group-hover:bg-white dark:group-hover:text-black">
-                {icon}
+              <span className="dark:bg-polar-800 dark flex h-8 w-8 flex-col items-center justify-center rounded-lg bg-gray-200 transition-colors group-hover:bg-black group-hover:text-white dark:group-hover:bg-white dark:group-hover:text-black">
+                {React.cloneElement(icon, { fontSize: 'inherit' })}
               </span>
             ) : (
               <div className="-mr-4 h-10" />
             )}
-            <h3 className="text-lg leading-snug">{title}</h3>
+            <h3 className="leading-snug">{title}</h3>
           </CardHeader>
           <CardContent className="flex h-full flex-col gap-y-4 pb-6">
-            <p className="dark:text-polar-200 h-full leading-relaxed text-gray-500 group-hover:text-black dark:group-hover:text-white">
+            <p className="dark:text-polar-200 h-full text-sm leading-relaxed text-gray-500 group-hover:text-black dark:group-hover:text-white">
               {description}
             </p>
           </CardContent>
@@ -56,154 +67,117 @@ const items = [
   {
     title: 'From idea to funding',
     description:
-      'We offer a wide array of monetization tools for your project, from one-time payments & recurring subscriptions to donations.',
+      'Polar has a wide array of monetization tools for your project, from one-time payments & recurring subscriptions to donations.',
     content: (
-      <StaggerReveal className="grid grid-cols-1 gap-8 md:grid-cols-2">
-        <FeatureItem
-          icon={<HowToVoteOutlined fontSize="small" />}
-          title="Issue Funding"
-          description="Polar allows you to fund issues in your repository. You can create a badge for a GitHub issue and allow your community to fund it."
-          link="/docs/overview/issue-funding/overview"
-        />
-        <FeatureItem
-          icon={<FavoriteBorderOutlined fontSize="small" />}
-          title="Rewards"
-          description="Setup & promote an upfront reward to potential contributors, on your GitHub issues."
-          link="/docs/overview/issue-funding/reward-contributors"
-        />
-        <FeatureItem
-          icon={<AttachMoneyOutlined fontSize="small" />}
-          title="Donations"
-          description="Makes it a piece of cake for your supporters to donate."
-          link="/docs/overview/donations"
-        />
-        <FeatureItem
-          icon={<AllInclusiveOutlined fontSize="small" />}
-          title="Subscriptions"
-          description="Offer paid subscription tiers, with associated benefits that you give in return."
-          link="/docs/overview/subscriptions"
-        />
-      </StaggerReveal>
+      <div className="flex flex-col gap-y-12">
+        <div className="flex flex-col gap-y-4">
+          <h2 className="text-2xl">From idea to funding</h2>
+          <p className="dark:text-polar-200 text-gray-500">
+            Pick & choose from a wide array of monetization tools.
+          </p>
+        </div>
+        <StaggerReveal className="grid grid-cols-1 divide-y overflow-hidden rounded-3xl border md:grid-cols-1">
+          <FeatureItem
+            icon={<HowToVoteOutlined />}
+            title="Issue Funding"
+            description="Automatically embed the Polar funding badge on your GitHub issues to crowdfund your backlog."
+            link="/docs/overview/issue-funding/overview"
+          />
+          <FeatureItem
+            icon={<AttachMoneyOutlined />}
+            title="Donations"
+            description="Makes it a piece of cake for your supporters to show appreciation."
+            link="/docs/overview/donations"
+          />
+          <FeatureItem
+            icon={<AllInclusiveOutlined />}
+            title="Subscriptions"
+            description="Offer paid subscription tiers, with associated benefits that you give in return."
+            link="/docs/overview/subscriptions"
+          />
+        </StaggerReveal>
+      </div>
     ),
   },
   {
-    title: 'Turn your passion into a Business',
+    title: 'From passion to business',
     description:
-      'Take your project to the next level with Products. Sell licenses, access to private repositories, or any other digital product you can think of.',
+      'Polar helps you take a leap of faith & turn your passion project into a thriving business.',
     content: (
-      <StaggerReveal className="grid grid-cols-1 gap-8 md:grid-cols-2">
-        <FeatureItem
-          icon={<HowToVoteOutlined fontSize="small" />}
-          title="Benefits"
-          description="A powerful service which can be tied to Products & Subscriptions to offer exclusive benefits for your supporters."
-          link="/docs/overview/issue-funding/overview"
-        />
-        <FeatureItem
-          icon={<FavoriteBorderOutlined fontSize="small" />}
-          title="Products"
-          description="Sell licenses, access to private repositories, or any other digital product you can think of."
-          link="/docs/overview/issue-funding/reward-contributors"
-        />
-      </StaggerReveal>
-    ),
-  },
-  {
-    title: 'We take care of your taxes',
-    description: `We're the merchant of record, handling boilerplate (billing, receipts, customer accounts etc) & your headaches (sales tax, VAT).`,
-  },
-  {
-    title: 'Deeply integrated with GitHub',
-    description: `Polar is built on top of GitHub, so you can easily integrate with your existing workflow. We're also proud to be an official GitHub funding option.`,
-  },
-  {
-    title: 'Developer Experience in the front seat',
-    description:
-      'We believe in transparency and trust, so we open sourced our entire platform. You can find our code on GitHub.',
-    content: (
-      <StaggerReveal className="grid grid-cols-1 gap-8 md:grid-cols-2">
-        <FeatureItem
-          title="⌘K Anywhere"
-          description="Reach into API documentation, quick navigation, and more with a single keystroke."
-          link="/docs/overview/issue-funding/overview"
-        />
-        <FeatureItem
-          icon={<FavoriteBorderOutlined fontSize="small" />}
-          title="Products"
-          description="Sell licenses, access to private repositories, or any other digital product you can think of."
-          link="/docs/overview/issue-funding/reward-contributors"
-        />
-      </StaggerReveal>
+      <div className="flex flex-col gap-y-12">
+        <div className="flex flex-col gap-y-4">
+          <h2 className="text-2xl">From passion to business</h2>
+          <p className="dark:text-polar-200 text-gray-500">
+            Unlock the full potential of your project by selling digital
+            products.
+          </p>
+        </div>
+        <StaggerReveal className="grid grid-cols-1 divide-y overflow-hidden rounded-3xl border md:grid-cols-1">
+          <FeatureItem
+            icon={<DiamondOutlined />}
+            title="Products"
+            description="Sell licenses, access to private repositories, or any other digital product you can think of."
+            link="/docs/overview/issue-funding/reward-contributors"
+          />
+          <FeatureItem
+            icon={<TrendingUpOutlined />}
+            title="Sales Metrics"
+            description="We aggregate all your sales data into one place, so you can focus on what matters."
+            link="/docs/overview/issue-funding/reward-contributors"
+          />
+          <FeatureItem
+            icon={<ReceiptLongOutlined />}
+            title="Newsletters"
+            description="Reach your community with insightful newsletter posts."
+            link="/docs/overview/issue-funding/reward-contributors"
+          />
+        </StaggerReveal>
+      </div>
     ),
   },
 ]
 
 export const Journey = () => {
-  const [selectedIndex, setSelectedIndex] = useState(0)
-
   return (
-    <Section className="gap-y-16 py-24" wrapperClassName="relative">
-      <h3 className="z-10 text-4xl leading-relaxed">
-        Focus on your passion —<br />
-        while we build infrastructure to get you paid
-      </h3>
-      <div className="z-10 flex flex-row gap-x-16">
-        <div className="flex w-1/3 flex-col">
-          <List>
-            {items.map((item, index) => (
-              <JourneyItem
-                key={item.title}
-                title={item.title}
-                description={item.description}
-                active={selectedIndex === index}
-                onClick={() => setSelectedIndex(index)}
-              />
-            ))}
-          </List>
+    <Section
+      className="flex-row gap-32 gap-y-24 py-24"
+      wrapperClassName="relative"
+    >
+      <div className="flex w-1/3 flex-col gap-y-4 text-2xl">
+        <h3>Focus on your passion —</h3>
+        <h3 className="dark:text-polar-200 text-gray-500">
+          While we build infrastructure to get you paid
+        </h3>
+      </div>
+      <div className="flex w-2/3 flex-col gap-y-12">
+        <div className="flex flex-row gap-x-12">
+          {items.map((item) => (
+            <div className="flex w-full flex-col" key={item.title}>
+              {item.content}
+            </div>
+          ))}
         </div>
-        <div className="flex w-2/3 flex-col">
-          {items[selectedIndex].content}
-        </div>
+        <List>
+          <FeatureItem
+            icon={<HiveOutlined />}
+            title="Benefits Engine"
+            description="Polar's benefits engine allows you to offer exclusive benefits to your supporters."
+            link="#"
+          />
+          <FeatureItem
+            icon={<HiveOutlined />}
+            title="Public Page"
+            description="A home for your profile on Polar. Showcase your projects, crowdfunded issues, and more."
+            link="#"
+          />
+          <FeatureItem
+            icon={<ReceiptLongOutlined />}
+            title="Merchant of Record"
+            description="No more VAT headache - we handle the necessary taxes for you."
+            link="/docs/overview/issue-funding/reward-contributors"
+          />
+        </List>
       </div>
     </Section>
-  )
-}
-
-const JourneyItem = ({
-  title,
-  description,
-  active,
-  onClick,
-}: PropsWithChildren<{
-  title: string
-  description: string
-  active: boolean
-  onClick: () => void
-}>) => {
-  return (
-    <ListItem
-      className={twMerge(
-        'hover:bg-gray-75 dark:hover:bg-polar-900 flex flex-col items-start gap-y-4 p-6',
-        active && 'dark:bg-polar-900',
-      )}
-      selected={active}
-      onSelect={onClick}
-    >
-      <div className="flex flex-row gap-x-6">
-        <ArrowForward className="text-black dark:text-white" fontSize="small" />
-        <div className="-mt-1 flex flex-col gap-y-4">
-          <h3 className="text-lg">{title}</h3>
-          {active && (
-            <motion.div
-              className="dark:text-polar-200 flex flex-col text-sm leading-relaxed text-gray-500"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.5 }}
-            >
-              {description}
-            </motion.div>
-          )}
-        </div>
-      </div>
-    </ListItem>
   )
 }

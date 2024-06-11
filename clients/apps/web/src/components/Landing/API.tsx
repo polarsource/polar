@@ -5,12 +5,12 @@ import { APIFirst } from './molecules/APIFirst'
 
 export const API = () => {
   return (
-    <Section className="flex flex-col items-center justify-center gap-y-32">
+    <Section className="flex flex-col items-center justify-center gap-y-16">
       <APIFirst />
-      <div className="flex flex-col items-center gap-y-8">
+      <div className="flex flex-col items-center gap-y-12">
         <h1 className="text-5xl">Our API sits in the front seat</h1>
         <p className="dark:text-polar-200 text-lg text-gray-500">
-          We built Polar by putting the developer experience first
+          We built Polar with the developer experience in mind
         </p>
         <Link href="/docs/api-reference/introduction">
           <Button size="lg">Explore the Polar API</Button>

@@ -11,7 +11,7 @@ export const APIFirst = () => {
         className="max-w-[300px]"
         subscriptionTier={MOCKED_PRODUCTS[1]}
       />
-      <div className="dark:bg-polar-900/50 absolute -bottom-12 left-1/2 flex w-[480px] -translate-x-1/2 flex-col gap-y-6 rounded-3xl border p-6 font-mono shadow-2xl backdrop-blur-md">
+      <div className="dark:bg-polar-900/50 absolute bottom-8 left-1/2 flex h-52 w-[480px] -translate-x-1/2 flex-col gap-y-6 rounded-3xl border p-6 font-mono shadow-2xl backdrop-blur-md">
         <div className="flex flex-row items-center gap-x-2">
           {Array.from({ length: 3 }).map((_, index) => (
             <div
@@ -43,7 +43,7 @@ https://api.polar.sh/api/v1/products/123 \\
               repeatType: 'mirror',
               repeatDelay: 0.4,
             }}
-            className="ml-1 inline-block h-4 w-2 bg-black [vertical-align:sub] dark:bg-white"
+            className="ml-1 inline-block h-4 w-1.5 bg-black [vertical-align:sub] dark:bg-white"
           />
         </span>
       </div>

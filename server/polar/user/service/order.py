@@ -53,6 +53,7 @@ class UserOrderService(ResourceServiceReader[Order]):
 
         statement = statement.options(
             joinedload(Order.subscription),
+            contains_eager(Order.product).selectinload(Product.product_medias),
         ).join(Organization, onclause=Product.organization_id == Organization.id)
 
         OrderProductPrice = aliased(ProductPrice)
@@ -109,6 +110,7 @@ class UserOrderService(ResourceServiceReader[Order]):
             .options(
                 joinedload(Order.product_price),
                 joinedload(Order.subscription),
+                contains_eager(Order.product).selectinload(Product.product_medias),
             )
         )
 

@@ -28,6 +28,7 @@ if TYPE_CHECKING:
 
 class FileServiceTypes(StrEnum):
     downloadable = "downloadable"
+    product_media = "product_media"
 
 
 class File(RecordModel):
@@ -66,3 +67,19 @@ class File(RecordModel):
 
     # Flag for Polar to disable consumption of file
     is_enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+
+    __mapper_args__ = {
+        "polymorphic_on": "service",
+    }
+
+
+class DownloadableFile(File):
+    __mapper_args__ = {
+        "polymorphic_identity": FileServiceTypes.downloadable,
+    }
+
+
+class ProductMediaFile(File):
+    __mapper_args__ = {
+        "polymorphic_identity": FileServiceTypes.product_media,
+    }

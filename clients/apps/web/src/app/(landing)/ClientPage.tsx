@@ -7,7 +7,6 @@ export default function Page() {
   return (
     <div className="flex flex-col items-center">
       <Hero />
-      <Separator className="w-screen" />
       <Journey />
       <Separator className="w-screen" />
       <Testamonials />

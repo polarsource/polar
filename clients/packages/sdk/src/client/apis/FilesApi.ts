@@ -18,12 +18,13 @@ import type {
   FileCreate,
   FileNotFound,
   FilePatch,
-  FileRead,
   FileUpload,
   FileUploadCompleted,
   HTTPValidationError,
-  ListResourceFileRead,
+  ListResourceAnnotatedUnionDownloadableFileReadProductMediaFileReadDiscriminatorMergeJSONSchema,
   NotPermitted,
+  ResponseFilesUpdate,
+  ResponseFilesUploaded,
 } from '../models/index';
 
 export interface FilesApiDeleteRequest {
@@ -143,7 +144,7 @@ export class FilesApi extends runtime.BaseAPI {
     /**
      * List
      */
-    async listRaw(requestParameters: FilesApiListRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListResourceFileRead>> {
+    async listRaw(requestParameters: FilesApiListRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListResourceAnnotatedUnionDownloadableFileReadProductMediaFileReadDiscriminatorMergeJSONSchema>> {
         const queryParameters: any = {};
 
         if (requestParameters['organizationId'] != null) {
@@ -173,7 +174,7 @@ export class FilesApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/files`,
+            path: `/api/v1/files/`,
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
@@ -185,7 +186,7 @@ export class FilesApi extends runtime.BaseAPI {
     /**
      * List
      */
-    async list(requestParameters: FilesApiListRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ListResourceFileRead> {
+    async list(requestParameters: FilesApiListRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ListResourceAnnotatedUnionDownloadableFileReadProductMediaFileReadDiscriminatorMergeJSONSchema> {
         const response = await this.listRaw(requestParameters, initOverrides);
         return await response.value();
     }
@@ -193,7 +194,7 @@ export class FilesApi extends runtime.BaseAPI {
     /**
      * Update
      */
-    async updateRaw(requestParameters: FilesApiUpdateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<FileRead>> {
+    async updateRaw(requestParameters: FilesApiUpdateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ResponseFilesUpdate>> {
         if (requestParameters['id'] == null) {
             throw new runtime.RequiredError(
                 'id',
@@ -236,7 +237,7 @@ export class FilesApi extends runtime.BaseAPI {
     /**
      * Update
      */
-    async update(requestParameters: FilesApiUpdateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<FileRead> {
+    async update(requestParameters: FilesApiUpdateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ResponseFilesUpdate> {
         const response = await this.updateRaw(requestParameters, initOverrides);
         return await response.value();
     }
@@ -244,7 +245,7 @@ export class FilesApi extends runtime.BaseAPI {
     /**
      * Uploaded
      */
-    async uploadedRaw(requestParameters: FilesApiUploadedRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<FileRead>> {
+    async uploadedRaw(requestParameters: FilesApiUploadedRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ResponseFilesUploaded>> {
         if (requestParameters['id'] == null) {
             throw new runtime.RequiredError(
                 'id',
@@ -287,7 +288,7 @@ export class FilesApi extends runtime.BaseAPI {
     /**
      * Uploaded
      */
-    async uploaded(requestParameters: FilesApiUploadedRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<FileRead> {
+    async uploaded(requestParameters: FilesApiUploadedRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ResponseFilesUploaded> {
         const response = await this.uploadedRaw(requestParameters, initOverrides);
         return await response.value();
     }

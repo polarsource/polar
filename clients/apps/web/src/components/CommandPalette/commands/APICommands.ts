@@ -1,4 +1,4 @@
-import openapiSchema from '@polar-sh/sdk/openapi'
+import openapiSchema from '@/openapi.json'
 import { OpenAPIV3_1 } from 'openapi-types'
 import { APICommand } from './commands'
 

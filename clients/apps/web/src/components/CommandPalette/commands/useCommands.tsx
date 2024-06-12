@@ -1,8 +1,8 @@
 import { resolveEndpointMetadata } from '@/components/Documentation/resolveEndpointMetadata'
 import { useCurrentOrgAndRepoFromURL } from '@/hooks'
+import openapiSchema from '@/openapi.json'
 import SwaggerParser from '@apidevtools/swagger-parser'
 import { Organization } from '@polar-sh/sdk'
-import openapiSchema from '@polar-sh/sdk/openapi'
 import lunr from 'lunr'
 import {
   useParams,

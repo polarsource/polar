@@ -44,3 +44,4 @@ storybook-static
 
 **/*/searchIndex.json
 **/*/searchMetadata.json
+/src/openapi.json

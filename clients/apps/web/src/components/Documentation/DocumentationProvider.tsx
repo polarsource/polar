@@ -1,8 +1,8 @@
 'use client'
 
+import openapiSchema from '@/openapi.json'
 import { CONFIG } from '@/utils/config'
 import SwaggerParser from '@apidevtools/swagger-parser'
-import openapiSchema from '@polar-sh/sdk/openapi'
 import { OpenAPIV3_1 } from 'openapi-types'
 import {
   Dispatch,

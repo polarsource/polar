@@ -12,6 +12,9 @@ jobs:
     timeout-minutes: 15
     runs-on: ubuntu-22.04
 
+    env:
+      POLAR_OPENAPI_SCHEMA_URL: ${{ secrets.POLAR_OPENAPI_SCHEMA_URL }}
+
     steps:
       - name: Check out code
         uses: actions/checkout@v3

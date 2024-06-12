@@ -7428,9 +7428,9 @@
                             },
                             "description": "Filter by the type of purchase the customer made.",
                             "default": [
-                                "donation",
                                 "order",
-                                "subscription"
+                                "subscription",
+                                "donation"
                             ],
                             "title": "Customer Types"
                         },
@@ -7899,8 +7899,8 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "creator:subscriptions:read",
-                            "creator:subscriptions:write"
+                            "subscriptions:read",
+                            "subscriptions:write"
                         ]
                     },
                     {
@@ -8048,8 +8048,8 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "creator:subscriptions:read",
-                            "creator:subscriptions:write"
+                            "subscriptions:read",
+                            "subscriptions:write"
                         ]
                     },
                     {
@@ -8274,7 +8274,7 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "creator:subscriptions:write"
+                            "subscriptions:write"
                         ]
                     },
                     {
@@ -8376,7 +8376,7 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "creator:subscriptions:write"
+                            "subscriptions:write"
                         ]
                     },
                     {
@@ -8478,8 +8478,8 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "creator:subscriptions:read",
-                            "creator:subscriptions:write"
+                            "subscriptions:read",
+                            "subscriptions:write"
                         ]
                     },
                     {
@@ -11710,8 +11710,8 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "creator:benefits:write",
-                            "creator:benefits:read"
+                            "benefits:read",
+                            "benefits:write"
                         ]
                     },
                     {
@@ -11825,7 +11825,7 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "creator:benefits:write"
+                            "benefits:write"
                         ]
                     },
                     {
@@ -11930,8 +11930,8 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "creator:benefits:write",
-                            "creator:benefits:read"
+                            "benefits:read",
+                            "benefits:write"
                         ]
                     },
                     {
@@ -12021,7 +12021,7 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "creator:benefits:write"
+                            "benefits:write"
                         ]
                     },
                     {
@@ -12151,7 +12151,7 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "creator:benefits:write"
+                            "benefits:write"
                         ]
                     },
                     {
@@ -12226,8 +12226,8 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "creator:benefits:write",
-                            "creator:benefits:read"
+                            "benefits:read",
+                            "benefits:write"
                         ]
                     },
                     {
@@ -12953,8 +12953,8 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "creator:products:write",
-                            "creator:products:read"
+                            "products:write",
+                            "products:read"
                         ]
                     },
                     {
@@ -13112,7 +13112,7 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "creator:products:write"
+                            "products:write"
                         ]
                     },
                     {
@@ -13178,8 +13178,8 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "creator:products:write",
-                            "creator:products:read"
+                            "products:write",
+                            "products:read"
                         ]
                     },
                     {
@@ -13249,7 +13249,7 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "creator:products:write"
+                            "products:write"
                         ]
                     },
                     {
@@ -13341,7 +13341,7 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "creator:products:write"
+                            "products:write"
                         ]
                     },
                     {
@@ -13863,7 +13863,7 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "creator:files:write"
+                            "files:write"
                         ]
                     },
                     {
@@ -14009,7 +14009,7 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "creator:files:write"
+                            "files:write"
                         ]
                     },
                     {
@@ -14034,7 +14034,7 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "creator:files:write"
+                            "files:write"
                         ]
                     },
                     {
@@ -14105,7 +14105,7 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "creator:files:write"
+                            "files:write"
                         ]
                     },
                     {
@@ -14174,7 +14174,7 @@
                     },
                     {
                         "OpenIdConnect": [
-                            "creator:files:write"
+                            "files:write"
                         ]
                     },
                     {
@@ -23400,7 +23400,7 @@
                     "scope": {
                         "type": "string",
                         "title": "Scope",
-                        "default": "openid profile email articles:read user:read organizations:read organizations:write creator:subscriptions:read creator:subscriptions:write creator:products:read creator:products:write creator:benefits:read creator:benefits:write orders:read creator:files:read creator:files:write metrics:read webhooks:read webhooks:write user:benefits:read user:orders:read user:subscriptions:read user:subscriptions:write user:advertisement_campaigns:read user:advertisement_campaigns:write user:downloadables:read"
+                        "default": "openid profile email articles:read user:read organizations:read organizations:write products:read products:write benefits:read benefits:write files:read files:write subscriptions:read subscriptions:write orders:read metrics:read webhooks:read webhooks:write user:benefits:read user:orders:read user:subscriptions:read user:subscriptions:write user:downloadables:read user:advertisement_campaigns:read user:advertisement_campaigns:write"
                     },
                     "client_name": {
                         "type": "string",
@@ -23561,7 +23561,7 @@
                     "scope": {
                         "type": "string",
                         "title": "Scope",
-                        "default": "openid profile email articles:read user:read organizations:read organizations:write creator:subscriptions:read creator:subscriptions:write creator:products:read creator:products:write creator:benefits:read creator:benefits:write orders:read creator:files:read creator:files:write metrics:read webhooks:read webhooks:write user:benefits:read user:orders:read user:subscriptions:read user:subscriptions:write user:advertisement_campaigns:read user:advertisement_campaigns:write user:downloadables:read"
+                        "default": "openid profile email articles:read user:read organizations:read organizations:write products:read products:write benefits:read benefits:write files:read files:write subscriptions:read subscriptions:write orders:read metrics:read webhooks:read webhooks:write user:benefits:read user:orders:read user:subscriptions:read user:subscriptions:write user:downloadables:read user:advertisement_campaigns:read user:advertisement_campaigns:write"
                     },
                     "client_name": {
                         "type": "string",
@@ -23682,7 +23682,7 @@
                     "scope": {
                         "type": "string",
                         "title": "Scope",
-                        "default": "openid profile email articles:read user:read organizations:read organizations:write creator:subscriptions:read creator:subscriptions:write creator:products:read creator:products:write creator:benefits:read creator:benefits:write orders:read creator:files:read creator:files:write metrics:read webhooks:read webhooks:write user:benefits:read user:orders:read user:subscriptions:read user:subscriptions:write user:advertisement_campaigns:read user:advertisement_campaigns:write user:downloadables:read"
+                        "default": "openid profile email articles:read user:read organizations:read organizations:write products:read products:write benefits:read benefits:write files:read files:write subscriptions:read subscriptions:write orders:read metrics:read webhooks:read webhooks:write user:benefits:read user:orders:read user:subscriptions:read user:subscriptions:write user:downloadables:read user:advertisement_campaigns:read user:advertisement_campaigns:write"
                     },
                     "client_name": {
                         "type": "string",
@@ -27695,15 +27695,15 @@
                     "web_default",
                     "organizations:read",
                     "organizations:write",
-                    "creator:subscriptions:read",
-                    "creator:subscriptions:write",
-                    "creator:products:read",
-                    "creator:products:write",
-                    "creator:benefits:read",
-                    "creator:benefits:write",
+                    "products:read",
+                    "products:write",
+                    "benefits:read",
+                    "benefits:write",
+                    "files:read",
+                    "files:write",
+                    "subscriptions:read",
+                    "subscriptions:write",
                     "orders:read",
-                    "creator:files:read",
-                    "creator:files:write",
                     "metrics:read",
                     "webhooks:read",
                     "webhooks:write",
@@ -27711,24 +27711,36 @@
                     "user:orders:read",
                     "user:subscriptions:read",
                     "user:subscriptions:write",
+                    "user:downloadables:read",
                     "user:advertisement_campaigns:read",
-                    "user:advertisement_campaigns:write",
-                    "user:downloadables:read"
+                    "user:advertisement_campaigns:write"
                 ],
                 "title": "Scope",
                 "enumNames": {
                     "articles:read": "Articles Read",
-                    "creator:benefits:read": "Read benefits",
-                    "creator:benefits:write": "Create or modify benefits",
-                    "creator:files:read": "Read & Download Files",
-                    "creator:files:write": "Upload Files",
-                    "creator:subscriptions:read": "Read subscription tiers and subscribers",
-                    "creator:subscriptions:write": "Create or modify subscription tiers and subscribers",
+                    "benefits:read": "Read benefits",
+                    "benefits:write": "Create or modify benefits",
                     "email": "Read your email address",
+                    "files:read": "Read file uploads",
+                    "files:write": "Create or modify file uploads",
+                    "metrics:read": "Read metrics",
                     "openid": "OpenID",
+                    "orders:read": "Read orders made on your organizations",
+                    "organizations:read": "Read your organizations",
+                    "organizations:write": "Create or modify organizations",
+                    "products:read": "Read products",
+                    "products:write": "Create or modify products",
                     "profile": "Read your profile",
-                    "user:downloadables:read": "Read Downloadable Files",
+                    "subscriptions:read": "Read subscriptions made on your organizations",
+                    "subscriptions:write": "Create or modify subscriptions made on your organizations",
+                    "user:advertisement_campaigns:read": "Read your advertisement campaigns",
+                    "user:advertisement_campaigns:write": "Create or modify your advertisement campaigns",
+                    "user:benefits:read": "Read your granted benefits",
+                    "user:downloadables:read": "Read your downloadable files",
+                    "user:orders:read": "Read your orders",
                     "user:read": "User Read",
+                    "user:subscriptions:read": "Read your subscriptions",
+                    "user:subscriptions:write": "Create or modify your subscriptions",
                     "web_default": "Web Default",
                     "webhooks:read": "Read webhooks",
                     "webhooks:write": "Create or modify webhooks"

@@ -11,7 +11,6 @@ import {
   DonationsApi,
   FilesApi,
   FundingApi,
-  HealthApi,
   MetricsApi,
   IntegrationsDiscordApi,
   IntegrationsGithubApi,
@@ -29,7 +28,6 @@ import {
   PullRequestsApi,
   RepositoriesApi,
   RewardsApi,
-  StreamApi,
   SubscriptionsApi,
   TrafficApi,
   TransactionsApi,
@@ -49,7 +47,6 @@ export class PolarAPI {
   public readonly dashboard: DashboardApi
   public readonly donations: DonationsApi
   public readonly funding: FundingApi
-  public readonly health: HealthApi
   public readonly integrationsDiscord: IntegrationsDiscordApi
   public readonly integrationsGitHub: IntegrationsGithubApi
   public readonly integrationsGitHubRepositoryBenefit: IntegrationsGithubRepositoryBenefitApi
@@ -67,7 +64,6 @@ export class PolarAPI {
   public readonly pullRequests: PullRequestsApi
   public readonly repositories: RepositoriesApi
   public readonly rewards: RewardsApi
-  public readonly stream: StreamApi
   public readonly subscriptions: SubscriptionsApi
   public readonly traffic: TrafficApi
   public readonly transactions: TransactionsApi
@@ -87,7 +83,6 @@ export class PolarAPI {
     this.dashboard = new DashboardApi(config)
     this.donations = new DonationsApi(config)
     this.funding = new FundingApi(config)
-    this.health = new HealthApi(config)
     this.integrationsDiscord = new IntegrationsDiscordApi(config)
     this.integrationsGitHub = new IntegrationsGithubApi(config)
     this.integrationsGitHubRepositoryBenefit =
@@ -106,7 +101,6 @@ export class PolarAPI {
     this.pullRequests = new PullRequestsApi(config)
     this.repositories = new RepositoriesApi(config)
     this.rewards = new RewardsApi(config)
-    this.stream = new StreamApi(config)
     this.subscriptions = new SubscriptionsApi(config)
     this.traffic = new TrafficApi(config)
     this.transactions = new TransactionsApi(config)

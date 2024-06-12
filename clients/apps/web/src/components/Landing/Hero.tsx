@@ -6,8 +6,8 @@ import Link from 'next/link'
 export const Hero = () => {
   return (
     <Section
-      className="flex w-full flex-col gap-y-12 py-40"
-      wrapperClassName="relative isolate"
+      className="flex w-full flex-col gap-y-12 py-24"
+      wrapperClassName="relative isolate border-b dark:border-polar-800 border-gray-100"
     >
       <div
         className="absolute inset-0"

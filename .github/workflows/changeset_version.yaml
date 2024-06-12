@@ -21,6 +21,7 @@ jobs:
     env:
       TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
       TURBO_TEAM: ${{ vars.TURBO_TEAM }}
+      POLAR_OPENAPI_SCHEMA_URL: ${{ secrets.POLAR_OPENAPI_SCHEMA_URL }}
 
     steps:
       - name: Check out code

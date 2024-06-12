@@ -1,5 +1,7 @@
 import { OpenAPIV3_1 } from 'openapi-types'
+import OptionalBadge from './OptionalBadge'
 import { ParameterItem } from './ParameterItem'
+import RequiredBadge from './RequiredBadge'
 
 export const BodyParameters = ({
   parameters,
@@ -36,13 +38,9 @@ export const BodyParameters = ({
                 </span>
 
                 {requiredProperties.includes(key) ? (
-                  <span className="text-xxs rounded-md bg-red-50 px-2 py-1 font-mono font-normal capitalize text-red-500 dark:bg-red-950/50">
-                    Required
-                  </span>
+                  <RequiredBadge />
                 ) : (
-                  <span className="text-xxs rounded-md bg-green-50 px-2 py-1 font-mono font-normal capitalize text-green-500 dark:bg-green-950/50">
-                    Optional
-                  </span>
+                  <OptionalBadge />
                 )}
               </div>
               <span className="text-lg font-medium text-black dark:text-white">

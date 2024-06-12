@@ -17,7 +17,7 @@ class TestGetMetrics:
 
     @pytest.mark.auth(
         AuthSubjectFixture(scopes={Scope.web_default}),
-        AuthSubjectFixture(scopes={Scope.creator_metrics_read}),
+        AuthSubjectFixture(scopes={Scope.metrics_read}),
     )
     async def test_over_limits(
         self, client: AsyncClient, user_organization_admin: UserOrganization
@@ -35,7 +35,7 @@ class TestGetMetrics:
 
     @pytest.mark.auth(
         AuthSubjectFixture(scopes={Scope.web_default}),
-        AuthSubjectFixture(scopes={Scope.creator_metrics_read}),
+        AuthSubjectFixture(scopes={Scope.metrics_read}),
     )
     async def test_user_valid(
         self, client: AsyncClient, user_organization_admin: UserOrganization
@@ -55,7 +55,7 @@ class TestGetMetrics:
         assert len(json["periods"]) == 12
 
     @pytest.mark.auth(
-        AuthSubjectFixture(subject="organization", scopes={Scope.creator_metrics_read})
+        AuthSubjectFixture(subject="organization", scopes={Scope.metrics_read})
     )
     async def test_organization(self, client: AsyncClient) -> None:
         response = await client.get(
@@ -83,8 +83,8 @@ class TestGetMetricsLimits:
 
     @pytest.mark.auth(
         AuthSubjectFixture(scopes={Scope.web_default}),
-        AuthSubjectFixture(scopes={Scope.creator_metrics_read}),
-        AuthSubjectFixture(subject="organization", scopes={Scope.creator_metrics_read}),
+        AuthSubjectFixture(scopes={Scope.metrics_read}),
+        AuthSubjectFixture(subject="organization", scopes={Scope.metrics_read}),
     )
     async def test_valid(self, client: AsyncClient) -> None:
         response = await client.get("/api/v1/metrics/limits")

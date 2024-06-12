@@ -37,7 +37,7 @@ class TestListOrders:
 
     @pytest.mark.auth(
         AuthSubjectFixture(scopes={Scope.web_default}),
-        AuthSubjectFixture(scopes={Scope.creator_orders_read}),
+        AuthSubjectFixture(scopes={Scope.orders_read}),
     )
     async def test_user_valid(
         self,
@@ -53,7 +53,7 @@ class TestListOrders:
         assert json["pagination"]["total_count"] == len(orders)
 
     @pytest.mark.auth(
-        AuthSubjectFixture(subject="organization", scopes={Scope.creator_orders_read}),
+        AuthSubjectFixture(subject="organization", scopes={Scope.orders_read}),
     )
     async def test_organization(self, client: AsyncClient, orders: list[Order]) -> None:
         response = await client.get("/api/v1/orders/")
@@ -74,7 +74,7 @@ class TesGetOrdersStatistics:
 
     @pytest.mark.auth(
         AuthSubjectFixture(scopes={Scope.web_default}),
-        AuthSubjectFixture(scopes={Scope.creator_orders_read}),
+        AuthSubjectFixture(scopes={Scope.orders_read}),
     )
     async def test_user_valid(
         self, client: AsyncClient, user_organization_admin: UserOrganization
@@ -87,7 +87,7 @@ class TesGetOrdersStatistics:
         assert len(json["periods"]) == 12
 
     @pytest.mark.auth(
-        AuthSubjectFixture(subject="organization", scopes={Scope.creator_orders_read}),
+        AuthSubjectFixture(subject="organization", scopes={Scope.orders_read}),
     )
     async def test_organization(self, client: AsyncClient) -> None:
         response = await client.get("/api/v1/orders/statistics")

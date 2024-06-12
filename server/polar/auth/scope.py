@@ -18,21 +18,21 @@ class Scope(StrEnum):
     organizations_read = "organizations:read"
     organizations_write = "organizations:write"
 
-    creator_subscriptions_read = "creator:subscriptions:read"
-    creator_subscriptions_write = "creator:subscriptions:write"
+    products_read = "products:read"
+    products_write = "products:write"
 
-    creator_products_read = "creator:products:read"
-    creator_products_write = "creator:products:write"
+    benefits_read = "benefits:read"
+    benefits_write = "benefits:write"
 
-    creator_benefits_read = "creator:benefits:read"
-    creator_benefits_write = "creator:benefits:write"
+    files_read = "files:read"
+    files_write = "files:write"
 
-    creator_orders_read = "orders:read"
+    subscriptions_read = "subscriptions:read"
+    subscriptions_write = "subscriptions:write"
 
-    creator_files_read = "creator:files:read"
-    creator_files_write = "creator:files:write"
+    orders_read = "orders:read"
 
-    creator_metrics_read = "metrics:read"
+    metrics_read = "metrics:read"
 
     webhooks_read = "webhooks:read"
     webhooks_write = "webhooks:write"
@@ -41,10 +41,9 @@ class Scope(StrEnum):
     user_orders_read = "user:orders:read"
     user_subscriptions_read = "user:subscriptions:read"
     user_subscriptions_write = "user:subscriptions:write"
+    user_downloadables_read = "user:downloadables:read"
     user_advertisement_campaigns_read = "user:advertisement_campaigns:read"
     user_advertisement_campaigns_write = "user:advertisement_campaigns:write"
-
-    user_downloadables_read = "user:downloadables:read"
 
     @classmethod
     def __get_pydantic_json_schema__(
@@ -65,15 +64,31 @@ SCOPES_SUPPORTED_DISPLAY_NAMES: dict[Scope, str] = {
     Scope.web_default: "Web Default",
     Scope.articles_read: "Articles Read",
     Scope.user_read: "User Read",
-    Scope.creator_subscriptions_read: "Read subscription tiers and subscribers",
-    Scope.creator_subscriptions_write: "Create or modify subscription tiers and subscribers",
-    Scope.creator_benefits_read: "Read benefits",
-    Scope.creator_benefits_write: "Create or modify benefits",
+    Scope.organizations_read: "Read your organizations",
+    Scope.organizations_write: "Create or modify organizations",
+    Scope.products_read: "Read products",
+    Scope.products_write: "Create or modify products",
+    Scope.benefits_read: "Read benefits",
+    Scope.benefits_write: "Create or modify benefits",
+    Scope.files_read: "Read file uploads",
+    Scope.files_write: "Create or modify file uploads",
+    Scope.subscriptions_read: "Read subscriptions made on your organizations",
+    Scope.subscriptions_write: (
+        "Create or modify subscriptions made on your organizations"
+    ),
+    Scope.orders_read: "Read orders made on your organizations",
+    Scope.metrics_read: "Read metrics",
     Scope.webhooks_read: "Read webhooks",
     Scope.webhooks_write: "Create or modify webhooks",
-    Scope.creator_files_read: "Read & Download Files",
-    Scope.creator_files_write: "Upload Files",
-    Scope.user_downloadables_read: "Read Downloadable Files",
+    Scope.user_benefits_read: "Read your granted benefits",
+    Scope.user_orders_read: "Read your orders",
+    Scope.user_subscriptions_read: "Read your subscriptions",
+    Scope.user_subscriptions_write: "Create or modify your subscriptions",
+    Scope.user_downloadables_read: "Read your downloadable files",
+    Scope.user_advertisement_campaigns_read: "Read your advertisement campaigns",
+    Scope.user_advertisement_campaigns_write: (
+        "Create or modify your advertisement campaigns"
+    ),
 }
 
 

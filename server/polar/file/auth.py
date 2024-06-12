@@ -10,7 +10,7 @@ CreatorFilesWrite = Annotated[
     AuthSubject[User | Organization],
     Depends(
         Authenticator(
-            required_scopes={Scope.web_default, Scope.creator_files_write},
+            required_scopes={Scope.web_default, Scope.files_write},
             allowed_subjects={User, Organization},
         )
     ),

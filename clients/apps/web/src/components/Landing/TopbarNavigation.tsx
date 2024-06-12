@@ -38,7 +38,7 @@ const PlatformPopover = () => {
   return (
     <Popover open={isOpen} onOpenChange={setIsOpen}>
       <PopoverTrigger
-        className="dark:hover:bg-polar-800 data-[state=open]:bg-polar-800 rounded-full px-4 py-2"
+        className="dark:hover:bg-polar-800 data-[state=open]:bg-polar-800 rounded-full px-4 py-2 focus-within:outline-0"
         onMouseEnter={() => {
           setIsOpen(true)
         }}
@@ -135,7 +135,7 @@ const PlatformPopover = () => {
 const DocumentationPopover = () => {
   return (
     <Popover>
-      <PopoverTrigger className="dark:hover:bg-polar-800 data-[state=open]:bg-polar-800 rounded-full px-4 py-2">
+      <PopoverTrigger className="dark:hover:bg-polar-800 data-[state=open]:bg-polar-800 rounded-full px-4 py-2 focus-within:outline-0">
         Documentation
         <PopoverContent
           className="flex w-[920px] flex-row divide-x rounded-3xl p-6 dark:text-white"

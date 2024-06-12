@@ -72,6 +72,10 @@ export const CreateProductModal = ({
               },
             ]) as any,
       },
+      ...{
+        medias: [],
+        full_medias: [],
+      },
       ...(savedFormValues ? savedFormValues : {}),
       organization_id: organization.id,
     },

@@ -81,7 +81,10 @@ const ProductPriceItem: React.FC<ProductPriceItemProps> = ({
       <FormField
         control={control}
         name={`prices.${index}.price_amount`}
-        rules={{ required: 'This field is required', min: 0 }}
+        rules={{
+          required: 'This field is required',
+          min: { value: 1, message: 'Price must be greater than 0' },
+        }}
         render={({ field }) => {
           return (
             <FormItem className="grow">
@@ -374,7 +377,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
       <FormField
         control={control}
         name="full_medias"
-        render={({ field, formState: {} }) => (
+        render={({ field }) => (
           <FormItem className="flex flex-col gap-2">
             <div className="flex flex-row items-center justify-between">
               <FormLabel>Media</FormLabel>

@@ -1,3 +1,4 @@
+import useDebouncedCallback from '@/hooks/utils'
 import { ArrowForward } from '@mui/icons-material'
 import Link from 'next/link'
 import {
@@ -35,15 +36,19 @@ const PopoverLinkItem = ({
 const PlatformPopover = () => {
   const [isOpen, setIsOpen] = useState(false)
 
+  const togglePopover = useDebouncedCallback((toggle: boolean) => {
+    setIsOpen(toggle)
+  }, 100)
+
   return (
     <Popover open={isOpen} onOpenChange={setIsOpen}>
       <PopoverTrigger
         className="dark:hover:bg-polar-800 data-[state=open]:bg-polar-800 rounded-full px-4 py-2 focus-within:outline-0"
         onMouseEnter={() => {
-          setIsOpen(true)
+          togglePopover(true)
         }}
         onMouseLeave={() => {
-          setIsOpen(false)
+          togglePopover(false)
         }}
       >
         Platform
@@ -133,9 +138,23 @@ const PlatformPopover = () => {
 }
 
 const DocumentationPopover = () => {
+  const [isOpen, setIsOpen] = useState(false)
+
+  const togglePopover = useDebouncedCallback((toggle: boolean) => {
+    setIsOpen(toggle)
+  }, 100)
+
   return (
-    <Popover>
-      <PopoverTrigger className="dark:hover:bg-polar-800 data-[state=open]:bg-polar-800 rounded-full px-4 py-2 focus-within:outline-0">
+    <Popover open={isOpen} onOpenChange={setIsOpen}>
+      <PopoverTrigger
+        className="dark:hover:bg-polar-800 data-[state=open]:bg-polar-800 rounded-full px-4 py-2 focus-within:outline-0"
+        onMouseEnter={() => {
+          togglePopover(true)
+        }}
+        onMouseLeave={() => {
+          togglePopover(false)
+        }}
+      >
         Documentation
         <PopoverContent
           className="flex w-[920px] flex-row divide-x rounded-3xl p-6 dark:text-white"

@@ -145,7 +145,7 @@ export const Journey = () => {
             With a wide array of funding tools for your project
           </h3>
         </div>
-        <div className="flex flex-row gap-x-12">
+        <div className="flex flex-col gap-12 md:flex-row">
           {items.map((item) => (
             <div className="flex w-full flex-col" key={item.title}>
               {item.content}
@@ -153,23 +153,23 @@ export const Journey = () => {
           ))}
         </div>
       </div>
-      <List className="flex-row divide-x divide-y-0">
+      <List className="md:flex-row md:divide-x md:divide-y-0">
         <FeatureItem
-          className="h-auto w-1/3"
+          className="h-auto md:w-1/3"
           icon={<HiveOutlined />}
           title="Benefits Engine"
           description="Give supporters value for their money with private GitHub repository access, Discord server invites & file downloads, to name a few."
           link="#"
         />
         <FeatureItem
-          className="h-auto w-1/3"
+          className="h-auto md:w-1/3"
           icon={<Language />}
           title="Public Page"
           description="A home for your profile on Polar. Showcase your projects, crowdfunded issues, and more."
           link="#"
         />
         <FeatureItem
-          className="h-auto w-1/3"
+          className="h-auto md:w-1/3"
           icon={<ReceiptLongOutlined />}
           title="Merchant of Record"
           description="No more VAT headache - we handle the necessary taxes for you."

@@ -57,15 +57,6 @@ export const useSections = (): Section[] => {
       const path = sourcePath.toString()
       const [ancestor] = path.replace('/api/v1/', '').split('/').filter(Boolean)
 
-      switch (ancestor) {
-        case undefined:
-        case 'readyz':
-        case 'healthz':
-        case 'backoffice':
-        case '{platform}':
-          return acc
-      }
-
       for (const [method, endpoint] of extractEntries(
         endpoints as OpenAPIV3_1.PathsObject,
       )) {

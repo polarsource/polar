@@ -33,7 +33,7 @@ class TestListBenefits:
 
     @pytest.mark.auth(
         AuthSubjectFixture(scopes={Scope.web_default}),
-        AuthSubjectFixture(scopes={Scope.creator_benefits_read}),
+        AuthSubjectFixture(scopes={Scope.benefits_read}),
     )
     async def test_user_valid(
         self,
@@ -53,9 +53,7 @@ class TestListBenefits:
 
     @pytest.mark.auth(
         AuthSubjectFixture(subject="organization", scopes={Scope.web_default}),
-        AuthSubjectFixture(
-            subject="organization", scopes={Scope.creator_benefits_read}
-        ),
+        AuthSubjectFixture(subject="organization", scopes={Scope.benefits_read}),
     )
     async def test_organization(
         self, client: AsyncClient, benefits: list[Benefit]

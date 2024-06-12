@@ -53,7 +53,8 @@ export const useSections = (): Section[] => {
   if (!schema) return []
 
   const sections = extractEntries(schema.paths ?? {}).reduce<Section[]>(
-    (acc, [path, endpoints]) => {
+    (acc, [sourcePath, endpoints]) => {
+      const path = sourcePath.toString()
       const [ancestor] = path.replace('/api/v1/', '').split('/').filter(Boolean)
 
       switch (ancestor) {

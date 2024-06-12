@@ -12,7 +12,6 @@ from polar.postgres import (
     AsyncSession,
     get_db_session,
 )
-from polar.tags.api import Tags
 
 from .schemas import WebhookIntegration as WebhookIntegrationSchema
 from .schemas import WebhookIntegrationCreate, WebhookIntegrationUpdate
@@ -24,7 +23,6 @@ router = APIRouter(tags=["webhook_notifications"])
 @router.get(
     "/webhook_notifications/search",
     response_model=ListResource[WebhookIntegrationSchema],
-    tags=[Tags.PUBLIC],
     description="Search webhook notification integrations.",
     summary="Search webhook notification integrations",
     status_code=200,
@@ -58,7 +56,6 @@ async def search(
 @router.post(
     "/webhook_notifications",
     response_model=WebhookIntegrationSchema,
-    tags=[Tags.PUBLIC],
     description="Create a webhook notification integration.",
     summary="Create a webhook notification integration",
     status_code=200,
@@ -85,7 +82,6 @@ async def create(
 @router.post(
     "/webhook_notifications/{id}",
     response_model=WebhookIntegrationSchema,
-    tags=[Tags.PUBLIC],
     description="Update webhook notification integration.",
     summary="Update webhook notification integration",
     status_code=200,
@@ -117,7 +113,6 @@ async def update(
 @router.delete(
     "/webhook_notifications/{id}",
     response_model=WebhookIntegrationSchema,
-    tags=[Tags.PUBLIC],
     description="Delete webhook notification integration.",
     summary="Delete webhook notification integration",
     status_code=200,

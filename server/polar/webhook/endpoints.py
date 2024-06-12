@@ -10,7 +10,6 @@ from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.routing import APIRouter
 from polar.models import WebhookEndpoint
 from polar.postgres import AsyncSession, get_db_session
-from polar.tags.api import Tags
 
 from .auth import WebhooksRead, WebhooksWrite
 from .schemas import WebhookDelivery as WebhookDeliverySchema
@@ -29,9 +28,7 @@ WebhookEndpointNotFound = {
 }
 
 
-@router.get(
-    "/endpoints", response_model=ListResource[WebhookEndpointSchema], tags=[Tags.PUBLIC]
-)
+@router.get("/endpoints", response_model=ListResource[WebhookEndpointSchema])
 async def list_webhook_endpoints(
     pagination: PaginationParamsQuery,
     auth_subject: WebhooksRead,
@@ -59,7 +56,6 @@ async def list_webhook_endpoints(
 @router.get(
     "/endpoints/{id}",
     response_model=WebhookEndpointSchema,
-    tags=[Tags.PUBLIC],
     responses={404: WebhookEndpointNotFound},
 )
 async def get_webhook_endpoint(
@@ -83,7 +79,6 @@ async def get_webhook_endpoint(
     "/endpoints",
     response_model=WebhookEndpointSchema,
     status_code=201,
-    tags=[Tags.PUBLIC],
     responses={201: {"description": "Webhook endpoint created."}},
 )
 async def create_webhook_endpoint(
@@ -103,7 +98,6 @@ async def create_webhook_endpoint(
 @router.patch(
     "/endpoints/{id}",
     response_model=WebhookEndpointSchema,
-    tags=[Tags.PUBLIC],
     responses={
         200: {"description": "Webhook endpoint updated."},
         403: {
@@ -135,7 +129,6 @@ async def update_webhook_endpoint(
 @router.delete(
     "/endpoints/{id}",
     status_code=204,
-    tags=[Tags.PUBLIC],
     responses={
         204: {"description": "Webhook endpoint deleted."},
         403: {
@@ -164,7 +157,6 @@ async def delete_webhook_endpoint(
 @router.get(
     "/deliveries",
     response_model=ListResource[WebhookDeliverySchema],
-    tags=[Tags.PUBLIC],
 )
 async def list_webhook_deliveries(
     pagination: PaginationParamsQuery,
@@ -193,7 +185,6 @@ async def list_webhook_deliveries(
 @router.post(
     "/events/{id}/redeliver",
     status_code=202,
-    tags=[Tags.PUBLIC],
     responses={
         202: {"description": "Webhook event re-delivery scheduled."},
         404: {

@@ -10,7 +10,6 @@ from polar.kit.routing import APIRouter
 from polar.kit.sorting import Sorting, SortingGetter
 from polar.models import AdvertisementCampaign
 from polar.postgres import get_db_session
-from polar.tags.api import Tags
 
 from .. import auth
 from ..schemas.advertisement import (
@@ -38,9 +37,7 @@ ListSorting = Annotated[
 ]
 
 
-@router.get(
-    "/", response_model=ListResource[UserAdvertisementCampaign], tags=[Tags.PUBLIC]
-)
+@router.get("/", response_model=ListResource[UserAdvertisementCampaign])
 async def list_advertisement_campaigns(
     auth_subject: auth.UserAdvertisementCampaignsRead,
     pagination: PaginationParamsQuery,
@@ -65,7 +62,6 @@ async def list_advertisement_campaigns(
 @router.get(
     "/{id}",
     response_model=UserAdvertisementCampaign,
-    tags=[Tags.PUBLIC],
     responses={404: AdvertisementCampaignNotFound},
 )
 async def get_advertisement_campaign(
@@ -87,7 +83,6 @@ async def get_advertisement_campaign(
 @router.post(
     "/",
     response_model=UserAdvertisementCampaign,
-    tags=[Tags.PUBLIC],
     status_code=201,
     responses={201: {"description": "Advertisement campaign created."}},
 )
@@ -107,7 +102,6 @@ async def create_advertisement_campaign(
 @router.patch(
     "/{id}",
     response_model=UserAdvertisementCampaign,
-    tags=[Tags.PUBLIC],
     responses={
         200: {"description": "Advertisement campaign updated."},
         404: AdvertisementCampaignNotFound,
@@ -136,7 +130,6 @@ async def update_advertisement_campaign(
 
 @router.post(
     "/{id}/enable",
-    tags=[Tags.PUBLIC],
     status_code=204,
     responses={
         204: {"description": "Advertisement campaign enabled on benefit."},
@@ -169,7 +162,6 @@ async def enable_advertisement_campaign(
 
 @router.delete(
     "/{id}",
-    tags=[Tags.PUBLIC],
     responses={
         204: {"description": "Advertisement campaign deleted."},
         404: AdvertisementCampaignNotFound,

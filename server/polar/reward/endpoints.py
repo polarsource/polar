@@ -14,7 +14,6 @@ from polar.models.pledge_transaction import PledgeTransaction as PledgeTransacti
 from polar.organization.schemas import Organization as OrganizationSchema
 from polar.pledge.schemas import Pledge
 from polar.postgres import AsyncSession, get_db_session
-from polar.tags.api import Tags
 from polar.user.schemas.user import User
 
 from .schemas import Reward, RewardsSummary, RewardsSummaryReceiver, RewardState
@@ -26,7 +25,6 @@ router = APIRouter(tags=["rewards"])
 @router.get(
     "/rewards/search",
     response_model=ListResource[Reward],
-    tags=[Tags.PUBLIC],
     description="Search rewards.",
     summary="Search rewards",
     status_code=200,
@@ -122,7 +120,6 @@ def to_resource(
 @router.get(
     "/rewards/summary",
     response_model=RewardsSummary,
-    tags=[Tags.PUBLIC],
     description="Get summary of rewards for resource.",  # noqa: E501
     summary="Get rewards summary",
     status_code=200,

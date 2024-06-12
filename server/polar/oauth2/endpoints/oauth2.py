@@ -10,7 +10,6 @@ from polar.kit.routing import APIRouter
 from polar.models import OAuth2Token, Organization
 from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession, get_db_session
-from polar.tags.api import Tags
 
 from ..authorization_server import (
     AuthorizationServer,
@@ -35,7 +34,7 @@ from ..userinfo import UserInfo, generate_user_info
 router = APIRouter(prefix="/oauth2", tags=["oauth2"])
 
 
-@router.get("/", response_model=ListResource[OAuth2Client], tags=[Tags.PUBLIC])
+@router.get("/", response_model=ListResource[OAuth2Client])
 async def list_oauth2_clients(
     auth_subject: WebUser,
     pagination: PaginationParamsQuery,
@@ -50,7 +49,7 @@ async def list_oauth2_clients(
     )
 
 
-@router.post("/register", name="oauth2.register", tags=[Tags.PUBLIC])
+@router.post("/register", name="oauth2.register")
 async def oauth2_register(
     client_configuration: OAuth2ClientConfiguration,
     request: Request,
@@ -64,7 +63,7 @@ async def oauth2_register(
     )
 
 
-@router.get("/register/{client_id}", name="oauth2.configure_get", tags=[Tags.PUBLIC])
+@router.get("/register/{client_id}", name="oauth2.configure_get")
 async def oauth2_configure_get(
     client_id: str,
     request: Request,
@@ -77,7 +76,7 @@ async def oauth2_configure_get(
     )
 
 
-@router.put("/register/{client_id}", name="oauth2.configure_put", tags=[Tags.PUBLIC])
+@router.put("/register/{client_id}", name="oauth2.configure_put")
 async def oauth2_configure_put(
     client_id: str,
     client_configuration: OAuth2ClientConfigurationUpdate,
@@ -92,9 +91,7 @@ async def oauth2_configure_put(
     )
 
 
-@router.delete(
-    "/register/{client_id}", name="oauth2.configure_delete", tags=[Tags.PUBLIC]
-)
+@router.delete("/register/{client_id}", name="oauth2.configure_delete")
 async def oauth2_configure_delete(
     client_id: str,
     request: Request,
@@ -159,7 +156,7 @@ async def oauth2_consent(
     )
 
 
-@router.post("/token", name="oauth2.token", tags=[Tags.PUBLIC])
+@router.post("/token", name="oauth2.token")
 async def oauth2_token(
     request: Request,
     authorization_server: AuthorizationServer = Depends(get_authorization_server),
@@ -168,7 +165,7 @@ async def oauth2_token(
     return authorization_server.create_token_response(request)
 
 
-@router.post("/revoke", name="oauth2.revoke", tags=[Tags.PUBLIC])
+@router.post("/revoke", name="oauth2.revoke")
 async def oauth2_revoke(
     request: Request,
     authorization_server: AuthorizationServer = Depends(get_authorization_server),
@@ -179,7 +176,7 @@ async def oauth2_revoke(
     )
 
 
-@router.post("/introspect", name="oauth2.introspect", tags=[Tags.PUBLIC])
+@router.post("/introspect", name="oauth2.introspect")
 async def oauth2_introspect(
     request: Request,
     authorization_server: AuthorizationServer = Depends(get_authorization_server),
@@ -195,7 +192,6 @@ async def oauth2_introspect(
     methods=["GET", "POST"],
     name="oauth2.userinfo",
     response_model=None,
-    tags=[Tags.PUBLIC],
 )
 async def oauth2_userinfo(token: OAuth2Token = Depends(get_token)) -> UserInfo:
     return generate_user_info(token.get_sub_type_value(), cast(str, token.scope))

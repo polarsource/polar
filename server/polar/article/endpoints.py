@@ -10,14 +10,11 @@ from polar.authz.service import AccessType, Authz
 from polar.exceptions import ResourceNotFound, Unauthorized
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.utils import utc_now
+from polar.openapi import IN_DEVELOPMENT_ONLY
 from polar.organization.dependencies import OrganizationNamePlatform
 from polar.organization.service import organization as organization_service
-from polar.postgres import (
-    AsyncSession,
-    get_db_session,
-)
+from polar.postgres import AsyncSession, get_db_session
 from polar.posthog import posthog
-from polar.tags.api import Tags
 from polar.user.service.user import user as user_service
 from polar.worker import enqueue_job
 
@@ -48,7 +45,7 @@ ArticlesReadOrAnonymous = Annotated[
 
 @router.get(
     "/articles/unsubscribe",
-    tags=[Tags.INTERNAL],
+    include_in_schema=IN_DEVELOPMENT_ONLY,
     response_model=ArticleUnsubscribeResponse,
     description="Unsubscribe user from articles in emails.",
     summary="Unsubscribe user",
@@ -66,7 +63,6 @@ async def email_unsubscribe(
 @router.get(
     "/articles",
     response_model=ListResource[ArticleSchema],
-    tags=[Tags.PUBLIC],
     description="List articles.",
     summary="List articles",
     status_code=200,
@@ -101,7 +97,6 @@ async def list(
 @router.get(
     "/articles/search",
     response_model=ListResource[ArticleSchema],
-    tags=[Tags.PUBLIC],
     description="Search articles.",
     summary="Search articles",
     status_code=200,
@@ -155,7 +150,6 @@ async def search(
 @router.get(
     "/articles/lookup",
     response_model=ArticleSchema,
-    tags=[Tags.PUBLIC],
     description="Lookup article.",
     summary="Lookup article",
     status_code=200,
@@ -193,7 +187,6 @@ async def lookup(
 @router.post(
     "/articles",
     response_model=ArticleSchema,
-    tags=[Tags.PUBLIC],
     description="Create a new article.",
     summary="Create article",
     status_code=200,
@@ -231,7 +224,6 @@ async def create(
 @router.get(
     "/articles/receivers",
     response_model=ArticleReceiversResponse,
-    tags=[Tags.PUBLIC],
     description="Get number of potential receivers for an article.",
     summary="Potential article receivers",
     status_code=200,
@@ -269,7 +261,6 @@ async def receivers(
 @router.get(
     "/articles/{id}",
     response_model=ArticleSchema,
-    tags=[Tags.PUBLIC],
     description="Get article.",
     summary="Get article",
     status_code=200,
@@ -301,7 +292,6 @@ async def get(
 @router.post(
     "/articles/{id}/viewed",
     response_model=ArticleViewedResponse,
-    tags=[Tags.PUBLIC],
     description="Track article view",
     summary="Track article",
     status_code=200,
@@ -331,7 +321,6 @@ async def viewed(
 @router.post(
     "/articles/{id}/send_preview",
     response_model=ArticlePreviewResponse,
-    tags=[Tags.PUBLIC],
     description="Send preview email",
     summary="Send preview email",
     status_code=200,
@@ -381,7 +370,6 @@ async def send_preview(
 @router.post(
     "/articles/{id}/send",
     response_model=ArticleSentResponse,
-    tags=[Tags.PUBLIC],
     description="Send email to all subscribers",
     summary="Send email to all subscribers",
     status_code=200,
@@ -416,7 +404,6 @@ async def send(
 @router.put(
     "/articles/{id}",
     response_model=ArticleSchema,
-    tags=[Tags.PUBLIC],
     description="Update an article.",
     summary="Update an article",
     status_code=200,
@@ -464,7 +451,6 @@ async def update(
 @router.delete(
     "/articles/{id}",
     response_model=ArticleDeleteResponse,
-    tags=[Tags.PUBLIC],
     description="Delete an article.",
     summary="Delete an article",
     status_code=200,

@@ -9,7 +9,6 @@ from polar.kit.routing import APIRouter
 from polar.models import Order
 from polar.models.product_price import ProductPriceType
 from polar.postgres import AsyncSession, get_db_session
-from polar.tags.api import Tags
 
 from . import auth, sorting
 from .schemas import Order as OrderSchema
@@ -23,7 +22,7 @@ OrderID = Annotated[UUID4, Path(description="The order ID.")]
 OrderNotFound = {"description": "Order not found.", "model": ResourceNotFound.schema()}
 
 
-@router.get("/", response_model=ListResource[OrderSchema], tags=[Tags.PUBLIC])
+@router.get("/", response_model=ListResource[OrderSchema])
 async def list_orders(
     auth_subject: auth.OrdersRead,
     pagination: PaginationParamsQuery,
@@ -66,7 +65,6 @@ async def list_orders(
 @router.get(
     "/{id}",
     response_model=OrderSchema,
-    tags=[Tags.PUBLIC],
     responses={404: OrderNotFound},
 )
 async def get_order(
@@ -86,7 +84,6 @@ async def get_order(
 @router.get(
     "/{id}/invoice",
     response_model=OrderInvoice,
-    tags=[Tags.PUBLIC],
     responses={404: OrderNotFound},
 )
 async def get_order_invoice(

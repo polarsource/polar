@@ -12,7 +12,6 @@ from polar.kit.sorting import Sorting, SortingGetter
 from polar.models import AdvertisementCampaign as AdvertisementCampaignModel
 from polar.models.benefit import BenefitAds
 from polar.postgres import AsyncSession, get_db_session
-from polar.tags.api import Tags
 
 from .schemas import AdvertisementCampaign, AdvertisementCampaignListResource
 from .service import SortProperty
@@ -37,7 +36,7 @@ ListSorting = Annotated[
 ]
 
 
-@router.get("/", response_model=AdvertisementCampaignListResource, tags=[Tags.PUBLIC])
+@router.get("/", response_model=AdvertisementCampaignListResource)
 async def list_advertisement_campaigns(
     pagination: PaginationParamsQuery,
     sorting: ListSorting,
@@ -89,7 +88,6 @@ async def list_advertisement_campaigns(
 @router.get(
     "/{id}",
     response_model=AdvertisementCampaign,
-    tags=[Tags.PUBLIC],
     responses={404: AdvertisementCampaignNotFound},
 )
 async def get_advertisement_campaign(
@@ -107,7 +105,6 @@ async def get_advertisement_campaign(
 
 @router.post(
     "/{id}/view",
-    tags=[Tags.PUBLIC],
     status_code=204,
     responses={
         204: {"description": "The view was successfully tracked."},

@@ -21,7 +21,7 @@ from polar.user_organization.service import (
 
 from .service import Receivers
 
-router = APIRouter(tags=["stream"])
+router = APIRouter(tags=["stream"], include_in_schema=False)
 
 log = structlog.get_logger()
 

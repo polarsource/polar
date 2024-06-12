@@ -5,9 +5,7 @@ from typing import TypedDict
 
 import structlog
 from fastapi import Depends, FastAPI
-from fastapi.openapi.utils import get_openapi
 from fastapi.routing import APIRoute
-from starlette.routing import BaseRoute
 
 from polar import receivers, worker  # noqa
 from polar.api import router
@@ -39,11 +37,10 @@ from polar.middlewares import (
 )
 from polar.oauth2.endpoints.well_known import router as well_known_router
 from polar.oauth2.exception_handlers import OAuth2Error, oauth2_error_exception_handler
+from polar.openapi import OPENAPI_PARAMETERS
 from polar.postgres import create_async_engine, create_sync_engine
 from polar.posthog import configure_posthog
 from polar.sentry import configure_sentry, set_sentry_user
-from polar.tags.api import Tags
-from polar.webhook.webhooks import app as webhooks_app
 from polar.worker import ArqRedis
 from polar.worker import lifespan as worker_lifespan
 
@@ -78,6 +75,8 @@ class State(TypedDict):
 
 @contextlib.asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[State]:
+    log.info("Starting Polar API")
+
     async with worker_lifespan() as arq_pool:
         async_engine = create_async_engine("app")
         async_sessionmaker = create_async_sessionmaker(async_engine)
@@ -108,6 +107,7 @@ def create_app() -> FastAPI:
         generate_unique_id_function=generate_unique_openapi_id,
         lifespan=lifespan,
         dependencies=[Depends(set_sentry_user)],
+        **OPENAPI_PARAMETERS,
     )
     configure_cors(app)
 
@@ -136,66 +136,6 @@ configure_logfire("server")
 configure_logging(logfire=True)
 configure_posthog()
 
-log.info("Starting Polar API")
 app = create_app()
 instrument_fastapi(app)
 instrument_httpx()
-
-
-def configure_openapi() -> None:
-    show_all_routes = settings.is_development()
-
-    def show(r: BaseRoute) -> bool:
-        if show_all_routes:
-            return True
-
-        if isinstance(r, APIRoute):
-            if Tags.PUBLIC in r.tags:
-                return True
-
-        return False
-
-    def format(r: BaseRoute) -> BaseRoute:
-        if isinstance(r, APIRoute):
-            # remove public/internal from tags
-            r.tags = [
-                t for t in r.tags if t is not Tags.PUBLIC and t is not Tags.INTERNAL
-            ]
-        return r
-
-    openapi_schema = get_openapi(
-        title="Polar API",
-        summary="Polar HTTP and Webhooks API",
-        version="0.1.0",
-        description="""
-Welcome to the **Polar API** for [polar.sh](https://polar.sh).
-
-This specification contains both the definitions of the Polar HTTP API and the Webhook API.
-
-#### Authentication
-
-Use a [Personal Access Token](https://polar.sh/settings) and send it in the `Authorization` header on the format `Bearer [YOUR_TOKEN]`.
-
-#### Feedback
-
-If you have any feedback or comments, reach out in the [Polar API-issue](https://github.com/polarsource/polar/issues/834), or reach out on the Polar Discord server.
-
-We'd love to see what you've built with the API and to get your thoughts on how we can make the API better!
-
-#### Connecting
-
-The Polar API is online at `https://api.polar.sh`.
-""",  # noqa: E501
-        routes=[format(r) for r in app.routes if show(r)],
-        webhooks=webhooks_app.webhooks.routes,
-        servers=[{"url": "https://api.polar.sh"}]
-        if not settings.is_development()
-        else None,
-    )
-    openapi_schema["info"]["x-logo"] = {
-        "url": "https://7vk6rcnylug0u6hg.public.blob.vercel-storage.com/image-Yq60IIuVbCa1dEBIFFDYKlZo74PzKl.png"
-    }
-    app.openapi_schema = openapi_schema
-
-
-configure_openapi()

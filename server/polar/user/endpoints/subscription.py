@@ -11,7 +11,6 @@ from polar.kit.sorting import Sorting, SortingGetter
 from polar.models import Subscription
 from polar.postgres import get_db_session
 from polar.subscription.service import AlreadySubscribed
-from polar.tags.api import Tags
 
 from .. import auth
 from ..schemas.subscription import (
@@ -40,7 +39,7 @@ ListSorting = Annotated[
 ]
 
 
-@router.get("/", response_model=ListResource[UserSubscription], tags=[Tags.PUBLIC])
+@router.get("/", response_model=ListResource[UserSubscription])
 async def list_subscriptions(
     auth_subject: auth.UserSubscriptionsRead,
     pagination: PaginationParamsQuery,
@@ -80,7 +79,6 @@ async def list_subscriptions(
 @router.get(
     "/{id}",
     response_model=UserSubscription,
-    tags=[Tags.PUBLIC],
     responses={404: SubscriptionNotFound},
 )
 async def get_subscription(
@@ -100,7 +98,6 @@ async def get_subscription(
 @router.post(
     "/",
     response_model=UserSubscription,
-    tags=[Tags.PUBLIC],
     status_code=201,
     responses={
         201: {"description": "Subscription created."},
@@ -131,7 +128,6 @@ async def create_subscription(
 @router.patch(
     "/{id}",
     response_model=UserSubscription,
-    tags=[Tags.PUBLIC],
     responses={
         200: {"description": "Subscription updated."},
         403: {
@@ -163,7 +159,6 @@ async def update_subscription(
 @router.delete(
     "/{id}",
     response_model=UserSubscription,
-    tags=[Tags.PUBLIC],
     responses={
         200: {"description": "Subscription canceled."},
         403: {

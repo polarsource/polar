@@ -9,7 +9,6 @@ from polar.exceptions import InternalServerError, NotPermitted, ResourceNotFound
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.routing import APIRouter
 from polar.postgres import AsyncSession, get_db_session
-from polar.tags.api import Tags
 
 from .schemas import Account, AccountCreate, AccountLink
 from .service import account as account_service
@@ -17,9 +16,7 @@ from .service import account as account_service
 router = APIRouter(tags=["accounts"])
 
 
-@router.get(
-    "/accounts/search", response_model=ListResource[Account], tags=[Tags.PUBLIC]
-)
+@router.get("/accounts/search", response_model=ListResource[Account])
 async def search(
     auth_subject: WebUser,
     pagination: PaginationParamsQuery,
@@ -38,7 +35,7 @@ async def search(
     )
 
 
-@router.get("/accounts/{id}", tags=[Tags.PUBLIC], response_model=Account)
+@router.get("/accounts/{id}", response_model=Account)
 async def get(
     id: UUID,
     auth_subject: WebUser,
@@ -55,9 +52,7 @@ async def get(
     return Account.from_db(acc)
 
 
-@router.post(
-    "/accounts/{id}/onboarding_link", tags=[Tags.PUBLIC], response_model=AccountLink
-)
+@router.post("/accounts/{id}/onboarding_link", response_model=AccountLink)
 async def onboarding_link(
     id: UUID,
     auth_subject: WebUser,
@@ -82,9 +77,7 @@ async def onboarding_link(
     return link
 
 
-@router.post(
-    "/accounts/{id}/dashboard_link", tags=[Tags.PUBLIC], response_model=AccountLink
-)
+@router.post("/accounts/{id}/dashboard_link", response_model=AccountLink)
 async def dashboard_link(
     id: UUID,
     auth_subject: WebUser,
@@ -108,7 +101,7 @@ async def dashboard_link(
     return link
 
 
-@router.post("/accounts", tags=[Tags.PUBLIC], response_model=Account)
+@router.post("/accounts", response_model=Account)
 async def create(
     account_create: AccountCreate,
     auth_subject: WebUser,

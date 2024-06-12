@@ -7,7 +7,6 @@ from polar.exceptions import PolarRequestValidationError
 from polar.kit.routing import APIRouter
 from polar.models.product_price import ProductPriceType
 from polar.postgres import AsyncSession, get_db_session
-from polar.tags.api import Tags
 
 from . import auth
 from .limits import MAX_INTERVAL_DAYS, MIN_DATE, is_under_limits
@@ -18,7 +17,7 @@ from .service import metrics as metrics_service
 router = APIRouter(prefix="/metrics", tags=["metrics"])
 
 
-@router.get("/", response_model=MetricsResponse, tags=[Tags.PUBLIC])
+@router.get("/", response_model=MetricsResponse)
 async def get_metrics(
     auth_subject: auth.MetricsRead,
     start_date: date = Query(
@@ -72,7 +71,7 @@ async def get_metrics(
     )
 
 
-@router.get("/limits", response_model=MetricsLimits, tags=[Tags.PUBLIC])
+@router.get("/limits", response_model=MetricsLimits)
 async def get_metrics_limits(auth_subject: auth.MetricsRead) -> MetricsLimits:
     """Get the interval limits for the metrics endpoint."""
     return MetricsLimits.model_validate(

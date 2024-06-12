@@ -23,6 +23,7 @@ from polar.models.pledge import PledgeState
 from polar.models.repository import Repository
 from polar.models.user import User
 from polar.models.user_organization import UserOrganization
+from polar.openapi import IN_DEVELOPMENT_ONLY
 from polar.organization.service import organization as organization_service
 from polar.pledge.endpoints import to_schema as pledge_to_schema
 from polar.pledge.schemas import Pledge as PledgeSchema
@@ -36,7 +37,7 @@ from polar.user_organization.service import (
     user_organization as user_organization_service,
 )
 
-router = APIRouter(tags=["dashboard"])
+router = APIRouter(tags=["dashboard"], include_in_schema=IN_DEVELOPMENT_ONLY)
 
 
 @router.get(

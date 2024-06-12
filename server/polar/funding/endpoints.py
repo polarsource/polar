@@ -11,7 +11,6 @@ from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession, get_db_session
 from polar.repository.dependencies import OptionalRepositoryNameQuery
 from polar.repository.service import repository as repository_service
-from polar.tags.api import Tags
 
 from .dependencies import ListFundingSorting
 from .schemas import IssueFunding
@@ -21,7 +20,7 @@ from .service import funding as funding_service
 router = APIRouter(prefix="/funding", tags=["funding"])
 
 
-@router.get("/search", response_model=ListResource[IssueFunding], tags=[Tags.PUBLIC])
+@router.get("/search", response_model=ListResource[IssueFunding])
 async def search(
     pagination: PaginationParamsQuery,
     organization_name_platform: OrganizationNamePlatform,
@@ -71,7 +70,6 @@ async def search(
     "/lookup",
     name="lookup",
     response_model=IssueFunding,
-    tags=[Tags.PUBLIC],
 )
 async def lookup(
     issue_id: UUID,

@@ -5,7 +5,6 @@ from pydantic import UUID4
 
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.postgres import AsyncSession, get_db_session
-from polar.tags.api import Tags
 
 from .. import auth
 from ..schemas.downloadables import DownloadableRead
@@ -18,7 +17,6 @@ router = APIRouter(prefix="/downloadables", tags=["downloadables"])
 
 @router.get(
     "/",
-    tags=[Tags.PUBLIC],
     response_model=ListResource[DownloadableRead],
 )
 async def list_downloadables(
@@ -53,7 +51,6 @@ async def list_downloadables(
 
 @router.get(
     "/{token}",
-    tags=[Tags.PUBLIC],
     responses={
         302: {"description": "Redirected to download"},
         400: {"description": "Invalid signature"},

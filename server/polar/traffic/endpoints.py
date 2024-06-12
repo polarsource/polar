@@ -10,13 +10,13 @@ from polar.auth.dependencies import WebUser
 from polar.authz.service import AccessType, Authz
 from polar.exceptions import BadRequest, ResourceNotFound, Unauthorized
 from polar.kit.pagination import ListResource, PaginationParamsQuery
+from polar.openapi import IN_DEVELOPMENT_ONLY
 from polar.organization.dependencies import (
     OptionalOrganizationNamePlatform,
     OrganizationNamePlatform,
 )
 from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession, get_db_session
-from polar.tags.api import Tags
 
 from .schemas import (
     TrackPageView,
@@ -28,13 +28,12 @@ from .service import traffic_service
 
 log = structlog.get_logger()
 
-router = APIRouter(prefix="", tags=["traffic"])
+router = APIRouter(prefix="", tags=["traffic"], include_in_schema=IN_DEVELOPMENT_ONLY)
 
 
 @router.post(
     "/traffic/track_page_view",
     response_model=TrackPageViewResponse,
-    tags=[Tags.PUBLIC],
 )
 async def track_page_view(
     track: TrackPageView,
@@ -56,7 +55,6 @@ async def track_page_view(
 @router.get(
     "/traffic/statistics",
     response_model=TrafficStatistics,
-    tags=[Tags.PUBLIC],
 )
 async def statistics(
     auth_subject: WebUser,
@@ -119,7 +117,6 @@ async def statistics(
 @router.get(
     "/traffic/referrers",
     response_model=ListResource[TrafficReferrer],
-    tags=[Tags.PUBLIC],
 )
 async def referrers(
     pagination: PaginationParamsQuery,

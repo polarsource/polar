@@ -13,10 +13,10 @@ from polar.issue.service import issue as issue_service
 from polar.kit.pagination import ListResource, Pagination
 from polar.models.pledge import Pledge
 from polar.models.user import User
+from polar.openapi import IN_DEVELOPMENT_ONLY
 from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession, get_db_session
 from polar.repository.service import repository as repository_service
-from polar.tags.api import Tags
 from polar.user_organization.service import (
     user_organization as user_organization_service,
 )
@@ -141,7 +141,6 @@ async def to_schema(session: AsyncSession, subject: Subject, p: Pledge) -> Pledg
 @router.get(
     "/pledges/search",
     response_model=ListResource[PledgeSchema],
-    tags=[Tags.PUBLIC],
     description="Search pledges. Requires authentication. The user can only read pledges that they have made (personally or via an organization) or received (to organizations that they are a member of).",  # noqa: E501
     summary="Search pledges",
     status_code=200,
@@ -275,7 +274,6 @@ async def search(
 @router.get(
     "/pledges/summary",
     response_model=PledgePledgesSummary,
-    tags=[Tags.PUBLIC],
     description="Get summary of pledges for resource.",  # noqa: E501
     summary="Get pledges summary",
     status_code=200,
@@ -299,7 +297,6 @@ async def summary(
 @router.get(
     "/pledges/spending",
     response_model=PledgeSpending,
-    tags=[Tags.PUBLIC],
     description="Get current user spending in the current period. Used together with spending limits.",  # noqa: E501
     summary="Get user spending",
     status_code=200,
@@ -320,7 +317,6 @@ async def spending(
 @router.get(
     "/pledges/{id}",
     response_model=PledgeSchema,
-    tags=[Tags.PUBLIC],
     description="Get a pledge. Requires authentication.",  # noqa: E501
     summary="Get pledge",
     status_code=200,
@@ -347,7 +343,7 @@ async def get(
 @router.post(
     "/pledges",
     response_model=PledgeSchema,
-    tags=[Tags.INTERNAL],
+    include_in_schema=IN_DEVELOPMENT_ONLY,
     description="Creates a pledge from a payment intent",
     status_code=200,
 )
@@ -378,7 +374,7 @@ async def create(
 @router.post(
     "/pledges/pay_on_completion",
     response_model=PledgeSchema,
-    tags=[Tags.INTERNAL],
+    include_in_schema=IN_DEVELOPMENT_ONLY,
     description="Creates a pay_on_completion type of pledge",
     status_code=200,
 )
@@ -413,7 +409,7 @@ async def create_pay_on_completion(
 @router.post(
     "/pledges/{id}/create_invoice",
     response_model=PledgeSchema,
-    tags=[Tags.INTERNAL],
+    include_in_schema=IN_DEVELOPMENT_ONLY,
     description="Creates an invoice for pay_on_completion pledges",
     status_code=200,
 )
@@ -442,6 +438,7 @@ async def create_invoice(
 @router.post(
     "/pledges/payment_intent",
     response_model=PledgeStripePaymentIntentMutationResponse,
+    include_in_schema=IN_DEVELOPMENT_ONLY,
     status_code=200,
     responses={
         400: {"detail": "message"},
@@ -494,6 +491,7 @@ async def create_payment_intent(
 @router.patch(
     "/pledges/payment_intent/{id}",
     response_model=PledgeStripePaymentIntentMutationResponse,
+    include_in_schema=IN_DEVELOPMENT_ONLY,
 )
 async def update_payment_intent(
     id: str,
@@ -519,6 +517,7 @@ async def update_payment_intent(
 
 @router.post(
     "/pledges/{pledge_id}/dispute",
+    include_in_schema=IN_DEVELOPMENT_ONLY,
     response_model=PledgeSchema,
 )
 async def dispute_pledge(

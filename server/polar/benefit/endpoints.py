@@ -12,7 +12,6 @@ from polar.models import Benefit
 from polar.models.benefit import BenefitType
 from polar.postgres import AsyncSession, get_db_session
 from polar.posthog import posthog
-from polar.tags.api import Tags
 
 from . import auth
 from .schemas import Benefit as BenefitSchema
@@ -31,7 +30,7 @@ BenefitNotFound = {
 }
 
 
-@router.get("/", response_model=ListResource[BenefitSchema], tags=[Tags.PUBLIC])
+@router.get("/", response_model=ListResource[BenefitSchema])
 async def list_benefits(
     auth_subject: auth.BenefitsRead,
     pagination: PaginationParamsQuery,
@@ -64,7 +63,6 @@ async def list_benefits(
 @router.get(
     "/{id}",
     response_model=BenefitSchema,
-    tags=[Tags.PUBLIC],
     responses={404: BenefitNotFound},
 )
 async def get_benefit(
@@ -84,7 +82,6 @@ async def get_benefit(
 @router.get(
     "/{id}/grants",
     response_model=ListResource[BenefitGrant],
-    tags=[Tags.PUBLIC],
     responses={404: BenefitNotFound},
 )
 async def list_benefit_grants(
@@ -142,7 +139,6 @@ async def list_benefit_grants(
     "/",
     response_model=BenefitSchema,
     status_code=201,
-    tags=[Tags.PUBLIC],
     responses={201: {"description": "Benefit created."}},
 )
 async def create_benefit(
@@ -172,7 +168,6 @@ async def create_benefit(
 @router.patch(
     "/{id}",
     response_model=BenefitSchema,
-    tags=[Tags.PUBLIC],
     responses={
         200: {"description": "Benefit updated."},
         403: {
@@ -216,7 +211,6 @@ async def update_benefit(
 @router.delete(
     "/{id}",
     status_code=204,
-    tags=[Tags.PUBLIC],
     responses={
         204: {"description": "Benefit deleted."},
         403: {

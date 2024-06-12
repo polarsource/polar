@@ -10,7 +10,6 @@ from polar.kit.routing import APIRouter
 from polar.models import Product
 from polar.models.product import SubscriptionTierType
 from polar.postgres import AsyncSession, get_db_session
-from polar.tags.api import Tags
 
 from . import auth
 from .schemas import Product as ProductSchema
@@ -26,7 +25,7 @@ ProductNotFound = {
 }
 
 
-@router.get("/", response_model=ListResource[ProductSchema], tags=[Tags.PUBLIC])
+@router.get("/", response_model=ListResource[ProductSchema])
 async def list_products(
     pagination: PaginationParamsQuery,
     auth_subject: auth.CreatorProductsReadOrAnonymous,
@@ -72,7 +71,6 @@ async def list_products(
 @router.get(
     "/{id}",
     response_model=ProductSchema,
-    tags=[Tags.PUBLIC],
     responses={404: ProductNotFound},
 )
 async def get_product(
@@ -93,7 +91,6 @@ async def get_product(
     "/",
     response_model=ProductSchema,
     status_code=201,
-    tags=[Tags.PUBLIC],
     responses={201: {"description": "Product created."}},
 )
 async def create_product(
@@ -111,7 +108,6 @@ async def create_product(
 @router.patch(
     "/{id}",
     response_model=ProductSchema,
-    tags=[Tags.PUBLIC],
     responses={
         200: {"description": "Product updated."},
         403: {
@@ -146,7 +142,6 @@ async def update_product(
 @router.post(
     "/{id}/benefits",
     response_model=ProductSchema,
-    tags=[Tags.PUBLIC],
     responses={
         200: {"description": "Product benefits updated."},
         403: {

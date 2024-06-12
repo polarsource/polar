@@ -8,7 +8,7 @@ import mdx from 'remark-mdx'
 import { visit } from 'unist-util-visit'
 
 const require = createRequire(import.meta.url)
-const openapiSchema = require('@polar-sh/sdk/openapi')
+const openapiSchema = require('../src/openapi.json')
 const {
   absolutePathToPage,
 } = require('next/dist/shared/lib/page-path/absolute-path-to-page')
@@ -115,23 +115,23 @@ const metadataOutputPath = path.resolve(
 )
 
 
-if (!fs.existsSync(outputPath)){
+if (!fs.existsSync(outputPath)) {
   fs.mkdirSync(outputPath, { recursive: true });
 }
 
 writeFile(
-    metadataOutputPath,
-    JSON.stringify({
-        openapi: buildOpenAPIMetadata(openapiSchema),
-        docs: await buildDocsMetadata(),
-    }),
-    (err) => {
-        if (err) {
-        console.error(err)
-        process.exit(1)
-        }
+  metadataOutputPath,
+  JSON.stringify({
+    openapi: buildOpenAPIMetadata(openapiSchema),
+    docs: await buildDocsMetadata(),
+  }),
+  (err) => {
+    if (err) {
+      console.error(err)
+      process.exit(1)
+    }
 
-        console.log('Search metadata created')
-        process.exit(0)
-    },
+    console.log('Search metadata created')
+    process.exit(0)
+  },
 )

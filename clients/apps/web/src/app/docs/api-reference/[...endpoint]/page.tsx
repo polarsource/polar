@@ -19,10 +19,7 @@ export default function Page({
   const { schema } = useDocumentationContext()
 
   const metadata = schema
-    ? resolveEndpointMetadata(
-        endpoint.join('/'),
-        schema as unknown as OpenAPIV3_1.Document,
-      )
+    ? resolveEndpointMetadata(endpoint.join('/'), schema)
     : undefined
 
   const { operation, method, apiEndpointPath } = metadata ?? {

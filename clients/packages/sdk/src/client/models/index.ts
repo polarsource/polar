@@ -10962,15 +10962,15 @@ export const Scope = {
     WEB_DEFAULT: 'web_default',
     ORGANIZATIONSREAD: 'organizations:read',
     ORGANIZATIONSWRITE: 'organizations:write',
-    CREATORSUBSCRIPTIONSREAD: 'creator:subscriptions:read',
-    CREATORSUBSCRIPTIONSWRITE: 'creator:subscriptions:write',
-    CREATORPRODUCTSREAD: 'creator:products:read',
-    CREATORPRODUCTSWRITE: 'creator:products:write',
-    CREATORBENEFITSREAD: 'creator:benefits:read',
-    CREATORBENEFITSWRITE: 'creator:benefits:write',
+    PRODUCTSREAD: 'products:read',
+    PRODUCTSWRITE: 'products:write',
+    BENEFITSREAD: 'benefits:read',
+    BENEFITSWRITE: 'benefits:write',
+    FILESREAD: 'files:read',
+    FILESWRITE: 'files:write',
+    SUBSCRIPTIONSREAD: 'subscriptions:read',
+    SUBSCRIPTIONSWRITE: 'subscriptions:write',
     ORDERSREAD: 'orders:read',
-    CREATORFILESREAD: 'creator:files:read',
-    CREATORFILESWRITE: 'creator:files:write',
     METRICSREAD: 'metrics:read',
     WEBHOOKSREAD: 'webhooks:read',
     WEBHOOKSWRITE: 'webhooks:write',
@@ -10978,9 +10978,9 @@ export const Scope = {
     USERORDERSREAD: 'user:orders:read',
     USERSUBSCRIPTIONSREAD: 'user:subscriptions:read',
     USERSUBSCRIPTIONSWRITE: 'user:subscriptions:write',
+    USERDOWNLOADABLESREAD: 'user:downloadables:read',
     USERADVERTISEMENT_CAMPAIGNSREAD: 'user:advertisement_campaigns:read',
-    USERADVERTISEMENT_CAMPAIGNSWRITE: 'user:advertisement_campaigns:write',
-    USERDOWNLOADABLESREAD: 'user:downloadables:read'
+    USERADVERTISEMENT_CAMPAIGNSWRITE: 'user:advertisement_campaigns:write'
 } as const;
 export type Scope = typeof Scope[keyof typeof Scope];
 

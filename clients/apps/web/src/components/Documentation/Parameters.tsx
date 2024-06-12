@@ -1,7 +1,9 @@
 import { OpenAPIV3_1 } from 'openapi-types'
 import OptionalBadge from './OptionalBadge'
 import { ParameterItem } from './ParameterItem'
+import PropertyType from './PropertyType'
 import RequiredBadge from './RequiredBadge'
+import { isSchemaObject } from './utils'
 
 export const Parameters = ({
   parameters,
@@ -22,6 +24,9 @@ export const Parameters = ({
               <span className="text-xxs rounded-md bg-blue-50 px-2 py-1 font-mono font-normal capitalize text-blue-500 dark:bg-blue-950/50 dark:text-blue-300">
                 {parameter.in} Parameter
               </span>
+              {parameter.schema && isSchemaObject(parameter.schema) && (
+                <PropertyType property={parameter.schema} />
+              )}
               {parameter.required ? <RequiredBadge /> : <OptionalBadge />}
             </div>
 

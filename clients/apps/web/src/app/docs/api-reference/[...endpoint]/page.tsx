@@ -1,12 +1,12 @@
 'use client'
 
+import { BodySchema } from '@/components/Documentation/BodySchema'
 import { useDocumentationContext } from '@/components/Documentation/DocumentationProvider'
 import { MDXContentWrapper } from '@/components/Documentation/MDXContentWrapper'
 import Markdown from 'markdown-to-jsx'
 import { OpenAPIV3_1 } from 'openapi-types'
 import { useMemo } from 'react'
 import { APIContainer } from '../../../../components/CommandPalette/containers/APIContainer'
-import { BodyParameters } from '../../../../components/Documentation/BodyParameters'
 import { Parameters } from '../../../../components/Documentation/Parameters'
 import { ResponseContainer } from '../../../../components/Documentation/ResponseContainer'
 import { resolveEndpointMetadata } from '../../../../components/Documentation/resolveEndpointMetadata'
@@ -28,7 +28,7 @@ export default function Page({
     apiEndpointPath: null,
   }
 
-  const requestBodyParameters = useMemo(() => {
+  const requestBodySchema = useMemo(() => {
     if (
       operation &&
       operation.requestBody &&
@@ -79,10 +79,7 @@ export default function Page({
             />
           )}
 
-          {requestBodyParameters && (
-            // @ts-ignore
-            <BodyParameters parameters={requestBodyParameters} />
-          )}
+          {requestBodySchema && <BodySchema schema={requestBodySchema} />}
         </div>
       </div>
       <div className="flex w-full flex-shrink-0 flex-col gap-y-8 md:w-96">

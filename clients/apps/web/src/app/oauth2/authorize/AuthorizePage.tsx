@@ -10,6 +10,7 @@ import {
 } from '@polar-sh/sdk'
 import Avatar from 'polarkit/components/ui/atoms/avatar'
 import Button from 'polarkit/components/ui/atoms/button'
+import { List, ListItem } from 'polarkit/components/ui/atoms/list'
 
 const isSubTypeOrganization = (
   sub_type: string,
@@ -88,15 +89,14 @@ const AuthorizePage = ({
           <div className="w-full text-center">
             They&apos;ll be able to do the following:
           </div>
-          <div className="flex w-full flex-col gap-2">
-            {scopes.map((scope) => (
-              <div
-                key={scope}
-                className="w-full rounded-md border px-4 py-3 text-center font-mono text-sm"
-              >
-                {scopeDisplayNames[scope]}
-              </div>
-            ))}
+          <div className="max-h-96 w-full overflow-y-auto">
+            <List size="small">
+              {scopes.sort().map((scope) => (
+                <ListItem key={scope} className="text-sm" size="small">
+                  <span>{scopeDisplayNames[scope]}</span>
+                </ListItem>
+              ))}
+            </List>
           </div>
           <div className="grid w-full grid-cols-2 gap-2">
             <Button

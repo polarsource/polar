@@ -16,15 +16,11 @@ from polar.issue.body import IssueBodyRenderer, get_issue_body_renderer
 from polar.kit.db.postgres import AsyncSessionMaker
 from polar.kit.pagination import ListResource, Pagination
 from polar.locker import Locker, get_locker
+from polar.openapi import IN_DEVELOPMENT_ONLY
 from polar.organization.service import organization as organization_service
 from polar.pledge.service import pledge as pledge_service
-from polar.postgres import (
-    AsyncSession,
-    get_db_session,
-    get_db_sessionmaker,
-)
+from polar.postgres import AsyncSession, get_db_session, get_db_sessionmaker
 from polar.repository.service import repository as repository_service
-from polar.tags.api import Tags
 from polar.user_organization.service import (
     user_organization as user_organization_service,
 )
@@ -44,7 +40,6 @@ router = APIRouter(tags=["issues"])
 @router.get(
     "/issues/search",
     response_model=ListResource[IssueSchema],
-    tags=[Tags.PUBLIC],
     description="Search issues.",
     summary="Search issues",
     status_code=200,
@@ -133,7 +128,6 @@ async def search(
 @router.get(
     "/issues/lookup",
     response_model=IssueSchema,
-    tags=[Tags.PUBLIC],
 )
 async def lookup(
     auth_subject: WebUserOrAnonymous,
@@ -200,7 +194,6 @@ async def lookup(
 
 @router.get(
     "/issues/{id}/body",
-    tags=[Tags.PUBLIC],
 )
 async def get_body(
     id: UUID,
@@ -226,7 +219,7 @@ async def get_body(
 @router.get(
     "/issues/for_you",
     response_model=ListResource[IssueSchema],
-    tags=[Tags.INTERNAL],
+    include_in_schema=IN_DEVELOPMENT_ONLY,
 )
 async def for_you(
     auth_subject: WebUser,
@@ -289,7 +282,6 @@ async def for_you(
 @router.get(
     "/issues/{id}",
     response_model=IssueSchema,
-    tags=[Tags.PUBLIC],
     description="Get issue",
     summary="Get issue",
 )
@@ -319,7 +311,6 @@ async def get(
 @router.post(
     "/issues/{id}",
     response_model=IssueSchema,
-    tags=[Tags.PUBLIC],
     description="Update issue. Requires authentication.",
     summary="Update issue.",
 )
@@ -369,7 +360,6 @@ async def update(
 @router.post(
     "/issues/{id}/confirm_solved",
     response_model=IssueSchema,
-    tags=[Tags.PUBLIC],
     description="Mark an issue as confirmed solved, and configure issue reward splits. Enables payouts of pledges. Can only be done once per issue. Requires authentication.",  # noqa: E501
     summary="Mark an issue as confirmed solved.",
 )
@@ -445,7 +435,7 @@ async def confirm(
 @router.post(
     "/issues/{id}/add_badge",
     response_model=IssueSchema,
-    tags=[Tags.INTERNAL],
+    include_in_schema=IN_DEVELOPMENT_ONLY,
 )
 async def add_polar_badge(
     id: UUID,
@@ -481,6 +471,7 @@ async def add_polar_badge(
 @router.post(
     "/issues/{id}/remove_badge",
     response_model=IssueSchema,
+    include_in_schema=IN_DEVELOPMENT_ONLY,
 )
 async def remove_polar_badge(
     id: UUID,
@@ -516,7 +507,7 @@ async def remove_polar_badge(
 @router.post(
     "/issues/{id}/comment",
     response_model=IssueSchema,
-    tags=[Tags.INTERNAL],
+    include_in_schema=IN_DEVELOPMENT_ONLY,
 )
 async def add_issue_comment(
     id: UUID,
@@ -568,7 +559,7 @@ async def add_issue_comment(
 @router.post(
     "/issues/{id}/badge_with_message",
     response_model=IssueSchema,
-    tags=[Tags.INTERNAL],
+    include_in_schema=IN_DEVELOPMENT_ONLY,
 )
 async def badge_with_message(
     id: UUID,

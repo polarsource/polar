@@ -7,8 +7,8 @@ from polar.auth.dependencies import WebUser
 from polar.auth.scope import Scope
 from polar.auth.service import AuthService
 from polar.kit.pagination import ListResource, Pagination
+from polar.openapi import IN_DEVELOPMENT_ONLY
 from polar.postgres import AsyncSession, get_db_session
-from polar.tags.api import Tags
 
 from .schemas import (
     CreatePersonalAccessToken,
@@ -19,13 +19,14 @@ from .service import personal_access_token_service
 
 log = structlog.get_logger()
 
-router = APIRouter(tags=["personal_access_token"])
+router = APIRouter(
+    tags=["personal_access_token"], include_in_schema=IN_DEVELOPMENT_ONLY
+)
 
 
 @router.delete(
     "/personal_access_tokens/{id}",
     response_model=PersonalAccessToken,
-    tags=[Tags.PUBLIC],
     description="Delete a personal access tokens. Requires authentication.",  # noqa: E501
     summary="Delete a personal access tokens",
     status_code=200,
@@ -50,7 +51,6 @@ async def delete(
 @router.get(
     "/personal_access_tokens",
     response_model=ListResource[PersonalAccessToken],
-    tags=[Tags.PUBLIC],
     description="List personal access tokens. Requires authentication.",  # noqa: E501
     summary="List personal access tokens",
     status_code=200,
@@ -72,7 +72,6 @@ async def list(
 @router.post(
     "/personal_access_tokens",
     response_model=CreatePersonalAccessTokenResponse,
-    tags=[Tags.PUBLIC],
     description="Create a new personal access token. Requires authentication.",  # noqa: E501
     summary="Create a new personal access token",
     status_code=200,

@@ -12,13 +12,14 @@ from polar.auth.schemas import (
 from polar.config import settings
 from polar.exceptions import ResourceNotFound, Unauthorized
 from polar.kit import jwt
+from polar.openapi import IN_DEVELOPMENT_ONLY
 from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession, get_db_session
 from polar.user.service.user import user as user_service
 
 from .service import AuthService
 
-router = APIRouter(tags=["auth"])
+router = APIRouter(tags=["auth"], include_in_schema=IN_DEVELOPMENT_ONLY)
 
 
 @router.get(

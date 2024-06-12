@@ -13,7 +13,6 @@ from polar.postgres import AsyncSession, get_db_session
 from polar.product.service.product import (
     product as product_service,
 )
-from polar.tags.api import Tags
 
 from .schemas import (
     Repository as RepositorySchema,
@@ -31,7 +30,6 @@ router = APIRouter(tags=["repositories"])
 @router.get(
     "/repositories",
     response_model=ListResource[RepositorySchema],
-    tags=[Tags.PUBLIC],
     description="List repositories in organizations that the authenticated user is a admin of. Requires authentication.",  # noqa: E501
     summary="List repositories",
     status_code=200,
@@ -56,7 +54,6 @@ async def list(
 @router.get(
     "/repositories/search",
     response_model=ListResource[RepositorySchema],
-    tags=[Tags.PUBLIC],
     description="Search repositories.",
     summary="Search repositories",
     status_code=200,
@@ -103,7 +100,6 @@ async def search(
 @router.get(
     "/repositories/lookup",
     response_model=RepositorySchema,
-    tags=[Tags.PUBLIC],
     description="Lookup repositories. Like search but returns at only one repository.",  # noqa: E501
     summary="Lookup repositories",
     status_code=200,
@@ -147,7 +143,6 @@ async def lookup(
 @router.get(
     "/repositories/{id}",
     response_model=RepositorySchema,
-    tags=[Tags.PUBLIC],
     description="Get a repository",
     status_code=200,
     summary="Get a repository",
@@ -185,7 +180,6 @@ async def get(
 @router.patch(
     "/repositories/{id}",
     response_model=RepositorySchema,
-    tags=[Tags.PUBLIC],
     description="Update repository",
     status_code=200,
     summary="Update a repository",

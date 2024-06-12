@@ -11,7 +11,6 @@ from polar.postgres import (
     AsyncSession,
     get_db_session,
 )
-from polar.tags.api import Tags
 
 from .schemas import PullRequest
 from .service import pull_request as pull_request_service
@@ -22,7 +21,6 @@ router = APIRouter(tags=["pull_requests"])
 @router.get(
     "/pull_requests/search",
     response_model=ListResource[PullRequest],
-    tags=[Tags.PUBLIC],
     description="Search pull requests.",
     summary="Search pull requests",
     status_code=200,

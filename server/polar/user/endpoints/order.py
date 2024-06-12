@@ -11,7 +11,6 @@ from polar.kit.sorting import Sorting, SortingGetter
 from polar.models import Order
 from polar.models.product_price import ProductPriceType
 from polar.postgres import get_db_session
-from polar.tags.api import Tags
 
 from .. import auth
 from ..schemas.order import UserOrder, UserOrderInvoice
@@ -29,7 +28,7 @@ ListSorting = Annotated[
 ]
 
 
-@router.get("/", response_model=ListResource[UserOrder], tags=[Tags.PUBLIC])
+@router.get("/", response_model=ListResource[UserOrder])
 async def list_orders(
     auth_subject: auth.UserOrdersRead,
     pagination: PaginationParamsQuery,
@@ -78,7 +77,6 @@ async def list_orders(
 @router.get(
     "/{id}",
     response_model=UserOrder,
-    tags=[Tags.PUBLIC],
     responses={404: OrderNotFound},
 )
 async def get_order(
@@ -98,7 +96,6 @@ async def get_order(
 @router.get(
     "/{id}/invoice",
     response_model=UserOrderInvoice,
-    tags=[Tags.PUBLIC],
     responses={404: OrderNotFound},
 )
 async def get_order_invoice(

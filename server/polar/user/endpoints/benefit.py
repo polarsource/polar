@@ -11,7 +11,6 @@ from polar.kit.sorting import Sorting, SortingGetter
 from polar.models import Benefit
 from polar.models.benefit import BenefitType
 from polar.postgres import get_db_session
-from polar.tags.api import Tags
 
 from .. import auth
 from ..schemas.benefit import UserBenefit, UserBenefitAdapter
@@ -32,7 +31,7 @@ ListSorting = Annotated[
 ]
 
 
-@router.get("/", response_model=ListResource[UserBenefit], tags=[Tags.PUBLIC])
+@router.get("/", response_model=ListResource[UserBenefit])
 async def list_benefits(
     auth_subject: auth.UserBenefitsRead,
     pagination: PaginationParamsQuery,
@@ -69,7 +68,6 @@ async def list_benefits(
 @router.get(
     "/{id}",
     response_model=UserBenefit,
-    tags=[Tags.PUBLIC],
     responses={404: BenefitNotFound},
 )
 async def get_benefit(

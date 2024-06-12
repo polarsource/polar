@@ -34,12 +34,12 @@ from polar.kit import jwt
 from polar.kit.http import ReturnTo
 from polar.locker import Locker, get_locker
 from polar.models.benefit import BenefitType
+from polar.openapi import IN_DEVELOPMENT_ONLY
 from polar.organization.schemas import Organization as OrganizationSchema
 from polar.pledge.service import pledge as pledge_service
 from polar.postgres import AsyncSession, get_db_session
 from polar.posthog import posthog
 from polar.reward.service import reward_service
-from polar.tags.api import Tags
 from polar.worker import enqueue_job
 
 from .schemas import (
@@ -54,7 +54,11 @@ from .service.user import GithubUserServiceError, github_user
 
 log = structlog.get_logger()
 
-router = APIRouter(prefix="/integrations/github", tags=["integrations_github"])
+router = APIRouter(
+    prefix="/integrations/github",
+    tags=["integrations_github"],
+    include_in_schema=IN_DEVELOPMENT_ONLY,
+)
 
 
 ###############################################################################
@@ -78,7 +82,7 @@ class NotPermittedOrganizationBillingPlan(NotPermitted):
         super().__init__(message)
 
 
-@router.get("/authorize", name="integrations.github.authorize", tags=[Tags.INTERNAL])
+@router.get("/authorize", name="integrations.github.authorize")
 async def github_authorize(
     request: Request,
     auth_subject: WebUserOrAnonymous,
@@ -107,7 +111,7 @@ async def github_authorize(
     return RedirectResponse(authorization_url, 303)
 
 
-@router.get("/callback", name="integrations.github.callback", tags=[Tags.INTERNAL])
+@router.get("/callback", name="integrations.github.callback")
 async def github_callback(
     request: Request,
     auth_subject: WebUserOrAnonymous,
@@ -242,7 +246,7 @@ async def lookup_user(
 ###############################################################################
 
 
-@router.get("/organizations/{id}/installation", tags=[Tags.INTERNAL])
+@router.get("/organizations/{id}/installation")
 async def redirect_to_organization_installation(
     id: UUID4,
     return_to: ReturnTo,
@@ -278,9 +282,7 @@ async def redirect_to_organization_installation(
     )
 
 
-@router.post(
-    "/organizations/{id}/check_permissions", status_code=204, tags=[Tags.INTERNAL]
-)
+@router.post("/organizations/{id}/check_permissions", status_code=204)
 async def check_organization_permissions(
     id: UUID4,
     input: OrganizationCheckPermissionsInput,
@@ -310,7 +312,7 @@ async def check_organization_permissions(
         raise InternalServerError() from e
 
 
-@router.get("/organizations/{id}/billing", tags=[Tags.INTERNAL])
+@router.get("/organizations/{id}/billing")
 async def get_organization_billing_plan(
     id: UUID4,
     auth_subject: WebUser,

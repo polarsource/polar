@@ -8,22 +8,21 @@ from polar.config import settings
 from polar.exceptions import PolarRedirectionError
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.http import ReturnTo
+from polar.openapi import IN_DEVELOPMENT_ONLY
 from polar.postgres import get_db_session
 from polar.posthog import posthog
-from polar.tags.api import Tags
 
 from .schemas import MagicLinkRequest
 from .service import MagicLinkError
 from .service import magic_link as magic_link_service
 
-router = APIRouter(prefix="/magic_link", tags=["magic_link"])
+router = APIRouter(
+    prefix="/magic_link", tags=["magic_link"], include_in_schema=IN_DEVELOPMENT_ONLY
+)
 
 
 @router.post(
-    "/request",
-    name="magic_link.request",
-    status_code=status.HTTP_202_ACCEPTED,
-    tags=[Tags.INTERNAL],
+    "/request", name="magic_link.request", status_code=status.HTTP_202_ACCEPTED
 )
 async def request_magic_link(
     magic_link_request: MagicLinkRequest,
@@ -43,7 +42,7 @@ async def request_magic_link(
     )
 
 
-@router.get("/authenticate", name="magic_link.authenticate", tags=[Tags.INTERNAL])
+@router.get("/authenticate", name="magic_link.authenticate")
 async def authenticate_magic_link(
     request: Request,
     return_to: ReturnTo,

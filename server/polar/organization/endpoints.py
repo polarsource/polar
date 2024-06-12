@@ -15,9 +15,9 @@ from polar.integrations.stripe.service import stripe as stripe_service
 from polar.kit.pagination import ListResource, Pagination, PaginationParamsQuery
 from polar.models.organization import Organization
 from polar.models.user import User
+from polar.openapi import IN_DEVELOPMENT_ONLY
 from polar.postgres import AsyncSession, get_db_session
 from polar.repository.service import repository as repository_service
-from polar.tags.api import Tags
 from polar.user_organization.schemas import OrganizationMember
 from polar.user_organization.service import (
     user_organization as user_organization_service,
@@ -76,7 +76,6 @@ async def to_schema(
 @router.get(
     "/organizations",
     response_model=ListResource[OrganizationSchema],
-    tags=[Tags.PUBLIC],
     description="List organizations that the authenticated user is a member of. Requires authentication.",  # noqa: E501
     summary="List organizations",
     status_code=200,
@@ -102,7 +101,6 @@ async def list(
 @router.get(
     "/organizations/search",
     response_model=ListResource[OrganizationSchema],
-    tags=[Tags.PUBLIC],
     description="Search organizations.",
     summary="Search organizations",
     status_code=200,
@@ -135,7 +133,6 @@ async def search(
 @router.get(
     "/organizations/lookup",
     response_model=OrganizationSchema,
-    tags=[Tags.PUBLIC],
     description="Lookup a single organization.",  # noqa: E501
     summary="Lookup organization",
     status_code=200,
@@ -173,7 +170,6 @@ async def lookup(
 @router.get(
     "/organizations/{id}",
     response_model=OrganizationSchema,
-    tags=[Tags.PUBLIC],
     description="Get a organization by ID",
     status_code=200,
     summary="Get organization",
@@ -198,7 +194,6 @@ async def get(
 @router.get(
     "/organizations/{id}/customers",
     response_model=ListResource[OrganizationCustomer],
-    tags=[Tags.PUBLIC],
     responses={404: OrganizationNotFound},
 )
 async def list_organization_customers(
@@ -235,7 +230,6 @@ async def list_organization_customers(
 @router.patch(
     "/organizations/{id}",
     response_model=OrganizationSchema,
-    tags=[Tags.PUBLIC],
     description="Update organization",
     status_code=200,
     summary="Update an organization",
@@ -274,7 +268,6 @@ async def update(
 @router.patch(
     "/organizations/{id}/account",
     response_model=OrganizationSchema,
-    tags=[Tags.PUBLIC],
     description="Set organization account",
     status_code=200,
     summary="Set organization organization",
@@ -308,7 +301,6 @@ async def set_account(
 @router.get(
     "/organizations/{id}/members",
     response_model=ListResource[OrganizationMember],
-    tags=[Tags.PUBLIC],
     description="List members of an organization. Requires authentication.",  # noqa: E501
     summary="List members in an organization",
     status_code=200,
@@ -344,7 +336,6 @@ async def list_members(
 @router.post(
     "/organizations/{id}/stripe_customer_portal",
     response_model=OrganizationStripePortalSession,
-    tags=[Tags.PUBLIC],
     description="Start a new Stripe Customer session for a organization.",
     status_code=200,
 )
@@ -371,7 +362,6 @@ async def create_stripe_customer_portal(
 @router.get(
     "/organizations/{id}/credit",
     response_model=CreditBalance,
-    tags=[Tags.PUBLIC],
     description="Get credits for a organization",  # noqa: E501
     status_code=200,
 )
@@ -478,7 +468,7 @@ async def get_badge_settings(
 @router.post(
     "/organizations/{id}/badge_settings",
     response_model=OrganizationSchema,
-    tags=[Tags.INTERNAL],
+    include_in_schema=IN_DEVELOPMENT_ONLY,
     summary="Update badge settings (Internal API)",
 )
 async def update_badge_settings(

@@ -16,7 +16,6 @@ from polar.models.organization import Organization
 from polar.organization.dependencies import OrganizationNamePlatform
 from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession, get_db_session
-from polar.tags.api import Tags
 from polar.user_organization.service import (
     user_organization as user_organization_service,
 )
@@ -43,7 +42,6 @@ SearchSorting = Annotated[
 @router.get(
     "/donations/search",
     response_model=ListResource[Donation],
-    tags=[Tags.PUBLIC],
 )
 async def search_donations(
     pagination: PaginationParamsQuery,
@@ -188,7 +186,6 @@ async def update_payment_intent(
 @router.get(
     "/donations/statistics",
     response_model=DonationStatistics,
-    tags=[Tags.PUBLIC],
 )
 async def statistics(
     auth_subject: WebUser,
@@ -221,7 +218,6 @@ async def statistics(
 @router.get(
     "/donations/public/search",
     response_model=ListResource[PublicDonation],
-    tags=[Tags.PUBLIC],
 )
 async def donations_public_search(
     pagination: PaginationParamsQuery,

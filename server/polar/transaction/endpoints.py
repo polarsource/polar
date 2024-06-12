@@ -14,7 +14,6 @@ from polar.kit.sorting import Sorting, SortingGetter
 from polar.models import Transaction as TransactionModel
 from polar.models.transaction import TransactionType
 from polar.postgres import AsyncSession, get_db_session, get_db_sessionmaker
-from polar.tags.api import Tags
 
 from .schemas import (
     PayoutCreate,
@@ -36,7 +35,7 @@ SearchSorting = Annotated[
 ]
 
 
-@router.get("/search", response_model=ListResource[Transaction], tags=[Tags.PUBLIC])
+@router.get("/search", response_model=ListResource[Transaction])
 async def search_transactions(
     pagination: PaginationParamsQuery,
     sorting: SearchSorting,
@@ -67,7 +66,7 @@ async def search_transactions(
     )
 
 
-@router.get("/lookup", response_model=TransactionDetails, tags=[Tags.PUBLIC])
+@router.get("/lookup", response_model=TransactionDetails)
 async def lookup_transaction(
     transaction_id: UUID4,
     auth_subject: WebUser,
@@ -78,7 +77,7 @@ async def lookup_transaction(
     )
 
 
-@router.get("/summary", response_model=TransactionsSummary, tags=[Tags.PUBLIC])
+@router.get("/summary", response_model=TransactionsSummary)
 async def get_summary(
     auth_subject: WebUser,
     account_id: UUID4,
@@ -94,7 +93,7 @@ async def get_summary(
     )
 
 
-@router.get("/payouts", response_model=PayoutEstimate, tags=[Tags.PUBLIC])
+@router.get("/payouts", response_model=PayoutEstimate)
 async def get_payout_estimate(
     auth_subject: WebUser,
     account_id: UUID4,
@@ -113,9 +112,7 @@ async def get_payout_estimate(
     )
 
 
-@router.post(
-    "/payouts", response_model=Transaction, status_code=201, tags=[Tags.PUBLIC]
-)
+@router.post("/payouts", response_model=Transaction, status_code=201)
 async def create_payout(
     auth_subject: WebUser,
     payout_create: PayoutCreate,
@@ -133,7 +130,7 @@ async def create_payout(
     return await payout_transaction_service.create_payout(session, account=account)
 
 
-@router.get("/payouts/{id}/csv", tags=[Tags.PUBLIC])
+@router.get("/payouts/{id}/csv")
 async def get_payout_csv(
     id: UUID4,
     auth_subject: WebUser,

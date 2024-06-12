@@ -2,12 +2,13 @@ import structlog
 from fastapi import APIRouter, Depends
 
 from polar.auth.dependencies import WebUser
+from polar.openapi import IN_DEVELOPMENT_ONLY
 from polar.postgres import AsyncSession, get_db_session
 
 from .schemas import NotificationsList, NotificationsMarkRead
 from .service import notifications
 
-router = APIRouter(tags=["notifications"])
+router = APIRouter(tags=["notifications"], include_in_schema=IN_DEVELOPMENT_ONLY)
 
 
 log = structlog.get_logger()

@@ -12,8 +12,8 @@ from polar.config import settings
 from polar.exceptions import ResourceAlreadyExists, Unauthorized
 from polar.kit import jwt
 from polar.kit.http import ReturnTo, add_query_parameters, get_safe_return_url
+from polar.openapi import IN_DEVELOPMENT_ONLY
 from polar.postgres import AsyncSession, get_db_session
-from polar.tags.api import Tags
 
 from . import oauth
 from .schemas import DiscordGuild
@@ -22,7 +22,11 @@ from .service import discord_user as discord_user_service
 
 log = structlog.get_logger()
 
-router = APIRouter(prefix="/integrations/discord", tags=["integrations_discord"])
+router = APIRouter(
+    prefix="/integrations/discord",
+    tags=["integrations_discord"],
+    include_in_schema=IN_DEVELOPMENT_ONLY,
+)
 
 
 ###############################################################################
@@ -61,7 +65,6 @@ oauth2_bot_authorize_callback = OAuth2AuthorizeCallback(
 @router.get(
     "/bot/authorize",
     name="integrations.discord.bot_authorize",
-    tags=[Tags.INTERNAL],
 )
 async def discord_bot_authorize(
     return_to: ReturnTo, request: Request, auth_subject: WebUser
@@ -84,9 +87,7 @@ async def discord_bot_authorize(
     return RedirectResponse(authorization_url, 303)
 
 
-@router.get(
-    "/bot/callback", name="integrations.discord.bot_callback", tags=[Tags.INTERNAL]
-)
+@router.get("/bot/callback", name="integrations.discord.bot_callback")
 async def discord_bot_callback(
     auth_subject: WebUser,
     access_token_state: tuple[OAuth2Token, str | None] = Depends(
@@ -127,11 +128,7 @@ oauth2_user_authorize_callback = OAuth2AuthorizeCallback(
 )
 
 
-@router.get(
-    "/user/authorize",
-    name="integrations.discord.user_authorize",
-    tags=[Tags.INTERNAL],
-)
+@router.get("/user/authorize", name="integrations.discord.user_authorize")
 async def discord_user_authorize(
     return_to: ReturnTo, request: Request, auth_subject: WebUser
 ) -> RedirectResponse:
@@ -153,9 +150,7 @@ async def discord_user_authorize(
     return RedirectResponse(authorization_url, 303)
 
 
-@router.get(
-    "/user/callback", name="integrations.discord.user_callback", tags=[Tags.INTERNAL]
-)
+@router.get("/user/callback", name="integrations.discord.user_callback")
 async def discord_user_callback(
     auth_subject: WebUser,
     session: AsyncSession = Depends(get_db_session),
@@ -188,7 +183,7 @@ async def discord_user_callback(
 ###############################################################################
 
 
-@router.get("/guild/lookup", response_model=DiscordGuild, tags=[Tags.INTERNAL])
+@router.get("/guild/lookup", response_model=DiscordGuild)
 async def discord_guild_lookup(guild_token: str, auth_subject: WebUser) -> DiscordGuild:
     try:
         guild_token_data = jwt.decode(

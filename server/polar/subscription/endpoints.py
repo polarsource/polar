@@ -19,7 +19,6 @@ from polar.models.product import SubscriptionTierType
 from polar.organization.dependencies import ResolvedOrganization
 from polar.postgres import AsyncSession, get_db_session
 from polar.posthog import posthog
-from polar.tags.api import Tags
 from polar.user.service.user import user as user_service
 
 from ..product.service.product import product as product_service
@@ -41,7 +40,6 @@ router = APIRouter(prefix="/subscriptions", tags=["subscriptions"])
 @router.get(
     "/subscriptions/statistics",
     response_model=SubscriptionsStatistics,
-    tags=[Tags.PUBLIC],
 )
 async def get_subscriptions_statistics(
     auth_subject: auth.CreatorSubscriptionsRead,
@@ -73,7 +71,6 @@ SearchSorting = Annotated[
 @router.get(
     "/subscriptions/search",
     response_model=ListResource[SubscriptionSchema],
-    tags=[Tags.PUBLIC],
 )
 async def search_subscriptions(
     auth_subject: auth.CreatorSubscriptionsRead,
@@ -109,7 +106,6 @@ async def search_subscriptions(
     "/subscriptions/email",
     response_model=SubscriptionSchema,
     status_code=201,
-    tags=[Tags.PUBLIC],
 )
 async def create_email_subscription(
     subscription_create: SubscriptionCreateEmail,
@@ -148,7 +144,6 @@ async def create_email_subscription(
 @router.post(
     "/subscriptions/import",
     response_model=SubscriptionsImported,
-    tags=[Tags.PUBLIC],
 )
 async def subscriptions_import(
     auth_subject: auth.CreatorSubscriptionsWrite,
@@ -200,7 +195,6 @@ async def subscriptions_import(
 
 @router.get(
     "/subscriptions/export",
-    tags=[Tags.PUBLIC],
 )
 async def subscriptions_export(
     auth_subject: auth.CreatorSubscriptionsRead,

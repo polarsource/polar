@@ -1,12 +1,7 @@
 from typing import Any
 
 import structlog
-from fastapi import (
-    APIRouter,
-    Depends,
-    Request,
-    Response,
-)
+from fastapi import APIRouter, Depends, Request, Response
 from fastapi.responses import RedirectResponse
 from httpx_oauth.integrations.fastapi import OAuth2AuthorizeCallback
 from httpx_oauth.oauth2 import OAuth2Token
@@ -25,8 +20,8 @@ from polar.integrations.github_repository_benefit.schemas import (
 )
 from polar.kit import jwt
 from polar.kit.http import ReturnTo, add_query_parameters, get_safe_return_url
+from polar.openapi import IN_DEVELOPMENT_ONLY
 from polar.postgres import AsyncSession, get_db_session
-from polar.tags.api import Tags
 
 from .service import github_oauth_client, github_repository_benefit_user_service
 
@@ -35,6 +30,7 @@ log = structlog.get_logger()
 router = APIRouter(
     prefix="/integrations/github_repository_benefit",
     tags=["integrations_github_repository_benefit"],
+    include_in_schema=IN_DEVELOPMENT_ONLY,
 )
 
 
@@ -83,9 +79,7 @@ class NotPermittedOrganizationBillingPlan(NotPermitted):
 
 
 @router.get(
-    "/user/authorize",
-    name="integrations.github_repository_benefit.user_authorize",
-    tags=[Tags.INTERNAL],
+    "/user/authorize", name="integrations.github_repository_benefit.user_authorize"
 )
 async def user_authorize(
     request: Request, return_to: ReturnTo, auth_subject: WebUser
@@ -107,9 +101,7 @@ async def user_authorize(
 
 
 @router.get(
-    "/user/callback",
-    name="integrations.github_repository_benefit.user_callback",
-    tags=[Tags.INTERNAL],
+    "/user/callback", name="integrations.github_repository_benefit.user_callback"
 )
 async def user_callback(
     auth_subject: WebUser,
@@ -141,7 +133,6 @@ async def user_callback(
     "/user/repositories",
     name="integrations.github_repository_benefit.user_repositories",
     description="Lists available repositories for this user",
-    tags=[Tags.INTERNAL],
 )
 async def user_repositories(
     auth_subject: WebUser,
@@ -178,7 +169,6 @@ async def user_repositories(
 @router.get(
     "/installation/install",
     name="integrations.github_repository_benefit.installation_install",
-    tags=[Tags.INTERNAL],
 )
 async def installation_install(
     request: Request, auth_subject: WebUser
@@ -192,7 +182,6 @@ async def installation_install(
 @router.get(
     "/installation/callback",
     name="integrations.github_repository_benefit.installation_callback",
-    tags=[Tags.INTERNAL],
 )
 async def installation_callback(request: Request, auth_subject: WebUser) -> Response:
     await publish(

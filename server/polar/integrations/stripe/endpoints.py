@@ -10,7 +10,9 @@ log = structlog.get_logger()
 
 stripe.api_key = settings.STRIPE_SECRET_KEY
 
-router = APIRouter(prefix="/integrations/stripe", tags=["integrations_stripe"])
+router = APIRouter(
+    prefix="/integrations/stripe", tags=["integrations_stripe"], include_in_schema=False
+)
 
 
 DIRECT_IMPLEMENTED_WEBHOOKS = {

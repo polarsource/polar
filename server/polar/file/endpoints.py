@@ -11,7 +11,6 @@ from polar.models import File, Organization
 from polar.organization.resolver import get_payload_organization
 from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession, get_db_session
-from polar.tags.api import Tags
 
 from . import auth
 from .schemas import (
@@ -45,7 +44,6 @@ ListOfFileIDs: TypeAlias = list[UUID4]
 
 @router.get(
     "/",
-    tags=[Tags.PUBLIC],
     response_model=ListResource[FileRead],
 )
 async def list(
@@ -85,7 +83,6 @@ async def list(
 
 @router.post(
     "/",
-    tags=[Tags.PUBLIC],
     response_model=FileUpload,
 )
 async def create(
@@ -110,7 +107,6 @@ async def create(
 
 @router.post(
     "/{id}/uploaded",
-    tags=[Tags.PUBLIC],
     response_model=FileRead,
 )
 async def uploaded(
@@ -141,7 +137,6 @@ async def uploaded(
 # Re-introduce with changing version
 @router.patch(
     "/{id}",
-    tags=[Tags.PUBLIC],
     response_model=FileRead,
 )
 async def update(
@@ -170,7 +165,6 @@ async def update(
 @router.delete(
     "/{id}",
     status_code=204,
-    tags=[Tags.PUBLIC],
     responses={
         204: {"description": "File deleted."},
         403: {

@@ -15,13 +15,13 @@ from polar.kit.schemas import Schema
 from polar.models.issue_reward import IssueReward
 from polar.models.pledge import Pledge as PledgeModel
 from polar.models.pledge_transaction import PledgeTransaction as PledgeTransactionModel
+from polar.openapi import IN_DEVELOPMENT_ONLY
 from polar.organization.service import organization as organization_service
 from polar.pledge.service import pledge as pledge_service
 from polar.postgres import AsyncSession, get_db_session
 from polar.repository.service import repository as repository_service
 from polar.reward.endpoints import to_resource as reward_to_resource
 from polar.reward.service import reward_service
-from polar.tags.api import Tags
 from polar.worker import enqueue_job
 
 from .pledge_service import bo_pledges_service
@@ -32,12 +32,14 @@ from .schemas import (
     BackofficeReward,
 )
 
-router = APIRouter(tags=["backoffice"], prefix="/backoffice")
+router = APIRouter(
+    tags=["backoffice"], prefix="/backoffice", include_in_schema=IN_DEVELOPMENT_ONLY
+)
 
 log = structlog.get_logger()
 
 
-@router.get("/pledges", response_model=list[BackofficePledge], tags=[Tags.INTERNAL])
+@router.get("/pledges", response_model=list[BackofficePledge])
 async def pledges(
     auth_subject: AdminUser,
     session: AsyncSession = Depends(get_db_session),
@@ -73,7 +75,6 @@ def r(
 @router.get(
     "/rewards/by_issue",
     response_model=ListResource[BackofficeReward],
-    tags=[Tags.INTERNAL],
 )
 async def rewards(
     auth_subject: AdminUser,
@@ -93,7 +94,6 @@ async def rewards(
 @router.get(
     "/rewards/pending",
     response_model=ListResource[BackofficeReward],
-    tags=[Tags.INTERNAL],
 )
 async def rewards_pending(
     auth_subject: AdminUser,
@@ -109,7 +109,7 @@ async def rewards_pending(
     )
 
 
-@router.get("/issue/{id}", response_model=Issue, tags=[Tags.INTERNAL])
+@router.get("/issue/{id}", response_model=Issue)
 async def issue(
     id: UUID,
     auth_subject: AdminUser,
@@ -142,7 +142,7 @@ class PledgeRewardTransfer(Schema):
     issue_reward_id: UUID
 
 
-@router.post("/pledges/approve", response_model=BackofficeReward, tags=[Tags.INTERNAL])
+@router.post("/pledges/approve", response_model=BackofficeReward)
 async def pledge_reward_transfer(
     body: PledgeRewardTransfer,
     auth_subject: AdminUser,
@@ -168,7 +168,6 @@ async def pledge_reward_transfer(
 @router.post(
     "/pledges/create_invoice/{pledge_id}",
     response_model=BackofficePledge,
-    tags=[Tags.INTERNAL],
 )
 async def pledge_create_invoice(
     pledge_id: UUID,
@@ -182,7 +181,6 @@ async def pledge_create_invoice(
 @router.post(
     "/pledges/mark_disputed/{pledge_id}",
     response_model=BackofficePledge,
-    tags=[Tags.INTERNAL],
 )
 async def pledge_mark_disputed(
     pledge_id: UUID,
@@ -198,7 +196,7 @@ async def pledge_mark_disputed(
     return await get_pledge(session, pledge_id)
 
 
-@router.post("/badge", response_model=BackofficeBadgeResponse, tags=[Tags.INTERNAL])
+@router.post("/badge", response_model=BackofficeBadgeResponse)
 async def manage_badge(
     badge: BackofficeBadge,
     auth_subject: AdminUser,
@@ -260,7 +258,6 @@ async def manage_badge(
 @router.post(
     "/update_badge_contents",
     response_model=dict[Any, Any],
-    tags=[Tags.INTERNAL],
 )
 async def update_badge_contents(
     org_slug: str,

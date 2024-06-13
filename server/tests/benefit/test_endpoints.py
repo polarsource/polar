@@ -121,11 +121,7 @@ class TestCreateBenefit:
                 "is_tax_applicable": True,
                 "properties": {"note": None},
                 "description": (
-                    "This is a way too long description that shall never fit "
-                    "in the space we have in a single tier card. "
-                    "That's why we need to add this upper limit of characters, "
-                    "otherwise users would put loads and loads of text that would "
-                    "result in a very ugly output on the subscription page."
+                    "This is just a simple product description that should be allowed"
                 ),
             },
             {
@@ -216,11 +212,7 @@ class TestUpdateBenefit:
         [
             {
                 "description": (
-                    "This is a way too long description that shall never fit "
-                    "in the space we have in a single tier card. "
-                    "That's why we need to add this upper limit of characters, "
-                    "otherwise users would put loads and loads of text that would "
-                    "result in a very ugly output on the subscription page."
+                    "This is just a simple product description that should be allowed"
                 )
             },
         ],

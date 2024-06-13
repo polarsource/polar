@@ -140,8 +140,8 @@ export default function ClientPage({
       <StaggerReveal className="flex flex-col gap-y-2">
         <FeatureItem
           id="subscriptions_enabled"
-          name="Subscriptions"
-          description="Offer benefits to your supporters via recurring payments"
+          name="Products"
+          description="Offer benefits to your supporters via recurring or one-time purchases"
           active={features.includes('subscriptions_enabled')}
           icon={<Bolt fontSize="inherit" />}
           onClick={toggleFeature}

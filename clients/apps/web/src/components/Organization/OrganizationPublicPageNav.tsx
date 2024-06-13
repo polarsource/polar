@@ -1,5 +1,6 @@
 'use client'
 
+import { useProducts } from '@/hooks/queries'
 import { isFeatureEnabled } from '@/utils/feature-flags'
 import { organizationPageLink } from '@/utils/nav'
 import { Organization } from '@polar-sh/sdk'
@@ -19,6 +20,11 @@ export const OrganizationPublicPageNav = ({
 }: OrganizationPublicPageNavProps) => {
   const routeSegment = useSelectedLayoutSegment()
   const currentTab = routeSegment ?? 'overview'
+
+  const { data: products } = useProducts(organization.id, {
+    isRecurring: false,
+  })
+  const renderProductsTab = (products?.items?.length ?? 0) > 0
 
   return (
     <Tabs value={currentTab}>
@@ -42,7 +48,7 @@ export const OrganizationPublicPageNav = ({
           </Link>
         )}
 
-        {isFeatureEnabled('products') && (
+        {isFeatureEnabled('products') && renderProductsTab && (
           <Link href={organizationPageLink(organization, 'products')}>
             <TabsTrigger value="products" size="small">
               Products

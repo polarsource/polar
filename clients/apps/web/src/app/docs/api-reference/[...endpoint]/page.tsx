@@ -1,5 +1,6 @@
 import { BodySchema } from '@/components/Documentation/BodySchema'
 import { MDXContentWrapper } from '@/components/Documentation/MDXContentWrapper'
+import { ResponsesSchemas } from '@/components/Documentation/ResponsesSchemas'
 import {
   fetchSchema,
   getRequestBodySchema,
@@ -62,6 +63,9 @@ export default async function Page({
           )}
 
           {requestBodySchema && <BodySchema schema={requestBodySchema} />}
+          {operation.responses && (
+            <ResponsesSchemas responses={operation.responses} />
+          )}
         </div>
       </div>
       <div className="flex w-full flex-shrink-0 flex-col gap-y-8 md:w-96">

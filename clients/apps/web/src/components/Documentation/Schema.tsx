@@ -97,8 +97,6 @@ const SchemaProperties = ({
 }
 
 export const Schema = ({ schema }: { schema: OpenAPIV3_1.SchemaObject }) => {
-  console.log(schema)
-
   const unionSchemas = getUnionSchemas(schema)
   if (unionSchemas) {
     return <UnionSchema schemas={unionSchemas} />

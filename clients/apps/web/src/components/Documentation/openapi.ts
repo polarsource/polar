@@ -85,6 +85,12 @@ export const isSchemaObject = (
   return !('$ref' in s)
 }
 
+export const isResponseObject = (
+  s: OpenAPIV3_1.ReferenceObject | OpenAPIV3_1.ResponseObject,
+): s is OpenAPIV3_1.ResponseObject => {
+  return !('$ref' in s)
+}
+
 export const getUnionSchemas = (schema: OpenAPIV3_1.SchemaObject) => {
   if (schema.oneOf) {
     return schema.oneOf

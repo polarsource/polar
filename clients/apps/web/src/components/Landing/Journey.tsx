@@ -1,7 +1,7 @@
 'use client'
 
 import {
-  AllInclusiveOutlined,
+  AccountBalanceOutlined,
   AttachMoneyOutlined,
   DiamondOutlined,
   HiveOutlined,
@@ -14,12 +14,15 @@ import Link from 'next/link'
 import {
   Card,
   CardContent,
+  CardFooter,
   CardHeader,
 } from 'polarkit/components/ui/atoms/card'
 import { List } from 'polarkit/components/ui/atoms/list'
-import React from 'react'
+import React, { PropsWithChildren } from 'react'
 import { twMerge } from 'tailwind-merge'
+import SubscriptionTierCard from '../Subscriptions/SubscriptionTierCard'
 import { Section } from './Section'
+import { MOCKED_PRODUCTS } from './utils'
 interface FeatureItemProps {
   className?: string
   icon?: JSX.Element
@@ -34,13 +37,14 @@ const FeatureItem = ({
   description,
   link,
   className,
-}: FeatureItemProps) => {
+  children,
+}: PropsWithChildren<FeatureItemProps>) => {
   return (
     <Link
       className={twMerge('group flex h-full flex-col', className)}
       href={link}
     >
-      <Card className="hover:bg-gray-75 dark:hover:bg-polar-900 flex h-full flex-col rounded-none border-none transition-colors dark:border-none">
+      <Card className="hover:bg-gray-75 dark:hover:bg-polar-900 flex h-full flex-col transition-colors">
         <CardHeader className="flex flex-row items-center gap-x-3 space-y-0 pb-4">
           {icon ? (
             <span className="dark:bg-polar-800 dark flex h-8 w-8 flex-col items-center justify-center rounded-lg bg-gray-200 transition-colors group-hover:bg-black group-hover:text-white dark:group-hover:bg-white dark:group-hover:text-black">
@@ -56,6 +60,11 @@ const FeatureItem = ({
             {description}
           </p>
         </CardContent>
+        {children && (
+          <CardFooter className="justify-betwee mt-4 flex flex-row items-center">
+            {children}
+          </CardFooter>
+        )}
       </Card>
     </Link>
   )
@@ -68,30 +77,50 @@ const items = [
       'Polar has a wide array of monetization tools for your project, from one-time payments & recurring subscriptions to donations.',
     content: (
       <div className="flex flex-col gap-y-12">
-        <div className="flex flex-col gap-y-4">
-          <h2 className="text-2xl">From idea to funding</h2>
-          <p className="dark:text-polar-200 text-gray-500">
-            Give your supporters all the reasons to fund your endeavour.
-          </p>
-        </div>
-        <div className="grid grid-cols-1 divide-y overflow-hidden rounded-3xl border md:grid-cols-1">
+        <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
           <FeatureItem
+            className="md:row-span-2"
+            icon={<DiamondOutlined />}
+            title="Products & Subscriptions"
+            description="Offer paid subscription tiers or one-time purchases with associated benefits."
+            link="/docs/overview/subscriptions"
+          >
+            <SubscriptionTierCard
+              className="dark:bg-polar-900 rounded-2xl"
+              subscriptionTier={MOCKED_PRODUCTS[1]}
+            />
+          </FeatureItem>
+          <FeatureItem
+            className="md:col-span-2"
             icon={<HowToVoteOutlined />}
             title="Issue Funding"
             description="Automatically embed the Polar funding badge on your GitHub issues to crowdfund your backlog."
             link="/docs/overview/issue-funding/overview"
-          />
+          >
+            <picture>
+              <source
+                media="(prefers-color-scheme: dark)"
+                srcSet={`/assets/landing/fund_dark.svg`}
+              />
+              <img
+                className="dark:border-polar-800 rounded-2xl border border-gray-100"
+                srcSet={`/assets/landing/fund.svg`}
+              />
+            </picture>
+          </FeatureItem>
           <FeatureItem
+            className="md:col-span-1"
             icon={<AttachMoneyOutlined />}
             title="Donations"
-            description="Make it a piece of cake for your supporters to show support & appreciation."
+            description="Your very own tip jar without any strings attached."
             link="/docs/overview/donations"
           />
           <FeatureItem
-            icon={<AllInclusiveOutlined />}
-            title="Subscriptions"
-            description="Offer paid subscription tiers with associated benefits."
-            link="/docs/overview/subscriptions"
+            className="md:col-span-1"
+            icon={<AccountBalanceOutlined />}
+            title="Payouts"
+            description="Withdraw your earnings with ease. Supporting Stripe & Open Collective."
+            link="#"
           />
         </div>
       </div>
@@ -110,7 +139,7 @@ const items = [
             products.
           </p>
         </div>
-        <div className="grid grid-cols-1 divide-y overflow-hidden rounded-3xl border md:grid-cols-1">
+        <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
           <FeatureItem
             icon={<DiamondOutlined />}
             title="Products"
@@ -145,7 +174,7 @@ export const Journey = () => {
             With a wide array of funding tools for your project
           </h3>
         </div>
-        <div className="flex flex-col gap-12 md:flex-row">
+        <div className="flex flex-col gap-24">
           {items.map((item) => (
             <div className="flex w-full flex-col" key={item.title}>
               {item.content}

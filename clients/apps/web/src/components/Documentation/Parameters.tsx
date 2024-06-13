@@ -1,5 +1,7 @@
+import Markdown from 'markdown-to-jsx'
 import { OpenAPIV3_1 } from 'openapi-types'
 import AnchoredElement from './AnchoredElement'
+import { MDXContentWrapper } from './MDXContentWrapper'
 import OptionalBadge from './OptionalBadge'
 import { ParameterItem } from './ParameterItem'
 import PropertyType from './PropertyType'
@@ -43,9 +45,9 @@ export const Parameters = ({
             </span>
 
             {parameter.description && (
-              <p className="dark:text-polar-300 text-sm leading-normal text-gray-600">
-                {parameter.description}
-              </p>
+              <MDXContentWrapper className="text-sm">
+                <Markdown>{parameter.description}</Markdown>
+              </MDXContentWrapper>
             )}
           </ParameterItem>
         ))}

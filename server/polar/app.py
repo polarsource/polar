@@ -4,7 +4,7 @@ from os import environ
 from typing import TypedDict
 
 import structlog
-from fastapi import Depends, FastAPI
+from fastapi import FastAPI
 from fastapi.routing import APIRoute
 
 from polar import receivers, worker  # noqa
@@ -40,7 +40,7 @@ from polar.oauth2.exception_handlers import OAuth2Error, oauth2_error_exception_
 from polar.openapi import OPENAPI_PARAMETERS
 from polar.postgres import create_async_engine, create_sync_engine
 from polar.posthog import configure_posthog
-from polar.sentry import configure_sentry, set_sentry_user
+from polar.sentry import configure_sentry
 from polar.worker import ArqRedis
 from polar.worker import lifespan as worker_lifespan
 
@@ -106,7 +106,6 @@ def create_app() -> FastAPI:
     app = FastAPI(
         generate_unique_id_function=generate_unique_openapi_id,
         lifespan=lifespan,
-        dependencies=[Depends(set_sentry_user)],
         **OPENAPI_PARAMETERS,
     )
     configure_cors(app)

@@ -11,6 +11,7 @@ from polar.exceptions import NotPermitted, PolarError, Unauthorized
 from polar.models import OAuth2Token
 from polar.oauth2.dependencies import get_optional_token
 from polar.postgres import AsyncSession, get_db_session
+from polar.sentry import set_sentry_user
 
 from .exceptions import MissingScope
 from .models import (
@@ -98,6 +99,8 @@ class _Authenticator:
                 return auth_subject
             else:
                 raise Unauthorized()
+
+        set_sentry_user(auth_subject)
 
         # Blocked subjects
         blocked_at = getattr(auth_subject.subject, "blocked_at", None)

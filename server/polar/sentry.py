@@ -3,7 +3,6 @@ from typing import TYPE_CHECKING, Self
 
 import posthog as global_posthog
 import sentry_sdk
-from fastapi import Depends
 from posthog.request import DEFAULT_HOST
 from sentry_sdk.hub import Hub
 from sentry_sdk.integrations import Integration
@@ -11,7 +10,6 @@ from sentry_sdk.integrations.fastapi import FastApiIntegration
 from sentry_sdk.scope import add_global_event_processor
 from sentry_sdk.utils import Dsn
 
-from polar.auth.dependencies import Authenticator
 from polar.auth.models import AuthSubject, Subject, is_user
 from polar.config import settings
 from polar.posthog import posthog
@@ -126,9 +124,7 @@ def configure_sentry() -> None:
     )
 
 
-async def set_sentry_user(
-    auth_subject: AuthSubject[Subject] = Depends(Authenticator()),
-) -> None:
+def set_sentry_user(auth_subject: AuthSubject[Subject]) -> None:
     if is_user(auth_subject):
         user = auth_subject.subject
         sentry_sdk.set_user({"id": str(user.id), "email": user.email})

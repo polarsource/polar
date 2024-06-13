@@ -13,5 +13,8 @@ export const getUnionSchemas = (schema: OpenAPIV3_1.SchemaObject) => {
   if (schema.anyOf) {
     return schema.anyOf
   }
+  if (schema.allOf) {
+    return schema.allOf
+  }
   return null
 }

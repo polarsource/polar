@@ -7,6 +7,9 @@ const getTypeDisplayName = (property: OpenAPIV3_1.SchemaObject): string => {
   }
 
   if (property.type === 'string') {
+    if (property.enum) {
+      return property.enum.map((e) => `"${e}"`).join(' | ')
+    }
     // TODO: handle format
     // Ref: https://swagger.io/docs/specification/data-models/data-types/
     return 'string'

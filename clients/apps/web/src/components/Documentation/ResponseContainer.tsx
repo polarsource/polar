@@ -5,7 +5,7 @@ import {
   TabsList,
   TabsTrigger,
 } from 'polarkit/components/ui/atoms/tabs'
-import { resolveValue } from './schemaResolver'
+import { generateSchemaExample } from './openapi'
 
 export const ResponseContainer = ({
   responses,
@@ -48,7 +48,7 @@ export const ResponseContainer = ({
             >
               {schema ? (
                 <pre className="max-h-72 select-text overflow-auto p-4 font-mono text-xs leading-normal text-gray-900 dark:text-white">
-                  {JSON.stringify(resolveValue(schema), null, 2)}
+                  {JSON.stringify(generateSchemaExample(schema), null, 2)}
                 </pre>
               ) : undefined}
             </TabsContent>

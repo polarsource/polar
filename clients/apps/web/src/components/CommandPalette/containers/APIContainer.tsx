@@ -1,6 +1,10 @@
 'use client'
 
-import { resolveValue } from '@/components/Documentation/schemaResolver'
+import {
+  generateSchemaExample,
+  getRequestBodySchema,
+  isDereferenced,
+} from '@/components/Documentation/openapi'
 import { CONFIG } from '@/utils/config'
 import { CheckOutlined, FileCopyOutlined } from '@mui/icons-material'
 import { AnimatePresence, motion } from 'framer-motion'
@@ -15,19 +19,33 @@ import {
 import { useCallback, useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 
-export const requestBodyParameters = (
-  endpoint: OpenAPIV3_1.OperationObject,
-) => {
-  const schema =
-    endpoint.requestBody &&
-    'content' in endpoint.requestBody &&
-    endpoint.requestBody.content &&
-    'application/json' in endpoint.requestBody.content &&
-    endpoint.requestBody.content['application/json'] &&
-    'schema' in endpoint.requestBody.content['application/json'] &&
-    endpoint.requestBody.content['application/json'].schema
+const requestBodyParameters = (endpoint: OpenAPIV3_1.OperationObject) => {
+  const schema = getRequestBodySchema(endpoint)
+  return schema ? generateSchemaExample(schema) : undefined
+}
 
-  return schema && 'properties' in schema ? resolveValue(schema) : undefined
+const getQueryParametersExamples = (endpoint: OpenAPIV3_1.OperationObject) => {
+  if (!endpoint.parameters) {
+    return undefined
+  }
+  return endpoint.parameters.reduce(
+    (acc, parameter) => {
+      if (
+        isDereferenced(parameter) &&
+        parameter.required &&
+        parameter.in === 'query' &&
+        parameter.schema &&
+        isDereferenced<OpenAPIV3_1.SchemaObject>(parameter.schema)
+      ) {
+        return {
+          ...acc,
+          [parameter.name]: generateSchemaExample(parameter.schema),
+        }
+      }
+      return acc
+    },
+    {} as Record<string, any>,
+  )
 }
 
 const buildCurlCommand = (
@@ -35,7 +53,14 @@ const buildCurlCommand = (
   url: string,
   endpoint: OpenAPIV3_1.OperationObject,
 ) => {
+  const queryParametersExamples = getQueryParametersExamples(endpoint)
+  console.log(queryParametersExamples)
+  const queryParametersString = new URLSearchParams(
+    queryParametersExamples,
+  ).toString()
+
   const requestParameters = requestBodyParameters(endpoint)
+  console.log(requestParameters)
   const requiredBodyParameters = requestParameters
 
   const bodyParametersString = requiredBodyParameters
@@ -43,7 +68,7 @@ const buildCurlCommand = (
     : ''
 
   return `curl -X ${method.toUpperCase()} \\
-${url} \\
+${url}${queryParametersString ? '?' + queryParametersString : ''} \\
 -H "Content-type: application/json" \\
 -H "Accept: application/json" \\
 -H "Authorization: Bearer <token>" \\

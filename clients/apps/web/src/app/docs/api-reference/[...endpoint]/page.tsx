@@ -1,6 +1,7 @@
 import { BodySchema } from '@/components/Documentation/BodySchema'
 import { MDXContentWrapper } from '@/components/Documentation/MDXContentWrapper'
 import { ResponsesSchemas } from '@/components/Documentation/ResponsesSchemas'
+import { SecuritySchemes } from '@/components/Documentation/SecuritySchemes'
 import {
   fetchSchema,
   getRequestBodySchema,
@@ -52,9 +53,12 @@ export default async function Page({
               <pre className="w-fit font-mono text-sm">{apiEndpointPath}</pre>
             </div>
           </div>
+
           <MDXContentWrapper>
             <Markdown>{operation.description ?? ''}</Markdown>
           </MDXContentWrapper>
+
+          <SecuritySchemes operation={operation} />
 
           {operation.parameters && (
             <Parameters

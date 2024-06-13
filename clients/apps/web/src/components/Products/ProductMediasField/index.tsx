@@ -21,19 +21,18 @@ const DropzoneView = ({
     <>
       <div
         className={twMerge(
-          'flex w-full cursor-pointer items-center justify-center rounded-3xl border border-transparent pb-8 pt-8',
+          'flex aspect-square w-full cursor-pointer items-center justify-center rounded-3xl border border-transparent px-4 py-8',
           isDragActive
-            ? 'dark:border-polar-800 dark:bg-polar-950 border-blue-100 bg-blue-50'
-            : 'dark:bg-polar-700 bg-gray-100',
+            ? 'dark:border-polar-700 dark:bg-polar-950 border-blue-100 bg-blue-50'
+            : 'dark:border-polar-700 bg-gray-100 dark:bg-transparent',
         )}
       >
-        <div className="dark:text-polar-500 text-center text-gray-700">
+        <div className="dark:text-polar-500 text-center text-gray-500">
           <div className="mb-4">
             <AddPhotoAlternateOutlined fontSize="medium" />
           </div>
-          <p className="text-sm font-medium">
-            {!isDragActive && 'Add product images'}
-            {isDragActive && "Drop it like it's hot"}
+          <p className="dark:text-polar-200 text-xs font-medium text-gray-700">
+            {isDragActive ? "Drop it like it's hot" : 'Add product media'}
           </p>
           <p className="mt-2 text-xs">Up to 10MB each.</p>
         </div>

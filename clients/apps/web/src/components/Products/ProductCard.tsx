@@ -2,7 +2,7 @@
 
 import { useOrganization } from '@/hooks/queries'
 import { isFeatureEnabled } from '@/utils/feature-flags'
-import { PanoramaOutlined } from '@mui/icons-material'
+import { BoltOutlined, DiamondOutlined } from '@mui/icons-material'
 import { Product, ProductPrice } from '@polar-sh/sdk'
 import Markdown from 'markdown-to-jsx'
 import { Pill } from 'polarkit/components/ui/atoms'
@@ -28,26 +28,32 @@ export const ProductCard = ({
     showOrganization,
   )
   return (
-    <div className="dark:border-polar-700 dark:hover:bg-polar-800 flex h-full w-full flex-col gap-6 rounded-3xl border border-gray-100 p-6 transition-colors hover:bg-gray-50">
+    <div className="dark:border-polar-700 dark:hover:bg-polar-900 hover:bg-gray-75 flex h-full w-full flex-col gap-6 overflow-hidden rounded-3xl border border-gray-100 bg-gray-50 transition-colors dark:bg-transparent">
       {isFeatureEnabled('products') && (
         <>
           {product.medias.length > 0 ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
-              className="aspect-square w-full rounded-2xl bg-gray-100 object-cover"
+              className="aspect-square w-full bg-gray-100 object-cover"
               alt={product.medias[0].name}
               width={600}
               height={600}
               src={product.medias[0].public_url}
             />
           ) : (
-            <div className="dark:bg-polar-900 flex aspect-square w-full flex-col items-center justify-center rounded-2xl bg-gray-100">
-              <PanoramaOutlined className="dark:text-polar-500 text-gray-500" />
+            <div className="flex aspect-square w-full flex-col items-center justify-center border-b border-gray-100 bg-white dark:bg-transparent">
+              <div className="dark:bg-polar-800 flex aspect-square w-24 flex-col items-center justify-center rounded-full bg-blue-50 text-4xl text-blue-500 dark:text-white">
+                {product.is_recurring ? (
+                  <BoltOutlined fontSize="inherit" />
+                ) : (
+                  <DiamondOutlined fontSize="inherit" />
+                )}
+              </div>
             </div>
           )}
         </>
       )}
-      <div className="flex flex-grow flex-col gap-3">
+      <div className="flex flex-grow flex-col gap-3 px-6">
         {organization && showOrganization && (
           <div className="flex flex-row items-center gap-x-2">
             <Avatar
@@ -88,7 +94,7 @@ export const ProductCard = ({
           </div>
         </div>
       </div>
-      <div className="flex flex-row items-center justify-between">
+      <div className="flex flex-row items-center justify-between px-6 pb-6">
         <h3 className="text-lg leading-snug text-blue-500 dark:text-blue-400">
           {price ? (
             <ProductPriceLabel price={price} />

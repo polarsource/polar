@@ -1,4 +1,5 @@
 import { OpenAPIV3_1 } from 'openapi-types'
+import AnchoredElement from './AnchoredElement'
 import { Schema } from './Schema'
 
 export const BodySchema = ({
@@ -8,10 +9,14 @@ export const BodySchema = ({
 }) => {
   return (
     <div className="flex flex-col gap-y-6">
-      <h3 className="text-xl text-black dark:text-white">Request Body</h3>
+      <AnchoredElement id="body">
+        <h3 className="group text-xl text-black dark:text-white">
+          Request Body
+        </h3>
+      </AnchoredElement>
 
       <div className="flex flex-col gap-y-4">
-        <Schema schema={schema} />
+        <Schema schema={schema} idPrefix={['body']} />
       </div>
     </div>
   )

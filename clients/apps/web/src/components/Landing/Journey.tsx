@@ -137,7 +137,7 @@ const items = [
 
 export const Journey = () => {
   return (
-    <Section className="gap-32 gap-y-12">
+    <Section className="gap-32 gap-y-24">
       <div className="flex flex-col gap-32 gap-y-32">
         <div className="flex flex-col gap-y-4 text-4xl">
           <h3>From first donation to IPO</h3>
@@ -153,29 +153,33 @@ export const Journey = () => {
           ))}
         </div>
       </div>
-      <List className="md:flex-row md:divide-x md:divide-y-0">
-        <FeatureItem
-          className="h-auto md:w-1/3"
-          icon={<HiveOutlined />}
-          title="Benefits Engine"
-          description="Give supporters value for their money with private GitHub repository access, Discord server invites & file downloads, to name a few."
-          link="#"
-        />
-        <FeatureItem
-          className="h-auto md:w-1/3"
-          icon={<Language />}
-          title="Public Page"
-          description="A home for your profile on Polar. Showcase your projects, crowdfunded issues, and more."
-          link="#"
-        />
-        <FeatureItem
-          className="h-auto md:w-1/3"
-          icon={<ReceiptLongOutlined />}
-          title="Merchant of Record"
-          description="No more VAT headache - we handle the necessary taxes for you."
-          link="/docs/overview/payments-taxes#taxes"
-        />
-      </List>
+
+      <div className="flex flex-col gap-y-16">
+        <h3 className="text-4xl leading-relaxed">The Polar Foundation</h3>
+        <List className="md:flex-row md:divide-x md:divide-y-0">
+          <FeatureItem
+            className="h-auto md:w-1/3"
+            icon={<HiveOutlined />}
+            title="Benefits Engine"
+            description="Give supporters value for their money with private GitHub repository access, Discord server invites & file downloads, to name a few."
+            link="#benefits"
+          />
+          <FeatureItem
+            className="h-auto md:w-1/3"
+            icon={<Language />}
+            title="Public Page"
+            description="A home for your profile on Polar. Showcase your projects, crowdfunded issues, and more."
+            link="#"
+          />
+          <FeatureItem
+            className="h-auto md:w-1/3"
+            icon={<ReceiptLongOutlined />}
+            title="Merchant of Record"
+            description="No more VAT headache - we handle the necessary taxes for you."
+            link="/docs/overview/payments-taxes#taxes"
+          />
+        </List>
+      </div>
     </Section>
   )
 }

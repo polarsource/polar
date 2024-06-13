@@ -58,7 +58,7 @@ const PlatformPopover = () => {
         >
           <div className="flex w-1/2 flex-col gap-y-4 pr-8">
             <h3 className="ml-3 text-lg">Features</h3>
-            <div className="flex flex-col">
+            <div className="flex flex-col gap-y-2">
               <PopoverLinkItem
                 title="Issue Funding & Rewards"
                 description="Crowdfunded GitHub issues on steroids"
@@ -93,7 +93,7 @@ const PlatformPopover = () => {
           </div>
           <div className="flex w-1/2 flex-col gap-y-4 pl-8">
             <h3 className="ml-3 text-lg">Benefits</h3>
-            <div className="flex flex-col">
+            <div className="flex flex-col gap-y-2">
               <PopoverLinkItem
                 title="Introducing Benefits"
                 description="Offer exclusive benefits to your supporters"
@@ -162,7 +162,7 @@ const DocumentationPopover = () => {
         >
           <div className="flex w-1/2 flex-col gap-y-4 pr-8">
             <h3 className="ml-3 text-lg">Documentation</h3>
-            <div className="flex flex-col">
+            <div className="flex flex-col gap-y-2">
               <PopoverLinkItem
                 title="Getting Started"
                 description="Start your journey with Polar"
@@ -187,7 +187,7 @@ const DocumentationPopover = () => {
           </div>
           <div className="flex w-1/2 flex-col gap-y-4 pl-8">
             <h3 className="ml-3 text-lg">API</h3>
-            <div className="flex flex-col">
+            <div className="flex flex-col gap-y-2">
               <PopoverLinkItem
                 title="API Reference"
                 description="Integrate Polar with your application"
@@ -218,7 +218,7 @@ const DocumentationPopover = () => {
 
 export const TopbarNavigation = () => {
   return (
-    <div className="absolute left-1/2 flex -translate-x-1/2 flex-row items-center gap-x-6 text-sm">
+    <div className="absolute left-1/2 flex -translate-x-1/2 flex-row items-center gap-x-4 text-sm">
       <PlatformPopover />
       <DocumentationPopover />
       <Link

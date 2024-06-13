@@ -7,7 +7,7 @@ export const Hero = () => {
   return (
     <Section
       className="flex w-full flex-col gap-y-12 py-24"
-      wrapperClassName="relative isolate border-b dark:border-polar-800 border-gray-100"
+      wrapperClassName="relative isolate"
     >
       <div
         className="absolute inset-0"
@@ -15,7 +15,7 @@ export const Hero = () => {
           backgroundImage:
             'radial-gradient(rgba(255,255,255,.2) 3%, transparent 3%)',
           backgroundPosition: '0 0',
-          backgroundSize: '20px 20px',
+          backgroundSize: '30px 30px',
         }}
       />
       <div className="z-20 flex flex-col gap-y-16">

@@ -1,53 +1,35 @@
-'use client'
-
 import { BodySchema } from '@/components/Documentation/BodySchema'
-import { useDocumentationContext } from '@/components/Documentation/DocumentationProvider'
 import { MDXContentWrapper } from '@/components/Documentation/MDXContentWrapper'
+import {
+  fetchSchema,
+  getRequestBodySchema,
+} from '@/components/Documentation/openapi'
 import Markdown from 'markdown-to-jsx'
+import { notFound } from 'next/navigation'
 import { OpenAPIV3_1 } from 'openapi-types'
-import { useMemo } from 'react'
 import { APIContainer } from '../../../../components/CommandPalette/containers/APIContainer'
 import { Parameters } from '../../../../components/Documentation/Parameters'
 import { ResponseContainer } from '../../../../components/Documentation/ResponseContainer'
-import { resolveEndpointMetadata } from '../../../../components/Documentation/resolveEndpointMetadata'
+import { resolveEndpointMetadata } from '../../../../components/Documentation/openapi'
 
-export default function Page({
+export default async function Page({
   params: { endpoint },
 }: {
   params: { endpoint: string[] }
 }) {
-  const { schema } = useDocumentationContext()
+  const schema = await fetchSchema()
 
   const metadata = schema
     ? resolveEndpointMetadata(endpoint.join('/'), schema)
     : undefined
 
-  const { operation, method, apiEndpointPath } = metadata ?? {
-    operation: null,
-    method: null,
-    apiEndpointPath: null,
+  if (!metadata) {
+    return notFound()
   }
 
-  const requestBodySchema = useMemo(() => {
-    if (
-      operation &&
-      operation.requestBody &&
-      !('content' in operation.requestBody)
-    ) {
-      return undefined
-    }
+  const { operation, method, apiEndpointPath } = metadata
 
-    const schema =
-      operation &&
-      operation.requestBody &&
-      'content' in operation.requestBody &&
-      'schema' in operation.requestBody.content['application/json'] &&
-      operation.requestBody.content['application/json'].schema
-
-    return schema
-  }, [operation])
-
-  if (!operation) return null
+  const requestBodySchema = getRequestBodySchema(operation)
 
   const subHeader = endpoint[2].replaceAll('_', ' ')
 

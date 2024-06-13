@@ -1,4 +1,4 @@
-import { resolveEndpointMetadata } from '@/components/Documentation/resolveEndpointMetadata'
+import { resolveEndpointMetadata } from '@/components/Documentation/openapi'
 import { useCurrentOrgAndRepoFromURL } from '@/hooks'
 import openapiSchema from '@/openapi.json'
 import SwaggerParser from '@apidevtools/swagger-parser'

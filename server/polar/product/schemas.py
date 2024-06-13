@@ -15,7 +15,6 @@ from polar.models.product_price import ProductPriceRecurringInterval, ProductPri
 
 PRODUCT_NAME_MIN_LENGTH = 3
 PRODUCT_NAME_MAX_LENGTH = 24
-PRODUCT_DESCRIPTION_MAX_LENGTH = 240
 
 # Product
 
@@ -46,7 +45,6 @@ ProductDescription = Annotated[
     str | None,
     Field(
         default=None,
-        max_length=PRODUCT_DESCRIPTION_MAX_LENGTH,
         description="The description of the product.",
     ),
     EmptyStrToNoneValidator,

@@ -1,3 +1,4 @@
+import Markdown from 'markdown-to-jsx'
 import { OpenAPIV3_1 } from 'openapi-types'
 import {
   Tabs,
@@ -5,6 +6,7 @@ import {
   TabsList,
   TabsTrigger,
 } from 'polarkit/components/ui/atoms/tabs'
+import { MDXContentWrapper } from './MDXContentWrapper'
 import OptionalBadge from './OptionalBadge'
 import { ParameterItem } from './ParameterItem'
 import PropertyType from './PropertyType'
@@ -33,9 +35,9 @@ const UnionSchema = ({
         <TabsContent key={index} value={schemaValues[index]}>
           <div className="flex flex-col gap-y-4">
             {schema.description && (
-              <p className="dark:text-polar-300 text-sm leading-normal text-gray-600">
-                {schema.description}
-              </p>
+              <MDXContentWrapper className="text-sm">
+                <Markdown>{schema.description}</Markdown>
+              </MDXContentWrapper>
             )}
             <Schema schema={schema} />
           </div>
@@ -73,9 +75,9 @@ const SchemaProperties = ({
               {property.title}
             </span>
             {property.description && (
-              <p className="dark:text-polar-300 text-sm leading-normal text-gray-600">
-                {property.description}
-              </p>
+              <MDXContentWrapper className="text-sm">
+                <Markdown>{property.description}</Markdown>
+              </MDXContentWrapper>
             )}
             {property.type == 'object' && (
               <div className="rounded-md border border-gray-200 p-4 dark:border-gray-800">

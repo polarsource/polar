@@ -1,10 +1,14 @@
 import { PropsWithChildren } from 'react'
 import { twMerge } from 'tailwind-merge'
 
-export const MDXContentWrapper = ({ children }: PropsWithChildren) => {
+export const MDXContentWrapper = ({
+  children,
+  className,
+}: PropsWithChildren<{ className?: string }>) => {
   return (
     <div
       className={twMerge(
+        className,
         'prose dark:prose-invert max-w-3xl',
         'dark:text-polar-200 text-gray-600',
         'prose-img:rounded-2xl prose-img:shadow-sm',

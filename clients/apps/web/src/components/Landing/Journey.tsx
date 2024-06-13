@@ -2,10 +2,10 @@
 
 import {
   AccountBalanceOutlined,
+  ArrowForwardOutlined,
   AttachMoneyOutlined,
   DiamondOutlined,
   HiveOutlined,
-  HowToVoteOutlined,
   Language,
   ReceiptLongOutlined,
   TrendingUpOutlined,
@@ -20,6 +20,7 @@ import {
 import { List } from 'polarkit/components/ui/atoms/list'
 import React, { PropsWithChildren } from 'react'
 import { twMerge } from 'tailwind-merge'
+import GitHubIcon from '../Icons/GitHubIcon'
 import SubscriptionTierCard from '../Subscriptions/SubscriptionTierCard'
 import { Section } from './Section'
 import { MOCKED_PRODUCTS } from './utils'
@@ -44,10 +45,10 @@ const FeatureItem = ({
       className={twMerge('group flex h-full flex-col', className)}
       href={link}
     >
-      <Card className="hover:bg-gray-75 dark:hover:bg-polar-900 flex h-full flex-col transition-colors">
+      <Card className="hover:bg-gray-75 dark:hover:to-polar-900 dark:border-polar-800 dark:from-polar-900 dark:to-polar-800 flex h-full flex-col bg-gradient-to-tr from-gray-50 to-blue-50 p-1 transition-colors">
         <CardHeader className="flex flex-row items-center gap-x-3 space-y-0 pb-4">
           {icon ? (
-            <span className="dark:bg-polar-800 dark flex h-8 w-8 flex-col items-center justify-center rounded-lg bg-gray-200 transition-colors group-hover:bg-blue-500 group-hover:text-white dark:group-hover:bg-white dark:group-hover:text-black">
+            <span className="dark:bg-polar-700 dark flex h-10 w-10 flex-col items-center justify-center rounded-full bg-gray-200 text-xl transition-colors group-hover:bg-blue-500 group-hover:text-white dark:group-hover:bg-white dark:group-hover:text-black">
               {React.cloneElement(icon, { fontSize: 'inherit' })}
             </span>
           ) : (
@@ -59,6 +60,10 @@ const FeatureItem = ({
           <p className="dark:text-polar-200 h-full leading-relaxed text-gray-500 group-hover:text-black dark:group-hover:text-white">
             {description}
           </p>
+          <div className="dark:text-polar-200 flex flex-row items-center gap-x-2 text-sm">
+            <span>Learn More</span>
+            <ArrowForwardOutlined fontSize="inherit" />
+          </div>
         </CardContent>
         {children && (
           <CardFooter className="justify-betwee mt-4 flex flex-row items-center">
@@ -79,20 +84,20 @@ const items = [
       <div className="flex flex-col gap-y-12">
         <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
           <FeatureItem
-            className="dark:from-polar-900 dark:to-polar-800 rounded-3xl bg-gradient-to-b from-gray-50 to-blue-50 md:row-span-2"
+            className="md:row-span-2"
             icon={<DiamondOutlined />}
             title="Products & Subscriptions"
             description="Offer paid subscription tiers or one-time purchases with associated benefits."
             link="/docs/overview/subscriptions"
           >
             <SubscriptionTierCard
-              className="dark:bg-polar-900 border-transparent bg-white"
+              className="dark:bg-polar-900 dark:border-polar-800 border-transparent bg-white"
               subscriptionTier={MOCKED_PRODUCTS[1]}
             />
           </FeatureItem>
           <FeatureItem
-            className="dark:from-polar-900 dark:to-polar-800 rounded-3xl bg-gradient-to-r from-gray-50 to-blue-50 md:col-span-2"
-            icon={<HowToVoteOutlined />}
+            className="md:col-span-2"
+            icon={<GitHubIcon width={20} height={20} />}
             title="Issue Funding"
             description="Automatically embed the Polar funding badge on your GitHub issues to crowdfund your backlog."
             link="/docs/overview/issue-funding/overview"
@@ -109,14 +114,14 @@ const items = [
             </picture>
           </FeatureItem>
           <FeatureItem
-            className="dark:from-polar-900 dark:to-polar-800 rounded-3xl bg-gradient-to-r from-gray-50 to-blue-50 md:col-span-1"
+            className="md:col-span-1"
             icon={<AttachMoneyOutlined />}
             title="Donations"
             description="Your very own tip jar without any strings attached."
             link="/docs/overview/donations"
           />
           <FeatureItem
-            className="dark:from-polar-900 dark:to-polar-800 rounded-3xl bg-gradient-to-r from-gray-50 to-blue-50 md:col-span-1"
+            className="md:col-span-1"
             icon={<AccountBalanceOutlined />}
             title="Payouts"
             description="Withdraw your earnings with ease. Supporting Stripe & Open Collective."
@@ -168,9 +173,9 @@ export const Journey = () => {
   return (
     <Section className="gap-32 gap-y-24">
       <div className="flex flex-col gap-32 gap-y-32">
-        <div className="flex flex-col gap-y-4 text-4xl">
+        <div className="flex flex-col gap-y-2 text-5xl leading-normal">
           <h3>From first donation to IPO</h3>
-          <h3 className="dark:text-polar-200 text-gray-500">
+          <h3 className="dark:text-polar-500 text-gray-500">
             With a wide array of funding tools for your project
           </h3>
         </div>

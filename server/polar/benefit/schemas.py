@@ -244,6 +244,7 @@ IsTaxApplicable = Annotated[bool, Field(description="Whether the benefit is taxa
 
 
 class BenefitCreateBase(Schema):
+    type: BenefitType
     description: str = Field(
         ...,
         min_length=BENEFIT_DESCRIPTION_MIN_LENGTH,

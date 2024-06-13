@@ -41,7 +41,7 @@ export const ProductCard = ({
               src={product.medias[0].public_url}
             />
           ) : (
-            <div className="flex aspect-square w-full flex-col items-center justify-center border-b border-gray-100 bg-white dark:bg-transparent">
+            <div className="dark:border-polar-700 flex aspect-square w-full flex-col items-center justify-center border-b border-gray-100 bg-white dark:bg-transparent">
               <div className="dark:bg-polar-800 flex aspect-square w-24 flex-col items-center justify-center rounded-full bg-blue-50 text-4xl text-blue-500 dark:text-white">
                 {product.is_recurring ? (
                   <BoltOutlined fontSize="inherit" />

@@ -1,5 +1,5 @@
 import { OpenAPIV3_1 } from 'openapi-types'
-import { getUnionSchemas, isSchemaObject } from './utils'
+import { getUnionSchemas, isSchemaObject } from './openapi'
 
 const getTypeDisplayName = (property: OpenAPIV3_1.SchemaObject): string => {
   if (property.const) {

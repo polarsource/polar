@@ -1,5 +1,3 @@
-'use client'
-
 import { OpenAPIV3_1 } from 'openapi-types'
 import {
   Tabs,

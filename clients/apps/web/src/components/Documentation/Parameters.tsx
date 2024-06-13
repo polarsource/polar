@@ -3,7 +3,7 @@ import OptionalBadge from './OptionalBadge'
 import { ParameterItem } from './ParameterItem'
 import PropertyType from './PropertyType'
 import RequiredBadge from './RequiredBadge'
-import { isSchemaObject } from './utils'
+import { isSchemaObject } from './openapi'
 
 export const Parameters = ({
   parameters,

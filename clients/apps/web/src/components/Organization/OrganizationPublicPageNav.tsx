@@ -34,18 +34,18 @@ export const OrganizationPublicPageNav = ({
           </TabsTrigger>
         </Link>
 
-        {isFeatureEnabled('products') && (
-          <Link href={organizationPageLink(organization, 'products')}>
-            <TabsTrigger value="products" size="small">
-              Products
-            </TabsTrigger>
-          </Link>
-        )}
-
         {organization.feature_settings?.subscriptions_enabled && (
           <Link href={organizationPageLink(organization, 'subscriptions')}>
             <TabsTrigger value="subscriptions" size="small">
               Subscriptions
+            </TabsTrigger>
+          </Link>
+        )}
+
+        {isFeatureEnabled('products') && (
+          <Link href={organizationPageLink(organization, 'products')}>
+            <TabsTrigger value="products" size="small">
+              Products
             </TabsTrigger>
           </Link>
         )}

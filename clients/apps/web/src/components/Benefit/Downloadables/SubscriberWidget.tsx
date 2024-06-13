@@ -28,12 +28,6 @@ export const DownloadableItem = ({
     navigator.clipboard.writeText(downloadable.file.checksum_sha256_hex ?? '')
   }, [downloadable])
 
-  const onCopySHACommand = useCallback(() => {
-    navigator.clipboard.writeText(
-      `echo "${downloadable.file.checksum_sha256_hex} ${downloadable.file.name}" | sha256sum -c`,
-    )
-  }, [downloadable])
-
   return (
     <div className="flex w-full flex-row items-center justify-between gap-x-6">
       <div className="flex w-full min-w-0 flex-col gap-y-1">
@@ -72,9 +66,6 @@ export const DownloadableItem = ({
               <>
                 <DropdownMenuItem onClick={onCopySHA}>
                   Copy SHA256 Checksum
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={onCopySHACommand}>
-                  Copy SHA256 Checksum command
                 </DropdownMenuItem>
               </>
             )}

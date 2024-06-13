@@ -47,7 +47,7 @@ const FeatureItem = ({
       <Card className="hover:bg-gray-75 dark:hover:bg-polar-900 flex h-full flex-col transition-colors">
         <CardHeader className="flex flex-row items-center gap-x-3 space-y-0 pb-4">
           {icon ? (
-            <span className="dark:bg-polar-800 dark flex h-8 w-8 flex-col items-center justify-center rounded-lg bg-gray-200 transition-colors group-hover:bg-black group-hover:text-white dark:group-hover:bg-white dark:group-hover:text-black">
+            <span className="dark:bg-polar-800 dark flex h-8 w-8 flex-col items-center justify-center rounded-lg bg-gray-200 transition-colors group-hover:bg-blue-500 group-hover:text-white dark:group-hover:bg-white dark:group-hover:text-black">
               {React.cloneElement(icon, { fontSize: 'inherit' })}
             </span>
           ) : (
@@ -79,19 +79,19 @@ const items = [
       <div className="flex flex-col gap-y-12">
         <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
           <FeatureItem
-            className="md:row-span-2"
+            className="dark:from-polar-900 dark:to-polar-800 rounded-3xl bg-gradient-to-b from-gray-50 to-blue-50 md:row-span-2"
             icon={<DiamondOutlined />}
             title="Products & Subscriptions"
             description="Offer paid subscription tiers or one-time purchases with associated benefits."
             link="/docs/overview/subscriptions"
           >
             <SubscriptionTierCard
-              className="dark:bg-polar-900 rounded-2xl"
+              className="dark:bg-polar-900 border-transparent bg-white"
               subscriptionTier={MOCKED_PRODUCTS[1]}
             />
           </FeatureItem>
           <FeatureItem
-            className="md:col-span-2"
+            className="dark:from-polar-900 dark:to-polar-800 rounded-3xl bg-gradient-to-r from-gray-50 to-blue-50 md:col-span-2"
             icon={<HowToVoteOutlined />}
             title="Issue Funding"
             description="Automatically embed the Polar funding badge on your GitHub issues to crowdfund your backlog."
@@ -103,20 +103,20 @@ const items = [
                 srcSet={`/assets/landing/fund_dark.svg`}
               />
               <img
-                className="dark:border-polar-800 rounded-2xl border border-gray-100"
+                className="dark:border-polar-700 rounded-2xl border border-gray-100"
                 srcSet={`/assets/landing/fund.svg`}
               />
             </picture>
           </FeatureItem>
           <FeatureItem
-            className="md:col-span-1"
+            className="dark:from-polar-900 dark:to-polar-800 rounded-3xl bg-gradient-to-r from-gray-50 to-blue-50 md:col-span-1"
             icon={<AttachMoneyOutlined />}
             title="Donations"
             description="Your very own tip jar without any strings attached."
             link="/docs/overview/donations"
           />
           <FeatureItem
-            className="md:col-span-1"
+            className="dark:from-polar-900 dark:to-polar-800 rounded-3xl bg-gradient-to-r from-gray-50 to-blue-50 md:col-span-1"
             icon={<AccountBalanceOutlined />}
             title="Payouts"
             description="Withdraw your earnings with ease. Supporting Stripe & Open Collective."

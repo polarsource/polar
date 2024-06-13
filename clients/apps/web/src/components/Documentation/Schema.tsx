@@ -12,7 +12,7 @@ import OptionalBadge from './OptionalBadge'
 import { ParameterItem } from './ParameterItem'
 import PropertyType from './PropertyType'
 import RequiredBadge from './RequiredBadge'
-import { getUnionSchemas, isSchemaObject } from './openapi'
+import { getUnionSchemas, isDereferenced } from './openapi'
 
 const UnionSchema = ({
   schemas: _schemas,
@@ -21,7 +21,7 @@ const UnionSchema = ({
   schemas: OpenAPIV3_1.SchemaObject[]
   idPrefix: string[]
 }) => {
-  const schemas = _schemas.filter(isSchemaObject)
+  const schemas = _schemas.filter(isDereferenced)
   const schemaValues = schemas.map((_, index) => `schema_${index}`)
   return (
     <Tabs>

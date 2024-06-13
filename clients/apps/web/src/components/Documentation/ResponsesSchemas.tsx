@@ -9,7 +9,7 @@ import {
 import AnchoredElement from './AnchoredElement'
 import { MDXContentWrapper } from './MDXContentWrapper'
 import { Schema } from './Schema'
-import { isResponseObject } from './openapi'
+import { isDereferenced } from './openapi'
 
 export const ResponsesSchemas = ({
   responses,
@@ -19,7 +19,7 @@ export const ResponsesSchemas = ({
   const responseSchemas = Object.entries(responses).reduce(
     (acc, [key, value]) => {
       if (
-        isResponseObject(value) &&
+        isDereferenced(value) &&
         value.content?.['application/json']?.schema
       ) {
         return { ...acc, [key]: value.content['application/json'].schema }

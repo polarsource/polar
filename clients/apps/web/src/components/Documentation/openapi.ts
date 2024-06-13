@@ -79,15 +79,9 @@ export const getRequestBodySchema = (
   return schema
 }
 
-export const isSchemaObject = (
-  s: OpenAPIV3_1.ReferenceObject | OpenAPIV3_1.SchemaObject,
-): s is OpenAPIV3_1.SchemaObject => {
-  return !('$ref' in s)
-}
-
-export const isResponseObject = (
-  s: OpenAPIV3_1.ReferenceObject | OpenAPIV3_1.ResponseObject,
-): s is OpenAPIV3_1.ResponseObject => {
+export const isDereferenced = <T extends object>(
+  s: OpenAPIV3_1.ReferenceObject | T,
+): s is T => {
   return !('$ref' in s)
 }
 
@@ -102,4 +96,78 @@ export const getUnionSchemas = (schema: OpenAPIV3_1.SchemaObject) => {
     return schema.allOf
   }
   return null
+}
+
+const _generateScalarSchemaExample = (schema: OpenAPIV3_1.SchemaObject) => {
+  if (schema.example) {
+    return schema.example
+  }
+
+  if (schema.default) {
+    return schema.default
+  }
+
+  if (schema.const) {
+    return schema.const
+  }
+
+  if (schema.type === 'string') {
+    if (schema.enum) {
+      return schema.enum[0]
+    }
+    if (schema.format === 'date') {
+      return new Date().toISOString().split('T')[0]
+    }
+    if (schema.format === 'date-time') {
+      return new Date().toISOString()
+    }
+    if (schema.format === 'uuid4') {
+      return '00000000-0000-0000-0000-000000000000'
+    }
+    return 'string'
+  }
+
+  if (schema.type === 'number' || schema.type === 'integer') {
+    return schema.minimum !== undefined
+      ? schema.minimum + (schema.exclusiveMinimum === true ? 1 : 0)
+      : 0
+  }
+
+  if (schema.type === 'boolean') {
+    return false
+  }
+
+  if (schema.type === 'null') {
+    return null
+  }
+
+  if (schema.type === 'object') {
+    return generateSchemaExample(schema)
+  }
+
+  if (schema.type === 'array') {
+    return [generateSchemaExample(schema.items as OpenAPIV3_1.SchemaObject)]
+  }
+}
+
+export const generateSchemaExample = (
+  schema: OpenAPIV3_1.SchemaObject,
+): Record<string, any> | string => {
+  const unionSchemas = getUnionSchemas(schema)
+
+  // TODO?: Handle more than one union schema
+  if (unionSchemas) {
+    return generateSchemaExample(unionSchemas.filter(isDereferenced)[0])
+  }
+
+  if (schema.properties) {
+    return Object.entries(schema.properties).reduce((acc, [key, value]) => {
+      return {
+        ...acc,
+        [key]: generateSchemaExample(value),
+      }
+    }, {})
+  }
+
+  return _generateScalarSchemaExample(schema)
 }

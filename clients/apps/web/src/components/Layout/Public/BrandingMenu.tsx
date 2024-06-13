@@ -59,7 +59,10 @@ export const BrandingMenu = ({
           <Link href="/">
             {logoVariant === 'logotype' ? (
               <LogoType
-                className={twMerge('-ml-2 md:ml-0', logoClassName)}
+                className={twMerge(
+                  '-ml-2 text-blue-500 md:ml-0 dark:text-white',
+                  logoClassName,
+                )}
                 width={size ?? 100}
               />
             ) : (

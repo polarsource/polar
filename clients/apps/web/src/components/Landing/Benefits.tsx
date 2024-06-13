@@ -2,7 +2,7 @@ import {
   FileDownloadOutlined,
   StickyNote2Outlined,
   TuneOutlined,
-  WebOutlined,
+  VerifiedOutlined,
 } from '@mui/icons-material'
 import Link from 'next/link'
 import { twMerge } from 'tailwind-merge'
@@ -28,14 +28,14 @@ const BenefitCard = ({
   return (
     <Link
       className={twMerge(
-        'hover:bg-gray-75 dark:hover:bg-polar-900 flex flex-col justify-between gap-y-8 p-12 transition-colors',
+        'hover:bg-gray-75 dark:hover:bg-polar-900 flex flex-col justify-between gap-y-8 p-8 transition-colors',
         className,
       )}
       href={link}
     >
       <span>{icon}</span>
       <div className="flex flex-col gap-y-2">
-        <h3 className="text-xl">{title}</h3>
+        <h3>{title}</h3>
         <p className="dark:text-polar-200 text-gray-500">{description}</p>
       </div>
     </Link>
@@ -44,7 +44,7 @@ const BenefitCard = ({
 
 export const Benefits = () => {
   return (
-    <Section className="gap-y-24">
+    <Section id="benefits" className="gap-y-24">
       <div className="flex flex-col items-center gap-y-4">
         <h1 className="text-center text-4xl">Benefits</h1>
         <p className="dark:text-polar-200 text-xl text-gray-500">
@@ -84,9 +84,9 @@ export const Benefits = () => {
         />
         <BenefitCard
           className="border-b md:border-b-0 md:border-r"
-          icon={<WebOutlined className="text-4xl" fontSize="inherit" />}
+          icon={<VerifiedOutlined className="text-4xl" fontSize="inherit" />}
           title="Sponsor Promotion"
-          description="Logo promotions on README, sites & newsletters. Polar will automate it."
+          description="Logo promotions on README, sites & newsletters. Polar automates it."
           link="#"
         />
         <BenefitCard

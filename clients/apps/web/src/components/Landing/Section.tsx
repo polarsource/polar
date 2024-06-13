@@ -2,12 +2,18 @@ import { PropsWithChildren } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 export const Section = ({
+  id,
   className,
   wrapperClassName,
   children,
-}: PropsWithChildren<{ className?: string; wrapperClassName?: string }>) => {
+}: PropsWithChildren<{
+  id?: string
+  className?: string
+  wrapperClassName?: string
+}>) => {
   return (
     <div
+      id={id}
       className={twMerge(
         'flex w-full flex-col items-center justify-stretch',
         wrapperClassName,

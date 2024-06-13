@@ -266,12 +266,6 @@
                 "operationId": "users:list_benefits",
                 "security": [
                     {
-                        "OpenIdConnect": []
-                    },
-                    {
-                        "HTTPBearer": []
-                    },
-                    {
                         "OpenIdConnect": [
                             "user:benefits:read"
                         ]
@@ -450,12 +444,6 @@
                 "operationId": "users:get_benefit",
                 "security": [
                     {
-                        "OpenIdConnect": []
-                    },
-                    {
-                        "HTTPBearer": []
-                    },
-                    {
                         "OpenIdConnect": [
                             "user:benefits:read"
                         ]
@@ -552,12 +540,6 @@
                 "description": "List my orders.",
                 "operationId": "users:list_orders",
                 "security": [
-                    {
-                        "OpenIdConnect": []
-                    },
-                    {
-                        "HTTPBearer": []
-                    },
                     {
                         "OpenIdConnect": [
                             "user:orders:read"
@@ -759,12 +741,6 @@
                 "operationId": "users:get_order",
                 "security": [
                     {
-                        "OpenIdConnect": []
-                    },
-                    {
-                        "HTTPBearer": []
-                    },
-                    {
                         "OpenIdConnect": [
                             "user:orders:read"
                         ]
@@ -831,12 +807,6 @@
                 "operationId": "users:get_order_invoice",
                 "security": [
                     {
-                        "OpenIdConnect": []
-                    },
-                    {
-                        "HTTPBearer": []
-                    },
-                    {
                         "OpenIdConnect": [
                             "user:orders:read"
                         ]
@@ -902,12 +872,6 @@
                 "description": "List my subscriptions.",
                 "operationId": "users:list_subscriptions",
                 "security": [
-                    {
-                        "OpenIdConnect": []
-                    },
-                    {
-                        "HTTPBearer": []
-                    },
                     {
                         "OpenIdConnect": [
                             "user:subscriptions:read"
@@ -1088,12 +1052,6 @@
                 "operationId": "users:create_subscription",
                 "security": [
                     {
-                        "OpenIdConnect": []
-                    },
-                    {
-                        "HTTPBearer": []
-                    },
-                    {
                         "OpenIdConnect": [
                             "user:subscriptions:write"
                         ]
@@ -1166,12 +1124,6 @@
                 "operationId": "users:get_subscription",
                 "security": [
                     {
-                        "OpenIdConnect": []
-                    },
-                    {
-                        "HTTPBearer": []
-                    },
-                    {
                         "OpenIdConnect": [
                             "user:subscriptions:read"
                         ]
@@ -1235,12 +1187,6 @@
                 "description": "Update a subscription.",
                 "operationId": "users:update_subscription",
                 "security": [
-                    {
-                        "OpenIdConnect": []
-                    },
-                    {
-                        "HTTPBearer": []
-                    },
                     {
                         "OpenIdConnect": [
                             "user:subscriptions:write"
@@ -1326,12 +1272,6 @@
                 "operationId": "users:cancel_subscription",
                 "security": [
                     {
-                        "OpenIdConnect": []
-                    },
-                    {
-                        "HTTPBearer": []
-                    },
-                    {
                         "OpenIdConnect": [
                             "user:subscriptions:write"
                         ]
@@ -1407,12 +1347,6 @@
                 "description": "List advertisement campaigns.",
                 "operationId": "users:list_advertisement_campaigns",
                 "security": [
-                    {
-                        "OpenIdConnect": []
-                    },
-                    {
-                        "HTTPBearer": []
-                    },
                     {
                         "OpenIdConnect": [
                             "user:advertisement_campaigns:read"
@@ -1515,12 +1449,6 @@
                 "operationId": "users:create_advertisement_campaign",
                 "security": [
                     {
-                        "OpenIdConnect": []
-                    },
-                    {
-                        "HTTPBearer": []
-                    },
-                    {
                         "OpenIdConnect": [
                             "user:advertisement_campaigns:write"
                         ]
@@ -1572,12 +1500,6 @@
                 "description": "Get an advertisement campaign by ID.",
                 "operationId": "users:get_advertisement_campaign",
                 "security": [
-                    {
-                        "OpenIdConnect": []
-                    },
-                    {
-                        "HTTPBearer": []
-                    },
                     {
                         "OpenIdConnect": [
                             "user:advertisement_campaigns:read"
@@ -1642,12 +1564,6 @@
                 "description": "Update an advertisement campaign.",
                 "operationId": "users:update_advertisement_campaign",
                 "security": [
-                    {
-                        "OpenIdConnect": []
-                    },
-                    {
-                        "HTTPBearer": []
-                    },
                     {
                         "OpenIdConnect": [
                             "user:advertisement_campaigns:write"
@@ -1723,12 +1639,6 @@
                 "operationId": "users:delete_advertisement_campaign",
                 "security": [
                     {
-                        "OpenIdConnect": []
-                    },
-                    {
-                        "HTTPBearer": []
-                    },
-                    {
                         "OpenIdConnect": [
                             "user:advertisement_campaigns:write"
                         ]
@@ -1795,12 +1705,6 @@
                 "description": "Enable an advertisement campaign on a granted benefit.",
                 "operationId": "users:enable_advertisement_campaign",
                 "security": [
-                    {
-                        "OpenIdConnect": []
-                    },
-                    {
-                        "HTTPBearer": []
-                    },
                     {
                         "OpenIdConnect": [
                             "user:advertisement_campaigns:write"
@@ -1870,12 +1774,6 @@
                 "summary": "List Downloadables",
                 "operationId": "users:list_downloadables",
                 "security": [
-                    {
-                        "OpenIdConnect": []
-                    },
-                    {
-                        "HTTPBearer": []
-                    },
                     {
                         "OpenIdConnect": [
                             "user:downloadables:read"
@@ -1984,12 +1882,6 @@
                 "summary": "Get Downloadable",
                 "operationId": "users:get_downloadable",
                 "security": [
-                    {
-                        "OpenIdConnect": []
-                    },
-                    {
-                        "HTTPBearer": []
-                    },
                     {
                         "OpenIdConnect": [
                             "user:downloadables:read"
@@ -2571,15 +2463,7 @@
                             }
                         }
                     }
-                },
-                "security": [
-                    {
-                        "OpenIdConnect": []
-                    },
-                    {
-                        "HTTPBearer": []
-                    }
-                ]
+                }
             }
         },
         "/api/v1/integrations/github_repository_benefit/user/authorize": {
@@ -3898,15 +3782,7 @@
                             }
                         }
                     }
-                },
-                "security": [
-                    {
-                        "OpenIdConnect": []
-                    },
-                    {
-                        "HTTPBearer": []
-                    }
-                ]
+                }
             }
         },
         "/api/v1/funding/search": {
@@ -4183,15 +4059,7 @@
                             }
                         }
                     }
-                },
-                "security": [
-                    {
-                        "OpenIdConnect": []
-                    },
-                    {
-                        "HTTPBearer": []
-                    }
-                ]
+                }
             }
         },
         "/api/v1/magic_link/authenticate": {
@@ -6679,12 +6547,6 @@
                 "operationId": "organizations:list",
                 "security": [
                     {
-                        "OpenIdConnect": []
-                    },
-                    {
-                        "HTTPBearer": []
-                    },
-                    {
                         "OpenIdConnect": [
                             "organizations:write",
                             "organizations:read"
@@ -6741,12 +6603,6 @@
                 "description": "Search organizations.",
                 "operationId": "organizations:search",
                 "security": [
-                    {
-                        "OpenIdConnect": []
-                    },
-                    {
-                        "HTTPBearer": []
-                    },
                     {
                         "OpenIdConnect": [
                             "organizations:write",
@@ -6824,12 +6680,6 @@
                 "description": "Lookup a single organization.",
                 "operationId": "organizations:lookup",
                 "security": [
-                    {
-                        "OpenIdConnect": []
-                    },
-                    {
-                        "HTTPBearer": []
-                    },
                     {
                         "OpenIdConnect": [
                             "organizations:write",
@@ -6927,12 +6777,6 @@
                 "operationId": "organizations:get",
                 "security": [
                     {
-                        "OpenIdConnect": []
-                    },
-                    {
-                        "HTTPBearer": []
-                    },
-                    {
                         "OpenIdConnect": [
                             "organizations:write",
                             "organizations:read"
@@ -6988,12 +6832,6 @@
                 "description": "Update organization",
                 "operationId": "organizations:update",
                 "security": [
-                    {
-                        "OpenIdConnect": []
-                    },
-                    {
-                        "HTTPBearer": []
-                    },
                     {
                         "OpenIdConnect": [
                             "organizations:write"
@@ -7062,12 +6900,6 @@
                 "operationId": "organizations:list_organization_customers",
                 "security": [
                     {
-                        "OpenIdConnect": []
-                    },
-                    {
-                        "HTTPBearer": []
-                    },
-                    {
                         "OpenIdConnect": [
                             "organizations:write",
                             "organizations:read"
@@ -7102,9 +6934,9 @@
                             },
                             "description": "Filter by the type of purchase the customer made.",
                             "default": [
-                                "order",
                                 "donation",
-                                "subscription"
+                                "subscription",
+                                "order"
                             ],
                             "title": "Customer Types"
                         },
@@ -7181,12 +7013,6 @@
                 "operationId": "organizations:set_account",
                 "security": [
                     {
-                        "OpenIdConnect": []
-                    },
-                    {
-                        "HTTPBearer": []
-                    },
-                    {
                         "OpenIdConnect": [
                             "organizations:write"
                         ]
@@ -7254,12 +7080,6 @@
                 "operationId": "organizations:list_members",
                 "security": [
                     {
-                        "OpenIdConnect": []
-                    },
-                    {
-                        "HTTPBearer": []
-                    },
-                    {
                         "OpenIdConnect": [
                             "organizations:write"
                         ]
@@ -7321,12 +7141,6 @@
                 "operationId": "organizations:create_stripe_customer_portal",
                 "security": [
                     {
-                        "OpenIdConnect": []
-                    },
-                    {
-                        "HTTPBearer": []
-                    },
-                    {
                         "OpenIdConnect": [
                             "organizations:write"
                         ]
@@ -7381,12 +7195,6 @@
                 "operationId": "organizations:get_credits",
                 "security": [
                     {
-                        "OpenIdConnect": []
-                    },
-                    {
-                        "HTTPBearer": []
-                    },
-                    {
                         "OpenIdConnect": [
                             "organizations:write"
                         ]
@@ -7440,12 +7248,6 @@
                 "operationId": "organizations:get_badge_settings",
                 "security": [
                     {
-                        "OpenIdConnect": []
-                    },
-                    {
-                        "HTTPBearer": []
-                    },
-                    {
                         "OpenIdConnect": [
                             "organizations:write"
                         ]
@@ -7496,12 +7298,6 @@
                 "summary": "Update badge settings (Internal API)",
                 "operationId": "organizations:update_badge_settings",
                 "security": [
-                    {
-                        "OpenIdConnect": []
-                    },
-                    {
-                        "HTTPBearer": []
-                    },
                     {
                         "OpenIdConnect": [
                             "organizations:write"
@@ -7566,16 +7362,16 @@
                 "operationId": "subscriptions:get_subscriptions_statistics",
                 "security": [
                     {
-                        "OpenIdConnect": []
+                        "OpenIdConnect": [
+                            "subscriptions:write",
+                            "subscriptions:read"
+                        ]
                     },
                     {
                         "HTTPBearer": []
                     },
                     {
-                        "OpenIdConnect": [
-                            "subscriptions:read",
-                            "subscriptions:write"
-                        ]
+                        "OpenIdConnect": []
                     },
                     {
                         "HTTPBearer": []
@@ -7715,16 +7511,16 @@
                 "operationId": "subscriptions:search_subscriptions",
                 "security": [
                     {
-                        "OpenIdConnect": []
+                        "OpenIdConnect": [
+                            "subscriptions:write",
+                            "subscriptions:read"
+                        ]
                     },
                     {
                         "HTTPBearer": []
                     },
                     {
-                        "OpenIdConnect": [
-                            "subscriptions:read",
-                            "subscriptions:write"
-                        ]
+                        "OpenIdConnect": []
                     },
                     {
                         "HTTPBearer": []
@@ -7941,15 +7737,15 @@
                 "operationId": "subscriptions:create_email_subscription",
                 "security": [
                     {
-                        "OpenIdConnect": []
+                        "OpenIdConnect": [
+                            "subscriptions:write"
+                        ]
                     },
                     {
                         "HTTPBearer": []
                     },
                     {
-                        "OpenIdConnect": [
-                            "subscriptions:write"
-                        ]
+                        "OpenIdConnect": []
                     },
                     {
                         "HTTPBearer": []
@@ -8043,15 +7839,15 @@
                 "operationId": "subscriptions:subscriptions_import",
                 "security": [
                     {
-                        "OpenIdConnect": []
+                        "OpenIdConnect": [
+                            "subscriptions:write"
+                        ]
                     },
                     {
                         "HTTPBearer": []
                     },
                     {
-                        "OpenIdConnect": [
-                            "subscriptions:write"
-                        ]
+                        "OpenIdConnect": []
                     },
                     {
                         "HTTPBearer": []
@@ -8145,16 +7941,16 @@
                 "operationId": "subscriptions:subscriptions_export",
                 "security": [
                     {
-                        "OpenIdConnect": []
+                        "OpenIdConnect": [
+                            "subscriptions:write",
+                            "subscriptions:read"
+                        ]
                     },
                     {
                         "HTTPBearer": []
                     },
                     {
-                        "OpenIdConnect": [
-                            "subscriptions:read",
-                            "subscriptions:write"
-                        ]
+                        "OpenIdConnect": []
                     },
                     {
                         "HTTPBearer": []
@@ -8235,14 +8031,6 @@
                 "summary": "Unsubscribe user",
                 "description": "Unsubscribe user from articles in emails.",
                 "operationId": "articles:email_unsubscribe",
-                "security": [
-                    {
-                        "OpenIdConnect": []
-                    },
-                    {
-                        "HTTPBearer": []
-                    }
-                ],
                 "parameters": [
                     {
                         "name": "article_subscription_id",
@@ -8413,12 +8201,6 @@
                 "description": "Search articles.",
                 "operationId": "articles:search",
                 "security": [
-                    {
-                        "OpenIdConnect": []
-                    },
-                    {
-                        "HTTPBearer": []
-                    },
                     {
                         "OpenIdConnect": [
                             "articles:read"
@@ -9747,14 +9529,6 @@
                 "summary": "List Advertisement Campaigns",
                 "description": "List active advertisement campaigns for a benefit.",
                 "operationId": "advertisements:list_advertisement_campaigns",
-                "security": [
-                    {
-                        "OpenIdConnect": []
-                    },
-                    {
-                        "HTTPBearer": []
-                    }
-                ],
                 "parameters": [
                     {
                         "name": "benefit_id",
@@ -9862,14 +9636,6 @@
                 "summary": "Get Advertisement Campaign",
                 "description": "Get an advertisement campaign by ID.",
                 "operationId": "advertisements:get_advertisement_campaign",
-                "security": [
-                    {
-                        "OpenIdConnect": []
-                    },
-                    {
-                        "HTTPBearer": []
-                    }
-                ],
                 "parameters": [
                     {
                         "name": "id",
@@ -9926,14 +9692,6 @@
                 "summary": "Track Advertisement Campaign View",
                 "description": "Track a view on an advertisement campaign.",
                 "operationId": "advertisements:track_advertisement_campaign_view",
-                "security": [
-                    {
-                        "OpenIdConnect": []
-                    },
-                    {
-                        "HTTPBearer": []
-                    }
-                ],
                 "parameters": [
                     {
                         "name": "id",
@@ -10013,15 +9771,7 @@
                             }
                         }
                     }
-                },
-                "security": [
-                    {
-                        "OpenIdConnect": []
-                    },
-                    {
-                        "HTTPBearer": []
-                    }
-                ]
+                }
             }
         },
         "/api/v1/traffic/statistics": {
@@ -10378,15 +10128,7 @@
                             }
                         }
                     }
-                },
-                "security": [
-                    {
-                        "OpenIdConnect": []
-                    },
-                    {
-                        "HTTPBearer": []
-                    }
-                ]
+                }
             }
         },
         "/api/v1/auth/logout": {
@@ -10396,14 +10138,6 @@
                 ],
                 "summary": "Logout",
                 "operationId": "auth:logout",
-                "security": [
-                    {
-                        "OpenIdConnect": []
-                    },
-                    {
-                        "HTTPBearer": []
-                    }
-                ],
                 "parameters": [
                     {
                         "name": "organization_id",
@@ -10754,14 +10488,6 @@
                 ],
                 "summary": "Donations Public Search",
                 "operationId": "donations:donations_public_search",
-                "security": [
-                    {
-                        "OpenIdConnect": []
-                    },
-                    {
-                        "HTTPBearer": []
-                    }
-                ],
                 "parameters": [
                     {
                         "name": "page",
@@ -11250,15 +10976,7 @@
                             }
                         }
                     }
-                },
-                "security": [
-                    {
-                        "OpenIdConnect": []
-                    },
-                    {
-                        "HTTPBearer": []
-                    }
-                ]
+                }
             }
         },
         "/api/v1/oauth2/revoke": {
@@ -11277,15 +10995,7 @@
                             }
                         }
                     }
-                },
-                "security": [
-                    {
-                        "OpenIdConnect": []
-                    },
-                    {
-                        "HTTPBearer": []
-                    }
-                ]
+                }
             }
         },
         "/api/v1/oauth2/introspect": {
@@ -11304,15 +11014,7 @@
                             }
                         }
                     }
-                },
-                "security": [
-                    {
-                        "OpenIdConnect": []
-                    },
-                    {
-                        "HTTPBearer": []
-                    }
-                ]
+                }
             }
         },
         "/api/v1/oauth2/userinfo": {
@@ -11335,9 +11037,6 @@
                 "security": [
                     {
                         "OpenIdConnect": []
-                    },
-                    {
-                        "HTTPBearer": []
                     }
                 ]
             },
@@ -11360,9 +11059,6 @@
                 "security": [
                     {
                         "OpenIdConnect": []
-                    },
-                    {
-                        "HTTPBearer": []
                     }
                 ]
             }
@@ -11377,15 +11073,9 @@
                 "operationId": "benefits:list_benefits",
                 "security": [
                     {
-                        "OpenIdConnect": []
-                    },
-                    {
-                        "HTTPBearer": []
-                    },
-                    {
                         "OpenIdConnect": [
-                            "benefits:write",
-                            "benefits:read"
+                            "benefits:read",
+                            "benefits:write"
                         ]
                     },
                     {
@@ -11492,12 +11182,6 @@
                 "operationId": "benefits:create_benefit",
                 "security": [
                     {
-                        "OpenIdConnect": []
-                    },
-                    {
-                        "HTTPBearer": []
-                    },
-                    {
                         "OpenIdConnect": [
                             "benefits:write"
                         ]
@@ -11597,15 +11281,9 @@
                 "operationId": "benefits:get_benefit",
                 "security": [
                     {
-                        "OpenIdConnect": []
-                    },
-                    {
-                        "HTTPBearer": []
-                    },
-                    {
                         "OpenIdConnect": [
-                            "benefits:write",
-                            "benefits:read"
+                            "benefits:read",
+                            "benefits:write"
                         ]
                     },
                     {
@@ -11687,12 +11365,6 @@
                 "description": "Update a benefit.",
                 "operationId": "benefits:update_benefit",
                 "security": [
-                    {
-                        "OpenIdConnect": []
-                    },
-                    {
-                        "HTTPBearer": []
-                    },
                     {
                         "OpenIdConnect": [
                             "benefits:write"
@@ -11818,12 +11490,6 @@
                 "operationId": "benefits:delete_benefit",
                 "security": [
                     {
-                        "OpenIdConnect": []
-                    },
-                    {
-                        "HTTPBearer": []
-                    },
-                    {
                         "OpenIdConnect": [
                             "benefits:write"
                         ]
@@ -11893,15 +11559,9 @@
                 "operationId": "benefits:list_benefit_grants",
                 "security": [
                     {
-                        "OpenIdConnect": []
-                    },
-                    {
-                        "HTTPBearer": []
-                    },
-                    {
                         "OpenIdConnect": [
-                            "benefits:write",
-                            "benefits:read"
+                            "benefits:read",
+                            "benefits:write"
                         ]
                     },
                     {
@@ -12047,12 +11707,6 @@
                 "operationId": "webhooks:list_webhook_endpoints",
                 "security": [
                     {
-                        "OpenIdConnect": []
-                    },
-                    {
-                        "HTTPBearer": []
-                    },
-                    {
                         "OpenIdConnect": [
                             "webhooks:read",
                             "webhooks:write"
@@ -12160,12 +11814,6 @@
                 "operationId": "webhooks:create_webhook_endpoint",
                 "security": [
                     {
-                        "OpenIdConnect": []
-                    },
-                    {
-                        "HTTPBearer": []
-                    },
-                    {
                         "OpenIdConnect": [
                             "webhooks:write"
                         ]
@@ -12217,12 +11865,6 @@
                 "description": "Get a webhook endpoint by ID.",
                 "operationId": "webhooks:get_webhook_endpoint",
                 "security": [
-                    {
-                        "OpenIdConnect": []
-                    },
-                    {
-                        "HTTPBearer": []
-                    },
                     {
                         "OpenIdConnect": [
                             "webhooks:read",
@@ -12288,12 +11930,6 @@
                 "description": "Update a webhook endpoint.",
                 "operationId": "webhooks:update_webhook_endpoint",
                 "security": [
-                    {
-                        "OpenIdConnect": []
-                    },
-                    {
-                        "HTTPBearer": []
-                    },
                     {
                         "OpenIdConnect": [
                             "webhooks:write"
@@ -12379,12 +12015,6 @@
                 "operationId": "webhooks:delete_webhook_endpoint",
                 "security": [
                     {
-                        "OpenIdConnect": []
-                    },
-                    {
-                        "HTTPBearer": []
-                    },
-                    {
                         "OpenIdConnect": [
                             "webhooks:write"
                         ]
@@ -12453,12 +12083,6 @@
                 "description": "List webhook deliveries.\n\nDeliveries are all the attempts to deliver a webhook event to an endpoint.",
                 "operationId": "webhooks:list_webhook_deliveries",
                 "security": [
-                    {
-                        "OpenIdConnect": []
-                    },
-                    {
-                        "HTTPBearer": []
-                    },
                     {
                         "OpenIdConnect": [
                             "webhooks:read",
@@ -12550,12 +12174,6 @@
                 "operationId": "webhooks:redeliver_webhook_event",
                 "security": [
                     {
-                        "OpenIdConnect": []
-                    },
-                    {
-                        "HTTPBearer": []
-                    },
-                    {
                         "OpenIdConnect": [
                             "webhooks:write"
                         ]
@@ -12619,12 +12237,6 @@
                 "description": "List products.",
                 "operationId": "products:list_products",
                 "security": [
-                    {
-                        "OpenIdConnect": []
-                    },
-                    {
-                        "HTTPBearer": []
-                    },
                     {
                         "OpenIdConnect": [
                             "products:write",
@@ -12779,12 +12391,6 @@
                 "operationId": "products:create_product",
                 "security": [
                     {
-                        "OpenIdConnect": []
-                    },
-                    {
-                        "HTTPBearer": []
-                    },
-                    {
                         "OpenIdConnect": [
                             "products:write"
                         ]
@@ -12844,12 +12450,6 @@
                 "description": "Get a product by ID.",
                 "operationId": "products:get_product",
                 "security": [
-                    {
-                        "OpenIdConnect": []
-                    },
-                    {
-                        "HTTPBearer": []
-                    },
                     {
                         "OpenIdConnect": [
                             "products:write",
@@ -12915,12 +12515,6 @@
                 "description": "Update a product.",
                 "operationId": "products:update_product",
                 "security": [
-                    {
-                        "OpenIdConnect": []
-                    },
-                    {
-                        "HTTPBearer": []
-                    },
                     {
                         "OpenIdConnect": [
                             "products:write"
@@ -13008,12 +12602,6 @@
                 "operationId": "products:update_product_benefits",
                 "security": [
                     {
-                        "OpenIdConnect": []
-                    },
-                    {
-                        "HTTPBearer": []
-                    },
-                    {
                         "OpenIdConnect": [
                             "products:write"
                         ]
@@ -13099,12 +12687,6 @@
                 "description": "List orders.",
                 "operationId": "orders:list_orders",
                 "security": [
-                    {
-                        "OpenIdConnect": []
-                    },
-                    {
-                        "HTTPBearer": []
-                    },
                     {
                         "OpenIdConnect": [
                             "orders:read"
@@ -13288,12 +12870,6 @@
                 "operationId": "orders:get_order",
                 "security": [
                     {
-                        "OpenIdConnect": []
-                    },
-                    {
-                        "HTTPBearer": []
-                    },
-                    {
                         "OpenIdConnect": [
                             "orders:read"
                         ]
@@ -13359,12 +12935,6 @@
                 "description": "Get an order's invoice data.",
                 "operationId": "orders:get_order_invoice",
                 "security": [
-                    {
-                        "OpenIdConnect": []
-                    },
-                    {
-                        "HTTPBearer": []
-                    },
                     {
                         "OpenIdConnect": [
                             "orders:read"
@@ -13478,14 +13048,6 @@
                 ],
                 "summary": "Get Checkout",
                 "operationId": "checkouts:get_checkout",
-                "security": [
-                    {
-                        "OpenIdConnect": []
-                    },
-                    {
-                        "HTTPBearer": []
-                    }
-                ],
                 "parameters": [
                     {
                         "name": "id",
@@ -13529,12 +13091,6 @@
                 "summary": "List",
                 "operationId": "files:list",
                 "security": [
-                    {
-                        "OpenIdConnect": []
-                    },
-                    {
-                        "HTTPBearer": []
-                    },
                     {
                         "OpenIdConnect": [
                             "files:write"
@@ -13642,12 +13198,6 @@
                 "operationId": "files:create",
                 "security": [
                     {
-                        "OpenIdConnect": []
-                    },
-                    {
-                        "HTTPBearer": []
-                    },
-                    {
                         "OpenIdConnect": [
                             "files:write"
                         ]
@@ -13713,12 +13263,6 @@
                 "summary": "Uploaded",
                 "operationId": "files:uploaded",
                 "security": [
-                    {
-                        "OpenIdConnect": []
-                    },
-                    {
-                        "HTTPBearer": []
-                    },
                     {
                         "OpenIdConnect": [
                             "files:write"
@@ -13800,12 +13344,6 @@
                 "operationId": "files:update",
                 "security": [
                     {
-                        "OpenIdConnect": []
-                    },
-                    {
-                        "HTTPBearer": []
-                    },
-                    {
                         "OpenIdConnect": [
                             "files:write"
                         ]
@@ -13884,12 +13422,6 @@
                 "operationId": "files:delete",
                 "security": [
                     {
-                        "OpenIdConnect": []
-                    },
-                    {
-                        "HTTPBearer": []
-                    },
-                    {
                         "OpenIdConnect": [
                             "files:write"
                         ]
@@ -13956,12 +13488,6 @@
                 "description": "Get metrics about your orders and subscriptions.",
                 "operationId": "metrics:get_metrics",
                 "security": [
-                    {
-                        "OpenIdConnect": []
-                    },
-                    {
-                        "HTTPBearer": []
-                    },
                     {
                         "OpenIdConnect": [
                             "metrics:read"
@@ -14114,12 +13640,6 @@
                     }
                 },
                 "security": [
-                    {
-                        "OpenIdConnect": []
-                    },
-                    {
-                        "HTTPBearer": []
-                    },
                     {
                         "OpenIdConnect": [
                             "metrics:read"
@@ -16101,6 +15621,14 @@
             },
             "BenefitAdsCreate": {
                 "properties": {
+                    "type": {
+                        "type": "string",
+                        "enum": [
+                            "ads"
+                        ],
+                        "const": "ads",
+                        "title": "Type"
+                    },
                     "description": {
                         "type": "string",
                         "maxLength": 42,
@@ -16121,22 +15649,14 @@
                         "title": "Organization Id",
                         "description": "The ID of the organization owning the benefit. **Required unless you use an organization token.**"
                     },
-                    "type": {
-                        "type": "string",
-                        "enum": [
-                            "ads"
-                        ],
-                        "const": "ads",
-                        "title": "Type"
-                    },
                     "properties": {
                         "$ref": "#/components/schemas/BenefitAdsProperties"
                     }
                 },
                 "type": "object",
                 "required": [
-                    "description",
                     "type",
+                    "description",
                     "properties"
                 ],
                 "title": "BenefitAdsCreate"
@@ -16641,6 +16161,14 @@
             },
             "BenefitCustomCreate": {
                 "properties": {
+                    "type": {
+                        "type": "string",
+                        "enum": [
+                            "custom"
+                        ],
+                        "const": "custom",
+                        "title": "Type"
+                    },
                     "description": {
                         "type": "string",
                         "maxLength": 42,
@@ -16661,14 +16189,6 @@
                         "title": "Organization Id",
                         "description": "The ID of the organization owning the benefit. **Required unless you use an organization token.**"
                     },
-                    "type": {
-                        "type": "string",
-                        "enum": [
-                            "custom"
-                        ],
-                        "const": "custom",
-                        "title": "Type"
-                    },
                     "is_tax_applicable": {
                         "type": "boolean",
                         "title": "Is Tax Applicable",
@@ -16680,8 +16200,8 @@
                 },
                 "type": "object",
                 "required": [
-                    "description",
                     "type",
+                    "description",
                     "is_tax_applicable",
                     "properties"
                 ],
@@ -16924,6 +16444,14 @@
             },
             "BenefitDiscordCreate": {
                 "properties": {
+                    "type": {
+                        "type": "string",
+                        "enum": [
+                            "discord"
+                        ],
+                        "const": "discord",
+                        "title": "Type"
+                    },
                     "description": {
                         "type": "string",
                         "maxLength": 42,
@@ -16944,22 +16472,14 @@
                         "title": "Organization Id",
                         "description": "The ID of the organization owning the benefit. **Required unless you use an organization token.**"
                     },
-                    "type": {
-                        "type": "string",
-                        "enum": [
-                            "discord"
-                        ],
-                        "const": "discord",
-                        "title": "Type"
-                    },
                     "properties": {
                         "$ref": "#/components/schemas/BenefitDiscordCreateProperties"
                     }
                 },
                 "type": "object",
                 "required": [
-                    "description",
                     "type",
+                    "description",
                     "properties"
                 ],
                 "title": "BenefitDiscordCreate"
@@ -17215,6 +16735,14 @@
             },
             "BenefitDownloadablesCreate": {
                 "properties": {
+                    "type": {
+                        "type": "string",
+                        "enum": [
+                            "downloadables"
+                        ],
+                        "const": "downloadables",
+                        "title": "Type"
+                    },
                     "description": {
                         "type": "string",
                         "maxLength": 42,
@@ -17235,22 +16763,14 @@
                         "title": "Organization Id",
                         "description": "The ID of the organization owning the benefit. **Required unless you use an organization token.**"
                     },
-                    "type": {
-                        "type": "string",
-                        "enum": [
-                            "downloadables"
-                        ],
-                        "const": "downloadables",
-                        "title": "Type"
-                    },
                     "properties": {
                         "$ref": "#/components/schemas/BenefitDownloadablesCreateProperties"
                     }
                 },
                 "type": "object",
                 "required": [
-                    "description",
                     "type",
+                    "description",
                     "properties"
                 ],
                 "title": "BenefitDownloadablesCreate"
@@ -17512,6 +17032,14 @@
             },
             "BenefitGitHubRepositoryCreate": {
                 "properties": {
+                    "type": {
+                        "type": "string",
+                        "enum": [
+                            "github_repository"
+                        ],
+                        "const": "github_repository",
+                        "title": "Type"
+                    },
                     "description": {
                         "type": "string",
                         "maxLength": 42,
@@ -17532,22 +17060,14 @@
                         "title": "Organization Id",
                         "description": "The ID of the organization owning the benefit. **Required unless you use an organization token.**"
                     },
-                    "type": {
-                        "type": "string",
-                        "enum": [
-                            "github_repository"
-                        ],
-                        "const": "github_repository",
-                        "title": "Type"
-                    },
                     "properties": {
                         "$ref": "#/components/schemas/BenefitGitHubRepositoryCreateProperties"
                     }
                 },
                 "type": "object",
                 "required": [
-                    "description",
                     "type",
+                    "description",
                     "properties"
                 ],
                 "title": "BenefitGitHubRepositoryCreate"

@@ -2023,6 +2023,12 @@ export type BenefitAdsTypeEnum = typeof BenefitAdsTypeEnum[keyof typeof BenefitA
  */
 export interface BenefitAdsCreate {
     /**
+     * 
+     * @type {string}
+     * @memberof BenefitAdsCreate
+     */
+    type: BenefitAdsCreateTypeEnum;
+    /**
      * The description of the benefit. Will be displayed on products having this benefit.
      * @type {string}
      * @memberof BenefitAdsCreate
@@ -2034,12 +2040,6 @@ export interface BenefitAdsCreate {
      * @memberof BenefitAdsCreate
      */
     organization_id?: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof BenefitAdsCreate
-     */
-    type: BenefitAdsCreateTypeEnum;
     /**
      * 
      * @type {BenefitAdsProperties}
@@ -2534,6 +2534,12 @@ export type BenefitCustomTypeEnum = typeof BenefitCustomTypeEnum[keyof typeof Be
  */
 export interface BenefitCustomCreate {
     /**
+     * 
+     * @type {string}
+     * @memberof BenefitCustomCreate
+     */
+    type: BenefitCustomCreateTypeEnum;
+    /**
      * The description of the benefit. Will be displayed on products having this benefit.
      * @type {string}
      * @memberof BenefitCustomCreate
@@ -2545,12 +2551,6 @@ export interface BenefitCustomCreate {
      * @memberof BenefitCustomCreate
      */
     organization_id?: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof BenefitCustomCreate
-     */
-    type: BenefitCustomCreateTypeEnum;
     /**
      * Whether the benefit is taxable.
      * @type {boolean}
@@ -2792,6 +2792,12 @@ export type BenefitDiscordTypeEnum = typeof BenefitDiscordTypeEnum[keyof typeof 
  */
 export interface BenefitDiscordCreate {
     /**
+     * 
+     * @type {string}
+     * @memberof BenefitDiscordCreate
+     */
+    type: BenefitDiscordCreateTypeEnum;
+    /**
      * The description of the benefit. Will be displayed on products having this benefit.
      * @type {string}
      * @memberof BenefitDiscordCreate
@@ -2803,12 +2809,6 @@ export interface BenefitDiscordCreate {
      * @memberof BenefitDiscordCreate
      */
     organization_id?: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof BenefitDiscordCreate
-     */
-    type: BenefitDiscordCreateTypeEnum;
     /**
      * 
      * @type {BenefitDiscordCreateProperties}
@@ -3067,6 +3067,12 @@ export type BenefitDownloadablesTypeEnum = typeof BenefitDownloadablesTypeEnum[k
  */
 export interface BenefitDownloadablesCreate {
     /**
+     * 
+     * @type {string}
+     * @memberof BenefitDownloadablesCreate
+     */
+    type: BenefitDownloadablesCreateTypeEnum;
+    /**
      * The description of the benefit. Will be displayed on products having this benefit.
      * @type {string}
      * @memberof BenefitDownloadablesCreate
@@ -3078,12 +3084,6 @@ export interface BenefitDownloadablesCreate {
      * @memberof BenefitDownloadablesCreate
      */
     organization_id?: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof BenefitDownloadablesCreate
-     */
-    type: BenefitDownloadablesCreateTypeEnum;
     /**
      * 
      * @type {BenefitDownloadablesCreateProperties}
@@ -3338,6 +3338,12 @@ export type BenefitGitHubRepositoryTypeEnum = typeof BenefitGitHubRepositoryType
  */
 export interface BenefitGitHubRepositoryCreate {
     /**
+     * 
+     * @type {string}
+     * @memberof BenefitGitHubRepositoryCreate
+     */
+    type: BenefitGitHubRepositoryCreateTypeEnum;
+    /**
      * The description of the benefit. Will be displayed on products having this benefit.
      * @type {string}
      * @memberof BenefitGitHubRepositoryCreate
@@ -3349,12 +3355,6 @@ export interface BenefitGitHubRepositoryCreate {
      * @memberof BenefitGitHubRepositoryCreate
      */
     organization_id?: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof BenefitGitHubRepositoryCreate
-     */
-    type: BenefitGitHubRepositoryCreateTypeEnum;
     /**
      * 
      * @type {BenefitGitHubRepositoryCreateProperties}

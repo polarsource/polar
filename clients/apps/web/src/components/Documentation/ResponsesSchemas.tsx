@@ -6,6 +6,7 @@ import {
   TabsList,
   TabsTrigger,
 } from 'polarkit/components/ui/atoms/tabs'
+import AnchoredElement from './AnchoredElement'
 import { MDXContentWrapper } from './MDXContentWrapper'
 import { Schema } from './Schema'
 import { isResponseObject } from './openapi'
@@ -30,7 +31,9 @@ export const ResponsesSchemas = ({
 
   return (
     <div className="flex flex-col gap-y-6">
-      <h3 className="text-xl text-black dark:text-white">Responses</h3>
+      <AnchoredElement id="responses">
+        <h3 className="group text-xl text-black dark:text-white">Responses</h3>
+      </AnchoredElement>
 
       <Tabs>
         <div className="overflow-x-auto">
@@ -58,7 +61,7 @@ export const ResponsesSchemas = ({
                   </Markdown>
                 </MDXContentWrapper>
               )}
-              <Schema schema={schema} />
+              <Schema schema={schema} idPrefix={['responses', statusCode]} />
             </div>
           </TabsContent>
         ))}

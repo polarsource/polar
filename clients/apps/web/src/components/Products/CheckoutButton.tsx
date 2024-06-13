@@ -72,7 +72,9 @@ const AuthenticatedCheckoutButton: React.FC<
       organization={organization}
       checkoutPath={checkoutPath}
       variant={variant}
-    />
+    >
+      {children}
+    </AuthenticatedRecurringCheckoutButton>
   ) : (
     <Link className="w-full" href={`${checkoutPath}?price=${price.id}`}>
       <Button

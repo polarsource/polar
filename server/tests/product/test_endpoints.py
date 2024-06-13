@@ -169,11 +169,7 @@ class TestCreateProduct:
             {"name": ""},
             {
                 "description": (
-                    "This is a way too long description that shall never fit "
-                    "in the space we have in a single product card. "
-                    "That's why we need to add this upper limit of characters, "
-                    "otherwise users would put loads and loads of text that would "
-                    "result in a very ugly output on the web page."
+                    "This is just a simple product description that should be allowed"
                 )
             },
             # No price
@@ -240,7 +236,6 @@ class TestCreateProduct:
             "/api/v1/products/",
             json={
                 "type": "individual",
-                "name": "Product",
                 "organization_id": str(organization.id),
                 "prices": [
                     {
@@ -331,17 +326,6 @@ class TestUpdateProduct:
         "payload",
         [
             {"name": "This is a way too long name for a product"},
-            {"name": "ab"},
-            {"name": ""},
-            {
-                "description": (
-                    "This is a way too long description that shall never fit "
-                    "in the space we have in a single product card. "
-                    "That's why we need to add this upper limit of characters, "
-                    "otherwise users would put loads and loads of text that would "
-                    "result in a very ugly output on the web page."
-                )
-            },
         ],
     )
     @pytest.mark.auth

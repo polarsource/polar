@@ -51,7 +51,7 @@ export const Benefits = () => {
       />
       <div className="flex flex-col items-center gap-y-4">
         <h1 className="text-center text-4xl">Benefits</h1>
-        <p className="dark:text-polar-200 text-xl text-gray-500">
+        <p className="dark:text-polar-200 text-center text-xl text-gray-500">
           Give supporters access to exclusive content - Polar will automate it.
         </p>
       </div>

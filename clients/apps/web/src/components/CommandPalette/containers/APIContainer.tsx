@@ -54,13 +54,11 @@ const buildCurlCommand = (
   endpoint: OpenAPIV3_1.OperationObject,
 ) => {
   const queryParametersExamples = getQueryParametersExamples(endpoint)
-  console.log(queryParametersExamples)
   const queryParametersString = new URLSearchParams(
     queryParametersExamples,
   ).toString()
 
   const requestParameters = requestBodyParameters(endpoint)
-  console.log(requestParameters)
   const requiredBodyParameters = requestParameters
 
   const bodyParametersString = requiredBodyParameters

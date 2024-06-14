@@ -7,8 +7,8 @@ from polar.authz.service import AccessType, Authz
 from polar.enums import AccountType
 from polar.exceptions import InternalServerError, NotPermitted, ResourceNotFound
 from polar.kit.pagination import ListResource, PaginationParamsQuery
-from polar.kit.routing import APIRouter
 from polar.postgres import AsyncSession, get_db_session
+from polar.routing import APIRouter
 
 from .schemas import Account, AccountCreate, AccountLink
 from .service import account as account_service

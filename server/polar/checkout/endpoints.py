@@ -1,8 +1,8 @@
 import structlog
 from fastapi import Depends
 
-from polar.kit.routing import APIRouter
 from polar.postgres import AsyncSession, get_db_session
+from polar.routing import APIRouter
 
 from . import auth
 from .schemas import Checkout, CheckoutCreate

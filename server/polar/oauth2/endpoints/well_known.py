@@ -3,7 +3,7 @@ from typing import Any
 from fastapi import Depends, Request
 
 from polar.config import settings
-from polar.kit.routing import APIRouter
+from polar.routing import APIRouter
 
 from ..authorization_server import AuthorizationServer
 from ..dependencies import get_authorization_server

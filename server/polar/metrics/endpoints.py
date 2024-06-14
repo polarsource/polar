@@ -4,9 +4,9 @@ from fastapi import Depends, Query
 from pydantic import UUID4
 
 from polar.exceptions import PolarRequestValidationError
-from polar.kit.routing import APIRouter
 from polar.models.product_price import ProductPriceType
 from polar.postgres import AsyncSession, get_db_session
+from polar.routing import APIRouter
 
 from . import auth
 from .limits import MAX_INTERVAL_DAYS, MIN_DATE, is_under_limits

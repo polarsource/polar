@@ -7,9 +7,9 @@ from pydantic import UUID4
 from polar.authz.service import AccessType, Authz
 from polar.exceptions import NotPermitted, ResourceNotFound, Unauthorized
 from polar.kit.pagination import ListResource, PaginationParamsQuery
-from polar.kit.routing import APIRouter
 from polar.models import WebhookEndpoint
 from polar.postgres import AsyncSession, get_db_session
+from polar.routing import APIRouter
 
 from .auth import WebhooksRead, WebhooksWrite
 from .schemas import WebhookDelivery as WebhookDeliverySchema

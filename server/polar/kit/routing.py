@@ -50,15 +50,18 @@ def _inherit_signature_from(
     return lambda x: x  # pyright: ignore
 
 
-class APIRouter(_APIRouter):
+def get_api_router_class(route_class: type[APIRoute]) -> type[_APIRouter]:
     """
-    A subclass of `APIRouter` that uses `AutoCommitAPIRoute` by default.
+    Returns a subclass of `APIRouter` that uses the given `route_class`.
     """
 
-    @_inherit_signature_from(_APIRouter.__init__)
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
-        kwargs["route_class"] = AutoCommitAPIRoute
-        super().__init__(*args, **kwargs)
+    class _CustomAPIRouter(_APIRouter):
+        @_inherit_signature_from(_APIRouter.__init__)
+        def __init__(self, *args: Any, **kwargs: Any) -> None:
+            kwargs["route_class"] = route_class
+            super().__init__(*args, **kwargs)
+
+    return _CustomAPIRouter
 
 
-__all__ = ["APIRouter"]
+__all__ = ["get_api_router_class", "AutoCommitAPIRoute"]

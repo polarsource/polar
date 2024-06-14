@@ -6,11 +6,11 @@ from pydantic import UUID4
 from polar.exceptions import ResourceNotFound
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.pagination import ListResource, PaginationParamsQuery
-from polar.kit.routing import APIRouter
 from polar.kit.sorting import Sorting, SortingGetter
 from polar.models import Benefit
 from polar.models.benefit import BenefitType
 from polar.postgres import get_db_session
+from polar.routing import APIRouter
 
 from .. import auth
 from ..schemas.benefit import UserBenefit, UserBenefitAdapter

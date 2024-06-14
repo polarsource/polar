@@ -7,11 +7,11 @@ from pydantic import UUID4
 from polar.benefit.service.benefit import benefit as benefit_service
 from polar.exceptions import PolarRequestValidationError, ResourceNotFound
 from polar.kit.pagination import ListResource, PaginationParamsQuery
-from polar.kit.routing import APIRouter
 from polar.kit.sorting import Sorting, SortingGetter
 from polar.models import AdvertisementCampaign as AdvertisementCampaignModel
 from polar.models.benefit import BenefitAds
 from polar.postgres import AsyncSession, get_db_session
+from polar.routing import APIRouter
 
 from .schemas import AdvertisementCampaign, AdvertisementCampaignListResource
 from .service import SortProperty

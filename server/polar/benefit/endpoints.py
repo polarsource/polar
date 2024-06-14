@@ -7,11 +7,11 @@ from pydantic import UUID4
 from polar.authz.service import Authz
 from polar.exceptions import BadRequest, NotPermitted, ResourceNotFound
 from polar.kit.pagination import ListResource, PaginationParamsQuery
-from polar.kit.routing import APIRouter
 from polar.models import Benefit
 from polar.models.benefit import BenefitType
 from polar.postgres import AsyncSession, get_db_session
 from polar.posthog import posthog
+from polar.routing import APIRouter
 
 from . import auth
 from .schemas import Benefit as BenefitSchema

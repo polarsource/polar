@@ -1,7 +1,7 @@
 from typing import Annotated, TypeAlias
 
 import structlog
-from fastapi import APIRouter, Depends, Path, Query
+from fastapi import Depends, Path, Query
 from pydantic import UUID4
 
 from polar.authz.service import AccessType, Authz
@@ -11,6 +11,7 @@ from polar.models import File, Organization
 from polar.organization.resolver import get_payload_organization
 from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession, get_db_session
+from polar.routing import APIRouter
 
 from . import auth
 from .schemas import (

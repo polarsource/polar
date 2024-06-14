@@ -1,9 +1,10 @@
 import structlog
-from fastapi import APIRouter, Depends
+from fastapi import Depends
 
 from polar.auth.dependencies import WebUser
 from polar.openapi import IN_DEVELOPMENT_ONLY
 from polar.postgres import AsyncSession, get_db_session
+from polar.routing import APIRouter
 
 from .schemas import NotificationsList, NotificationsMarkRead
 from .service import notifications

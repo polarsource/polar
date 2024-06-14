@@ -1,7 +1,7 @@
 from collections.abc import Sequence
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import Depends, HTTPException, Query
 
 from polar.auth.dependencies import WebUser
 from polar.auth.models import AuthSubject
@@ -33,6 +33,7 @@ from polar.repository.service import repository
 from polar.reward.endpoints import to_resource
 from polar.reward.schemas import Reward
 from polar.reward.service import reward_service
+from polar.routing import APIRouter
 from polar.user_organization.service import (
     user_organization as user_organization_service,
 )

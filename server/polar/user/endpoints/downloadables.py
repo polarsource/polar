@@ -1,10 +1,11 @@
 import structlog
-from fastapi import APIRouter, Depends, Query
+from fastapi import Depends, Query
 from fastapi.responses import RedirectResponse
 from pydantic import UUID4
 
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.postgres import AsyncSession, get_db_session
+from polar.routing import APIRouter
 
 from .. import auth
 from ..schemas.downloadables import DownloadableRead

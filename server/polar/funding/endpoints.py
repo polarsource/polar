@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import Depends, Query
 
 from polar.auth.dependencies import WebUserOrAnonymous
 from polar.exceptions import ResourceNotFound
@@ -11,6 +11,7 @@ from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession, get_db_session
 from polar.repository.dependencies import OptionalRepositoryNameQuery
 from polar.repository.service import repository as repository_service
+from polar.routing import APIRouter
 
 from .dependencies import ListFundingSorting
 from .schemas import IssueFunding

@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import Depends, HTTPException, Query
 from fastapi.responses import HTMLResponse
 
 from polar.auth.dependencies import WebUser, WebUserOrAnonymous
@@ -21,6 +21,7 @@ from polar.organization.service import organization as organization_service
 from polar.pledge.service import pledge as pledge_service
 from polar.postgres import AsyncSession, get_db_session, get_db_sessionmaker
 from polar.repository.service import repository as repository_service
+from polar.routing import APIRouter
 from polar.user_organization.service import (
     user_organization as user_organization_service,
 )

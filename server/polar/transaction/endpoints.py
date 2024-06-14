@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import Depends, Query
 from fastapi.responses import StreamingResponse
 from pydantic import UUID4
 
@@ -14,6 +14,7 @@ from polar.kit.sorting import Sorting, SortingGetter
 from polar.models import Transaction as TransactionModel
 from polar.models.transaction import TransactionType
 from polar.postgres import AsyncSession, get_db_session, get_db_sessionmaker
+from polar.routing import APIRouter
 
 from .schemas import (
     PayoutCreate,

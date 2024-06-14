@@ -1,9 +1,10 @@
 import stripe
 import structlog
-from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi import Depends, HTTPException, Query, Request
 from starlette.responses import RedirectResponse
 
 from polar.config import settings
+from polar.routing import APIRouter
 from polar.worker import enqueue_job
 
 log = structlog.get_logger()

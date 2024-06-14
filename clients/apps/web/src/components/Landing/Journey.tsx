@@ -88,10 +88,8 @@ const items = [
     content: (
       <div className="flex flex-col gap-y-24">
         <div className="flex flex-col gap-y-4">
-          <h2 className="text-5xl leading-normal">
-            From first donation to IPO
-          </h2>
-          <h3 className="dark:text-polar-600 text-4xl leading-normal text-gray-500">
+          <h2 className="text-5xl leading-snug">From first donation to IPO</h2>
+          <h3 className="dark:text-polar-600 text-4xl leading-snug text-gray-500">
             With a wide array of funding tools for your project
           </h3>
         </div>
@@ -202,8 +200,8 @@ const items = [
     content: (
       <div className="flex flex-col gap-y-24">
         <div className="flex flex-col gap-y-4">
-          <h2 className="text-5xl leading-normal">From passion to business</h2>
-          <h3 className="dark:text-polar-600 text-4xl leading-normal text-gray-500">
+          <h2 className="text-5xl leading-snug">From passion to business</h2>
+          <h3 className="dark:text-polar-600 text-4xl leading-snug text-gray-500">
             Unlock the full potential of your project with insights to your
             sales
           </h3>
@@ -228,23 +226,10 @@ const items = [
             </picture>
           </FeatureItem>
           <FeatureItem
-            icon={<Language />}
-            title="Public Page"
-            description="A home for your profile on Polar. Showcase your projects, crowdfunded issues, and more."
-            link="#"
-            learnMore={false}
-          />
-          <FeatureItem
-            icon={<Webhook />}
-            title="Webhooks"
-            description="Integrate with the Polar API for real-time updates on funding events."
-            link="/docs/api-reference/webhooks"
-          />
-          <FeatureItem
             icon={<ReceiptLongOutlined />}
-            title="Newsletters"
-            description="Reach your community with insightful newsletter posts - using an MDX-powered editor."
-            link="/docs/overview/issue-funding/reward-contributors"
+            title="Merchant of Record"
+            description="No more VAT headache - we handle the necessary taxes for you."
+            link="/docs/overview/payments-taxes#taxes"
           />
           <FeatureItem
             icon={<AccountBalanceOutlined />}
@@ -253,10 +238,23 @@ const items = [
             link="/docs/overview/payments-taxes"
           />
           <FeatureItem
+            icon={<Webhook />}
+            title="Webhooks"
+            description="Integrate with the Polar API for real-time updates on funding events."
+            link="/docs/api-reference/webhooks"
+          />
+          <FeatureItem
+            icon={<Language />}
+            title="Public Page"
+            description="A home for your profile on Polar. Showcase your projects, crowdfunded issues, and more."
+            link="#"
+            learnMore={false}
+          />
+          <FeatureItem
             icon={<ReceiptLongOutlined />}
-            title="Merchant of Record"
-            description="No more VAT headache - we handle the necessary taxes for you."
-            link="/docs/overview/payments-taxes#taxes"
+            title="Newsletters"
+            description="Reach your community with insightful newsletter posts - using an MDX-powered editor."
+            link="/docs/overview/issue-funding/reward-contributors"
           />
         </div>
       </div>

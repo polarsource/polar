@@ -37,8 +37,8 @@ export const MOCKED_PRODUCTS: Partial<Product>[] = [
     benefits: [
       {
         id: '123',
-        description: 'Premium Newsletter',
-        type: 'articles',
+        description: 'Binary Downloads',
+        type: 'downloadables',
         created_at: new Date().toDateString(),
         selectable: false,
         deletable: false,

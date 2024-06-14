@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import Depends, Query
 
 from polar.auth.dependencies import WebUserOrAnonymous
 from polar.authz.service import AccessType, Authz
@@ -11,6 +11,7 @@ from polar.postgres import (
     AsyncSession,
     get_db_session,
 )
+from polar.routing import APIRouter
 
 from .schemas import PullRequest
 from .service import pull_request as pull_request_service

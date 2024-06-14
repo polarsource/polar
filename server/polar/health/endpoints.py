@@ -1,4 +1,4 @@
-from fastapi import APIRouter
+from polar.routing import APIRouter
 
 router = APIRouter(tags=["health"], include_in_schema=False)
 

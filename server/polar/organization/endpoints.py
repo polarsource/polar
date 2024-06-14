@@ -2,7 +2,7 @@ from typing import Annotated
 from uuid import UUID
 
 import structlog
-from fastapi import APIRouter, Depends, HTTPException, Path, Query
+from fastapi import Depends, HTTPException, Path, Query
 from pydantic import UUID4
 
 from polar.auth.models import Subject
@@ -18,6 +18,7 @@ from polar.models.user import User
 from polar.openapi import IN_DEVELOPMENT_ONLY
 from polar.postgres import AsyncSession, get_db_session
 from polar.repository.service import repository as repository_service
+from polar.routing import APIRouter
 from polar.user_organization.schemas import OrganizationMember
 from polar.user_organization.service import (
     user_organization as user_organization_service,

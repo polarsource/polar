@@ -1,7 +1,7 @@
 import datetime
 from typing import Annotated, Literal
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import Depends, Query
 from pydantic import UUID4
 
 from polar.auth.dependencies import WebUser, WebUserOrAnonymous
@@ -16,6 +16,7 @@ from polar.models.organization import Organization
 from polar.organization.dependencies import OrganizationNamePlatform
 from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession, get_db_session
+from polar.routing import APIRouter
 from polar.user_organization.service import (
     user_organization as user_organization_service,
 )

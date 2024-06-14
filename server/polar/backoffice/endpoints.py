@@ -2,7 +2,7 @@ from typing import Any
 from uuid import UUID
 
 import structlog
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import Depends, HTTPException
 
 from polar.auth.dependencies import AdminUser
 from polar.enums import Platforms
@@ -22,6 +22,7 @@ from polar.postgres import AsyncSession, get_db_session
 from polar.repository.service import repository as repository_service
 from polar.reward.endpoints import to_resource as reward_to_resource
 from polar.reward.service import reward_service
+from polar.routing import APIRouter
 from polar.worker import enqueue_job
 
 from .pledge_service import bo_pledges_service

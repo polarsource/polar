@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Query, Request, status
+from fastapi import Depends, Query, Request, status
 from fastapi.responses import RedirectResponse
 
 from polar.auth.dependencies import WebUserOrAnonymous
@@ -11,6 +11,7 @@ from polar.kit.http import ReturnTo
 from polar.openapi import IN_DEVELOPMENT_ONLY
 from polar.postgres import get_db_session
 from polar.posthog import posthog
+from polar.routing import APIRouter
 
 from .schemas import MagicLinkRequest
 from .service import MagicLinkError

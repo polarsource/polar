@@ -1,7 +1,7 @@
 from uuid import UUID
 
 import structlog
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import Depends, HTTPException
 
 from polar.auth.dependencies import WebUser
 from polar.auth.scope import Scope
@@ -9,6 +9,7 @@ from polar.auth.service import AuthService
 from polar.kit.pagination import ListResource, Pagination
 from polar.openapi import IN_DEVELOPMENT_ONLY
 from polar.postgres import AsyncSession, get_db_session
+from polar.routing import APIRouter
 
 from .schemas import (
     CreatePersonalAccessToken,

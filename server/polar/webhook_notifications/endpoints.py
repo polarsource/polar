@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Depends
+from fastapi import Depends
 
 from polar.auth.dependencies import WebUser
 from polar.authz.service import AccessType, Authz
@@ -12,6 +12,7 @@ from polar.postgres import (
     AsyncSession,
     get_db_session,
 )
+from polar.routing import APIRouter
 
 from .schemas import WebhookIntegration as WebhookIntegrationSchema
 from .schemas import WebhookIntegrationCreate, WebhookIntegrationUpdate

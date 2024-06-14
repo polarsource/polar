@@ -3,7 +3,7 @@ from collections.abc import AsyncGenerator
 from typing import Any
 
 import structlog
-from fastapi import APIRouter, Depends, Request
+from fastapi import Depends, Request
 from redis.exceptions import ConnectionError
 from sse_starlette.sse import EventSourceResponse
 from uvicorn import Server
@@ -15,6 +15,7 @@ from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession, get_db_session
 from polar.redis import Redis, get_redis
 from polar.repository.service import repository as repository_service
+from polar.routing import APIRouter
 from polar.user_organization.service import (
     user_organization as user_organization_service,
 )

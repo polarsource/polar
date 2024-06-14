@@ -1,7 +1,7 @@
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import Depends, Query
 
 from polar.auth.dependencies import Authenticator, WebUser, WebUserOrAnonymous
 from polar.auth.models import Anonymous, AuthSubject, User
@@ -15,6 +15,7 @@ from polar.organization.dependencies import OrganizationNamePlatform
 from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession, get_db_session
 from polar.posthog import posthog
+from polar.routing import APIRouter
 from polar.user.service.user import user as user_service
 from polar.worker import enqueue_job
 

@@ -3,7 +3,7 @@ from typing import Literal
 from uuid import UUID
 
 import structlog
-from fastapi import APIRouter, Depends, Query
+from fastapi import Depends, Query
 
 from polar.article.service import article_service
 from polar.auth.dependencies import WebUser
@@ -17,6 +17,7 @@ from polar.organization.dependencies import (
 )
 from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession, get_db_session
+from polar.routing import APIRouter
 
 from .schemas import (
     TrackPageView,

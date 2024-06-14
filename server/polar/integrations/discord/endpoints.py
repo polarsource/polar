@@ -2,7 +2,7 @@ from typing import Any
 from uuid import UUID
 
 import structlog
-from fastapi import APIRouter, Depends, Request
+from fastapi import Depends, Request
 from fastapi.responses import RedirectResponse
 from httpx_oauth.integrations.fastapi import OAuth2AuthorizeCallback
 from httpx_oauth.oauth2 import OAuth2Token
@@ -14,6 +14,7 @@ from polar.kit import jwt
 from polar.kit.http import ReturnTo, add_query_parameters, get_safe_return_url
 from polar.openapi import IN_DEVELOPMENT_ONLY
 from polar.postgres import AsyncSession, get_db_session
+from polar.routing import APIRouter
 
 from . import oauth
 from .schemas import DiscordGuild

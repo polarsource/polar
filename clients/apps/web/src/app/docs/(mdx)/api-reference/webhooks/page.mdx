@@ -1,0 +1,799 @@
+# Webhooks
+
+Webhooks allow you to build or set up integrations that subscribe to certain Polar events. When one of those events is triggered, we'll send an HTTP POST payload to the webhook's configured URL.
+
+## Configuring a Webhook
+
+Head over to your organization's settings page and click on the "Add Endpoint" button to create a new webhook.
+
+![Add Webhook Endpoint](/assets/docs/webhooks/add_endpoint.png#only-light)
+![Add Webhook Endpoint](/assets/docs/webhooks/add_endpoint_dark.png#only-dark)
+
+In the dialog that appears, enter the URL to which the webhook events should be sent.
+
+![Add URL](/assets/docs/webhooks/url.png#only-light)
+![Add URL](/assets/docs/webhooks/url_dark.png#only-dark)
+
+### Webhook Secret
+
+In order to verify that the webhook events are coming from Polar, you can provide a secret key. This secret key will be used to sign the webhook events.
+
+![Add Secret](/assets/docs/webhooks/secret.png#only-light)
+![Add Secret](/assets/docs/webhooks/secret_dark.png#only-dark)
+
+## Webhook Events
+
+Polar supports the following Webhook events:
+
+- `subscription.created`
+- `subscription.updated`
+- `product.created`
+- `product.updated`
+- `benefit.created`
+- `benefit.updated`
+- `organization.updated`
+- `pledge.created`
+- `pledge.updated`
+- `donation.created`
+
+### Subscription Created
+
+The `subscription.created` event is triggered when a new subscription is created. The payload contains the subscription details.
+
+```json
+{
+    "type": "subscription.created",
+    "data": {
+        "created_at": "2019-08-24T14:15:22Z",
+        "modified_at": "2019-08-24T14:15:22Z",
+        "id": "string",
+        "status": "incomplete",
+        "current_period_start": "2019-08-24T14:15:22Z",
+        "current_period_end": "2019-08-24T14:15:22Z",
+        "cancel_at_period_end": true,
+        "started_at": "2019-08-24T14:15:22Z",
+        "ended_at": "2019-08-24T14:15:22Z",
+        "user_id": "string",
+        "product_id": "string",
+        "price_id": "string",
+        "user": {
+            "email": "string",
+            "public_name": "string",
+            "github_username": "string",
+            "avatar_url": "string"
+        },
+        "product": {
+            "created_at": "2019-08-24T14:15:22Z",
+            "modified_at": "2019-08-24T14:15:22Z",
+            "id": "string",
+            "name": "string",
+            "description": "string",
+            "is_recurring": true,
+            "is_archived": true,
+            "organization_id": "string",
+            "type": "free",
+            "is_highlighted": true,
+            "prices": [
+            {
+                "created_at": "2019-08-24T14:15:22Z",
+                "modified_at": "2019-08-24T14:15:22Z",
+                "id": "string",
+                "price_amount": 0,
+                "price_currency": "string",
+                "is_archived": true,
+                "type": "recurring",
+                "recurring_interval": "month"
+            }
+            ],
+            "benefits": [
+            {
+                "created_at": "2019-08-24T14:15:22Z",
+                "modified_at": "2019-08-24T14:15:22Z",
+                "id": "string",
+                "type": "custom",
+                "description": "string",
+                "selectable": true,
+                "deletable": true,
+                "organization_id": "string"
+            }
+            ],
+            "medias": [
+            {
+                "id": "string",
+                "organization_id": "string",
+                "name": "string",
+                "path": "string",
+                "mime_type": "string",
+                "size": 0,
+                "storage_version": "string",
+                "checksum_etag": "string",
+                "checksum_sha256_base64": "string",
+                "checksum_sha256_hex": "string",
+                "last_modified_at": "2019-08-24T14:15:22Z",
+                "version": "string",
+                "service": "product_media",
+                "is_uploaded": true,
+                "created_at": "2019-08-24T14:15:22Z",
+                "size_readable": "string",
+                "public_url": "string"
+            }
+            ]
+        },
+        "price": {
+            "created_at": "2019-08-24T14:15:22Z",
+            "modified_at": "2019-08-24T14:15:22Z",
+            "id": "string",
+            "price_amount": 0,
+            "price_currency": "string",
+            "is_archived": true,
+            "type": "recurring",
+            "recurring_interval": "month"
+        }
+    }
+}
+```
+
+### Subscription Updated
+
+The `subscription.updated` event is triggered when a subscription is updated. The payload contains the updated subscription details.
+
+```json
+{
+    "type": "subscription.updated",
+    "data": {
+        "created_at": "2019-08-24T14:15:22Z",
+        "modified_at": "2019-08-24T14:15:22Z",
+        "id": "string",
+        "status": "incomplete",
+        "current_period_start": "2019-08-24T14:15:22Z",
+        "current_period_end": "2019-08-24T14:15:22Z",
+        "cancel_at_period_end": true,
+        "started_at": "2019-08-24T14:15:22Z",
+        "ended_at": "2019-08-24T14:15:22Z",
+        "user_id": "string",
+        "product_id": "string",
+        "price_id": "string",
+        "user": {
+            "email": "string",
+            "public_name": "string",
+            "github_username": "string",
+            "avatar_url": "string"
+        },
+        "product": {
+            "created_at": "2019-08-24T14:15:22Z",
+            "modified_at": "2019-08-24T14:15:22Z",
+            "id": "string",
+            "name": "string",
+            "description": "string",
+            "is_recurring": true,
+            "is_archived": true,
+            "organization_id": "string",
+            "type": "free",
+            "is_highlighted": true,
+            "prices": [
+            {
+                "created_at": "2019-08-24T14:15:22Z",
+                "modified_at": "2019-08-24T14:15:22Z",
+                "id": "string",
+                "price_amount": 0,
+                "price_currency": "string",
+                "is_archived": true,
+                "type": "recurring",
+                "recurring_interval": "month"
+            }
+            ],
+            "benefits": [
+            {
+                "created_at": "2019-08-24T14:15:22Z",
+                "modified_at": "2019-08-24T14:15:22Z",
+                "id": "string",
+                "type": "custom",
+                "description": "string",
+                "selectable": true,
+                "deletable": true,
+                "organization_id": "string"
+            }
+            ],
+            "medias": [
+            {
+                "id": "string",
+                "organization_id": "string",
+                "name": "string",
+                "path": "string",
+                "mime_type": "string",
+                "size": 0,
+                "storage_version": "string",
+                "checksum_etag": "string",
+                "checksum_sha256_base64": "string",
+                "checksum_sha256_hex": "string",
+                "last_modified_at": "2019-08-24T14:15:22Z",
+                "version": "string",
+                "service": "product_media",
+                "is_uploaded": true,
+                "created_at": "2019-08-24T14:15:22Z",
+                "size_readable": "string",
+                "public_url": "string"
+            }
+            ]
+        },
+        "price": {
+            "created_at": "2019-08-24T14:15:22Z",
+            "modified_at": "2019-08-24T14:15:22Z",
+            "id": "string",
+            "price_amount": 0,
+            "price_currency": "string",
+            "is_archived": true,
+            "type": "recurring",
+            "recurring_interval": "month"
+        }
+    }
+}
+```
+
+### Product Created
+
+The `product.created` event is triggered when a new product is created. The payload contains the product details.
+
+```json
+{
+    "type": "product.created",
+    "data": {
+        "created_at": "2019-08-24T14:15:22Z",
+        "modified_at": "2019-08-24T14:15:22Z",
+        "id": "string",
+        "name": "string",
+        "description": "string",
+        "is_recurring": true,
+        "is_archived": true,
+        "organization_id": "string",
+        "type": "free",
+        "is_highlighted": true,
+        "prices": [
+            {
+            "created_at": "2019-08-24T14:15:22Z",
+            "modified_at": "2019-08-24T14:15:22Z",
+            "id": "string",
+            "price_amount": 0,
+            "price_currency": "string",
+            "is_archived": true,
+            "type": "recurring",
+            "recurring_interval": "month"
+            }
+        ],
+        "benefits": [
+            {
+            "created_at": "2019-08-24T14:15:22Z",
+            "modified_at": "2019-08-24T14:15:22Z",
+            "id": "string",
+            "type": "custom",
+            "description": "string",
+            "selectable": true,
+            "deletable": true,
+            "organization_id": "string"
+            }
+        ],
+        "medias": [
+            {
+            "id": "string",
+            "organization_id": "string",
+            "name": "string",
+            "path": "string",
+            "mime_type": "string",
+            "size": 0,
+            "storage_version": "string",
+            "checksum_etag": "string",
+            "checksum_sha256_base64": "string",
+            "checksum_sha256_hex": "string",
+            "last_modified_at": "2019-08-24T14:15:22Z",
+            "version": "string",
+            "service": "product_media",
+            "is_uploaded": true,
+            "created_at": "2019-08-24T14:15:22Z",
+            "size_readable": "string",
+            "public_url": "string"
+            }
+        ]
+    }
+}
+```
+
+### Product Updated
+
+The `product.updated` event is triggered when a product is updated. The payload contains the updated product details.
+
+```json
+{
+    "type": "product.updated",
+    "data": {
+        "created_at": "2019-08-24T14:15:22Z",
+        "modified_at": "2019-08-24T14:15:22Z",
+        "id": "string",
+        "name": "string",
+        "description": "string",
+        "is_recurring": true,
+        "is_archived": true,
+        "organization_id": "string",
+        "type": "free",
+        "is_highlighted": true,
+        "prices": [
+            {
+            "created_at": "2019-08-24T14:15:22Z",
+            "modified_at": "2019-08-24T14:15:22Z",
+            "id": "string",
+            "price_amount": 0,
+            "price_currency": "string",
+            "is_archived": true,
+            "type": "recurring",
+            "recurring_interval": "month"
+            }
+        ],
+        "benefits": [
+            {
+            "created_at": "2019-08-24T14:15:22Z",
+            "modified_at": "2019-08-24T14:15:22Z",
+            "id": "string",
+            "type": "custom",
+            "description": "string",
+            "selectable": true,
+            "deletable": true,
+            "organization_id": "string"
+            }
+        ],
+        "medias": [
+            {
+            "id": "string",
+            "organization_id": "string",
+            "name": "string",
+            "path": "string",
+            "mime_type": "string",
+            "size": 0,
+            "storage_version": "string",
+            "checksum_etag": "string",
+            "checksum_sha256_base64": "string",
+            "checksum_sha256_hex": "string",
+            "last_modified_at": "2019-08-24T14:15:22Z",
+            "version": "string",
+            "service": "product_media",
+            "is_uploaded": true,
+            "created_at": "2019-08-24T14:15:22Z",
+            "size_readable": "string",
+            "public_url": "string"
+            }
+        ]
+    }
+}
+```
+
+### Benefit Created
+
+The `benefit.created` event is triggered when a new benefit is created. The payload contains the benefit details.
+
+```json
+{
+    "type": "benefit.created",
+    "data": {
+        "created_at": "2019-08-24T14:15:22Z",
+        "modified_at": "2019-08-24T14:15:22Z",
+        "id": "string",
+        "type": "articles",
+        "description": "string",
+        "selectable": true,
+        "deletable": true,
+        "organization_id": "string",
+        "properties": {
+            "paid_articles": true
+        }
+    }
+}
+```
+
+### Benefit Updated
+
+The `benefit.updated` event is triggered when a benefit is updated. The payload contains the updated benefit details.
+
+```json
+{
+    "type": "benefit.updated",
+    "data": {
+        "created_at": "2019-08-24T14:15:22Z",
+        "modified_at": "2019-08-24T14:15:22Z",
+        "id": "string",
+        "type": "articles",
+        "description": "string",
+        "selectable": true,
+        "deletable": true,
+        "organization_id": "string",
+        "properties": {
+            "paid_articles": true
+        }
+    }
+}
+```
+
+### Organization Updated
+
+The `organization.updated` event is triggered when an organization is updated. The payload contains the updated organization details.
+
+```json
+{
+    "type": "organization.updated",
+    "data": {
+        "id": "497f6eca-6276-4993-bfeb-53cbbbba6f08",
+        "platform": "github",
+        "name": "string",
+        "avatar_url": "string",
+        "is_personal": true,
+        "bio": "string",
+        "pretty_name": "string",
+        "company": "string",
+        "blog": "string",
+        "location": "string",
+        "email": "string",
+        "twitter_username": "string",
+        "pledge_minimum_amount": 0,
+        "pledge_badge_show_amount": true,
+        "default_upfront_split_to_contributors": 0,
+        "account_id": "string",
+        "has_app_installed": true,
+        "custom_domain": "string",
+        "public_page_enabled": true,
+        "donations_enabled": true,
+        "public_donation_timestamps": true,
+        "profile_settings": {
+            "description": "string",
+            "featured_projects": [
+            "string"
+            ],
+            "featured_organizations": [
+            "string"
+            ],
+            "links": [
+            "http://example.com"
+            ]
+        },
+        "feature_settings": {
+            "articles_enabled": false,
+            "subscriptions_enabled": false,
+            "issue_funding_enabled": false
+        },
+        "billing_email": "string",
+        "total_monthly_spending_limit": 0,
+        "per_user_monthly_spending_limit": 0,
+        "is_teams_enabled": true
+    }
+}
+```
+
+### Pledge Created
+
+The `pledge.created` event is triggered when a new pledge is created. The payload contains the pledge details.
+
+```json
+{
+    "type": "pledge.created",
+    "data": {
+        "id": "497f6eca-6276-4993-bfeb-53cbbbba6f08",
+        "created_at": "2019-08-24T14:15:22Z",
+        "amount": {
+            "currency": "string",
+            "amount": 0
+        },
+        "state": "initiated",
+        "type": "pay_upfront",
+        "refunded_at": "2019-08-24T14:15:22Z",
+        "scheduled_payout_at": "2019-08-24T14:15:22Z",
+        "issue": {
+            "id": "497f6eca-6276-4993-bfeb-53cbbbba6f08",
+            "platform": "github",
+            "number": 0,
+            "title": "string",
+            "body": "string",
+            "comments": 0,
+            "labels": [],
+            "author": {
+            "id": 0,
+            "login": "string",
+            "html_url": "http://example.com",
+            "avatar_url": "http://example.com"
+            },
+            "assignees": [
+            {
+                "id": 0,
+                "login": "string",
+                "html_url": "http://example.com",
+                "avatar_url": "http://example.com"
+            }
+            ],
+            "reactions": {
+            "total_count": 0,
+            "plus_one": 0,
+            "minus_one": 0,
+            "laugh": 0,
+            "hooray": 0,
+            "confused": 0,
+            "heart": 0,
+            "rocket": 0,
+            "eyes": 0
+            },
+            "state": "OPEN",
+            "issue_closed_at": "2019-08-24T14:15:22Z",
+            "issue_modified_at": "2019-08-24T14:15:22Z",
+            "issue_created_at": "2019-08-24T14:15:22Z",
+            "needs_confirmation_solved": true,
+            "confirmed_solved_at": "2019-08-24T14:15:22Z",
+            "funding": {
+            "funding_goal": {
+                "currency": "string",
+                "amount": 0
+            },
+            "pledges_sum": {
+                "currency": "string",
+                "amount": 0
+            }
+            },
+            "repository": {
+            "id": "497f6eca-6276-4993-bfeb-53cbbbba6f08",
+            "platform": "github",
+            "visibility": "public",
+            "name": "MyOrg",
+            "description": "string",
+            "stars": 1337,
+            "license": "string",
+            "homepage": "string",
+            "profile_settings": {
+                "description": "string",
+                "cover_image_url": "string",
+                "featured_organizations": [
+                "string"
+                ],
+                "highlighted_subscription_tiers": [
+                "string"
+                ],
+                "links": [
+                "http://example.com"
+                ]
+            },
+            "organization": {
+                "id": "497f6eca-6276-4993-bfeb-53cbbbba6f08",
+                "platform": "github",
+                "name": "string",
+                "avatar_url": "string",
+                "is_personal": true,
+                "bio": "string",
+                "pretty_name": "string",
+                "company": "string",
+                "blog": "string",
+                "location": "string",
+                "email": "string",
+                "twitter_username": "string",
+                "pledge_minimum_amount": 0,
+                "pledge_badge_show_amount": true,
+                "default_upfront_split_to_contributors": 0,
+                "account_id": "string",
+                "has_app_installed": true,
+                "custom_domain": "string",
+                "public_page_enabled": true,
+                "donations_enabled": true,
+                "public_donation_timestamps": true,
+                "profile_settings": {
+                "description": "string",
+                "featured_projects": [
+                    "string"
+                ],
+                "featured_organizations": [
+                    "string"
+                ],
+                "links": [
+                    "http://example.com"
+                ]
+                },
+                "feature_settings": {
+                "articles_enabled": false,
+                "subscriptions_enabled": false,
+                "issue_funding_enabled": false
+                },
+                "billing_email": "string",
+                "total_monthly_spending_limit": 0,
+                "per_user_monthly_spending_limit": 0,
+                "is_teams_enabled": true
+            }
+            },
+            "upfront_split_to_contributors": 0,
+            "pledge_badge_currently_embedded": true,
+            "badge_custom_content": "string"
+        },
+        "pledger": {
+            "name": "string",
+            "github_username": "string",
+            "avatar_url": "string"
+        },
+        "hosted_invoice_url": "string",
+        "authed_can_admin_sender": false,
+        "authed_can_admin_received": false,
+        "created_by": {
+            "name": "string",
+            "github_username": "string",
+            "avatar_url": "string"
+        }
+    }
+}
+```
+
+### Pledge Updated
+
+The `pledge.updated` event is triggered when a pledge is updated. The payload contains the updated pledge details.
+
+```json
+{
+    "type": "pledge.updated",
+    "data": {
+        "id": "497f6eca-6276-4993-bfeb-53cbbbba6f08",
+        "created_at": "2019-08-24T14:15:22Z",
+        "amount": {
+            "currency": "string",
+            "amount": 0
+        },
+        "state": "initiated",
+        "type": "pay_upfront",
+        "refunded_at": "2019-08-24T14:15:22Z",
+        "scheduled_payout_at": "2019-08-24T14:15:22Z",
+        "issue": {
+            "id": "497f6eca-6276-4993-bfeb-53cbbbba6f08",
+            "platform": "github",
+            "number": 0,
+            "title": "string",
+            "body": "string",
+            "comments": 0,
+            "labels": [],
+            "author": {
+            "id": 0,
+            "login": "string",
+            "html_url": "http://example.com",
+            "avatar_url": "http://example.com"
+            },
+            "assignees": [
+            {
+                "id": 0,
+                "login": "string",
+                "html_url": "http://example.com",
+                "avatar_url": "http://example.com"
+            }
+            ],
+            "reactions": {
+            "total_count": 0,
+            "plus_one": 0,
+            "minus_one": 0,
+            "laugh": 0,
+            "hooray": 0,
+            "confused": 0,
+            "heart": 0,
+            "rocket": 0,
+            "eyes": 0
+            },
+            "state": "OPEN",
+            "issue_closed_at": "2019-08-24T14:15:22Z",
+            "issue_modified_at": "2019-08-24T14:15:22Z",
+            "issue_created_at": "2019-08-24T14:15:22Z",
+            "needs_confirmation_solved": true,
+            "confirmed_solved_at": "2019-08-24T14:15:22Z",
+            "funding": {
+            "funding_goal": {
+                "currency": "string",
+                "amount": 0
+            },
+            "pledges_sum": {
+                "currency": "string",
+                "amount": 0
+            }
+            },
+            "repository": {
+            "id": "497f6eca-6276-4993-bfeb-53cbbbba6f08",
+            "platform": "github",
+            "visibility": "public",
+            "name": "MyOrg",
+            "description": "string",
+            "stars": 1337,
+            "license": "string",
+            "homepage": "string",
+            "profile_settings": {
+                "description": "string",
+                "cover_image_url": "string",
+                "featured_organizations": [
+                "string"
+                ],
+                "highlighted_subscription_tiers": [
+                "string"
+                ],
+                "links": [
+                "http://example.com"
+                ]
+            },
+            "organization": {
+                "id": "497f6eca-6276-4993-bfeb-53cbbbba6f08",
+                "platform": "github",
+                "name": "string",
+                "avatar_url": "string",
+                "is_personal": true,
+                "bio": "string",
+                "pretty_name": "string",
+                "company": "string",
+                "blog": "string",
+                "location": "string",
+                "email": "string",
+                "twitter_username": "string",
+                "pledge_minimum_amount": 0,
+                "pledge_badge_show_amount": true,
+                "default_upfront_split_to_contributors": 0,
+                "account_id": "string",
+                "has_app_installed": true,
+                "custom_domain": "string",
+                "public_page_enabled": true,
+                "donations_enabled": true,
+                "public_donation_timestamps": true,
+                "profile_settings": {
+                "description": "string",
+                "featured_projects": [
+                    "string"
+                ],
+                "featured_organizations": [
+                    "string"
+                ],
+                "links": [
+                    "http://example.com"
+                ]
+                },
+                "feature_settings": {
+                "articles_enabled": false,
+                "subscriptions_enabled": false,
+                "issue_funding_enabled": false
+                },
+                "billing_email": "string",
+                "total_monthly_spending_limit": 0,
+                "per_user_monthly_spending_limit": 0,
+                "is_teams_enabled": true
+            }
+            },
+            "upfront_split_to_contributors": 0,
+            "pledge_badge_currently_embedded": true,
+            "badge_custom_content": "string"
+        },
+        "pledger": {
+            "name": "string",
+            "github_username": "string",
+            "avatar_url": "string"
+        },
+        "hosted_invoice_url": "string",
+        "authed_can_admin_sender": false,
+        "authed_can_admin_received": false,
+        "created_by": {
+            "name": "string",
+            "github_username": "string",
+            "avatar_url": "string"
+        }
+    }
+}
+```
+
+### Donation Created
+
+The `donation.created` event is triggered when a new donation is created. The payload contains the donation details.
+
+```json 
+{
+    "type": "donation.created",
+    "data": {
+        "id": "497f6eca-6276-4993-bfeb-53cbbbba6f08",
+        "amount": {
+            "currency": "string",
+            "amount": 0
+        },
+        "message": "string",
+        "donor": {
+            "name": "string",
+            "github_username": "string",
+            "avatar_url": "string"
+        },
+        "created_at": "2019-08-24T14:15:22Z",
+        "email": "string"
+    }
+}

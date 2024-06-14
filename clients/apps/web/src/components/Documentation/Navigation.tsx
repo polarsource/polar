@@ -229,6 +229,9 @@ const APISections = () => {
       <NaviagtionItem href="/docs/api-reference/polar-sdk">
         Polar SDK
       </NaviagtionItem>
+      <NaviagtionItem href="/docs/api-reference/webhooks">
+        Webhooks
+      </NaviagtionItem>
       <NaviagtionItem href="/docs/api-reference/github-actions">
         GitHub Actions
       </NaviagtionItem>

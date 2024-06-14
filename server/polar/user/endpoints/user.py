@@ -10,12 +10,12 @@ from polar.integrations.github.service.organization import (
     github_organization as github_organization_service,
 )
 from polar.integrations.stripe.service import stripe as stripe_service
-from polar.kit.routing import APIRouter
 from polar.locker import Locker, get_locker
 from polar.models import User
 from polar.organization.schemas import Organization
 from polar.postgres import AsyncSession, get_db_session
 from polar.posthog import posthog
+from polar.routing import APIRouter
 from polar.user.service.user import user as user_service
 
 from ..schemas.user import (

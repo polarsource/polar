@@ -6,10 +6,10 @@ from pydantic import UUID4
 from polar.authz.service import Authz
 from polar.exceptions import NotPermitted, ResourceNotFound
 from polar.kit.pagination import ListResource, PaginationParamsQuery
-from polar.kit.routing import APIRouter
 from polar.models import Product
 from polar.models.product import SubscriptionTierType
 from polar.postgres import AsyncSession, get_db_session
+from polar.routing import APIRouter
 
 from . import auth
 from .schemas import Product as ProductSchema

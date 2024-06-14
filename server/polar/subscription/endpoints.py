@@ -12,13 +12,13 @@ from polar.enums import UserSignupType
 from polar.exceptions import ResourceNotFound, Unauthorized
 from polar.kit.csv import get_emails_from_csv, get_iterable_from_binary_io
 from polar.kit.pagination import ListResource, PaginationParams, PaginationParamsQuery
-from polar.kit.routing import APIRouter
 from polar.kit.sorting import Sorting, SortingGetter
 from polar.models import Subscription
 from polar.models.product import SubscriptionTierType
 from polar.organization.dependencies import ResolvedOrganization
 from polar.postgres import AsyncSession, get_db_session
 from polar.posthog import posthog
+from polar.routing import APIRouter
 from polar.user.service.user import user as user_service
 
 from ..product.service.product import product as product_service

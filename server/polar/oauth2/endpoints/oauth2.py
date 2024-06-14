@@ -6,10 +6,10 @@ from fastapi import Depends, Form, HTTPException, Request, Response
 from polar.auth.dependencies import WebUser, WebUserOrAnonymous
 from polar.auth.models import is_user
 from polar.kit.pagination import ListResource, PaginationParamsQuery
-from polar.kit.routing import APIRouter
 from polar.models import OAuth2Token, Organization
 from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession, get_db_session
+from polar.routing import APIRouter
 
 from ..authorization_server import (
     AuthorizationServer,

@@ -1,4 +1,4 @@
-from polar.kit.routing import APIRouter
+from polar.routing import APIRouter
 
 from .advertisement import router as advertisement_router
 from .benefit import router as benefit_router

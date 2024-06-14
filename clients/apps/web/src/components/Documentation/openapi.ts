@@ -10,7 +10,9 @@ export const fetchSchema = async (): Promise<OpenAPIV3_1.Document> => {
   let schema = openapiSchema as any
   // Fetch the schema from the server in development
   if (CONFIG.ENVIRONMENT === 'development') {
-    const schemaResponse = await fetch(`${CONFIG.BASE_URL}/openapi.json`)
+    const schemaResponse = await fetch(`${CONFIG.BASE_URL}/openapi.json`, {
+      cache: 'no-store',
+    })
     schema = await schemaResponse.json()
   }
   return new Promise((resolve) =>

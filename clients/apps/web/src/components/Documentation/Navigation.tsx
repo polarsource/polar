@@ -71,7 +71,7 @@ export const DocumentationPageSidebar = () => {
             API Reference
           </NaviagtionItem>
         </li>
-        <li>
+        <li className="hidden">
           <NaviagtionItem
             icon={<DescriptionOutlined fontSize="inherit" />}
             href="/docs/guides"

@@ -122,7 +122,7 @@ const items = [
               />
               <img
                 className="dark:border-polar-700 rounded-2xl border border-gray-100"
-                srcSet={`/assets/landing/fund.svg`}
+                srcSet={`/assets/landing/fund_dark.svg`}
               />
             </picture>
           </FeatureItem>
@@ -223,7 +223,7 @@ const items = [
               />
               <img
                 className="dark:border-polar-700 rounded-2xl border border-gray-100"
-                srcSet={`/assets/landing/sales.png`}
+                srcSet={`/assets/landing/sales_dark.png`}
               />
             </picture>
           </FeatureItem>

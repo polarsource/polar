@@ -6,20 +6,19 @@ import Link from 'next/link'
 export const Hero = () => {
   return (
     <Section
-      className="flex w-full flex-col gap-y-12 py-24"
+      className="flex w-full flex-col gap-y-12 py-32"
       wrapperClassName="relative isolate"
     >
       <div
         className="absolute inset-0"
         style={{
-          backgroundImage:
-            'radial-gradient(rgba(255,255,255,.2) 3%, transparent 3%)',
-          backgroundPosition: '0 0',
-          backgroundSize: '30px 30px',
+          backgroundImage: 'url(/assets/landing/circles.svg)',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
         }}
       />
       <div className="z-20 flex flex-col gap-y-16">
-        <h1 className="w-3/4 text-balance text-5xl text-gray-950 md:text-7xl md:leading-tight dark:text-white">
+        <h1 className="w-3/4 text-balance text-5xl leading-snug text-gray-950 md:text-7xl md:leading-tight dark:text-white">
           Earn a living on your passion projects
         </h1>
         <div className="flex flex-col gap-y-4">

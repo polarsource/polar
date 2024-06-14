@@ -9,8 +9,10 @@ import {
   Language,
   ReceiptLongOutlined,
   TrendingUpOutlined,
+  Webhook,
 } from '@mui/icons-material'
 import Link from 'next/link'
+import Avatar from 'polarkit/components/ui/atoms/avatar'
 import {
   Card,
   CardContent,
@@ -29,6 +31,7 @@ interface FeatureItemProps {
   title: string
   description: string
   link: string
+  learnMore?: boolean
 }
 
 const FeatureItem = ({
@@ -36,6 +39,7 @@ const FeatureItem = ({
   icon,
   description,
   link,
+  learnMore = true,
   className,
   children,
 }: PropsWithChildren<FeatureItemProps>) => {
@@ -59,10 +63,12 @@ const FeatureItem = ({
           <p className="dark:text-polar-200 h-full leading-relaxed text-gray-500 group-hover:text-black dark:group-hover:text-white">
             {description}
           </p>
-          <div className="dark:text-polar-200 flex flex-row items-center gap-x-2 text-sm transition-colors group-hover:text-blue-500 dark:group-hover:text-white">
-            <span>Learn More</span>
-            <ArrowForwardOutlined fontSize="inherit" />
-          </div>
+          {learnMore && (
+            <div className="dark:text-polar-200 flex flex-row items-center gap-x-2 text-sm transition-colors group-hover:text-blue-500 dark:group-hover:text-white">
+              <span>Learn More</span>
+              <ArrowForwardOutlined fontSize="inherit" />
+            </div>
+          )}
         </CardContent>
         {children && (
           <CardFooter className="justify-betwee mt-4 flex flex-row items-center">
@@ -80,7 +86,15 @@ const items = [
     description:
       'Polar has a wide array of monetization tools for your project, from one-time payments & recurring subscriptions to donations.',
     content: (
-      <div className="flex flex-col gap-y-12">
+      <div className="flex flex-col gap-y-24">
+        <div className="flex flex-col gap-y-4">
+          <h2 className="text-5xl leading-normal">
+            From first donation to IPO
+          </h2>
+          <h3 className="dark:text-polar-600 text-4xl leading-normal text-gray-500">
+            With a wide array of funding tools for your project
+          </h3>
+        </div>
         <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
           <FeatureItem
             className="md:row-span-2"
@@ -126,6 +140,58 @@ const items = [
             link="#benefits"
           />
         </div>
+
+        <div className="flex flex-col divide-y overflow-hidden rounded-3xl border md:flex-row md:divide-x md:divide-y-0">
+          {[
+            {
+              name: 'Serenity OS',
+              username: '@serenityos',
+              avatar: 'https://avatars.githubusercontent.com/u/50811782?v=4',
+              text: 'Using Polar with Issue Funding to promote rewards for contributors.',
+              link: 'https://polar.sh/serenityos',
+            },
+            {
+              name: 'Capawesome',
+              username: '@capawesome-team',
+              avatar: 'https://avatars.githubusercontent.com/u/105555861?v=4',
+              text: 'Offering early access to sponsors using Subscription Tiers.',
+              link: 'https://polar.sh/capawesome-team',
+            },
+            {
+              name: 'Your Next Store',
+              username: '@yournextstore',
+              avatar: 'https://avatars.githubusercontent.com/u/159799280?v=4',
+              text: 'Selling e-commerce starter kit using Polar Products & Subscriptions.',
+              link: 'https://polar.sh/yournextstore',
+            },
+          ].map((testamonial) => (
+            <Link
+              key={testamonial.name}
+              className="hover:bg-gray-75 dark:hover:bg-polar-900 group relative flex flex-col transition-colors md:w-1/3"
+              href={testamonial.link}
+              target="_blank"
+            >
+              <div className=" flex h-full w-full flex-col gap-y-8 rounded-none border-none p-10">
+                <div className="flex flex-row items-center gap-4 space-y-0">
+                  <Avatar
+                    className="h-12 w-12"
+                    avatar_url={testamonial.avatar}
+                    name={testamonial.name}
+                  />
+                  <div className="flex flex-col">
+                    <span>{testamonial.name}</span>
+                    <span className="dark:text-polar-500 text-sm text-gray-500">
+                      {testamonial.username}
+                    </span>
+                  </div>
+                </div>
+                <div className="flex h-full flex-col gap-y-4 leading-relaxed">
+                  {testamonial.text}
+                </div>
+              </div>
+            </Link>
+          ))}
+        </div>
       </div>
     ),
   },
@@ -136,11 +202,11 @@ const items = [
     content: (
       <div className="flex flex-col gap-y-24">
         <div className="flex flex-col gap-y-4">
-          <h2 className="text-4xl">From passion to business</h2>
-          <p className="dark:text-polar-200 text-xl text-gray-500">
+          <h2 className="text-5xl leading-normal">From passion to business</h2>
+          <h3 className="dark:text-polar-600 text-4xl leading-normal text-gray-500">
             Unlock the full potential of your project with insights to your
             sales
-          </p>
+          </h3>
         </div>
         <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
           <FeatureItem
@@ -166,30 +232,25 @@ const items = [
             title="Public Page"
             description="A home for your profile on Polar. Showcase your projects, crowdfunded issues, and more."
             link="#"
+            learnMore={false}
           />
           <FeatureItem
-            className="md:row-span-2"
+            icon={<Webhook />}
+            title="Webhooks"
+            description="Integrate with the Polar API for real-time updates on funding events."
+            link="/docs/api-reference/webhooks"
+          />
+          <FeatureItem
             icon={<ReceiptLongOutlined />}
             title="Newsletters"
             description="Reach your community with insightful newsletter posts - using an MDX-powered editor."
             link="/docs/overview/issue-funding/reward-contributors"
-          >
-            <picture>
-              <source
-                media="(prefers-color-scheme: dark)"
-                srcSet={`/assets/landing/newsletter_dark.png`}
-              />
-              <img
-                className="dark:border-polar-700 rounded-2xl border border-gray-100"
-                srcSet={`/assets/landing/newsletter.png`}
-              />
-            </picture>
-          </FeatureItem>
+          />
           <FeatureItem
             icon={<AccountBalanceOutlined />}
             title="Payouts"
             description="Withdraw your earnings with ease. Supporting Stripe & Open Collective."
-            link="#"
+            link="/docs/overview/payments-taxes"
           />
           <FeatureItem
             icon={<ReceiptLongOutlined />}
@@ -205,22 +266,8 @@ const items = [
 
 export const Journey = () => {
   return (
-    <Section className="gap-32 gap-y-24">
-      <div className="flex flex-col gap-32 gap-y-32">
-        <div className="flex flex-col gap-y-2 text-5xl leading-normal">
-          <h3>From first donation to IPO</h3>
-          <h3 className="dark:text-polar-600 text-gray-500">
-            With a wide array of funding tools for your project
-          </h3>
-        </div>
-        <div className="flex flex-col gap-32">
-          {items.map((item) => (
-            <div className="flex w-full flex-col" key={item.title}>
-              {item.content}
-            </div>
-          ))}
-        </div>
-      </div>
+    <Section className="flex flex-col gap-y-24">
+      {items.map((item) => item.content)}
     </Section>
   )
 }

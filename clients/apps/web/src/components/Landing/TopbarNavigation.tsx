@@ -62,32 +62,27 @@ const PlatformPopover = () => {
               <PopoverLinkItem
                 title="Issue Funding & Rewards"
                 description="Crowdfunded GitHub issues on steroids"
-                link="/issue-funding"
+                link="/docs/overview/issue-funding/overview"
               />
               <PopoverLinkItem
                 title="Donations"
                 description="A tip jar for your projects"
-                link="/donations"
+                link="/docs/overview/donations"
               />
               <PopoverLinkItem
                 title="Subscriptions"
                 description="Recurring funding in exchange for benefits"
-                link="/subscriptions"
+                link="/docs/overview/subscriptions"
               />
               <PopoverLinkItem
                 title="Products"
                 description="Sell digital products & services"
-                link="/products"
+                link="/polarsource/posts/introducing-digital-products"
               />
               <PopoverLinkItem
                 title="Newsletters"
                 description="Reach your community with insightful posts"
-                link="/newsletters"
-              />
-              <PopoverLinkItem
-                title="Public Page"
-                description="A home for your profile on Polar"
-                link="/newsletters"
+                link="/docs/overview/newsletters"
               />
             </div>
           </div>
@@ -97,37 +92,37 @@ const PlatformPopover = () => {
               <PopoverLinkItem
                 title="Introducing Benefits"
                 description="Offer exclusive benefits to your supporters"
-                link="#"
+                link="/#benefits"
               />
               <PopoverLinkItem
                 title="Private GitHub Repositories"
                 description="Grant access to private repositories"
-                link="#"
+                link="/#benefits"
               />
               <PopoverLinkItem
                 title="Discord Server Access"
                 description="Automatic Discord role assignment"
-                link="#"
+                link="/#benefits"
               />
               <PopoverLinkItem
                 title="File Downloads"
                 description="Access to exclusive file downloads"
-                link="#"
+                link="/#benefits"
               />
               <PopoverLinkItem
                 title="Advertisements"
                 description="Promote your supporters in READMEs & Newsletters"
-                link="#"
+                link="/#benefits"
               />
               <PopoverLinkItem
                 title="Premium Newsletters"
                 description="Early & private access to newsletters"
-                link="#"
+                link="/#benefits"
               />
               <PopoverLinkItem
                 title="Custom"
                 description="Offer custom benefits for your special usecase"
-                link="#"
+                link="/#benefits"
               />
             </div>
           </div>
@@ -218,7 +213,7 @@ const DocumentationPopover = () => {
 
 export const TopbarNavigation = () => {
   return (
-    <div className="absolute left-1/2 flex -translate-x-1/2 flex-row items-center gap-x-4 text-sm">
+    <div className="absolute left-1/2 hidden -translate-x-1/2 flex-row items-center gap-x-4 text-sm md:flex">
       <PlatformPopover />
       <DocumentationPopover />
       <Link

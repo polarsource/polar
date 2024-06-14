@@ -18,7 +18,7 @@ export const Hero = () => {
         }}
       />
       <div className="z-20 flex flex-col gap-y-16">
-        <h1 className="w-3/4 text-balance text-5xl leading-snug text-gray-950 md:text-7xl md:leading-tight dark:text-white">
+        <h1 className="text-balance text-5xl leading-snug text-gray-950 md:w-3/4 md:text-7xl md:leading-tight dark:text-white">
           Earn a living on your passion projects
         </h1>
         <div className="flex flex-col gap-y-4">

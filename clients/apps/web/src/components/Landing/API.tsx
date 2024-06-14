@@ -31,8 +31,8 @@ export const API = () => {
         </div>
       </div>
       <div className="flex flex-col items-center gap-y-12 text-center md:hidden">
-        <h1 className="text-5xl leading-snug">
-          We&apos;re out of sales pitches
+        <h1 className="text-2xl leading-snug md:text-5xl">
+          We&apos;ve run out of sales pitches
         </h1>
         <div className="flex flex-col gap-4 md:flex-row md:items-center">
           <GithubLoginButton

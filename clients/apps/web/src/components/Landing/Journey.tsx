@@ -88,7 +88,9 @@ const items = [
     content: (
       <div className="flex flex-col gap-y-24">
         <div className="flex flex-col gap-y-4">
-          <h2 className="text-5xl leading-snug">From first donation to IPO</h2>
+          <h2 className="text-4xl leading-snug md:text-5xl">
+            From first donation to IPO
+          </h2>
           <h3 className="dark:text-polar-600 text-4xl leading-snug text-gray-500">
             With a wide array of funding tools for your project
           </h3>
@@ -200,7 +202,9 @@ const items = [
     content: (
       <div className="flex flex-col gap-y-24">
         <div className="flex flex-col gap-y-4">
-          <h2 className="text-5xl leading-snug">From passion to business</h2>
+          <h2 className="text-4xl leading-snug md:text-5xl">
+            From passion to business
+          </h2>
           <h3 className="dark:text-polar-600 text-4xl leading-snug text-gray-500">
             Unlock the full potential of your project with insights to your
             sales

@@ -21,7 +21,7 @@ export default function Layout({ children }: PropsWithChildren) {
     <div className="flex w-full flex-col items-center">
       <Section
         wrapperClassName="sticky top-0 z-30 dark:bg-polar-950 bg-white"
-        className="py-8"
+        className="py-4 md:py-8"
       >
         <LandingPageTopbar />
       </Section>

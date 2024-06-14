@@ -4,6 +4,7 @@ import { Testamonials } from '@/components/Landing/Testamonials'
 import { Separator } from 'polarkit/components/ui/separator'
 import { API } from './API'
 import { Benefits } from './Benefits'
+import { Pricing } from './Pricing'
 
 export default function Page() {
   return (
@@ -12,6 +13,8 @@ export default function Page() {
       <Journey />
       <Separator className="w-screen" />
       <Testamonials />
+      <Separator className="w-screen" />
+      <Pricing />
       <Separator className="w-screen" />
       <Benefits />
       <Separator className="w-screen" />

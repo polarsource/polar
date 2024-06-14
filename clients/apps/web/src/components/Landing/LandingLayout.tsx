@@ -35,7 +35,7 @@ const LandingPageTopbar = () => {
   return (
     <div className="relative flex flex-row items-center justify-between bg-transparent">
       <TopbarNavigation />
-      <BrandingMenu className="md:block" size={50} />
+      <BrandingMenu className="hidden md:block" size={50} />
       <BrandingMenu className="md:hidden" />
       <div className="flex flex-row items-center gap-x-6">
         <Link href="/login">

@@ -4,7 +4,6 @@ import {
   TuneOutlined,
   VerifiedOutlined,
 } from '@mui/icons-material'
-import Link from 'next/link'
 import { twMerge } from 'tailwind-merge'
 import { DiscordIcon } from '../Benefit/utils'
 import GitHubIcon from '../Icons/GitHubIcon'
@@ -14,7 +13,6 @@ interface BenefitCardProps {
   className?: string
   title: string
   description: string
-  link: string
   icon: JSX.Element
 }
 
@@ -26,25 +24,32 @@ const BenefitCard = ({
   link,
 }: BenefitCardProps) => {
   return (
-    <Link
+    <div
       className={twMerge(
-        'hover:bg-gray-75 dark:hover:bg-polar-900 flex flex-col justify-between gap-y-8 p-8 transition-colors',
+        'hover:bg-gray-75 dark:hover:bg-polar-900 dark:bg-polar-950 flex flex-col justify-between gap-y-8 p-8 transition-colors',
         className,
       )}
-      href={link}
     >
       <span>{icon}</span>
       <div className="flex flex-col gap-y-2">
         <h3>{title}</h3>
         <p className="dark:text-polar-200 text-gray-500">{description}</p>
       </div>
-    </Link>
+    </div>
   )
 }
 
 export const Benefits = () => {
   return (
     <Section id="benefits" className="gap-y-24">
+      <div
+        className="absolute inset-0 -z-10"
+        style={{
+          backgroundImage: 'url(/assets/landing/circles.svg)',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+        }}
+      />
       <div className="flex flex-col items-center gap-y-4">
         <h1 className="text-center text-4xl">Benefits</h1>
         <p className="dark:text-polar-200 text-xl text-gray-500">
@@ -57,14 +62,12 @@ export const Benefits = () => {
           icon={<GitHubIcon width={30} height={30} />}
           title="Private GitHub Repositories"
           description="Grant access based on Subscription status - early access, sponsorware, courses & so much more."
-          link="#"
         />
         <BenefitCard
           className="border-b md:border-r"
           icon={<DiscordIcon size={30} />}
           title="Automated Discord Roles"
           description="Give your supporters access to exclusive Discord roles based on how much they support with each month."
-          link="#"
         />
         <BenefitCard
           className="border-b"
@@ -73,27 +76,23 @@ export const Benefits = () => {
           }
           title="File Downloads"
           description="Want to sell digital goods? With file downloads, you can grant supporters access as long as they subscribe."
-          link="#"
         />
         <BenefitCard
           className="border-b md:border-b-0 md:border-r"
           icon={<StickyNote2Outlined className="text-4xl" fontSize="inherit" />}
           title="Premium & Early Newsletters"
           description="Offer your paid subscribers early sneak peaks & educational content."
-          link="#"
         />
         <BenefitCard
           className="border-b md:border-b-0 md:border-r"
           icon={<VerifiedOutlined className="text-4xl" fontSize="inherit" />}
           title="Sponsor Promotion"
           description="Logo promotions on README, sites & newsletters. Polar automates it."
-          link="#"
         />
         <BenefitCard
           icon={<TuneOutlined className="text-4xl" fontSize="inherit" />}
           title="Custom Benefit"
           description="Setup your very own custom benefit - and share private notes such as email addresses, links & more."
-          link="#"
         />
       </div>
     </Section>

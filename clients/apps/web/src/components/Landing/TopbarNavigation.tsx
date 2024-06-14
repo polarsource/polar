@@ -218,6 +218,12 @@ export const TopbarNavigation = () => {
       <DocumentationPopover />
       <Link
         className="dark:hover:bg-polar-800 rounded-full px-4 py-2"
+        href="/#pricing"
+      >
+        Pricing
+      </Link>
+      <Link
+        className="dark:hover:bg-polar-800 rounded-full px-4 py-2"
         href="https://github.com/polarsource/polar"
         target="_blank"
       >

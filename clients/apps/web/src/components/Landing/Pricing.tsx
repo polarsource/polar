@@ -36,7 +36,7 @@ const PriceItem = ({
 
 export const Pricing = () => {
   return (
-    <Section className="gap-y-24">
+    <Section id="pricing" className="gap-y-24">
       <h1 className="text-center text-4xl">Pricing</h1>
       <div className="flex flex-col divide-y overflow-hidden rounded-3xl border md:flex-row md:divide-x md:divide-y-0">
         <PriceItem

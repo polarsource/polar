@@ -6,7 +6,7 @@ import { MOCKED_PRODUCTS } from '../utils'
 
 export const APIFirst = () => {
   return (
-    <div className="relative">
+    <div className="relative hidden md:flex">
       <SubscriptionTierCard
         className="max-w-[300px]"
         subscriptionTier={MOCKED_PRODUCTS[1]}

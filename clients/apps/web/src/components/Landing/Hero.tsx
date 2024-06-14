@@ -23,7 +23,7 @@ export const Hero = () => {
         </h1>
         <div className="flex flex-col gap-y-4">
           <p className="text-balance text-xl leading-loose">
-            With a funding & monetization platform for open source & indie
+            Polar is a funding & monetization platform for open source & indie
             developers
           </p>
         </div>

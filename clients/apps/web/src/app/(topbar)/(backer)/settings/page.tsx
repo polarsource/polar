@@ -64,10 +64,10 @@ export default function Page() {
         </div>
 
         <div className="flex flex-col gap-y-4">
-          <Section>
+          <Section id="pat">
             <SectionDescription
-              title="Access Tokens"
-              description="Manage access tokens which can be used to authenticate you with the Polar SDK."
+              title="Personal Access Tokens"
+              description="Manage access tokens which can be used to authenticate you with the Polar API."
             />
             <AccessTokensSettings />
           </Section>
@@ -94,7 +94,7 @@ export default function Page() {
             </>
           ) : null}
 
-          <Section>
+          <Section id="oauth">
             <SectionDescription
               title="OAuth Applications"
               description="Your configured OAuth Applications."

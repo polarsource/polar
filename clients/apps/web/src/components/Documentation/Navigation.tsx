@@ -226,6 +226,9 @@ const APISections = () => {
       <NaviagtionItem href="/docs/api-reference/introduction">
         Introduction
       </NaviagtionItem>
+      <NaviagtionItem href="/docs/api-reference/authentication">
+        Authentication
+      </NaviagtionItem>
       <NaviagtionItem href="/docs/api-reference/polar-sdk">
         Polar SDK
       </NaviagtionItem>
@@ -249,7 +252,7 @@ const APIReferenceSections = () => {
               <NaviagtionItem
                 key={endpoint.path + endpoint.method}
                 className="m-0 bg-transparent p-0 text-sm dark:bg-transparent"
-                href={`/docs/api-reference/${endpoint.path}/${endpoint.method}`}
+                href={`/docs/api-reference${endpoint.path}/${endpoint.method}`}
                 active={(pathname) => {
                   const hasTrailingSlash = endpoint.path.endsWith('/')
                   const withTrailingSlash = hasTrailingSlash

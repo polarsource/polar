@@ -14,9 +14,9 @@ export default function Page() {
       <Separator className="w-screen" />
       <Testamonials />
       <Separator className="w-screen" />
-      <Pricing />
-      <Separator className="w-screen" />
       <Benefits />
+      <Separator className="w-screen" />
+      <Pricing />
       <Separator className="w-screen" />
       <API />
     </div>

@@ -21,7 +21,6 @@ const BenefitCard = ({
   title,
   description,
   icon,
-  link,
 }: BenefitCardProps) => {
   return (
     <div

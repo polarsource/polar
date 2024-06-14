@@ -189,6 +189,16 @@ const DocumentationPopover = () => {
                 link="/docs/api-reference/introduction"
               />
               <PopoverLinkItem
+                title="OAuth"
+                description="Authentication with the Polar API"
+                link="/docs/api-reference/authentication"
+              />
+              <PopoverLinkItem
+                title="Webhooks"
+                description="Integrate Polar with your application"
+                link="/docs/api-reference/webhooks"
+              />
+              <PopoverLinkItem
                 title="Polar SDK"
                 description="Our very own TypeScript SDK"
                 link="/docs/api-reference/polar-sdk"
@@ -196,11 +206,6 @@ const DocumentationPopover = () => {
               <PopoverLinkItem
                 title="GitHub Actions"
                 description="Use Polar in your CI/CD pipeline"
-                link="/docs/api-reference/github-actions"
-              />
-              <PopoverLinkItem
-                title="OAuth"
-                description="Authentication with the Polar API"
                 link="/docs/api-reference/github-actions"
               />
             </div>

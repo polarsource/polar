@@ -99,7 +99,7 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
         grant = await self.get_by_benefit_and_scope(session, user, benefit, **scope)
 
         if grant is None:
-            grant = BenefitGrant(user=user, benefit=benefit, **scope)
+            grant = BenefitGrant(user=user, benefit=benefit, properties={}, **scope)
             session.add(grant)
         elif grant.is_granted:
             return grant
@@ -151,7 +151,7 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
         grant = await self.get_by_benefit_and_scope(session, user, benefit, **scope)
 
         if grant is None:
-            grant = BenefitGrant(user=user, benefit=benefit, **scope)
+            grant = BenefitGrant(user=user, benefit=benefit, properties={}, **scope)
             session.add(grant)
         elif grant.is_revoked:
             return grant

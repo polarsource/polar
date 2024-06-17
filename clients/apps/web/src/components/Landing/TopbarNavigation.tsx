@@ -43,7 +43,7 @@ const PlatformPopover = () => {
   return (
     <Popover open={isOpen} onOpenChange={setIsOpen}>
       <PopoverTrigger
-        className="dark:hover:bg-polar-800 data-[state=open]:bg-polar-800 rounded-full px-4 py-2 focus-within:outline-0"
+        className="dark:hover:bg-polar-800 dark:data-[state=open]:bg-polar-800 rounded-full px-4 py-2 focus-within:outline-0 hover:bg-gray-100 data-[state=open]:bg-gray-100"
         onMouseEnter={() => {
           togglePopover(true)
         }}
@@ -62,7 +62,7 @@ const PlatformPopover = () => {
               <PopoverLinkItem
                 title="Issue Funding & Rewards"
                 description="Crowdfunded GitHub issues on steroids"
-                link="/docs/overview/issue-funding/overview"
+                link="/issue-funding"
               />
               <PopoverLinkItem
                 title="Donations"
@@ -142,7 +142,7 @@ const DocumentationPopover = () => {
   return (
     <Popover open={isOpen} onOpenChange={setIsOpen}>
       <PopoverTrigger
-        className="dark:hover:bg-polar-800 data-[state=open]:bg-polar-800 rounded-full px-4 py-2 focus-within:outline-0"
+        className="dark:hover:bg-polar-800 dark:data-[state=open]:bg-polar-800 rounded-full px-4 py-2 focus-within:outline-0 hover:bg-gray-100 data-[state=open]:bg-gray-100"
         onMouseEnter={() => {
           togglePopover(true)
         }}
@@ -222,13 +222,13 @@ export const TopbarNavigation = () => {
       <PlatformPopover />
       <DocumentationPopover />
       <Link
-        className="dark:hover:bg-polar-800 rounded-full px-4 py-2"
+        className="dark:hover:bg-polar-800 rounded-full px-4 py-2 hover:bg-gray-100"
         href="/#pricing"
       >
         Pricing
       </Link>
       <Link
-        className="dark:hover:bg-polar-800 rounded-full px-4 py-2"
+        className="dark:hover:bg-polar-800 rounded-full px-4 py-2 hover:bg-gray-100"
         href="https://github.com/polarsource/polar"
         target="_blank"
       >

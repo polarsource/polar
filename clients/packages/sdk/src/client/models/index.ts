@@ -11342,17 +11342,23 @@ export interface Subscription {
     price?: SubscriptionPrice;
 }
 /**
- * 
+ * Request schema for creating a subscription by email.
  * @export
  * @interface SubscriptionCreateEmail
  */
 export interface SubscriptionCreateEmail {
     /**
-     * 
+     * The email address of the user.
      * @type {string}
      * @memberof SubscriptionCreateEmail
      */
     email: string;
+    /**
+     * The ID of the product. **Must be the free subscription tier**.
+     * @type {string}
+     * @memberof SubscriptionCreateEmail
+     */
+    product_id: string;
 }
 /**
  * @type SubscriptionPrice
@@ -11420,7 +11426,7 @@ export interface SubscriptionUser {
     avatar_url?: string;
 }
 /**
- * 
+ * Result of a subscription import operation.
  * @export
  * @interface SubscriptionsImported
  */
@@ -11431,50 +11437,6 @@ export interface SubscriptionsImported {
      * @memberof SubscriptionsImported
      */
     count: number;
-}
-/**
- * 
- * @export
- * @interface SubscriptionsStatistics
- */
-export interface SubscriptionsStatistics {
-    /**
-     * 
-     * @type {Array<SubscriptionsStatisticsPeriod>}
-     * @memberof SubscriptionsStatistics
-     */
-    periods: Array<SubscriptionsStatisticsPeriod>;
-}
-/**
- * 
- * @export
- * @interface SubscriptionsStatisticsPeriod
- */
-export interface SubscriptionsStatisticsPeriod {
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionsStatisticsPeriod
-     */
-    start_date: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof SubscriptionsStatisticsPeriod
-     */
-    end_date: string;
-    /**
-     * 
-     * @type {number}
-     * @memberof SubscriptionsStatisticsPeriod
-     */
-    subscribers: number;
-    /**
-     * 
-     * @type {number}
-     * @memberof SubscriptionsStatisticsPeriod
-     */
-    earnings: number;
 }
 /**
  * 

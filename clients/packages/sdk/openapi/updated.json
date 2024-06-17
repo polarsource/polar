@@ -34,6 +34,9 @@
                     {
                         "HTTPBearer": []
                     }
+                ],
+                "x-polar-allowed-subjects": [
+                    "User"
                 ]
             },
             "put": {
@@ -82,6 +85,9 @@
                     {
                         "HTTPBearer": []
                     }
+                ],
+                "x-polar-allowed-subjects": [
+                    "User"
                 ]
             }
         },
@@ -112,6 +118,9 @@
                     {
                         "HTTPBearer": []
                     }
+                ],
+                "x-polar-allowed-subjects": [
+                    "User"
                 ]
             }
         },
@@ -142,6 +151,9 @@
                     {
                         "HTTPBearer": []
                     }
+                ],
+                "x-polar-allowed-subjects": [
+                    "User"
                 ]
             }
         },
@@ -192,6 +204,9 @@
                     {
                         "HTTPBearer": []
                     }
+                ],
+                "x-polar-allowed-subjects": [
+                    "User"
                 ]
             }
         },
@@ -223,6 +238,9 @@
                     {
                         "HTTPBearer": []
                     }
+                ],
+                "x-polar-allowed-subjects": [
+                    "User"
                 ]
             }
         },
@@ -253,6 +271,9 @@
                     {
                         "HTTPBearer": []
                     }
+                ],
+                "x-polar-allowed-subjects": [
+                    "User"
                 ]
             }
         },
@@ -431,7 +452,10 @@
                             }
                         }
                     }
-                }
+                },
+                "x-polar-allowed-subjects": [
+                    "User"
+                ]
             }
         },
         "/api/v1/users/benefits/{id}": {
@@ -528,7 +552,10 @@
                             }
                         }
                     }
-                }
+                },
+                "x-polar-allowed-subjects": [
+                    "User"
+                ]
             }
         },
         "/api/v1/users/orders/": {
@@ -728,7 +755,10 @@
                             }
                         }
                     }
-                }
+                },
+                "x-polar-allowed-subjects": [
+                    "User"
+                ]
             }
         },
         "/api/v1/users/orders/{id}": {
@@ -794,7 +824,10 @@
                             }
                         }
                     }
-                }
+                },
+                "x-polar-allowed-subjects": [
+                    "User"
+                ]
             }
         },
         "/api/v1/users/orders/{id}/invoice": {
@@ -860,7 +893,10 @@
                             }
                         }
                     }
-                }
+                },
+                "x-polar-allowed-subjects": [
+                    "User"
+                ]
             }
         },
         "/api/v1/users/subscriptions/": {
@@ -1041,7 +1077,10 @@
                             }
                         }
                     }
-                }
+                },
+                "x-polar-allowed-subjects": [
+                    "User"
+                ]
             },
             "post": {
                 "tags": [
@@ -1111,7 +1150,11 @@
                             }
                         }
                     }
-                }
+                },
+                "x-polar-allowed-subjects": [
+                    "User",
+                    "Anonymous"
+                ]
             }
         },
         "/api/v1/users/subscriptions/{id}": {
@@ -1177,7 +1220,10 @@
                             }
                         }
                     }
-                }
+                },
+                "x-polar-allowed-subjects": [
+                    "User"
+                ]
             },
             "patch": {
                 "tags": [
@@ -1261,7 +1307,10 @@
                             }
                         }
                     }
-                }
+                },
+                "x-polar-allowed-subjects": [
+                    "User"
+                ]
             },
             "delete": {
                 "tags": [
@@ -1335,7 +1384,10 @@
                             }
                         }
                     }
-                }
+                },
+                "x-polar-allowed-subjects": [
+                    "User"
+                ]
             }
         },
         "/api/v1/users/advertisements/": {
@@ -1438,7 +1490,10 @@
                             }
                         }
                     }
-                }
+                },
+                "x-polar-allowed-subjects": [
+                    "User"
+                ]
             },
             "post": {
                 "tags": [
@@ -1488,7 +1543,10 @@
                             }
                         }
                     }
-                }
+                },
+                "x-polar-allowed-subjects": [
+                    "User"
+                ]
             }
         },
         "/api/v1/users/advertisements/{id}": {
@@ -1554,7 +1612,10 @@
                             }
                         }
                     }
-                }
+                },
+                "x-polar-allowed-subjects": [
+                    "User"
+                ]
             },
             "patch": {
                 "tags": [
@@ -1628,7 +1689,10 @@
                             }
                         }
                     }
-                }
+                },
+                "x-polar-allowed-subjects": [
+                    "User"
+                ]
             },
             "delete": {
                 "tags": [
@@ -1693,7 +1757,10 @@
                             }
                         }
                     }
-                }
+                },
+                "x-polar-allowed-subjects": [
+                    "User"
+                ]
             }
         },
         "/api/v1/users/advertisements/{id}/enable": {
@@ -1762,7 +1829,10 @@
                             }
                         }
                     }
-                }
+                },
+                "x-polar-allowed-subjects": [
+                    "User"
+                ]
             }
         },
         "/api/v1/users/downloadables/": {
@@ -1870,7 +1940,10 @@
                             }
                         }
                     }
-                }
+                },
+                "x-polar-allowed-subjects": [
+                    "User"
+                ]
             }
         },
         "/api/v1/users/downloadables/{token}": {
@@ -1933,7 +2006,10 @@
                             }
                         }
                     }
-                }
+                },
+                "x-polar-allowed-subjects": [
+                    "User"
+                ]
             }
         },
         "/api/v1/integrations/github/authorize": {
@@ -2518,7 +2594,10 @@
                             }
                         }
                     }
-                }
+                },
+                "x-polar-allowed-subjects": [
+                    "User"
+                ]
             }
         },
         "/api/v1/integrations/github_repository_benefit/user/callback": {
@@ -2621,7 +2700,10 @@
                             }
                         }
                     }
-                }
+                },
+                "x-polar-allowed-subjects": [
+                    "User"
+                ]
             }
         },
         "/api/v1/integrations/github_repository_benefit/user/repositories": {
@@ -2651,6 +2733,9 @@
                     {
                         "HTTPBearer": []
                     }
+                ],
+                "x-polar-allowed-subjects": [
+                    "User"
                 ]
             }
         },
@@ -2678,6 +2763,9 @@
                     {
                         "HTTPBearer": []
                     }
+                ],
+                "x-polar-allowed-subjects": [
+                    "User"
                 ]
             }
         },
@@ -2705,6 +2793,9 @@
                     {
                         "HTTPBearer": []
                     }
+                ],
+                "x-polar-allowed-subjects": [
+                    "User"
                 ]
             }
         },
@@ -2760,7 +2851,10 @@
                             }
                         }
                     }
-                }
+                },
+                "x-polar-allowed-subjects": [
+                    "User"
+                ]
             }
         },
         "/api/v1/integrations/discord/bot/callback": {
@@ -2863,7 +2957,10 @@
                             }
                         }
                     }
-                }
+                },
+                "x-polar-allowed-subjects": [
+                    "User"
+                ]
             }
         },
         "/api/v1/integrations/discord/user/authorize": {
@@ -2918,7 +3015,10 @@
                             }
                         }
                     }
-                }
+                },
+                "x-polar-allowed-subjects": [
+                    "User"
+                ]
             }
         },
         "/api/v1/integrations/discord/user/callback": {
@@ -3021,7 +3121,10 @@
                             }
                         }
                     }
-                }
+                },
+                "x-polar-allowed-subjects": [
+                    "User"
+                ]
             }
         },
         "/api/v1/integrations/discord/guild/lookup": {
@@ -3071,7 +3174,10 @@
                             }
                         }
                     }
-                }
+                },
+                "x-polar-allowed-subjects": [
+                    "User"
+                ]
             }
         },
         "/api/v1/backoffice/pledges": {
@@ -3104,6 +3210,9 @@
                     {
                         "HTTPBearer": []
                     }
+                ],
+                "x-polar-allowed-subjects": [
+                    "User"
                 ]
             }
         },
@@ -3162,7 +3271,10 @@
                             }
                         }
                     }
-                }
+                },
+                "x-polar-allowed-subjects": [
+                    "User"
+                ]
             }
         },
         "/api/v1/backoffice/rewards/pending": {
@@ -3191,6 +3303,9 @@
                     {
                         "HTTPBearer": []
                     }
+                ],
+                "x-polar-allowed-subjects": [
+                    "User"
                 ]
             }
         },
@@ -3242,7 +3357,10 @@
                             }
                         }
                     }
-                }
+                },
+                "x-polar-allowed-subjects": [
+                    "User"
+                ]
             }
         },
         "/api/v1/backoffice/pledges/approve": {
@@ -3291,6 +3409,9 @@
                     {
                         "HTTPBearer": []
                     }
+                ],
+                "x-polar-allowed-subjects": [
+                    "User"
                 ]
             }
         },
@@ -3342,7 +3463,10 @@
                             }
                         }
                     }
-                }
+                },
+                "x-polar-allowed-subjects": [
+                    "User"
+                ]
             }
         },
         "/api/v1/backoffice/pledges/mark_disputed/{pledge_id}": {
@@ -3393,7 +3517,10 @@
                             }
                         }
                     }
-                }
+                },
+                "x-polar-allowed-subjects": [
+                    "User"
+                ]
             }
         },
         "/api/v1/backoffice/badge": {
@@ -3442,6 +3569,9 @@
                     {
                         "HTTPBearer": []
                     }
+                ],
+                "x-polar-allowed-subjects": [
+                    "User"
                 ]
             }
         },
@@ -3502,7 +3632,10 @@
                             }
                         }
                     }
-                }
+                },
+                "x-polar-allowed-subjects": [
+                    "User"
+                ]
             }
         },
         "/api/v1/dashboard/personal": {
@@ -3615,7 +3748,10 @@
                             }
                         }
                     }
-                }
+                },
+                "x-polar-allowed-subjects": [
+                    "User"
+                ]
             }
         },
         "/api/v1/dashboard/{platform}/{org_name}": {
@@ -3761,7 +3897,10 @@
                             }
                         }
                     }
-                }
+                },
+                "x-polar-allowed-subjects": [
+                    "User"
+                ]
             }
         },
         "/api/v1/dashboard/dummy_do_not_use": {
@@ -3969,7 +4108,11 @@
                             }
                         }
                     }
-                }
+                },
+                "x-polar-allowed-subjects": [
+                    "User",
+                    "Anonymous"
+                ]
             }
         },
         "/api/v1/funding/lookup": {
@@ -4020,7 +4163,11 @@
                             }
                         }
                     }
-                }
+                },
+                "x-polar-allowed-subjects": [
+                    "User",
+                    "Anonymous"
+                ]
             }
         },
         "/api/v1/magic_link/request": {
@@ -4123,7 +4270,11 @@
                             }
                         }
                     }
-                }
+                },
+                "x-polar-allowed-subjects": [
+                    "User",
+                    "Anonymous"
+                ]
             }
         },
         "/api/v1/notifications": {
@@ -4152,6 +4303,9 @@
                     {
                         "HTTPBearer": []
                     }
+                ],
+                "x-polar-allowed-subjects": [
+                    "User"
                 ]
             }
         },
@@ -4199,6 +4353,9 @@
                     {
                         "HTTPBearer": []
                     }
+                ],
+                "x-polar-allowed-subjects": [
+                    "User"
                 ]
             }
         },
@@ -4229,6 +4386,9 @@
                     {
                         "HTTPBearer": []
                     }
+                ],
+                "x-polar-allowed-subjects": [
+                    "User"
                 ]
             }
         },
@@ -4307,7 +4467,11 @@
                             }
                         }
                     }
-                }
+                },
+                "x-polar-allowed-subjects": [
+                    "User",
+                    "Anonymous"
+                ]
             }
         },
         "/api/v1/repositories/lookup": {
@@ -4378,7 +4542,11 @@
                             }
                         }
                     }
-                }
+                },
+                "x-polar-allowed-subjects": [
+                    "User",
+                    "Anonymous"
+                ]
             }
         },
         "/api/v1/repositories/{id}": {
@@ -4433,7 +4601,11 @@
                             }
                         }
                     }
-                }
+                },
+                "x-polar-allowed-subjects": [
+                    "User",
+                    "Anonymous"
+                ]
             },
             "patch": {
                 "tags": [
@@ -4496,7 +4668,10 @@
                             }
                         }
                     }
-                }
+                },
+                "x-polar-allowed-subjects": [
+                    "User"
+                ]
             }
         },
         "/api/v1/rewards/search": {
@@ -4595,7 +4770,10 @@
                             }
                         }
                     }
-                }
+                },
+                "x-polar-allowed-subjects": [
+                    "User"
+                ]
             }
         },
         "/api/v1/rewards/summary": {
@@ -4647,7 +4825,11 @@
                             }
                         }
                     }
-                }
+                },
+                "x-polar-allowed-subjects": [
+                    "User",
+                    "Anonymous"
+                ]
             }
         },
         "/api/v1/personal_access_tokens/{id}": {
@@ -4699,7 +4881,10 @@
                             }
                         }
                     }
-                }
+                },
+                "x-polar-allowed-subjects": [
+                    "User"
+                ]
             }
         },
         "/api/v1/personal_access_tokens": {
@@ -4729,6 +4914,9 @@
                     {
                         "HTTPBearer": []
                     }
+                ],
+                "x-polar-allowed-subjects": [
+                    "User"
                 ]
             },
             "post": {
@@ -4777,6 +4965,9 @@
                     {
                         "HTTPBearer": []
                     }
+                ],
+                "x-polar-allowed-subjects": [
+                    "User"
                 ]
             }
         },
@@ -4806,6 +4997,9 @@
                     {
                         "HTTPBearer": []
                     }
+                ],
+                "x-polar-allowed-subjects": [
+                    "User"
                 ]
             }
         },
@@ -4856,7 +5050,10 @@
                             }
                         }
                     }
-                }
+                },
+                "x-polar-allowed-subjects": [
+                    "User"
+                ]
             }
         },
         "/api/v1/pull_requests/search": {
@@ -4920,7 +5117,11 @@
                             }
                         }
                     }
-                }
+                },
+                "x-polar-allowed-subjects": [
+                    "User",
+                    "Anonymous"
+                ]
             }
         },
         "/api/v1/accounts/search": {
@@ -4987,7 +5188,10 @@
                             }
                         }
                     }
-                }
+                },
+                "x-polar-allowed-subjects": [
+                    "User"
+                ]
             }
         },
         "/api/v1/accounts/{id}": {
@@ -5038,7 +5242,10 @@
                             }
                         }
                     }
-                }
+                },
+                "x-polar-allowed-subjects": [
+                    "User"
+                ]
             }
         },
         "/api/v1/accounts/{id}/onboarding_link": {
@@ -5098,7 +5305,10 @@
                             }
                         }
                     }
-                }
+                },
+                "x-polar-allowed-subjects": [
+                    "User"
+                ]
             }
         },
         "/api/v1/accounts/{id}/dashboard_link": {
@@ -5149,7 +5359,10 @@
                             }
                         }
                     }
-                }
+                },
+                "x-polar-allowed-subjects": [
+                    "User"
+                ]
             }
         },
         "/api/v1/accounts": {
@@ -5198,6 +5411,9 @@
                     {
                         "HTTPBearer": []
                     }
+                ],
+                "x-polar-allowed-subjects": [
+                    "User"
                 ]
             }
         },
@@ -5346,7 +5562,11 @@
                             }
                         }
                     }
-                }
+                },
+                "x-polar-allowed-subjects": [
+                    "User",
+                    "Anonymous"
+                ]
             }
         },
         "/api/v1/issues/lookup": {
@@ -5408,7 +5628,11 @@
                             }
                         }
                     }
-                }
+                },
+                "x-polar-allowed-subjects": [
+                    "User",
+                    "Anonymous"
+                ]
             }
         },
         "/api/v1/issues/{id}/body": {
@@ -5457,7 +5681,11 @@
                             }
                         }
                     }
-                }
+                },
+                "x-polar-allowed-subjects": [
+                    "User",
+                    "Anonymous"
+                ]
             }
         },
         "/api/v1/issues/for_you": {
@@ -5486,6 +5714,9 @@
                     {
                         "HTTPBearer": []
                     }
+                ],
+                "x-polar-allowed-subjects": [
+                    "User"
                 ]
             }
         },
@@ -5538,7 +5769,11 @@
                             }
                         }
                     }
-                }
+                },
+                "x-polar-allowed-subjects": [
+                    "User",
+                    "Anonymous"
+                ]
             },
             "post": {
                 "tags": [
@@ -5598,7 +5833,10 @@
                             }
                         }
                     }
-                }
+                },
+                "x-polar-allowed-subjects": [
+                    "User"
+                ]
             }
         },
         "/api/v1/issues/{id}/confirm_solved": {
@@ -5660,7 +5898,10 @@
                             }
                         }
                     }
-                }
+                },
+                "x-polar-allowed-subjects": [
+                    "User"
+                ]
             }
         },
         "/api/v1/issues/{id}/add_badge": {
@@ -5711,7 +5952,10 @@
                             }
                         }
                     }
-                }
+                },
+                "x-polar-allowed-subjects": [
+                    "User"
+                ]
             }
         },
         "/api/v1/issues/{id}/remove_badge": {
@@ -5762,7 +6006,10 @@
                             }
                         }
                     }
-                }
+                },
+                "x-polar-allowed-subjects": [
+                    "User"
+                ]
             }
         },
         "/api/v1/issues/{id}/comment": {
@@ -5823,7 +6070,10 @@
                             }
                         }
                     }
-                }
+                },
+                "x-polar-allowed-subjects": [
+                    "User"
+                ]
             }
         },
         "/api/v1/issues/{id}/badge_with_message": {
@@ -5884,7 +6134,10 @@
                             }
                         }
                     }
-                }
+                },
+                "x-polar-allowed-subjects": [
+                    "User"
+                ]
             }
         },
         "/api/v1/pledges/search": {
@@ -6043,7 +6296,11 @@
                             }
                         }
                     }
-                }
+                },
+                "x-polar-allowed-subjects": [
+                    "User",
+                    "Anonymous"
+                ]
             }
         },
         "/api/v1/pledges/summary": {
@@ -6095,7 +6352,11 @@
                             }
                         }
                     }
-                }
+                },
+                "x-polar-allowed-subjects": [
+                    "User",
+                    "Anonymous"
+                ]
             }
         },
         "/api/v1/pledges/spending": {
@@ -6149,7 +6410,10 @@
                             }
                         }
                     }
-                }
+                },
+                "x-polar-allowed-subjects": [
+                    "User"
+                ]
             }
         },
         "/api/v1/pledges/{id}": {
@@ -6201,7 +6465,10 @@
                             }
                         }
                     }
-                }
+                },
+                "x-polar-allowed-subjects": [
+                    "User"
+                ]
             }
         },
         "/api/v1/pledges": {
@@ -6251,6 +6518,10 @@
                     {
                         "HTTPBearer": []
                     }
+                ],
+                "x-polar-allowed-subjects": [
+                    "User",
+                    "Anonymous"
                 ]
             }
         },
@@ -6301,6 +6572,9 @@
                     {
                         "HTTPBearer": []
                     }
+                ],
+                "x-polar-allowed-subjects": [
+                    "User"
                 ]
             }
         },
@@ -6353,7 +6627,10 @@
                             }
                         }
                     }
-                }
+                },
+                "x-polar-allowed-subjects": [
+                    "User"
+                ]
             }
         },
         "/api/v1/pledges/payment_intent": {
@@ -6414,6 +6691,10 @@
                     {
                         "HTTPBearer": []
                     }
+                ],
+                "x-polar-allowed-subjects": [
+                    "User",
+                    "Anonymous"
                 ]
             }
         },
@@ -6474,7 +6755,11 @@
                             }
                         }
                     }
-                }
+                },
+                "x-polar-allowed-subjects": [
+                    "User",
+                    "Anonymous"
+                ]
             }
         },
         "/api/v1/pledges/{pledge_id}/dispute": {
@@ -6534,7 +6819,10 @@
                             }
                         }
                     }
-                }
+                },
+                "x-polar-allowed-subjects": [
+                    "User"
+                ]
             }
         },
         "/api/v1/organizations": {
@@ -6591,7 +6879,11 @@
                             }
                         }
                     }
-                }
+                },
+                "x-polar-allowed-subjects": [
+                    "User",
+                    "Organization"
+                ]
             }
         },
         "/api/v1/organizations/search": {
@@ -6668,7 +6960,11 @@
                             }
                         }
                     }
-                }
+                },
+                "x-polar-allowed-subjects": [
+                    "User",
+                    "Organization"
+                ]
             }
         },
         "/api/v1/organizations/lookup": {
@@ -6764,7 +7060,11 @@
                             }
                         }
                     }
-                }
+                },
+                "x-polar-allowed-subjects": [
+                    "User",
+                    "Organization"
+                ]
             }
         },
         "/api/v1/organizations/{id}": {
@@ -6822,7 +7122,11 @@
                             }
                         }
                     }
-                }
+                },
+                "x-polar-allowed-subjects": [
+                    "User",
+                    "Organization"
+                ]
             },
             "patch": {
                 "tags": [
@@ -6887,7 +7191,11 @@
                             }
                         }
                     }
-                }
+                },
+                "x-polar-allowed-subjects": [
+                    "User",
+                    "Organization"
+                ]
             }
         },
         "/api/v1/organizations/{id}/customers": {
@@ -7000,7 +7308,11 @@
                             }
                         }
                     }
-                }
+                },
+                "x-polar-allowed-subjects": [
+                    "User",
+                    "Organization"
+                ]
             }
         },
         "/api/v1/organizations/{id}/account": {
@@ -7067,7 +7379,11 @@
                             }
                         }
                     }
-                }
+                },
+                "x-polar-allowed-subjects": [
+                    "User",
+                    "Organization"
+                ]
             }
         },
         "/api/v1/organizations/{id}/members": {
@@ -7128,7 +7444,11 @@
                             }
                         }
                     }
-                }
+                },
+                "x-polar-allowed-subjects": [
+                    "User",
+                    "Organization"
+                ]
             }
         },
         "/api/v1/organizations/{id}/stripe_customer_portal": {
@@ -7182,7 +7502,11 @@
                             }
                         }
                     }
-                }
+                },
+                "x-polar-allowed-subjects": [
+                    "User",
+                    "Organization"
+                ]
             }
         },
         "/api/v1/organizations/{id}/credit": {
@@ -7236,7 +7560,11 @@
                             }
                         }
                     }
-                }
+                },
+                "x-polar-allowed-subjects": [
+                    "User",
+                    "Organization"
+                ]
             }
         },
         "/api/v1/organizations/{id}/badge_settings": {
@@ -7289,7 +7617,11 @@
                             }
                         }
                     }
-                }
+                },
+                "x-polar-allowed-subjects": [
+                    "User",
+                    "Organization"
+                ]
             },
             "post": {
                 "tags": [
@@ -7350,28 +7682,27 @@
                             }
                         }
                     }
-                }
+                },
+                "x-polar-allowed-subjects": [
+                    "User",
+                    "Organization"
+                ]
             }
         },
-        "/api/v1/subscriptions/subscriptions/statistics": {
+        "/api/v1/subscriptions/": {
             "get": {
                 "tags": [
                     "subscriptions"
                 ],
-                "summary": "Get Subscriptions Statistics",
-                "operationId": "get_subscriptions_statistics",
+                "summary": "List Subscriptions",
+                "description": "List subscriptions.",
+                "operationId": "list_subscriptions",
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "subscriptions:write",
-                            "subscriptions:read"
+                            "subscriptions:read",
+                            "subscriptions:write"
                         ]
-                    },
-                    {
-                        "HTTPBearer": []
-                    },
-                    {
-                        "OpenIdConnect": []
                     },
                     {
                         "HTTPBearer": []
@@ -7379,46 +7710,7 @@
                 ],
                 "parameters": [
                     {
-                        "name": "start_date",
-                        "in": "query",
-                        "required": true,
-                        "schema": {
-                            "type": "string",
-                            "format": "date",
-                            "title": "Start Date"
-                        }
-                    },
-                    {
-                        "name": "end_date",
-                        "in": "query",
-                        "required": true,
-                        "schema": {
-                            "type": "string",
-                            "format": "date",
-                            "title": "End Date"
-                        }
-                    },
-                    {
-                        "name": "types",
-                        "in": "query",
-                        "required": false,
-                        "schema": {
-                            "anyOf": [
-                                {
-                                    "type": "array",
-                                    "items": {
-                                        "$ref": "#/components/schemas/SubscriptionTierType"
-                                    }
-                                },
-                                {
-                                    "type": "null"
-                                }
-                            ],
-                            "title": "Types"
-                        }
-                    },
-                    {
-                        "name": "subscription_tier_id",
+                        "name": "organization_id",
                         "in": "query",
                         "required": false,
                         "schema": {
@@ -7431,102 +7723,30 @@
                                     "type": "null"
                                 }
                             ],
-                            "title": "Subscription Tier Id"
-                        }
+                            "description": "Filter by organization ID.",
+                            "title": "Organization Id"
+                        },
+                        "description": "Filter by organization ID."
                     },
                     {
-                        "name": "organization_name",
+                        "name": "product_id",
                         "in": "query",
                         "required": false,
                         "schema": {
                             "anyOf": [
                                 {
                                     "type": "string",
-                                    "minLength": 1
+                                    "format": "uuid4"
                                 },
                                 {
                                     "type": "null"
                                 }
                             ],
-                            "description": "Filter by organization name. Required unless you are authenticated as an organization.",
-                            "examples": [
-                                "my-org"
-                            ],
-                            "title": "Organization Name"
+                            "description": "Filter by product ID.",
+                            "title": "Product Id"
                         },
-                        "description": "Filter by organization name. Required unless you are authenticated as an organization."
+                        "description": "Filter by product ID."
                     },
-                    {
-                        "name": "platform",
-                        "in": "query",
-                        "required": false,
-                        "schema": {
-                            "anyOf": [
-                                {
-                                    "$ref": "#/components/schemas/Platforms"
-                                },
-                                {
-                                    "type": "null"
-                                }
-                            ],
-                            "description": "Platform linked to `organization_name`. Required if `organization_name` is set. Currently, only `github` is supported.",
-                            "examples": [
-                                "github"
-                            ],
-                            "title": "Platform"
-                        },
-                        "description": "Platform linked to `organization_name`. Required if `organization_name` is set. Currently, only `github` is supported."
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Successful Response",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/SubscriptionsStatistics"
-                                }
-                            }
-                        }
-                    },
-                    "422": {
-                        "description": "Validation Error",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/HTTPValidationError"
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/subscriptions/subscriptions/search": {
-            "get": {
-                "tags": [
-                    "subscriptions"
-                ],
-                "summary": "Search Subscriptions",
-                "operationId": "search_subscriptions",
-                "security": [
-                    {
-                        "OpenIdConnect": [
-                            "subscriptions:write",
-                            "subscriptions:read"
-                        ]
-                    },
-                    {
-                        "HTTPBearer": []
-                    },
-                    {
-                        "OpenIdConnect": []
-                    },
-                    {
-                        "HTTPBearer": []
-                    }
-                ],
-                "parameters": [
                     {
                         "name": "type",
                         "in": "query",
@@ -7540,42 +7760,11 @@
                                     "type": "null"
                                 }
                             ],
+                            "description": "Filter by tier type.",
                             "title": "Type"
-                        }
-                    },
-                    {
-                        "name": "subscription_tier_id",
-                        "in": "query",
-                        "required": false,
-                        "schema": {
-                            "anyOf": [
-                                {
-                                    "type": "string",
-                                    "format": "uuid4"
-                                },
-                                {
-                                    "type": "null"
-                                }
-                            ],
-                            "title": "Subscription Tier Id"
-                        }
-                    },
-                    {
-                        "name": "subscriber_user_id",
-                        "in": "query",
-                        "required": false,
-                        "schema": {
-                            "anyOf": [
-                                {
-                                    "type": "string",
-                                    "format": "uuid4"
-                                },
-                                {
-                                    "type": "null"
-                                }
-                            ],
-                            "title": "Subscriber User Id"
-                        }
+                        },
+                        "description": "Filter by tier type.",
+                        "deprecated": true
                     },
                     {
                         "name": "active",
@@ -7590,8 +7779,10 @@
                                     "type": "null"
                                 }
                             ],
+                            "description": "Filter by active or inactive subscription.",
                             "title": "Active"
-                        }
+                        },
+                        "description": "Filter by active or inactive subscription."
                     },
                     {
                         "name": "page",
@@ -7659,49 +7850,6 @@
                             "title": "Sorting"
                         },
                         "description": "Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order."
-                    },
-                    {
-                        "name": "organization_name",
-                        "in": "query",
-                        "required": false,
-                        "schema": {
-                            "anyOf": [
-                                {
-                                    "type": "string",
-                                    "minLength": 1
-                                },
-                                {
-                                    "type": "null"
-                                }
-                            ],
-                            "description": "Filter by organization name. Required unless you are authenticated as an organization.",
-                            "examples": [
-                                "my-org"
-                            ],
-                            "title": "Organization Name"
-                        },
-                        "description": "Filter by organization name. Required unless you are authenticated as an organization."
-                    },
-                    {
-                        "name": "platform",
-                        "in": "query",
-                        "required": false,
-                        "schema": {
-                            "anyOf": [
-                                {
-                                    "$ref": "#/components/schemas/Platforms"
-                                },
-                                {
-                                    "type": "null"
-                                }
-                            ],
-                            "description": "Platform linked to `organization_name`. Required if `organization_name` is set. Currently, only `github` is supported.",
-                            "examples": [
-                                "github"
-                            ],
-                            "title": "Platform"
-                        },
-                        "description": "Platform linked to `organization_name`. Required if `organization_name` is set. Currently, only `github` is supported."
                     }
                 ],
                 "responses": {
@@ -7725,16 +7873,19 @@
                             }
                         }
                     }
-                }
-            }
-        },
-        "/api/v1/subscriptions/subscriptions/email": {
+                },
+                "x-polar-allowed-subjects": [
+                    "User",
+                    "Organization"
+                ]
+            },
             "post": {
                 "tags": [
                     "subscriptions"
                 ],
-                "summary": "Create Email Subscription",
-                "operationId": "create_email_subscription",
+                "summary": "Create Subscription",
+                "description": "Create a subscription on the free tier for a given email.",
+                "operationId": "create_subscription",
                 "security": [
                     {
                         "OpenIdConnect": [
@@ -7743,57 +7894,6 @@
                     },
                     {
                         "HTTPBearer": []
-                    },
-                    {
-                        "OpenIdConnect": []
-                    },
-                    {
-                        "HTTPBearer": []
-                    }
-                ],
-                "parameters": [
-                    {
-                        "name": "organization_name",
-                        "in": "query",
-                        "required": false,
-                        "schema": {
-                            "anyOf": [
-                                {
-                                    "type": "string",
-                                    "minLength": 1
-                                },
-                                {
-                                    "type": "null"
-                                }
-                            ],
-                            "description": "Filter by organization name. Required unless you are authenticated as an organization.",
-                            "examples": [
-                                "my-org"
-                            ],
-                            "title": "Organization Name"
-                        },
-                        "description": "Filter by organization name. Required unless you are authenticated as an organization."
-                    },
-                    {
-                        "name": "platform",
-                        "in": "query",
-                        "required": false,
-                        "schema": {
-                            "anyOf": [
-                                {
-                                    "$ref": "#/components/schemas/Platforms"
-                                },
-                                {
-                                    "type": "null"
-                                }
-                            ],
-                            "description": "Platform linked to `organization_name`. Required if `organization_name` is set. Currently, only `github` is supported.",
-                            "examples": [
-                                "github"
-                            ],
-                            "title": "Platform"
-                        },
-                        "description": "Platform linked to `organization_name`. Required if `organization_name` is set. Currently, only `github` is supported."
                     }
                 ],
                 "requestBody": {
@@ -7827,86 +7927,30 @@
                             }
                         }
                     }
-                }
+                },
+                "x-polar-allowed-subjects": [
+                    "User",
+                    "Organization"
+                ]
             }
         },
-        "/api/v1/subscriptions/subscriptions/import": {
+        "/api/v1/subscriptions/import": {
             "post": {
                 "tags": [
                     "subscriptions"
                 ],
                 "summary": "Subscriptions Import",
+                "description": "Import subscriptions from a CSV file.",
                 "operationId": "subscriptions_import",
-                "security": [
-                    {
-                        "OpenIdConnect": [
-                            "subscriptions:write"
-                        ]
-                    },
-                    {
-                        "HTTPBearer": []
-                    },
-                    {
-                        "OpenIdConnect": []
-                    },
-                    {
-                        "HTTPBearer": []
-                    }
-                ],
-                "parameters": [
-                    {
-                        "name": "organization_name",
-                        "in": "query",
-                        "required": false,
-                        "schema": {
-                            "anyOf": [
-                                {
-                                    "type": "string",
-                                    "minLength": 1
-                                },
-                                {
-                                    "type": "null"
-                                }
-                            ],
-                            "description": "Filter by organization name. Required unless you are authenticated as an organization.",
-                            "examples": [
-                                "my-org"
-                            ],
-                            "title": "Organization Name"
-                        },
-                        "description": "Filter by organization name. Required unless you are authenticated as an organization."
-                    },
-                    {
-                        "name": "platform",
-                        "in": "query",
-                        "required": false,
-                        "schema": {
-                            "anyOf": [
-                                {
-                                    "$ref": "#/components/schemas/Platforms"
-                                },
-                                {
-                                    "type": "null"
-                                }
-                            ],
-                            "description": "Platform linked to `organization_name`. Required if `organization_name` is set. Currently, only `github` is supported.",
-                            "examples": [
-                                "github"
-                            ],
-                            "title": "Platform"
-                        },
-                        "description": "Platform linked to `organization_name`. Required if `organization_name` is set. Currently, only `github` is supported."
-                    }
-                ],
                 "requestBody": {
-                    "required": true,
                     "content": {
                         "multipart/form-data": {
                             "schema": {
                                 "$ref": "#/components/schemas/Body_subscriptions_subscriptions_import"
                             }
                         }
-                    }
+                    },
+                    "required": true
                 },
                 "responses": {
                     "200": {
@@ -7929,28 +7973,37 @@
                             }
                         }
                     }
-                }
+                },
+                "security": [
+                    {
+                        "OpenIdConnect": [
+                            "subscriptions:write"
+                        ]
+                    },
+                    {
+                        "HTTPBearer": []
+                    }
+                ],
+                "x-polar-allowed-subjects": [
+                    "User",
+                    "Organization"
+                ]
             }
         },
-        "/api/v1/subscriptions/subscriptions/export": {
+        "/api/v1/subscriptions/export": {
             "get": {
                 "tags": [
                     "subscriptions"
                 ],
                 "summary": "Subscriptions Export",
+                "description": "Export subscriptions as a CSV file.",
                 "operationId": "subscriptions_export",
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "subscriptions:write",
-                            "subscriptions:read"
+                            "subscriptions:read",
+                            "subscriptions:write"
                         ]
-                    },
-                    {
-                        "HTTPBearer": []
-                    },
-                    {
-                        "OpenIdConnect": []
                     },
                     {
                         "HTTPBearer": []
@@ -7958,47 +8011,23 @@
                 ],
                 "parameters": [
                     {
-                        "name": "organization_name",
+                        "name": "organization_id",
                         "in": "query",
                         "required": false,
                         "schema": {
                             "anyOf": [
                                 {
                                     "type": "string",
-                                    "minLength": 1
+                                    "format": "uuid4"
                                 },
                                 {
                                     "type": "null"
                                 }
                             ],
-                            "description": "Filter by organization name. Required unless you are authenticated as an organization.",
-                            "examples": [
-                                "my-org"
-                            ],
-                            "title": "Organization Name"
+                            "description": "Filter by organization ID.",
+                            "title": "Organization Id"
                         },
-                        "description": "Filter by organization name. Required unless you are authenticated as an organization."
-                    },
-                    {
-                        "name": "platform",
-                        "in": "query",
-                        "required": false,
-                        "schema": {
-                            "anyOf": [
-                                {
-                                    "$ref": "#/components/schemas/Platforms"
-                                },
-                                {
-                                    "type": "null"
-                                }
-                            ],
-                            "description": "Platform linked to `organization_name`. Required if `organization_name` is set. Currently, only `github` is supported.",
-                            "examples": [
-                                "github"
-                            ],
-                            "title": "Platform"
-                        },
-                        "description": "Platform linked to `organization_name`. Required if `organization_name` is set. Currently, only `github` is supported."
+                        "description": "Filter by organization ID."
                     }
                 ],
                 "responses": {
@@ -8020,7 +8049,11 @@
                             }
                         }
                     }
-                }
+                },
+                "x-polar-allowed-subjects": [
+                    "User",
+                    "Organization"
+                ]
             }
         },
         "/api/v1/articles/unsubscribe": {
@@ -8138,7 +8171,10 @@
                             }
                         }
                     }
-                }
+                },
+                "x-polar-allowed-subjects": [
+                    "User"
+                ]
             },
             "post": {
                 "tags": [
@@ -8189,7 +8225,10 @@
                             }
                         }
                     }
-                }
+                },
+                "x-polar-allowed-subjects": [
+                    "User"
+                ]
             }
         },
         "/api/v1/articles/search": {
@@ -8325,7 +8364,11 @@
                             }
                         }
                     }
-                }
+                },
+                "x-polar-allowed-subjects": [
+                    "User",
+                    "Anonymous"
+                ]
             }
         },
         "/api/v1/articles/lookup": {
@@ -8412,7 +8455,11 @@
                             }
                         }
                     }
-                }
+                },
+                "x-polar-allowed-subjects": [
+                    "User",
+                    "Anonymous"
+                ]
             }
         },
         "/api/v1/articles/receivers": {
@@ -8499,7 +8546,10 @@
                             }
                         }
                     }
-                }
+                },
+                "x-polar-allowed-subjects": [
+                    "User"
+                ]
             }
         },
         "/api/v1/articles/{id}": {
@@ -8554,7 +8604,11 @@
                             }
                         }
                     }
-                }
+                },
+                "x-polar-allowed-subjects": [
+                    "User",
+                    "Anonymous"
+                ]
             },
             "put": {
                 "tags": [
@@ -8617,7 +8671,10 @@
                             }
                         }
                     }
-                }
+                },
+                "x-polar-allowed-subjects": [
+                    "User"
+                ]
             },
             "delete": {
                 "tags": [
@@ -8670,7 +8727,10 @@
                             }
                         }
                     }
-                }
+                },
+                "x-polar-allowed-subjects": [
+                    "User"
+                ]
             }
         },
         "/api/v1/articles/{id}/viewed": {
@@ -8725,7 +8785,11 @@
                             }
                         }
                     }
-                }
+                },
+                "x-polar-allowed-subjects": [
+                    "User",
+                    "Anonymous"
+                ]
             }
         },
         "/api/v1/articles/{id}/send_preview": {
@@ -8790,7 +8854,10 @@
                             }
                         }
                     }
-                }
+                },
+                "x-polar-allowed-subjects": [
+                    "User"
+                ]
             }
         },
         "/api/v1/articles/{id}/send": {
@@ -8845,7 +8912,10 @@
                             }
                         }
                     }
-                }
+                },
+                "x-polar-allowed-subjects": [
+                    "User"
+                ]
             }
         },
         "/api/v1/transactions/search": {
@@ -9020,7 +9090,10 @@
                             }
                         }
                     }
-                }
+                },
+                "x-polar-allowed-subjects": [
+                    "User"
+                ]
             }
         },
         "/api/v1/transactions/lookup": {
@@ -9071,7 +9144,10 @@
                             }
                         }
                     }
-                }
+                },
+                "x-polar-allowed-subjects": [
+                    "User"
+                ]
             }
         },
         "/api/v1/transactions/summary": {
@@ -9122,7 +9198,10 @@
                             }
                         }
                     }
-                }
+                },
+                "x-polar-allowed-subjects": [
+                    "User"
+                ]
             }
         },
         "/api/v1/transactions/payouts": {
@@ -9173,7 +9252,10 @@
                             }
                         }
                     }
-                }
+                },
+                "x-polar-allowed-subjects": [
+                    "User"
+                ]
             },
             "post": {
                 "tags": [
@@ -9220,7 +9302,10 @@
                             }
                         }
                     }
-                }
+                },
+                "x-polar-allowed-subjects": [
+                    "User"
+                ]
             }
         },
         "/api/v1/transactions/payouts/{id}/csv": {
@@ -9269,7 +9354,10 @@
                             }
                         }
                     }
-                }
+                },
+                "x-polar-allowed-subjects": [
+                    "User"
+                ]
             }
         },
         "/api/v1/webhook_notifications/search": {
@@ -9347,7 +9435,10 @@
                             }
                         }
                     }
-                }
+                },
+                "x-polar-allowed-subjects": [
+                    "User"
+                ]
             }
         },
         "/api/v1/webhook_notifications": {
@@ -9400,6 +9491,9 @@
                     {
                         "HTTPBearer": []
                     }
+                ],
+                "x-polar-allowed-subjects": [
+                    "User"
                 ]
             }
         },
@@ -9465,7 +9559,10 @@
                             }
                         }
                     }
-                }
+                },
+                "x-polar-allowed-subjects": [
+                    "User"
+                ]
             },
             "delete": {
                 "tags": [
@@ -9518,7 +9615,10 @@
                             }
                         }
                     }
-                }
+                },
+                "x-polar-allowed-subjects": [
+                    "User"
+                ]
             }
         },
         "/api/v1/advertisements/": {
@@ -9916,7 +10016,10 @@
                             }
                         }
                     }
-                }
+                },
+                "x-polar-allowed-subjects": [
+                    "User"
+                ]
             }
         },
         "/api/v1/traffic/referrers": {
@@ -10036,7 +10139,10 @@
                             }
                         }
                     }
-                }
+                },
+                "x-polar-allowed-subjects": [
+                    "User"
+                ]
             }
         },
         "/api/v1/auth/custom_domain_forward": {
@@ -10087,7 +10193,10 @@
                             }
                         }
                     }
-                }
+                },
+                "x-polar-allowed-subjects": [
+                    "User"
+                ]
             }
         },
         "/api/v1/auth/custom_domain_exchange": {
@@ -10284,7 +10393,10 @@
                             }
                         }
                     }
-                }
+                },
+                "x-polar-allowed-subjects": [
+                    "User"
+                ]
             }
         },
         "/api/v1/donations/payment_intent": {
@@ -10333,6 +10445,10 @@
                     {
                         "HTTPBearer": []
                     }
+                ],
+                "x-polar-allowed-subjects": [
+                    "User",
+                    "Anonymous"
                 ]
             }
         },
@@ -10393,7 +10509,11 @@
                             }
                         }
                     }
-                }
+                },
+                "x-polar-allowed-subjects": [
+                    "User",
+                    "Anonymous"
+                ]
             }
         },
         "/api/v1/donations/statistics": {
@@ -10478,7 +10598,10 @@
                             }
                         }
                     }
-                }
+                },
+                "x-polar-allowed-subjects": [
+                    "User"
+                ]
             }
         },
         "/api/v1/donations/public/search": {
@@ -10669,7 +10792,10 @@
                             }
                         }
                     }
-                }
+                },
+                "x-polar-allowed-subjects": [
+                    "User"
+                ]
             }
         },
         "/api/v1/oauth2/register": {
@@ -10716,6 +10842,9 @@
                     {
                         "HTTPBearer": []
                     }
+                ],
+                "x-polar-allowed-subjects": [
+                    "User"
                 ]
             }
         },
@@ -10764,7 +10893,11 @@
                             }
                         }
                     }
-                }
+                },
+                "x-polar-allowed-subjects": [
+                    "User",
+                    "Anonymous"
+                ]
             },
             "put": {
                 "tags": [
@@ -10820,7 +10953,11 @@
                             }
                         }
                     }
-                }
+                },
+                "x-polar-allowed-subjects": [
+                    "User",
+                    "Anonymous"
+                ]
             },
             "delete": {
                 "tags": [
@@ -10866,7 +11003,11 @@
                             }
                         }
                     }
-                }
+                },
+                "x-polar-allowed-subjects": [
+                    "User",
+                    "Anonymous"
+                ]
             }
         },
         "/api/v1/oauth2/authorize": {
@@ -10910,6 +11051,10 @@
                     {
                         "HTTPBearer": []
                     }
+                ],
+                "x-polar-allowed-subjects": [
+                    "User",
+                    "Anonymous"
                 ]
             }
         },
@@ -10957,6 +11102,9 @@
                     {
                         "HTTPBearer": []
                     }
+                ],
+                "x-polar-allowed-subjects": [
+                    "User"
                 ]
             }
         },
@@ -11074,8 +11222,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "benefits:read",
-                            "benefits:write"
+                            "benefits:write",
+                            "benefits:read"
                         ]
                     },
                     {
@@ -11171,7 +11319,11 @@
                             }
                         }
                     }
-                }
+                },
+                "x-polar-allowed-subjects": [
+                    "User",
+                    "Organization"
+                ]
             },
             "post": {
                 "tags": [
@@ -11268,7 +11420,11 @@
                             }
                         }
                     }
-                }
+                },
+                "x-polar-allowed-subjects": [
+                    "User",
+                    "Organization"
+                ]
             }
         },
         "/api/v1/benefits/{id}": {
@@ -11282,8 +11438,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "benefits:read",
-                            "benefits:write"
+                            "benefits:write",
+                            "benefits:read"
                         ]
                     },
                     {
@@ -11355,7 +11511,11 @@
                             }
                         }
                     }
-                }
+                },
+                "x-polar-allowed-subjects": [
+                    "User",
+                    "Organization"
+                ]
             },
             "patch": {
                 "tags": [
@@ -11479,7 +11639,11 @@
                             }
                         }
                     }
-                }
+                },
+                "x-polar-allowed-subjects": [
+                    "User",
+                    "Organization"
+                ]
             },
             "delete": {
                 "tags": [
@@ -11546,7 +11710,11 @@
                             }
                         }
                     }
-                }
+                },
+                "x-polar-allowed-subjects": [
+                    "User",
+                    "Organization"
+                ]
             }
         },
         "/api/v1/benefits/{id}/grants": {
@@ -11560,8 +11728,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "benefits:read",
-                            "benefits:write"
+                            "benefits:write",
+                            "benefits:read"
                         ]
                     },
                     {
@@ -11694,7 +11862,11 @@
                             }
                         }
                     }
-                }
+                },
+                "x-polar-allowed-subjects": [
+                    "User",
+                    "Organization"
+                ]
             }
         },
         "/api/v1/webhooks/endpoints": {
@@ -11803,7 +11975,11 @@
                             }
                         }
                     }
-                }
+                },
+                "x-polar-allowed-subjects": [
+                    "User",
+                    "Organization"
+                ]
             },
             "post": {
                 "tags": [
@@ -11853,7 +12029,11 @@
                             }
                         }
                     }
-                }
+                },
+                "x-polar-allowed-subjects": [
+                    "User",
+                    "Organization"
+                ]
             }
         },
         "/api/v1/webhooks/endpoints/{id}": {
@@ -11920,7 +12100,11 @@
                             }
                         }
                     }
-                }
+                },
+                "x-polar-allowed-subjects": [
+                    "User",
+                    "Organization"
+                ]
             },
             "patch": {
                 "tags": [
@@ -12004,7 +12188,11 @@
                             }
                         }
                     }
-                }
+                },
+                "x-polar-allowed-subjects": [
+                    "User",
+                    "Organization"
+                ]
             },
             "delete": {
                 "tags": [
@@ -12071,7 +12259,11 @@
                             }
                         }
                     }
-                }
+                },
+                "x-polar-allowed-subjects": [
+                    "User",
+                    "Organization"
+                ]
             }
         },
         "/api/v1/webhooks/deliveries": {
@@ -12161,7 +12353,11 @@
                             }
                         }
                     }
-                }
+                },
+                "x-polar-allowed-subjects": [
+                    "User",
+                    "Organization"
+                ]
             }
         },
         "/api/v1/webhooks/events/{id}/redeliver": {
@@ -12225,7 +12421,11 @@
                             }
                         }
                     }
-                }
+                },
+                "x-polar-allowed-subjects": [
+                    "User",
+                    "Organization"
+                ]
             }
         },
         "/api/v1/products/": {
@@ -12380,7 +12580,12 @@
                             }
                         }
                     }
-                }
+                },
+                "x-polar-allowed-subjects": [
+                    "User",
+                    "Organization",
+                    "Anonymous"
+                ]
             },
             "post": {
                 "tags": [
@@ -12438,7 +12643,11 @@
                             }
                         }
                     }
-                }
+                },
+                "x-polar-allowed-subjects": [
+                    "User",
+                    "Organization"
+                ]
             }
         },
         "/api/v1/products/{id}": {
@@ -12505,7 +12714,12 @@
                             }
                         }
                     }
-                }
+                },
+                "x-polar-allowed-subjects": [
+                    "User",
+                    "Organization",
+                    "Anonymous"
+                ]
             },
             "patch": {
                 "tags": [
@@ -12589,7 +12803,11 @@
                             }
                         }
                     }
-                }
+                },
+                "x-polar-allowed-subjects": [
+                    "User",
+                    "Organization"
+                ]
             }
         },
         "/api/v1/products/{id}/benefits": {
@@ -12675,7 +12893,11 @@
                             }
                         }
                     }
-                }
+                },
+                "x-polar-allowed-subjects": [
+                    "User",
+                    "Organization"
+                ]
             }
         },
         "/api/v1/orders/": {
@@ -12857,7 +13079,11 @@
                             }
                         }
                     }
-                }
+                },
+                "x-polar-allowed-subjects": [
+                    "User",
+                    "Organization"
+                ]
             }
         },
         "/api/v1/orders/{id}": {
@@ -12923,7 +13149,11 @@
                             }
                         }
                     }
-                }
+                },
+                "x-polar-allowed-subjects": [
+                    "User",
+                    "Organization"
+                ]
             }
         },
         "/api/v1/orders/{id}/invoice": {
@@ -12989,7 +13219,11 @@
                             }
                         }
                     }
-                }
+                },
+                "x-polar-allowed-subjects": [
+                    "User",
+                    "Organization"
+                ]
             }
         },
         "/api/v1/checkouts/": {
@@ -13038,6 +13272,10 @@
                     {
                         "HTTPBearer": []
                     }
+                ],
+                "x-polar-allowed-subjects": [
+                    "User",
+                    "Anonymous"
                 ]
             }
         },
@@ -13188,7 +13426,11 @@
                             }
                         }
                     }
-                }
+                },
+                "x-polar-allowed-subjects": [
+                    "User",
+                    "Organization"
+                ]
             },
             "post": {
                 "tags": [
@@ -13252,7 +13494,11 @@
                             }
                         }
                     }
-                }
+                },
+                "x-polar-allowed-subjects": [
+                    "User",
+                    "Organization"
+                ]
             }
         },
         "/api/v1/files/{id}/uploaded": {
@@ -13332,7 +13578,11 @@
                             }
                         }
                     }
-                }
+                },
+                "x-polar-allowed-subjects": [
+                    "User",
+                    "Organization"
+                ]
             }
         },
         "/api/v1/files/{id}": {
@@ -13412,7 +13662,11 @@
                             }
                         }
                     }
-                }
+                },
+                "x-polar-allowed-subjects": [
+                    "User",
+                    "Organization"
+                ]
             },
             "delete": {
                 "tags": [
@@ -13476,7 +13730,11 @@
                             }
                         }
                     }
-                }
+                },
+                "x-polar-allowed-subjects": [
+                    "User",
+                    "Organization"
+                ]
             }
         },
         "/api/v1/metrics/": {
@@ -13616,7 +13874,11 @@
                             }
                         }
                     }
-                }
+                },
+                "x-polar-allowed-subjects": [
+                    "User",
+                    "Organization"
+                ]
             }
         },
         "/api/v1/metrics/limits": {
@@ -13648,6 +13910,10 @@
                     {
                         "HTTPBearer": []
                     }
+                ],
+                "x-polar-allowed-subjects": [
+                    "User",
+                    "Organization"
                 ]
             }
         }
@@ -17687,12 +17953,20 @@
                     "file": {
                         "type": "string",
                         "format": "binary",
-                        "title": "File"
+                        "title": "File",
+                        "description": "CSV file with emails."
+                    },
+                    "organization_id": {
+                        "type": "string",
+                        "format": "uuid4",
+                        "title": "Organization Id",
+                        "description": "The organization ID on which to import the subscriptions."
                     }
                 },
                 "type": "object",
                 "required": [
-                    "file"
+                    "file",
+                    "organization_id"
                 ],
                 "title": "Body_subscriptions:subscriptions_import"
             },
@@ -18238,6 +18512,7 @@
                     },
                     "email": {
                         "type": "string",
+                        "format": "email",
                         "title": "Email",
                         "description": "The donators email address. Receipts will be sent to this address."
                     },
@@ -24590,8 +24865,7 @@
                     "description": {
                         "anyOf": [
                             {
-                                "type": "string",
-                                "maxLength": 240
+                                "type": "string"
                             },
                             {
                                 "type": "null"
@@ -24890,8 +25164,7 @@
                     "description": {
                         "anyOf": [
                             {
-                                "type": "string",
-                                "maxLength": 240
+                                "type": "string"
                             },
                             {
                                 "type": "null"
@@ -24983,8 +25256,7 @@
                     "description": {
                         "anyOf": [
                             {
-                                "type": "string",
-                                "maxLength": 240
+                                "type": "string"
                             },
                             {
                                 "type": "null"
@@ -26318,14 +26590,23 @@
                     "email": {
                         "type": "string",
                         "format": "email",
-                        "title": "Email"
+                        "title": "Email",
+                        "description": "The email address of the user."
+                    },
+                    "product_id": {
+                        "type": "string",
+                        "format": "uuid4",
+                        "title": "Product Id",
+                        "description": "The ID of the product. **Must be the free subscription tier**."
                     }
                 },
                 "type": "object",
                 "required": [
-                    "email"
+                    "email",
+                    "product_id"
                 ],
-                "title": "SubscriptionCreateEmail"
+                "title": "SubscriptionCreateEmail",
+                "description": "Request schema for creating a subscription by email."
             },
             "SubscriptionStatus": {
                 "type": "string",
@@ -26400,53 +26681,8 @@
                 "required": [
                     "count"
                 ],
-                "title": "SubscriptionsImported"
-            },
-            "SubscriptionsStatistics": {
-                "properties": {
-                    "periods": {
-                        "items": {
-                            "$ref": "#/components/schemas/SubscriptionsStatisticsPeriod"
-                        },
-                        "type": "array",
-                        "title": "Periods"
-                    }
-                },
-                "type": "object",
-                "required": [
-                    "periods"
-                ],
-                "title": "SubscriptionsStatistics"
-            },
-            "SubscriptionsStatisticsPeriod": {
-                "properties": {
-                    "start_date": {
-                        "type": "string",
-                        "format": "date",
-                        "title": "Start Date"
-                    },
-                    "end_date": {
-                        "type": "string",
-                        "format": "date",
-                        "title": "End Date"
-                    },
-                    "subscribers": {
-                        "type": "integer",
-                        "title": "Subscribers"
-                    },
-                    "earnings": {
-                        "type": "integer",
-                        "title": "Earnings"
-                    }
-                },
-                "type": "object",
-                "required": [
-                    "start_date",
-                    "end_date",
-                    "subscribers",
-                    "earnings"
-                ],
-                "title": "SubscriptionsStatisticsPeriod"
+                "title": "SubscriptionsImported",
+                "description": "Result of a subscription import operation."
             },
             "SummaryPledge": {
                 "properties": {

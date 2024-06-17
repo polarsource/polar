@@ -307,6 +307,11 @@ class DonationSender:
             key=None,
         )
 
+        self.mocker.patch(
+            "polar.integrations.stripe.service.StripeService.get_checkout_session_by_payment_intent",
+            return_value=None,
+        )
+
         await payment_intent_succeeded(
             self.job_context,
             event=ev,

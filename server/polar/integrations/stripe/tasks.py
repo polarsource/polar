@@ -89,6 +89,18 @@ async def payment_intent_succeeded(
             payload = PaymentIntentSuccessWebhook.model_validate(payment_intent)
             metadata = payment_intent.get("metadata", {})
 
+            # Check if there is a Checkout Session related,
+            # meaning it's a product or subscription purchase
+            checkout_session = stripe_service.get_checkout_session_by_payment_intent(
+                payload.id
+            )
+            if (
+                checkout_session is not None
+                and checkout_session.metadata is not None
+                and checkout_session.metadata.get("type") == ProductType.product
+            ):
+                return
+
             # payments for pay_upfront (pi has metadata)
             if metadata.get("type") == ProductType.pledge:
                 await pledge_service.handle_payment_intent_success(

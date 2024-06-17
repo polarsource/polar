@@ -1,6 +1,7 @@
 import pytest
 import stripe
 from arq import Retry
+from pytest_mock import MockerFixture
 
 from polar.account.service import account as account_service
 from polar.auth.models import AuthSubject
@@ -28,6 +29,7 @@ class TestDonations:
         job_context: JobContext,
         session: AsyncSession,
         organization: Organization,
+        mocker: MockerFixture,
     ) -> None:
         # then
         session.expunge_all()
@@ -52,6 +54,11 @@ class TestDonations:
                 },
             ),
             key=None,
+        )
+
+        mocker.patch(
+            "polar.integrations.stripe.service.StripeService.get_checkout_session_by_payment_intent",
+            return_value=None,
         )
 
         await payment_intent_succeeded(

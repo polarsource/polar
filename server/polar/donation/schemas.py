@@ -7,7 +7,7 @@ from pydantic import UUID4, Field
 from polar.currency.schemas import CurrencyAmount
 from polar.enums import Platforms
 from polar.issue.schemas import Issue
-from polar.kit.schemas import Schema
+from polar.kit.schemas import EmailStrDNS, Schema
 from polar.models import Donation as DonationModel
 from polar.models.organization import Organization
 from polar.models.user import User
@@ -71,7 +71,7 @@ class DonationCurrencyAmount(CurrencyAmount):
 
 class DonationCreateStripePaymentIntent(Schema):
     to_organization_id: UUID4
-    email: str = Field(
+    email: EmailStrDNS = Field(
         description="The donators email address. Receipts will be sent to this address."
     )
     amount: DonationCurrencyAmount

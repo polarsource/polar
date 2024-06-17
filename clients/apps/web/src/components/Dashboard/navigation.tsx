@@ -6,7 +6,6 @@ import { ArrowUpRightIcon } from '@heroicons/react/20/solid'
 import {
   AllInclusiveOutlined,
   AttachMoneyOutlined,
-  Bolt,
   BoltOutlined,
   DiamondOutlined,
   Face,
@@ -225,31 +224,6 @@ const maintainerRoutesList = (org: Organization): Route[] => [
       {
         title: 'Subscriptions',
         link: `/maintainer/${org.name}/sales/subscriptions`,
-      },
-    ],
-  },
-  {
-    id: 'org-subscriptions',
-    title: 'Subscriptions',
-    icon: <Bolt className="h-5 w-5" fontSize="inherit" />,
-    postIcon: undefined,
-    link: `/maintainer/${org.name}/subscriptions/overview`,
-    checkIsActive: (currentRoute: string): boolean => {
-      return currentRoute.startsWith(`/maintainer/${org.name}/subscriptions`)
-    },
-    if: org.feature_settings?.subscriptions_enabled,
-    subs: [
-      {
-        title: 'Overview',
-        link: `/maintainer/${org.name}/subscriptions/overview`,
-      },
-      {
-        title: 'Tiers',
-        link: `/maintainer/${org.name}/products/overview`,
-      },
-      {
-        title: 'Subscribers',
-        link: `/maintainer/${org.name}/subscriptions/subscribers`,
       },
     ],
   },

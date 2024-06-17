@@ -22,7 +22,7 @@ export default async function Page({
   params: { organization: string }
   searchParams: DataTableSearchParams & {
     type?: SubscriptionTierType
-    subscription_tier_id?: string
+    product_id?: string
     status?: Extract<SubscriptionTierType, 'active' | 'inactive'>
   }
 }) {
@@ -46,7 +46,7 @@ export default async function Page({
       pagination={pagination}
       sorting={sorting}
       subscriptionTierType={searchParams.type}
-      subscriptionTierId={searchParams.subscription_tier_id}
+      productId={searchParams.product_id}
       subscriptionStatus={searchParams.status}
     />
   )

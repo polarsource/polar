@@ -1,6 +1,4 @@
-import { formatCurrencyAndAmount } from '@/utils/money'
 import * as Plot from '@observablehq/plot'
-import { SubscriptionsStatisticsPeriod } from '@polar-sh/sdk'
 import { useCallback, useEffect, useState } from 'react'
 
 const createAreaGradient = (id: string) => {
@@ -64,11 +62,6 @@ export class Callback extends Plot.Dot {
     }
     return null
   }
-}
-
-export interface ParsedSubscriptionsStatisticsPeriod
-  extends SubscriptionsStatisticsPeriod {
-  parsedStartDate: Date
 }
 
 export interface ChartData {
@@ -210,56 +203,6 @@ export function Chart<T extends ChartData, K extends keyof T>({
       className="dark:text-polar-500 text-gray-300"
       ref={setContainerRef}
       onMouseLeave={onMouseLeave}
-    />
-  )
-}
-
-interface SubscribersChartProps {
-  data: ParsedSubscriptionsStatisticsPeriod[]
-  onDataIndexHover?: (index: number | undefined) => void
-  hoveredIndex?: number | undefined
-}
-
-export const SubscribersChart: React.FC<SubscribersChartProps> = ({
-  data,
-  onDataIndexHover,
-  hoveredIndex,
-}) => {
-  return (
-    <Chart
-      data={data}
-      y="subscribers"
-      axisYOptions={{
-        label: null,
-        stroke: 'none',
-      }}
-      onDataIndexHover={onDataIndexHover}
-      hoveredIndex={hoveredIndex}
-    />
-  )
-}
-
-interface EarningsChartProps {
-  data: ParsedSubscriptionsStatisticsPeriod[]
-  onDataIndexHover?: (index: number | undefined) => void
-  hoveredIndex?: number | undefined
-}
-
-export const EarningsChart: React.FC<EarningsChartProps> = ({
-  data,
-  onDataIndexHover,
-  hoveredIndex,
-}) => {
-  return (
-    <Chart
-      data={data}
-      y="earnings"
-      axisYOptions={{
-        label: null,
-        tickFormat: (t, _i) => formatCurrencyAndAmount(t, 'usd'),
-      }}
-      onDataIndexHover={onDataIndexHover}
-      hoveredIndex={hoveredIndex}
     />
   )
 }

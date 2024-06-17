@@ -1,11 +1,7 @@
+import { useFreeTier } from '@/hooks/queries'
 import { api } from '@/utils/api'
 import { setValidationErrors } from '@/utils/api/errors'
-import {
-  Organization,
-  ResponseError,
-  SubscriptionCreateEmail,
-  ValidationError,
-} from '@polar-sh/sdk'
+import { Organization, ResponseError, ValidationError } from '@polar-sh/sdk'
 import Button from 'polarkit/components/ui/atoms/button'
 import Input from 'polarkit/components/ui/atoms/input'
 import {
@@ -28,18 +24,24 @@ const AddSubscriberModal = ({
   hide: (added: boolean) => void
   organization: Organization
 }) => {
-  const form = useForm<SubscriptionCreateEmail>()
+  const { data: freeTier } = useFreeTier(organization.id)
+  const form = useForm<{ email: string }>()
   const { control, handleSubmit, setError } = form
   const [loading, setLoading] = useState(false)
 
-  const onSubmit: SubmitHandler<SubscriptionCreateEmail> = useCallback(
-    async (subscriptionCreateEmail) => {
+  const onSubmit: SubmitHandler<{ email: string }> = useCallback(
+    async (formData) => {
+      if (!freeTier) {
+        return
+      }
+
       setLoading(true)
       try {
-        await api.subscriptions.createEmailSubscription({
-          organizationName: organization.name,
-          platform: organization.platform,
-          subscriptionCreateEmail,
+        await api.subscriptions.createSubscription({
+          subscriptionCreateEmail: {
+            ...formData,
+            product_id: freeTier.id,
+          },
         })
         hide(true)
       } catch (e) {
@@ -56,7 +58,7 @@ const AddSubscriberModal = ({
         setLoading(false)
       }
     },
-    [organization, hide, setError],
+    [freeTier, hide, setError],
   )
 
   return (

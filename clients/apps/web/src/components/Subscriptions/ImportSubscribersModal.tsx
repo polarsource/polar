@@ -28,8 +28,7 @@ const ImportSubscribersModal = ({
 
     await api.subscriptions
       .subscriptionsImport({
-        organizationName: organization.name,
-        platform: organization.platform,
+        organizationId: organization.id,
         file: selectedFile,
       })
       .then((res) => {

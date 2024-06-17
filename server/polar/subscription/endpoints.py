@@ -2,21 +2,24 @@ from collections.abc import AsyncGenerator
 from typing import Annotated
 
 import structlog
-from fastapi import Depends, Query, Response, UploadFile
+from fastapi import Depends, File, Form, Query, Response, UploadFile
 from fastapi.responses import StreamingResponse
 from pydantic import UUID4
 
 from polar.authz.service import AccessType, Authz
 from polar.enums import UserSignupType
-from polar.exceptions import ResourceNotFound, Unauthorized
-from polar.kit.csv import get_emails_from_csv, get_iterable_from_binary_io
+from polar.exceptions import PolarRequestValidationError
+from polar.kit.csv import (
+    IterableCSVWriter,
+    get_emails_from_csv,
+    get_iterable_from_binary_io,
+)
 from polar.kit.pagination import ListResource, PaginationParams, PaginationParamsQuery
 from polar.kit.sorting import Sorting, SortingGetter
 from polar.models import Subscription
 from polar.models.product import SubscriptionTierType
-from polar.organization.dependencies import ResolvedOrganization
+from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession, get_db_session
-from polar.posthog import posthog
 from polar.routing import APIRouter
 from polar.user.service.user import user as user_service
 
@@ -38,28 +41,30 @@ SearchSorting = Annotated[
 ]
 
 
-@router.get(
-    "/subscriptions/search",
-    response_model=ListResource[SubscriptionSchema],
-)
-async def search_subscriptions(
-    auth_subject: auth.CreatorSubscriptionsRead,
+@router.get("/", response_model=ListResource[SubscriptionSchema])
+async def list_subscriptions(
+    auth_subject: auth.SubscriptionsRead,
     pagination: PaginationParamsQuery,
     sorting: SearchSorting,
-    organization: ResolvedOrganization,
-    type: SubscriptionTierType | None = Query(None),
-    subscription_tier_id: UUID4 | None = Query(None),
-    subscriber_user_id: UUID4 | None = Query(None),
-    active: bool | None = Query(None),
+    organization_id: UUID4 | None = Query(
+        None, description="Filter by organization ID."
+    ),
+    product_id: UUID4 | None = Query(None, description="Filter by product ID."),
+    type: SubscriptionTierType | None = Query(
+        None, description="Filter by tier type.", deprecated=True
+    ),
+    active: bool | None = Query(
+        None, description="Filter by active or inactive subscription."
+    ),
     session: AsyncSession = Depends(get_db_session),
 ) -> ListResource[SubscriptionSchema]:
-    results, count = await subscription_service.search(
+    """List subscriptions."""
+    results, count = await subscription_service.list(
         session,
         auth_subject,
         type=type,
-        organization=organization,
-        subscription_tier_id=subscription_tier_id,
-        subscriber_user_id=subscriber_user_id,
+        organization_id=organization_id,
+        product_id=product_id,
         active=active,
         pagination=pagination,
         sorting=sorting,
@@ -72,64 +77,103 @@ async def search_subscriptions(
     )
 
 
-@router.post(
-    "/subscriptions/email",
-    response_model=SubscriptionSchema,
-    status_code=201,
-)
-async def create_email_subscription(
+@router.post("/", response_model=SubscriptionSchema, status_code=201)
+async def create_subscription(
     subscription_create: SubscriptionCreateEmail,
-    auth_subject: auth.CreatorSubscriptionsWrite,
-    organization: ResolvedOrganization,
+    auth_subject: auth.SubscriptionsWrite,
     authz: Authz = Depends(Authz.authz),
     session: AsyncSession = Depends(get_db_session),
 ) -> Subscription:
-    # authz
-    if not await authz.can(auth_subject.subject, AccessType.write, organization):
-        raise Unauthorized()
+    """Create a subscription on the free tier for a given email."""
+    product = await product_service.get(session, subscription_create.product_id)
+    if product is None:
+        raise PolarRequestValidationError(
+            [
+                {
+                    "loc": ("body", "product_id"),
+                    "msg": "Product does not exist.",
+                    "type": "value_error",
+                    "input": subscription_create.product_id,
+                }
+            ]
+        )
 
-    # find free tier
-    free_tier = await product_service.get_free(session, organization=organization)
-    if free_tier is None:
-        raise ResourceNotFound("No free tier found")
+    await session.refresh(product, {"organization"})
+    if not await authz.can(
+        auth_subject.subject, AccessType.write, product.organization
+    ):
+        raise PolarRequestValidationError(
+            [
+                {
+                    "loc": ("body", "product_id"),
+                    "msg": "Product does not exist.",
+                    "type": "value_error",
+                    "input": subscription_create.product_id,
+                }
+            ]
+        )
+
+    if product.type != SubscriptionTierType.free:
+        raise PolarRequestValidationError(
+            [
+                {
+                    "loc": ("body", "product_id"),
+                    "msg": "Product is not the free tier.",
+                    "type": "value_error",
+                    "input": subscription_create.product_id,
+                }
+            ]
+        )
 
     user = await user_service.get_by_email_or_signup(
         session, subscription_create.email, signup_type=UserSignupType.imported
     )
     subscription = await subscription_service.create_arbitrary_subscription(
-        session, user=user, product=free_tier
-    )
-
-    posthog.auth_subject_event(
-        auth_subject,
-        "subscriptions",
-        "email_import",
-        "create",
-        {"subscription_tier_id": free_tier.id},
+        session, user=user, product=product
     )
 
     return subscription
 
 
-@router.post(
-    "/subscriptions/import",
-    response_model=SubscriptionsImported,
-)
+@router.post("/import", response_model=SubscriptionsImported)
 async def subscriptions_import(
-    auth_subject: auth.CreatorSubscriptionsWrite,
-    file: UploadFile,
-    organization: ResolvedOrganization,
+    auth_subject: auth.SubscriptionsWrite,
+    file: Annotated[UploadFile, File(description="CSV file with emails.")],
+    organization_id: Annotated[
+        UUID4,
+        Form(description="The organization ID on which to import the subscriptions."),
+    ],
     authz: Authz = Depends(Authz.authz),
     session: AsyncSession = Depends(get_db_session),
 ) -> SubscriptionsImported:
-    # find free tier
+    """Import subscriptions from a CSV file."""
+    organization = await organization_service.get(session, organization_id)
+    if organization is None or not await authz.can(
+        auth_subject.subject, AccessType.write, organization
+    ):
+        raise PolarRequestValidationError(
+            [
+                {
+                    "loc": ("body", "organization_id"),
+                    "msg": "Organization does not exist.",
+                    "type": "value_error",
+                    "input": organization_id,
+                }
+            ]
+        )
+
     free_tier = await product_service.get_free(session, organization=organization)
     if free_tier is None:
-        raise ResourceNotFound("No free tier found")
-
-    # authz
-    if not await authz.can(auth_subject.subject, AccessType.write, organization):
-        raise Unauthorized()
+        raise PolarRequestValidationError(
+            [
+                {
+                    "loc": ("body", "organization_id"),
+                    "msg": "Organization does not have a free tier.",
+                    "type": "value_error",
+                    "input": organization_id,
+                }
+            ]
+        )
 
     emails = get_emails_from_csv(get_iterable_from_binary_io(file.file))
 
@@ -149,60 +193,49 @@ async def subscriptions_import(
         except Exception as e:
             log.error("subscriptions_import.failed", e=e)
 
-    posthog.auth_subject_event(
-        auth_subject,
-        "subscriptions",
-        "import",
-        "create",
-        {
-            "subscription_tier_id": free_tier.id,
-            "email_count": count,
-        },
-    )
-
     return SubscriptionsImported(count=count)
 
 
-@router.get(
-    "/subscriptions/export",
-)
+@router.get("/export")
 async def subscriptions_export(
-    auth_subject: auth.CreatorSubscriptionsRead,
-    organization: ResolvedOrganization,
-    authz: Authz = Depends(Authz.authz),
+    auth_subject: auth.SubscriptionsRead,
+    organization_id: UUID4 | None = Query(
+        None, description="Filter by organization ID."
+    ),
     session: AsyncSession = Depends(get_db_session),
 ) -> Response:
-    # authz
-    if not await authz.can(auth_subject.subject, AccessType.write, organization):
-        raise Unauthorized()
+    """Export subscriptions as a CSV file."""
 
     async def create_csv() -> AsyncGenerator[str, None]:
+        csv_writer = IterableCSVWriter(dialect="excel")
         # CSV header
-        yield "email,name,created_at,active,tier\n"
+        yield csv_writer.getrow(
+            ("Email", "Name", "Created At", "Active", "Product", "Price", "Currency")
+        )
 
-        (subscribers, _) = await subscription_service.search(
+        (subscribers, _) = await subscription_service.list(
             session,
             auth_subject,
-            organization=organization,
+            organization_id=organization_id,
             pagination=PaginationParams(limit=1000000, page=1),
         )
 
         for sub in subscribers:
-            fields = [
-                sub.user.email,
-                sub.user.username_or_email,
-                sub.created_at.strftime("%Y-%m-%d %H:%M:%S"),
-                "true" if sub.active else "false",
-                sub.product.name,
-            ]
+            yield csv_writer.getrow(
+                (
+                    sub.user.email,
+                    sub.user.username_or_email,
+                    sub.created_at.isoformat(),
+                    "true" if sub.active else "false",
+                    sub.product.name,
+                    sub.price.price_amount / 100 if sub.price is not None else "",
+                    sub.price.price_currency if sub.price is not None else "",
+                )
+            )
 
-            # strip commas (poor mans CSV)
-            fields = [f.replace(",", "") for f in fields]
-
-            yield ",".join(fields) + "\n"
-
-    posthog.auth_subject_event(auth_subject, "subscriptions", "export", "create")
-
-    name = f"{organization.name}_subscribers.csv"
-    headers = {"Content-Disposition": f'attachment; filename="{name}"'}
-    return StreamingResponse(create_csv(), headers=headers, media_type="text/csv")
+    filename = "polar-subscribers.csv"
+    return StreamingResponse(
+        create_csv(),
+        media_type="text/csv",
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
+    )

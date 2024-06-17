@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from pydantic import UUID4
+from pydantic import UUID4, Field
 
 from polar.kit.schemas import EmailStrDNS, Schema, TimestampedSchema
 from polar.models.subscription import SubscriptionStatus
@@ -35,8 +35,15 @@ class Subscription(SubscriptionBase):
 
 
 class SubscriptionCreateEmail(Schema):
-    email: EmailStrDNS
+    """Request schema for creating a subscription by email."""
+
+    email: EmailStrDNS = Field(description="The email address of the user.")
+    product_id: UUID4 = Field(
+        description="The ID of the product. **Must be the free subscription tier**."
+    )
 
 
 class SubscriptionsImported(Schema):
+    """Result of a subscription import operation."""
+
     count: int

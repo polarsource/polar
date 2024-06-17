@@ -147,15 +147,14 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         res = await session.execute(query)
         return res.scalars().unique().one_or_none()
 
-    async def search(
+    async def list(
         self,
         session: AsyncSession,
         auth_subject: AuthSubject[User | Organization],
         *,
-        organization: Organization,
+        organization_id: uuid.UUID | None = None,
         type: SubscriptionTierType | None = None,
-        subscription_tier_id: uuid.UUID | None = None,
-        subscriber_user_id: uuid.UUID | None = None,
+        product_id: uuid.UUID | None = None,
         active: bool | None = None,
         pagination: PaginationParams,
         sorting: list[Sorting[SearchSortProperty]] = [
@@ -170,17 +169,14 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
             Subscription.price, isouter=True
         )
 
-        if organization is not None:
-            statement = statement.where(Product.organization_id == organization.id)
+        if organization_id is not None:
+            statement = statement.where(Product.organization_id == organization_id)
 
         if type is not None:
             statement = statement.where(Product.type == type)
 
-        if subscription_tier_id is not None:
-            statement = statement.where(Product.id == subscription_tier_id)
-
-        if subscriber_user_id is not None:
-            statement = statement.where(Subscription.user_id == subscriber_user_id)
+        if product_id is not None:
+            statement = statement.where(Product.id == product_id)
 
         if active is not None:
             if active:
@@ -232,7 +228,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         user: User,
         *,
         organization_id: uuid.UUID | None = None,
-    ) -> list[Subscription]:
+    ) -> Sequence[Subscription]:
         statement = (
             select(Subscription)
             .join(Subscription.product)
@@ -245,7 +241,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
 
         result = await session.execute(statement)
 
-        return list(result.scalars().all())
+        return result.scalars().all()
 
     async def create_arbitrary_subscription(
         self,

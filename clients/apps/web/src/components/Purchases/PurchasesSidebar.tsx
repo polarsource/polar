@@ -56,7 +56,7 @@ const PurchaseSidebar: React.FC<React.PropsWithChildren<{}>> = ({
   )
 
   return (
-    <ShadowBox className="sticky top-[6.5rem] flex max-w-[320px] flex-col gap-6">
+    <ShadowBox className="sticky top-[6.5rem] flex w-full max-w-[320px] flex-shrink-0 flex-col gap-6">
       <h1 className="text-lg font-medium">Purchases</h1>
       <div className="flex flex-col gap-y-3">
         <div className="flex flex-col">

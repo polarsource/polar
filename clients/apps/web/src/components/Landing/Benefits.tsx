@@ -8,6 +8,7 @@ import { twMerge } from 'tailwind-merge'
 import { DiscordIcon } from '../Benefit/utils'
 import GitHubIcon from '../Icons/GitHubIcon'
 import { Section } from './Section'
+import { Circles } from './molecules/Circles'
 
 interface BenefitCardProps {
   className?: string
@@ -25,7 +26,7 @@ const BenefitCard = ({
   return (
     <div
       className={twMerge(
-        'hover:bg-gray-75 dark:hover:bg-polar-900 dark:bg-polar-950 flex flex-col justify-between gap-y-8 p-8 transition-colors',
+        'hover:bg-gray-75 dark:hover:bg-polar-900 dark:bg-polar-950 flex flex-col justify-between gap-y-8 bg-white p-8 transition-colors',
         className,
       )}
     >
@@ -40,15 +41,13 @@ const BenefitCard = ({
 
 export const Benefits = () => {
   return (
-    <Section id="benefits" className="gap-y-24">
-      <div
-        className="absolute inset-0 -z-10"
-        style={{
-          backgroundImage: 'url(/assets/landing/circles.svg)',
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-        }}
-      />
+    <Section
+      id="benefits"
+      className="gap-y-24"
+      wrapperClassName="overflow-hidden"
+    >
+      <Circles className="absolute inset-0 top-1/2 -z-10 hidden -translate-y-1/2 text-white dark:block" />
+      <Circles className="absolute inset-0 top-1/2 -z-10 block -translate-y-1/2 text-black dark:hidden" />
       <div className="flex flex-col items-center gap-y-4">
         <h1 className="text-center text-4xl">Benefits</h1>
         <p className="dark:text-polar-200 text-center text-xl text-gray-500">

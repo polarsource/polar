@@ -1,0 +1,118 @@
+import { ComponentProps } from 'react'
+
+export const Circles = (props: Partial<ComponentProps<'svg'>>) => {
+  return (
+    <svg
+      viewBox="0 0 1920 1080"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      {...props}
+    >
+      <g>
+        <path
+          d="M186.898 -13.9385V1094.15"
+          stroke="currentColor"
+          stroke-opacity="0.06"
+        />
+        <path
+          d="M379.787 -13.9385V1094.15"
+          stroke="currentColor"
+          stroke-opacity="0.06"
+        />
+        <path
+          d="M572.676 -13.9385V1094.15"
+          stroke="currentColor"
+          stroke-opacity="0.06"
+        />
+        <path
+          d="M765.564 -13.9385V1094.15"
+          stroke="currentColor"
+          stroke-opacity="0.06"
+        />
+        <path
+          d="M958.455 -13.9385V1094.15"
+          stroke="currentColor"
+          stroke-opacity="0.06"
+        />
+        <path
+          d="M1151.34 -13.9385V1094.15"
+          stroke="currentColor"
+          stroke-opacity="0.06"
+        />
+        <path
+          d="M1344.23 -13.9385V1094.15"
+          stroke="currentColor"
+          stroke-opacity="0.06"
+        />
+        <path
+          d="M1537.12 -13.9385V1094.15"
+          stroke="currentColor"
+          stroke-opacity="0.06"
+        />
+        <path
+          d="M1730.01 -13.9385V1094.15"
+          stroke="currentColor"
+          stroke-opacity="0.06"
+        />
+        <path
+          d="M-26.5117 921.778L2065.51 921.778"
+          stroke="currentColor"
+          stroke-opacity="0.06"
+        />
+        <path
+          d="M-26.5117 728.889L2065.51 728.889"
+          stroke="currentColor"
+          stroke-opacity="0.06"
+        />
+        <path
+          d="M-26.5117 536L2065.51 536"
+          stroke="currentColor"
+          stroke-opacity="0.06"
+        />
+        <path
+          d="M-26.5117 343.111L2065.51 343.111"
+          stroke="currentColor"
+          stroke-opacity="0.06"
+        />
+        <path
+          d="M-26.5117 150.222L2065.51 150.222"
+          stroke="currentColor"
+          stroke-opacity="0.06"
+        />
+        <circle
+          cx="958.265"
+          cy="535.487"
+          r="384.765"
+          stroke="currentColor"
+          stroke-opacity="0.06"
+        />
+        <circle
+          cx="958.043"
+          cy="535.487"
+          r="770.543"
+          stroke="currentColor"
+          stroke-opacity="0.06"
+        />
+        <path
+          d="M1922.5 535.5C1922.5 1067.9 1490.68 1499.5 958 1499.5C41.321 1499.5 -6.5 1067.9 -6.5 535.5C-6.5 3.09775 41.321 -428.5 958 -428.5C1490.68 -428.5 1922.5 3.09775 1922.5 535.5Z"
+          stroke="currentColor"
+          stroke-opacity="0.06"
+        />
+        <circle
+          cx="958.154"
+          cy="535.487"
+          r="577.654"
+          stroke="currentColor"
+          stroke-opacity="0.06"
+        />
+        <circle
+          cx="958.376"
+          cy="536.376"
+          r="191.876"
+          stroke="currentColor"
+          stroke-opacity="0.06"
+        />
+      </g>
+    </svg>
+  )
+}

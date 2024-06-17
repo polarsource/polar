@@ -175,7 +175,7 @@ export default function Page() {
       </Section>
 
       <Section className="flex flex-col items-center gap-16 md:gap-24 md:py-24">
-        <h1 className="px-16 text-center text-4xl leading-snug">
+        <h1 className="px-4 text-center text-4xl leading-snug">
           Rewarding contributors has never been easier
         </h1>
         <picture>

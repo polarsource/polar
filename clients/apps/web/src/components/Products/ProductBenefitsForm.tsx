@@ -1,6 +1,7 @@
 import { useDeleteBenefit } from '@/hooks/queries'
 import { LoyaltyOutlined, MoreVertOutlined } from '@mui/icons-material'
 import { BenefitPublicInner, Organization } from '@polar-sh/sdk'
+import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { Switch } from 'polarkit/components/ui/atoms'
 import Button from 'polarkit/components/ui/atoms/button'
@@ -149,14 +150,11 @@ const ProductBenefitsForm = ({
       <div className={twMerge('flex w-full flex-col gap-y-6', className)}>
         <div className="flex flex-row items-center justify-between">
           <h2 className="text-gray-950 dark:text-white">Benefits</h2>
-          <Button
-            size="sm"
-            className="self-start"
-            onClick={toggle}
-            type="button"
-          >
-            New Benefit
-          </Button>
+          <Link href={`/maintainer/${organization.name}/products/benefits`}>
+            <Button size="sm" className="self-start" type="button">
+              New Benefit
+            </Button>
+          </Link>
         </div>
         <div className="flex flex-col gap-y-6">
           <div className="flex flex-col gap-y-4">

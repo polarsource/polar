@@ -428,6 +428,14 @@ class StripeService:
     def get_checkout_session(self, id: str) -> stripe_lib.checkout.Session:
         return stripe_lib.checkout.Session.retrieve(id)
 
+    def get_checkout_session_by_payment_intent(
+        self, payment_intent: str
+    ) -> stripe_lib.checkout.Session | None:
+        sessions = stripe_lib.checkout.Session.list(payment_intent=payment_intent)
+        for session in sessions:
+            return session
+        return None
+
     def get_subscription(self, id: str) -> stripe_lib.Subscription:
         return stripe_lib.Subscription.retrieve(id, expand=["latest_invoice"])
 

@@ -75,6 +75,7 @@ export const getRequestBodySchema = (
     operation &&
     operation.requestBody &&
     'content' in operation.requestBody &&
+    operation.requestBody.content['application/json'] &&
     'schema' in operation.requestBody.content['application/json'] &&
     operation.requestBody.content['application/json'].schema
 

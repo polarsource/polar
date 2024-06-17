@@ -555,59 +555,13 @@ class TestUpdateProductBenefitsGrants:
 
 
 @pytest.mark.asyncio
-class TestSearch:
-    @pytest.mark.auth(AuthSubjectFixture(subject="user_second"))
-    async def test_user_own_subscription(
-        self,
-        auth_subject: AuthSubject[User],
-        session: AsyncSession,
-        save_fixture: SaveFixture,
-        organization: Organization,
-        user: User,
-        user_second: User,
-        product: Product,
-    ) -> None:
-        """
-        Checks that own subscriptions are not returned by this method.
-
-        This is the role of `.search_subscribed`.
-        """
-        await create_active_subscription(
-            save_fixture,
-            product=product,
-            user=user,
-            started_at=datetime(2023, 1, 1),
-            ended_at=datetime(2023, 6, 15),
-        )
-        await create_active_subscription(
-            save_fixture,
-            product=product,
-            user=user_second,
-            started_at=datetime(2023, 1, 1),
-            ended_at=datetime(2023, 6, 15),
-        )
-
-        # then
-        session.expunge_all()
-
-        results, count = await subscription_service.search(
-            session,
-            auth_subject,
-            organization=organization,
-            pagination=PaginationParams(1, 10),
-        )
-
-        assert len(results) == 0
-        assert count == 0
-
+class TestList:
     @pytest.mark.auth
     async def test_user_not_organization_member(
         self,
         auth_subject: AuthSubject[User],
         session: AsyncSession,
         save_fixture: SaveFixture,
-        organization: Organization,
-        user: User,
         user_second: User,
         product: Product,
     ) -> None:
@@ -622,11 +576,8 @@ class TestSearch:
         # then
         session.expunge_all()
 
-        results, count = await subscription_service.search(
-            session,
-            auth_subject,
-            organization=organization,
-            pagination=PaginationParams(1, 10),
+        results, count = await subscription_service.list(
+            session, auth_subject, pagination=PaginationParams(1, 10)
         )
 
         assert len(results) == 0
@@ -638,8 +589,6 @@ class TestSearch:
         auth_subject: AuthSubject[User],
         session: AsyncSession,
         save_fixture: SaveFixture,
-        organization: Organization,
-        user: User,
         user_second: User,
         user_organization: UserOrganization,
         product: Product,
@@ -655,11 +604,8 @@ class TestSearch:
         # then
         session.expunge_all()
 
-        results, count = await subscription_service.search(
-            session,
-            auth_subject,
-            organization=organization,
-            pagination=PaginationParams(1, 10),
+        results, count = await subscription_service.list(
+            session, auth_subject, pagination=PaginationParams(1, 10)
         )
 
         assert len(results) == 1
@@ -686,11 +632,8 @@ class TestSearch:
         # then
         session.expunge_all()
 
-        results, count = await subscription_service.search(
-            session,
-            auth_subject,
-            organization=organization,
-            pagination=PaginationParams(1, 10),
+        results, count = await subscription_service.list(
+            session, auth_subject, pagination=PaginationParams(1, 10)
         )
 
         assert len(results) == 1

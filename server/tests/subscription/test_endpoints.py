@@ -10,29 +10,19 @@ from tests.fixtures.random_objects import create_active_subscription
 
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
-class TestSearchSubscriptions:
+class TestListSubscriptions:
     async def test_anonymous(
         self, client: AsyncClient, organization: Organization
     ) -> None:
-        response = await client.get("/api/v1/subscriptions/subscriptions/search")
+        response = await client.get("/api/v1/subscriptions/")
 
         assert response.status_code == 401
 
     @pytest.mark.auth
-    async def test_not_existing_organization(self, client: AsyncClient) -> None:
-        response = await client.get(
-            "/api/v1/subscriptions/subscriptions/search",
-            params={"platform": "github", "organization_name": "not_existing"},
-        )
-
-        assert response.status_code == 422
-
-    @pytest.mark.auth
-    async def test_valid_organization(
+    async def test_valid(
         self,
         save_fixture: SaveFixture,
         client: AsyncClient,
-        organization: Organization,
         user: User,
         user_organization: UserOrganization,
         product: Product,
@@ -45,13 +35,7 @@ class TestSearchSubscriptions:
             ended_at=datetime(2023, 6, 15),
         )
 
-        response = await client.get(
-            "/api/v1/subscriptions/subscriptions/search",
-            params={
-                "platform": organization.platform.value,
-                "organization_name": organization.name,
-            },
-        )
+        response = await client.get("/api/v1/subscriptions/")
 
         assert response.status_code == 200
 

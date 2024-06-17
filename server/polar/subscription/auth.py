@@ -3,23 +3,10 @@ from typing import Annotated
 from fastapi import Depends
 
 from polar.auth.dependencies import Authenticator
-from polar.auth.models import Anonymous, AuthSubject, Organization, User
+from polar.auth.models import AuthSubject, Organization, User
 from polar.auth.scope import Scope
 
-_CreatorSubscriptionsReadOrAnonymous = Authenticator(
-    required_scopes={
-        Scope.web_default,
-        Scope.subscriptions_read,
-        Scope.subscriptions_write,
-    },
-    allowed_subjects={Anonymous, User, Organization},
-)
-CreatorSubscriptionsReadOrAnonymous = Annotated[
-    AuthSubject[Anonymous | User | Organization],
-    Depends(_CreatorSubscriptionsReadOrAnonymous),
-]
-
-_CreatorSubscriptionsRead = Authenticator(
+_SubscriptionsRead = Authenticator(
     required_scopes={
         Scope.web_default,
         Scope.subscriptions_read,
@@ -27,15 +14,15 @@ _CreatorSubscriptionsRead = Authenticator(
     },
     allowed_subjects={User, Organization},
 )
-CreatorSubscriptionsRead = Annotated[
-    AuthSubject[User | Organization], Depends(_CreatorSubscriptionsRead)
+SubscriptionsRead = Annotated[
+    AuthSubject[User | Organization], Depends(_SubscriptionsRead)
 ]
 
 
-_CreatorSubscriptionsWrite = Authenticator(
+_SubscriptionsWrite = Authenticator(
     required_scopes={Scope.web_default, Scope.subscriptions_write},
     allowed_subjects={User, Organization},
 )
-CreatorSubscriptionsWrite = Annotated[
-    AuthSubject[User | Organization], Depends(_CreatorSubscriptionsWrite)
+SubscriptionsWrite = Annotated[
+    AuthSubject[User | Organization], Depends(_SubscriptionsWrite)
 ]

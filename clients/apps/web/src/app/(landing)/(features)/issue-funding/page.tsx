@@ -228,7 +228,7 @@ const ListItem = ({ children }: PropsWithChildren) => {
 }
 
 export const metadata = {
-  title: 'Issue Funding',
+  title: PAGE_TITLE,
   description: PAGE_DESCRIPTION,
   openGraph: {
     description: PAGE_DESCRIPTION,

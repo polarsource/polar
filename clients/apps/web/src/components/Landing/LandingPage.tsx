@@ -10,6 +10,14 @@ export default function Page() {
   return (
     <div className="flex flex-col items-center">
       <Hero />
+      <PageContent />
+    </div>
+  )
+}
+
+export const PageContent = () => {
+  return (
+    <>
       <Journey />
       <Separator className="w-screen" />
       <Testamonials />
@@ -19,6 +27,6 @@ export default function Page() {
       <Pricing />
       <Separator className="w-screen" />
       <API />
-    </div>
+    </>
   )
 }

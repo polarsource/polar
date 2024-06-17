@@ -113,7 +113,7 @@ const items = [
             icon={<GitHubIcon width={20} height={20} />}
             title="Issue Funding"
             description="Automatically embed the Polar funding badge on your GitHub issues to crowdfund your backlog."
-            link="/docs/overview/issue-funding/overview"
+            link="/issue-funding"
           >
             <picture>
               <source

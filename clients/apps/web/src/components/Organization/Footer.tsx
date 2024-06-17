@@ -51,9 +51,7 @@ const Footer = ({
               <FooterLink href="/docs/overview/newsletters">
                 Newsletter
               </FooterLink>
-              <FooterLink href="/docs/overview/issue-funding/overview">
-                Issue Funding
-              </FooterLink>
+              <FooterLink href="/issue-funding">Issue Funding</FooterLink>
             </div>
           </div>
           <div className="flex flex-col gap-y-4">

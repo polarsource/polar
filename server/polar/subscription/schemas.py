@@ -1,4 +1,4 @@
-from datetime import date, datetime
+from datetime import datetime
 
 from pydantic import UUID4
 
@@ -40,14 +40,3 @@ class SubscriptionCreateEmail(Schema):
 
 class SubscriptionsImported(Schema):
     count: int
-
-
-class SubscriptionsStatisticsPeriod(Schema):
-    start_date: date
-    end_date: date
-    subscribers: int
-    earnings: int
-
-
-class SubscriptionsStatistics(Schema):
-    periods: list[SubscriptionsStatisticsPeriod]

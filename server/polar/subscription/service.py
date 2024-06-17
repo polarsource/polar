@@ -7,20 +7,7 @@ from typing import Any, Literal, cast, overload
 import stripe as stripe_lib
 from discord_webhook import AsyncDiscordWebhook, DiscordEmbed
 from slack_sdk.webhook import WebhookClient as SlackWebhookClient
-from sqlalchemy import (
-    Select,
-    UnaryExpression,
-    and_,
-    asc,
-    desc,
-    distinct,
-    func,
-    not_,
-    or_,
-    select,
-    text,
-    tuple_,
-)
+from sqlalchemy import Select, UnaryExpression, and_, asc, desc, select
 from sqlalchemy.orm import contains_eager, joinedload
 
 from polar.auth.models import (
@@ -42,19 +29,16 @@ from polar.kit.utils import utc_now
 from polar.models import (
     Benefit,
     BenefitGrant,
-    Order,
     Organization,
     Product,
     ProductBenefit,
     ProductPrice,
     Subscription,
-    Transaction,
     User,
     UserOrganization,
 )
 from polar.models.product import SubscriptionTierType
 from polar.models.subscription import SubscriptionStatus
-from polar.models.transaction import TransactionType
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.notifications.notification import (
     MaintainerNewPaidSubscriptionNotificationPayload,
@@ -72,7 +56,6 @@ from polar.worker import enqueue_job
 
 from ..product.service.product import product as product_service
 from ..product.service.product_price import product_price as product_price_service
-from .schemas import SubscriptionsStatisticsPeriod
 
 
 class SubscriptionError(PolarError): ...
@@ -543,154 +526,6 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         async for subscription in subscriptions:
             await self.enqueue_benefits_grants(session, subscription)
 
-    async def get_statistics_periods(
-        self,
-        session: AsyncSession,
-        auth_subject: AuthSubject[User | Organization],
-        *,
-        start_date: date,
-        end_date: date,
-        organization: Organization | None = None,
-        types: list[SubscriptionTierType] | None = None,
-        subscription_tier_id: uuid.UUID | None = None,
-    ) -> list[SubscriptionsStatisticsPeriod]:
-        if end_date > utc_now().date():
-            raise EndDateInTheFuture(end_date)
-
-        subscriptions_statement = self._get_readable_subscriptions_statement(
-            auth_subject
-        )
-
-        if organization is not None:
-            subscriptions_statement = subscriptions_statement.where(
-                Product.organization_id == organization.id
-            )
-
-        if types is not None:
-            subscriptions_statement = subscriptions_statement.where(
-                Product.type.in_(types)
-            )
-
-        if subscription_tier_id is not None:
-            subscriptions_statement = subscriptions_statement.where(
-                Product.id == subscription_tier_id
-            )
-
-        # Set the interval to 1 month
-        # Supporting dynamic interval is difficult for the cumulative column
-        interval = text("interval 'P1M'")
-
-        start_date_column = func.generate_series(
-            start_date, end_date, interval
-        ).column_valued("start_date")
-        end_date_column = start_date_column + interval
-
-        earnings_statement = (
-            select(
-                start_date_column,
-                end_date_column,
-                func.coalesce(
-                    func.sum(Transaction.amount).filter(
-                        Transaction.created_at >= start_date_column,
-                        Transaction.created_at < end_date_column,
-                    ),
-                    0,
-                ),
-            )
-            .join(
-                Transaction,
-                onclause=and_(
-                    Transaction.type == TransactionType.balance,
-                    Transaction.account_id.is_not(None),
-                    Transaction.order_id.in_(
-                        select(Order.id).where(
-                            Order.subscription_id.in_(
-                                subscriptions_statement.with_only_columns(
-                                    Subscription.id
-                                )
-                            )
-                        )
-                    ),
-                ),
-                isouter=True,
-            )
-            .group_by(start_date_column)
-            .order_by(start_date_column)
-        )
-
-        subscriptions_join_clause = and_(
-            Subscription.id.in_(
-                subscriptions_statement.with_only_columns(Subscription.id)
-            ),
-            or_(
-                and_(
-                    or_(
-                        start_date_column <= Subscription.ended_at,
-                        Subscription.ended_at.is_(None),
-                    ),
-                    end_date_column >= Subscription.started_at,
-                ),
-                and_(
-                    Subscription.started_at <= end_date_column,
-                    or_(
-                        Subscription.ended_at >= start_date_column,
-                        Subscription.ended_at.is_(None),
-                    ),
-                ),
-            ),
-            # Exclude subscriptions that were active less than a month
-            # This way, people who subscribe and unsubscribe right away are not counted
-            # Mainly useful for the Free tier,
-            # since paid tiers are canceled at the end of the period
-            not_(
-                and_(
-                    Subscription.ended_at.is_not(None),
-                    Subscription.started_at >= start_date_column,
-                    Subscription.ended_at <= end_date_column,
-                )
-            ),
-        )
-        subscribers_count_statement = (
-            select(start_date_column)
-            .add_columns(
-                end_date_column,
-                # Trick to exclude counting of multiple subscription/unsubscription
-                # that could happen with the Free tier.
-                func.count(
-                    distinct(
-                        tuple_(
-                            Subscription.user_id,
-                            Subscription.product_id,
-                        )
-                    )
-                ).filter(Subscription.id.is_not(None)),
-            )
-            .join(Subscription, onclause=subscriptions_join_clause, isouter=True)
-            .group_by(start_date_column)
-            .order_by(start_date_column)
-        )
-
-        earnings_result = await session.execute(earnings_statement)
-        earnings_results = earnings_result.all()
-
-        subscribers_count_result = await session.execute(subscribers_count_statement)
-        subscribers_counts = list(subscribers_count_result.tuples().all())
-
-        statistics_periods: list[SubscriptionsStatisticsPeriod] = []
-
-        for start_date, end_date, earnings in earnings_results:
-            subscribers = subscribers_counts.pop(0)[2]
-            statistics_periods.append(
-                SubscriptionsStatisticsPeriod(
-                    start_date=start_date,
-                    end_date=end_date,
-                    subscribers=subscribers,
-                    earnings=earnings,
-                )
-            )
-
-        return statistics_periods
-
     async def user_webhook_notifications(
         self, session: AsyncSession, subscription: Subscription
     ) -> None:
@@ -795,15 +630,6 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
             )
 
         return statement
-
-    def _get_subscribed_subscriptions_statement(
-        self, auth_subject: AuthSubject[User]
-    ) -> Select[Any]:
-        user = auth_subject.subject
-        return select(Subscription).where(
-            Subscription.deleted_at.is_(None),
-            Subscription.user_id == user.id,
-        )
 
     async def _get_outdated_grants(
         self,

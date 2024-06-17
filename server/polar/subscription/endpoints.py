@@ -1,5 +1,4 @@
 from collections.abc import AsyncGenerator
-from datetime import date
 from typing import Annotated
 
 import structlog
@@ -24,42 +23,13 @@ from polar.user.service.user import user as user_service
 from ..product.service.product import product as product_service
 from . import auth
 from .schemas import Subscription as SubscriptionSchema
-from .schemas import (
-    SubscriptionCreateEmail,
-    SubscriptionsImported,
-    SubscriptionsStatistics,
-)
+from .schemas import SubscriptionCreateEmail, SubscriptionsImported
 from .service import AlreadySubscribed, SearchSortProperty
 from .service import subscription as subscription_service
 
 log = structlog.get_logger()
 
 router = APIRouter(prefix="/subscriptions", tags=["subscriptions"])
-
-
-@router.get(
-    "/subscriptions/statistics",
-    response_model=SubscriptionsStatistics,
-)
-async def get_subscriptions_statistics(
-    auth_subject: auth.CreatorSubscriptionsRead,
-    organization: ResolvedOrganization,
-    start_date: date = Query(...),
-    end_date: date = Query(...),
-    types: list[SubscriptionTierType] | None = Query(None),
-    subscription_tier_id: UUID4 | None = Query(None),
-    session: AsyncSession = Depends(get_db_session),
-) -> SubscriptionsStatistics:
-    periods = await subscription_service.get_statistics_periods(
-        session,
-        auth_subject,
-        start_date=start_date,
-        end_date=end_date,
-        organization=organization,
-        types=types,
-        subscription_tier_id=subscription_tier_id,
-    )
-    return SubscriptionsStatistics(periods=periods)
 
 
 SearchSorting = Annotated[

@@ -143,6 +143,27 @@ class TestGrantBenefit:
 
         assert not grant.is_granted
 
+    async def test_default_properties_value(
+        self,
+        session: AsyncSession,
+        subscription: Subscription,
+        user: User,
+        benefit_organization: Benefit,
+        benefit_service_mock: MagicMock,
+    ) -> None:
+        benefit_service_mock.grant.side_effect = (
+            lambda user, benefit, properties, **kwargs: properties
+        )
+
+        # then
+        session.expunge_all()
+
+        grant = await benefit_grant_service.grant_benefit(
+            session, user, benefit_organization, subscription=subscription
+        )
+
+        assert grant.properties == {}
+
 
 @pytest.mark.asyncio
 class TestRevokeBenefit:

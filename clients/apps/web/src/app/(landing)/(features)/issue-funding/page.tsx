@@ -174,9 +174,9 @@ export default function Page() {
         </div>
       </Section>
 
-      <Section className="flex flex-col gap-16 md:flex-row md:justify-between md:gap-32 md:py-24">
+      <Section className="flex flex-col items-center gap-16 md:gap-24 md:py-24">
         <h1 className="px-16 text-center text-4xl leading-snug">
-          Rewarding contributions has never been easier
+          Rewarding contributors has never been easier
         </h1>
         <picture>
           <source

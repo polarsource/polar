@@ -1,9 +1,9 @@
-import { Inter } from 'next/font/google'
 import '../styles/globals.scss'
 
 import { UserContextProvider } from '@/providers/auth'
 import { getServerSideAPI } from '@/utils/api/serverside'
 import { Metadata } from 'next'
+import localFont from 'next/font/local'
 import { twMerge } from 'tailwind-merge'
 import {
   PolarPostHogProvider,
@@ -11,11 +11,10 @@ import {
   PolarThemeProvider,
 } from './providers'
 
-// If loading a variable font, you don't need to specify the font weight
-const inter = Inter({
-  subsets: ['latin'],
-  variable: '--font-inter',
+const inter = localFont({
+  src: '../assets/fonts/Inter-Variable.woff2',
   display: 'swap',
+  variable: '--font-inter',
 })
 
 export const metadata: Metadata = {
@@ -72,7 +71,7 @@ export default async function RootLayout({
 
       <body
         className={twMerge(
-          'dark:bg-polar-950 h-full bg-white md:h-screen dark:text-white',
+          `dark:bg-polar-950 h-full bg-white [font-feature-settings:'ss01','ss08','zero'] md:h-screen dark:text-white`,
           inter.className,
         )}
       >

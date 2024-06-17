@@ -1,16 +1,18 @@
 import { PropsWithChildren } from 'react'
 import { twMerge } from 'tailwind-merge'
 
+export type SectionProps = PropsWithChildren<{
+  id?: string
+  className?: string
+  wrapperClassName?: string
+}>
+
 export const Section = ({
   id,
   className,
   wrapperClassName,
   children,
-}: PropsWithChildren<{
-  id?: string
-  className?: string
-  wrapperClassName?: string
-}>) => {
+}: SectionProps) => {
   return (
     <div
       id={id}

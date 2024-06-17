@@ -48,10 +48,10 @@ const FeatureItem = ({
       className={twMerge('group flex h-full flex-col', className)}
       href={link}
     >
-      <Card className="hover:bg-gray-75 dark:hover:to-polar-900 dark:border-polar-800 dark:from-polar-900 dark:to-polar-800 flex h-full flex-col bg-gradient-to-tr from-gray-50 to-blue-50 p-1 transition-colors">
+      <Card className="dark:border-polar-800 dark:from-polar-950 dark:to-polar-900 flex h-full flex-col bg-gradient-to-tr from-white to-blue-50/50 p-1 transition-colors">
         <CardHeader className="flex flex-row items-center gap-x-3 space-y-0 pb-4">
           {icon ? (
-            <span className="dark:bg-polar-700 dark flex h-10 w-10 flex-col items-center justify-center rounded-full bg-white text-xl transition-colors group-hover:bg-blue-500 group-hover:text-white dark:group-hover:bg-white dark:group-hover:text-black">
+            <span className="dark:bg-polar-700 dark flex h-10 w-10 flex-col items-center justify-center rounded-full bg-white text-xl shadow-sm transition-colors group-hover:text-blue-500">
               {React.cloneElement(icon, { fontSize: 'inherit' })}
             </span>
           ) : (
@@ -60,7 +60,7 @@ const FeatureItem = ({
           <h3 className="text-lg leading-snug">{title}</h3>
         </CardHeader>
         <CardContent className="flex h-full flex-col gap-y-4 pb-6">
-          <p className="dark:text-polar-200 h-full leading-relaxed text-gray-500 group-hover:text-black dark:group-hover:text-white">
+          <p className="dark:text-polar-200 h-full leading-relaxed text-gray-500 transition-colors group-hover:text-black dark:group-hover:text-white">
             {description}
           </p>
           {learnMore && (
@@ -104,7 +104,7 @@ const items = [
             link="/docs/overview/subscriptions"
           >
             <SubscriptionTierCard
-              className="dark:bg-polar-900 dark:border-polar-800 border-transparent bg-white"
+              className="dark:bg-polar-900 dark:border-polar-800 border-transparent bg-white shadow-sm"
               subscriptionTier={MOCKED_PRODUCTS[1]}
             />
           </FeatureItem>
@@ -122,7 +122,7 @@ const items = [
               />
               <img
                 className="dark:border-polar-700 rounded-2xl border border-gray-100"
-                srcSet={`/assets/landing/fund_dark.svg`}
+                srcSet={`/assets/landing/fund.svg`}
               />
             </picture>
           </FeatureItem>
@@ -225,7 +225,7 @@ const items = [
               />
               <img
                 className="dark:border-polar-700 rounded-2xl border border-gray-100"
-                srcSet={`/assets/landing/sales_dark.png`}
+                srcSet={`/assets/landing/sales.png`}
               />
             </picture>
           </FeatureItem>

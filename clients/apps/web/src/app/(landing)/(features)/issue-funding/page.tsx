@@ -1,11 +1,10 @@
 import GithubLoginButton from '@/components/Auth/GithubLoginButton'
+import { FeatureSection } from '@/components/Landing/FeatureSection'
 import { PageContent } from '@/components/Landing/LandingPage'
 import { Section } from '@/components/Landing/Section'
-import { ArrowForward } from '@mui/icons-material'
 import { UserSignupType } from '@polar-sh/sdk'
 import Link from 'next/link'
 import { Separator } from 'polarkit/components/ui/separator'
-import { PropsWithChildren } from 'react'
 
 const PAGE_TITLE = 'Issue Funding & Rewards'
 const PAGE_DESCRIPTION = 'A new way to crowdfund your backlog of GitHub issues'
@@ -79,100 +78,50 @@ export default function Page() {
         </picture>
       </Section>
 
-      <Section
-        className="flex flex-col-reverse gap-16 md:flex-row md:justify-between md:gap-32 md:py-24"
-        wrapperClassName="bg-gray-75 dark:bg-polar-900"
-      >
-        <picture className="md:w-1/2">
-          <source
-            media="(prefers-color-scheme: dark)"
-            srcSet={`/assets/landing/issue-funding/funding_modal_dark.png`}
-          />
-          <img
-            className="border-gray-75 dark:border-polar-700 rounded-2xl border shadow-sm"
-            alt="Issue Funding Badge"
-            src={`/assets/landing/issue-funding/funding_modal.png`}
-          />
-        </picture>
-        <div className="flex flex-col gap-y-6 md:w-1/2">
-          <div className="flex flex-col gap-y-4">
-            <h1 className="text-2xl md:text-4xl md:leading-snug">
-              Seamlessly badge issues
-            </h1>
-            <p className="dark:text-polar-200 text-lg text-gray-500 md:text-xl md:leading-normal">
-              Promote funding on your GitHub issues without any manual overhead
-            </p>
-          </div>
-          <ul className="flex flex-col gap-y-2">
-            <ListItem>Customize the Embed</ListItem>
-            <ListItem>Set optional funding goal</ListItem>
-            <ListItem>Target issues using the Polar label</ListItem>
-            <ListItem>Deploy the embed on issues automatically</ListItem>
-          </ul>
-        </div>
-      </Section>
+      <FeatureSection
+        wrapperClassName="bg-gray-50 dark:bg-polar-900"
+        title="Seamlessly badge issues"
+        description="Promote funding on your GitHub issues without any manual overhead"
+        media={{
+          dark: '/assets/landing/issue-funding/funding_modal_dark.png',
+          light: '/assets/landing/issue-funding/funding_modal.png',
+        }}
+        features={[
+          'Customize the Embed',
+          'Set optional funding goal',
+          'Target issues using the Polar label',
+          'Deploy the embed on issues automatically',
+        ]}
+      />
 
-      <Section className="flex flex-col gap-16 md:flex-row md:justify-between md:gap-32 md:py-24">
-        <div className="flex flex-col gap-y-6 md:w-1/2">
-          <div className="flex flex-col gap-y-4">
-            <h1 className="text-2xl md:text-4xl md:leading-snug">
-              Contributor Rewards
-            </h1>
-            <p className="dark:text-polar-200 text-lg text-gray-500 md:text-xl md:leading-normal">
-              Reward contributors who help you fix your GitHub issues
-            </p>
-          </div>
-          <ul className="flex flex-col gap-y-2">
-            <ListItem>Setup rewards for contributors</ListItem>
-            <ListItem>
-              Adjust individual rewards before transferring funds
-            </ListItem>
-            <ListItem>Boost rewards by funding the issue yourself</ListItem>
-          </ul>
-        </div>
-        <picture className="md:w-1/2">
-          <source
-            media="(prefers-color-scheme: dark)"
-            srcSet={`/assets/landing/issue-funding/rewards_dark.png`}
-          />
-          <img
-            className="border-gray-75 dark:border-polar-700 rounded-2xl border shadow-sm"
-            alt="Issue Funding Badge"
-            src={`/assets/landing/issue-funding/rewards.png`}
-          />
-        </picture>
-      </Section>
+      <FeatureSection
+        title="Contributor Rewards"
+        description="Reward contributors who help you fix your GitHub issues"
+        media={{
+          dark: '/assets/landing/issue-funding/rewards_dark.png',
+          light: '/assets/landing/issue-funding/rewards.png',
+        }}
+        features={[
+          'Setup rewards for contributors',
+          'Adjust individual rewards before transferring funds',
+          'Boost rewards by funding the issue yourself',
+        ]}
+        direction="row-reverse"
+      />
 
-      <Section
-        className="flex flex-col-reverse gap-16 md:flex-row md:justify-between md:gap-32 md:py-24"
-        wrapperClassName="bg-gray-75 dark:bg-polar-900"
-      >
-        <picture className="md:w-1/2">
-          <source
-            media="(prefers-color-scheme: dark)"
-            srcSet={`/assets/landing/issue-funding/completed_dark.png`}
-          />
-          <img
-            className="border-gray-75 dark:border-polar-700 rounded-2xl border shadow-sm"
-            alt="Issue Funding Badge"
-            src={`/assets/landing/issue-funding/completed.png`}
-          />
-        </picture>
-        <div className="flex flex-col gap-y-6 md:w-1/2">
-          <div className="flex flex-col gap-y-4">
-            <h1 className="text-2xl md:text-4xl md:leading-snug">
-              Crowdfunded Backlog
-            </h1>
-            <p className="dark:text-polar-200 text-lg text-gray-500 md:text-xl md:leading-normal">
-              Automatically synced with your GitHub issues
-            </p>
-          </div>
-          <ul className="flex flex-col gap-y-2">
-            <ListItem>A dashboard overview of your funded issues</ListItem>
-            <ListItem>Promote your funded issues on the Public Page</ListItem>
-          </ul>
-        </div>
-      </Section>
+      <FeatureSection
+        wrapperClassName="bg-gray-50 dark:bg-polar-900"
+        title="Crowdfunded Backlog"
+        description="Automatically synced with your GitHub issues"
+        media={{
+          dark: '/assets/landing/issue-funding/completed_dark.png',
+          light: '/assets/landing/issue-funding/completed.png',
+        }}
+        features={[
+          'A dashboard overview of your funded issues',
+          'Promote your funded issues on the Public Page',
+        ]}
+      />
 
       <Section className="flex flex-col items-center gap-16 md:gap-24 md:py-24">
         <h1 className="px-4 text-center text-4xl leading-snug">
@@ -196,9 +145,7 @@ export default function Page() {
               className="hover:bg-gray-75 dark:hover:bg-polar-900 group relative flex flex-col transition-colors md:w-1/3"
             >
               <div className="flex h-full w-full flex-col gap-y-6 rounded-none border-none p-10">
-                <h3 className="font-mono text-xl text-blue-500">
-                  0{index + 1}.
-                </h3>
+                <h3 className="text-xl text-blue-500">0{index + 1}</h3>
                 <div className="flex h-full flex-col gap-y-2 leading-relaxed">
                   <h3 className="text-xl">{step.title}</h3>
                   <p className="dark:text-polar-200 text-gray-500">
@@ -215,15 +162,6 @@ export default function Page() {
 
       <PageContent />
     </>
-  )
-}
-
-const ListItem = ({ children }: PropsWithChildren) => {
-  return (
-    <li className="flex flex-row gap-x-2 leading-snug">
-      <ArrowForward fontSize="small" />
-      <span>{children}</span>
-    </li>
   )
 }
 

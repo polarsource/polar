@@ -21,7 +21,7 @@ const PriceItem = ({
 }) => {
   return (
     <div className="md:w-1/3">
-      <Card className="flex h-full flex-col p-2 dark:border-none">
+      <Card className="flex h-full flex-col border-none p-2 dark:border-none">
         <CardHeader className="flex flex-col text-blue-500">{icon}</CardHeader>
         <CardContent className="flex h-full flex-col gap-y-2 pb-6">
           <h3 className="text-lg leading-snug">{title}</h3>

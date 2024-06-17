@@ -2,21 +2,16 @@ import GithubLoginButton from '@/components/Auth/GithubLoginButton'
 import { Section } from '@/components/Landing/Section'
 import { UserSignupType } from '@polar-sh/sdk'
 import Link from 'next/link'
+import { Circles } from './molecules/Circles'
 
 export const Hero = () => {
   return (
     <Section
       className="flex w-full flex-col gap-y-12 py-32"
-      wrapperClassName="relative isolate"
+      wrapperClassName="relative isolate overflow-hidden"
     >
-      <div
-        className="absolute inset-0"
-        style={{
-          backgroundImage: 'url(/assets/landing/circles.svg)',
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-        }}
-      />
+      <Circles className="absolute inset-0 top-1/2 block -translate-y-1/2 text-black dark:hidden" />
+      <Circles className="absolute inset-0 top-1/2 hidden -translate-y-1/2 text-white dark:block" />
       <div className="z-20 flex flex-col gap-y-16">
         <h1 className="text-balance text-5xl leading-snug text-gray-950 md:w-3/4 md:text-7xl md:leading-tight dark:text-white">
           Earn a living on your passion projects

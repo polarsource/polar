@@ -6,7 +6,6 @@ import { ArrowUpRightIcon } from '@heroicons/react/20/solid'
 import {
   AllInclusiveOutlined,
   AttachMoneyOutlined,
-  BoltOutlined,
   DiamondOutlined,
   Face,
   FavoriteBorderOutlined,
@@ -307,15 +306,6 @@ const backerRoutesList = (): Route[] => [
     title: 'Feed',
     link: `/feed`,
     icon: <AllInclusiveOutlined className="h-5 w-5" fontSize="inherit" />,
-    postIcon: undefined,
-    if: true,
-    subs: undefined,
-  },
-  {
-    id: 'subscriptions',
-    title: 'My Subscriptions',
-    link: `/subscriptions`,
-    icon: <BoltOutlined className="h-5 w-5" fontSize="inherit" />,
     postIcon: undefined,
     if: true,
     subs: undefined,

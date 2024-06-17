@@ -13,7 +13,7 @@ import {
   subscriptionStatusDisplayNames,
   tiersTypeDisplayNames,
 } from '@/components/Subscriptions/utils'
-import { useProducts, useSearchSubscriptions } from '@/hooks/queries'
+import { useListSubscriptions, useProducts } from '@/hooks/queries'
 import { getServerURL } from '@/utils/api'
 import {
   DataTablePaginationState,
@@ -49,7 +49,7 @@ interface ClientPageProps {
   organization: Organization
   pagination: DataTablePaginationState
   sorting: DataTableSortingState
-  subscriptionTierId?: string
+  productId?: string
   subscriptionTierType?: SubscriptionTierType
   subscriptionStatus?: Extract<SubscriptionStatus, 'active' | 'canceled'>
 }
@@ -58,7 +58,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
   organization,
   pagination,
   sorting,
-  subscriptionTierId,
+  productId,
   subscriptionTierType,
   subscriptionStatus,
 }) => {
@@ -68,7 +68,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
     [subscriptionTiers.data],
   )
 
-  const filter = subscriptionTierType || subscriptionTierId || 'all'
+  const filter = subscriptionTierType || productId || 'all'
   const status = subscriptionStatus || 'active'
   const getSearchParams = (
     pagination: DataTablePaginationState,
@@ -81,7 +81,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
       if (Object.values(SubscriptionTierType).includes(filter as any)) {
         params.append('type', filter)
       } else {
-        params.append('subscription_tier_id', filter)
+        params.append('product_id', filter)
       }
     }
 
@@ -154,11 +154,9 @@ const ClientPage: React.FC<ClientPageProps> = ({
     )
   }
 
-  const subscriptionsHook = useSearchSubscriptions({
-    platform: organization.platform,
-    organizationName: organization.name,
+  const subscriptionsHook = useListSubscriptions(organization.id, {
     ...getAPIParams(pagination, sorting),
-    ...(subscriptionTierId ? { subscriptionTierId } : {}),
+    ...(productId ? { productId } : {}),
     ...(subscriptionTierType ? { type: subscriptionTierType } : {}),
     ...{ active: status === 'active' },
   })
@@ -168,10 +166,11 @@ const ClientPage: React.FC<ClientPageProps> = ({
 
   const columns: DataTableColumnDef<Subscription>[] = [
     {
-      id: 'subscriber',
-      enableSorting: false,
+      id: 'user',
+      accessorKey: 'user',
+      enableSorting: true,
       header: ({ column }) => (
-        <DataTableColumnHeader column={column} title="Subscriber" />
+        <DataTableColumnHeader column={column} title="Customer" />
       ),
       cell: ({ row: { original: subscription } }) => {
         const user = subscription.user
@@ -289,9 +288,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
 
   const onExport = () => {
     const url = new URL(
-      `${getServerURL()}/api/v1/subscriptions/subscriptions/export?organization_name=${
-        organization.name
-      }&platform=${organization.platform}`,
+      `${getServerURL()}/api/v1/subscriptions/export?organization_id=${organization.id}`,
     )
 
     window.open(url, '_blank')
@@ -300,9 +297,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
   return (
     <DashboardBody>
       <div className="flex flex-col gap-8">
-        <div className="flex items-center justify-between gap-2">
-          <h2 className="text-xl">Subscribers</h2>
-
+        <div className="flex items-center justify-end gap-2">
           <div className="flex items-center gap-2">
             <div className="w-full min-w-[180px]">
               <SubscriptionStatusSelect
@@ -314,7 +309,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
             <div className="w-full min-w-[180px]">
               <SubscriptionTiersSelect
                 tiersByType={subscriptionTiersByType}
-                value={subscriptionTierType || subscriptionTierId || 'all'}
+                value={subscriptionTierType || productId || 'all'}
                 onChange={setFilter}
               />
             </div>

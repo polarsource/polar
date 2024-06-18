@@ -16,7 +16,8 @@ from polar.exceptions import (
 async def polar_exception_handler(request: Request, exc: PolarError) -> JSONResponse:
     return JSONResponse(
         status_code=exc.status_code,
-        content={"type": type(exc).__name__, "detail": exc.message},
+        content={"error": type(exc).__name__, "detail": exc.message},
+        headers=exc.headers,
     )
 
 
@@ -25,7 +26,7 @@ async def request_validation_exception_handler(
 ) -> JSONResponse:
     return JSONResponse(
         status_code=422,
-        content={"type": type(exc).__name__, "detail": jsonable_encoder(exc.errors())},
+        content={"error": type(exc).__name__, "detail": jsonable_encoder(exc.errors())},
     )
 
 

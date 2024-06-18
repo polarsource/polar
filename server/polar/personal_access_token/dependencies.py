@@ -1,4 +1,4 @@
-from fastapi import Depends, HTTPException
+from fastapi import Depends
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from polar.kit.utils import utc_now
@@ -17,9 +17,9 @@ auth_header_scheme = HTTPBearer(
 async def get_optional_personal_access_token(
     auth_header: HTTPAuthorizationCredentials | None = Depends(auth_header_scheme),
     session: AsyncSession = Depends(get_db_session),
-) -> PersonalAccessToken | None:
+) -> tuple[PersonalAccessToken | None, bool]:
     if auth_header is None:
-        return None
+        return None, False
 
     token = await personal_access_token_service.get_by_token(
         session, auth_header.credentials
@@ -32,14 +32,4 @@ async def get_optional_personal_access_token(
             last_used_at=utc_now(),
         )
 
-    return token
-
-
-async def get_personal_access_token(
-    personal_access_token: PersonalAccessToken | None = Depends(
-        get_optional_personal_access_token
-    ),
-) -> PersonalAccessToken:
-    if personal_access_token is None:
-        raise HTTPException(status_code=401)
-    return personal_access_token
+    return token, True

@@ -222,13 +222,6 @@ export const TopbarNavigation = () => {
       >
         Pricing
       </Link>
-      <Link
-        className="dark:hover:bg-polar-800 rounded-full px-4 py-2 hover:bg-gray-100"
-        href="https://github.com/polarsource/polar"
-        target="_blank"
-      >
-        Open Source
-      </Link>
     </div>
   )
 }

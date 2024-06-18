@@ -9,6 +9,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import Button from 'polarkit/components/ui/atoms/button'
 import { PropsWithChildren, useEffect } from 'react'
+import GitHubButton from 'react-github-btn'
 
 export default function Layout({ children }: PropsWithChildren) {
   const pathname = usePathname()
@@ -35,9 +36,29 @@ const LandingPageTopbar = () => {
   return (
     <div className="relative flex flex-row items-center justify-between bg-transparent">
       <TopbarNavigation />
-      <BrandingMenu className="hidden md:block" size={50} />
-      <BrandingMenu className="md:hidden" />
+      <BrandingMenu
+        className="mt-1 hidden md:block"
+        size={100}
+        logoVariant="logotype"
+      />
+      <BrandingMenu
+        className="ml-2 mt-1 md:hidden"
+        logoVariant="logotype"
+        size={100}
+      />
       <div className="flex flex-row items-center gap-x-6">
+        <div className="mt-2">
+          <GitHubButton
+            href="https://github.com/polarsource/polar"
+            data-color-scheme="no-preference: light; light: light; dark: dark;"
+            data-icon="octicon-star"
+            data-size="large"
+            data-show-count="true"
+            aria-label="Star buttons/github-buttons on GitHub"
+          >
+            Star
+          </GitHubButton>
+        </div>
         <Link href="/login">
           <Button>Login</Button>
         </Link>

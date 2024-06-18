@@ -20,9 +20,9 @@ export const PageContent = () => {
     <>
       <Journey />
       <Separator className="w-screen" />
-      <Testamonials />
-      <Separator className="w-screen" />
       <Benefits />
+      <Separator className="w-screen" />
+      <Testamonials />
       <Separator className="w-screen" />
       <Pricing />
       <Separator className="w-screen" />

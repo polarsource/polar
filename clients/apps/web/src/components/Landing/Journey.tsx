@@ -9,7 +9,6 @@ import {
   Language,
   ReceiptLongOutlined,
   TrendingUpOutlined,
-  Webhook,
 } from '@mui/icons-material'
 import Link from 'next/link'
 import Avatar from 'polarkit/components/ui/atoms/avatar'
@@ -32,7 +31,8 @@ interface FeatureItemProps {
   title: string
   description: string
   link: string
-  learnMore?: boolean
+  showLink?: boolean
+  linkDescription?: string
 }
 
 const FeatureItem = ({
@@ -40,7 +40,8 @@ const FeatureItem = ({
   icon,
   description,
   link,
-  learnMore = true,
+  showLink = true,
+  linkDescription = 'Learn more',
   className,
   children,
 }: PropsWithChildren<FeatureItemProps>) => {
@@ -64,9 +65,9 @@ const FeatureItem = ({
           <p className="dark:text-polar-200 h-full leading-relaxed text-gray-500 transition-colors group-hover:text-black dark:group-hover:text-white">
             {description}
           </p>
-          {learnMore && (
+          {showLink && (
             <div className="dark:text-polar-200 flex flex-row items-center gap-x-2 text-sm transition-colors group-hover:text-blue-500 dark:group-hover:text-white">
-              <span>Learn more</span>
+              <span>{linkDescription}</span>
               <ArrowForwardOutlined fontSize="inherit" />
             </div>
           )}
@@ -225,11 +226,10 @@ const items = [
       <div key="section-mor" className="flex flex-col gap-y-24">
         <div className="flex flex-col gap-y-4">
           <h2 className="text-4xl leading-snug md:text-5xl">
-            From passion to business
+            Increase sales, not overhead
           </h2>
           <h3 className="dark:text-polar-600 text-4xl leading-snug text-gray-500">
-            Unlock the full potential of your project with insights to your
-            sales
+            Polar handles VAT, sales tax and billing so you don&apos;t have to.
           </h3>
         </div>
         <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
@@ -237,7 +237,66 @@ const items = [
             className="md:col-span-2 md:row-span-2"
             icon={<TrendingUpOutlined />}
             title="Sales Metrics"
-            description="We aggregate all your sales data into one place, so you can focus on what matters."
+            description="Professional funding, sales and subscription metrics. Your dashboard can be plotted down to each hour - let's aim high, together."
+            link="#"
+            showLink={false}
+          >
+            <picture>
+              <source
+                media="(prefers-color-scheme: dark)"
+                srcSet={`/assets/landing/sales_dark.png`}
+              />
+              <img
+                className="dark:border-polar-700 rounded-2xl border border-gray-100"
+                srcSet={`/assets/landing/sales.png`}
+                alt="Showing metric dashboard within Polar"
+              />
+            </picture>
+          </FeatureItem>
+          <FeatureItem
+            icon={<ReceiptLongOutlined />}
+            title="Merchant of Record"
+            description="No more VAT headache - we handle the necessary taxes for you."
+            className="md:col-span-1"
+            link="/docs/overview/payments-taxes#taxes"
+          />
+          <FeatureItem
+            icon={<AccountBalanceOutlined />}
+            title="Payouts"
+            description="Withdraw your earnings with ease. Supporting Stripe & Open Collective."
+            link="/docs/overview/payments-taxes"
+          />
+        </div>
+      </div>
+    ),
+  },
+  {
+    title: 'Grow with your community',
+    description: '',
+    content: (
+      <div key="section-community" className="flex flex-col gap-y-24">
+        <div className="flex flex-col gap-y-4">
+          <h2 className="text-4xl leading-snug md:text-5xl">
+            Grow community alongside transactions
+          </h2>
+          <h3 className="dark:text-polar-600 text-4xl leading-snug text-gray-500">
+            Crucial for successful developer tools. So it&apos;s built-in - for
+            free.
+          </h3>
+        </div>
+        <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
+          <FeatureItem
+            icon={<Language />}
+            title="Polar Page"
+            description="Social bio links for developers. Showcase your repos, products, subscriptions, newsletter and more."
+            link="https://polar.sh/polarsource"
+            linkDescription="Checkout our Polar Page"
+          />
+          <FeatureItem
+            className="md:col-span-2 md:row-span-2"
+            icon={<TrendingUpOutlined />}
+            title="Free & Premium Newsletters"
+            description="Offer online- and email newsletters to your community - at no additional cost. Write posts in GitHub flavoured markdown. Share them with all subscribers, paid ones or as early access."
             link="/docs/overview/issue-funding/reward-contributors"
           >
             <picture>
@@ -248,39 +307,16 @@ const items = [
               <img
                 className="dark:border-polar-700 rounded-2xl border border-gray-100"
                 srcSet={`/assets/landing/sales.png`}
+                alt="Write newsletters in GitHub flavoured markdown"
               />
             </picture>
           </FeatureItem>
           <FeatureItem
-            icon={<ReceiptLongOutlined />}
-            title="Merchant of Record"
-            description="No more VAT headache - we handle the necessary taxes for you."
-            link="/docs/overview/payments-taxes#taxes"
-          />
-          <FeatureItem
-            icon={<AccountBalanceOutlined />}
-            title="Payouts"
-            description="Withdraw your earnings with ease. Supporting Stripe & Open Collective."
-            link="/docs/overview/payments-taxes"
-          />
-          <FeatureItem
-            icon={<Webhook />}
-            title="Webhooks"
-            description="Integrate with the Polar API for real-time updates on funding events."
-            link="/docs/api-reference/webhooks"
-          />
-          <FeatureItem
-            icon={<Language />}
-            title="Public Page"
-            description="A home for your profile on Polar. Showcase your projects, crowdfunded issues, and more."
-            link="#"
-            learnMore={false}
-          />
-          <FeatureItem
-            icon={<ReceiptLongOutlined />}
-            title="Newsletters"
-            description="Reach your community with insightful newsletter posts - using an MDX-powered editor."
-            link="/docs/overview/issue-funding/reward-contributors"
+            icon={<GitHubIcon width={20} height={20} />}
+            title="Official GitHub Option"
+            description="GitHub offers first-class support for Polar Pages in FUNDING.yaml. Convert stars into community members."
+            link="https://polar.sh/polarsource/posts/github-supports-polar-in-funding-yaml"
+            linkDescription="Read announcement"
           />
         </div>
       </div>

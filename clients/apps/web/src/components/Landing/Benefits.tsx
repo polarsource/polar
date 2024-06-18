@@ -49,9 +49,11 @@ export const Benefits = () => {
       <Circles className="absolute inset-0 top-1/2 -z-10 hidden -translate-y-1/2 text-white dark:block" />
       <Circles className="absolute inset-0 top-1/2 -z-10 block -translate-y-1/2 text-black dark:hidden" />
       <div className="flex flex-col items-center gap-y-4">
-        <h1 className="text-center text-4xl">Benefits</h1>
+        <h1 className="text-center text-4xl">
+          Offer developer benefits in seconds
+        </h1>
         <p className="dark:text-polar-200 text-center text-xl text-gray-500">
-          Give supporters access to exclusive content - Polar will automate it.
+          Common upsells are delightfully built-in and automated.
         </p>
       </div>
       <div className="grid grid-cols-1 overflow-hidden rounded-3xl border md:grid-cols-3">
@@ -59,38 +61,38 @@ export const Benefits = () => {
           className="border-b md:border-r"
           icon={<GitHubIcon width={30} height={30} />}
           title="Private GitHub Repositories"
-          description="Grant access based on Subscription status - early access, sponsorware, courses & so much more."
+          description=""
         />
         <BenefitCard
           className="border-b md:border-r"
-          icon={<DiscordIcon size={30} />}
-          title="Automated Discord Roles"
-          description="Give your supporters access to exclusive Discord roles based on how much they support with each month."
-        />
-        <BenefitCard
-          className="border-b"
           icon={
             <FileDownloadOutlined className="text-4xl" fontSize="inherit" />
           }
           title="File Downloads"
-          description="Want to sell digital goods? With file downloads, you can grant supporters access as long as they subscribe."
+          description=""
         />
         <BenefitCard
-          className="border-b md:border-b-0 md:border-r"
+          className="border-b md:border-r"
           icon={<StickyNote2Outlined className="text-4xl" fontSize="inherit" />}
-          title="Premium & Early Newsletters"
-          description="Offer your paid subscribers early sneak peaks & educational content."
+          title="Free & Premium Newsletters"
+          description=""
+        />
+        <BenefitCard
+          className="border-b md:border-r"
+          icon={<DiscordIcon size={30} />}
+          title="Discord Invites & Roles"
+          description=""
         />
         <BenefitCard
           className="border-b md:border-b-0 md:border-r"
           icon={<VerifiedOutlined className="text-4xl" fontSize="inherit" />}
           title="Sponsor Promotion"
-          description="Logo promotions on README, sites & newsletters. Polar automates it."
+          description=""
         />
         <BenefitCard
           icon={<TuneOutlined className="text-4xl" fontSize="inherit" />}
           title="Custom Benefit"
-          description="Setup your very own custom benefit - and share private notes such as email addresses, links & more."
+          description=""
         />
       </div>
     </Section>

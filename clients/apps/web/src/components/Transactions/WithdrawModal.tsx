@@ -30,7 +30,7 @@ const WithdrawModal: React.FC<WithdrawModalProps> = ({
 
     if (error instanceof ResponseError) {
       const body = await error.response.json()
-      if (body.type === 'InsufficientBalance') {
+      if (body.error === 'InsufficientBalance') {
         setErrorMessage(
           'The balance of this account is insufficient to cover the processing fees.',
         )

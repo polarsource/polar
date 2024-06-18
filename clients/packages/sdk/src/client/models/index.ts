@@ -1671,6 +1671,41 @@ export interface AuthorizeUser {
      */
     avatar_url?: string;
 }
+
+/**
+ * 
+ * @export
+ */
+export const AvailableScope = {
+    OPENID: 'openid',
+    PROFILE: 'profile',
+    EMAIL: 'email',
+    ARTICLESREAD: 'articles:read',
+    USERREAD: 'user:read',
+    ORGANIZATIONSREAD: 'organizations:read',
+    ORGANIZATIONSWRITE: 'organizations:write',
+    PRODUCTSREAD: 'products:read',
+    PRODUCTSWRITE: 'products:write',
+    BENEFITSREAD: 'benefits:read',
+    BENEFITSWRITE: 'benefits:write',
+    FILESREAD: 'files:read',
+    FILESWRITE: 'files:write',
+    SUBSCRIPTIONSREAD: 'subscriptions:read',
+    SUBSCRIPTIONSWRITE: 'subscriptions:write',
+    ORDERSREAD: 'orders:read',
+    METRICSREAD: 'metrics:read',
+    WEBHOOKSREAD: 'webhooks:read',
+    WEBHOOKSWRITE: 'webhooks:write',
+    USERBENEFITSREAD: 'user:benefits:read',
+    USERORDERSREAD: 'user:orders:read',
+    USERSUBSCRIPTIONSREAD: 'user:subscriptions:read',
+    USERSUBSCRIPTIONSWRITE: 'user:subscriptions:write',
+    USERDOWNLOADABLESREAD: 'user:downloadables:read',
+    USERADVERTISEMENT_CAMPAIGNSREAD: 'user:advertisement_campaigns:read',
+    USERADVERTISEMENT_CAMPAIGNSWRITE: 'user:advertisement_campaigns:write'
+} as const;
+export type AvailableScope = typeof AvailableScope[keyof typeof AvailableScope];
+
 /**
  * 
  * @export
@@ -3999,80 +4034,6 @@ export interface ConfirmIssueSplit {
      * @memberof ConfirmIssueSplit
      */
     share_thousands: number;
-}
-/**
- * 
- * @export
- * @interface CreatePersonalAccessToken
- */
-export interface CreatePersonalAccessToken {
-    /**
-     * 
-     * @type {string}
-     * @memberof CreatePersonalAccessToken
-     */
-    comment: string;
-    /**
-     * 
-     * @type {Array<string>}
-     * @memberof CreatePersonalAccessToken
-     */
-    scopes?: Array<CreatePersonalAccessTokenScopesEnum>;
-}
-
-
-/**
- * @export
- */
-export const CreatePersonalAccessTokenScopesEnum = {
-    ARTICLESREAD: 'articles:read',
-    USERREAD: 'user:read',
-    ORGANIZATIONSREAD: 'organizations:read'
-} as const;
-export type CreatePersonalAccessTokenScopesEnum = typeof CreatePersonalAccessTokenScopesEnum[keyof typeof CreatePersonalAccessTokenScopesEnum];
-
-/**
- * 
- * @export
- * @interface CreatePersonalAccessTokenResponse
- */
-export interface CreatePersonalAccessTokenResponse {
-    /**
-     * 
-     * @type {string}
-     * @memberof CreatePersonalAccessTokenResponse
-     */
-    id: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof CreatePersonalAccessTokenResponse
-     */
-    created_at: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof CreatePersonalAccessTokenResponse
-     */
-    last_used_at?: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof CreatePersonalAccessTokenResponse
-     */
-    expires_at: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof CreatePersonalAccessTokenResponse
-     */
-    comment: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof CreatePersonalAccessTokenResponse
-     */
-    token: string;
 }
 /**
  * 
@@ -9066,13 +9027,7 @@ export interface PayoutEstimate {
  */
 export interface PersonalAccessToken {
     /**
-     * 
-     * @type {string}
-     * @memberof PersonalAccessToken
-     */
-    id: string;
-    /**
-     * 
+     * Creation timestamp of the object.
      * @type {string}
      * @memberof PersonalAccessToken
      */
@@ -9082,7 +9037,19 @@ export interface PersonalAccessToken {
      * @type {string}
      * @memberof PersonalAccessToken
      */
-    last_used_at?: string;
+    modified_at?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof PersonalAccessToken
+     */
+    id: string;
+    /**
+     * 
+     * @type {Array<Scope>}
+     * @memberof PersonalAccessToken
+     */
+    scopes: Array<Scope>;
     /**
      * 
      * @type {string}
@@ -9095,6 +9062,56 @@ export interface PersonalAccessToken {
      * @memberof PersonalAccessToken
      */
     comment: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof PersonalAccessToken
+     */
+    last_used_at?: string;
+}
+/**
+ * 
+ * @export
+ * @interface PersonalAccessTokenCreate
+ */
+export interface PersonalAccessTokenCreate {
+    /**
+     * 
+     * @type {string}
+     * @memberof PersonalAccessTokenCreate
+     */
+    comment: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof PersonalAccessTokenCreate
+     */
+    expires_in?: string;
+    /**
+     * 
+     * @type {Array<AvailableScope>}
+     * @memberof PersonalAccessTokenCreate
+     */
+    scopes: Array<AvailableScope>;
+}
+/**
+ * 
+ * @export
+ * @interface PersonalAccessTokenCreateResponse
+ */
+export interface PersonalAccessTokenCreateResponse {
+    /**
+     * 
+     * @type {PersonalAccessToken}
+     * @memberof PersonalAccessTokenCreateResponse
+     */
+    personal_access_token: PersonalAccessToken;
+    /**
+     * 
+     * @type {string}
+     * @memberof PersonalAccessTokenCreateResponse
+     */
+    token: string;
 }
 
 /**

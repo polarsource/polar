@@ -14,12 +14,14 @@ export const Hero = () => {
       <Circles className="absolute inset-0 top-1/2 hidden -translate-y-1/2 text-white dark:block" />
       <div className="z-20 flex flex-col gap-y-16">
         <h1 className="text-balance text-5xl leading-snug text-gray-950 md:w-3/4 md:text-7xl md:leading-tight dark:text-white">
-          Earn a living on your passion projects
+          Get paid coding on your passion
         </h1>
-        <div className="flex flex-col gap-y-4">
+        <div className="flex flex-col">
           <p className="text-balance text-xl leading-loose">
-            Polar is a funding & monetization platform for open source & indie
-            developers
+            Polar is the best funding & monetization platform for developers.
+          </p>
+          <p className="text-balance text-xl leading-loose">
+            Focus on your passion and leave VAT, sales tax and billing to us.
           </p>
         </div>
       </div>

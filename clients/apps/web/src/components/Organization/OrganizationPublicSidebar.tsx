@@ -8,7 +8,6 @@ import { CONFIG } from '@/utils/config'
 import { RssIcon } from '@heroicons/react/20/solid'
 import { LanguageOutlined, MailOutline } from '@mui/icons-material'
 import {
-  CreatePersonalAccessTokenResponse,
   ListResourceOrganizationCustomer,
   Organization,
   OrganizationProfileSettings,
@@ -159,7 +158,7 @@ export const OrganizationPublicSidebar = ({
               </SocialLink>
             )}
             <Button
-              className="dark:bg-transparent p-0 dark:hover:bg-transparent dark:text-polar-400 dark:hover:text-white flex flex-col items-center justify-center rounded-full border-none bg-transparent text-gray-500 hover:text-blue-500 transition-colors hover:bg-transparent"
+              className="dark:text-polar-400 flex flex-col items-center justify-center rounded-full border-none bg-transparent p-0 text-gray-500 transition-colors hover:bg-transparent hover:text-blue-500 dark:bg-transparent dark:hover:bg-transparent dark:hover:text-white"
               onClick={showRssModal}
               variant="secondary"
             >
@@ -230,7 +229,7 @@ const SocialLink = (props: PropsWithChildren<{ href: string }>) => {
     <Link
       target="_blank"
       rel="noopener nofollow"
-      className="dark:bg-transparent dark:text-polar-400 dark:hover:text-white flex flex-col items-center justify-center rounded-full bg-transparent text-gray-500 hover:text-blue-500 transition-colors hover:bg-transparent"
+      className="dark:text-polar-400 flex flex-col items-center justify-center rounded-full bg-transparent text-gray-500 transition-colors hover:bg-transparent hover:text-blue-500 dark:bg-transparent dark:hover:text-white"
       href={props.href}
     >
       {props.children}
@@ -258,13 +257,13 @@ const RssModal = ({
     let active = true
 
     api.personalAccessToken
-      .create({
-        createPersonalAccessToken: {
+      .createPersonalAccessToken({
+        personalAccessTokenCreate: {
           comment: `RSS for ${organization.name}`,
           scopes: ['organizations:read', 'articles:read'],
         },
       })
-      .then((res: CreatePersonalAccessTokenResponse) => {
+      .then((res) => {
         if (active) {
           setToken(res.token)
         }
@@ -273,7 +272,7 @@ const RssModal = ({
     return () => {
       active = false
     }
-  }, [currentUser])
+  }, [currentUser, organization])
 
   return (
     <>

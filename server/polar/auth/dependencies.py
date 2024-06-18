@@ -2,14 +2,14 @@ from inspect import Parameter, Signature
 from typing import Annotated
 
 from fastapi import Depends, Request, Security
-from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from makefun import with_signature
 
 from polar.auth.scope import RESERVED_SCOPES, Scope
 from polar.config import settings
 from polar.exceptions import NotPermitted, PolarError, Unauthorized
-from polar.models import OAuth2Token
+from polar.models import OAuth2Token, PersonalAccessToken
 from polar.oauth2.dependencies import get_optional_token
+from polar.personal_access_token.dependencies import get_optional_personal_access_token
 from polar.postgres import AsyncSession, get_db_session
 from polar.sentry import set_sentry_user
 
@@ -33,12 +33,6 @@ class UnsupportedSubjectType(PolarError):
         return super().__init__(message, 400)
 
 
-auth_header_scheme = HTTPBearer(
-    auto_error=False,
-    description="You can generate a **Personal Access Token** from your [settings](https://polar.sh/settings).",
-)
-
-
 async def _get_cookie_token(request: Request) -> str | None:
     return request.cookies.get(settings.AUTH_COOKIE_KEY)
 
@@ -46,7 +40,9 @@ async def _get_cookie_token(request: Request) -> str | None:
 async def get_auth_subject(
     cookie_token: str | None = Depends(_get_cookie_token),
     oauth2_token: OAuth2Token | None = Depends(get_optional_token),
-    auth_header: HTTPAuthorizationCredentials | None = Depends(auth_header_scheme),
+    personal_access_token: PersonalAccessToken | None = Depends(
+        get_optional_personal_access_token
+    ),
     session: AsyncSession = Depends(get_db_session),
 ) -> AuthSubject[Subject]:
     if cookie_token is not None:
@@ -66,16 +62,12 @@ async def get_auth_subject(
             oauth2_token.sub, oauth2_token.get_scopes(), AuthMethod.OAUTH2_ACCESS_TOKEN
         )
 
-    # Authorization header.
-    # Can contain both a PAT and a forwarded cookie value (via Next/Vercel)
-    if auth_header is not None:
-        user_scopes = await AuthService.get_user_from_auth_header(
-            session, token=auth_header.credentials
+    if personal_access_token:
+        return AuthSubject(
+            personal_access_token.user,
+            personal_access_token.get_scopes(),
+            AuthMethod.PERSONAL_ACCESS_TOKEN,
         )
-
-        if user_scopes:
-            user, scopes = user_scopes
-            return AuthSubject(user, scopes, AuthMethod.PERSONAL_ACCESS_TOKEN)
 
     return AuthSubject(Anonymous(), set(), AuthMethod.NONE)
 

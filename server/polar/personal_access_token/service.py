@@ -1,4 +1,5 @@
 from collections.abc import Sequence
+from datetime import datetime
 from uuid import UUID
 
 from sqlalchemy import Select, select, update
@@ -80,13 +81,15 @@ class PersonalAccessTokenService(ResourceServiceReader[PersonalAccessToken]):
         personal_access_token.set_deleted_at()
         session.add(personal_access_token)
 
-    async def record_usage(self, session: AsyncSession, id: UUID) -> None:
-        stmt = (
+    async def record_usage(
+        self, session: AsyncSession, id: UUID, last_used_at: datetime
+    ) -> None:
+        statement = (
             update(PersonalAccessToken)
             .where(PersonalAccessToken.id == id)
-            .values(last_used_at=utc_now())
+            .values(last_used_at=last_used_at)
         )
-        await session.execute(stmt)
+        await session.execute(statement)
 
     def _get_readable_order_statement(
         self, auth_subject: AuthSubject[User]

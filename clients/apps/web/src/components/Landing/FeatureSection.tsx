@@ -38,7 +38,6 @@ export const FeatureSection = ({
         <source media="(prefers-color-scheme: dark)" srcSet={media.dark} />
         <img
           className="border-gray-75 dark:border-polar-700 rounded-2xl border shadow-sm"
-          alt="Issue Funding Badge"
           src={media.light}
         />
       </picture>

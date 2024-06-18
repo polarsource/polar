@@ -70,14 +70,9 @@ const PlatformPopover = () => {
                 link="/docs/overview/donations"
               />
               <PopoverLinkItem
-                title="Subscriptions"
-                description="Recurring funding in exchange for benefits"
-                link="/docs/overview/subscriptions"
-              />
-              <PopoverLinkItem
-                title="Products"
-                description="Sell digital products & services"
-                link="/polarsource/posts/introducing-digital-products"
+                title="Products & Subscriptions"
+                description="One-time & recurring funding in exchange for benefits"
+                link="/products"
               />
               <PopoverLinkItem
                 title="Newsletters"

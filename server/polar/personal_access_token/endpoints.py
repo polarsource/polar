@@ -16,7 +16,7 @@ from .schemas import (
     CreatePersonalAccessTokenResponse,
     PersonalAccessToken,
 )
-from .service import personal_access_token_service
+from .service import personal_access_token as personal_access_token_service
 
 log = structlog.get_logger()
 

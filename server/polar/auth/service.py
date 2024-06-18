@@ -12,7 +12,6 @@ from polar.kit import jwt
 from polar.kit.http import get_safe_return_url
 from polar.kit.schemas import Schema
 from polar.models import User
-from polar.personal_access_token.service import personal_access_token_service
 from polar.postgres import AsyncSession
 from polar.user.service.user import user as user_service
 
@@ -102,46 +101,6 @@ class AuthService:
                 raise BadRequest("unexpected jwt type")
 
             return await user_service.get(session, id=decoded["user_id"])
-        except (KeyError, jwt.DecodeError, jwt.ExpiredSignatureError):
-            return None
-
-    @classmethod
-    async def get_user_from_auth_header(
-        cls, session: AsyncSession, *, token: str
-    ) -> tuple[User, set[Scope]] | None:
-        try:
-            decoded = jwt.decode_unsafe(token=token, secret=settings.SECRET)
-
-            # TODO: once all tokens have been rotated, replace decode_unsafe above with decode
-            if decoded.get("type", "auth") != "auth":
-                raise BadRequest("unexpected jwt type")
-
-            # Authorization headers as when forwarded by NextJS serverside and edge.
-            # We're passing Cookie contents in the Authorization header.
-            if "user_id" in decoded:
-                user = await user_service.get(session, id=decoded["user_id"])
-                if user:
-                    # cookie based auth, has full admin scope
-                    return user, {Scope.web_default}
-
-            # Personal Access Token in the Authorization header.
-            if "pat_id" in decoded:
-                pat = await personal_access_token_service.get(
-                    session, id=decoded["pat_id"], load_user=True
-                )
-                if pat is None:
-                    return None
-
-                if "scopes" in decoded:
-                    scopes = {Scope(x) for x in decoded["scopes"].split(",")}
-                else:
-                    scopes = {Scope.web_default}
-
-                await personal_access_token_service.record_usage(session, id=pat.id)
-
-                return pat.user, scopes
-
-            raise Exception("failed to decode token")
         except (KeyError, jwt.DecodeError, jwt.ExpiredSignatureError):
             return None
 

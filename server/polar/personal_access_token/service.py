@@ -2,29 +2,33 @@ from collections.abc import Sequence
 from datetime import timedelta
 from uuid import UUID
 
+from sqlalchemy import select
 from sqlalchemy.orm import joinedload
 
+from polar.config import settings
+from polar.kit.crypto import get_token_hash
 from polar.kit.extensions.sqlalchemy import sql
+from polar.kit.services import ResourceServiceReader
 from polar.kit.utils import utc_now
-from polar.models.personal_access_token import PersonalAccessToken
+from polar.models import PersonalAccessToken
 from polar.postgres import AsyncSession
 
 
-class PersonalAccessTokenService:
-    async def get(
-        self, session: AsyncSession, id: UUID, load_user: bool = False
+class PersonalAccessTokenService(ResourceServiceReader[PersonalAccessToken]):
+    async def get_by_token(
+        self, session: AsyncSession, token: str, *, expired: bool = False
     ) -> PersonalAccessToken | None:
-        stmt = sql.select(PersonalAccessToken).where(
-            PersonalAccessToken.id == id,
-            PersonalAccessToken.deleted_at.is_(None),
-            PersonalAccessToken.expires_at > utc_now(),
+        token_hash = get_token_hash(token, secret=settings.SECRET)
+        statement = (
+            select(PersonalAccessToken)
+            .where(PersonalAccessToken.token == token_hash)
+            .options(joinedload(PersonalAccessToken.user))
         )
+        if not expired:
+            statement = statement.where(PersonalAccessToken.expires_at > utc_now())
 
-        if load_user:
-            stmt = stmt.options(joinedload(PersonalAccessToken.user))
-
-        res = await session.execute(stmt)
-        return res.scalars().unique().one_or_none()
+        result = await session.execute(statement)
+        return result.unique().scalar_one_or_none()
 
     async def list_for_user(
         self, session: AsyncSession, user_id: UUID
@@ -69,4 +73,4 @@ class PersonalAccessTokenService:
         await session.commit()
 
 
-personal_access_token_service = PersonalAccessTokenService()
+personal_access_token = PersonalAccessTokenService(PersonalAccessToken)

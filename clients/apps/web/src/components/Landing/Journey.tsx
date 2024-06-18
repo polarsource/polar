@@ -25,6 +25,7 @@ import GitHubIcon from '../Icons/GitHubIcon'
 import SubscriptionTierCard from '../Subscriptions/SubscriptionTierCard'
 import { Section } from './Section'
 import { MOCKED_PRODUCTS } from './utils'
+
 interface FeatureItemProps {
   className?: string
   icon?: JSX.Element
@@ -65,7 +66,7 @@ const FeatureItem = ({
           </p>
           {learnMore && (
             <div className="dark:text-polar-200 flex flex-row items-center gap-x-2 text-sm transition-colors group-hover:text-blue-500 dark:group-hover:text-white">
-              <span>Learn More</span>
+              <span>Learn more</span>
               <ArrowForwardOutlined fontSize="inherit" />
             </div>
           )}
@@ -82,7 +83,7 @@ const FeatureItem = ({
 
 const items = [
   {
-    title: 'From idea to funding',
+    title: 'From first donation to IPO',
     description:
       'Polar has a wide array of monetization tools for your project, from one-time payments & recurring subscriptions to donations.',
     content: (
@@ -92,7 +93,7 @@ const items = [
             From first donation to IPO
           </h2>
           <h3 className="dark:text-polar-600 text-4xl leading-snug text-gray-500">
-            With a wide array of funding tools for your project
+            Polar offers features to scale with your needs.
           </h3>
         </div>
         <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
@@ -100,7 +101,7 @@ const items = [
             className="md:row-span-2"
             icon={<DiamondOutlined />}
             title="Products & Subscriptions"
-            description="Offer paid subscription tiers or one-time purchases with associated benefits."
+            description="Start offering developer first products and services in minutes - paid once, monthly or annually."
             link="/products"
           >
             <SubscriptionTierCard
@@ -111,8 +112,8 @@ const items = [
           <FeatureItem
             className="md:col-span-2"
             icon={<GitHubIcon width={20} height={20} />}
-            title="Issue Funding"
-            description="Automatically embed the Polar funding badge on your GitHub issues to crowdfund your backlog."
+            title="Issue Funding & Rewards"
+            description="Crowdfunded backlog or community bounties with seamless support to split funds with contributors."
             link="/issue-funding"
           >
             <picture>
@@ -123,21 +124,42 @@ const items = [
               <img
                 className="dark:border-polar-700 rounded-2xl border border-gray-100"
                 srcSet={`/assets/landing/fund.svg`}
+                alt="Polar crowdfunding badge embedded on a GitHub issue"
               />
             </picture>
+          </FeatureItem>
+          <FeatureItem
+            icon={<HiveOutlined />}
+            title="Powerful Built-in Benefits"
+            description="We're building common developer upsells so you don't have to."
+            link="#benefits"
+          >
+            <ul>
+              {[
+                'GitHub Repo(s) Access',
+                'File Downloads',
+                'Discord Invites',
+                'Newsletter Access',
+                'Ads',
+                'Custom',
+              ].map((upsell, i) => (
+                <li key={`upsell-${i}`} className="mb-2 mr-2 inline-block">
+                  <p className="rounded-2xl border border-gray-900 px-3 py-1.5 text-xs text-gray-600">
+                    {upsell}
+                  </p>
+                </li>
+              ))}
+              <li className="mb-2 mr-2 inline-block">
+                <p className="text-sm text-gray-600">+ More coming</p>
+              </li>
+            </ul>
           </FeatureItem>
           <FeatureItem
             className="md:col-span-1"
             icon={<AttachMoneyOutlined />}
             title="Donations"
-            description="Your very own tip jar without any strings attached."
+            description="Official GitHub FUNDING.yaml option. Get appreciation from your community for a great post, release or ongoing development."
             link="/donations"
-          />
-          <FeatureItem
-            icon={<HiveOutlined />}
-            title="Benefits Engine"
-            description="Give supporters value for their money with private GitHub repository access, Discord server invites & file downloads."
-            link="#benefits"
           />
         </div>
 

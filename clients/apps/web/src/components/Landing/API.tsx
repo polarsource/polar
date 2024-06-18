@@ -10,9 +10,7 @@ export const API = () => {
     <Section className="flex flex-col items-center justify-center gap-y-16">
       <APIFirst />
       <div className="hidden flex-col items-center gap-y-12 text-center md:flex">
-        <h1 className="text-5xl leading-snug">
-          Our API sits in the front seat
-        </h1>
+        <h1 className="text-5xl leading-snug">Seamless integrations</h1>
         <p className="dark:text-polar-200 text-lg text-gray-500">
           We built Polar with the developer experience in mind
         </p>

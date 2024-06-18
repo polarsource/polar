@@ -7,8 +7,6 @@ import {
 import { twMerge } from 'tailwind-merge'
 import { DiscordIcon } from '../Benefit/utils'
 import GitHubIcon from '../Icons/GitHubIcon'
-import { Section } from './Section'
-import { Circles } from './molecules/Circles'
 
 interface BenefitCardProps {
   className?: string
@@ -41,13 +39,7 @@ const BenefitCard = ({
 
 export const Benefits = () => {
   return (
-    <Section
-      id="benefits"
-      className="gap-y-24"
-      wrapperClassName="overflow-hidden"
-    >
-      <Circles className="absolute inset-0 top-1/2 -z-10 hidden -translate-y-1/2 text-white dark:block" />
-      <Circles className="absolute inset-0 top-1/2 -z-10 block -translate-y-1/2 text-black dark:hidden" />
+    <>
       <div className="flex flex-col items-center gap-y-4">
         <h1 className="text-center text-4xl">
           Offer developer benefits in seconds
@@ -95,6 +87,6 @@ export const Benefits = () => {
           description=""
         />
       </div>
-    </Section>
+    </>
   )
 }

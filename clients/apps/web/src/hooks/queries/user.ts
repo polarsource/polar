@@ -1,5 +1,6 @@
 import { api, queryClient } from '@/utils/api'
 import {
+  PersonalAccessTokenCreate,
   UserAdvertisementCampaignCreate,
   UserAdvertisementCampaignUpdate,
   UserFreeSubscriptionCreate,
@@ -45,20 +46,18 @@ export const useUserPreferencesMutation: () => UseMutationResult<
     },
   })
 
-export const useListPersonalAccessTokens = () =>
+export const usePersonalAccessTokens = () =>
   useQuery({
     queryKey: ['personalAccessTokens'],
-    queryFn: () => api.personalAccessToken.list(),
+    queryFn: () => api.personalAccessToken.listPersonalAccessTokens(),
     retry: defaultRetry,
   })
 
 export const useCreatePersonalAccessToken = () =>
   useMutation({
-    mutationFn: (variables: { comment: string }) => {
-      return api.personalAccessToken.create({
-        createPersonalAccessToken: {
-          comment: variables.comment,
-        },
+    mutationFn: (personalAccessTokenCreate: PersonalAccessTokenCreate) => {
+      return api.personalAccessToken.createPersonalAccessToken({
+        personalAccessTokenCreate,
       })
     },
     onSuccess: (_result, _variables, _ctx) => {
@@ -69,7 +68,7 @@ export const useCreatePersonalAccessToken = () =>
 export const useDeletePersonalAccessToken = () =>
   useMutation({
     mutationFn: (variables: { id: string }) => {
-      return api.personalAccessToken._delete({
+      return api.personalAccessToken.deletePersonalAccessToken({
         id: variables.id,
       })
     },

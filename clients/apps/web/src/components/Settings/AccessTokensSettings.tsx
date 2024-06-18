@@ -3,11 +3,13 @@
 import {
   useCreatePersonalAccessToken,
   useDeletePersonalAccessToken,
-  useListPersonalAccessTokens,
+  usePersonalAccessTokens,
 } from '@/hooks/queries'
 import {
-  CreatePersonalAccessTokenResponse,
+  AvailableScope,
   PersonalAccessToken,
+  PersonalAccessTokenCreate,
+  PersonalAccessTokenCreateResponse,
 } from '@polar-sh/sdk'
 import {
   FormattedDateTime,
@@ -16,8 +18,29 @@ import {
 import Button from 'polarkit/components/ui/atoms/button'
 import CopyToClipboardInput from 'polarkit/components/ui/atoms/copytoclipboardinput'
 import Input from 'polarkit/components/ui/atoms/input'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from 'polarkit/components/ui/atoms/select'
+import { Checkbox } from 'polarkit/components/ui/checkbox'
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+} from 'polarkit/components/ui/form'
 import { Banner } from 'polarkit/components/ui/molecules'
-import { useState } from 'react'
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from 'polarkit/components/ui/popover'
+import { useCallback, useState } from 'react'
+import { useForm } from 'react-hook-form'
 
 const AccessToken = (
   props: PersonalAccessToken & { createdTokenJWT?: string },
@@ -31,17 +54,26 @@ const AccessToken = (
           <div className="gap-y flex flex-col">
             <h3 className="text-md">{props.comment}</h3>
             <p className="dark:text-polar-400 text-sm text-gray-500">
-              <FormattedDateTime datetime={props.created_at} dateStyle="long" />
+              Expires on{' '}
+              <FormattedDateTime datetime={props.expires_at} dateStyle="long" />{' '}
+              —{' '}
+              {props.last_used_at ? (
+                <>
+                  Last used on{' '}
+                  <FormattedDateTime
+                    datetime={props.last_used_at}
+                    dateStyle="long"
+                  />
+                </>
+              ) : (
+                'Never used'
+              )}
             </p>
           </div>
         </div>{' '}
         <div className="dark:text-polar-400 flex flex-row items-center gap-x-4 space-x-4 text-gray-500">
-          {props.last_used_at && (
-            <FormattedDateTime datetime={props.last_used_at} dateStyle="long" />
-          )}
           <Button
             variant="destructive"
-            size="sm"
             onClick={async () => {
               await deleteToken.mutateAsync({ id: props.id })
             }}
@@ -69,27 +101,33 @@ const AccessToken = (
 }
 
 const AccessTokensSettings = () => {
-  const tokens = useListPersonalAccessTokens()
+  const tokens = usePersonalAccessTokens()
   const createToken = useCreatePersonalAccessToken()
   const [createdToken, setCreatedToken] =
-    useState<CreatePersonalAccessTokenResponse>()
+    useState<PersonalAccessTokenCreateResponse>()
 
-  const [accessTokenName, setAccessTokenName] = useState('')
+  const form = useForm<PersonalAccessTokenCreate>({
+    defaultValues: { scopes: [] },
+  })
+  const { control, handleSubmit, reset } = form
 
-  const onCreate = async (e: React.MouseEvent<HTMLButtonElement>) => {
-    e.preventDefault()
-    e.stopPropagation()
-    const created = await createToken.mutateAsync({ comment: accessTokenName })
-    setCreatedToken(created)
-    setAccessTokenName('')
-  }
+  const onCreate = useCallback(
+    async (data: PersonalAccessTokenCreate) => {
+      const created = await createToken.mutateAsync(data)
+      setCreatedToken(created)
+      reset({ scopes: [] })
+      createToken.reset()
+    },
+    [createToken, reset],
+  )
 
   return (
     <div className="flex w-full flex-col">
       <ShadowListGroup>
         {tokens.data?.items && tokens.data.items.length > 0 ? (
           tokens.data?.items?.map((token) => {
-            const shouldRenderJWT = token.id === createdToken?.id
+            const shouldRenderJWT =
+              token.id === createdToken?.personal_access_token.id
 
             return (
               <ShadowListGroup.Item key={token.id}>
@@ -105,28 +143,108 @@ const AccessTokensSettings = () => {
         ) : (
           <ShadowListGroup.Item>
             <p className="dark:text-polar-400 text-sm text-gray-500">
-              You don&apos;t have any active Access Tokens.
+              You don&apos;t have any active Personal Access Tokens.
             </p>
           </ShadowListGroup.Item>
         )}
         <ShadowListGroup.Item>
-          <div className="flex flex-row items-center gap-x-4">
-            <Input
-              value={accessTokenName}
-              onChange={(e) => setAccessTokenName(e.target.value)}
-              id="access-token-nname"
-              name="name"
-              placeholder="Name your Access Token"
-            />
-            <Button
-              fullWidth={false}
-              size="lg"
-              onClick={onCreate}
-              disabled={accessTokenName.length < 1}
+          <Form {...form}>
+            <form
+              onSubmit={handleSubmit(onCreate)}
+              className="flex flex-row items-center gap-x-4"
             >
-              Create
-            </Button>
-          </div>
+              <FormField
+                control={control}
+                name="comment"
+                rules={{
+                  required: 'This field is required',
+                }}
+                render={({ field }) => (
+                  <FormControl>
+                    <Input {...field} placeholder="Token name" />
+                  </FormControl>
+                )}
+              />
+              <FormField
+                control={control}
+                name="scopes"
+                render={({ field }) => (
+                  <Popover>
+                    <PopoverTrigger asChild className="w-1/4">
+                      <Button variant="outline">
+                        {field.value.length === 0
+                          ? 'Select scopes'
+                          : field.value.length === 1
+                            ? `${field.value[0]}`
+                            : `${field.value.length} scopes`}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="flex w-80 flex-col gap-2">
+                      {Object.values(AvailableScope).map((scope) => (
+                        <FormField
+                          key={scope}
+                          control={control}
+                          name="scopes"
+                          render={({ field }) => {
+                            return (
+                              <FormItem
+                                key={scope}
+                                className="flex flex-row items-start space-x-3 space-y-0"
+                              >
+                                <FormControl>
+                                  <Checkbox
+                                    checked={field.value?.includes(scope)}
+                                    onCheckedChange={(checked) => {
+                                      return checked
+                                        ? field.onChange([
+                                            ...field.value,
+                                            scope,
+                                          ])
+                                        : field.onChange(
+                                            field.value?.filter(
+                                              (value) => value !== scope,
+                                            ),
+                                          )
+                                    }}
+                                  />
+                                </FormControl>
+                                <FormLabel className="font-normal">
+                                  {scope}
+                                </FormLabel>
+                              </FormItem>
+                            )
+                          }}
+                        />
+                      ))}
+                    </PopoverContent>
+                  </Popover>
+                )}
+              />
+              <FormField
+                control={control}
+                name="expires_in"
+                rules={{ required: 'This field is required' }}
+                render={({ field }) => (
+                  <Select
+                    onValueChange={field.onChange}
+                    defaultValue={field.value}
+                  >
+                    <SelectTrigger className="w-1/4">
+                      <SelectValue placeholder="Expiration" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {[1, 7, 30, 90, 180, 365].map((days) => (
+                        <SelectItem key={days} value={`P${days}D`}>
+                          {days} days
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+              <Button type="submit">Create</Button>
+            </form>
+          </Form>
         </ShadowListGroup.Item>
       </ShadowListGroup>
     </div>

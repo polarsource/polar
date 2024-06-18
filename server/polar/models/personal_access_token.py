@@ -31,5 +31,6 @@ class PersonalAccessToken(RecordModel):
     def user(cls) -> Mapped[User]:
         return relationship(User, lazy="raise")
 
-    def get_scopes(self) -> set[Scope]:
+    @property
+    def scopes(self) -> set[Scope]:
         return scope_to_set(self.scope)

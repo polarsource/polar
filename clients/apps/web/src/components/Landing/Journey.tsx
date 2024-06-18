@@ -86,7 +86,7 @@ const items = [
     description:
       'Polar has a wide array of monetization tools for your project, from one-time payments & recurring subscriptions to donations.',
     content: (
-      <div className="flex flex-col gap-y-24">
+      <div key="section-core-features" className="flex flex-col gap-y-24">
         <div className="flex flex-col gap-y-4">
           <h2 className="text-4xl leading-snug md:text-5xl">
             From first donation to IPO
@@ -200,7 +200,7 @@ const items = [
     description:
       'Polar helps you take a leap of faith & turn your passion project into a thriving business.',
     content: (
-      <div className="flex flex-col gap-y-24">
+      <div key="section-mor" className="flex flex-col gap-y-24">
         <div className="flex flex-col gap-y-4">
           <h2 className="text-4xl leading-snug md:text-5xl">
             From passion to business

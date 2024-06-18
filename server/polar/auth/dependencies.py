@@ -59,13 +59,13 @@ async def get_auth_subject(
 
     if oauth2_token:
         return AuthSubject(
-            oauth2_token.sub, oauth2_token.get_scopes(), AuthMethod.OAUTH2_ACCESS_TOKEN
+            oauth2_token.sub, oauth2_token.scopes, AuthMethod.OAUTH2_ACCESS_TOKEN
         )
 
     if personal_access_token:
         return AuthSubject(
             personal_access_token.user,
-            personal_access_token.get_scopes(),
+            personal_access_token.scopes,
             AuthMethod.PERSONAL_ACCESS_TOKEN,
         )
 

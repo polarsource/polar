@@ -14,10 +14,12 @@ class OAuth2Token(RecordModel, OAuth2TokenMixin, SubTypeModelMixin):
 
     nonce: Mapped[str | None] = mapped_column(String, index=True, nullable=True)
 
-    def get_expires_at(self) -> int:
+    @property
+    def expires_at(self) -> int:
         return cast(int, self.issued_at) + cast(int, self.expires_in)
 
-    def get_scopes(self) -> set[Scope]:
+    @property
+    def scopes(self) -> set[Scope]:
         return scope_to_set(cast(str, self.get_scope()))
 
     def get_introspection_data(self, issuer: str) -> dict[str, Any]:
@@ -31,6 +33,6 @@ class OAuth2Token(RecordModel, OAuth2TokenMixin, SubTypeModelMixin):
             "sub": str(self.sub.id),
             "aud": self.client_id,
             "iss": issuer,
-            "exp": self.get_expires_at(),
+            "exp": self.expires_at,
             "iat": self.issued_at,
         }

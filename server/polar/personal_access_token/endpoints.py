@@ -1,108 +1,75 @@
-from uuid import UUID
-
 import structlog
-from fastapi import Depends, HTTPException
+from fastapi import Depends
+from pydantic import UUID4
 
 from polar.auth.dependencies import WebUser
-from polar.auth.scope import Scope
-from polar.auth.service import AuthService
-from polar.kit.pagination import ListResource, Pagination
+from polar.exceptions import ResourceNotFound
+from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.openapi import IN_DEVELOPMENT_ONLY
 from polar.postgres import AsyncSession, get_db_session
 from polar.routing import APIRouter
 
 from .schemas import (
-    CreatePersonalAccessToken,
-    CreatePersonalAccessTokenResponse,
     PersonalAccessToken,
+    PersonalAccessTokenCreate,
+    PersonalAccessTokenCreateResponse,
 )
 from .service import personal_access_token as personal_access_token_service
 
 log = structlog.get_logger()
 
 router = APIRouter(
-    tags=["personal_access_token"], include_in_schema=IN_DEVELOPMENT_ONLY
+    prefix="/personal_access_tokens",
+    tags=["personal_access_token"],
+    include_in_schema=IN_DEVELOPMENT_ONLY,
 )
 
 
-@router.delete(
-    "/personal_access_tokens/{id}",
-    response_model=PersonalAccessToken,
-    description="Delete a personal access tokens. Requires authentication.",  # noqa: E501
-    summary="Delete a personal access tokens",
-    status_code=200,
-)
-async def delete(
-    id: UUID,
+@router.get("/", response_model=ListResource[PersonalAccessToken])
+async def list_personal_access_tokens(
     auth_subject: WebUser,
-    session: AsyncSession = Depends(get_db_session),
-) -> PersonalAccessToken:
-    pat = await personal_access_token_service.get(session, id)
-    if not pat:
-        raise HTTPException(status_code=404, detail="PAT not found")
-
-    if pat.user_id != auth_subject.subject.id:
-        raise HTTPException(status_code=403, detail="PAT not owned by this user")
-
-    await personal_access_token_service.delete(session, id)
-
-    return PersonalAccessToken.from_db(pat)
-
-
-@router.get(
-    "/personal_access_tokens",
-    response_model=ListResource[PersonalAccessToken],
-    description="List personal access tokens. Requires authentication.",  # noqa: E501
-    summary="List personal access tokens",
-    status_code=200,
-)
-async def list(
-    auth_subject: WebUser,
+    pagination: PaginationParamsQuery,
     session: AsyncSession = Depends(get_db_session),
 ) -> ListResource[PersonalAccessToken]:
-    pats = await personal_access_token_service.list_for_user(
-        session, auth_subject.subject.id
+    """List personal access tokens."""
+    results, count = await personal_access_token_service.list(
+        session, auth_subject, pagination=pagination
     )
 
-    return ListResource(
-        items=[PersonalAccessToken.from_db(p) for p in pats],
-        pagination=Pagination(total_count=len(pats), max_page=1),
+    return ListResource.from_paginated_results(
+        [PersonalAccessToken.model_validate(result) for result in results],
+        count,
+        pagination,
     )
 
 
-@router.post(
-    "/personal_access_tokens",
-    response_model=CreatePersonalAccessTokenResponse,
-    description="Create a new personal access token. Requires authentication.",  # noqa: E501
-    summary="Create a new personal access token",
-    status_code=200,
-)
-async def create(
-    payload: CreatePersonalAccessToken,
+@router.post("/", response_model=PersonalAccessTokenCreateResponse, status_code=201)
+async def create_personal_access_token(
+    personal_access_token_create: PersonalAccessTokenCreate,
     auth_subject: WebUser,
     session: AsyncSession = Depends(get_db_session),
-) -> CreatePersonalAccessTokenResponse:
-    pat = await personal_access_token_service.create(
-        session,
-        user_id=auth_subject.subject.id,
-        comment=payload.comment,
+) -> PersonalAccessTokenCreateResponse:
+    personal_access_token, token = await personal_access_token_service.create(
+        session, auth_subject, personal_access_token_create
     )
-
-    if payload.scopes:
-        mapped = {
-            "articles:read": Scope.articles_read,
-            "user:read": Scope.user_read,
-            "organizations:read": Scope.organizations_read,
+    return PersonalAccessTokenCreateResponse.model_validate(
+        {
+            "personal_access_token": personal_access_token,
+            "token": token,
         }
-        scopes = [mapped[k] for k in payload.scopes]
-    else:
-        scopes = [Scope.web_default]
-
-    return CreatePersonalAccessTokenResponse(
-        id=pat.id,
-        created_at=pat.created_at,
-        last_used_at=pat.last_used_at,
-        comment=pat.comment,
-        expires_at=pat.expires_at,
-        token=AuthService.generate_pat_token(pat.id, pat.expires_at, scopes=scopes),
     )
+
+
+@router.delete("/{id}", status_code=204)
+async def delete_personal_access_token(
+    id: UUID4,
+    auth_subject: WebUser,
+    session: AsyncSession = Depends(get_db_session),
+) -> None:
+    personal_access_token = await personal_access_token_service.get_by_id(
+        session, auth_subject, id
+    )
+    if personal_access_token is None:
+        raise ResourceNotFound()
+
+    await personal_access_token_service.delete(session, personal_access_token)

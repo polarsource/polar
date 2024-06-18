@@ -4,6 +4,8 @@ from pydantic import BaseModel, create_model
 from pydantic_core import ErrorDetails, InitErrorDetails, PydanticCustomError
 from pydantic_core import ValidationError as PydanticValidationError
 
+from polar.config import settings
+
 
 class PolarError(Exception):
     """
@@ -15,12 +17,19 @@ class PolarError(Exception):
     Args:
         message: The error message that'll be displayed to the user.
         status_code: The status code of the HTTP response. Defaults to 500.
+        headers: Additional headers to be included in the response.
     """
 
-    def __init__(self, message: str, status_code: int = 500) -> None:
+    def __init__(
+        self,
+        message: str,
+        status_code: int = 500,
+        headers: dict[str, str] | None = None,
+    ) -> None:
         super().__init__(message)
         self.message = message
         self.status_code = status_code
+        self.headers = headers
 
     @classmethod
     def schema(cls) -> type[BaseModel]:
@@ -71,7 +80,13 @@ class NotPermitted(PolarError):
 
 class Unauthorized(PolarError):
     def __init__(self, message: str = "Unauthorized", status_code: int = 401) -> None:
-        super().__init__(message, status_code)
+        super().__init__(
+            message,
+            status_code,
+            headers={
+                "WWW-Authenticate": f'Bearer realm="{settings.WWW_AUTHENTICATE_REALM}"'
+            },
+        )
 
 
 class InternalServerError(PolarError):

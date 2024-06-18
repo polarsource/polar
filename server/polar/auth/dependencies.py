@@ -6,14 +6,14 @@ from makefun import with_signature
 
 from polar.auth.scope import RESERVED_SCOPES, Scope
 from polar.config import settings
-from polar.exceptions import NotPermitted, PolarError, Unauthorized
+from polar.exceptions import NotPermitted, Unauthorized
 from polar.models import OAuth2Token, PersonalAccessToken
 from polar.oauth2.dependencies import get_optional_token
+from polar.oauth2.exceptions import InsufficientScopeError, InvalidTokenError
 from polar.personal_access_token.dependencies import get_optional_personal_access_token
 from polar.postgres import AsyncSession, get_db_session
 from polar.sentry import set_sentry_user
 
-from .exceptions import MissingScope
 from .models import (
     SUBJECTS,
     Anonymous,
@@ -27,22 +27,16 @@ from .models import (
 from .service import AuthService
 
 
-class UnsupportedSubjectType(PolarError):
-    def __init__(self, subject_type: SubjectType) -> None:
-        message = f"This endpoint does not support {subject_type.__name__} tokens."
-        return super().__init__(message, 400)
-
-
 async def _get_cookie_token(request: Request) -> str | None:
     return request.cookies.get(settings.AUTH_COOKIE_KEY)
 
 
 async def get_auth_subject(
     cookie_token: str | None = Depends(_get_cookie_token),
-    oauth2_token: OAuth2Token | None = Depends(get_optional_token),
-    personal_access_token: PersonalAccessToken | None = Depends(
-        get_optional_personal_access_token
-    ),
+    oauth2_credentials: tuple[OAuth2Token | None, bool] = Depends(get_optional_token),
+    personal_access_token_credentials: tuple[
+        PersonalAccessToken | None, bool
+    ] = Depends(get_optional_personal_access_token),
     session: AsyncSession = Depends(get_db_session),
 ) -> AuthSubject[Subject]:
     if cookie_token is not None:
@@ -57,6 +51,11 @@ async def get_auth_subject(
                 scopes.add(Scope.admin)
             return AuthSubject(user, scopes, AuthMethod.COOKIE)
 
+    oauth2_token, oauth2_authorization_set = oauth2_credentials
+    personal_access_token, personal_access_token_authorization_set = (
+        personal_access_token_credentials
+    )
+
     if oauth2_token:
         return AuthSubject(
             oauth2_token.sub, oauth2_token.scopes, AuthMethod.OAUTH2_ACCESS_TOKEN
@@ -68,6 +67,9 @@ async def get_auth_subject(
             personal_access_token.scopes,
             AuthMethod.PERSONAL_ACCESS_TOKEN,
         )
+
+    if oauth2_authorization_set or personal_access_token_authorization_set:
+        raise InvalidTokenError()
 
     return AuthSubject(Anonymous(), set(), AuthMethod.NONE)
 
@@ -102,7 +104,10 @@ class _Authenticator:
         # Not allowed subject
         subject_type = type(auth_subject.subject)
         if subject_type not in self.allowed_subjects:
-            raise UnsupportedSubjectType(subject_type)
+            raise InvalidTokenError(
+                "The subject of this access token is not valid for this endpoint.",
+                allowed_subjects=" ".join(s.__name__ for s in self.allowed_subjects),
+            )
 
         # No required scopes
         if not self.required_scopes:
@@ -112,7 +117,7 @@ class _Authenticator:
         if auth_subject.scopes & self.required_scopes:
             return auth_subject
 
-        raise MissingScope(auth_subject.scopes, self.required_scopes)
+        raise InsufficientScopeError({s for s in self.required_scopes})
 
 
 def Authenticator(

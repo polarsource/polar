@@ -35,6 +35,7 @@ class Settings(BaseSettings):
     SECRET: str = "super secret jwt secret"
     JWKS: JWKSFile = Field(default="./.jwks.json")
     CURRENT_JWK_KID: str = "polar_dev"
+    WWW_AUTHENTICATE_REALM: str = "polar"
 
     # Custom domain auth and exchange secrets
     CUSTOM_DOMAIN_JWT_KEY: str = "SETME! secret key used for custom domain auth"

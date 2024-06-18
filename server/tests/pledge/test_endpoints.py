@@ -514,7 +514,7 @@ async def test_create_pay_on_completion_total_monthly_spending_limit(
 
     assert (
         create_pledge.text
-        == '{"type":"BadRequest","detail":"The team spending limit has been reached"}'
+        == '{"error":"BadRequest","detail":"The team spending limit has been reached"}'
     )
 
 
@@ -565,7 +565,7 @@ async def test_create_pay_on_completion_per_user_monthly_spending_limit(
 
     assert (
         create_pledge.text
-        == '{"type":"BadRequest","detail":"The user spending limit has been reached"}'
+        == '{"error":"BadRequest","detail":"The user spending limit has been reached"}'
     )
 
 
@@ -597,7 +597,7 @@ async def test_no_billing_email(
 
     assert (
         create_pledge.text
-        == '{"type":"BadRequest","detail":"The team has no configured billing email"}'
+        == '{"error":"BadRequest","detail":"The team has no configured billing email"}'
     )
 
 

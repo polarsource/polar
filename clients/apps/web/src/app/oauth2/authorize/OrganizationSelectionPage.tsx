@@ -22,17 +22,10 @@ const OrganizationSelectionPage = ({
   const buildOrganizationSelectionURL = (
     organization: AuthorizeOrganization,
   ) => {
-    const updatedSearchParams = organization.is_personal
-      ? {
-          // For personal organization, we issue a user token
-          // The backend should handle this automatically, but we still change the query for clarity
-          ...searchParams,
-          sub_type: 'user',
-        }
-      : {
-          ...searchParams,
-          sub: organization.id,
-        }
+    const updatedSearchParams = {
+      ...searchParams,
+      sub: organization.id,
+    }
     const serializedSearchParams = new URLSearchParams(
       updatedSearchParams,
     ).toString()

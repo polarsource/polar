@@ -71,7 +71,7 @@ const FeatureItem = ({
           )}
         </CardContent>
         {children && (
-          <CardFooter className="justify-betwee mt-4 flex flex-row items-center">
+          <CardFooter className="mt-4 flex flex-row items-center">
             {children}
           </CardFooter>
         )}
@@ -101,7 +101,7 @@ const items = [
             icon={<DiamondOutlined />}
             title="Products & Subscriptions"
             description="Offer paid subscription tiers or one-time purchases with associated benefits."
-            link="/docs/overview/subscriptions"
+            link="/products"
           >
             <SubscriptionTierCard
               className="dark:bg-polar-900 dark:border-polar-800 border-transparent bg-white shadow-sm"

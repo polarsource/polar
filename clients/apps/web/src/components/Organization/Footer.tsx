@@ -35,23 +35,21 @@ const Footer = ({
         </div>
         <div
           className={twMerge(
-            'flex flex-row flex-wrap gap-y-12 md:flex-row md:flex-nowrap',
+            'flex flex-col gap-y-12 md:flex-row',
             wide ? 'gap-x-24 lg:gap-x-32' : 'gap-x-20',
           )}
         >
           <div className="flex flex-col gap-y-4">
-            <h3 className="text-base dark:text-white">Creators</h3>
+            <h3 className="text-base dark:text-white">Platform</h3>
             <div className="flex flex-col gap-y-2">
               <FooterLink href="https://api.polar.sh/api/v1/integrations/github/authorize?return_to=%2Fmaintainer&user_signup_type=maintainer">
                 Create an Account
               </FooterLink>
-              <FooterLink href="/docs/overview/payments-taxes">
-                Pricing
-              </FooterLink>
-              <FooterLink href="/docs/overview/newsletters">
-                Newsletter
-              </FooterLink>
               <FooterLink href="/issue-funding">Issue Funding</FooterLink>
+              <FooterLink href="/products">Products & Subscriptions</FooterLink>
+              <FooterLink href="/docs/overview/newsletters">
+                Newsletters
+              </FooterLink>
             </div>
           </div>
           <div className="flex flex-col gap-y-4">

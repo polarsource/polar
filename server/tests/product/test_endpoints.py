@@ -360,6 +360,43 @@ class TestUpdateProduct:
         json = response.json()
         assert json["name"] == "Updated Name"
 
+    @pytest.mark.auth
+    async def test_existing_price_with_full_schema(
+        self,
+        client: AsyncClient,
+        product_one_time: Product,
+        user_organization_admin: UserOrganization,
+    ) -> None:
+        """
+        We should handle the case where we want to keep the existing price, but we pass
+        the full schema of it.
+
+        It happens from the frontend where it's cumbersome
+        to get rid of the full schema.
+        """
+        response = await client.patch(
+            f"/api/v1/products/{product_one_time.id}",
+            json={
+                "prices": [
+                    {
+                        "id": str(product_one_time.prices[0].id),
+                        "price_amount": 2000,
+                        "price_currency": "usd",
+                        "is_archived": False,
+                        "type": "one_time",
+                    }
+                ]
+            },
+        )
+
+        assert response.status_code == 200
+
+        json = response.json()
+        assert len(json["prices"]) == 1
+        price = json["prices"][0]
+        assert price["id"] == str(product_one_time.prices[0].id)
+        assert price["price_amount"] == product_one_time.prices[0].price_amount
+
 
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge

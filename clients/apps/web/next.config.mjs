@@ -1,7 +1,7 @@
 import createMDX from '@next/mdx'
 import rehypeSlug from 'rehype-slug';
 import bundleAnalyzer from '@next/bundle-analyzer'
-import {withSentryConfig} from '@sentry/nextjs'
+import { withSentryConfig } from '@sentry/nextjs'
 
 const POLAR_AUTH_COOKIE_KEY = 'polar_session'
 
@@ -108,7 +108,7 @@ const nextConfig = {
       // Logged-out user redirection
       {
         source:
-          '/:rootPath(feed|for-you|posts|subscriptions|funding|rewards|settings|backoffice|maintainer|finance):subPath(/?.*)',
+          '/:rootPath(feed|for-you|posts|purchases|funding|rewards|settings|backoffice|maintainer|finance):subPath(/?.*)',
         destination: '/login?return_to=/:rootPath:subPath',
         missing: [
           {

@@ -16,6 +16,8 @@ from polar.auth.models import (
     is_user,
 )
 from polar.config import settings
+from polar.email.renderer import get_email_renderer
+from polar.email.sender import get_email_sender
 from polar.enums import UserSignupType
 from polar.exceptions import PolarError
 from polar.integrations.loops.service import loops as loops_service
@@ -478,6 +480,14 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
 
         await self.after_subscription_updated(session, subscription)
 
+        if (
+            subscription.active
+            and subscription.started_at is not None
+            and subscription.started_at.date()
+            == subscription.current_period_start.date()
+        ):
+            await self.send_confirmation_email(session, subscription)
+
         return subscription
 
     async def enqueue_benefits_grants(
@@ -521,6 +531,40 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         subscriptions = await session.stream_scalars(statement)
         async for subscription in subscriptions:
             await self.enqueue_benefits_grants(session, subscription)
+
+    async def send_confirmation_email(
+        self, session: AsyncSession, subscription: Subscription
+    ) -> None:
+        email_renderer = get_email_renderer({"subscription": "polar.subscription"})
+        email_sender = get_email_sender()
+
+        product = subscription.product
+        featured_organization = await organization_service.get(
+            session, product.organization_id
+        )
+        assert featured_organization is not None
+        user = subscription.user
+
+        subject, body = email_renderer.render_from_template(
+            "Your {{ product.name }} subscription",
+            "subscription/confirmation.html",
+            {
+                "featured_organization": featured_organization,
+                "product": product,
+                "url": (
+                    f"{settings.FRONTEND_BASE_URL}"
+                    f"/purchases/subscriptions/{subscription.id}"
+                ),
+                "current_year": datetime.now().year,
+            },
+        )
+
+        email_sender.send_to_user(
+            to_email_addr=user.email,
+            subject=subject,
+            html_content=body,
+            from_email_addr="noreply@notifications.polar.sh",
+        )
 
     async def user_webhook_notifications(
         self, session: AsyncSession, subscription: Subscription

@@ -1,7 +1,15 @@
 import Button from 'polarkit/components/ui/atoms/button'
 import Input from 'polarkit/components/ui/atoms/input'
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from 'polarkit/components/ui/atoms/select'
+import {
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -11,6 +19,7 @@ import {
 import ImageUpload from '@/components/Form/ImageUpload'
 import { AddOutlined, ClearOutlined } from '@mui/icons-material'
 import { Scope } from '@polar-sh/sdk'
+import Link from 'next/link'
 import { Checkbox } from 'polarkit/components/ui/checkbox'
 import { useFieldArray, useFormContext } from 'react-hook-form'
 import { EnhancedOAuth2ClientConfiguration } from './NewOAuthClientModal'
@@ -34,6 +43,53 @@ export const FieldName = () => {
             <Input {...field} placeholder="My OAuth Application" />
           </FormControl>
           <FormMessage />
+        </FormItem>
+      )}
+    />
+  )
+}
+
+export const FieldClientType = () => {
+  const { control } = useFormContext<EnhancedOAuth2ClientConfiguration>()
+
+  return (
+    <FormField
+      control={control}
+      name="token_endpoint_auth_method"
+      rules={{
+        required: 'This field is required',
+      }}
+      render={({ field }) => (
+        <FormItem>
+          <FormLabel>Client Type</FormLabel>
+          <Select onValueChange={field.onChange} defaultValue={field.value}>
+            <FormControl>
+              <SelectTrigger>
+                <SelectValue placeholder="Select a client type" />
+              </SelectTrigger>
+            </FormControl>
+            <SelectContent>
+              <SelectItem value="client_secret_post">
+                Confidential Client
+              </SelectItem>
+              <SelectItem value="none">Public Client</SelectItem>
+            </SelectContent>
+          </Select>
+          <FormMessage />
+          <FormDescription>
+            If you intend to perform authentication on public clients, like SPA
+            or mobile app, select <em>Public Client</em>. Otherwise, choose{' '}
+            <em>Confidential Client</em>.{' '}
+            <Link
+              className="text-blue-500 hover:text-blue-400 dark:text-blue-400 dark:hover:text-blue-300"
+              href="/docs/api-reference/authentication#public-clients"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Read more
+            </Link>
+            .
+          </FormDescription>
         </FormItem>
       )}
     />
@@ -68,6 +124,18 @@ export const FieldClientSecret = ({
         <Input value={clientSecret} placeholder="Client Secret" readOnly />
       </FormControl>
       <FormMessage />
+      <FormDescription>
+        This is a sensitive value. Don&apos;t embed it in a public client like a
+        SPA or mobile app. <Link
+          className="text-blue-500 hover:text-blue-400 dark:text-blue-400 dark:hover:text-blue-300"
+          href="/docs/api-reference/authentication#public-clients"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          Read more
+        </Link>
+        .
+      </FormDescription>
     </FormItem>
   )
 }

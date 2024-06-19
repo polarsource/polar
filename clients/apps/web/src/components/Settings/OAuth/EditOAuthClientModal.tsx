@@ -15,6 +15,7 @@ import { useForm } from 'react-hook-form'
 import {
   FieldClientID,
   FieldClientSecret,
+  FieldClientType,
   FieldClientURI,
   FieldLogo,
   FieldName,
@@ -106,6 +107,7 @@ export const EditOAuthClientModal = ({
             <FieldName />
             <FieldClientID clientId={client.client_id} />
             <FieldClientSecret clientSecret={client.client_secret} />
+            <FieldClientType />
             <FieldLogo />
             <FieldRedirectURIs />
             <FieldScopes />

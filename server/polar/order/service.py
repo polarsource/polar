@@ -1,5 +1,6 @@
 import uuid
 from collections.abc import Sequence
+from datetime import datetime
 from typing import Any
 
 import stripe as stripe_lib
@@ -8,6 +9,9 @@ from sqlalchemy.orm import aliased, contains_eager, joinedload
 
 from polar.account.service import account as account_service
 from polar.auth.models import AuthSubject, is_organization, is_user
+from polar.config import settings
+from polar.email.renderer import get_email_renderer
+from polar.email.sender import get_email_sender
 from polar.enums import UserSignupType
 from polar.exceptions import PolarError
 from polar.held_balance.service import held_balance as held_balance_service
@@ -277,8 +281,40 @@ class OrderService(ResourceServiceReader[Order]):
                 product_id=product.id,
                 order_id=order.id,
             )
+            await self.send_confirmation_email(session, order)
 
         return order
+
+    async def send_confirmation_email(
+        self, session: AsyncSession, order: Order
+    ) -> None:
+        email_renderer = get_email_renderer({"order": "polar.order"})
+        email_sender = get_email_sender()
+
+        product = order.product
+        featured_organization = await organization_service.get(
+            session, product.organization_id
+        )
+        assert featured_organization is not None
+        user = order.user
+
+        subject, body = email_renderer.render_from_template(
+            "Your {{ product.name }} order confirmation",
+            "order/confirmation.html",
+            {
+                "featured_organization": featured_organization,
+                "product": product,
+                "url": f"{settings.FRONTEND_BASE_URL}/purchases/products/{order.id}",
+                "current_year": datetime.now().year,
+            },
+        )
+
+        email_sender.send_to_user(
+            to_email_addr=user.email,
+            subject=subject,
+            html_content=body,
+            from_email_addr="noreply@notifications.polar.sh",
+        )
 
     async def update_product_benefits_grants(
         self, session: AsyncSession, product: Product

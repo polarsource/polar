@@ -41,6 +41,7 @@ from polar.openapi import OPENAPI_PARAMETERS
 from polar.postgres import create_async_engine, create_sync_engine
 from polar.posthog import configure_posthog
 from polar.sentry import configure_sentry
+from polar.webhook.webhooks import app as webhook_app
 from polar.worker import ArqRedis
 from polar.worker import lifespan as worker_lifespan
 
@@ -127,6 +128,8 @@ def create_app() -> FastAPI:
     app.include_router(health_router)
 
     app.include_router(router)
+    app.webhooks.routes = webhook_app.webhooks.routes
+
     return app
 
 

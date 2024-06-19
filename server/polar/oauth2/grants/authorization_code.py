@@ -55,6 +55,7 @@ class SubTypeGrantMixin:
 
 class AuthorizationCodeGrant(SubTypeGrantMixin, _AuthorizationCodeGrant):
     server: "AuthorizationServer"
+    TOKEN_ENDPOINT_AUTH_METHODS = ["client_secret_basic", "client_secret_post", "none"]
 
     def __init__(self, request: OAuth2Request, server: "AuthorizationServer") -> None:
         super().__init__(request, server)

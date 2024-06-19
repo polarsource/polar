@@ -172,6 +172,12 @@ class ExistingProductPrice(Schema):
     id: UUID4
 
 
+ProductPriceUpdate = Annotated[
+    ExistingProductPrice | ProductPriceRecurringCreate | ProductPriceOneTimeCreate,
+    Field(union_mode="left_to_right"),
+]
+
+
 class ProductUpdate(Schema):
     """
     Schema to update a product.
@@ -189,14 +195,7 @@ class ProductUpdate(Schema):
             "and subscriptions will continue normally."
         ),
     )
-    prices: (
-        list[
-            ExistingProductPrice
-            | ProductPriceRecurringCreate
-            | ProductPriceOneTimeCreate
-        ]
-        | None
-    ) = Field(
+    prices: list[ProductPriceUpdate] | None = Field(
         default=None,
         description=(
             "List of available prices for this product. "

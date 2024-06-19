@@ -333,7 +333,6 @@ class ProductService(ResourceService[Product, ProductCreate, ProductUpdate]):
             for price_update in update_schema.prices:
                 if isinstance(price_update, ExistingProductPrice):
                     existing_price = product.get_price(price_update.id)
-                    # TODO: we might want to check if the price actually exists
                     if existing_price is not None:
                         existing_prices.add(existing_price)
                     continue

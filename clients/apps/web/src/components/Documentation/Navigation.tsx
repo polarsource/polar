@@ -19,7 +19,7 @@ import { Separator } from 'polarkit/components/ui/separator'
 import { PropsWithChildren, useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { useSections } from './APINavigation'
-import { NaviagtionItem } from './NavigationItem'
+import { NavigationItem } from './NavigationItem'
 import { SearchPalette } from './SearchPalette'
 
 export const Navigation = () => {
@@ -39,6 +39,7 @@ export const Navigation = () => {
       {shouldRenderAPISections && (
         <>
           <APISections />
+          <WebhooksReferenceSections />
           <APIReferenceSections />
         </>
       )}
@@ -56,28 +57,28 @@ export const DocumentationPageSidebar = () => {
       </div>
       <ul className="flex flex-col">
         <li>
-          <NaviagtionItem
+          <NavigationItem
             icon={<SpaceDashboardOutlined fontSize="inherit" />}
             href="/docs/overview"
           >
             Overview
-          </NaviagtionItem>
+          </NavigationItem>
         </li>
         <li>
-          <NaviagtionItem
+          <NavigationItem
             icon={<ApiOutlined fontSize="inherit" />}
             href="/docs/api"
           >
             API Reference
-          </NaviagtionItem>
+          </NavigationItem>
         </li>
         <li className="hidden">
-          <NaviagtionItem
+          <NavigationItem
             icon={<DescriptionOutlined fontSize="inherit" />}
             href="/docs/guides"
           >
             Guides
-          </NaviagtionItem>
+          </NavigationItem>
         </li>
       </ul>
       <Separator />
@@ -130,56 +131,56 @@ const OverviewSections = () => {
   return (
     <>
       <div className="flex flex-col">
-        <NaviagtionItem href="/docs/overview/donations">
+        <NavigationItem href="/docs/overview/donations">
           Donations
-        </NaviagtionItem>
-        <NaviagtionItem href="/docs/overview/benefits">Benefits</NaviagtionItem>
-        <NaviagtionItem href="/docs/overview/subscriptions">
+        </NavigationItem>
+        <NavigationItem href="/docs/overview/benefits">Benefits</NavigationItem>
+        <NavigationItem href="/docs/overview/subscriptions">
           Subscriptions
-        </NaviagtionItem>
-        <NaviagtionItem href="/docs/overview/newsletters">
+        </NavigationItem>
+        <NavigationItem href="/docs/overview/newsletters">
           Newsletters
-        </NaviagtionItem>
-        <NaviagtionItem href="/docs/overview/ads">Ads</NaviagtionItem>
-        <NaviagtionItem href="/docs/overview/payments-taxes">
+        </NavigationItem>
+        <NavigationItem href="/docs/overview/ads">Ads</NavigationItem>
+        <NavigationItem href="/docs/overview/payments-taxes">
           Payments & Taxes
-        </NaviagtionItem>
-        <NaviagtionItem href="/docs/overview/support">Support</NaviagtionItem>
+        </NavigationItem>
+        <NavigationItem href="/docs/overview/support">Support</NavigationItem>
       </div>
 
       <div className="flex flex-col gap-y-4">
         <h2 className="font-medium">Issue Funding</h2>
         <div className="flex flex-col">
-          <NaviagtionItem
+          <NavigationItem
             href="/docs/overview/issue-funding/overview"
             icon={<ArrowForward fontSize="inherit" />}
           >
             Overview
-          </NaviagtionItem>
-          <NaviagtionItem
+          </NavigationItem>
+          <NavigationItem
             href="/docs/overview/issue-funding/getting-started"
             icon={<ArrowForward fontSize="inherit" />}
           >
             Getting Started
-          </NaviagtionItem>
-          <NaviagtionItem
+          </NavigationItem>
+          <NavigationItem
             href="/docs/overview/issue-funding/workflow"
             icon={<ArrowForward fontSize="inherit" />}
           >
             Workflow
-          </NaviagtionItem>
-          <NaviagtionItem
+          </NavigationItem>
+          <NavigationItem
             href="/docs/overview/issue-funding/promote"
             icon={<ArrowForward fontSize="inherit" />}
           >
             Promote
-          </NaviagtionItem>
-          <NaviagtionItem
+          </NavigationItem>
+          <NavigationItem
             href="/docs/overview/issue-funding/reward-contributors"
             icon={<ArrowForward fontSize="inherit" />}
           >
             Reward Contributors
-          </NaviagtionItem>
+          </NavigationItem>
         </div>
       </div>
     </>
@@ -191,30 +192,30 @@ const FAQSections = () => {
     <div className="flex flex-col gap-y-4">
       <h2 className="font-medium">FAQ</h2>
       <div className="flex flex-col">
-        <NaviagtionItem
+        <NavigationItem
           href="/docs/overview/faq/overview"
           icon={<ArrowForward fontSize="inherit" />}
         >
           Overview
-        </NaviagtionItem>
-        <NaviagtionItem
+        </NavigationItem>
+        <NavigationItem
           href="/docs/overview/faq/for-maintainers"
           icon={<ArrowForward fontSize="inherit" />}
         >
           For Maintainers
-        </NaviagtionItem>
-        <NaviagtionItem
+        </NavigationItem>
+        <NavigationItem
           href="/docs/overview/faq/for-backers"
           icon={<ArrowForward fontSize="inherit" />}
         >
           For Backers
-        </NaviagtionItem>
-        <NaviagtionItem
+        </NavigationItem>
+        <NavigationItem
           href="/docs/overview/faq/for-contributors"
           icon={<ArrowForward fontSize="inherit" />}
         >
           For Contributors
-        </NaviagtionItem>
+        </NavigationItem>
       </div>
     </div>
   )
@@ -223,21 +224,42 @@ const FAQSections = () => {
 const APISections = () => {
   return (
     <div className="flex flex-col">
-      <NaviagtionItem href="/docs/api-reference/introduction">
+      <NavigationItem href="/docs/api-reference/introduction">
         Introduction
-      </NaviagtionItem>
-      <NaviagtionItem href="/docs/api-reference/authentication">
+      </NavigationItem>
+      <NavigationItem href="/docs/api-reference/authentication">
         Authentication
-      </NaviagtionItem>
-      <NaviagtionItem href="/docs/api-reference/polar-sdk">
+      </NavigationItem>
+      <NavigationItem href="/docs/api-reference/polar-sdk">
         Polar SDK
-      </NaviagtionItem>
-      <NaviagtionItem href="/docs/api-reference/webhooks">
-        Webhooks
-      </NaviagtionItem>
-      <NaviagtionItem href="/docs/api-reference/github-actions">
+      </NavigationItem>
+      <NavigationItem href="/docs/api-reference/github-actions">
         GitHub Actions
-      </NaviagtionItem>
+      </NavigationItem>
+    </div>
+  )
+}
+
+const WebhooksReferenceSections = () => {
+  return (
+    <div className="flex flex-col gap-y-6">
+      <h3>Webhooks</h3>
+      <div className="flex flex-col">
+        <NavigationItem
+          href="/docs/api-reference/webhooks"
+          active={(pathname) => pathname === '/docs/api-reference/webhooks'}
+        >
+          Overview
+        </NavigationItem>
+        <NavigationItem
+          href="/docs/api-reference/webhooks/events"
+          active={(pathname) =>
+            pathname === '/docs/api-reference/webhooks/events'
+          }
+        >
+          Events
+        </NavigationItem>
+      </div>
     </div>
   )
 }
@@ -252,7 +274,7 @@ const APIReferenceSections = () => {
         {sections.map((section) => (
           <CollapsibleSection key={section.name} title={section.name}>
             {section.endpoints.map((endpoint) => (
-              <NaviagtionItem
+              <NavigationItem
                 key={endpoint.path + endpoint.method}
                 className="m-0 bg-transparent p-0 text-sm dark:bg-transparent"
                 href={`/docs/api-reference${endpoint.path}/${endpoint.method}`}
@@ -273,7 +295,7 @@ const APIReferenceSections = () => {
                     {endpoint.method}
                   </span>
                 </div>
-              </NaviagtionItem>
+              </NavigationItem>
             ))}
           </CollapsibleSection>
         ))}

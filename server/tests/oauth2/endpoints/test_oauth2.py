@@ -1,7 +1,8 @@
-from typing import cast
+from typing import Literal, cast
 
 import pytest
 import pytest_asyncio
+from authlib.oauth2.rfc7636 import create_s256_code_challenge
 from httpx import AsyncClient
 
 from polar.config import settings
@@ -44,6 +45,28 @@ async def oauth2_client(save_fixture: SaveFixture, user: User) -> OAuth2Client:
     return oauth2_client
 
 
+@pytest_asyncio.fixture
+async def public_oauth2_client(save_fixture: SaveFixture, user: User) -> OAuth2Client:
+    oauth2_client = OAuth2Client(
+        client_id="polar_ci_123",
+        client_secret="polar_cs_123",
+        registration_access_token="polar_rat_123",
+        user=user,
+    )
+    oauth2_client.set_client_metadata(
+        {
+            "client_name": "Test Client",
+            "redirect_uris": ["http://127.0.0.1:8000/docs/oauth2-redirect"],
+            "token_endpoint_auth_method": "none",
+            "grant_types": ["authorization_code", "refresh_token"],
+            "response_types": ["code"],
+            "scope": "openid profile email",
+        }
+    )
+    await save_fixture(oauth2_client)
+    return oauth2_client
+
+
 async def create_oauth2_grant(
     save_fixture: SaveFixture,
     *,
@@ -71,6 +94,8 @@ async def create_oauth2_authorization_code(
     redirect_uri: str,
     user: User | None = None,
     organization: Organization | None = None,
+    code_verifier: str | None = None,
+    code_challenge_method: Literal["plain", "S256"] | None = None,
 ) -> OAuth2AuthorizationCode:
     authorization_code = OAuth2AuthorizationCode(
         code=get_token_hash(code, secret=settings.SECRET),
@@ -78,6 +103,17 @@ async def create_oauth2_authorization_code(
         scope=" ".join(scopes),
         redirect_uri=redirect_uri,
     )
+    if code_challenge_method is not None:
+        assert code_verifier is not None, "code_verifier must be provided"
+        authorization_code.code_challenge_method = code_challenge_method  # pyright: ignore
+        authorization_code.code_challenge = cast(  # pyright: ignore
+            str,
+            (
+                create_s256_code_challenge(code_verifier)
+                if code_challenge_method == "S256"
+                else code_verifier
+            ),
+        )
     if user is not None:
         authorization_code.user_id = user.id
         authorization_code.sub_type = SubType.user
@@ -808,6 +844,43 @@ class TestOAuth2Token:
             "code": "CODE",
             "client_id": oauth2_client.client_id,
             "client_secret": oauth2_client.client_secret,
+            "redirect_uri": "http://127.0.0.1:8000/docs/oauth2-redirect",
+        }
+
+        response = await client.post("/api/v1/oauth2/token", data=data)
+
+        assert response.status_code == 200
+        json = response.json()
+
+        access_token = json["access_token"]
+        assert access_token.startswith("polar_at_u_")
+        refresh_token = json["refresh_token"]
+        assert refresh_token.startswith("polar_rt_u_")
+
+    async def test_authorization_code_public_client(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        user: User,
+        public_oauth2_client: OAuth2Client,
+    ) -> None:
+        code_verifier = "A" * 43
+        await create_oauth2_authorization_code(
+            save_fixture,
+            client=public_oauth2_client,
+            code="CODE",
+            scopes=["openid", "profile", "email"],
+            redirect_uri="http://127.0.0.1:8000/docs/oauth2-redirect",
+            user=user,
+            code_verifier=code_verifier,
+            code_challenge_method="S256",
+        )
+
+        data = {
+            "grant_type": "authorization_code",
+            "code": "CODE",
+            "client_id": public_oauth2_client.client_id,
+            "code_verifier": code_verifier,
             "redirect_uri": "http://127.0.0.1:8000/docs/oauth2-redirect",
         }
 

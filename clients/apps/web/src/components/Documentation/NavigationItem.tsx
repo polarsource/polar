@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation'
 import { PropsWithChildren } from 'react'
 import { twMerge } from 'tailwind-merge'
 
-export const NaviagtionItem = ({
+export const NavigationItem = ({
   children,
   icon,
   className,

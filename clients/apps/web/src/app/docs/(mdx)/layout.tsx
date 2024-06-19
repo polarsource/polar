@@ -1,5 +1,3 @@
-'use client'
-
 import { PropsWithChildren } from 'react'
 import { MDXContentWrapper } from '../../../components/Documentation/MDXContentWrapper'
 import { TableOfContents } from '../../../components/Documentation/TableOfContents'

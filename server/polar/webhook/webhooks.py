@@ -148,7 +148,7 @@ class WebhookBenefitCreatedPayload(Schema):
 
 @app.webhooks.post(
     WebhookEventType.benefit_created.value,
-    description="Sent when a new benefit is created",
+    description="Sent when a new benefit is created.",
 )
 async def benefit_created(body: WebhookBenefitCreatedPayload) -> None:
     return None
@@ -161,7 +161,7 @@ class WebhookBenefitUpdatedPayload(Schema):
 
 @app.webhooks.post(
     WebhookEventType.benefit_updated.value,
-    description="Sent when a benefit is updated",
+    description="Sent when a benefit is updated.",
 )
 async def benefit_updated(body: WebhookBenefitUpdatedPayload) -> None:
     return None

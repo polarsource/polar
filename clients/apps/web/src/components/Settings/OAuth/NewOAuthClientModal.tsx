@@ -6,6 +6,7 @@ import { Form } from 'polarkit/components/ui/form'
 import { useCallback, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import {
+  FieldClientType,
   FieldClientURI,
   FieldLogo,
   FieldName,
@@ -32,6 +33,7 @@ export const NewOAuthClientModal = ({
 }: NewOAuthClientModalProps) => {
   const form = useForm<EnhancedOAuth2ClientConfiguration>({
     defaultValues: {
+      token_endpoint_auth_method: 'client_secret_post',
       redirect_uris: [{ uri: '' }],
       scope: [],
     },
@@ -76,6 +78,7 @@ export const NewOAuthClientModal = ({
           >
             <FieldName />
             <FieldLogo />
+            <FieldClientType />
             <FieldRedirectURIs />
             <FieldScopes />
             <FieldClientURI />

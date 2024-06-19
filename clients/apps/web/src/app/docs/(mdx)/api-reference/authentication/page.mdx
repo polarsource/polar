@@ -34,6 +34,7 @@ You can create a client from your [user settings](/settings#oauth).
 Here are the required fields:
 
 * Application Name: the name of the application that'll be shown to the final users.
+* Client Type: the type of client you are creating. [Read more](#public-clients).
 * Redirect URIs: for security reasons, you need to declare your application URL where the users will be redirected after granting access to their data. **HTTPS URL are required unless the hostname is `localhost`**.
 * Scopes: the list of scopes your app will be able to ask for. To improve privacy and security, select only the scopes you really need for your application.
 * Homepage URL: the URL of your application. It'll be shown to the final users on the authorization page.
@@ -116,6 +117,12 @@ The rest of the flow remains unchanged. The access token you'll get will be tied
 <BrowserCallout type="NOTE">
 Bear in mind that some endpoints might not support organization access tokens. Typically, user-specific endpoints like `/api/v1/users/benefit` will not work with organization access tokens.
 </BrowserCallout>
+
+### Public Clients
+
+Public clients are clients where the Client Secret can't be kept safe, as it would be accessible by the final user. This is the case for SPA, mobile applications, or any client running on the user's device.
+
+In this case, **and only if the client is configured as a Public Client**, the request to the token endpoint won't require the `client_secret` parameter. However, the [PKCE](https://oauth.net/2/pkce/) method will be required to maximize security.
 
 ## Make authenticated requests
 

@@ -89,7 +89,7 @@ class ResendEmailSender(EmailSender):
         )
 
 
-def get_email_sender(type: str = "notification") -> EmailSender:
+def get_email_sender() -> EmailSender:
     if settings.EMAIL_SENDER == EmailSenderType.resend:
         return ResendEmailSender()
 

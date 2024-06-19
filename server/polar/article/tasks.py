@@ -96,7 +96,7 @@ async def articles_send_to_user(
                     f"{from_name} <{article.created_by_user.email}>"
                 )
 
-        email_sender = get_email_sender("article")
+        email_sender = get_email_sender()
 
         email_sender.send_to_user(
             to_email_addr=user.email,

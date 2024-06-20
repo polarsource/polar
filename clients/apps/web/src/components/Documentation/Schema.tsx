@@ -22,7 +22,9 @@ const UnionSchema = ({
   idPrefix: string[]
 }) => {
   const schemas = _schemas.filter(isDereferenced)
-  const schemaValues = schemas.map((_, index) => `schema_${index}`)
+  const schemaValues = schemas.map((schema, index) =>
+    [...idPrefix, schema.title || `schema_${index}`].join('_'),
+  )
   return (
     <Tabs>
       <div className="overflow-x-auto">

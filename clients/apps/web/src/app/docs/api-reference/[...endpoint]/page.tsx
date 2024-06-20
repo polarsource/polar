@@ -3,6 +3,8 @@ import { BodySchema } from '@/components/Documentation/BodySchema'
 import { MDXContentWrapper } from '@/components/Documentation/MDXContentWrapper'
 import { ResponsesSchemas } from '@/components/Documentation/ResponsesSchemas'
 import {
+  EndpointError,
+  EndpointMetadata,
   fetchSchema,
   getRequestBodySchema,
 } from '@/components/Documentation/openapi'
@@ -14,6 +16,23 @@ import { Parameters } from '../../../../components/Documentation/Parameters'
 import { ResponseContainer } from '../../../../components/Documentation/ResponseContainer'
 import { resolveEndpointMetadata } from '../../../../components/Documentation/openapi'
 
+export async function generateStaticParams(): Promise<
+  { endpoint: string[] }[]
+> {
+  const schema = await fetchSchema()
+  return Object.entries(schema.paths || {}).reduce<{ endpoint: string[] }[]>(
+    (paths, [path, methods]) => [
+      ...paths,
+      ...(methods
+        ? Object.entries(methods).map(([method, _]) => ({
+            endpoint: [...path.split('/').filter((part) => !!part), method],
+          }))
+        : []),
+    ],
+    [],
+  )
+}
+
 export default async function Page({
   params: { endpoint },
 }: {
@@ -21,15 +40,21 @@ export default async function Page({
 }) {
   const schema = await fetchSchema()
 
-  const metadata = schema
-    ? resolveEndpointMetadata(endpoint.join('/'), schema)
-    : undefined
-
-  if (!metadata) {
-    return notFound()
+  let metadata: EndpointMetadata
+  try {
+    metadata = resolveEndpointMetadata(endpoint, schema)
+  } catch (e) {
+    if (e instanceof EndpointError) {
+      return notFound()
+    }
+    throw e
   }
 
   const { operation, method, apiEndpointPath } = metadata
+
+  if (!operation) {
+    return notFound()
+  }
 
   const requestBodySchema = getRequestBodySchema(operation)
 

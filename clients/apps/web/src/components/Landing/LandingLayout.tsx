@@ -9,7 +9,6 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import Button from 'polarkit/components/ui/atoms/button'
 import { PropsWithChildren, useEffect } from 'react'
-import GitHubButton from 'react-github-btn'
 
 export default function Layout({ children }: PropsWithChildren) {
   const pathname = usePathname()
@@ -47,18 +46,15 @@ const LandingPageTopbar = () => {
         size={100}
       />
       <div className="flex flex-row items-center gap-x-6">
-        <div className="mt-2">
-          <GitHubButton
-            href="https://github.com/polarsource/polar"
-            data-color-scheme="no-preference: light; light: light; dark: dark;"
-            data-icon="octicon-star"
-            data-size="large"
-            data-show-count="true"
-            aria-label="Star buttons/github-buttons on GitHub"
-          >
-            Star
-          </GitHubButton>
-        </div>
+        <a
+          href="https://github.com/polarsource/polar"
+          className="rounded-full border border-gray-200 py-1.5 pl-3 pr-1.5 text-sm hover:bg-gray-100 dark:border-gray-800 dark:text-gray-400 dark:hover:bg-gray-800"
+        >
+          Star on GitHub&nbsp;&nbsp;
+          <span className="rounded-full bg-gray-100 px-2 py-0.5 dark:bg-gray-700">
+            1.5k
+          </span>
+        </a>
         <Link href="/login">
           <Button>Login</Button>
         </Link>

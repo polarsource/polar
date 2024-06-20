@@ -97,7 +97,7 @@ const Benefits = () => {
         />
       </div>
       <div className="-mt-12 text-center">
-        <p className="inline-block rounded-2xl border border-gray-800 px-4 py-1 text-gray-600">
+        <p className="inline-block rounded-2xl border border-gray-300 px-4 py-1 text-gray-500 dark:border-gray-800 dark:text-gray-600">
           + License keys, private packages and more to come
         </p>
       </div>

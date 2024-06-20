@@ -16,6 +16,7 @@ jobs:
       TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
       TURBO_TEAM: ${{ vars.TURBO_TEAM }}
       POLAR_OPENAPI_SCHEMA_URL: ${{ secrets.POLAR_OPENAPI_SCHEMA_URL }}
+      VERCEL_ENV: 'testing'
 
     steps:
       - name: Check out code
@@ -62,6 +63,7 @@ jobs:
       TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
       TURBO_TEAM: ${{ vars.TURBO_TEAM }}
       POLAR_OPENAPI_SCHEMA_URL: ${{ secrets.POLAR_OPENAPI_SCHEMA_URL }}
+      VERCEL_ENV: 'testing'
 
     steps:
       - name: Check out code

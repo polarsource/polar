@@ -37,7 +37,12 @@ const PriceItem = ({
 export const Pricing = () => {
   return (
     <Section id="pricing" className="gap-y-24">
-      <h1 className="text-center text-4xl">Pricing</h1>
+      <div className="flex flex-col items-center gap-y-4">
+        <h1 className="text-center text-4xl">Pricing</h1>
+        <p className="dark:text-polar-200 text-center text-xl text-gray-500">
+          Transparent pricing aligned with your success.
+        </p>
+      </div>
       <div className="flex flex-col divide-y overflow-hidden rounded-3xl border md:flex-row md:divide-x md:divide-y-0">
         <PriceItem
           icon={<FavoriteBorderOutlined fontSize="large" />}
@@ -47,12 +52,12 @@ export const Pricing = () => {
         <PriceItem
           icon={<PercentOutlined fontSize="large" />}
           title="5% Revenue Share"
-          description={`We're in this together. We earn when you do.`}
+          description={`We earn when you do.`}
         />
         <PriceItem
           icon={<SyncAltOutlined fontSize="large" />}
-          title="Stripe Fees"
-          description="Stripe transaction- and payout fees apply before transfers."
+          title="+ Stripe & Open Collective"
+          description="Transaction- and payout fees apply."
         />
       </div>
     </Section>

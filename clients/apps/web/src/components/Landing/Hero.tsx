@@ -18,11 +18,10 @@ export const Hero = () => {
         </h1>
         <div className="flex flex-col">
           <p className="text-balance text-xl leading-loose">
-            Polar is the funding & monetization platform for thousands of
-            developers.
+            Polar is the best funding & monetization platform for developers.
           </p>
           <p className="text-balance text-xl leading-loose">
-            Focusing on their passions. Leaving VAT, sales tax & billing to us.
+            Stay focused on shipping. Leave VAT, sales tax & billing to us.
           </p>
         </div>
       </div>

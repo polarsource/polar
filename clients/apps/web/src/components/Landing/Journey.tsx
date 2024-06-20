@@ -131,7 +131,7 @@ const items = [
             icon={<AttachMoneyOutlined />}
             title="Donations"
             description="Your very own tip jar without any strings attached."
-            link="/docs/overview/donations"
+            link="/donations"
           />
           <FeatureItem
             icon={<HiveOutlined />}

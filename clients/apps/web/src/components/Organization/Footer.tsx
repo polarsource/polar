@@ -47,6 +47,7 @@ const Footer = ({
               </FooterLink>
               <FooterLink href="/issue-funding">Issue Funding</FooterLink>
               <FooterLink href="/products">Products & Subscriptions</FooterLink>
+              <FooterLink href="/donations">Donations</FooterLink>
               <FooterLink href="/docs/overview/newsletters">
                 Newsletters
               </FooterLink>

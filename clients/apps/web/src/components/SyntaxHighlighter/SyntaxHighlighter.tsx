@@ -64,8 +64,9 @@ const SyntaxHighlighter = (props: {
   language: string | undefined
   code: string
   theme: Theme
+  lineNumbers?: boolean
 }) => {
-  const { language, code, theme } = props
+  const { language, code, theme, lineNumbers } = props
 
   const resolvedLanguage =
     language && Prism.languages[language] ? language : 'plain'
@@ -82,19 +83,21 @@ const SyntaxHighlighter = (props: {
       <code>
         {tokensPerLine.map((tokensForLine, lineIndex) => (
           <div key={lineIndex} className="m-0">
-            <span
-              style={{
-                marginRight: '1.5rem',
-                opacity: '.2',
-                fontSize: '.7rem',
-                userSelect: 'none',
-                textAlign: 'right',
-                display: 'inline-block',
-                width: `${width}px`,
-              }}
-            >
-              {lineIndex + 1}
-            </span>
+            {lineNumbers && (
+              <span
+                style={{
+                  marginRight: '1.5rem',
+                  opacity: '.2',
+                  fontSize: '.7rem',
+                  userSelect: 'none',
+                  textAlign: 'right',
+                  display: 'inline-block',
+                  width: `${width}px`,
+                }}
+              >
+                {lineIndex + 1}
+              </span>
+            )}
             {tokensForLine.map((token, i) => (
               <CodeBlockLine key={i} theme={theme} token={token} />
             ))}

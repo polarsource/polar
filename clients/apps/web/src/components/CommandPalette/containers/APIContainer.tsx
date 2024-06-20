@@ -19,12 +19,23 @@ import {
 import { useCallback, useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 
-const requestBodyParameters = (endpoint: OpenAPIV3_1.OperationObject) => {
+import SyntaxHighlighter from '@/components/SyntaxHighlighter/SyntaxHighlighter'
+import {
+  Theme,
+  polarDark,
+  polarLight,
+} from '@/components/SyntaxHighlighter/themes'
+import { useTheme } from 'next-themes'
+
+const getBodyExample = (endpoint: OpenAPIV3_1.OperationObject) => {
   const schema = getRequestBodySchema(endpoint)
   return schema ? generateSchemaExample(schema) : undefined
 }
 
-const getQueryParametersExamples = (endpoint: OpenAPIV3_1.OperationObject) => {
+const getParametersExample = (
+  endpoint: OpenAPIV3_1.OperationObject,
+  include: ('path' | 'query')[],
+) => {
   if (!endpoint.parameters) {
     return undefined
   }
@@ -33,7 +44,7 @@ const getQueryParametersExamples = (endpoint: OpenAPIV3_1.OperationObject) => {
       if (
         isDereferenced(parameter) &&
         parameter.required &&
-        parameter.in === 'query' &&
+        include.some((i) => i === parameter.in) &&
         parameter.schema &&
         isDereferenced<OpenAPIV3_1.SchemaObject>(parameter.schema)
       ) {
@@ -53,16 +64,14 @@ const buildCurlCommand = (
   url: string,
   endpoint: OpenAPIV3_1.OperationObject,
 ) => {
-  const queryParametersExamples = getQueryParametersExamples(endpoint)
+  const parametersExample = getParametersExample(endpoint, ['query'])
   const queryParametersString = new URLSearchParams(
-    queryParametersExamples,
+    parametersExample,
   ).toString()
 
-  const requestParameters = requestBodyParameters(endpoint)
-  const requiredBodyParameters = requestParameters
-
-  const bodyParametersString = requiredBodyParameters
-    ? `-d '${JSON.stringify(requiredBodyParameters, null, 2)}'`
+  const bodyExample = getBodyExample(endpoint)
+  const bodyString = bodyExample
+    ? `-d '${JSON.stringify(bodyExample, null, 2)}'`
     : ''
 
   return `curl -X ${method.toUpperCase()} \\
@@ -70,7 +79,7 @@ ${url}${queryParametersString ? '?' + queryParametersString : ''} \\
 -H "Content-type: application/json" \\
 -H "Accept: application/json" \\
 -H "Authorization: Bearer <token>" \\
-${bodyParametersString}`
+${bodyString}`
 }
 
 const buildNodeJSCommand = (endpoint: OpenAPIV3_1.OperationObject) => {
@@ -83,6 +92,83 @@ const buildNodeJSCommand = (endpoint: OpenAPIV3_1.OperationObject) => {
         group.toUpperCase().replace('-', '').replace('_', ''),
       )
 
+  const titleToCamel = (str: string) => {
+    const joined = str.split(' ').join('')
+    return joined.charAt(0).toLowerCase() + joined.slice(1)
+  }
+
+  const objectToString = (obj: any, indent: number = 0): string => {
+    const indentBase = '  '
+    let result = '{\n'
+    const entries = Object.entries(obj)
+
+    entries.forEach(([key, value], index) => {
+      const isLast = index === entries.length - 1
+      const lineIndent = indentBase.repeat(indent + 1)
+      const nextIndent = indent + 1
+      let valueString
+
+      if (
+        typeof value === 'object' &&
+        !Array.isArray(value) &&
+        value !== null
+      ) {
+        valueString = objectToString(value, nextIndent)
+      } else if (Array.isArray(value)) {
+        valueString = `[${value
+          .map((v) => {
+            if (typeof v === 'object' && !Array.isArray(v) && v !== null) {
+              return objectToString(v, nextIndent)
+            } else if (typeof v === 'string') {
+              return `'${v}'`
+            } else {
+              return v
+            }
+          })
+          .join(', ')}]`
+      } else if (typeof value === 'string') {
+        valueString = `'${value}'`
+      } else {
+        valueString = value
+      }
+
+      result += `${lineIndent}${key}: ${valueString}${isLast ? '' : ','}\n`
+    })
+
+    result += `${indentBase.repeat(indent)}}`
+    return result
+  }
+
+  const convertToCamelCase = (obj: Record<string, any>): Record<string, any> =>
+    Object.keys(obj).reduce(
+      (acc, key) => {
+        const newKey = snakeToCamel(key)
+        return {
+          ...acc,
+          [newKey]: obj[key],
+        }
+      },
+      {} as Record<string, any>,
+    )
+
+  const parametersExamples = getParametersExample(endpoint, ['path', 'query'])
+  const bodySchema = getRequestBodySchema(endpoint)
+  const bodyExample = bodySchema ? generateSchemaExample(bodySchema) : undefined
+  const bodyTitle =
+    bodySchema &&
+    isDereferenced(bodySchema) &&
+    bodySchema.title &&
+    titleToCamel(bodySchema.title)
+
+  const requestParameters = {
+    ...(parametersExamples ? convertToCamelCase(parametersExamples) : {}),
+    ...(bodySchema && isDereferenced(bodySchema) && bodyExample
+      ? {
+          [bodyTitle || 'body']: bodyExample,
+        }
+      : {}),
+  }
+
   return `import { PolarAPI, Configuration } from '@polar-sh/sdk';
 
 const polar = new PolarAPI(
@@ -93,7 +179,7 @@ const polar = new PolarAPI(
     })
 );
 
-polar.${namespace}.${snakeToCamel(endpointName)}()
+polar.${namespace}.${snakeToCamel(endpointName)}(${objectToString(requestParameters)})
   .then(console.log)
   .catch(console.error);
 `
@@ -110,6 +196,16 @@ export const APIContainer = ({
   path: string
   method: string
 }) => {
+  const { resolvedTheme } = useTheme()
+  const baseTheme = resolvedTheme === 'dark' ? polarDark : polarLight
+  const syntaxHighlighterTheme: Theme = {
+    ...baseTheme,
+    base: {
+      ...baseTheme.base,
+      background: 'transparent',
+    },
+  }
+
   const [currentTab, setCurrentTab] = useState<'curl' | 'nodejs'>('curl')
   const [didCopy, setDidCopy] = useState(false)
 
@@ -191,15 +287,19 @@ export const APIContainer = ({
             </AnimatePresence>
           </Button>
         </TabsList>
-        <TabsContent value="curl" className="p-2 py-0">
-          <pre className="select-text overflow-auto p-4 font-mono text-xs leading-normal text-gray-900 dark:text-white">
-            {curlCommand}
-          </pre>
+        <TabsContent value="curl" className="p-2 py-0 text-xs">
+          <SyntaxHighlighter
+            language="bash"
+            code={curlCommand}
+            theme={syntaxHighlighterTheme}
+          />
         </TabsContent>
-        <TabsContent value="nodejs" className="p-2 py-0">
-          <pre className="select-text overflow-auto p-4 font-mono text-xs leading-normal text-gray-900 dark:text-white">
-            {nodeJSCommand}
-          </pre>
+        <TabsContent value="nodejs" className="p-2 py-0 text-xs">
+          <SyntaxHighlighter
+            language="js"
+            code={nodeJSCommand}
+            theme={syntaxHighlighterTheme}
+          />
         </TabsContent>
       </Tabs>
     </div>

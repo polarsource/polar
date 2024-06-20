@@ -36,7 +36,7 @@ export default function ClientPage() {
 
   return (
     <div className="flex h-full flex-col gap-12 md:flex-row">
-      <div className="flex h-full w-full flex-col gap-y-12 self-stretch md:sticky md:top-[6.5rem] md:max-w-xs">
+      <div className="flex h-full w-full flex-col gap-y-12 self-stretch md:sticky md:top-[3rem] md:max-w-xs">
         <PurchaseSidebar />
       </div>
       {orders?.pagination.total_count === 0 ? (

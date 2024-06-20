@@ -48,7 +48,7 @@ export const Navigation = () => {
 }
 
 export const DocumentationPageSidebar = () => {
-  const { isShown, show, hide } = useModal()
+  const { isShown, show, hide, toggle } = useModal()
 
   return (
     <div className="flex w-full flex-shrink-0 flex-col gap-y-12 md:w-60">
@@ -84,7 +84,7 @@ export const DocumentationPageSidebar = () => {
       <Separator />
       <Navigation />
 
-      <SearchPalette isShown={isShown} show={show} hide={hide} />
+      <SearchPalette isShown={isShown} toggle={toggle} hide={hide} />
     </div>
   )
 }

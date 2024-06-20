@@ -1,5 +1,6 @@
 import { SearchOutlined } from '@mui/icons-material'
 import { twMerge } from 'tailwind-merge'
+import { CommandPaletteTriggerKey } from './commands/trigger'
 
 export interface CommandPaletteTriggerProps {
   className?: string
@@ -33,7 +34,7 @@ export const CommandPaletteTrigger = ({
           'dark:border-polar-600 cursor-default rounded-md bg-white px-2 py-1 text-xs tracking-wide dark:border dark:bg-transparent',
         )}
       >
-        <span>⌘K</span>
+        <CommandPaletteTriggerKey />
       </div>
     </div>
   )

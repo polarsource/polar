@@ -1,11 +1,11 @@
 import { Community } from '@/components/Landing/Community'
 import { Hero } from '@/components/Landing/Hero'
+import { LastPitch } from '@/components/Landing/LastPitch'
 import { MerchantOfRecord } from '@/components/Landing/MOR'
 import { Monetization } from '@/components/Landing/Monetization'
 import { Testamonials } from '@/components/Landing/Testamonials'
 import { Separator } from 'polarkit/components/ui/separator'
 import { API } from './API'
-import { Benefits } from './Benefits'
 import { Pricing } from './Pricing'
 import { Section } from './Section'
 import { Circles } from './molecules/Circles'
@@ -31,13 +31,13 @@ export const PageContent = () => {
       <Separator className="w-screen" />
 
       <Section
-        id="benefits"
+        id="integrations"
         className="gap-y-24"
         wrapperClassName="overflow-hidden"
       >
         <Circles className="absolute inset-0 top-1/2 -z-10 hidden -translate-y-1/2 text-white dark:block" />
         <Circles className="absolute inset-0 top-1/2 -z-10 block -translate-y-1/2 text-black dark:hidden" />
-        <Benefits />
+        <API />
       </Section>
 
       <Separator className="w-screen" />
@@ -50,7 +50,9 @@ export const PageContent = () => {
 
       <Separator className="w-screen" />
 
-      <API />
+      <LastPitch />
+
+      <Separator className="w-screen" />
     </>
   )
 }

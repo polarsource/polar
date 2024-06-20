@@ -4,14 +4,19 @@ import SubscriptionTierCard from '@/components/Subscriptions/SubscriptionTierCar
 import { motion } from 'framer-motion'
 import { MOCKED_PRODUCTS } from '../utils'
 
+const API_PRODUCT = {
+  ...MOCKED_PRODUCTS[1],
+  description: undefined,
+}
+
 export const APIFirst = () => {
   return (
-    <div className="relative hidden md:flex">
+    <div className="relative -mt-8 mb-8 md:flex">
       <SubscriptionTierCard
         className="max-w-[300px]"
-        subscriptionTier={MOCKED_PRODUCTS[1]}
+        subscriptionTier={API_PRODUCT}
       />
-      <div className="dark:bg-polar-900/50 absolute bottom-8 left-1/2 flex h-52 w-[480px] -translate-x-1/2 flex-col gap-y-6 rounded-3xl border p-6 font-mono shadow-2xl backdrop-blur-md">
+      <div className="dark:bg-polar-900/50 absolute -bottom-8 left-1/2 flex h-52 w-[480px] -translate-x-1/2 flex-col gap-y-6 rounded-3xl border p-6 font-mono shadow-2xl backdrop-blur-md">
         <div className="flex flex-row items-center gap-x-2">
           {Array.from({ length: 3 }).map((_, index) => (
             <div
@@ -24,7 +29,7 @@ export const APIFirst = () => {
           {`curl -X GET \\
 https://api.polar.sh/api/v1/products/123 \\
 -H "Accept: application/json" \\
--H "Authorization: Bearer <token>"`}
+-H "Authorization: Bearer polar_at_XXXX"`}
           <motion.span
             initial="inactive"
             animate="active"

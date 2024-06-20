@@ -82,7 +82,7 @@ export const Testamonials = () => {
   return (
     <Section className="gap-y-16">
       <h3 className="text-center text-4xl leading-snug">
-        Serving world-class developers, world-wide.
+        Serving world-class developers, world-wide
       </h3>
       <div className="dark:border-polar-700 flex flex-col divide-y overflow-hidden rounded-3xl border">
         <Link

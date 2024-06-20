@@ -34,11 +34,11 @@ export const Community = () => {
           <picture>
             <source
               media="(prefers-color-scheme: dark)"
-              srcSet={`/assets/landing/sales_dark.png`}
+              srcSet={`/assets/landing/newsletter_dark.png`}
             />
             <img
               className="dark:border-polar-700 rounded-2xl border border-gray-100"
-              srcSet={`/assets/landing/sales.png`}
+              srcSet={`/assets/landing/newsletter_light.png`}
               alt="Write newsletters in GitHub flavoured markdown"
             />
           </picture>

@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "@polar-sh/sdk": "0.5.1",
-    "next": "^14.1.0",
+    "next": "^14.2.4",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-markdown": "^9.0.1"

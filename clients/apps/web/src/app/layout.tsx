@@ -2,8 +2,8 @@ import '../styles/globals.scss'
 
 import { UserContextProvider } from '@/providers/auth'
 import { getServerSideAPI } from '@/utils/api/serverside'
-import { Metadata } from 'next'
 import localFont from 'next/font/local'
+import { Metadata } from 'next/types'
 import { twMerge } from 'tailwind-merge'
 import {
   PolarPostHogProvider,

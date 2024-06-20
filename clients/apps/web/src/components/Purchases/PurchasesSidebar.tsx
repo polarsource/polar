@@ -87,7 +87,7 @@ const PurchaseSidebar: React.FC<React.PropsWithChildren<{}>> = ({
           </PurchaseLink>
         </div>
       </div>
-      {renderSearch && (
+      {renderSearch ? (
         <div className="flex flex-col gap-y-3">
           <div className="w-full">
             <Input
@@ -97,6 +97,8 @@ const PurchaseSidebar: React.FC<React.PropsWithChildren<{}>> = ({
             />
           </div>
         </div>
+      ) : (
+        <></>
       )}
       <>{children}</>
     </ShadowBox>

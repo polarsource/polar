@@ -65,14 +65,14 @@ const PlatformPopover = () => {
                 link="/issue-funding"
               />
               <PopoverLinkItem
-                title="Donations"
-                description="A tip jar for your projects"
-                link="/docs/overview/donations"
-              />
-              <PopoverLinkItem
                 title="Products & Subscriptions"
                 description="One-time & recurring funding in exchange for benefits"
                 link="/products"
+              />
+              <PopoverLinkItem
+                title="Donations"
+                description="A tip jar for your projects"
+                link="/donations"
               />
               <PopoverLinkItem
                 title="Newsletters"

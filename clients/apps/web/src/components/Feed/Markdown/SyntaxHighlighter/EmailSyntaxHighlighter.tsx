@@ -1,6 +1,6 @@
+import SyntaxHighlighter from '@/components/SyntaxHighlighter/SyntaxHighlighter'
+import { polarLight } from '@/components/SyntaxHighlighter/themes'
 import { firstChild } from '../markdown'
-import SyntaxHighlighter from './SyntaxHighlighter'
-import { polarLight } from './themes'
 
 const EmailSyntaxHighlighter = (props: {
   language: string | undefined
@@ -20,7 +20,12 @@ const EmailSyntaxHighlighter = (props: {
 
   return (
     <div className="relative my-2 w-full">
-      <SyntaxHighlighter language={language} code={code} theme={polarLight} />
+      <SyntaxHighlighter
+        language={language}
+        code={code}
+        theme={polarLight}
+        lineNumbers
+      />
     </div>
   )
 }

@@ -1,10 +1,10 @@
 import { ContentPasteOutlined } from '@mui/icons-material'
 import Button from 'polarkit/components/ui/atoms/button'
 
+import SyntaxHighlighter from '@/components/SyntaxHighlighter/SyntaxHighlighter'
+import { polarDark, polarLight } from '@/components/SyntaxHighlighter/themes'
 import { useTheme } from 'next-themes'
 import { firstChild } from '../markdown'
-import SyntaxHighlighter from './SyntaxHighlighter'
-import { polarDark, polarLight } from './themes'
 
 const BrowserSyntaxHighlighter = (props: {
   language: string | undefined
@@ -37,6 +37,7 @@ const BrowserSyntaxHighlighter = (props: {
           language={language}
           code={code}
           theme={syntaxHighlighterTheme}
+          lineNumbers
         />
       </div>
       <Button

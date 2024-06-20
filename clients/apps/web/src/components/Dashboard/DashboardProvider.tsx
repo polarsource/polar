@@ -1,6 +1,7 @@
 import { useCurrentOrgAndRepoFromURL } from '@/hooks'
-import { PropsWithChildren, createContext, useContext, useEffect } from 'react'
+import { PropsWithChildren, createContext, useContext } from 'react'
 import { CommandPalette } from '../CommandPalette/CommandPalette'
+import { useCommandPaletteTrigger } from '../CommandPalette/commands/trigger'
 import { Modal } from '../Modal'
 import { useModal } from '../Modal/useModal'
 
@@ -32,21 +33,7 @@ export const DashboardProvider = ({ children }: PropsWithChildren) => {
     toggle: toggleCommandPalette,
   } = useModal()
 
-  useEffect(() => {
-    const handleKeyPress = (e: KeyboardEvent) => {
-      if (isCommandPaletteOpen) return
-
-      if (e.key === 'k' && e.metaKey) {
-        showCommandPalette()
-      }
-    }
-
-    window.addEventListener('keydown', handleKeyPress)
-
-    return () => {
-      window.removeEventListener('keydown', handleKeyPress)
-    }
-  }, [isCommandPaletteOpen, showCommandPalette])
+  useCommandPaletteTrigger(toggleCommandPalette)
 
   return (
     <DashboardContext.Provider

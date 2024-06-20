@@ -35,8 +35,10 @@ export default function ClientPage() {
   })
 
   return (
-    <div className="flex h-full flex-grow flex-row items-start gap-x-12">
-      <PurchaseSidebar />
+    <div className="flex h-full flex-col gap-12 md:flex-row">
+      <div className="flex h-full w-full flex-col gap-y-12 self-stretch md:sticky md:top-[6.5rem] md:max-w-xs">
+        <PurchaseSidebar />
+      </div>
       {orders?.pagination.total_count === 0 ? (
         <div className="dark:text-polar-400 flex h-full w-full flex-col items-center gap-y-4 pt-32 text-6xl text-gray-600">
           <DiamondOutlined fontSize="inherit" />

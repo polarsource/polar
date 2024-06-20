@@ -14,13 +14,8 @@ import { usePathname, useRouter } from 'next/navigation'
 import Button from 'polarkit/components/ui/atoms/button'
 import { useCallback } from 'react'
 
-import {
-  unauthenticatedRoutes,
-  useBackerRoutes,
-} from '@/components/Dashboard/navigation'
 import { useMaintainerUpgrade } from '@/hooks/queries'
 import { BrandingMenu } from './BrandingMenu'
-import TopbarNavigation from './TopbarNavigation'
 import TopbarRight from './TopbarRight'
 
 const Topbar = ({
@@ -109,22 +104,11 @@ const Topbar = ({
 
   const upsell = upsellOrDashboard()
 
-  const backerRoutes = useBackerRoutes()
-
-  const routes = authenticatedUser ? backerRoutes : unauthenticatedRoutes
-
   return (
     <div className="z-50 flex w-full flex-col items-center py-4">
       <div className="flex w-full max-w-7xl flex-row flex-wrap justify-between gap-y-4 px-2">
         <div className="flex flex-shrink-0 flex-row items-center gap-x-4 md:gap-x-12">
           <BrandingMenu />
-
-          <div className="flex flex-shrink-0 flex-row items-center gap-4">
-            <TopbarNavigation
-              routes={routes}
-              unauthenticated={!authenticatedUser}
-            />
-          </div>
         </div>
         {!hideProfile ? (
           <div className="relative flex flex-1 flex-shrink-0 flex-row items-center justify-end gap-x-6 md:ml-0 ">

@@ -5,13 +5,12 @@ import {
   GitHubAuthUpsell,
   MaintainerUpsell,
 } from '@/components/Dashboard/Upsell'
-import { FeaturedCreators } from '@/components/Feed/FeaturedCreators'
-import { Feed } from '@/components/Feed/Feed'
+import PurchaseSidebar from '@/components/Purchases/PurchasesSidebar'
 import { useAuth, useGitHubAccount, usePersonalOrganization } from '@/hooks'
 import { useListAdminOrganizations, useSearchArticles } from '@/hooks/queries'
-import { useEffect } from 'react'
+import { PropsWithChildren, useEffect } from 'react'
 
-export default function Page() {
+export default function Layout({ children }: PropsWithChildren) {
   const { authenticated, reloadUser } = useAuth()
   const { isLoading: adminOrgsAreLoading } = useListAdminOrganizations()
   const personalOrg = usePersonalOrganization()
@@ -39,11 +38,9 @@ export default function Page() {
     authenticated && !listOrganizationQuery.isLoading && !personalOrg
 
   return (
-    <div className="relative flex h-full flex-col md:flex-row md:gap-x-24 md:pt-6">
-      <div className="flex w-full flex-col gap-y-8 pb-12 md:w-full">
-        <Feed />
-      </div>
-      <div className="flex h-full flex-col gap-y-12 self-stretch md:max-w-xs">
+    <div className="flex h-full flex-col gap-12 md:flex-row">
+      <div className="flex h-full w-full flex-col gap-y-6 self-stretch md:sticky md:top-[6.5rem] md:max-w-xs">
+        <PurchaseSidebar />
         {shouldShowGitHubAuthUpsell ? (
           <GitHubAuthUpsell />
         ) : shouldShowMaintainerUpsell ? (
@@ -51,8 +48,8 @@ export default function Page() {
         ) : shouldShowPostUpsell ? (
           <CreatePostUpsell />
         ) : null}
-        <FeaturedCreators />
       </div>
+      {children}
     </div>
   )
 }

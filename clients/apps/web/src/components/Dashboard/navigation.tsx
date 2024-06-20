@@ -311,15 +311,6 @@ const backerRoutesList = (): Route[] => [
     subs: undefined,
   },
   {
-    id: 'funding',
-    title: 'Funding',
-    link: `/funding`,
-    icon: <FavoriteBorderOutlined className="h-5 w-5" fontSize="inherit" />,
-    postIcon: undefined,
-    if: true,
-    subs: undefined,
-  },
-  {
     id: 'purchases',
     title: 'Purchases',
     link: `/purchases`,
@@ -328,6 +319,15 @@ const backerRoutesList = (): Route[] => [
     get if() {
       return isFeatureEnabled('products')
     },
+    subs: undefined,
+  },
+  {
+    id: 'funding',
+    title: 'Funded Issues',
+    link: `/funding`,
+    icon: <HowToVoteOutlined className="h-5 w-5" fontSize="inherit" />,
+    postIcon: undefined,
+    if: true,
     subs: undefined,
   },
 ]

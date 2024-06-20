@@ -19,7 +19,7 @@ const PurchaseLink = ({ ...props }: PropsWithChildren<LinkProps>) => {
   return (
     <Link
       className={twMerge(
-        'flex cursor-pointer flex-row items-center justify-between gap-x-2 rounded-xl bg-transparent px-4 py-2 text-sm text-gray-500 transition-colors hover:text-blue-500 dark:hover:text-blue-50',
+        'flex cursor-pointer flex-row items-center justify-between gap-x-2 rounded-xl bg-transparent px-4 py-2 text-sm text-gray-500 transition-colors [font-feature-settings:"tnum"] hover:text-blue-500 dark:hover:text-blue-50',
         active
           ? 'dark:bg-polar-700 bg-blue-50 text-blue-500 dark:text-blue-50'
           : '',

@@ -29,7 +29,7 @@ export const Community = () => {
           icon={<TrendingUpOutlined />}
           title="Free & Premium Newsletters"
           description="Offer online- and email newsletters to your community - at no additional cost. Write posts in GitHub flavoured markdown. Share them with all subscribers, paid ones or as early access."
-          link="/docs/overview/issue-funding/reward-contributors"
+          link="/docs/overview/newsletters"
         >
           <picture>
             <source

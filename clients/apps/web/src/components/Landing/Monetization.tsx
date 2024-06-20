@@ -19,7 +19,7 @@ import FeatureItem from './molecules/FeatureItem'
 import { MOCKED_PRODUCTS } from './utils'
 
 interface BenefitCardProps {
-  className: string
+  className?: string
   title: string
   description: string
   icon: JSX.Element

@@ -277,7 +277,7 @@ const APIReferenceSections = () => {
               <NavigationItem
                 key={endpoint.path + endpoint.method}
                 className="m-0 bg-transparent p-0 text-sm dark:bg-transparent"
-                href={`/docs/api-reference${endpoint.path}/${endpoint.method}`}
+                href={`/docs/api-reference${endpoint.path}${endpoint.path.endsWith('/') ? '' : '/'}${endpoint.method}`}
                 active={(pathname) => {
                   const hasTrailingSlash = endpoint.path.endsWith('/')
                   const withTrailingSlash = hasTrailingSlash

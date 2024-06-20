@@ -22,35 +22,48 @@ export const fetchSchema = async (): Promise<OpenAPIV3_1.Document> => {
   )
 }
 
-interface EndpointMetadata {
+const isMethod = (method: string): method is APIMethod =>
+  ['get', 'post', 'put', 'patch', 'delete'].includes(method)
+
+export class EndpointError extends Error {
+  constructor(endpoint: string[]) {
+    super(`Endpoint not found or invalid: ${endpoint}`)
+  }
+}
+
+export interface EndpointMetadata {
   operation: OpenAPIV3_1.OperationObject
   method: APIMethod
   apiEndpointPath: string
 }
 
 export const resolveEndpointMetadata = (
-  endpoint: string,
+  endpoint: string[],
   schema: OpenAPIV3_1.Document,
 ): EndpointMetadata => {
-  const parts = endpoint.split('/').filter(Boolean)
+  const parts = endpoint.slice(0, -1)
+  const method = endpoint[endpoint.length - 1]
 
-  const method = parts.pop() as APIMethod
-  const apiEndpointPath =
-    `/${decodeURIComponent(parts.join('/'))}` as keyof typeof schema.paths
+  if (!isMethod(method)) {
+    throw new EndpointError(endpoint)
+  }
 
-  const apiEndpoint = schema.paths?.[apiEndpointPath]
+  let apiEndpointPath = `/${decodeURIComponent(parts.join('/'))}`
 
   // Try to fallback to endpoint with trailing slash if endpoint is a root resource
-  let operation: OpenAPIV3_1.OperationObject
-  try {
-    operation = apiEndpoint?.[method] as OpenAPIV3_1.OperationObject
+  let apiEndpoint = schema.paths?.[apiEndpointPath]
+  if (!apiEndpoint) {
+    apiEndpointPath = `${apiEndpointPath}/`
+    apiEndpoint = schema.paths?.[apiEndpointPath]
+  }
 
-    if (!operation) {
-      throw new Error('Operation not found')
-    }
-  } catch (e) {
-    // @ts-ignore
-    operation = schema.paths?.[`${apiEndpointPath}/`]?.[method]
+  if (!apiEndpoint) {
+    throw new EndpointError(endpoint)
+  }
+
+  const operation = apiEndpoint?.[method]
+  if (!operation) {
+    throw new EndpointError(endpoint)
   }
 
   return {

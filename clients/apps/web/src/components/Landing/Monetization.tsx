@@ -123,7 +123,7 @@ export const Monetization = () => {
             icon={<DiamondOutlined />}
             title="Products & Subscriptions"
             description="Start offering developer first products and services in minutes - paid once, monthly or annually."
-            link="/docs/overview/subscriptions"
+            link="/products"
           >
             <SubscriptionTierCard
               className="dark:bg-polar-900 dark:border-polar-800 border-transparent bg-white shadow-sm"
@@ -154,7 +154,7 @@ export const Monetization = () => {
             icon={<AttachMoneyOutlined />}
             title="Donations"
             description="Get appreciation from your community for a great newsletter, release or ongoing development."
-            link="/docs/overview/donations"
+            link="/donations"
           />
           <FeatureItem
             icon={<HiveOutlined />}

@@ -9,7 +9,6 @@ import { api } from '@/utils/api'
 import {
   InstallationCreatePlatformEnum,
   Organization,
-  ResponseError,
   UserSignupType,
 } from '@polar-sh/sdk'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
@@ -75,9 +74,16 @@ export default function Page() {
         // redirect
         router.replace(`/maintainer/${organization.name}/initialize`)
       })
-      .catch((err: ResponseError) => {
+      .catch((err) => {
         if (signal.aborted) {
           return
+        }
+
+        if (err.name === 'FetchError') {
+          setError('Could not fetch data from GitHub. Try refreshing the page.')
+          // Since we get rare issues here sometimes. Raise so we capture in
+          // Sentry for more details.
+          throw err
         }
         if (err.response.status === 401) {
           setShowLogin(true)

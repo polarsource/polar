@@ -36,6 +36,8 @@ const PurchaseSidebar: React.FC<React.PropsWithChildren<{}>> = ({
     PurchasesQueryParametersContext,
   )
 
+  const pathname = usePathname()
+
   const { data: orders } = useUserOrders({
     limit: 1,
     productPriceType: ProductPriceType.ONE_TIME,
@@ -55,11 +57,19 @@ const PurchaseSidebar: React.FC<React.PropsWithChildren<{}>> = ({
     [setPurchaseParameters],
   )
 
+  const renderSearch = useMemo(
+    () => pathname.startsWith('/purchases'),
+    [pathname],
+  )
+
   return (
-    <ShadowBox className="sticky top-[6.5rem] flex w-full max-w-[320px] flex-shrink-0 flex-col gap-6">
-      <h1 className="text-lg font-medium">Purchases</h1>
+    <ShadowBox className="flex w-full flex-shrink-0 flex-col gap-6 p-6">
+      <h2 className="text-lg">Backer</h2>
       <div className="flex flex-col gap-y-3">
         <div className="flex flex-col">
+          <PurchaseLink href="/feed">
+            <span className="flex flex-row items-center gap-x-2">Feed</span>
+          </PurchaseLink>
           <PurchaseLink href="/purchases/products">
             <span className="flex flex-row items-center gap-x-2">Products</span>
             <span>{orders?.pagination.total_count || 0}</span>
@@ -70,17 +80,24 @@ const PurchaseSidebar: React.FC<React.PropsWithChildren<{}>> = ({
             </span>
             <span>{subscriptions?.pagination.total_count || 0}</span>
           </PurchaseLink>
+          <PurchaseLink href="/funding">
+            <span className="flex flex-row items-center gap-x-2">
+              Funded Issues
+            </span>
+          </PurchaseLink>
         </div>
       </div>
-      <div className="flex flex-col gap-y-3">
-        <div className="w-full">
-          <Input
-            placeholder="Search products or creators"
-            onChange={handleSearch}
-            value={purchaseParameters.query}
-          />
+      {renderSearch && (
+        <div className="flex flex-col gap-y-3">
+          <div className="w-full">
+            <Input
+              placeholder="Search products or creators"
+              onChange={handleSearch}
+              value={purchaseParameters.query}
+            />
+          </div>
         </div>
-      </div>
+      )}
       <>{children}</>
     </ShadowBox>
   )

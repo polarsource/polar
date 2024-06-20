@@ -51,8 +51,6 @@ export const PageContent = () => {
       <Separator className="w-screen" />
 
       <LastPitch />
-
-      <Separator className="w-screen" />
     </>
   )
 }

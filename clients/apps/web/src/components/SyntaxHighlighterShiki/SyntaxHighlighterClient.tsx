@@ -1,12 +1,12 @@
 'use client'
 
-import { themeConfig, themesList, transformers } from '@polar/shiki'
 import React, { useCallback, useContext, useEffect, useState } from 'react'
 import {
   BundledLanguage,
   Highlighter,
   getHighlighter as _getHighlighter,
 } from 'shiki/bundle/web'
+import { themeConfig, themesList, transformers } from '../../../shiki.config'
 
 const getHighlighter = async (): Promise<Highlighter> => {
   return _getHighlighter({

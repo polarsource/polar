@@ -1,9 +1,9 @@
-import { themeConfig, themesList, transformers } from '@polar/shiki'
 import {
   Highlighter,
   getHighlighter as _getHighlighter,
   bundledLanguages,
 } from 'shiki'
+import { themeConfig, themesList, transformers } from '../../../shiki.config'
 
 export type { Highlighter }
 

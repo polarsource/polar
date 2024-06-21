@@ -16,9 +16,6 @@
       // When using regular polarkit components, refer to "polarkit" instead of "@polarkit"
       "@polarkit/lib/*": [
         "../../../packages/polarkit/src/lib/*"
-      ],
-      "@polar/shiki": [
-        "../shiki.config"
       ]
     },
     "module": "esnext",

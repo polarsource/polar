@@ -1,3 +1,4 @@
+import { themeConfig, themesList, transformers } from '@polar/shiki'
 import {
   BundledLanguage,
   Highlighter,
@@ -15,7 +16,7 @@ export const getHighlighter = async (): Promise<Highlighter> => {
   }
   highlighter = await _getHighlighter({
     langs: Object.keys(bundledLanguages),
-    themes: ['catppuccin-latte', 'catppuccin-mocha'],
+    themes: themesList,
   })
   return highlighter
 }
@@ -31,18 +32,10 @@ const SyntaxHighlighterServer = ({
 }) => {
   const html = highlighter.codeToHtml(code, {
     lang,
-    themes: {
-      light: 'catppuccin-latte',
-      dark: 'catppuccin-mocha',
-    },
-    structure: 'inline',
+    themes: themeConfig,
+    transformers,
   })
-  return (
-    <pre
-      dangerouslySetInnerHTML={{ __html: html }}
-      className="shiki shiki-themes catppuccin-latte catppuccin-mocha overflow-auto"
-    ></pre>
-  )
+  return <div dangerouslySetInnerHTML={{ __html: html }}></div>
 }
 
 export default SyntaxHighlighterServer

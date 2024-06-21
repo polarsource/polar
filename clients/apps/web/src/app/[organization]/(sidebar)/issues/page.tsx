@@ -4,10 +4,8 @@ import {
   urlSearchFromObj,
 } from '@/components/Organization/filters'
 import { getServerSideAPI } from '@/utils/api/serverside'
-import { redirectToCanonicalDomain } from '@/utils/nav'
 import { Organization, Platforms, ResponseError } from '@polar-sh/sdk'
 import type { Metadata } from 'next'
-import { headers } from 'next/headers'
 import { notFound } from 'next/navigation'
 import ClientPage from './ClientPage'
 
@@ -115,13 +113,6 @@ export default async function Page({
   if (!organization.public_page_enabled) {
     notFound()
   }
-
-  redirectToCanonicalDomain({
-    organization,
-    paramOrganizationName: params.organization,
-    headers: headers(),
-    subPath: `/issues`,
-  })
 
   return <ClientPage organization={organization} issues={issues} />
 }

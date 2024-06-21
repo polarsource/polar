@@ -1,7 +1,6 @@
 import PreviewText, { UnescapeText } from '@/components/Feed/Markdown/preview'
 import { getServerSideAPI } from '@/utils/api/serverside'
 import { firstImageUrlFromMarkdown } from '@/utils/markdown'
-import { redirectToCanonicalDomain } from '@/utils/nav'
 import {
   Article,
   ListResourceProduct,
@@ -9,7 +8,6 @@ import {
   ResponseError,
 } from '@polar-sh/sdk'
 import type { Metadata } from 'next'
-import { headers } from 'next/headers'
 import { notFound } from 'next/navigation'
 import ClientPage from './ClientPage'
 
@@ -173,13 +171,6 @@ export default async function Page({
     notFound()
   }
 
-  redirectToCanonicalDomain({
-    organization: article.organization,
-    paramOrganizationName: params.organization,
-    headers: headers(),
-    subPath: `/posts/${article.slug}`,
-  })
-
   const jsonLd: WithContext<JSONLDArticle> = {
     '@context': 'https://schema.org',
     '@type': 'BlogPosting',
@@ -188,16 +179,12 @@ export default async function Page({
     author: {
       '@type': 'Organization',
       name: article.byline.name,
-      url: article.organization.custom_domain
-        ? `https://${article.organization.custom_domain}`
-        : `https://polar.sh/${article.organization.name}`,
+      url: `https://polar.sh/${article.organization.name}`,
     },
     publisher: {
       '@type': 'Organization',
       name: article.byline.name,
-      url: article.organization.custom_domain
-        ? `https://${article.organization.custom_domain}`
-        : `https://polar.sh/${article.organization.name}`,
+      url: `https://polar.sh/${article.organization.name}`,
     },
   }
 

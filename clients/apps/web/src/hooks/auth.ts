@@ -1,5 +1,4 @@
 import { AuthContext } from '@/providers/auth'
-import { PublicPageOrganizationContext } from '@/providers/organization'
 import { api } from '@/utils/api'
 import { CONFIG } from '@/utils/config'
 import { UserRead } from '@polar-sh/sdk'
@@ -58,19 +57,11 @@ export const useAuth = (): {
 }
 
 export const useLogout = () => {
-  const org = useContext(PublicPageOrganizationContext)
-
   const func = useCallback(async () => {
-    // custom domain logout
-    if (org && org.custom_domain) {
-      window.location.href = `${CONFIG.BASE_URL}/api/v1/auth/logout?organization_id=${org.id}`
-      return
-    }
-
     // polar.sh logout
     window.location.href = `${CONFIG.BASE_URL}/api/v1/auth/logout`
     return
-  }, [org, useLogout])
+  }, [])
 
   return func
 }

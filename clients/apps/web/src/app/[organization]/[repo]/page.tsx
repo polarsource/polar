@@ -6,7 +6,6 @@ import {
 import { Link } from '@/components/Profile/LinksEditor/LinksEditor'
 import { getServerSideAPI } from '@/utils/api/serverside'
 import { CONFIG } from '@/utils/config'
-import { redirectToCanonicalDomain } from '@/utils/nav'
 import {
   ListResourceArticle,
   ListResourceIssueFunding,
@@ -18,7 +17,6 @@ import {
   ResponseError,
 } from '@polar-sh/sdk'
 import { Metadata } from 'next'
-import { headers } from 'next/headers'
 import { notFound } from 'next/navigation'
 import { OgObject } from 'open-graph-scraper-lite/dist/lib/types'
 import ClientPage from './ClientPage'
@@ -178,13 +176,6 @@ export default async function Page({
   } catch (e) {
     notFound()
   }
-
-  redirectToCanonicalDomain({
-    organization: repository.organization,
-    paramOrganizationName: params.organization,
-    headers: headers(),
-    subPath: `/${params.repo}`,
-  })
 
   if (!repository.organization.public_page_enabled) {
     notFound()

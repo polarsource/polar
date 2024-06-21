@@ -1,5 +1,4 @@
 import { getServerSideAPI } from '@/utils/api/serverside'
-import { redirectToCanonicalDomain } from '@/utils/nav'
 import {
   ListResourceArticle,
   Organization,
@@ -7,7 +6,6 @@ import {
   ResponseError,
 } from '@polar-sh/sdk'
 import type { Metadata } from 'next'
-import { headers } from 'next/headers'
 import { notFound } from 'next/navigation'
 import ClientPage from './ClientPage'
 
@@ -135,13 +133,6 @@ export default async function Page({
   } catch (e) {
     notFound()
   }
-
-  redirectToCanonicalDomain({
-    organization,
-    paramOrganizationName: params.organization,
-    headers: headers(),
-    subPath: '/posts',
-  })
 
   return (
     <ClientPage

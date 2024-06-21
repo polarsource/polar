@@ -1,5 +1,4 @@
 import { getServerSideAPI } from '@/utils/api/serverside'
-import { redirectToCanonicalDomain } from '@/utils/nav'
 import {
   Issue,
   ListResourceOrganization,
@@ -8,7 +7,6 @@ import {
   Platforms,
 } from '@polar-sh/sdk'
 import { Metadata } from 'next'
-import { headers } from 'next/headers'
 import { notFound } from 'next/navigation'
 import ClientPage from './ClientPage'
 
@@ -145,13 +143,6 @@ export default async function Page({
   if (!organization.public_page_enabled) {
     notFound()
   }
-
-  redirectToCanonicalDomain({
-    organization: organization,
-    paramOrganizationName: params.organization,
-    headers: headers(),
-    subPath: `/donate`, // TODO: forward search params
-  })
 
   // If issue and issue does not match org
   if (issue && issue.repository.organization.id !== organization.id) {

@@ -2,7 +2,7 @@
 
 import GithubLoginButton from '@/components/Auth/GithubLoginButton'
 import PublicProfileDropdown from '@/components/Navigation/PublicProfileDropdown'
-import { useAuth, useCurrentOrgAndRepoFromURL } from '@/hooks'
+import { useAuth } from '@/hooks'
 import { CONFIG } from '@/utils/config'
 import { ArrowForwardOutlined } from '@mui/icons-material'
 import { Organization, UserRead, UserSignupType } from '@polar-sh/sdk'
@@ -13,11 +13,9 @@ import Button from 'polarkit/components/ui/atoms/button'
 export const PolarMenu = ({
   authenticatedUser,
   userAdminOrganizations,
-  organization,
 }: {
   authenticatedUser?: UserRead
   userAdminOrganizations: Organization[]
-  organization?: Organization
 }) => {
   const pathname = usePathname()
   const loginReturnTo = pathname ?? '/feed'
@@ -26,10 +24,6 @@ export const PolarMenu = ({
   // Fallback to client side user loading (needed as we're loading data in the layout, and it isn't refreshed on navigation)
   const { currentUser: clientCurrentUser } = useAuth()
   const currentUser = authenticatedUser ?? clientCurrentUser
-
-  // Fallback to client side org loading
-  const { org: clientOrg } = useCurrentOrgAndRepoFromURL()
-  const currentOrg = clientOrg ?? organization
 
   const personalOrg = userAdminOrganizations?.find((o) => o.is_personal)
 
@@ -41,10 +35,7 @@ export const PolarMenu = ({
     ? `${CONFIG.FRONTEND_BASE_URL}/maintainer/${currentUser?.username}/overview`
     : `${CONFIG.FRONTEND_BASE_URL}/maintainer/${userAdminOrganizations?.[0]?.name}/overview`
 
-  // Login through polar.sh with auth forwarding if on custom domain
-  const loginLink = currentOrg?.custom_domain
-    ? `${CONFIG.FRONTEND_BASE_URL}/login?return_to=${loginReturnTo}&for_organization_id=${currentOrg.id}`
-    : `${CONFIG.FRONTEND_BASE_URL}/login?return_to=${loginReturnTo}`
+  const loginLink = `${CONFIG.FRONTEND_BASE_URL}/login?return_to=${loginReturnTo}`
 
   return (
     <div className="flex flex-row items-center gap-x-6">

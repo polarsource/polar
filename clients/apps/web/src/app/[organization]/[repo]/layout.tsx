@@ -89,7 +89,6 @@ export default async function Layout({
               />
             </a>
             <PolarMenu
-              organization={organization}
               authenticatedUser={authenticatedUser}
               userAdminOrganizations={userAdminOrganizations ?? []}
             />
@@ -125,7 +124,6 @@ export default async function Layout({
             </div>
             <div className="hidden flex-row items-center md:flex">
               <PolarMenu
-                organization={organization}
                 authenticatedUser={authenticatedUser}
                 userAdminOrganizations={userAdminOrganizations}
               />

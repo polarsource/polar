@@ -1,11 +1,9 @@
 from datetime import datetime
-from uuid import UUID
 
 import structlog
 from fastapi import Request, Response
 from fastapi.responses import RedirectResponse
 
-from polar.auth.scope import Scope
 from polar.config import settings
 from polar.exceptions import BadRequest
 from polar.kit import jwt
@@ -55,20 +53,6 @@ class AuthService:
                 type="auth",
             ),
             expires_at,
-        )
-
-    @classmethod
-    def generate_pat_token(
-        cls, pat_id: UUID, expires_at: datetime, scopes: list[Scope]
-    ) -> str:
-        return jwt.encode(
-            data={
-                "pat_id": str(pat_id),
-                "scopes": ",".join(scopes),
-            },
-            secret=settings.SECRET,
-            expires_at=expires_at,
-            type="auth",
         )
 
     @classmethod

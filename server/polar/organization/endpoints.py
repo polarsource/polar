@@ -143,21 +143,12 @@ async def lookup(
     auth_subject: AnonymousOrganizationsRead,
     platform: Platforms | None = None,
     organization_name: str | None = None,
-    custom_domain: str | None = None,
     session: AsyncSession = Depends(get_db_session),
 ) -> OrganizationSchema:
     # Search by platform and organization name.
     if platform and organization_name:
         org = await organization_service.get_by_name(
             session, platform, organization_name
-        )
-        if org:
-            return await to_schema(session, auth_subject.subject, org)
-
-    # Search by custom domain
-    if custom_domain:
-        org = await organization_service.get_by_custom_domain(
-            session, custom_domain=custom_domain
         )
         if org:
             return await to_schema(session, auth_subject.subject, org)

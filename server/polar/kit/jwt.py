@@ -17,7 +17,6 @@ def create_expiration_dt(seconds: int) -> datetime:
 
 
 TYPE = Literal[
-    "custom_domain_forward",
     "github_oauth",
     "discord_oauth",
     "discord_guild_token",

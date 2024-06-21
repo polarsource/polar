@@ -37,10 +37,6 @@ class Settings(BaseSettings):
     CURRENT_JWK_KID: str = "polar_dev"
     WWW_AUTHENTICATE_REALM: str = "polar"
 
-    # Custom domain auth and exchange secrets
-    CUSTOM_DOMAIN_JWT_KEY: str = "SETME! secret key used for custom domain auth"
-    CUSTOM_DOMAIN_FORWARD_SECRET: str = "SETME! pre shared secret for exchanging a JWT to a auth JWT"  # pre shared key with the nextjs web app
-
     # JSON list of accepted CORS origins
     CORS_ORIGINS: list[str] = []
 

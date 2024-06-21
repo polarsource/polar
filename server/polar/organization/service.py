@@ -95,16 +95,6 @@ class OrganizationService(ResourceServiceReader[Organization]):
     ) -> Organization | None:
         return await self.get_by(session, platform=platform, name=name, blocked_at=None)
 
-    async def get_by_custom_domain(
-        self, session: AsyncSession, custom_domain: str
-    ) -> Organization | None:
-        query = sql.select(Organization).where(
-            Organization.custom_domain == custom_domain,
-            Organization.blocked_at.is_(None),
-        )
-        res = await session.execute(query)
-        return res.scalars().unique().one_or_none()
-
     async def get_personal(
         self, session: AsyncSession, user_id: UUID
     ) -> Organization | None:

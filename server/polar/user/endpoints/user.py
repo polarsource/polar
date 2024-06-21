@@ -1,9 +1,8 @@
 import structlog
-from fastapi import Depends, Response
+from fastapi import Depends
 
 from polar.auth.dependencies import Authenticator, WebUser
 from polar.auth.models import AuthSubject
-from polar.auth.service import AuthService, LogoutResponse
 from polar.authz.service import Authz
 from polar.exceptions import InternalServerError
 from polar.integrations.github.service.organization import (
@@ -84,14 +83,6 @@ async def set_account(
         user=auth_subject.subject,
         account_id=set_account.account_id,
     )
-
-
-@router.get(
-    "/logout",
-    deprecated=True,  # Use /api/v1/auth/logout instead, which also has support for custom domains
-)
-async def logout(response: Response, auth_subject: WebUser) -> LogoutResponse:
-    return AuthService.generate_logout_response(response=response)
 
 
 @router.post(

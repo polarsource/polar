@@ -1,10 +1,12 @@
+import { Highlighter } from '@/components/SyntaxHighlighterShiki/SyntaxHighlighterServer'
 import Markdown from 'markdown-to-jsx'
 import dynamic from 'next/dynamic'
 import { Skeleton } from 'polarkit/components/ui/skeleton'
-import { createContext, useContext } from 'react'
 import BrowserAd from './Ad/BrowserAd'
 import BrowserCallout from './Callout/BrowserCallout'
 import { calloutRenderRule } from './Callout/renderRule'
+import CodeBlockClient from './CodeBlock/CodeBlockClient'
+import CodeBlockServer from './CodeBlock/CodeBlockServer'
 import Embed from './Embed/BrowserEmbed'
 import Iframe from './Iframe/BrowserIframe'
 import { ImageOverlay } from './Img/ImageOverlay'
@@ -28,27 +30,6 @@ const BrowserMermaid = dynamic(() => import('./Mermaid/BrowserMermaid'), {
   ),
 })
 
-// Dynamically load the SyntaxHighlighter (heavily reduces bundle sizes)
-//
-// While loading (and SSR), render a placeholder without syntax highlighting
-const SyntaxHighlighterContext = createContext('')
-const BrowserSyntaxHighlighter = dynamic(
-  () => import('./SyntaxHighlighter/BrowserSyntaxHighlighter'),
-  {
-    ssr: false,
-    loading: () => <BrowserSyntaxHighlighterLoading />,
-  },
-)
-
-const BrowserSyntaxHighlighterLoading = () => {
-  const value = useContext(SyntaxHighlighterContext)
-  return (
-    <pre className="w-full">
-      <code className="text-black dark:text-white">{value}</code>
-    </pre>
-  )
-}
-
 export const opts = {
   ...markdownOpts,
 
@@ -62,32 +43,6 @@ export const opts = {
     embed: (args: any) => <Embed {...args} />,
     iframe: (args: any) => <Iframe {...args} />,
     img: (args: any) => <ImageOverlay {...args} />,
-    pre: (args: any) => {
-      const child = firstChild(args.children)
-      if (!child) {
-        return <></>
-      }
-
-      if (
-        typeof child === 'object' &&
-        'type' in child &&
-        child.type === 'code'
-      ) {
-        const language = child.props.className?.replace('lang-', '')
-        if (language === 'mermaid') {
-          const contents = firstChild(child.props.children)
-          if (contents && typeof contents === 'string') {
-            return <BrowserMermaid graphDefinition={contents} />
-          }
-        }
-        return (
-          <SyntaxHighlighterContext.Provider value={child.props.children}>
-            <BrowserSyntaxHighlighter language={language} {...child.props} />
-          </SyntaxHighlighterContext.Provider>
-        )
-      }
-      return <></>
-    },
     Ad: (args: any) => <BrowserAd {...args} />,
     footer: (args: any) => (
       <footer
@@ -118,7 +73,64 @@ export const previewOpts = {
   },
 } as const
 
-const BrowserRender = ({
+export const BrowserServerRender = ({
+  article,
+  showPaywalledContent,
+  isSubscriber,
+  paidArticlesBenefitName,
+  highlighter,
+}: {
+  article: RenderArticle
+  showPaywalledContent: boolean
+  isSubscriber: boolean
+  paidArticlesBenefitName?: string
+  highlighter: Highlighter
+}) => {
+  return (
+    <Markdown
+      options={{
+        ...opts,
+        overrides: {
+          ...opts.overrides,
+          pre: (args: any) => {
+            const child = firstChild(args.children)
+            if (!child) {
+              return <></>
+            }
+
+            if (
+              typeof child === 'object' &&
+              'type' in child &&
+              child.type === 'code'
+            ) {
+              const language = child.props.className?.replace('lang-', '')
+              return (
+                <CodeBlockServer
+                  language={language}
+                  highlighter={highlighter}
+                  {...child.props}
+                />
+              )
+            }
+            return <></>
+          },
+        },
+        createElement: wrapStrictCreateElement({
+          article,
+          showPaywalledContent,
+          isSubscriber,
+          paidArticlesBenefitName,
+          extraAllowedCustomComponents: Object.keys(opts.overrides),
+        }),
+        renderRule: calloutRenderRule(BrowserCallout),
+      }}
+    >
+      {article.body}
+    </Markdown>
+  )
+}
+
+export const BrowserClientRender = ({
   article,
   showPaywalledContent,
   isSubscriber,
@@ -133,6 +145,31 @@ const BrowserRender = ({
     <Markdown
       options={{
         ...opts,
+        overrides: {
+          ...opts.overrides,
+          pre: (args: any) => {
+            const child = firstChild(args.children)
+            if (!child) {
+              return <></>
+            }
+
+            if (
+              typeof child === 'object' &&
+              'type' in child &&
+              child.type === 'code'
+            ) {
+              const language = child.props.className?.replace('lang-', '')
+              if (language === 'mermaid') {
+                const contents = firstChild(child.props.children)
+                if (contents && typeof contents === 'string') {
+                  return <BrowserMermaid graphDefinition={contents} />
+                }
+              }
+              return <CodeBlockClient language={language} {...child.props} />
+            }
+            return <></>
+          },
+        },
         createElement: wrapStrictCreateElement({
           article,
           showPaywalledContent,
@@ -178,8 +215,6 @@ export const AbbreviatedBrowserRender = ({
     </Markdown>
   )
 }
-
-export default BrowserRender
 
 export type AbbreviatedContentResult = {
   body: string

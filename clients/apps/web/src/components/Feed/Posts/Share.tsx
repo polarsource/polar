@@ -1,3 +1,5 @@
+'use client'
+
 import { organizationPageLink } from '@/utils/nav'
 import { LinkedIn } from '@mui/icons-material'
 import XIcon from '@mui/icons-material/X'

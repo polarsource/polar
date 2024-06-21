@@ -1,3 +1,5 @@
+'use client'
+
 // @ts-ignore
 import mermaid from 'mermaid'
 import { useTheme } from 'next-themes'

@@ -1,3 +1,5 @@
+'use client'
+
 import { useAdvertisementDisplays } from '@/hooks/queries'
 
 const BrowserAd = (props: { subscriptionBenefitId: string }) => {

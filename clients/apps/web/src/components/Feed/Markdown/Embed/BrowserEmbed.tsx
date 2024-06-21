@@ -1,3 +1,5 @@
+'use client'
+
 import IssueListItem from '@/components/Issues/IssueListItem'
 import { api } from '@/utils/api'
 import { FavoriteBorderOutlined } from '@mui/icons-material'

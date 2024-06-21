@@ -4,6 +4,7 @@ import { getServerSideAPI } from '@/utils/api/serverside'
 import { Article } from '@polar-sh/sdk'
 
 import { parseBenefitIdsFromBody } from '@/components/Feed/Markdown/Ad/EmailAd'
+import { getHighlighter } from '@/components/SyntaxHighlighterShiki/SyntaxHighlighterServer'
 import { getMagicLinkAuthenticateURL } from '@/utils/auth'
 import {
   Body,
@@ -225,6 +226,8 @@ const renderArticle = async (
     dimensions: ads[idx].dimensions as [number, number],
   }))
 
+  const highlighter = await getHighlighter()
+
   const html = render(
     <Html lang="en">
       <Tailwind config={twConfig}>
@@ -309,7 +312,11 @@ const renderArticle = async (
 
               <Row>
                 <Column className="prose prose-p:text-gray-700 prose-img:rounded-2xl prose-a:text-blue-500 hover:prose-a:text-blue-400 prose-a:no-underline mb-8 space-y-16">
-                  <EmailRender article={article} adsContext={adsContext} />
+                  <EmailRender
+                    article={article}
+                    adsContext={adsContext}
+                    highlighter={highlighter}
+                  />
                 </Column>
               </Row>
 

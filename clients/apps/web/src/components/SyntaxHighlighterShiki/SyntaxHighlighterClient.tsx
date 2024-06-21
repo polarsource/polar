@@ -80,7 +80,7 @@ export const SyntaxHighlighterClient = ({
   lang,
   code,
 }: {
-  lang: BundledLanguage
+  lang: string
   code: string
 }) => {
   const { highlighter, loadedLanguages, loadLanguage } = useContext(
@@ -89,7 +89,7 @@ export const SyntaxHighlighterClient = ({
   const [highlightedCode, setHighlightedCode] = useState<string | null>(null)
 
   useEffect(() => {
-    loadLanguage(lang)
+    loadLanguage(lang as BundledLanguage)
   }, [loadLanguage, lang])
 
   useEffect(() => {

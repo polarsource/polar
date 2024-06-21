@@ -1,15 +1,16 @@
+import { Highlighter } from '@/components/SyntaxHighlighterShiki/SyntaxHighlighterServer'
 import Markdown from 'markdown-to-jsx'
 
 import { Container } from '@react-email/components'
 import EmailAd from './Ad/EmailAd'
 import EmailCallout from './Callout/EmailCallout'
 import { calloutRenderRule } from './Callout/renderRule'
+import CodeBlockEmail from './CodeBlock/CodeBlockEmail'
 import Embed from './Embed/EmailEmbed'
 import Iframe from './Iframe/EmailIframe'
 import EmailMermaid from './Mermaid/EmailMermaid'
 import Paywall, { EmailPaywall } from './Paywall/Paywall'
 import Poll from './Poll/Poll'
-import EmailSyntaxHighlighter from './SyntaxHighlighter/EmailSyntaxHighlighter'
 import {
   BenefitAds,
   RenderArticle,
@@ -29,28 +30,6 @@ export const opts = {
     SubscribeNow: () => <></>, // do not render
     embed: (args: any) => <Embed {...args} />,
     iframe: (args: any) => <Iframe {...args} />,
-    pre: (args: any) => {
-      const child = firstChild(args.children)
-      if (!child) {
-        return <></>
-      }
-
-      if (
-        typeof child === 'object' &&
-        'type' in child &&
-        child.type === 'code'
-      ) {
-        const language = child.props.className?.replace('lang-', '')
-        if (language === 'mermaid') {
-          const contents = firstChild(child.props.children)
-          if (contents && typeof contents === 'string') {
-            return <EmailMermaid graphDefinition={contents} />
-          }
-        }
-        return <EmailSyntaxHighlighter language={language} {...child.props} />
-      }
-      return <></>
-    },
     Ad: (args: any) => <EmailAd {...args} />,
   },
 } as const
@@ -58,12 +37,43 @@ export const opts = {
 const EmailRender = (props: {
   article: RenderArticle
   adsContext?: BenefitAds[]
+  highlighter: Highlighter
 }) => {
   return (
     <Markdown
       options={{
         ...opts,
+        overrides: {
+          ...opts.overrides,
+          pre: (args: any) => {
+            const child = firstChild(args.children)
+            if (!child) {
+              return <></>
+            }
 
+            if (
+              typeof child === 'object' &&
+              'type' in child &&
+              child.type === 'code'
+            ) {
+              const language = child.props.className?.replace('lang-', '')
+              if (language === 'mermaid') {
+                const contents = firstChild(child.props.children)
+                if (contents && typeof contents === 'string') {
+                  return <EmailMermaid graphDefinition={contents} />
+                }
+              }
+              return (
+                <CodeBlockEmail
+                  language={language}
+                  highlighter={props.highlighter}
+                  {...child.props}
+                />
+              )
+            }
+            return <></>
+          },
+        },
         createElement: wrapStrictCreateElement({
           article: props.article,
           extraAllowedCustomComponents: Object.keys(opts.overrides),

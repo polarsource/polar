@@ -206,7 +206,6 @@ const ClientPage = () => {
             body: localArticle.body,
           },
           isSubscriber: true,
-          showPaywalledContent: true,
           hasPaidArticlesBenefit: true,
           showShare: false,
           isAuthor: true,

@@ -1,15 +1,10 @@
-'use client'
-
 import LongformPost from '@/components/Feed/LongformPost'
 import { organizationPageLink } from '@/utils/nav'
-import { useTrafficRecordPageView } from '@/utils/traffic'
 import { ArrowBackOutlined } from '@mui/icons-material'
 
-import {
-  useListAllOrganizations,
-  useUserBenefits,
-  useUserSubscriptions,
-} from '@/hooks/queries'
+import { BrowserServerRender } from '@/components/Feed/Markdown/BrowserRender'
+import { getHighlighter } from '@/components/SyntaxHighlighterShiki/SyntaxHighlighterServer'
+import { getServerSideAPI } from '@/utils/api/serverside'
 import { Article, BenefitPublicInner, Product } from '@polar-sh/sdk'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
@@ -20,37 +15,45 @@ interface PostPageProps {
   article: Article
 }
 
-export default function Page({ article, products }: PostPageProps) {
-  useTrafficRecordPageView({ article })
-
+export default async function Page({ article, products }: PostPageProps) {
+  const api = getServerSideAPI()
   // Check if the user is the author of the article
-  const allOrganizations = useListAllOrganizations()
-  const orgIds = (allOrganizations.data?.items ?? []).map((o) => o.id)
+  let isAuthor = false
+  try {
+    const allOrganizations = await api.organizations.list()
+    const orgIds = allOrganizations.items?.map((org) => org.id) || []
+    isAuthor =
+      article.organization.is_personal &&
+      orgIds.includes(article.organization.id)
+  } catch (err) {}
 
-  const isAuthor =
-    article.organization.is_personal && orgIds.includes(article.organization.id)
+  // Check if the user is subscriber
+  let isSubscriber = false
+  try {
+    const userSubs = await api.users.listSubscriptions({
+      organizationId: article.organization.id,
+      active: true,
+      limit: 100,
+    })
+    const subscription = (userSubs.items ?? []).find(
+      (s) => s.product.organization_id === article.organization.id,
+    )
+    isSubscriber = subscription !== undefined
+  } catch (err) {}
 
-  const userSubs = useUserSubscriptions({
-    organizationId: article.organization.id,
-    active: true,
-    limit: 100,
-  })
-
-  const subscription = (userSubs.data?.items ?? []).find(
-    (s) => s.product.organization_id === article.organization.id,
-  )
-
-  const isSubscriber = subscription ? true : false
-
-  const { data: benefits } = useUserBenefits({
-    type: 'articles',
-    organizationId: article.organization.id,
-    limit: 100,
-  })
-  const hasPaidArticlesBenefit =
-    benefits?.items?.some(
-      (b) => b.type === 'articles' && b.properties.paid_articles,
-    ) || false
+  // Check if the user has access to paid articles
+  let hasPaidArticlesBenefit = false
+  try {
+    const benefits = await api.users.listBenefits({
+      type: 'articles',
+      organizationId: article.organization.id,
+      limit: 100,
+    })
+    hasPaidArticlesBenefit =
+      benefits?.items?.some(
+        (b) => b.type === 'articles' && b.properties.paid_articles,
+      ) || false
+  } catch (err) {}
 
   const isPaidBenefit = (b: BenefitPublicInner) =>
     b.type === 'articles' &&
@@ -68,6 +71,8 @@ export default function Page({ article, products }: PostPageProps) {
   if (!article.organization.feature_settings?.articles_enabled) {
     return redirect(organizationPageLink(article.organization))
   }
+
+  const highlighter = await getHighlighter()
 
   return (
     <div className="dark:md:bg-polar-900 dark:md:border-polar-800 dark:ring-polar-800 relative flex w-full flex-col items-center rounded-3xl ring-gray-100 md:bg-white md:p-12 md:shadow-sm md:ring-1 dark:md:border dark:md:ring-1">
@@ -87,11 +92,17 @@ export default function Page({ article, products }: PostPageProps) {
         article={article}
         isSubscriber={isSubscriber}
         hasPaidArticlesBenefit={hasPaidArticlesBenefit}
-        showPaywalledContent={true} // Can safely be true. If the user doesn't have permissions to see the paywalled content it will already be stripped out.
         showShare={true}
-        paidArticlesBenefitName={paidArticlesBenefit?.description}
         isAuthor={isAuthor}
-      />
+      >
+        <BrowserServerRender
+          article={article}
+          showPaywalledContent={true} // Can safely be true. If the user doesn't have permissions to see the paywalled content it will already be stripped out.
+          isSubscriber={isSubscriber}
+          paidArticlesBenefitName={paidArticlesBenefit?.description}
+          highlighter={highlighter}
+        />
+      </LongformPost>
     </div>
   )
 }

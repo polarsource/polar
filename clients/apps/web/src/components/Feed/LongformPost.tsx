@@ -1,5 +1,3 @@
-'use client'
-
 import LogoIcon from '@/components/Brand/LogoIcon'
 import { organizationPageLink } from '@/utils/nav'
 import Link from 'next/link'
@@ -8,30 +6,26 @@ import Button from 'polarkit/components/ui/atoms/button'
 import { useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
 import SubscribeNowWithModal from '../Subscriptions/SubscribeNowWithModal'
-import BrowserRender from './Markdown/BrowserRender'
 import { RenderArticle } from './Markdown/markdown'
 import PostPaywall from './PostPaywall'
 import Share from './Posts/Share'
 
 interface LongformPostProps {
   article: RenderArticle
-  showPaywalledContent: boolean
   isSubscriber: boolean
   hasPaidArticlesBenefit: boolean
-  paidArticlesBenefitName?: string
   showShare: boolean
   isAuthor: boolean
 }
 
 export default function LongformPost({
   article,
-  showPaywalledContent,
   isSubscriber,
   hasPaidArticlesBenefit,
-  paidArticlesBenefitName,
   showShare,
   isAuthor,
-}: LongformPostProps) {
+  children,
+}: React.PropsWithChildren<LongformPostProps>) {
   const shouldRenderPaywall = article.is_preview
 
   const showNonSubscriberUpsell =
@@ -105,16 +99,10 @@ export default function LongformPost({
             'dark:prose-headings:text-polar-50 prose-headings:font-medium prose-p:text-gray-800 dark:prose-p:text-polar-200 dark:prose-strong:text-polar-50 dark:prose-strong:font-medium',
             'prose-img:rounded-2xl prose-img:drop-shadow-none lg:prose-img:drop-shadow-2xl',
             ' prose-a:text-blue-500 hover:prose-a:text-blue-400 dark:hover:prose-a:text-blue-300 dark:prose-a:text-blue-400 prose-a:no-underline',
-            'prose-code:before:content-none prose-code:after:content-none prose-code:bg-gray-100 dark:prose-code:bg-polar-700 prose-code:font-normal prose-code:rounded-sm prose-code:px-1.5 prose-code:py-1',
             'mb-8 w-full max-w-none space-y-16 leading-loose tracking-[0.015rem]',
           )}
         >
-          <BrowserRender
-            article={article}
-            showPaywalledContent={showPaywalledContent}
-            isSubscriber={isSubscriber}
-            paidArticlesBenefitName={paidArticlesBenefitName}
-          />
+          {children}
         </div>
       </div>
 

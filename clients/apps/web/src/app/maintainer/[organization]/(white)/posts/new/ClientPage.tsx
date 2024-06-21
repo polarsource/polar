@@ -145,7 +145,6 @@ const ClientPage = () => {
             is_preview: false,
           },
           isSubscriber: true,
-          showPaywalledContent: true,
           showShare: false,
           hasPaidArticlesBenefit: true,
           isAuthor: true,

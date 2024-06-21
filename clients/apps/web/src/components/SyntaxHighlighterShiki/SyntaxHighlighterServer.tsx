@@ -1,6 +1,5 @@
 import { themeConfig, themesList, transformers } from '@polar/shiki'
 import {
-  BundledLanguage,
   Highlighter,
   getHighlighter as _getHighlighter,
   bundledLanguages,
@@ -26,7 +25,7 @@ const SyntaxHighlighterServer = ({
   code,
   highlighter,
 }: {
-  lang: BundledLanguage
+  lang: string
   code: string
   highlighter: Highlighter
 }) => {

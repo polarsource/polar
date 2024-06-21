@@ -1,5 +1,4 @@
 import { getServerSideAPI } from '@/utils/api/serverside'
-import { requestHost } from '@/utils/nav'
 import { ResponseError } from '@polar-sh/sdk'
 import { NextRequest, NextResponse } from 'next/server'
 
@@ -11,9 +10,8 @@ export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams
   const priceId = searchParams.get('price') as string
 
-  // Build success URL with custom domain support
-  const host = requestHost(request)
-  const successURL = `${host.protocol}://${host.host}/checkout/success?session_id={CHECKOUT_SESSION_ID}`
+  const requestURL = new URL(request.url)
+  const successURL = `${requestURL.protocol}//${requestURL.host}/subscribe/success?session_id={CHECKOUT_SESSION_ID}`
 
   try {
     const { url } = await api.checkouts.createCheckout({

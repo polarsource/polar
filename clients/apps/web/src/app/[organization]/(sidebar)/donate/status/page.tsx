@@ -1,8 +1,6 @@
 import { getServerSideAPI } from '@/utils/api/serverside'
-import { redirectToCanonicalDomain } from '@/utils/nav'
 import { Organization, Platforms, ResponseError } from '@polar-sh/sdk'
 import { Metadata } from 'next'
-import { headers } from 'next/headers'
 import { notFound } from 'next/navigation'
 import ClientPage from './ClientPage'
 
@@ -99,13 +97,6 @@ export default async function Page({
   if (!organization) {
     notFound()
   }
-
-  redirectToCanonicalDomain({
-    organization: organization,
-    paramOrganizationName: params.organization,
-    headers: headers(),
-    subPath: `/donate/status`,
-  })
 
   const email =
     typeof searchParams?.email === 'string' ? searchParams.email : undefined

@@ -1,5 +1,5 @@
 import { getServerSideAPI } from '@/utils/api/serverside'
-import { organizationPageLink, redirectToCanonicalDomain } from '@/utils/nav'
+import { organizationPageLink } from '@/utils/nav'
 import {
   Issue,
   Pledger,
@@ -8,7 +8,6 @@ import {
   RewardsSummary,
 } from '@polar-sh/sdk'
 import { Metadata } from 'next'
-import { headers } from 'next/headers'
 import { notFound, redirect } from 'next/navigation'
 import ClientPage from './ClientPage'
 
@@ -113,13 +112,6 @@ export default async function Page({
   if (!issue) {
     notFound()
   }
-
-  redirectToCanonicalDomain({
-    organization: issue.repository.organization,
-    paramOrganizationName: params.organization,
-    headers: headers(),
-    subPath: `/${issue.repository.name}/issues/${issue.number}`,
-  })
 
   // Closed issue, redirect to donation instead
   if (

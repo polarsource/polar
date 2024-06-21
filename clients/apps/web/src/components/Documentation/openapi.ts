@@ -127,10 +127,11 @@ const _generateScalarSchemaExample = (schema: OpenAPIV3_1.SchemaObject) => {
     return schema.const
   }
 
+  if (schema.enum) {
+    return schema.enum[0]
+  }
+
   if (schema.type === 'string') {
-    if (schema.enum) {
-      return schema.enum[0]
-    }
     if (schema.format === 'date' || schema.format === 'date-time') {
       const todayAtMidnight = new Date()
       todayAtMidnight.setHours(0, 0, 0, 0) // Avoids hydration issues
@@ -167,6 +168,15 @@ const _generateScalarSchemaExample = (schema: OpenAPIV3_1.SchemaObject) => {
   if (schema.type === 'array') {
     return [generateSchemaExample(schema.items as OpenAPIV3_1.SchemaObject)]
   }
+
+  // Completely empty schema information
+  if (typeof schema === 'object' && Object.keys(schema).length === 0) {
+    return {}
+  }
+
+  throw new Error(
+    `Could not generate example for schema: ${JSON.stringify(schema)}`,
+  )
 }
 
 export const generateSchemaExample = (
@@ -222,7 +232,7 @@ export const buildCurlCommand = (
   method: string = 'GET',
   url: string,
   endpoint: OpenAPIV3_1.OperationObject,
-) => {
+): string => {
   const parametersExample = getParametersExample(endpoint, ['query'])
   const queryParametersString = new URLSearchParams(
     parametersExample,
@@ -242,7 +252,9 @@ ${url}${queryParametersString ? '?' + queryParametersString : ''} \\
 ${bodyString}`
 }
 
-export const buildNodeJSCommand = (endpoint: OpenAPIV3_1.OperationObject) => {
+export const buildNodeJSCommand = (
+  endpoint: OpenAPIV3_1.OperationObject,
+): string => {
   const [namespace, endpointName] = endpoint.operationId?.split(':') ?? ['', '']
 
   const snakeToCamel = (str: string) =>

@@ -8,7 +8,7 @@ import {
 import SyntaxHighlighterServer, {
   Highlighter,
 } from '../SyntaxHighlighterShiki/SyntaxHighlighterServer'
-import { generateSchemaExample } from './openapi'
+import { generateSchemaExample, isDereferenced } from './openapi'
 
 export const ResponseContainer = ({
   responses,
@@ -18,6 +18,22 @@ export const ResponseContainer = ({
   highlighter: Highlighter
 }) => {
   const triggerClassName = 'py-1'
+
+  const responsesExamples = Object.entries(responses).reduce<
+    [string, string][]
+  >((acc, [statusCode, response]) => {
+    const schema =
+      'content' in response &&
+      response.content?.['application/json'].schema &&
+      'schema' in response.content['application/json'] &&
+      response.content['application/json'].schema
+    if (schema && isDereferenced(schema)) {
+      const example = generateSchemaExample(schema)
+      const stringifiedExample = JSON.stringify(example, null, 2)
+      return [...acc, [statusCode, stringifiedExample]]
+    }
+    return acc
+  }, [])
 
   return (
     <div className="dark:border-polar-700 flex h-full w-full flex-col rounded-3xl bg-white shadow-sm dark:border dark:bg-transparent dark:shadow-none">
@@ -38,29 +54,19 @@ export const ResponseContainer = ({
           </TabsList>
         </div>
 
-        {Object.entries(responses).map(([statusCode, response]) => {
-          const schema =
-            'content' in response &&
-            response.content?.['application/json'].schema &&
-            'schema' in response.content['application/json'] &&
-            response.content['application/json'].schema
-
-          return (
-            <TabsContent
-              key={statusCode}
-              value={statusCode}
-              className="p-4 text-xs"
-            >
-              {schema ? (
-                <SyntaxHighlighterServer
-                  lang="json"
-                  code={JSON.stringify(generateSchemaExample(schema), null, 2)}
-                  highlighter={highlighter}
-                />
-              ) : undefined}
-            </TabsContent>
-          )
-        })}
+        {responsesExamples.map(([statusCode, example]) => (
+          <TabsContent
+            key={statusCode}
+            value={statusCode}
+            className="p-4 text-xs"
+          >
+            <SyntaxHighlighterServer
+              lang="json"
+              code={example}
+              highlighter={highlighter}
+            />
+          </TabsContent>
+        ))}
       </Tabs>
     </div>
   )

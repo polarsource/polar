@@ -1,6 +1,3 @@
-'use client'
-
-import { useTheme } from 'next-themes'
 import { OpenAPIV3_1 } from 'openapi-types'
 import {
   Tabs,
@@ -8,26 +5,19 @@ import {
   TabsList,
   TabsTrigger,
 } from 'polarkit/components/ui/atoms/tabs'
-import SyntaxHighlighter from '../SyntaxHighlighter/SyntaxHighlighter'
-import { Theme, polarDark, polarLight } from '../SyntaxHighlighter/themes'
+import SyntaxHighlighterServer, {
+  Highlighter,
+} from '../SyntaxHighlighterShiki/SyntaxHighlighterServer'
 import { generateSchemaExample } from './openapi'
 
 export const ResponseContainer = ({
   responses,
+  highlighter,
 }: {
   responses: OpenAPIV3_1.ResponsesObject
+  highlighter: Highlighter
 }) => {
   const triggerClassName = 'py-1'
-  const { resolvedTheme } = useTheme()
-  const baseTheme = resolvedTheme === 'dark' ? polarDark : polarLight
-  const syntaxHighlighterTheme: Theme = {
-    ...baseTheme,
-    base: {
-      ...baseTheme.base,
-      background: 'transparent',
-      maxHeight: '18rem',
-    },
-  }
 
   return (
     <div className="dark:border-polar-700 flex h-full w-full flex-col rounded-3xl bg-white shadow-sm dark:border dark:bg-transparent dark:shadow-none">
@@ -59,13 +49,13 @@ export const ResponseContainer = ({
             <TabsContent
               key={statusCode}
               value={statusCode}
-              className="p-2 py-0 text-xs"
+              className="p-4 text-xs"
             >
               {schema ? (
-                <SyntaxHighlighter
-                  language="json"
+                <SyntaxHighlighterServer
+                  lang="json"
                   code={JSON.stringify(generateSchemaExample(schema), null, 2)}
-                  theme={syntaxHighlighterTheme}
+                  highlighter={highlighter}
                 />
               ) : undefined}
             </TabsContent>

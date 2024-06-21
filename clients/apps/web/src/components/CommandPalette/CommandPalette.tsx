@@ -11,6 +11,7 @@ import {
 } from 'next/navigation'
 import posthog from 'posthog-js'
 import { useCallback, useEffect, useMemo } from 'react'
+import { SyntaxHighlighterProvider } from '../SyntaxHighlighterShiki/SyntaxHighlighterClient'
 import { CommandItem } from './CommandItem'
 import { APICommand, CommandType } from './commands/commands'
 import { ScopeType } from './commands/scopes'
@@ -44,10 +45,12 @@ export const CommandPalette = ({ organization, hide }: CommandPaletteProps) => {
       organization={organization}
       hideCommandPalette={hide}
     >
-      <div className="dark:bg-polar-950 bg-gray-75 dark:porder-polar-700 flex w-full flex-grow flex-col overflow-hidden rounded-3xl dark:border">
-        <CommandPaletteInput />
-        <CommandPaletteContainer />
-      </div>
+      <SyntaxHighlighterProvider>
+        <div className="dark:bg-polar-950 bg-gray-75 dark:porder-polar-700 flex w-full flex-grow flex-col overflow-hidden rounded-3xl dark:border">
+          <CommandPaletteInput />
+          <CommandPaletteContainer />
+        </div>
+      </SyntaxHighlighterProvider>
     </CommandPaletteContextProvider>
   )
 }

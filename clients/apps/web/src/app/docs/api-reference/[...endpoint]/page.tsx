@@ -1,3 +1,4 @@
+import { APIContainer } from '@/components/Documentation/APIContainer'
 import { AuthenticationSchema } from '@/components/Documentation/AuthenticationSchema'
 import { BodySchema } from '@/components/Documentation/BodySchema'
 import { MDXContentWrapper } from '@/components/Documentation/MDXContentWrapper'
@@ -8,10 +9,10 @@ import {
   fetchSchema,
   getRequestBodySchema,
 } from '@/components/Documentation/openapi'
+import { getHighlighter } from '@/components/SyntaxHighlighterShiki/SyntaxHighlighterServer'
 import Markdown from 'markdown-to-jsx'
 import { notFound } from 'next/navigation'
 import { OpenAPIV3_1 } from 'openapi-types'
-import { APIContainer } from '../../../../components/CommandPalette/containers/APIContainer'
 import { Parameters } from '../../../../components/Documentation/Parameters'
 import { ResponseContainer } from '../../../../components/Documentation/ResponseContainer'
 import { resolveEndpointMetadata } from '../../../../components/Documentation/openapi'
@@ -39,6 +40,7 @@ export default async function Page({
   params: { endpoint: string[] }
 }) {
   const schema = await fetchSchema()
+  const highlighter = await getHighlighter()
 
   let metadata: EndpointMetadata
   try {
@@ -103,9 +105,13 @@ export default async function Page({
           operation={operation}
           method={method}
           path={apiEndpointPath}
+          highlighter={highlighter}
         />
         {operation.responses && (
-          <ResponseContainer responses={operation.responses} />
+          <ResponseContainer
+            responses={operation.responses}
+            highlighter={highlighter}
+          />
         )}
       </div>
     </>

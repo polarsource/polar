@@ -1,5 +1,3 @@
-'use server'
-
 import {
   BundledLanguage,
   Highlighter,
@@ -9,14 +7,20 @@ import {
 
 export type { Highlighter }
 
+let highlighter: Highlighter | null = null
+
 export const getHighlighter = async (): Promise<Highlighter> => {
-  return _getHighlighter({
+  if (highlighter) {
+    return highlighter
+  }
+  highlighter = await _getHighlighter({
     langs: Object.keys(bundledLanguages),
     themes: ['catppuccin-latte', 'catppuccin-mocha'],
   })
+  return highlighter
 }
 
-const SyntaxHighlighterServer = async ({
+const SyntaxHighlighterServer = ({
   lang,
   code,
   highlighter,
@@ -32,7 +36,6 @@ const SyntaxHighlighterServer = async ({
       dark: 'catppuccin-mocha',
     },
   })
-
   return <div dangerouslySetInnerHTML={{ __html: html }}></div>
 }
 

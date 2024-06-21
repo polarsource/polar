@@ -136,8 +136,8 @@ const APINavigator = () => {
   )
 
   return (
-    <div className="flex h-[360px] flex-grow flex-row">
-      <div className="flex h-full w-72 flex-shrink-0 flex-col gap-y-1 overflow-y-scroll p-4">
+    <div className="grid h-[360px] grid-cols-3">
+      <div className="flex h-full flex-shrink-0 flex-col gap-y-1 overflow-y-scroll p-4">
         {apiCommands.map((command) => {
           return (
             <CommandItem
@@ -165,7 +165,7 @@ const APINavigator = () => {
           )
         })}
       </div>
-      <div className="flex h-full w-full flex-row py-4 pr-4">
+      <div className="col-span-2 flex h-full w-full flex-row py-4 pr-4">
         {apiEndpoint && (
           <APIContainer
             operation={apiEndpoint.operation}

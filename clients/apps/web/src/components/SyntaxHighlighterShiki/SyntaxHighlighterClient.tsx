@@ -99,12 +99,16 @@ export const SyntaxHighlighterClient = ({
         light: 'catppuccin-latte',
         dark: 'catppuccin-mocha',
       },
+      structure: 'inline',
     })
     setHighlightedCode(highlightedCode)
   }, [highlighter, loadedLanguages, lang, code])
 
   return highlightedCode ? (
-    <div dangerouslySetInnerHTML={{ __html: highlightedCode }}></div>
+    <pre
+      dangerouslySetInnerHTML={{ __html: highlightedCode }}
+      className="shiki shiki-themes catppuccin-latte catppuccin-mocha overflow-auto"
+    ></pre>
   ) : (
     <pre>{code}</pre>
   )

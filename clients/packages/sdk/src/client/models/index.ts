@@ -4112,56 +4112,11 @@ export interface CurrencyAmount {
     amount: number;
 }
 /**
- * 
+ * @type Data
  * @export
- * @interface CustomDomainExchangeRequest
  */
-export interface CustomDomainExchangeRequest {
-    /**
-     * 
-     * @type {string}
-     * @memberof CustomDomainExchangeRequest
-     */
-    token: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof CustomDomainExchangeRequest
-     */
-    secret: string;
-}
-/**
- * 
- * @export
- * @interface CustomDomainExchangeResponse
- */
-export interface CustomDomainExchangeResponse {
-    /**
-     * 
-     * @type {string}
-     * @memberof CustomDomainExchangeResponse
-     */
-    token: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof CustomDomainExchangeResponse
-     */
-    expires_at: string;
-}
-/**
- * 
- * @export
- * @interface CustomDomainForwardResponse
- */
-export interface CustomDomainForwardResponse {
-    /**
-     * 
-     * @type {string}
-     * @memberof CustomDomainForwardResponse
-     */
-    token: string;
-}
+export type Data = BenefitAds | BenefitArticles | BenefitCustom | BenefitDiscord | BenefitDownloadables | BenefitGitHubRepository;
+
 /**
  * 
  * @export
@@ -6357,19 +6312,6 @@ export type LocationInner = number | string;
 /**
  * 
  * @export
- * @interface LogoutResponse
- */
-export interface LogoutResponse {
-    /**
-     * 
-     * @type {boolean}
-     * @memberof LogoutResponse
-     */
-    success: boolean;
-}
-/**
- * 
- * @export
  * @interface LookupUserRequest
  */
 export interface LookupUserRequest {
@@ -8483,12 +8425,6 @@ export interface Organization {
      * @memberof Organization
      */
     has_app_installed: boolean;
-    /**
-     * 
-     * @type {string}
-     * @memberof Organization
-     */
-    custom_domain?: string;
     /**
      * If this organization has a public Polar page
      * @type {boolean}
@@ -11353,10 +11289,10 @@ export interface Subscription {
     product: Product;
     /**
      * 
-     * @type {SubscriptionPrice}
+     * @type {UserSubscriptionPrice}
      * @memberof Subscription
      */
-    price?: SubscriptionPrice;
+    price?: UserSubscriptionPrice;
 }
 /**
  * Request schema for creating a subscription by email.
@@ -11377,12 +11313,6 @@ export interface SubscriptionCreateEmail {
      */
     product_id: string;
 }
-/**
- * @type SubscriptionPrice
- * 
- * @export
- */
-export type SubscriptionPrice = { type: 'one_time' } & ProductPriceOneTime | { type: 'recurring' } & ProductPriceRecurring;
 
 /**
  * 
@@ -13260,11 +13190,17 @@ export interface UserSubscription {
     product: UserSubscriptionProduct;
     /**
      * 
-     * @type {SubscriptionPrice}
+     * @type {UserSubscriptionPrice}
      * @memberof UserSubscription
      */
-    price?: SubscriptionPrice;
+    price?: UserSubscriptionPrice;
 }
+/**
+ * @type UserSubscriptionPrice
+ * 
+ * @export
+ */
+export type UserSubscriptionPrice = { type: 'one_time' } & ProductPriceOneTime | { type: 'recurring' } & ProductPriceRecurring;
 /**
  * 
  * @export
@@ -13419,6 +13355,64 @@ export const Visibility = {
 export type Visibility = typeof Visibility[keyof typeof Visibility];
 
 /**
+ * 
+ * @export
+ * @interface WebhookBenefitCreatedPayload
+ */
+export interface WebhookBenefitCreatedPayload {
+    /**
+     * 
+     * @type {string}
+     * @memberof WebhookBenefitCreatedPayload
+     */
+    type: WebhookBenefitCreatedPayloadTypeEnum;
+    /**
+     * 
+     * @type {Data}
+     * @memberof WebhookBenefitCreatedPayload
+     */
+    data: Data;
+}
+
+
+/**
+ * @export
+ */
+export const WebhookBenefitCreatedPayloadTypeEnum = {
+    BENEFIT_CREATED: 'benefit.created'
+} as const;
+export type WebhookBenefitCreatedPayloadTypeEnum = typeof WebhookBenefitCreatedPayloadTypeEnum[keyof typeof WebhookBenefitCreatedPayloadTypeEnum];
+
+/**
+ * 
+ * @export
+ * @interface WebhookBenefitUpdatedPayload
+ */
+export interface WebhookBenefitUpdatedPayload {
+    /**
+     * 
+     * @type {string}
+     * @memberof WebhookBenefitUpdatedPayload
+     */
+    type: WebhookBenefitUpdatedPayloadTypeEnum;
+    /**
+     * 
+     * @type {Data}
+     * @memberof WebhookBenefitUpdatedPayload
+     */
+    data: Data;
+}
+
+
+/**
+ * @export
+ */
+export const WebhookBenefitUpdatedPayloadTypeEnum = {
+    BENEFIT_UPDATED: 'benefit.updated'
+} as const;
+export type WebhookBenefitUpdatedPayloadTypeEnum = typeof WebhookBenefitUpdatedPayloadTypeEnum[keyof typeof WebhookBenefitUpdatedPayloadTypeEnum];
+
+/**
  * A webhook delivery for a webhook event.
  * @export
  * @interface WebhookDelivery
@@ -13461,6 +13455,35 @@ export interface WebhookDelivery {
      */
     webhook_event: WebhookEvent;
 }
+/**
+ * 
+ * @export
+ * @interface WebhookDonationCreatedPayload
+ */
+export interface WebhookDonationCreatedPayload {
+    /**
+     * 
+     * @type {string}
+     * @memberof WebhookDonationCreatedPayload
+     */
+    type: WebhookDonationCreatedPayloadTypeEnum;
+    /**
+     * 
+     * @type {Donation}
+     * @memberof WebhookDonationCreatedPayload
+     */
+    data: Donation;
+}
+
+
+/**
+ * @export
+ */
+export const WebhookDonationCreatedPayloadTypeEnum = {
+    DONATION_CREATED: 'donation.created'
+} as const;
+export type WebhookDonationCreatedPayloadTypeEnum = typeof WebhookDonationCreatedPayloadTypeEnum[keyof typeof WebhookDonationCreatedPayloadTypeEnum];
+
 /**
  * A webhook endpoint.
  * @export
@@ -13734,6 +13757,151 @@ export interface WebhookIntegrationUpdate {
 /**
  * 
  * @export
+ * @interface WebhookOrganizationUpdatedPayload
+ */
+export interface WebhookOrganizationUpdatedPayload {
+    /**
+     * 
+     * @type {string}
+     * @memberof WebhookOrganizationUpdatedPayload
+     */
+    type: WebhookOrganizationUpdatedPayloadTypeEnum;
+    /**
+     * 
+     * @type {Organization}
+     * @memberof WebhookOrganizationUpdatedPayload
+     */
+    data: Organization;
+}
+
+
+/**
+ * @export
+ */
+export const WebhookOrganizationUpdatedPayloadTypeEnum = {
+    ORGANIZATION_UPDATED: 'organization.updated'
+} as const;
+export type WebhookOrganizationUpdatedPayloadTypeEnum = typeof WebhookOrganizationUpdatedPayloadTypeEnum[keyof typeof WebhookOrganizationUpdatedPayloadTypeEnum];
+
+/**
+ * 
+ * @export
+ * @interface WebhookPledgeCreatedPayload
+ */
+export interface WebhookPledgeCreatedPayload {
+    /**
+     * 
+     * @type {string}
+     * @memberof WebhookPledgeCreatedPayload
+     */
+    type: WebhookPledgeCreatedPayloadTypeEnum;
+    /**
+     * 
+     * @type {Pledge}
+     * @memberof WebhookPledgeCreatedPayload
+     */
+    data: Pledge;
+}
+
+
+/**
+ * @export
+ */
+export const WebhookPledgeCreatedPayloadTypeEnum = {
+    PLEDGE_CREATED: 'pledge.created'
+} as const;
+export type WebhookPledgeCreatedPayloadTypeEnum = typeof WebhookPledgeCreatedPayloadTypeEnum[keyof typeof WebhookPledgeCreatedPayloadTypeEnum];
+
+/**
+ * 
+ * @export
+ * @interface WebhookPledgeUpdatedPayload
+ */
+export interface WebhookPledgeUpdatedPayload {
+    /**
+     * 
+     * @type {string}
+     * @memberof WebhookPledgeUpdatedPayload
+     */
+    type: WebhookPledgeUpdatedPayloadTypeEnum;
+    /**
+     * 
+     * @type {Pledge}
+     * @memberof WebhookPledgeUpdatedPayload
+     */
+    data: Pledge;
+}
+
+
+/**
+ * @export
+ */
+export const WebhookPledgeUpdatedPayloadTypeEnum = {
+    PLEDGE_UPDATED: 'pledge.updated'
+} as const;
+export type WebhookPledgeUpdatedPayloadTypeEnum = typeof WebhookPledgeUpdatedPayloadTypeEnum[keyof typeof WebhookPledgeUpdatedPayloadTypeEnum];
+
+/**
+ * 
+ * @export
+ * @interface WebhookProductCreatedPayload
+ */
+export interface WebhookProductCreatedPayload {
+    /**
+     * 
+     * @type {string}
+     * @memberof WebhookProductCreatedPayload
+     */
+    type: WebhookProductCreatedPayloadTypeEnum;
+    /**
+     * 
+     * @type {Product}
+     * @memberof WebhookProductCreatedPayload
+     */
+    data: Product;
+}
+
+
+/**
+ * @export
+ */
+export const WebhookProductCreatedPayloadTypeEnum = {
+    PRODUCT_CREATED: 'product.created'
+} as const;
+export type WebhookProductCreatedPayloadTypeEnum = typeof WebhookProductCreatedPayloadTypeEnum[keyof typeof WebhookProductCreatedPayloadTypeEnum];
+
+/**
+ * 
+ * @export
+ * @interface WebhookProductUpdatedPayload
+ */
+export interface WebhookProductUpdatedPayload {
+    /**
+     * 
+     * @type {string}
+     * @memberof WebhookProductUpdatedPayload
+     */
+    type: WebhookProductUpdatedPayloadTypeEnum;
+    /**
+     * 
+     * @type {Product}
+     * @memberof WebhookProductUpdatedPayload
+     */
+    data: Product;
+}
+
+
+/**
+ * @export
+ */
+export const WebhookProductUpdatedPayloadTypeEnum = {
+    PRODUCT_UPDATED: 'product.updated'
+} as const;
+export type WebhookProductUpdatedPayloadTypeEnum = typeof WebhookProductUpdatedPayloadTypeEnum[keyof typeof WebhookProductUpdatedPayloadTypeEnum];
+
+/**
+ * 
+ * @export
  * @interface WebhookResponse
  */
 export interface WebhookResponse {
@@ -13756,3 +13924,61 @@ export interface WebhookResponse {
      */
     job_id?: string;
 }
+/**
+ * 
+ * @export
+ * @interface WebhookSubscriptionCreatedPayload
+ */
+export interface WebhookSubscriptionCreatedPayload {
+    /**
+     * 
+     * @type {string}
+     * @memberof WebhookSubscriptionCreatedPayload
+     */
+    type: WebhookSubscriptionCreatedPayloadTypeEnum;
+    /**
+     * 
+     * @type {Subscription}
+     * @memberof WebhookSubscriptionCreatedPayload
+     */
+    data: Subscription;
+}
+
+
+/**
+ * @export
+ */
+export const WebhookSubscriptionCreatedPayloadTypeEnum = {
+    SUBSCRIPTION_CREATED: 'subscription.created'
+} as const;
+export type WebhookSubscriptionCreatedPayloadTypeEnum = typeof WebhookSubscriptionCreatedPayloadTypeEnum[keyof typeof WebhookSubscriptionCreatedPayloadTypeEnum];
+
+/**
+ * 
+ * @export
+ * @interface WebhookSubscriptionUpdatedPayload
+ */
+export interface WebhookSubscriptionUpdatedPayload {
+    /**
+     * 
+     * @type {string}
+     * @memberof WebhookSubscriptionUpdatedPayload
+     */
+    type: WebhookSubscriptionUpdatedPayloadTypeEnum;
+    /**
+     * 
+     * @type {Subscription}
+     * @memberof WebhookSubscriptionUpdatedPayload
+     */
+    data: Subscription;
+}
+
+
+/**
+ * @export
+ */
+export const WebhookSubscriptionUpdatedPayloadTypeEnum = {
+    SUBSCRIPTION_UPDATED: 'subscription.updated'
+} as const;
+export type WebhookSubscriptionUpdatedPayloadTypeEnum = typeof WebhookSubscriptionUpdatedPayloadTypeEnum[keyof typeof WebhookSubscriptionUpdatedPayloadTypeEnum];
+

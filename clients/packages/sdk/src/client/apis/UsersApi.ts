@@ -25,7 +25,6 @@ import type {
   ListResourceUserAdvertisementCampaign,
   ListResourceUserOrder,
   ListResourceUserSubscription,
-  LogoutResponse,
   Organization,
   ProductPriceType,
   ResourceNotFound,
@@ -1098,78 +1097,6 @@ export class UsersApi extends runtime.BaseAPI {
     }
 
     /**
-     * Logout
-     * @deprecated
-     */
-    async logoutRaw(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<LogoutResponse>> {
-        const queryParameters: any = {};
-
-        const headerParameters: runtime.HTTPHeaders = {};
-
-        if (this.configuration && this.configuration.accessToken) {
-            const token = this.configuration.accessToken;
-            const tokenString = await token("HTTPBearer", []);
-
-            if (tokenString) {
-                headerParameters["Authorization"] = `Bearer ${tokenString}`;
-            }
-        }
-        const response = await this.request({
-            path: `/api/v1/users/logout`,
-            method: 'GET',
-            headers: headerParameters,
-            query: queryParameters,
-        }, initOverrides);
-
-        return new runtime.JSONApiResponse(response);
-    }
-
-    /**
-     * Logout
-     * @deprecated
-     */
-    async logout(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<LogoutResponse> {
-        const response = await this.logoutRaw(initOverrides);
-        return await response.value();
-    }
-
-    /**
-     * Logout
-     * @deprecated
-     */
-    async logout_3Raw(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<LogoutResponse>> {
-        const queryParameters: any = {};
-
-        const headerParameters: runtime.HTTPHeaders = {};
-
-        if (this.configuration && this.configuration.accessToken) {
-            const token = this.configuration.accessToken;
-            const tokenString = await token("HTTPBearer", []);
-
-            if (tokenString) {
-                headerParameters["Authorization"] = `Bearer ${tokenString}`;
-            }
-        }
-        const response = await this.request({
-            path: `/api/v1/users/logout`,
-            method: 'GET',
-            headers: headerParameters,
-            query: queryParameters,
-        }, initOverrides);
-
-        return new runtime.JSONApiResponse(response);
-    }
-
-    /**
-     * Logout
-     * @deprecated
-     */
-    async logout_3(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<LogoutResponse> {
-        const response = await this.logout_3Raw(initOverrides);
-        return await response.value();
-    }
-
-    /**
      * Maintainer Upgrade
      */
     async maintainerUpgradeRaw(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Organization>> {
@@ -1206,7 +1133,7 @@ export class UsersApi extends runtime.BaseAPI {
     /**
      * Maintainer Upgrade
      */
-    async maintainerUpgrade_4Raw(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Organization>> {
+    async maintainerUpgrade_3Raw(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Organization>> {
         const queryParameters: any = {};
 
         const headerParameters: runtime.HTTPHeaders = {};
@@ -1232,8 +1159,8 @@ export class UsersApi extends runtime.BaseAPI {
     /**
      * Maintainer Upgrade
      */
-    async maintainerUpgrade_4(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Organization> {
-        const response = await this.maintainerUpgrade_4Raw(initOverrides);
+    async maintainerUpgrade_3(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Organization> {
+        const response = await this.maintainerUpgrade_3Raw(initOverrides);
         return await response.value();
     }
 
@@ -1274,7 +1201,7 @@ export class UsersApi extends runtime.BaseAPI {
     /**
      * Scopes
      */
-    async scopes_5Raw(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<UserScopes>> {
+    async scopes_4Raw(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<UserScopes>> {
         const queryParameters: any = {};
 
         const headerParameters: runtime.HTTPHeaders = {};
@@ -1300,8 +1227,8 @@ export class UsersApi extends runtime.BaseAPI {
     /**
      * Scopes
      */
-    async scopes_5(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<UserScopes> {
-        const response = await this.scopes_5Raw(initOverrides);
+    async scopes_4(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<UserScopes> {
+        const response = await this.scopes_4Raw(initOverrides);
         return await response.value();
     }
 
@@ -1352,11 +1279,11 @@ export class UsersApi extends runtime.BaseAPI {
     /**
      * Set Account
      */
-    async setAccount_6Raw(requestParameters: UsersApiSetAccount0Request, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<UserRead>> {
+    async setAccount_5Raw(requestParameters: UsersApiSetAccount0Request, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<UserRead>> {
         if (requestParameters['userSetAccount'] == null) {
             throw new runtime.RequiredError(
                 'userSetAccount',
-                'Required parameter "userSetAccount" was null or undefined when calling setAccount_6().'
+                'Required parameter "userSetAccount" was null or undefined when calling setAccount_5().'
             );
         }
 
@@ -1388,8 +1315,8 @@ export class UsersApi extends runtime.BaseAPI {
     /**
      * Set Account
      */
-    async setAccount_6(requestParameters: UsersApiSetAccount0Request, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<UserRead> {
-        const response = await this.setAccount_6Raw(requestParameters, initOverrides);
+    async setAccount_5(requestParameters: UsersApiSetAccount0Request, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<UserRead> {
+        const response = await this.setAccount_5Raw(requestParameters, initOverrides);
         return await response.value();
     }
 
@@ -1493,11 +1420,11 @@ export class UsersApi extends runtime.BaseAPI {
     /**
      * Update Preferences
      */
-    async updatePreferences_7Raw(requestParameters: UsersApiUpdatePreferences0Request, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<UserRead>> {
+    async updatePreferences_6Raw(requestParameters: UsersApiUpdatePreferences0Request, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<UserRead>> {
         if (requestParameters['userUpdateSettings'] == null) {
             throw new runtime.RequiredError(
                 'userUpdateSettings',
-                'Required parameter "userUpdateSettings" was null or undefined when calling updatePreferences_7().'
+                'Required parameter "userUpdateSettings" was null or undefined when calling updatePreferences_6().'
             );
         }
 
@@ -1529,8 +1456,8 @@ export class UsersApi extends runtime.BaseAPI {
     /**
      * Update Preferences
      */
-    async updatePreferences_7(requestParameters: UsersApiUpdatePreferences0Request, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<UserRead> {
-        const response = await this.updatePreferences_7Raw(requestParameters, initOverrides);
+    async updatePreferences_6(requestParameters: UsersApiUpdatePreferences0Request, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<UserRead> {
+        const response = await this.updatePreferences_6Raw(requestParameters, initOverrides);
         return await response.value();
     }
 

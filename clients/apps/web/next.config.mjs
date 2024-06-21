@@ -4,7 +4,7 @@ import bundleAnalyzer from '@next/bundle-analyzer'
 import { withSentryConfig } from '@sentry/nextjs'
 import rehypeShikiFromHighlighter from '@shikijs/rehype/core'
 import { bundledLanguages, getHighlighter } from 'shiki';
-
+import { themeConfig, themesList, transformers } from './shiki.config.mjs'
 
 const POLAR_AUTH_COOKIE_KEY = 'polar_session'
 
@@ -387,7 +387,7 @@ const nextConfig = {
 const createConfig = async () => {
   const highlighter = await getHighlighter({
     langs: Object.keys(bundledLanguages),
-    themes: ['catppuccin-latte', 'catppuccin-mocha'],
+    themes: themesList,
   })
   const withMDX = createMDX({
     options: {
@@ -396,10 +396,8 @@ const createConfig = async () => {
         [
           rehypeShikiFromHighlighter,
           highlighter, {
-            themes: {
-              light: 'catppuccin-latte',
-              dark: 'catppuccin-mocha',
-            },
+            themes: themeConfig,
+            transformers,
           },
         ],
       ]

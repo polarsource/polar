@@ -16,6 +16,9 @@
       // When using regular polarkit components, refer to "polarkit" instead of "@polarkit"
       "@polarkit/lib/*": [
         "../../../packages/polarkit/src/lib/*"
+      ],
+      "@polar/shiki": [
+        "../shiki.config"
       ]
     },
     "module": "esnext",
@@ -29,7 +32,7 @@
     "forceConsistentCasingInFileNames": true,
     "inlineSources": false,
     "isolatedModules": true,
-  
+
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "preserveWatchOutput": true,
@@ -47,7 +50,7 @@
         "name": "next"
       }
     ],
-    
+
   },
   "include": [
     "next-env.d.ts",

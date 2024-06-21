@@ -1,5 +1,6 @@
 'use client'
 
+import { themeConfig, themesList, transformers } from '@polar/shiki'
 import React, { useCallback, useContext, useEffect, useState } from 'react'
 import {
   BundledLanguage,
@@ -10,7 +11,7 @@ import {
 const getHighlighter = async (): Promise<Highlighter> => {
   return _getHighlighter({
     langs: ['bash', 'js'],
-    themes: ['catppuccin-latte', 'catppuccin-mocha'],
+    themes: themesList,
   })
 }
 
@@ -95,20 +96,14 @@ export const SyntaxHighlighterClient = ({
     if (!highlighter || !loadedLanguages.includes(lang)) return
     const highlightedCode = highlighter.codeToHtml(code, {
       lang,
-      themes: {
-        light: 'catppuccin-latte',
-        dark: 'catppuccin-mocha',
-      },
-      structure: 'inline',
+      themes: themeConfig,
+      transformers,
     })
     setHighlightedCode(highlightedCode)
   }, [highlighter, loadedLanguages, lang, code])
 
   return highlightedCode ? (
-    <pre
-      dangerouslySetInnerHTML={{ __html: highlightedCode }}
-      className="shiki shiki-themes catppuccin-latte catppuccin-mocha overflow-auto"
-    ></pre>
+    <div dangerouslySetInnerHTML={{ __html: highlightedCode }}></div>
   ) : (
     <pre>{code}</pre>
   )

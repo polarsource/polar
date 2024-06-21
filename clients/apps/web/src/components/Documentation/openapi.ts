@@ -131,11 +131,14 @@ const _generateScalarSchemaExample = (schema: OpenAPIV3_1.SchemaObject) => {
     if (schema.enum) {
       return schema.enum[0]
     }
-    if (schema.format === 'date') {
-      return new Date().toISOString().split('T')[0]
-    }
-    if (schema.format === 'date-time') {
-      return new Date().toISOString()
+    if (schema.format === 'date' || schema.format === 'date-time') {
+      const todayAtMidnight = new Date()
+      todayAtMidnight.setHours(0, 0, 0, 0) // Avoids hydration issues
+      if (schema.format === 'date') {
+        return todayAtMidnight.toISOString().split('T')[0]
+      } else {
+        return todayAtMidnight.toISOString()
+      }
     }
     if (schema.format === 'uuid4') {
       return '00000000-0000-0000-0000-000000000000'
@@ -186,4 +189,158 @@ export const generateSchemaExample = (
   }
 
   return _generateScalarSchemaExample(schema)
+}
+
+const getParametersExample = (
+  endpoint: OpenAPIV3_1.OperationObject,
+  include: ('path' | 'query')[],
+) => {
+  if (!endpoint.parameters) {
+    return undefined
+  }
+  return endpoint.parameters.reduce(
+    (acc, parameter) => {
+      if (
+        isDereferenced(parameter) &&
+        parameter.required &&
+        include.some((i) => i === parameter.in) &&
+        parameter.schema &&
+        isDereferenced<OpenAPIV3_1.SchemaObject>(parameter.schema)
+      ) {
+        return {
+          ...acc,
+          [parameter.name]: generateSchemaExample(parameter.schema),
+        }
+      }
+      return acc
+    },
+    {} as Record<string, any>,
+  )
+}
+
+export const buildCurlCommand = (
+  method: string = 'GET',
+  url: string,
+  endpoint: OpenAPIV3_1.OperationObject,
+) => {
+  const parametersExample = getParametersExample(endpoint, ['query'])
+  const queryParametersString = new URLSearchParams(
+    parametersExample,
+  ).toString()
+
+  const bodySchema = getRequestBodySchema(endpoint)
+  const bodyExample = bodySchema ? generateSchemaExample(bodySchema) : undefined
+  const bodyString = bodyExample
+    ? `-d '${JSON.stringify(bodyExample, null, 2)}'`
+    : ''
+
+  return `curl -X ${method.toUpperCase()} \\
+${url}${queryParametersString ? '?' + queryParametersString : ''} \\
+-H "Content-type: application/json" \\
+-H "Accept: application/json" \\
+-H "Authorization: Bearer <token>" \\
+${bodyString}`
+}
+
+export const buildNodeJSCommand = (endpoint: OpenAPIV3_1.OperationObject) => {
+  const [namespace, endpointName] = endpoint.operationId?.split(':') ?? ['', '']
+
+  const snakeToCamel = (str: string) =>
+    str
+      .toLowerCase()
+      .replace(/([-_][a-z])/g, (group: string) =>
+        group.toUpperCase().replace('-', '').replace('_', ''),
+      )
+
+  const titleToCamel = (str: string) => {
+    const joined = str.split(' ').join('')
+    return joined.charAt(0).toLowerCase() + joined.slice(1)
+  }
+
+  const objectToString = (obj: any, indent: number = 0): string => {
+    const indentBase = '  '
+    let result = '{\n'
+    const entries = Object.entries(obj)
+
+    entries.forEach(([key, value], index) => {
+      const isLast = index === entries.length - 1
+      const lineIndent = indentBase.repeat(indent + 1)
+      const nextIndent = indent + 1
+      let valueString
+
+      if (
+        typeof value === 'object' &&
+        !Array.isArray(value) &&
+        value !== null
+      ) {
+        valueString = objectToString(value, nextIndent)
+      } else if (Array.isArray(value)) {
+        valueString = `[${value
+          .map((v) => {
+            if (typeof v === 'object' && !Array.isArray(v) && v !== null) {
+              return objectToString(v, nextIndent)
+            } else if (typeof v === 'string') {
+              return `'${v}'`
+            } else {
+              return v
+            }
+          })
+          .join(', ')}]`
+      } else if (typeof value === 'string') {
+        valueString = `'${value}'`
+      } else {
+        valueString = value
+      }
+
+      result += `${lineIndent}${key}: ${valueString}${isLast ? '' : ','}\n`
+    })
+
+    result += `${indentBase.repeat(indent)}}`
+    return result
+  }
+
+  const convertToCamelCase = (obj: Record<string, any>): Record<string, any> =>
+    Object.keys(obj).reduce(
+      (acc, key) => {
+        const newKey = snakeToCamel(key)
+        return {
+          ...acc,
+          [newKey]: obj[key],
+        }
+      },
+      {} as Record<string, any>,
+    )
+
+  const parametersExamples = getParametersExample(endpoint, ['path', 'query'])
+  const bodySchema = getRequestBodySchema(endpoint)
+  const bodyExample = bodySchema ? generateSchemaExample(bodySchema) : undefined
+  const bodyTitle =
+    bodySchema &&
+    isDereferenced(bodySchema) &&
+    bodySchema.title &&
+    titleToCamel(bodySchema.title)
+
+  const requestParameters = {
+    ...(parametersExamples ? convertToCamelCase(parametersExamples) : {}),
+    ...(bodySchema && isDereferenced(bodySchema) && bodyExample
+      ? {
+          [bodyTitle || 'body']: bodyExample,
+        }
+      : {}),
+  }
+
+  return `import { PolarAPI, Configuration } from '@polar-sh/sdk';
+
+const polar = new PolarAPI(
+    new Configuration({
+        headers: {
+            'Authorization': \`Bearer \${process.env.POLAR_ACCESS_TOKEN}\`
+        }
+    })
+);
+
+polar.${namespace}.${snakeToCamel(endpointName)}(${objectToString(requestParameters)})
+  .then(console.log)
+  .catch(console.error);
+`
 }

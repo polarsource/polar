@@ -8,22 +8,23 @@ import {
 } from 'polarkit/components/ui/atoms/tabs'
 import { twMerge } from 'tailwind-merge'
 
-import {
-  buildCurlCommand,
-  buildNodeJSCommand,
-} from '@/components/Documentation/openapi'
-import { SyntaxHighlighterClient } from '@/components/SyntaxHighlighterShiki/SyntaxHighlighterClient'
+import SyntaxHighlighterServer, {
+  Highlighter,
+} from '@/components/SyntaxHighlighterShiki/SyntaxHighlighterServer'
+import { buildCurlCommand, buildNodeJSCommand } from './openapi'
 
 export const APIContainer = ({
   className,
   operation,
   path,
   method,
+  highlighter,
 }: {
   className?: string
   operation: OpenAPIV3_1.OperationObject
   path: string
   method: string
+  highlighter: Highlighter
 }) => {
   const triggerClassName = 'py-1'
   const curlCommand = buildCurlCommand(
@@ -56,10 +57,18 @@ export const APIContainer = ({
           </div>
         </TabsList>
         <TabsContent value="curl" className="p-4 text-xs">
-          <SyntaxHighlighterClient lang="bash" code={curlCommand} />
+          <SyntaxHighlighterServer
+            lang="bash"
+            code={curlCommand}
+            highlighter={highlighter}
+          />
         </TabsContent>
         <TabsContent value="nodejs" className="p-4 text-xs">
-          <SyntaxHighlighterClient lang="js" code={nodeJSCommand} />
+          <SyntaxHighlighterServer
+            lang="js"
+            code={nodeJSCommand}
+            highlighter={highlighter}
+          />
         </TabsContent>
       </Tabs>
     </div>

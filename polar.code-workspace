@@ -9,10 +9,6 @@
 			"name": "server"
 		},
 		{
-			"path": "docs",
-			"name": "docs"
-		},
-		{
 			"path": ".",
 			"name": "root",
 		}

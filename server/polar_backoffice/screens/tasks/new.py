@@ -22,6 +22,9 @@ def get_function_arguments(f: Callable[..., Any]) -> Iterator[tuple[str, Any]]:
             if is_typeddict(type_hints_args[0]):
                 yield from get_type_hints(type_hints_args[0]).items()
                 return
+            elif issubclass(type_hints_args[0], dict):
+                yield from get_function_arguments(type_hints_args[0].__init__)
+                return
         yield key, type_hint
 
 
@@ -131,7 +134,7 @@ class NewTaskModal(ModalScreen[bool]):
         for key, _ in get_function_arguments(task_function.coroutine):
             form_widget = self._form_widgets[key]
             value = form_widget.value
-            raw_job_kwargs[key] = value
+            raw_job_kwargs[key] = value if value else None
 
         try:
             job_kwargs = JobKwargsModel(**raw_job_kwargs)

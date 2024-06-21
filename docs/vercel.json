@@ -1,4 +1,0 @@
-{
-  "trailingSlash": true,
-  "ignoreCommand": "git diff HEAD^ HEAD --quiet ."
-}

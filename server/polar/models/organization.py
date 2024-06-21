@@ -156,10 +156,6 @@ class Organization(RecordModel):
         default=None,
     )
 
-    custom_domain: Mapped[str | None] = mapped_column(
-        String, nullable=True, default=None, unique=True
-    )
-
     profile_settings: Mapped[dict[str, Any]] = mapped_column(
         JSONB, nullable=False, default=dict
     )

@@ -1,3 +1,5 @@
+'use client'
+
 import SubscribeNowWithModal from '@/components/Subscriptions/SubscribeNowWithModal'
 import { Article } from '@polar-sh/sdk'
 

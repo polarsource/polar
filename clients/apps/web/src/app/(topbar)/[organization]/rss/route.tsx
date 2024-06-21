@@ -1,4 +1,5 @@
 import EmailRender from '@/components/Feed/Markdown/EmailRender'
+import { getHighlighter } from '@/components/SyntaxHighlighterShiki/SyntaxHighlighterServer'
 import { getServerSideAPI } from '@/utils/api/serverside'
 import { organizationPageLink } from '@/utils/nav'
 import { Platforms } from '@polar-sh/sdk'
@@ -50,10 +51,11 @@ export async function GET(
   })
 
   const ReactDOMServer = (await import('react-dom/server')).default
+  const highlighter = await getHighlighter()
 
   for (const article of articles.items || []) {
     const preview = ReactDOMServer.renderToStaticMarkup(
-      <EmailRender article={article} />,
+      <EmailRender article={article} highlighter={highlighter} />,
     )
 
     feed.item({

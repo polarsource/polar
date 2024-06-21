@@ -1,5 +1,4 @@
 import CheckoutSuccess from '@/components/Checkout/CheckoutSuccess'
-import { PublicPageOrganizationContextProvider } from '@/providers/organization'
 import { getServerSideAPI } from '@/utils/api/serverside'
 import { Checkout, Organization, ResponseError } from '@polar-sh/sdk'
 import { notFound } from 'next/navigation'
@@ -38,9 +37,5 @@ export default async function Page({
     }
   }
 
-  return (
-    <PublicPageOrganizationContextProvider organization={organization}>
-      <CheckoutSuccess checkout={checkout} organization={organization} />
-    </PublicPageOrganizationContextProvider>
-  )
+  return <CheckoutSuccess checkout={checkout} organization={organization} />
 }

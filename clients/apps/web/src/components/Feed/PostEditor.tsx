@@ -16,7 +16,9 @@ import { TabsContent } from 'polarkit/components/ui/atoms/tabs'
 import React, { PropsWithChildren, useContext, useState } from 'react'
 import { DashboardBody } from '../Layout/DashboardLayout'
 import { MarkdownEditor } from '../Markdown/MarkdownEditor'
+import { SyntaxHighlighterProvider } from '../SyntaxHighlighterShiki/SyntaxHighlighterClient'
 import LongformPost from './LongformPost'
+import { BrowserClientRender } from './Markdown/BrowserRender'
 import { PublishSettings } from './Publishing/PublishSettings'
 import { PostToolbar } from './Toolbar/PostToolbar'
 import {
@@ -87,47 +89,54 @@ export const PostEditor = ({
 
   return (
     <PostEditorContextProvider onChange={onBodyChange}>
-      <PostToolbar
-        article={article}
-        previewAs={previewAs}
-        onPreviewAsChange={setPreviewAs}
-        canCreate={canCreate}
-      />
-      <div>
-        <DashboardBody className="mt-0 !p-0">
-          <div className="flex flex-row">
-            <div className="flex w-full flex-col px-4 pb-6 sm:px-6 md:px-8">
-              <TabsContent className="flex-grow" value="edit" tabIndex={-1}>
-                <Editor
-                  title={title}
-                  body={body}
-                  onTitleChange={onTitleChange}
-                  disabled={disabled}
-                  article={article}
-                />
-              </TabsContent>
-              <TabsContent value="preview">
-                <div className="dark:md:bg-polar-900 dark:md:border-polar-800 dark:ring-polar-800 relative my-8 flex min-h-screen w-full flex-col items-center rounded-[3rem] ring-1 ring-gray-100 md:bg-white md:p-12 md:shadow-sm dark:ring-1 dark:md:border">
-                  <LongformPost
-                    {...previewProps}
-                    showPaywalledContent={previewAs === 'premium'}
-                    isSubscriber={previewAs === 'premium'}
-                    hasPaidArticlesBenefit={previewAs === 'premium'}
-                    showShare={false}
-                    isAuthor={true}
+      <SyntaxHighlighterProvider>
+        <PostToolbar
+          article={article}
+          previewAs={previewAs}
+          onPreviewAsChange={setPreviewAs}
+          canCreate={canCreate}
+        />
+        <div>
+          <DashboardBody className="mt-0 !p-0">
+            <div className="flex flex-row">
+              <div className="flex w-full flex-col px-4 pb-6 sm:px-6 md:px-8">
+                <TabsContent className="flex-grow" value="edit" tabIndex={-1}>
+                  <Editor
+                    title={title}
+                    body={body}
+                    onTitleChange={onTitleChange}
+                    disabled={disabled}
+                    article={article}
                   />
-                </div>
-              </TabsContent>
-              <TabsContent
-                value="settings"
-                className="flex flex-col gap-16 md:mt-8 md:flex-row md:items-start md:justify-between"
-              >
-                {article && <PublishSettings article={article} />}
-              </TabsContent>
+                </TabsContent>
+                <TabsContent value="preview">
+                  <div className="dark:md:bg-polar-900 dark:md:border-polar-800 dark:ring-polar-800 relative my-8 flex min-h-screen w-full flex-col items-center rounded-[3rem] ring-1 ring-gray-100 md:bg-white md:p-12 md:shadow-sm dark:ring-1 dark:md:border">
+                    <LongformPost
+                      {...previewProps}
+                      isSubscriber={previewAs === 'premium'}
+                      hasPaidArticlesBenefit={previewAs === 'premium'}
+                      showShare={false}
+                      isAuthor={true}
+                    >
+                      <BrowserClientRender
+                        {...previewProps}
+                        showPaywalledContent={previewAs === 'premium'}
+                        isSubscriber={previewAs === 'premium'}
+                      />
+                    </LongformPost>
+                  </div>
+                </TabsContent>
+                <TabsContent
+                  value="settings"
+                  className="flex flex-col gap-16 md:mt-8 md:flex-row md:items-start md:justify-between"
+                >
+                  {article && <PublishSettings article={article} />}
+                </TabsContent>
+              </div>
             </div>
-          </div>
-        </DashboardBody>
-      </div>
+          </DashboardBody>
+        </div>
+      </SyntaxHighlighterProvider>
     </PostEditorContextProvider>
   )
 }

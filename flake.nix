@@ -12,8 +12,8 @@
     in {
       devShells.${system}.default = pkgs.mkShell {
         nativeBuildInputs = with pkgs; [
-          nodejs_20
-          nodePackages.pnpm
+          nodejs_18
+          corepack
 
           python312
         ];

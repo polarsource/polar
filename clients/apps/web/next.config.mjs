@@ -2,6 +2,9 @@ import createMDX from '@next/mdx'
 import rehypeSlug from 'rehype-slug';
 import bundleAnalyzer from '@next/bundle-analyzer'
 import { withSentryConfig } from '@sentry/nextjs'
+import rehypeShikiFromHighlighter from '@shikijs/rehype/core'
+import { bundledLanguages, getHighlighter } from 'shiki';
+
 
 const POLAR_AUTH_COOKIE_KEY = 'polar_session'
 
@@ -381,56 +384,74 @@ const nextConfig = {
   },
 }
 
-const withMDX = createMDX({
-  options: {
-    rehypePlugins: [
-      rehypeSlug
-    ]
-  }
-})
-
-let conf = withMDX(nextConfig)
-
-// Injected content via Sentry wizard below
-
-conf = withSentryConfig(
-  conf,
-  {
-    // For all available options, see:
-    // https://github.com/getsentry/sentry-webpack-plugin#options
-
-    // Suppresses source map uploading logs during build
-    silent: true,
-
-    org: 'polar-sh',
-    project: 'dashboard',
-  },
-  {
-    // For all available options, see:
-    // https://docs.sentry.io/platforms/javascript/guides/nextjs/manual-setup/
-
-    // Upload a larger set of source maps for prettier stack traces (increases build time)
-    widenClientFileUpload: true,
-
-    // Transpiles SDK to be compatible with IE11 (increases bundle size)
-    transpileClientSDK: true,
-
-    // Routes browser requests to Sentry through a Next.js rewrite to circumvent ad-blockers (increases server load)
-    tunnelRoute: '/monitoring',
-
-    // Hides source maps from generated client bundles
-    hideSourceMaps: true,
-
-    // Automatically tree-shake Sentry logger statements to reduce bundle size
-    disableLogger: true,
-  },
-)
-
-if (process.env.ANALYZE === 'true') {
-  const withBundleAnalyzer = bundleAnalyzer({
-    enabled: true,
+const createConfig = async () => {
+  const highlighter = await getHighlighter({
+    langs: Object.keys(bundledLanguages),
+    themes: ['catppuccin-latte', 'catppuccin-mocha'],
   })
-  conf = withBundleAnalyzer(conf)
+  const withMDX = createMDX({
+    options: {
+      rehypePlugins: [
+        rehypeSlug,
+        [
+          rehypeShikiFromHighlighter,
+          highlighter, {
+            themes: {
+              light: 'catppuccin-latte',
+              dark: 'catppuccin-mocha',
+            },
+          },
+        ],
+      ]
+    }
+  })
+
+  let conf = withMDX(nextConfig)
+
+  // Injected content via Sentry wizard below
+
+  conf = withSentryConfig(
+    conf,
+    {
+      // For all available options, see:
+      // https://github.com/getsentry/sentry-webpack-plugin#options
+
+      // Suppresses source map uploading logs during build
+      silent: true,
+
+      org: 'polar-sh',
+      project: 'dashboard',
+    },
+    {
+      // For all available options, see:
+      // https://docs.sentry.io/platforms/javascript/guides/nextjs/manual-setup/
+
+      // Upload a larger set of source maps for prettier stack traces (increases build time)
+      widenClientFileUpload: true,
+
+      // Transpiles SDK to be compatible with IE11 (increases bundle size)
+      transpileClientSDK: true,
+
+      // Routes browser requests to Sentry through a Next.js rewrite to circumvent ad-blockers (increases server load)
+      tunnelRoute: '/monitoring',
+
+      // Hides source maps from generated client bundles
+      hideSourceMaps: true,
+
+      // Automatically tree-shake Sentry logger statements to reduce bundle size
+      disableLogger: true,
+    },
+  )
+
+  if (process.env.ANALYZE === 'true') {
+    const withBundleAnalyzer = bundleAnalyzer({
+      enabled: true,
+    })
+    conf = withBundleAnalyzer(conf)
+  }
+
+  return conf
 }
 
-export default conf
+
+export default createConfig

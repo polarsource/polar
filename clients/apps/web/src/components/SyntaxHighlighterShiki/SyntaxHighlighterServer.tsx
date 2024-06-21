@@ -35,8 +35,14 @@ const SyntaxHighlighterServer = ({
       light: 'catppuccin-latte',
       dark: 'catppuccin-mocha',
     },
+    structure: 'inline',
   })
-  return <div dangerouslySetInnerHTML={{ __html: html }}></div>
+  return (
+    <pre
+      dangerouslySetInnerHTML={{ __html: html }}
+      className="shiki shiki-themes catppuccin-latte catppuccin-mocha overflow-auto"
+    ></pre>
+  )
 }
 
 export default SyntaxHighlighterServer

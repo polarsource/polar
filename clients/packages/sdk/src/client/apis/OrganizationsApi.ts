@@ -65,7 +65,6 @@ export interface OrganizationsApiListOrganizationCustomersRequest {
 export interface OrganizationsApiLookupRequest {
     platform?: Platforms;
     organizationName?: string;
-    customDomain?: string;
 }
 
 export interface OrganizationsApiSearchRequest {
@@ -414,10 +413,6 @@ export class OrganizationsApi extends runtime.BaseAPI {
 
         if (requestParameters['organizationName'] != null) {
             queryParameters['organization_name'] = requestParameters['organizationName'];
-        }
-
-        if (requestParameters['customDomain'] != null) {
-            queryParameters['custom_domain'] = requestParameters['customDomain'];
         }
 
         const headerParameters: runtime.HTTPHeaders = {};

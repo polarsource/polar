@@ -15,19 +15,8 @@
 
 import * as runtime from '../runtime';
 import type {
-  CustomDomainExchangeRequest,
-  CustomDomainExchangeResponse,
-  CustomDomainForwardResponse,
   HTTPValidationError,
 } from '../models/index';
-
-export interface AuthApiCustomDomainExchangeOperationRequest {
-    customDomainExchangeRequest: CustomDomainExchangeRequest;
-}
-
-export interface AuthApiCustomDomainForwardRequest {
-    organizationId: string;
-}
 
 export interface AuthApiLogoutRequest {
     organizationId?: string;
@@ -37,87 +26,6 @@ export interface AuthApiLogoutRequest {
  * 
  */
 export class AuthApi extends runtime.BaseAPI {
-
-    /**
-     * Custom Domain Exchange
-     */
-    async customDomainExchangeRaw(requestParameters: AuthApiCustomDomainExchangeOperationRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<CustomDomainExchangeResponse>> {
-        if (requestParameters['customDomainExchangeRequest'] == null) {
-            throw new runtime.RequiredError(
-                'customDomainExchangeRequest',
-                'Required parameter "customDomainExchangeRequest" was null or undefined when calling customDomainExchange().'
-            );
-        }
-
-        const queryParameters: any = {};
-
-        const headerParameters: runtime.HTTPHeaders = {};
-
-        headerParameters['Content-Type'] = 'application/json';
-
-        const response = await this.request({
-            path: `/api/v1/auth/custom_domain_exchange`,
-            method: 'POST',
-            headers: headerParameters,
-            query: queryParameters,
-            body: requestParameters['customDomainExchangeRequest'],
-        }, initOverrides);
-
-        return new runtime.JSONApiResponse(response);
-    }
-
-    /**
-     * Custom Domain Exchange
-     */
-    async customDomainExchange(requestParameters: AuthApiCustomDomainExchangeOperationRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<CustomDomainExchangeResponse> {
-        const response = await this.customDomainExchangeRaw(requestParameters, initOverrides);
-        return await response.value();
-    }
-
-    /**
-     * Custom Domain Forward
-     */
-    async customDomainForwardRaw(requestParameters: AuthApiCustomDomainForwardRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<CustomDomainForwardResponse>> {
-        if (requestParameters['organizationId'] == null) {
-            throw new runtime.RequiredError(
-                'organizationId',
-                'Required parameter "organizationId" was null or undefined when calling customDomainForward().'
-            );
-        }
-
-        const queryParameters: any = {};
-
-        if (requestParameters['organizationId'] != null) {
-            queryParameters['organization_id'] = requestParameters['organizationId'];
-        }
-
-        const headerParameters: runtime.HTTPHeaders = {};
-
-        if (this.configuration && this.configuration.accessToken) {
-            const token = this.configuration.accessToken;
-            const tokenString = await token("HTTPBearer", []);
-
-            if (tokenString) {
-                headerParameters["Authorization"] = `Bearer ${tokenString}`;
-            }
-        }
-        const response = await this.request({
-            path: `/api/v1/auth/custom_domain_forward`,
-            method: 'GET',
-            headers: headerParameters,
-            query: queryParameters,
-        }, initOverrides);
-
-        return new runtime.JSONApiResponse(response);
-    }
-
-    /**
-     * Custom Domain Forward
-     */
-    async customDomainForward(requestParameters: AuthApiCustomDomainForwardRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<CustomDomainForwardResponse> {
-        const response = await this.customDomainForwardRaw(requestParameters, initOverrides);
-        return await response.value();
-    }
 
     /**
      * Logout

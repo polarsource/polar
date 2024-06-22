@@ -2,7 +2,7 @@
 
 import BenefitDetails from '@/components/Benefit/BenefitDetails'
 import { BenefitRow } from '@/components/Benefit/BenefitRow'
-import { previewOpts } from '@/components/Feed/Markdown/BrowserRender'
+import { markdownOpts } from '@/components/Feed/Markdown/markdown'
 import { ConfirmModal } from '@/components/Modal/ConfirmModal'
 import { InlineModal } from '@/components/Modal/InlineModal'
 import ProductPriceLabel from '@/components/Products/ProductPriceLabel'
@@ -82,9 +82,9 @@ const ClientPage = ({ subscription }: { subscription: UserSubscription }) => {
               <div className="prose dark:prose-invert prose-headings:mt-8 prose-headings:font-semibold prose-headings:text-black prose-h1:text-3xl prose-h2:text-2xl prose-h3:text-xl prose-h4:text-lg prose-h5:text-md prose-h6:text-sm dark:prose-headings:text-polar-50 dark:text-polar-300 max-w-4xl text-gray-800">
                 <Markdown
                   options={{
-                    ...previewOpts,
+                    ...markdownOpts,
                     overrides: {
-                      ...previewOpts.overrides,
+                      ...markdownOpts.overrides,
                       a: (props) => (
                         <a {...props} rel="noopener noreferrer nofollow" />
                       ),

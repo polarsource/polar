@@ -18,7 +18,7 @@ import { DashboardBody } from '../Layout/DashboardLayout'
 import { MarkdownEditor } from '../Markdown/MarkdownEditor'
 import { SyntaxHighlighterProvider } from '../SyntaxHighlighterShiki/SyntaxHighlighterClient'
 import LongformPost from './LongformPost'
-import { BrowserClientRender } from './Markdown/BrowserRender'
+import { BrowserClientRender } from './Markdown/Render/BrowserClientRender'
 import { PublishSettings } from './Publishing/PublishSettings'
 import { PostToolbar } from './Toolbar/PostToolbar'
 import {

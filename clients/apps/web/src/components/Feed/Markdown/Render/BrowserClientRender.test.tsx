@@ -4,9 +4,9 @@ import { PolarQueryClientProvider } from '@/app/providers'
 import '@testing-library/jest-dom'
 import { act, render } from '@testing-library/react'
 import Markdown from 'markdown-to-jsx'
-import { opts } from './BrowserRender'
-import { RenderArticle, wrapStrictCreateElement } from './markdown'
-import { polarPostUpsellAccess } from './testdata/polarPostUpsellAccess'
+import { RenderArticle, wrapStrictCreateElement } from '../markdown'
+import { polarPostUpsellAccess } from '../testdata/polarPostUpsellAccess'
+import { opts } from './BrowserClientRender'
 
 const TestRenderer = (props: { article: RenderArticle }) => {
   return (
@@ -35,7 +35,7 @@ test('code', async () => {
         article={{
           ...article,
           body: `
- 
+
 code:::
 
 \`\`\`go
@@ -63,7 +63,7 @@ test('XSS', async () => {
         article={{
           ...article,
           body: `
- 
+
 <p>
 hello
 </p>
@@ -71,7 +71,7 @@ hello
 <p onload="alert(1)">
 what
 </p>
-    
+
 <table>
     <thead>
         <tr><th>TH</th></tr>
@@ -117,7 +117,7 @@ Hello **world**!
 This is a normal **block** of text [Polar](https://polar.sh/) with _various_ formatting.
 And here it continues in the same block.
 
-This is a different block.  
+This is a different block.
 With a linebreak! (double whitespace)
 
 > This is a quoute!

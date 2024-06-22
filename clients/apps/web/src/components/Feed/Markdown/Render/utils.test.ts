@@ -1,4 +1,4 @@
-import { abbreviatedContent, getReferences } from './BrowserRender'
+import { abbreviatedContent, getReferences } from './utils'
 
 describe('abbreviatedContent', () => {
   test('short', () => {
@@ -32,9 +32,9 @@ Sed diam augue, mattis in magna in, condimentum iaculis est. Integer tincidunt, 
 Curabitur lorem neque, rutrum non velit quis, consequat maximus quam. Suspendisse laoreet turpis sit amet enim congue suscipit. Curabitur odio mi, iaculis eget massa vitae, fringilla bibendum turpis. Nam egestas tortor neque, vitae finibus ex venenatis nec. Nam feugiat convallis erat, et volutpat odio venenatis ac. Nunc facilisis eget metus sed pellentesque. Nulla fermentum, dui quis cursus molestie, ante purus tristique est, at placerat dui risus vel enim.
 
 Pellentesque habitant morbi tristique senectus et netus et malesuada fames ac turpis egestas.
-    
+
 Mauris at libero purus. Pellentesque habitant morbi tristique senectus et netus et malesuada fames ac turpis egestas. Integer finibus fringilla orci, vitae dignissim sem blandit id. Nulla placerat ligula et bibendum euismod. In sapien erat, consequat in porttitor in, hendrerit sit amet nisl. Fusce bibendum est at bibendum eleifend. In hac habitasse platea dictumst. Mauris eleifend elementum dolor id rhoncus.
-    
+
 Aenean et enim congue, hendrerit magna quis, placerat erat. Nam lacus sem, rutrum malesuada est id, commodo viverra elit. Donec auctor, nunc in vulputate varius, lorem mi porttitor metus, ut eleifend sapien dui sed risus. Mauris sagittis tempor diam, vel tincidunt odio sollicitudin vitae. Sed hendrerit lectus convallis quam elementum, viverra fermentum dui ultricies. Fusce eu elit in magna posuere convallis. Mauris sodales tincidunt ipsum quis hendrerit. Pellentesque et neque laoreet est consectetur euismod eget id justo. Vivamus commodo eleifend nunc, at pharetra libero volutpat vel.`
 
     expect(

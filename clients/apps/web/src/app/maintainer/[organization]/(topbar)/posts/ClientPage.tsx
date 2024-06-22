@@ -1,6 +1,6 @@
 'use client'
 
-import { AbbreviatedBrowserRender } from '@/components/Feed/Markdown/BrowserRender'
+import { AbbreviatedBrowserRender } from '@/components/Feed/Markdown/Render/AbbreviatedRender'
 import { AnimatedIconButton } from '@/components/Feed/Posts/Post'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import EmptyLayout from '@/components/Layout/EmptyLayout'

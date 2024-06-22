@@ -3,10 +3,10 @@ import { article } from '@/utils/testdata'
 import '@testing-library/jest-dom'
 import { render } from '@testing-library/react'
 import Markdown from 'markdown-to-jsx'
+import { RenderArticle, wrapStrictCreateElement } from '../markdown'
+import { polarPost } from '../testdata/polarPost'
+import { polarPostUpsellAccess } from '../testdata/polarPostUpsellAccess'
 import { opts } from './EmailRender'
-import { RenderArticle, wrapStrictCreateElement } from './markdown'
-import { polarPost } from './testdata/polarPost'
-import { polarPostUpsellAccess } from './testdata/polarPostUpsellAccess'
 
 const TestRenderer = (props: { article: RenderArticle }) => {
   return (
@@ -30,7 +30,7 @@ test('code', () => {
       article={{
         ...article,
         body: `
- 
+
 code:::
 
 \`\`\`go

@@ -2,22 +2,22 @@ import { Highlighter } from '@/components/SyntaxHighlighterShiki/SyntaxHighlight
 import Markdown from 'markdown-to-jsx'
 
 import { Container } from '@react-email/components'
-import EmailAd from './Ad/EmailAd'
-import EmailCallout from './Callout/EmailCallout'
-import { calloutRenderRule } from './Callout/renderRule'
-import CodeBlockEmail from './CodeBlock/CodeBlockEmail'
-import Embed from './Embed/EmailEmbed'
-import Iframe from './Iframe/EmailIframe'
-import EmailMermaid from './Mermaid/EmailMermaid'
-import Paywall, { EmailPaywall } from './Paywall/Paywall'
-import Poll from './Poll/Poll'
+import EmailAd from '../Ad/EmailAd'
+import EmailCallout from '../Callout/EmailCallout'
+import { calloutRenderRule } from '../Callout/renderRule'
+import CodeBlockEmail from '../CodeBlock/CodeBlockEmail'
+import Embed from '../Embed/EmailEmbed'
+import Iframe from '../Iframe/EmailIframe'
+import EmailMermaid from '../Mermaid/EmailMermaid'
+import Paywall, { EmailPaywall } from '../Paywall/Paywall'
+import Poll from '../Poll/Poll'
 import {
   BenefitAds,
   RenderArticle,
   firstChild,
   markdownOpts,
   wrapStrictCreateElement,
-} from './markdown'
+} from '../markdown'
 
 export const opts = {
   ...markdownOpts,

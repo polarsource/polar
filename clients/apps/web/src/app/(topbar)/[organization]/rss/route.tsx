@@ -1,4 +1,4 @@
-import EmailRender from '@/components/Feed/Markdown/EmailRender'
+import EmailRender from '@/components/Feed/Markdown/Render/EmailRender'
 import { getHighlighter } from '@/components/SyntaxHighlighterShiki/SyntaxHighlighterServer'
 import { getServerSideAPI } from '@/utils/api/serverside'
 import { organizationPageLink } from '@/utils/nav'

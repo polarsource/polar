@@ -2,7 +2,7 @@ import LongformPost from '@/components/Feed/LongformPost'
 import { organizationPageLink } from '@/utils/nav'
 import { ArrowBackOutlined } from '@mui/icons-material'
 
-import { BrowserServerRender } from '@/components/Feed/Markdown/BrowserRender'
+import { BrowserServerRender } from '@/components/Feed/Markdown/Render/BrowserServerRender'
 import { getHighlighter } from '@/components/SyntaxHighlighterShiki/SyntaxHighlighterServer'
 import { getServerSideAPI } from '@/utils/api/serverside'
 import { Article, BenefitPublicInner, Product } from '@polar-sh/sdk'

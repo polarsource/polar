@@ -7,7 +7,7 @@ import {
 } from 'polarkit/components/ui/tooltip'
 import { useContext, useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
-import { abbreviatedContent } from '../Feed/Markdown/BrowserRender'
+import { abbreviatedContent } from '../Feed/Markdown/Render/utils'
 import { PostEditorContext } from '../Feed/PostEditor'
 
 interface MarkdownEditorProps {

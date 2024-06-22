@@ -11,7 +11,7 @@ import Button, { ButtonProps } from 'polarkit/components/ui/atoms/button'
 import { PropsWithChildren, useCallback, useEffect, useRef } from 'react'
 import { useHoverDirty } from 'react-use'
 import { twMerge } from 'tailwind-merge'
-import { AbbreviatedBrowserRender } from '../Markdown/BrowserRender'
+import { AbbreviatedBrowserRender } from '../Markdown/Render/AbbreviatedRender'
 
 type FeedPost = {
   article: Article

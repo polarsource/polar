@@ -3,75 +3,17 @@
 exports[`code 1`] = `
 <div>
   <div>
-     
-
     <p>
       code:::
     </p>
-    <div
-      class="relative my-2 w-full"
-    >
-      <pre
-        style="text-align: left; white-space: pre; word-spacing: normal; word-break: normal; word-wrap: normal; color: rgb(0, 25, 58); background: rgb(243, 244, 247); tab-size: 4; font-size: .8em; border-radius: 2em; hyphens: none; overflow: auto; position: relative; margin: 0.5em 0px; padding: 2em;"
+    <pre>
+      <code
+        class="lang-go"
       >
-        <code>
-          <div
-            class="m-0"
-          >
-            <span
-              style="margin-right: 1.5rem; opacity: 0.2; font-size: .7rem; user-select: none; text-align: right; display: inline-block; width: 3.010299956639812px;"
-            >
-              1
-            </span>
-            <span
-              style="color: rgb(0, 0, 255); font-style: italic;"
-            >
-              func
-            </span>
-            <span>
-               
-            </span>
-            <span
-              style="color: rgb(124, 77, 255);"
-            >
-              main
-            </span>
-            <span
-              style="color: rgb(57, 173, 181);"
-            >
-              (
-            </span>
-            <span
-              style="color: rgb(57, 173, 181);"
-            >
-              )
-            </span>
-            <span>
-               
-            </span>
-            <span
-              style="color: rgb(57, 173, 181);"
-            >
-              {
-            </span>
-          </div>
-          <div
-            class="m-0"
-          >
-            <span
-              style="margin-right: 1.5rem; opacity: 0.2; font-size: .7rem; user-select: none; text-align: right; display: inline-block; width: 3.010299956639812px;"
-            >
-              2
-            </span>
-            <span
-              style="color: rgb(57, 173, 181);"
-            >
-              }
-            </span>
-          </div>
-        </code>
-      </pre>
-    </div>
+        func main() {
+}
+      </code>
+    </pre>
   </div>
 </div>
 `;
@@ -82,12 +24,16 @@ exports[`mermaid 1`] = `
     <p>
       we love charts
     </p>
-    <center>
-      <img
-        alt="Mermaid"
-        src="http://127.0.0.1:3000/email/kroki/mermaid/eJwryExVKMksyUlVCEgtKVZITMkvKElNUUiqVCjLzynNK0lNLSrmUgACJZf89GIlBSsFYwsziIBzYglYwMIUwg-C8g1NAYd2F64"
-      />
-    </center>
+    <pre>
+      <code
+        class="lang-mermaid"
+      >
+        pie title Pets adopted by volunteers
+    "Dogs" : 386
+    "Cats" : 85
+    "Rats" : 15
+      </code>
+    </pre>
   </div>
 </div>
 `;
@@ -232,152 +178,17 @@ exports[`posts 1`] = `
     <p>
       We love to write & share code too, so of course we support syntax highlighting in Polar Posts.
     </p>
-    <div
-      class="relative my-2 w-full"
-    >
-      <pre
-        style="text-align: left; white-space: pre; word-spacing: normal; word-break: normal; word-wrap: normal; color: rgb(0, 25, 58); background: rgb(243, 244, 247); tab-size: 4; font-size: .8em; border-radius: 2em; hyphens: none; overflow: auto; position: relative; margin: 0.5em 0px; padding: 2em;"
+    <pre>
+      <code
+        class="lang-python"
       >
-        <code>
-          <div
-            class="m-0"
-          >
-            <span
-              style="margin-right: 1.5rem; opacity: 0.2; font-size: .7rem; user-select: none; text-align: right; display: inline-block; width: 6.989700043360188px;"
-            >
-              1
-            </span>
-            <span
-              style="color: rgb(0, 0, 255); font-style: italic;"
-            >
-              def
-            </span>
-            <span>
-               
-            </span>
-            <span
-              style="color: rgb(124, 77, 255);"
-            >
-              hello_world
-            </span>
-            <span
-              style="color: rgb(57, 173, 181);"
-            >
-              (
-            </span>
-            <span
-              style="color: rgb(57, 173, 181);"
-            >
-              )
-            </span>
-            <span
-              style="color: rgb(57, 173, 181);"
-            >
-              :
-            </span>
-          </div>
-          <div
-            class="m-0"
-          >
-            <span
-              style="margin-right: 1.5rem; opacity: 0.2; font-size: .7rem; user-select: none; text-align: right; display: inline-block; width: 6.989700043360188px;"
-            >
-              2
-            </span>
-            <span>
-                  
-            </span>
-            <span
-              style="color: rgb(0, 0, 255); font-style: italic;"
-            >
-              print
-            </span>
-            <span
-              style="color: rgb(57, 173, 181);"
-            >
-              (
-            </span>
-            <span
-              style="color: rgb(239, 100, 100);"
-            >
-              "Hello world from a Polar Post"
-            </span>
-            <span
-              style="color: rgb(57, 173, 181);"
-            >
-              )
-            </span>
-          </div>
-          <div
-            class="m-0"
-          >
-            <span
-              style="margin-right: 1.5rem; opacity: 0.2; font-size: .7rem; user-select: none; text-align: right; display: inline-block; width: 6.989700043360188px;"
-            >
-              3
-            </span>
-            <span />
-          </div>
-          <div
-            class="m-0"
-          >
-            <span
-              style="margin-right: 1.5rem; opacity: 0.2; font-size: .7rem; user-select: none; text-align: right; display: inline-block; width: 6.989700043360188px;"
-            >
-              4
-            </span>
-            <span
-              style="color: rgb(0, 0, 255); font-style: italic;"
-            >
-              if
-            </span>
-            <span>
-               __name__ 
-            </span>
-            <span
-              style="color: rgb(57, 173, 181);"
-            >
-              ==
-            </span>
-            <span>
-               
-            </span>
-            <span
-              style="color: rgb(239, 100, 100);"
-            >
-              "__main__"
-            </span>
-            <span
-              style="color: rgb(57, 173, 181);"
-            >
-              :
-            </span>
-          </div>
-          <div
-            class="m-0"
-          >
-            <span
-              style="margin-right: 1.5rem; opacity: 0.2; font-size: .7rem; user-select: none; text-align: right; display: inline-block; width: 6.989700043360188px;"
-            >
-              5
-            </span>
-            <span>
-                  hello_world
-            </span>
-            <span
-              style="color: rgb(57, 173, 181);"
-            >
-              (
-            </span>
-            <span
-              style="color: rgb(57, 173, 181);"
-            >
-              )
-            </span>
-          </div>
-        </code>
-      </pre>
-    </div>
+        def hello_world():
+    print("Hello world from a Polar Post")
+
+if __name__ == "__main__":
+    hello_world()
+      </code>
+    </pre>
     <p>
       I can embed Youtube videos, images, links or even GitHub issues you can fund using Polar issue funding & rewards.
     </p>

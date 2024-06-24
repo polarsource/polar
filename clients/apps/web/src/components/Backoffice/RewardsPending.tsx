@@ -5,7 +5,6 @@ import {
   useBackofficeRewardsPending,
 } from '@/hooks/queries'
 import { api } from '@/utils/api'
-import { getCentsInDollarString } from '@/utils/money'
 import {
   ArrowLeftIcon,
   ArrowRightIcon,
@@ -16,6 +15,7 @@ import {
 import { BackofficeReward, PledgeState, PledgeType } from '@polar-sh/sdk'
 import Link from 'next/link'
 import Button from 'polarkit/components/ui/atoms/button'
+import { getCentsInDollarString } from 'polarkit/lib/money'
 import { Fragment, useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
 

@@ -1,7 +1,6 @@
 import { useAuth } from '@/hooks'
 import { useUserSubscriptions } from '@/hooks/queries'
 import { api } from '@/utils/api'
-import { formatCurrencyAndAmount } from '@/utils/money'
 import {
   Organization,
   Product,
@@ -15,6 +14,7 @@ import {
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import Button, { ButtonProps } from 'polarkit/components/ui/atoms/button'
+import { formatCurrencyAndAmount } from 'polarkit/lib/money'
 import React, { useCallback, useMemo, useState } from 'react'
 import { ConfirmModal } from '../Modal/ConfirmModal'
 

@@ -6,7 +6,6 @@ import {
   useNotifications,
   useNotificationsMarkRead,
 } from '@/hooks/queries'
-import { getCentsInDollarString } from '@/utils/money'
 import { useOutsideClick } from '@/utils/useOutsideClick'
 import {
   Announcement,
@@ -34,6 +33,7 @@ import {
 import Link from 'next/link'
 import { PolarTimeAgo } from 'polarkit/components/ui/atoms'
 import Button from 'polarkit/components/ui/atoms/button'
+import { getCentsInDollarString } from 'polarkit/lib/money'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import SplitRewardModal from '../Finance/SplitRewardModal'

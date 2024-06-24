@@ -1,6 +1,6 @@
-import { getCentsInDollarString } from '@/utils/money'
 import { ClockIcon, HeartIcon } from '@heroicons/react/20/solid'
 import { PledgesSummary } from '@polar-sh/sdk'
+import { getCentsInDollarString } from 'polarkit/lib/money'
 import Pledgers from './Pledgers'
 
 interface BasePledgeSummaryPillProps {

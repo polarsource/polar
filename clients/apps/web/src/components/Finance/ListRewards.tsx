@@ -3,9 +3,9 @@ import DollarSignIcon from '@/components/Icons/DollarSignIcon'
 import EyeIcon from '@/components/Icons/EyeIcon'
 import Icon from '@/components/Icons/Icon'
 import { githubIssueLink } from '@/utils/github'
-import { getCentsInDollarString } from '@/utils/money'
 import { dateOrString } from '@/utils/time'
 import { PledgeState, PledgeType, Reward, RewardState } from '@polar-sh/sdk'
+import { getCentsInDollarString } from 'polarkit/lib/money'
 
 export type Column = 'PAID_OUT_DATE' | 'RECEIVER' | 'BACKER' | 'PAYMENT_STATUS'
 

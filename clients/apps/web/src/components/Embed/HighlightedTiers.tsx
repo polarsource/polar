@@ -1,6 +1,6 @@
 import LogoIcon from '@/components/Brand/LogoIcon'
-import { formatCurrencyAndAmount } from '@/utils/money'
 import { Product, ProductPriceRecurringInterval } from '@polar-sh/sdk'
+import { formatCurrencyAndAmount } from 'polarkit/lib/money'
 import {
   getRecurringBillingLabel,
   getRecurringProductPrice,

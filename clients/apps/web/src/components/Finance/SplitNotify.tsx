@@ -1,10 +1,10 @@
 import { api } from '@/utils/api'
 import { githubIssueLink } from '@/utils/github'
-import { getCentsInDollarString } from '@/utils/money'
 import { ConfirmIssueSplit, Issue, Pledge, UserRead } from '@polar-sh/sdk'
 import Button from 'polarkit/components/ui/atoms/button'
 import TextArea from 'polarkit/components/ui/atoms/textarea'
 import { Banner } from 'polarkit/components/ui/molecules'
+import { getCentsInDollarString } from 'polarkit/lib/money'
 import { useState } from 'react'
 import { ModalHeader } from '../Modal'
 

@@ -5,7 +5,6 @@ import {
   useRecurringBillingLabel,
   useRecurringProductPrice,
 } from '@/hooks/products'
-import { formatCurrencyAndAmount } from '@/utils/money'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { DragIndicatorOutlined } from '@mui/icons-material'
@@ -18,6 +17,7 @@ import {
 } from 'polarkit/components/ui/atoms/card'
 import { Separator } from 'polarkit/components/ui/separator'
 import { Skeleton } from 'polarkit/components/ui/skeleton'
+import { formatCurrencyAndAmount } from 'polarkit/lib/money'
 import { MouseEventHandler, useCallback, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { resolveBenefitIcon } from '../Benefit/utils'

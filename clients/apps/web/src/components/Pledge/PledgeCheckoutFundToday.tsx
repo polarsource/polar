@@ -1,7 +1,6 @@
 import { useAuth } from '@/hooks/auth'
 import { useListPaymentMethods } from '@/hooks/queries'
 import { api } from '@/utils/api'
-import { getCentsInDollarString } from '@/utils/money'
 import { EnvelopeIcon } from '@heroicons/react/24/outline'
 import {
   Issue,
@@ -26,6 +25,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from 'polarkit/components/ui/atoms/select'
+import { getCentsInDollarString } from 'polarkit/lib/money'
 import posthog from 'posthog-js'
 import { ChangeEvent, useCallback, useEffect, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'

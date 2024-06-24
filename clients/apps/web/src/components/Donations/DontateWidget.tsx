@@ -1,10 +1,10 @@
-import { getCentsInDollarString } from '@/utils/money'
 import { organizationPageLink } from '@/utils/nav'
 import { AttachMoneyOutlined } from '@mui/icons-material'
 import { Organization } from '@polar-sh/sdk'
 import Link from 'next/link'
 import Button from 'polarkit/components/ui/atoms/button'
 import Input from 'polarkit/components/ui/atoms/input'
+import { getCentsInDollarString } from 'polarkit/lib/money'
 import { ChangeEvent, useState } from 'react'
 
 export interface DonateWidgetProps {

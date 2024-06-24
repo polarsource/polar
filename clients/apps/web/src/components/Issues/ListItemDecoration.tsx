@@ -1,4 +1,3 @@
-import { getCentsInDollarString } from '@/utils/money'
 import {
   Funding,
   Issue,
@@ -8,6 +7,7 @@ import {
   PledgesTypeSummaries,
   Reward,
 } from '@polar-sh/sdk'
+import { getCentsInDollarString } from 'polarkit/lib/money'
 import { twMerge } from 'tailwind-merge'
 import IssuePledge from './IssuePledge'
 import IssueReference from './IssueReference'

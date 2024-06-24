@@ -4,8 +4,8 @@ export { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 export { queryClient } from './query'
 
 export const getServerURL = (path?: string): string => {
-  path = path !== undefined ? path : ''
-  const baseURL = process?.env?.NEXT_PUBLIC_API_URL
+  path = path || ''
+  const baseURL = process.env.NEXT_PUBLIC_API_URL
   return `${baseURL}${path}`
 }
 

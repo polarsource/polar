@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
   const priceId = searchParams.get('price') as string
 
   const requestURL = new URL(request.url)
-  const successURL = `${requestURL.protocol}//${requestURL.host}/subscribe/success?session_id={CHECKOUT_SESSION_ID}`
+  const successURL = `${requestURL.protocol}//${requestURL.host}/checkout/success?session_id={CHECKOUT_SESSION_ID}`
 
   try {
     const { url } = await api.checkouts.createCheckout({

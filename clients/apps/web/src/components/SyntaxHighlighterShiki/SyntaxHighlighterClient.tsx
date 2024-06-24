@@ -5,12 +5,12 @@ import {
   BundledLanguage,
   Highlighter,
   ShikiError,
-  getHighlighter as _getHighlighter,
+  createHighlighter,
 } from 'shiki/bundle/web'
 import { themeConfig, themesList, transformers } from '../../../shiki.config'
 
 const getHighlighter = async (): Promise<Highlighter> => {
-  return _getHighlighter({
+  return createHighlighter({
     langs: ['bash', 'js'],
     themes: themesList,
   })

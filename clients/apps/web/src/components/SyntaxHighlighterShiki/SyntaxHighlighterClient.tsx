@@ -92,9 +92,7 @@ export const SyntaxHighlighterClient = ({
   lang: string
   code: string
 }) => {
-  const { highlighter, loadedLanguages, loadLanguage } = useContext(
-    SyntaxHighlighterContext,
-  )
+  const { highlighter, loadLanguage } = useContext(SyntaxHighlighterContext)
   const [highlightedCode, setHighlightedCode] = useState<string | null>(null)
 
   useEffect(() => {}, [loadLanguage, lang])
@@ -109,7 +107,7 @@ export const SyntaxHighlighterClient = ({
       })
       setHighlightedCode(highlightedCode)
     })
-  }, [highlighter, loadedLanguages, lang, code])
+  }, [highlighter, loadLanguage, lang, code])
 
   return highlightedCode ? (
     <div dangerouslySetInnerHTML={{ __html: highlightedCode }}></div>

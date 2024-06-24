@@ -281,7 +281,24 @@ class OrderService(ResourceServiceReader[Order]):
                 product_id=product.id,
                 order_id=order.id,
             )
+
             await self.send_confirmation_email(session, order)
+
+        is_first_invoice = (
+            order.subscription is not None
+            and order.subscription.started_at is not None
+            and order.subscription.current_period_start is not None
+            and order.subscription.started_at.date()
+            == order.subscription.current_period_start.date()
+        )
+
+        is_non_recurring = order.product_price.type != ProductPriceType.recurring
+
+        if is_first_invoice or is_non_recurring:
+            enqueue_job(
+                "order.discord_notification",
+                order_id=order.id,
+            )
 
         return order
 

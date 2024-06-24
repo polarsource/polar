@@ -50,51 +50,6 @@ async def subscription_update_product_benefits_grants(
         )
 
 
-@task("subscription.discord_notification")
-async def subscription_discord_notification(
-    ctx: JobContext,
-    subscription_id: uuid.UUID,
-    polar_context: PolarWorkerContext,
-) -> None:
-    if not settings.DISCORD_WEBHOOK_URL:
-        return
-
-    async with AsyncSessionMaker(ctx) as session:
-        subscription = await subscription_service.get(session, subscription_id)
-        if subscription is None:
-            raise SubscriptionDoesNotExist(subscription_id)
-
-        assert subscription.price_id is not None
-        price = await product_price_service.get(session, subscription.price_id)
-        assert price is not None
-
-        tier = await product_service.get(session, subscription.product_id)
-        if not tier:
-            raise SubscriptionDoesNotExist(subscription_id)
-
-        tier_org = await organization_service.get(session, tier.organization_id)
-        if not tier_org:
-            raise SubscriptionDoesNotExist(subscription_id)
-
-        webhook = AsyncDiscordWebhook(
-            url=settings.DISCORD_WEBHOOK_URL, content="New subscription"
-        )
-
-        embed = DiscordEmbed(
-            title=tier.name,
-            description=f"${get_cents_in_dollar_string(price.price_amount)}/{price.recurring_interval}",
-            color="65280",
-        )
-
-        embed.add_embed_field(
-            name="Org",
-            value=f"[{tier_org.name}](https://polar.sh/{tier_org.name})",
-        )
-
-        webhook.add_embed(embed)
-        await webhook.execute()
-
-
 @task("subscription.user_webhook_notifications")
 async def subscription_user_webhook_notifications(
     ctx: JobContext,

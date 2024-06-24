@@ -191,8 +191,22 @@ const ClientPage: React.FC<ClientPageProps> = ({
       header: ({ column }) => (
         <DataTableColumnHeader column={column} title="Status" />
       ),
-      cell: (props) =>
-        subscriptionStatusDisplayNames[props.getValue() as SubscriptionStatus],
+      cell: ({ getValue, row: { original: subscription } }) => {
+        return (
+          <>
+            {subscriptionStatusDisplayNames[getValue() as SubscriptionStatus]}
+            {subscription.cancel_at_period_end &&
+              subscription.current_period_end && (
+                <span className="ml-2 shrink-0 rounded-lg border border-yellow-200 bg-yellow-100 px-1.5 text-xs text-yellow-600 dark:border-yellow-600 dark:bg-yellow-700 dark:text-yellow-300">
+                  Cancels at{' '}
+                  <FormattedDateTime
+                    datetime={subscription.current_period_end}
+                  />
+                </span>
+              )}
+          </>
+        )
+      },
     },
     {
       accessorKey: 'started_at',

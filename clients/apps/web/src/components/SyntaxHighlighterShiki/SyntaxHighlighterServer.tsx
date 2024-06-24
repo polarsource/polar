@@ -30,7 +30,7 @@ const SyntaxHighlighterServer = ({
   highlighter: Highlighter
 }) => {
   const html = highlighter.codeToHtml(code, {
-    lang,
+    lang: highlighter.getLoadedLanguages().includes(lang) ? lang : 'text',
     themes: themeConfig,
     transformers,
   })

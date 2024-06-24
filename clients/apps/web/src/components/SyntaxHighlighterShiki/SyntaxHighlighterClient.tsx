@@ -4,6 +4,7 @@ import React, { useCallback, useContext, useEffect, useState } from 'react'
 import {
   BundledLanguage,
   Highlighter,
+  ShikiError,
   getHighlighter as _getHighlighter,
 } from 'shiki/bundle/web'
 import { themeConfig, themesList, transformers } from '../../../shiki.config'
@@ -26,7 +27,7 @@ const loadLanguage = async (
 interface SyntaxHighlighterContextType {
   highlighter: Highlighter | null
   loadedLanguages: string[]
-  loadLanguage: (lang: BundledLanguage) => Promise<void>
+  loadLanguage: (lang: BundledLanguage) => Promise<boolean>
 }
 
 const stub = (): never => {
@@ -54,11 +55,19 @@ export const SyntaxHighlighterProvider = ({
     })
   }, [])
 
-  const loadLanguageCallback = useCallback(
-    async (lang: BundledLanguage) => {
-      if (!highlighter) return
-      await loadLanguage(lang, highlighter)
-      setLoadedLanguages(highlighter.getLoadedLanguages())
+  const _loadLanguage = useCallback(
+    async (lang: BundledLanguage): Promise<boolean> => {
+      if (!highlighter) return false
+      try {
+        await loadLanguage(lang, highlighter)
+        setLoadedLanguages(highlighter.getLoadedLanguages())
+        return true
+      } catch (err) {
+        if (err instanceof ShikiError) {
+          return false
+        }
+        throw err
+      }
     },
     [highlighter],
   )
@@ -68,7 +77,7 @@ export const SyntaxHighlighterProvider = ({
       value={{
         highlighter,
         loadedLanguages,
-        loadLanguage: loadLanguageCallback,
+        loadLanguage: _loadLanguage,
       }}
     >
       {children}
@@ -88,18 +97,18 @@ export const SyntaxHighlighterClient = ({
   )
   const [highlightedCode, setHighlightedCode] = useState<string | null>(null)
 
-  useEffect(() => {
-    loadLanguage(lang as BundledLanguage)
-  }, [loadLanguage, lang])
+  useEffect(() => {}, [loadLanguage, lang])
 
   useEffect(() => {
-    if (!highlighter || !loadedLanguages.includes(lang)) return
-    const highlightedCode = highlighter.codeToHtml(code, {
-      lang,
-      themes: themeConfig,
-      transformers,
+    if (!highlighter) return
+    loadLanguage(lang as BundledLanguage).then((success) => {
+      const highlightedCode = highlighter.codeToHtml(code, {
+        lang: success ? lang : 'text',
+        themes: themeConfig,
+        transformers,
+      })
+      setHighlightedCode(highlightedCode)
     })
-    setHighlightedCode(highlightedCode)
   }, [highlighter, loadedLanguages, lang, code])
 
   return highlightedCode ? (

@@ -8,7 +8,7 @@ import {
 } from 'next/navigation'
 import React, { useEffect, useState } from 'react'
 
-const LIMIT = 9
+const LIMIT = 3 * 10
 
 interface PurchasesQueryParameters {
   page: number

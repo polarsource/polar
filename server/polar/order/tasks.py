@@ -95,7 +95,7 @@ async def order_discord_notification(
             description = f"${get_cents_in_dollar_string(price.price_amount)}"
 
         embed = DiscordEmbed(
-            title=order.product.name,
+            title=product.name,
             description=description,
             color="65280",
         )

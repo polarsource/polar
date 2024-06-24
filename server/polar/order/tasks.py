@@ -62,8 +62,7 @@ async def update_product_benefits_grants(
 
 @task("order.discord_notification")
 async def order_discord_notification(
-    ctx: JobContext,
-    order_id: uuid.UUID,
+    ctx: JobContext, order_id: uuid.UUID, polar_context: PolarWorkerContext
 ) -> None:
     if not settings.DISCORD_WEBHOOK_URL:
         return

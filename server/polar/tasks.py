@@ -6,6 +6,7 @@ from polar.integrations.loops import tasks as loops
 from polar.integrations.stripe import tasks as stripe
 from polar.magic_link import tasks as magic_link
 from polar.notifications import tasks as notifications
+from polar.order import tasks as order
 from polar.organization import tasks as organization
 from polar.personal_access_token import tasks as personal_access_token
 from polar.subscription import tasks as subscription
@@ -21,6 +22,7 @@ __all__ = [
     "loops",
     "stripe",
     "magic_link",
+    "order",
     "notifications",
     "organization",
     "personal_access_token",

@@ -1,5 +1,4 @@
 import uuid
-from math import prod
 
 import structlog
 from discord_webhook import AsyncDiscordWebhook, DiscordEmbed

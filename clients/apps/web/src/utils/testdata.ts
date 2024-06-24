@@ -338,17 +338,22 @@ export const pullRequest: PullRequest = {
 
 export const article: Article = {
   id: 'xxxx',
-  slug: 'xxxx',
-  organization: org,
-  title: 'Funding goals, reward contributors (v1), backer dashboard & API',
-  body: `Our team is growing and new features, enhancements and bug fixes are shipped daily. Since Polar is [open source](https://github.com/polarsource/polar) anyone can see, contribute and follow along our daily progress & backlog, but... It's a bit verbose :-)
+  slug: 'build-saas-with-polar',
+  organization: {
+    ...org,
+    name: 'polarsource',
+    pretty_name: 'Polar',
+  },
+  title: 'Build SaaS with Polar using our API, Webhooks & OAuth',
+  body: `![Hero](https://7vk6rcnylug0u6hg.public.blob.vercel-storage.com/Frame%20543-jakaw4OY2P90MQRnqVzbrmv9cJbtfe.jpg)
 
-  So we'll start keeping a changelog to highlight some of the gems. Let's dive right into some of the highlights from the last month.`,
+Our mission at Polar is for developers to get paid coding on their passions. Empowering open source- and indie developers to build independent careers and businesses. All the way from first donation to IPO.
+  `,
   visibility: 'public',
   is_preview: false,
   byline: {
-    name: 'birkjernstrom',
-    avatar_url: 'https://avatars.githubusercontent.com/u/281715?v=4',
+    name: 'polarsource',
+    avatar_url: 'https://avatars.githubusercontent.com/u/105373340?v=4',
   },
   is_pinned: false,
 }

@@ -1,16 +1,14 @@
 import GithubLoginButton from '@/components/Auth/GithubLoginButton'
+import { Post } from '@/components/Feed/Posts/Post'
 import { FeatureSection } from '@/components/Landing/FeatureSection'
 import { PageContent } from '@/components/Landing/LandingPage'
 import { Section } from '@/components/Landing/Section'
-import { MOCKED_PRODUCTS } from '@/components/Landing/utils'
-import SubscriptionTierCard from '@/components/Subscriptions/SubscriptionTierCard'
+import { article } from '@/utils/testdata'
 import { UserSignupType } from '@polar-sh/sdk'
 import Link from 'next/link'
-import { Separator } from 'polarkit/components/ui/separator'
 
-const PAGE_TITLE = 'Products & Subscriptions'
-const PAGE_DESCRIPTION =
-  'Offer paid subscription tiers or one-time purchases with associated benefits'
+const PAGE_TITLE = 'Newsletters'
+const PAGE_DESCRIPTION = 'Reach your audience with insightful posts and updates'
 
 export default function Page() {
   return (
@@ -50,15 +48,13 @@ export default function Page() {
             </p>
           </div>
         </div>
-        <div className="grid grid-cols-1 gap-4 md:w-1/2 md:grid-cols-2">
-          <SubscriptionTierCard
-            className="shadow-sm"
-            subscriptionTier={MOCKED_PRODUCTS[1]}
-          />
-          <SubscriptionTierCard
-            className="shadow-sm"
-            subscriptionTier={MOCKED_PRODUCTS[2]}
-          />
+        <div className="md:w-1/2">
+          <Link
+            href="https://polar.sh/polarsource/posts/build-saas-with-polar"
+            target="_blank"
+          >
+            <Post article={article} />
+          </Link>
         </div>
       </Section>
       <Section
@@ -68,48 +64,45 @@ export default function Page() {
         <picture className="w-full">
           <source
             media="(prefers-color-scheme: dark)"
-            srcSet="assets/landing/subscriptions/subscriptions_dark.png"
+            srcSet="assets/landing/newsletters/newsletters_dark.png"
           />
           <img
             className="border-gray-75 dark:border-polar-700 rounded-3xl border shadow-2xl"
-            alt="Products & Subscriptions"
-            src="/assets/landing/subscriptions/subscriptions.png"
+            alt="Newsletters"
+            src="/assets/landing/newsletters/newsletters.png"
           />
         </picture>
       </Section>
-      <FeatureSection
-        title="Subscriptions"
-        description="Recurring funding for your projects"
-        features={[
-          'Sell access to exclusive content on a recurring basis',
-          'Customize your subscription tiers',
-          'Metrics on your subscription sales & revenue',
-        ]}
-        media={{
-          light: '/assets/landing/subscriptions/products.jpg',
-          dark: '/assets/landing/subscriptions/products_dark.jpg',
-        }}
-      />
 
-      <Separator />
+      <FeatureSection
+        title="Posts & Newsletters for Developers"
+        description="Write in Markdown & preview in real-time"
+        media={{
+          light: '',
+          dark: '',
+        }}
+        features={[
+          'Write in Markdown or MDX',
+          'Preview in real-time',
+          'GitHub-flavoured Markdown',
+          'Built-in components - Paywalls, Subscription Upsells & more',
+        ]}
+      />
 
       <FeatureSection
         wrapperClassName="bg-gray-50 dark:bg-polar-900"
-        title="One-time Purchases"
-        description="Sell products or services as one-time purchases"
-        features={[
-          'Sell access to exclusive content once',
-          'Customize your product offerings',
-          'Metrics on sales & revenue',
-        ]}
+        title="Directly to your supporter's inbox"
+        description="Distribute your newsletter via email with ease"
         media={{
-          light: '/assets/landing/subscriptions/products.jpg',
-          dark: '/assets/landing/subscriptions/products_dark.jpg',
+          light: '',
+          dark: '',
         }}
+        features={[
+          'Publish newsletters via email',
+          'Email metrics, analytics & insights',
+        ]}
         direction="row-reverse"
       />
-
-      <Separator />
 
       <PageContent />
     </>

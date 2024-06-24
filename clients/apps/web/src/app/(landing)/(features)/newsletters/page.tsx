@@ -7,7 +7,7 @@ import { article } from '@/utils/testdata'
 import { UserSignupType } from '@polar-sh/sdk'
 import Link from 'next/link'
 
-const PAGE_TITLE = 'Newsletters'
+const PAGE_TITLE = 'Posts & Newsletters'
 const PAGE_DESCRIPTION = 'Reach your audience with insightful posts and updates'
 
 export default function Page() {

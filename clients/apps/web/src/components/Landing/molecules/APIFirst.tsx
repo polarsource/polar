@@ -13,7 +13,7 @@ export const APIFirst = () => {
   return (
     <div className="relative -mt-8 mb-8 md:flex">
       <SubscriptionTierCard
-        className="max-w-[300px]"
+        className="dark:bg-polar-950 max-w-[300px]"
         subscriptionTier={API_PRODUCT}
       />
       <div className="dark:bg-polar-900/50 absolute -bottom-8 left-1/2 flex h-52 w-[480px] -translate-x-1/2 flex-col gap-y-6 rounded-3xl border p-6 font-mono shadow-2xl backdrop-blur-md">

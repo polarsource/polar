@@ -16,7 +16,7 @@ const defaultFrontendHostname = process.env.NEXT_PUBLIC_FRONTEND_BASE_URL
 const nextConfig = {
   reactStrictMode: true,
   swcMinify: true,
-  transpilePackages: ['polarkit'],
+  transpilePackages: ['polarkit', 'shiki'],
   pageExtensions: ['js', 'jsx', 'md', 'mdx', 'ts', 'tsx'],
 
   // Do not do any fiddling with trailing slashes

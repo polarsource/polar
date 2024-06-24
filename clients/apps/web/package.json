@@ -65,7 +65,7 @@
     "lunr": "^2.3.9",
     "markdown-to-jsx": "^7.4.5",
     "mermaid": "^10.6.1",
-    "next": "~14.1",
+    "next": "^14.2",
     "next-themes": "^0.2.1",
     "open-graph-scraper-lite": "^2.0.0",
     "openapi-types": "^12.1.3",

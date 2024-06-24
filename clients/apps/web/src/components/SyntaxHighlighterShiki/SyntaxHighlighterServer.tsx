@@ -1,8 +1,4 @@
-import {
-  Highlighter,
-  getHighlighter as _getHighlighter,
-  bundledLanguages,
-} from 'shiki'
+import { Highlighter, bundledLanguages, createHighlighter } from 'shiki'
 import { themeConfig, themesList, transformers } from '../../../shiki.config'
 
 export type { Highlighter }
@@ -13,7 +9,7 @@ export const getHighlighter = async (): Promise<Highlighter> => {
   if (highlighter) {
     return highlighter
   }
-  highlighter = await _getHighlighter({
+  highlighter = await createHighlighter({
     langs: Object.keys(bundledLanguages),
     themes: themesList,
   })

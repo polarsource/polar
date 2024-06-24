@@ -3,7 +3,7 @@ import rehypeSlug from 'rehype-slug';
 import bundleAnalyzer from '@next/bundle-analyzer'
 import { withSentryConfig } from '@sentry/nextjs'
 import rehypeShikiFromHighlighter from '@shikijs/rehype/core'
-import { bundledLanguages, getHighlighter } from 'shiki';
+import { bundledLanguages, createHighlighter } from 'shiki';
 import { themeConfig, themesList, transformers } from './shiki.config.mjs'
 
 const POLAR_AUTH_COOKIE_KEY = 'polar_session'
@@ -385,7 +385,7 @@ const nextConfig = {
 }
 
 const createConfig = async () => {
-  const highlighter = await getHighlighter({
+  const highlighter = await createHighlighter({
     langs: Object.keys(bundledLanguages),
     themes: themesList,
   })

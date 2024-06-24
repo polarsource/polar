@@ -77,7 +77,7 @@ const PlatformPopover = () => {
               <PopoverLinkItem
                 title="Newsletters"
                 description="Reach your community with insightful posts"
-                link="/docs/overview/newsletters"
+                link="/newsletters"
               />
             </div>
           </div>

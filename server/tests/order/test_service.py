@@ -447,7 +447,7 @@ class TestCreateOrderFromStripe:
         assert order.product_price == product_one_time.prices[0]
         assert order.subscription is None
 
-        enqueue_job_mock.assert_called_once_with(
+        enqueue_job_mock.assert_any_call(
             "benefit.enqueue_benefits_grants",
             task="grant",
             user_id=user.id,

@@ -78,8 +78,8 @@ export default function Page() {
         title="Posts & Newsletters for Developers"
         description="Write in Markdown & preview in real-time"
         media={{
-          light: '',
-          dark: '',
+          light: '/assets/landing/newsletters/editor.png',
+          dark: '/assets/landing/newsletters/editor_dark.png',
         }}
         features={[
           'Write in Markdown or MDX',
@@ -94,8 +94,8 @@ export default function Page() {
         title="Directly to your supporter's inbox"
         description="Distribute your newsletter via email with ease"
         media={{
-          light: '',
-          dark: '',
+          light: '/assets/landing/newsletters/metrics.png',
+          dark: '/assets/landing/newsletters/metrics_dark.png',
         }}
         features={[
           'Publish newsletters via email',

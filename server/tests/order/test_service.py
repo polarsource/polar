@@ -448,6 +448,11 @@ class TestCreateOrderFromStripe:
         assert order.subscription is None
 
         enqueue_job_mock.assert_any_call(
+            "order.discord_notification",
+            order_id=order.id,
+        )
+
+        enqueue_job_mock.assert_any_call(
             "benefit.enqueue_benefits_grants",
             task="grant",
             user_id=user.id,

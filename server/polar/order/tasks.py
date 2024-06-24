@@ -1,4 +1,5 @@
 import uuid
+from math import prod
 
 import structlog
 from discord_webhook import AsyncDiscordWebhook, DiscordEmbed
@@ -72,11 +73,13 @@ async def order_discord_notification(
         if order is None:
             raise OrderDoesNotExist(order_id)
 
-        product_org = await organization_service.get(
-            session, order.product.organization_id
-        )
+        product = await product_service.get(session, order.product_id)
+        if not product:
+            raise ProductDoesNotExist(order.product_id)
+
+        product_org = await organization_service.get(session, product.organization_id)
         if not product_org:
-            raise OrganizationDoesNotExist(order.product.organization_id)
+            raise OrganizationDoesNotExist(product.organization_id)
 
         webhook = AsyncDiscordWebhook(
             url=settings.DISCORD_WEBHOOK_URL, content="New order"

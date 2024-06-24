@@ -7,7 +7,7 @@ from typing import Any, Literal, cast, overload
 import stripe as stripe_lib
 from discord_webhook import AsyncDiscordWebhook, DiscordEmbed
 from slack_sdk.webhook import WebhookClient as SlackWebhookClient
-from sqlalchemy import Select, UnaryExpression, and_, asc, desc, select
+from sqlalchemy import Select, UnaryExpression, and_, asc, case, desc, select
 from sqlalchemy.orm import contains_eager, joinedload
 
 from polar.auth.models import (
@@ -192,7 +192,29 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
             if criterion == SearchSortProperty.user:
                 order_by_clauses.append(clause_function(User.username))
             if criterion == SearchSortProperty.status:
-                order_by_clauses.append(clause_function(Subscription.status))
+                order_by_clauses.append(
+                    clause_function(
+                        case(
+                            (Subscription.status == SubscriptionStatus.incomplete, 1),
+                            (
+                                Subscription.status
+                                == SubscriptionStatus.incomplete_expired,
+                                2,
+                            ),
+                            (Subscription.status == SubscriptionStatus.trialing, 3),
+                            (
+                                Subscription.status == SubscriptionStatus.active,
+                                case(
+                                    (Subscription.cancel_at_period_end.is_(False), 4),
+                                    (Subscription.cancel_at_period_end.is_(True), 5),
+                                ),
+                            ),
+                            (Subscription.status == SubscriptionStatus.past_due, 6),
+                            (Subscription.status == SubscriptionStatus.canceled, 7),
+                            (Subscription.status == SubscriptionStatus.unpaid, 8),
+                        )
+                    )
+                )
             if criterion == SearchSortProperty.started_at:
                 order_by_clauses.append(clause_function(Subscription.started_at))
             if criterion == SearchSortProperty.current_period_end:

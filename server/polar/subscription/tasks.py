@@ -1,17 +1,12 @@
 import uuid
 
 import structlog
-from discord_webhook import AsyncDiscordWebhook, DiscordEmbed
 
-from polar.config import settings
 from polar.exceptions import PolarTaskError
-from polar.kit.money import get_cents_in_dollar_string
 from polar.logging import Logger
-from polar.organization.service import organization as organization_service
 from polar.worker import AsyncSessionMaker, JobContext, PolarWorkerContext, task
 
 from ..product.service.product import product as product_service
-from ..product.service.product_price import product_price as product_price_service
 from .service import subscription as subscription_service
 
 log: Logger = structlog.get_logger()

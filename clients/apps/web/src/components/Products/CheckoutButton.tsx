@@ -1,3 +1,5 @@
+'use client'
+
 import { useAuth } from '@/hooks'
 import { useUserSubscriptions } from '@/hooks/queries'
 import { api } from '@/utils/api'

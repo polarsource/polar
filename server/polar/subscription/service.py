@@ -400,9 +400,6 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         )
 
         enqueue_job(
-            "subscription.discord_notification", subscription_id=subscription.id
-        )
-        enqueue_job(
             "subscription.user_webhook_notifications", subscription_id=subscription.id
         )
 

@@ -8,7 +8,6 @@ import Spinner from '@/components/Shared/Spinner'
 import { useCurrentOrgAndRepoFromURL } from '@/hooks/org'
 import { useOrganizationCredits, useUpdateOrganization } from '@/hooks/queries'
 import { api } from '@/utils/api'
-import { getCentsInDollarString } from '@/utils/money'
 import { ArrowTopRightOnSquareIcon } from '@heroicons/react/24/outline'
 import { CreditBalance, Organization } from '@polar-sh/sdk'
 import { redirect } from 'next/navigation'
@@ -24,6 +23,7 @@ import {
   FormLabel,
   FormMessage,
 } from 'polarkit/components/ui/form'
+import { getCentsInDollarString } from 'polarkit/lib/money'
 import { useCallback, useState } from 'react'
 import { useForm, useFormContext } from 'react-hook-form'
 

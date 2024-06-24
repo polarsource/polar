@@ -37,6 +37,7 @@
     "./components/ui/tooltip": "./src/components/ui/tooltip.tsx",
     "./components/ui/toggle": "./src/components/ui/toggle.tsx",
     "./components/ui/toggle-group": "./src/components/ui/toggle-group.tsx",
+    "./lib/money": "./src/lib/money.ts",
     "./package.json": "./package.json"
   },
   "scripts": {

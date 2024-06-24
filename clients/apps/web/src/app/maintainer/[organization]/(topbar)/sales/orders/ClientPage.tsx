@@ -12,7 +12,6 @@ import {
   getAPIParams,
   serializeSearchParams,
 } from '@/utils/datatable'
-import { formatCurrencyAndAmount } from '@/utils/money'
 import {
   Order,
   OrderUser,
@@ -28,6 +27,7 @@ import {
   DataTableColumnDef,
   DataTableColumnHeader,
 } from 'polarkit/components/ui/atoms/datatable'
+import { formatCurrencyAndAmount } from 'polarkit/lib/money'
 import React, { useMemo } from 'react'
 
 interface ClientPageProps {

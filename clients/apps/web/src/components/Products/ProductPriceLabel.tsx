@@ -1,9 +1,9 @@
-import { formatCurrencyAndAmount } from '@/utils/money'
 import {
   ProductPrice,
   ProductPriceRecurringInterval,
   ProductPriceType,
 } from '@polar-sh/sdk'
+import { formatCurrencyAndAmount } from 'polarkit/lib/money'
 import { useMemo } from 'react'
 
 interface ProductPriceLabelProps {

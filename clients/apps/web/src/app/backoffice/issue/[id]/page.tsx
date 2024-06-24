@@ -5,9 +5,9 @@ import {
   useBackofficePledgeRewardTransfer,
   useBackofficeRewards,
 } from '@/hooks/queries'
-import { getCentsInDollarString } from '@/utils/money'
 import { ArrowTopRightOnSquareIcon } from '@heroicons/react/20/solid'
 import Button from 'polarkit/components/ui/atoms/button'
+import { getCentsInDollarString } from 'polarkit/lib/money'
 import { twMerge } from 'tailwind-merge'
 
 export default function Page({ params }: { params: { id: string } }) {

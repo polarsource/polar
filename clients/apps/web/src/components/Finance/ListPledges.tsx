@@ -3,9 +3,9 @@ import EyeIcon from '@/components/Icons/EyeIcon'
 import Icon from '@/components/Icons/Icon'
 import RefundIcon from '@/components/Icons/RefundIcon'
 import { githubIssueLink } from '@/utils/github'
-import { getCentsInDollarString } from '@/utils/money'
 import { dateOrString } from '@/utils/time'
 import { Pledge, PledgeState, PledgeType } from '@polar-sh/sdk'
+import { getCentsInDollarString } from 'polarkit/lib/money'
 
 export type Column = 'ESTIMATED_PAYOUT_DATE' | 'REFUNDED_DATE'
 

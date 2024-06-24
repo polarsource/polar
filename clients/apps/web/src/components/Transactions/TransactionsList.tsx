@@ -3,7 +3,6 @@ import {
   DataTablePaginationState,
   DataTableSortingState,
 } from '@/utils/datatable'
-import { formatCurrencyAndAmount } from '@/utils/money'
 import {
   KeyboardArrowDownOutlined,
   KeyboardArrowRightOutlined,
@@ -23,6 +22,7 @@ import {
   DataTableColumnHeader,
   ReactQueryLoading,
 } from 'polarkit/components/ui/atoms/datatable'
+import { formatCurrencyAndAmount } from 'polarkit/lib/money'
 import { useMemo } from 'react'
 import ProductPill from '../Products/ProductPill'
 

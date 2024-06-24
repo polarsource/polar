@@ -1,7 +1,7 @@
-import { getCentsInDollarString } from '@/utils/money'
 import { AttachMoneyOutlined } from '@mui/icons-material'
 import { ChangeEvent, FocusEvent } from 'react'
 import { twMerge } from 'tailwind-merge'
+import { getCentsInDollarString } from '../../../lib/money'
 import Input from './Input'
 
 interface Props {

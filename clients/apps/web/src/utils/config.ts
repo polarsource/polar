@@ -23,30 +23,30 @@ const STRIPE_COUNTRIES =
 
 let defaults = {
   ENVIRONMENT:
-    process?.env?.VERCEL_ENV ||
-    process?.env?.NEXT_PUBLIC_VERCEL_ENV ||
+    process.env.VERCEL_ENV ||
+    process.env.NEXT_PUBLIC_VERCEL_ENV ||
     'development',
   FRONTEND_BASE_URL:
-    process?.env?.NEXT_PUBLIC_FRONTEND_BASE_URL || 'http://127.0.0.1:3000',
-  BASE_URL: process?.env?.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000',
-  LOGIN_PATH: process?.env?.NEXT_PUBLIC_LOGIN_PATH || '/login',
+    process.env.NEXT_PUBLIC_FRONTEND_BASE_URL || 'http://127.0.0.1:3000',
+  BASE_URL: process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000',
+  LOGIN_PATH: process.env.NEXT_PUBLIC_LOGIN_PATH || '/login',
   GITHUB_APP_NAMESPACE:
-    process?.env?.NEXT_PUBLIC_GITHUB_APP_NAMESPACE || 'polar-sh',
+    process.env.NEXT_PUBLIC_GITHUB_APP_NAMESPACE || 'polar-sh',
   LOCALSTORAGE_PERSIST_KEY:
-    process?.env?.NEXT_PUBLIC_LOCALSTORAGE_PERSIST_KEY || 'polar',
+    process.env.NEXT_PUBLIC_LOCALSTORAGE_PERSIST_KEY || 'polar',
   LOCALSTORAGE_PERSIST_VERSION: stringToNumber(
-    process?.env?.NEXT_PUBLIC_LOCALSTORAGE_PERSIST_VERSION,
+    process.env.NEXT_PUBLIC_LOCALSTORAGE_PERSIST_VERSION,
     6,
   ),
   GITHUB_BADGE_EMBED_DEFAULT_LABEL:
-    process?.env?.NEXT_PUBLIC_GITHUB_BADGE_EMBED_DEFAULT_LABEL || 'Fund',
-  SENTRY_DSN: process?.env?.NEXT_PUBLIC_SENTRY_DSN || undefined,
-  POSTHOG_TOKEN: process?.env?.NEXT_PUBLIC_POSTHOG_TOKEN || '',
-  POSTHOG_HOST: process?.env?.NEXT_PUBLIC_POSTHOG_HOST || undefined,
+    process.env.NEXT_PUBLIC_GITHUB_BADGE_EMBED_DEFAULT_LABEL || 'Fund',
+  SENTRY_DSN: process.env.NEXT_PUBLIC_SENTRY_DSN || undefined,
+  POSTHOG_TOKEN: process.env.NEXT_PUBLIC_POSTHOG_TOKEN || '',
+  POSTHOG_HOST: process.env.NEXT_PUBLIC_POSTHOG_HOST || undefined,
   STRIPE_COUNTRIES_WHITELIST_CSV:
-    process?.env?.NEXT_PUBLIC_STRIPE_COUNTRIES_WHITELIST || STRIPE_COUNTRIES,
+    process.env.NEXT_PUBLIC_STRIPE_COUNTRIES_WHITELIST || STRIPE_COUNTRIES,
   APPLE_DOMAIN_ASSOCIATION:
-    process?.env?.NEXT_PUBLIC_APPLE_DOMAIN_ASSOCIATION ||
+    process.env.NEXT_PUBLIC_APPLE_DOMAIN_ASSOCIATION ||
     '<Replace with Apple Pay Domain Association from Stripe>',
 }
 

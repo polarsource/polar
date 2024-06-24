@@ -1,5 +1,5 @@
-import { getCentsInDollarString } from '@/utils/money'
 import { DonationStripePaymentIntentMutationResponse } from '@polar-sh/sdk'
+import { getCentsInDollarString } from 'polarkit/lib/money'
 
 const Subtotal = ({
   paymentIntent,

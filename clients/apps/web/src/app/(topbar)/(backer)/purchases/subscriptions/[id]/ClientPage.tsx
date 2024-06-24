@@ -13,7 +13,6 @@ import {
   useUserOrderInvoice,
   useUserOrders,
 } from '@/hooks/queries'
-import { formatCurrencyAndAmount } from '@/utils/money'
 import { organizationPageLink } from '@/utils/nav'
 import { ArrowBackOutlined, ReceiptOutlined } from '@mui/icons-material'
 import { UserBenefit, UserOrder, UserSubscription } from '@polar-sh/sdk'
@@ -23,6 +22,7 @@ import { FormattedDateTime } from 'polarkit/components/ui/atoms'
 import Button from 'polarkit/components/ui/atoms/button'
 import { List, ListItem } from 'polarkit/components/ui/atoms/list'
 import ShadowBox from 'polarkit/components/ui/atoms/shadowbox'
+import { formatCurrencyAndAmount } from 'polarkit/lib/money'
 import { useCallback, useState } from 'react'
 
 const ClientPage = ({ subscription }: { subscription: UserSubscription }) => {

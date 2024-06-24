@@ -1,5 +1,5 @@
-import { getCentsInDollarString } from '@/utils/money'
 import { Funding } from '@polar-sh/sdk'
+import { getCentsInDollarString } from 'polarkit/lib/money'
 
 const IssueBadge = ({
   showAmountRaised = false,

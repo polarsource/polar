@@ -1,7 +1,7 @@
 import { Interval, Metric, MetricType } from '@polar-sh/sdk'
 import format from 'date-fns/format'
 import parse from 'date-fns/parse'
-import { formatCurrencyAndAmount } from './money'
+import { formatCurrencyAndAmount } from 'polarkit/lib/money'
 
 export const toISODate = (date: Date) => format(date, 'yyyy-MM-dd')
 

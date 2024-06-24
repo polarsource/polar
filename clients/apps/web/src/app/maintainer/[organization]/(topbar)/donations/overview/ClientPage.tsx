@@ -8,7 +8,6 @@ import {
   DataTablePaginationState,
   DataTableSortingState,
 } from '@/utils/datatable'
-import { getCentsInDollarString } from '@/utils/money'
 import { VolunteerActivismOutlined } from '@mui/icons-material'
 import { Donation, Organization } from '@polar-sh/sdk'
 import { useRouter } from 'next/navigation'
@@ -20,6 +19,7 @@ import {
   CardContent,
   CardHeader,
 } from 'polarkit/components/ui/atoms/card'
+import { getCentsInDollarString } from 'polarkit/lib/money'
 import { useState } from 'react'
 import DonorsTable from './DonorsTable'
 

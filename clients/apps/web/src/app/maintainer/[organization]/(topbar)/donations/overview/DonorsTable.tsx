@@ -8,7 +8,6 @@ import {
   serializeSearchParams,
 } from '@/utils/datatable'
 import { githubIssueLink } from '@/utils/github'
-import { getCentsInDollarString } from '@/utils/money'
 import { ArrowUpRightIcon } from '@heroicons/react/24/outline'
 import { CurrencyAmount, Donation, Issue, Organization } from '@polar-sh/sdk'
 import { useRouter } from 'next/navigation'
@@ -19,6 +18,7 @@ import {
   DataTableColumnDef,
   DataTableColumnHeader,
 } from 'polarkit/components/ui/atoms/datatable'
+import { getCentsInDollarString } from 'polarkit/lib/money'
 import React from 'react'
 
 interface DonorsTableProps {

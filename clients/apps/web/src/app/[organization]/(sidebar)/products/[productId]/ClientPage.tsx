@@ -9,9 +9,16 @@ import CheckoutButton from '@/components/Products/CheckoutButton'
 import ProductPrices from '@/components/Products/ProductPrices'
 import { Slideshow } from '@/components/Products/Slideshow'
 import { Organization, Product } from '@polar-sh/sdk'
+import { formatCurrencyAndAmount } from '@polarkit/lib/money'
 import Markdown from 'markdown-to-jsx'
 import { List, ListItem } from 'polarkit/components/ui/atoms/list'
 import ShadowBox from 'polarkit/components/ui/atoms/shadowbox'
+
+const percentageFormatter = new Intl.NumberFormat('en-US', {
+  style: 'percent',
+  minimumFractionDigits: 0,
+  maximumFractionDigits: 0,
+})
 
 export default function ClientPage({
   organization,
@@ -20,6 +27,22 @@ export default function ClientPage({
   organization: Organization
   product: Product
 }) {
+  const isRecurring = product.is_recurring
+  const monthlyPrice = product.prices.find(
+    (price) =>
+      price.type === 'recurring' && price.recurring_interval === 'month',
+  )
+  const yearlyPrice = product.prices.find(
+    (price) =>
+      price.type === 'recurring' && price.recurring_interval === 'year',
+  )
+
+  const yearlyDiscount =
+    yearlyPrice &&
+    monthlyPrice &&
+    (monthlyPrice.price_amount * 12 - yearlyPrice.price_amount) /
+      (monthlyPrice.price_amount * 12)
+
   return (
     <div className="flex flex-col items-start gap-8 pb-8 md:flex-row md:gap-12 md:pb-0">
       <div className="flex flex-col gap-8 md:w-2/3">
@@ -88,15 +111,53 @@ export default function ClientPage({
           ) : (
             <></>
           )}
-          <div className="flex flex-col gap-2">
-            <CheckoutButton
-              product={product}
-              organization={organization}
-              checkoutPath="/api/checkout"
-              variant="default"
-            >
-              Buy Now
-            </CheckoutButton>
+          <div className="flex flex-col gap-4">
+            {isRecurring ? (
+              <>
+                {monthlyPrice && (
+                  <CheckoutButton
+                    product={product}
+                    recurringInterval="month"
+                    organization={organization}
+                    checkoutPath="/api/checkout"
+                    variant="default"
+                  >
+                    {yearlyPrice
+                      ? `Subscribe for ${formatCurrencyAndAmount(monthlyPrice.price_amount, monthlyPrice.price_currency, 0)} per month`
+                      : 'Subscribe now'}
+                  </CheckoutButton>
+                )}
+                {yearlyPrice && (
+                  <div className="relative">
+                    <CheckoutButton
+                      product={product}
+                      recurringInterval="year"
+                      organization={organization}
+                      checkoutPath="/api/checkout"
+                      variant="default"
+                    >
+                      {monthlyPrice
+                        ? `Subscribe for ${formatCurrencyAndAmount(yearlyPrice.price_amount, yearlyPrice.price_currency, 0)} per year`
+                        : 'Subscribe now'}
+                    </CheckoutButton>
+                    {yearlyDiscount && yearlyDiscount > 0 && (
+                      <div className="text-xxs absolute -right-1 -top-2 rounded-full bg-green-100 bg-gradient-to-l px-2 py-0.5 text-green-400 dark:bg-green-950 dark:text-green-300">
+                        Save {percentageFormatter.format(yearlyDiscount)}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </>
+            ) : (
+              <CheckoutButton
+                product={product}
+                organization={organization}
+                checkoutPath="/api/checkout"
+                variant="default"
+              >
+                Buy Now
+              </CheckoutButton>
+            )}
           </div>
         </ShadowBox>
       </div>

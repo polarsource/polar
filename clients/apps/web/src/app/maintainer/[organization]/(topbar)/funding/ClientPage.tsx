@@ -65,47 +65,46 @@ export default function ClientPage() {
           <span className="text-6xl">
             <HowToVoteOutlined fontSize="inherit" />
           </span>
-          <h2 className="text-lg">
-            {org.name} hasn&apos;t funded any issues... yet!
-          </h2>
+          <h2 className="text-lg">{org.name} has not funded any issues yet</h2>
         </div>
       ) : null}
 
       {havePledges ? (
-        <div>
-          <h2 className="text-2xl font-medium">Funding</h2>
+        <div className="flex flex-col gap-y-6">
+          <div className="flex flex-col gap-y-4">
+            {openIssues.length > 0 ? (
+              <h2 className="mt-2 text-lg">Open issues</h2>
+            ) : null}
 
-          {openIssues.length > 0 ? (
-            <h2 className="mt-2 text-lg">Open issues</h2>
-          ) : null}
+            {Object.values(groupedOpenIssues).map((ps) => (
+              <IssueListItem
+                key={ps[0].issue.id}
+                issue={ps[0].issue}
+                references={[]}
+                pledges={ps}
+                canAddRemovePolarLabel={false}
+                showLogo={true}
+                showPledgeAction={false}
+              />
+            ))}
+          </div>
+          <div className="flex flex-col gap-y-4">
+            {closedIssues.length > 0 ? (
+              <h2 className="mt-2 text-lg">Closed issues</h2>
+            ) : null}
 
-          {Object.values(groupedOpenIssues).map((ps) => (
-            <IssueListItem
-              key={ps[0].issue.id}
-              issue={ps[0].issue}
-              references={[]}
-              pledges={ps}
-              canAddRemovePolarLabel={false}
-              showLogo={true}
-              showPledgeAction={false}
-            />
-          ))}
-
-          {closedIssues.length > 0 ? (
-            <h2 className="mt-2 text-lg">Closed issues</h2>
-          ) : null}
-
-          {Object.values(groupedClosedIssues).map((ps) => (
-            <IssueListItem
-              key={ps[0].issue.id}
-              issue={ps[0].issue}
-              references={[]}
-              pledges={ps}
-              canAddRemovePolarLabel={false}
-              showLogo={true}
-              showPledgeAction={false}
-            />
-          ))}
+            {Object.values(groupedClosedIssues).map((ps) => (
+              <IssueListItem
+                key={ps[0].issue.id}
+                issue={ps[0].issue}
+                references={[]}
+                pledges={ps}
+                canAddRemovePolarLabel={false}
+                showLogo={true}
+                showPledgeAction={false}
+              />
+            ))}
+          </div>
         </div>
       ) : null}
     </DashboardBody>

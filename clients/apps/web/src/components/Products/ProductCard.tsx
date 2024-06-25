@@ -28,7 +28,7 @@ export const ProductCard = ({
     showOrganization,
   )
   return (
-    <div className="dark:border-polar-700 dark:hover:bg-polar-900 dark:bg-polar-950 hover:bg-gray-75 flex h-full w-full flex-col gap-6 overflow-hidden rounded-3xl border border-gray-100 bg-gray-50 transition-colors">
+    <div className="dark:border-polar-700 dark:hover:bg-polar-900 dark:from-polar-950 dark:to-polar-950 hover:bg-gray-75 flex h-full w-full flex-col gap-6 overflow-hidden rounded-3xl border border-gray-100 bg-gradient-to-tr from-white to-blue-50/50 transition-colors">
       {isFeatureEnabled('products') && (
         <>
           {product.medias.length > 0 ? (
@@ -41,7 +41,7 @@ export const ProductCard = ({
               src={product.medias[0].public_url}
             />
           ) : (
-            <div className="dark:border-polar-700 flex aspect-square w-full flex-col items-center justify-center border-b border-gray-200 bg-gray-50 dark:bg-transparent">
+            <div className="dark:border-polar-700 flex aspect-square w-full flex-col items-center justify-center border-b border-gray-200">
               <div className="dark:bg-polar-900 dark:border-polar-800 flex aspect-square w-24 flex-col items-center justify-center rounded-full bg-blue-50 text-4xl text-blue-500 dark:border dark:text-white">
                 {product.is_recurring ? (
                   <BoltOutlined fontSize="inherit" />

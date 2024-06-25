@@ -1,10 +1,12 @@
 import { UserSignupType } from '@polar-sh/sdk'
 import GithubLoginButton from '../Auth/GithubLoginButton'
+import { HeroGraphic } from './Hero/HeroGraphic'
 import { Section } from './Section'
 
 export const LastPitch = () => {
   return (
-    <Section className="flex flex-col items-center justify-center gap-y-16">
+    <Section className="flex flex-col items-center justify-center gap-y-32">
+      <HeroGraphic />
       <div className="flex flex-col items-center gap-y-12 text-center">
         <div className="flex flex-col items-center gap-y-4">
           <h1 className="text-center text-4xl">

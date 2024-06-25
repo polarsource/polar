@@ -23,7 +23,7 @@ export const HeroGraphic = () => {
 
   return (
     <div
-      className="relative h-full w-1/3"
+      className="relative hidden h-full w-1/3 md:block"
       ref={(el) => {
         if (el) {
           const boundingBox = el.getBoundingClientRect()
@@ -129,7 +129,7 @@ const Box = ({ className, icon, title, transition }: BoxProps) => {
     >
       <motion.div
         initial={{ opacity: 0.2, y: 15, scale: 1 }}
-        animate={{
+        whileInView={{
           opacity: 1,
           y: 0,
           scale: 0.8,
@@ -144,7 +144,7 @@ const Box = ({ className, icon, title, transition }: BoxProps) => {
       <motion.span
         className="dark:text-polar-500 text-gray-500"
         initial={{ opacity: 0 }}
-        animate={{
+        whileInView={{
           opacity: 1,
         }}
         transition={t}
@@ -166,7 +166,7 @@ const Path = ({ start, end, transition, vertical }: PathProps) => {
   return (
     <motion.path
       initial={{ pathLength: 0 }}
-      animate={{ pathLength: 1 }}
+      whileInView={{ pathLength: 1 }}
       transition={{
         ease: [0.75, 0, 0.25, 1],
         duration: 2,

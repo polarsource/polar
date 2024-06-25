@@ -1,5 +1,5 @@
 import { Community } from '@/components/Landing/Community'
-import { Hero } from '@/components/Landing/Hero'
+import { Hero } from '@/components/Landing/Hero/Hero'
 import { LastPitch } from '@/components/Landing/LastPitch'
 import { MerchantOfRecord } from '@/components/Landing/MOR'
 import { Monetization } from '@/components/Landing/Monetization'

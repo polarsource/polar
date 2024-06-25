@@ -5,7 +5,6 @@ export const MOCKED_PRODUCTS: Partial<Product>[] = [
     name: 'Follower',
     type: 'free',
     description: 'A simple way to follow my projects.',
-
     benefits: [
       {
         id: '123',
@@ -17,12 +16,13 @@ export const MOCKED_PRODUCTS: Partial<Product>[] = [
         organization_id: '123',
       },
     ],
+    created_at: new Date().toDateString(),
   },
   {
     name: 'Supporter',
     type: 'individual',
     description:
-      'Access to my weekly newsletter, my private GitHub repository & invite to my Discord server.',
+      'Access to software releases, my private GitHub repository & support in my Discord server.',
     prices: [
       {
         id: '123',
@@ -46,7 +46,7 @@ export const MOCKED_PRODUCTS: Partial<Product>[] = [
       },
       {
         id: '456',
-        description: 'Access to GitHub repository',
+        description: 'Private GitHub repository',
         type: 'github_repository',
         created_at: new Date().toDateString(),
         selectable: false,
@@ -63,12 +63,13 @@ export const MOCKED_PRODUCTS: Partial<Product>[] = [
         organization_id: '123',
       },
     ],
+    created_at: new Date().toDateString(),
   },
   {
     name: 'Enterprise',
     type: 'business',
     description:
-      'Exclusive support, exposure in my weekly newsletter & premium role on Discord.',
+      'Exclusive support, exposure in weekly newsletter & premium role on Discord.',
     prices: [
       {
         id: '123',
@@ -83,7 +84,7 @@ export const MOCKED_PRODUCTS: Partial<Product>[] = [
     benefits: [
       {
         id: '123',
-        description: 'Your logotype in Newsletter',
+        description: 'Logotype in Newsletter',
         type: 'articles',
         created_at: new Date().toDateString(),
         selectable: false,
@@ -92,7 +93,7 @@ export const MOCKED_PRODUCTS: Partial<Product>[] = [
       },
       {
         id: '456',
-        description: 'Access to GitHub repository',
+        description: 'Private GitHub repository',
         type: 'github_repository',
         created_at: new Date().toDateString(),
         selectable: false,
@@ -107,6 +108,71 @@ export const MOCKED_PRODUCTS: Partial<Product>[] = [
         selectable: false,
         deletable: false,
         organization_id: '123',
+      },
+    ],
+    created_at: new Date().toDateString(),
+  },
+  {
+    id: '123456',
+    name: 'Lifetime Supporter',
+    description:
+      'Exclusive support, access to private repository & premium role on Discord.',
+    benefits: [
+      {
+        id: '123',
+        description: 'Logotype in Newsletter',
+        type: 'articles',
+        created_at: new Date().toDateString(),
+        selectable: false,
+        deletable: false,
+        organization_id: '123',
+      },
+      {
+        id: '456',
+        description: 'Private GitHub repository',
+        type: 'github_repository',
+        created_at: new Date().toDateString(),
+        selectable: false,
+        deletable: false,
+        organization_id: '123',
+      },
+      {
+        id: '789',
+        description: 'Premium Role on Discord',
+        type: 'discord',
+        created_at: new Date().toDateString(),
+        selectable: false,
+        deletable: false,
+        organization_id: '123',
+      },
+    ],
+    created_at: new Date().toDateString(),
+    is_recurring: false,
+    is_archived: false,
+    organization_id: '123',
+    medias: [
+      /* {
+        id: '123',
+        created_at: new Date().toDateString(),
+        public_url: '/assets/brand/polar_login.png',
+        is_uploaded: false,
+        service: 'product_media',
+        mime_type: 'image/png',
+        organization_id: '123',
+        name: 'blend.png',
+        path: '/assets/brand/polar_login.png',
+        size: 123,
+        size_readable: '123 B',
+      }, */
+    ],
+    prices: [
+      {
+        id: '123',
+        created_at: new Date().toDateString(),
+        price_amount: 99900,
+        price_currency: 'usd',
+        type: 'one_time',
+        is_archived: false,
       },
     ],
   },

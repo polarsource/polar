@@ -2,9 +2,11 @@ import GithubLoginButton from '@/components/Auth/GithubLoginButton'
 import { FeatureSection } from '@/components/Landing/FeatureSection'
 import { PageContent } from '@/components/Landing/LandingPage'
 import { Section } from '@/components/Landing/Section'
+import { Circles } from '@/components/Landing/molecules/Circles'
 import { MOCKED_PRODUCTS } from '@/components/Landing/utils'
+import { ProductCard } from '@/components/Products/ProductCard'
 import SubscriptionTierCard from '@/components/Subscriptions/SubscriptionTierCard'
-import { UserSignupType } from '@polar-sh/sdk'
+import { Product, UserSignupType } from '@polar-sh/sdk'
 import Link from 'next/link'
 import { Separator } from 'polarkit/components/ui/separator'
 
@@ -15,8 +17,10 @@ const PAGE_DESCRIPTION =
 export default function Page() {
   return (
     <>
-      <Section className="flex flex-col gap-16 md:flex-row md:justify-between md:py-24">
-        <div className="flex flex-col gap-y-8 md:w-1/2">
+      <Section className="relative flex flex-col gap-16 md:flex-row md:justify-between md:py-24">
+        <Circles className="absolute inset-0 top-1/2 -z-10 block -translate-y-1/2 text-black dark:hidden" />
+        <Circles className="absolute inset-0 top-1/2 -z-10 hidden -translate-y-1/2 text-white dark:block" />
+        <div className="relative flex flex-col gap-y-8 md:w-1/2">
           <h1 className="text-4xl md:text-5xl md:leading-snug">{PAGE_TITLE}</h1>
           <p className="text-lg md:text-xl md:leading-normal">
             {PAGE_DESCRIPTION}
@@ -50,14 +54,13 @@ export default function Page() {
             </p>
           </div>
         </div>
-        <div className="grid grid-cols-1 gap-4 md:w-1/2 md:grid-cols-2">
+        <div className="relative grid grid-cols-1 gap-4 md:w-1/2 md:grid-cols-2">
+          <div className="shadow-3xl overflow-hidden rounded-3xl">
+            <ProductCard product={MOCKED_PRODUCTS[3] as Product} />
+          </div>
           <SubscriptionTierCard
-            className="shadow-sm"
+            className="dark:bg-polar-950 shadow-3xl w-full max-w-[280px]"
             subscriptionTier={MOCKED_PRODUCTS[1]}
-          />
-          <SubscriptionTierCard
-            className="shadow-sm"
-            subscriptionTier={MOCKED_PRODUCTS[2]}
           />
         </div>
       </Section>

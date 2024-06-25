@@ -2,6 +2,7 @@ import GithubLoginButton from '@/components/Auth/GithubLoginButton'
 import { FeatureSection } from '@/components/Landing/FeatureSection'
 import { PageContent } from '@/components/Landing/LandingPage'
 import { Section } from '@/components/Landing/Section'
+import { Circles } from '@/components/Landing/molecules/Circles'
 import { UserSignupType } from '@polar-sh/sdk'
 import Link from 'next/link'
 import { Separator } from 'polarkit/components/ui/separator'
@@ -30,8 +31,10 @@ const steps = [
 export default function Page() {
   return (
     <>
-      <Section className="flex flex-col gap-16 md:flex-row md:justify-between md:gap-32 md:py-24">
-        <div className="flex flex-col gap-y-8 md:w-1/2">
+      <Section className="relative flex flex-col gap-16 md:flex-row md:justify-between md:gap-32 md:py-24">
+        <Circles className="absolute inset-0 top-1/2 -z-10 block -translate-y-1/2 text-black dark:hidden" />
+        <Circles className="absolute inset-0 top-1/2 -z-10 hidden -translate-y-1/2 text-white dark:block" />
+        <div className="relative flex flex-col gap-y-8 md:w-1/2">
           <h1 className="text-4xl md:text-5xl md:leading-snug">{PAGE_TITLE}</h1>
           <p className="text-lg md:text-xl md:leading-normal">
             {PAGE_DESCRIPTION}
@@ -65,7 +68,7 @@ export default function Page() {
             </p>
           </div>
         </div>
-        <picture className="md:w-1/2">
+        <picture className="relative md:w-1/2">
           <source
             media="(prefers-color-scheme: dark)"
             srcSet={`/assets/landing/fund_dark.svg`}

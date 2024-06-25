@@ -28,21 +28,21 @@ export const ProductCard = ({
     showOrganization,
   )
   return (
-    <div className="dark:border-polar-700 dark:hover:bg-polar-900 hover:bg-gray-75 flex h-full w-full flex-col gap-6 overflow-hidden rounded-3xl border border-gray-100 bg-gray-50 transition-colors dark:bg-transparent">
+    <div className="dark:border-polar-700 dark:hover:bg-polar-900 dark:bg-polar-950 hover:bg-gray-75 flex h-full w-full flex-col gap-6 overflow-hidden rounded-3xl border border-gray-100 bg-gray-50 transition-colors">
       {isFeatureEnabled('products') && (
         <>
           {product.medias.length > 0 ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
-              className="aspect-square w-full bg-gray-100 object-cover"
+              className="dark:bg-polar-950 aspect-square w-full bg-gray-100 object-cover"
               alt={product.medias[0].name}
               width={600}
               height={600}
               src={product.medias[0].public_url}
             />
           ) : (
-            <div className="dark:border-polar-700 flex aspect-square w-full flex-col items-center justify-center border-b border-gray-100 bg-white dark:bg-transparent">
-              <div className="dark:bg-polar-800 flex aspect-square w-24 flex-col items-center justify-center rounded-full bg-blue-50 text-4xl text-blue-500 dark:text-white">
+            <div className="dark:border-polar-700 flex aspect-square w-full flex-col items-center justify-center border-b border-gray-200 bg-gray-50 dark:bg-transparent">
+              <div className="dark:bg-polar-900 dark:border-polar-800 flex aspect-square w-24 flex-col items-center justify-center rounded-full bg-blue-50 text-4xl text-blue-500 dark:border dark:text-white">
                 {product.is_recurring ? (
                   <BoltOutlined fontSize="inherit" />
                 ) : (

@@ -85,14 +85,16 @@ export const CreatorCard = ({
       </Link>
       <CardFooter className="flex flex-row items-center justify-between gap-x-4 p-6">
         <div className="flex w-full flex-row items-center gap-x-4">
-          <Link href={organizationPageLink(organization, 'subscriptions')}>
-            <Button size="sm">Subscribe</Button>
-          </Link>
+          {organization.feature_settings?.subscriptions_enabled && (
+            <Link href={organizationPageLink(organization, 'subscriptions')}>
+              <Button size="sm">Subscribe</Button>
+            </Link>
+          )}
           <Link
             href={`https://github.com/${organization.name}`}
             target="_blank"
           >
-            <Button size="icon" variant="secondary">
+            <Button className="aspect-square" size="icon" variant="secondary">
               <GitHub fontSize="inherit" />
             </Button>
           </Link>

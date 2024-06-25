@@ -6,13 +6,13 @@ from typing import TypedDict
 import structlog
 from fastapi import FastAPI
 from fastapi.routing import APIRoute
-from starlette.middleware.cors import CORSMiddleware
 
 from polar import receivers, worker  # noqa
 from polar.api import router
 from polar.config import settings
 from polar.exception_handlers import add_exception_handlers
 from polar.health.endpoints import router as health_router
+from polar.kit.cors import CORSConfig, CORSMatcherMiddleware, Scope
 from polar.kit.db.postgres import (
     AsyncEngine,
     AsyncSessionMaker,
@@ -48,16 +48,34 @@ log: Logger = structlog.get_logger()
 
 
 def configure_cors(app: FastAPI) -> None:
-    if not settings.CORS_ORIGINS:
-        return
+    configs: list[CORSConfig] = []
 
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=[str(origin) for origin in settings.CORS_ORIGINS],
-        allow_credentials=True,
+    # Polar frontend CORS configuration
+    if settings.CORS_ORIGINS:
+
+        def polar_frontend_matcher(origin: str, scope: Scope) -> bool:
+            return origin in settings.CORS_ORIGINS
+
+        polar_frontend_config = CORSConfig(
+            polar_frontend_matcher,
+            allow_origins=[str(origin) for origin in settings.CORS_ORIGINS],
+            allow_credentials=True,  # Cookies are allowed, but only there!
+            allow_methods=["*"],
+            allow_headers=["*"],
+        )
+        configs.append(polar_frontend_config)
+
+    # External API calls CORS configuration
+    api_config = CORSConfig(
+        lambda origin, scope: True,
+        allow_origins=["*"],
+        allow_credentials=False,  # No cookies allowed
         allow_methods=["*"],
-        allow_headers=["*"],
+        allow_headers=["Authorization"],  # Allow Authorization header to pass tokens
     )
+    configs.append(api_config)
+
+    app.add_middleware(CORSMatcherMiddleware, configs=configs)
 
 
 def generate_unique_openapi_id(route: APIRoute) -> str:

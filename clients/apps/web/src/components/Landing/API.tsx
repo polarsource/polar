@@ -2,11 +2,19 @@ import { UserSignupType } from '@polar-sh/sdk'
 import Link from 'next/link'
 import Button from 'polarkit/components/ui/atoms/button'
 import GithubLoginButton from '../Auth/GithubLoginButton'
+import { Section } from './Section'
 import { APIFirst } from './molecules/APIFirst'
+import { Circles } from './molecules/Circles'
 
 export const API = () => {
   return (
-    <div className="flex flex-col items-center justify-center gap-y-16">
+    <Section
+      id="integrations"
+      className="flex flex-col items-center justify-center gap-y-24"
+      wrapperClassName="overflow-hidden"
+    >
+      <Circles className="absolute inset-0 top-1/2 -z-10 hidden -translate-y-1/2 text-white dark:block" />
+      <Circles className="absolute inset-0 top-1/2 -z-10 block -translate-y-1/2 text-black dark:hidden" />
       <APIFirst />
       <div className="hidden flex-col items-center gap-y-12 text-center md:flex">
         <h1 className="text-5xl leading-snug">
@@ -30,6 +38,6 @@ export const API = () => {
           </Link>
         </div>
       </div>
-    </div>
+    </Section>
   )
 }

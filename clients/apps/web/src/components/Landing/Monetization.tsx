@@ -108,7 +108,7 @@ const Benefits = () => {
 export const Monetization = () => {
   return (
     <>
-      <div className="flex flex-col gap-y-24">
+      <div className="flex flex-col gap-y-24 md:gap-y-32">
         <div className="flex flex-col gap-y-4">
           <h2 className="text-4xl leading-snug md:text-5xl">
             From first donation to IPO

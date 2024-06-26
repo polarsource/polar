@@ -19,6 +19,17 @@ from polar.models.organization import Organization
 from polar.models.user import User
 
 
+class ArticleByline(StrEnum):
+    user = "user"
+    organization = "organization"
+
+
+class ArticleVisibility(StrEnum):
+    public = "public"
+    hidden = "hidden"  # visible if you have the link
+    private = "private"  # only visible to org members
+
+
 class Article(RecordModel):
     __tablename__ = "articles"
 
@@ -31,21 +42,12 @@ class Article(RecordModel):
         TIMESTAMP(timezone=True), nullable=True, default=None
     )
 
-    class Byline(StrEnum):
-        user = "user"
-        organization = "organization"
-
-    byline: Mapped[Byline] = mapped_column(
-        StringEnum(Byline), nullable=False, default=Byline.user
+    byline: Mapped[ArticleByline] = mapped_column(
+        StringEnum(ArticleByline), nullable=False, default=ArticleByline.user
     )
 
-    class Visibility(StrEnum):
-        public = "public"
-        hidden = "hidden"  # visible if you have the link
-        private = "private"  # only visible to org members
-
-    visibility: Mapped[Visibility] = mapped_column(
-        StringEnum(Visibility), nullable=False, default=Visibility.private
+    visibility: Mapped[ArticleVisibility] = mapped_column(
+        StringEnum(ArticleVisibility), nullable=False, default=ArticleVisibility.private
     )
 
     user_id: Mapped[UUID | None] = mapped_column(

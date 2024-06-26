@@ -18,6 +18,7 @@ from polar.models import (
     User,
     UserOrganization,
 )
+from polar.models.article import ArticleVisibility
 from polar.postgres import AsyncSession
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
@@ -33,7 +34,7 @@ async def create_article(
     *,
     user: User,
     organization: Organization,
-    visibility: Article.Visibility,
+    visibility: ArticleVisibility,
     paid_subscribers_only: bool,
     published_at: datetime | None = None,
 ) -> Article:
@@ -79,7 +80,7 @@ async def article_public_free_published(
         save_fixture,
         user=user,
         organization=organization,
-        visibility=Article.Visibility.public,
+        visibility=ArticleVisibility.public,
         paid_subscribers_only=False,
         published_at=utc_now(),
     )
@@ -93,7 +94,7 @@ async def article_public_paid_published(
         save_fixture,
         user=user,
         organization=organization,
-        visibility=Article.Visibility.public,
+        visibility=ArticleVisibility.public,
         paid_subscribers_only=True,
         published_at=utc_now(),
     )
@@ -107,7 +108,7 @@ async def article_hidden_free_published(
         save_fixture,
         user=user,
         organization=organization,
-        visibility=Article.Visibility.hidden,
+        visibility=ArticleVisibility.hidden,
         paid_subscribers_only=False,
         published_at=utc_now(),
     )
@@ -121,7 +122,7 @@ async def article_hidden_paid_published(
         save_fixture,
         user=user,
         organization=organization,
-        visibility=Article.Visibility.hidden,
+        visibility=ArticleVisibility.hidden,
         paid_subscribers_only=True,
         published_at=utc_now(),
     )
@@ -135,7 +136,7 @@ async def article_private_published(
         save_fixture,
         user=user,
         organization=organization,
-        visibility=Article.Visibility.private,
+        visibility=ArticleVisibility.private,
         paid_subscribers_only=False,
         published_at=utc_now(),
     )
@@ -149,7 +150,7 @@ async def article_unpublished(
         save_fixture,
         user=user,
         organization=organization,
-        visibility=Article.Visibility.public,
+        visibility=ArticleVisibility.public,
         paid_subscribers_only=False,
         published_at=None,
     )

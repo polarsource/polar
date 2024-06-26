@@ -6,13 +6,14 @@ from typing import Self
 from pydantic import UUID4, Field, FutureDatetime, HttpUrl, model_validator
 
 from polar.kit.schemas import EmailStrDNS, Schema
-from polar.models.article import Article as ArticleModel
+from polar.models import Article as ArticleModel
+from polar.models.article import ArticleByline, ArticleVisibility
 from polar.organization.schemas import Organization
 
 paywall_regex = r"<Paywall>((.|\n)*?)<\/Paywall>"
 
 
-class Byline(Schema):
+class BylineProfile(Schema):
     name: str
     avatar_url: str | None = None
 
@@ -22,8 +23,8 @@ class Article(Schema):
     slug: str
     title: str
     body: str
-    byline: Byline
-    visibility: ArticleModel.Visibility
+    byline: BylineProfile
+    visibility: ArticleVisibility
 
     user_id: UUID4 | None = None
     organization_id: UUID4
@@ -107,21 +108,16 @@ class Article(Schema):
     def from_db(
         cls, i: ArticleModel, include_admin_fields: bool, is_paid_subscriber: bool
     ) -> Self:
-        byline: Byline | None = None
-
-        if i.byline == i.Byline.organization:
-            byline = Byline(
-                name=i.organization.name,
-                avatar_url=i.organization.avatar_url,
-            )
-        if i.byline == i.Byline.user and i.user:
-            byline = Byline(
+        if i.byline == ArticleByline.user and i.user:
+            byline = BylineProfile(
                 name=i.user.public_name,
                 avatar_url=i.user.avatar_url,
             )
-
-        if not byline:
-            raise ValueError("article has no byline")
+        else:
+            byline = BylineProfile(
+                name=i.organization.name,
+                avatar_url=i.organization.avatar_url,
+            )
 
         return cls(
             id=i.id,
@@ -177,11 +173,11 @@ class ArticleCreate(Schema):
         ),
     )
 
-    byline: ArticleModel.Byline = Field(
-        default=ArticleModel.Byline.organization,
+    byline: ArticleByline = Field(
+        default=ArticleByline.organization,
         description="If the user or organization should be credited in the byline.",
     )
-    visibility: ArticleModel.Visibility = Field(default=ArticleModel.Visibility.private)
+    visibility: ArticleVisibility = Field(default=ArticleVisibility.private)
     paid_subscribers_only: bool = Field(
         default=False,
         description="Set to true to only make this article available for subscribers to a paid subscription tier in the organization.",
@@ -242,11 +238,11 @@ class ArticleUpdate(Schema):
     )
 
     slug: str | None = None
-    byline: ArticleModel.Byline | None = Field(
+    byline: ArticleByline | None = Field(
         default=None,
         description="If the user or organization should be credited in the byline.",
     )
-    visibility: ArticleModel.Visibility | None = Field(default=None)
+    visibility: ArticleVisibility | None = Field(default=None)
     paid_subscribers_only: bool | None = Field(
         default=None,
         description="Set to true to only make this article available for subscribers to a paid subscription tier in the organization.",

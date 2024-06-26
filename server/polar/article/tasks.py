@@ -8,7 +8,8 @@ from polar.auth.service import AuthService
 from polar.config import settings
 from polar.email.sender import get_email_sender
 from polar.logging import Logger
-from polar.models.article import Article
+from polar.models import Article
+from polar.models.article import ArticleByline
 from polar.user.service.user import user as user_service
 from polar.worker import (
     AsyncSessionMaker,
@@ -91,7 +92,7 @@ async def articles_send_to_user(
             return None
 
         from_name = ""
-        if article.byline == Article.Byline.user and article.user is not None:
+        if article.byline == ArticleByline.user and article.user is not None:
             from_name = article.user.public_name
             if article.user.email:
                 email_headers["Reply-To"] = f"{from_name} <{article.user.email}>"

@@ -51,7 +51,7 @@ const BenefitCard = ({
 const Benefits = () => {
   return (
     <>
-      <div className="flex flex-col items-center gap-y-4 md:gap-y-8">
+      <div className="flex flex-col items-center gap-y-4 text-center md:gap-y-8">
         <h2 className="text-2xl leading-snug md:text-5xl">
           Powerful & built-in benefits
         </h2>

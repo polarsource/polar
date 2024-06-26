@@ -32,7 +32,7 @@ export const useBenefits = (orgId?: string, limit = 30) =>
   useQuery({
     queryKey: ['benefits', 'organization', orgId],
     queryFn: () =>
-      api.benefits.listBenefits({
+      api.benefits.list({
         organizationId: orgId ?? '',
         limit,
       }),
@@ -44,7 +44,7 @@ export const useBenefit = (id?: string) =>
   useQuery({
     queryKey: ['benefits', 'id', id],
     queryFn: () => {
-      return api.benefits.getBenefit({
+      return api.benefits.get({
         id: id ?? '',
       })
     },
@@ -54,16 +54,10 @@ export const useBenefit = (id?: string) =>
 
 export const useUpdateBenefit = (orgId?: string) =>
   useMutation({
-    mutationFn: ({
-      id,
-      benefitUpdate,
-    }: {
-      id: string
-      benefitUpdate: BenefitUpdate
-    }) => {
-      return api.benefits.updateBenefit({
+    mutationFn: ({ id, body }: { id: string; body: BenefitUpdate }) => {
+      return api.benefits.update({
         id,
-        benefitUpdate,
+        body,
       })
     },
     onSuccess: (result, _variables, _ctx) => {
@@ -73,9 +67,9 @@ export const useUpdateBenefit = (orgId?: string) =>
 
 export const useCreateBenefit = (orgId?: string) =>
   useMutation({
-    mutationFn: (benefitCreate: BenefitCreate) => {
-      return api.benefits.createBenefit({
-        benefitCreate,
+    mutationFn: (body: BenefitCreate) => {
+      return api.benefits.create({
+        body,
       })
     },
     onSuccess: (result, _variables, _ctx) => {
@@ -86,7 +80,7 @@ export const useCreateBenefit = (orgId?: string) =>
 export const useDeleteBenefit = (orgId?: string) =>
   useMutation({
     mutationFn: ({ id }: { id: string }) => {
-      return api.benefits.deleteBenefit({
+      return api.benefits.delete({
         id,
       })
     },

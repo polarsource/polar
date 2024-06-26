@@ -3,7 +3,7 @@ import {
   ProductBenefitsUpdate,
   ProductCreate,
   ProductUpdate,
-  ProductsApiListProductsRequest,
+  ProductsApiListRequest,
   SubscriptionTierType,
 } from '@polar-sh/sdk'
 import { useMutation, useQuery } from '@tanstack/react-query'
@@ -11,16 +11,13 @@ import { defaultRetry } from './retry'
 
 export const useProducts = (
   organizationId?: string,
-  parameters?: Omit<
-    ProductsApiListProductsRequest,
-    'organization_id' | 'limit'
-  >,
+  parameters?: Omit<ProductsApiListRequest, 'organization_id' | 'limit'>,
   limit = 100,
 ) =>
   useQuery({
     queryKey: ['products', { organizationId, ...(parameters || {}) }],
     queryFn: () =>
-      api.products.listProducts({
+      api.products.list({
         organizationId: organizationId ?? '',
         limit,
         ...(parameters || {}),
@@ -37,7 +34,7 @@ export const useBenefitProducts = (
   useQuery({
     queryKey: ['products', { organizationId, benefitId }],
     queryFn: () =>
-      api.products.listProducts({
+      api.products.list({
         organizationId: organizationId ?? '',
         benefitId: benefitId ?? '',
         limit,
@@ -50,7 +47,7 @@ export const useProduct = (id?: string) =>
   useQuery({
     queryKey: ['products', { id }],
     queryFn: () => {
-      return api.products.getProduct({
+      return api.products.get({
         id: id ?? '',
       })
     },
@@ -63,7 +60,7 @@ export const useFreeTier = (organizationId?: string) =>
     queryKey: ['products', 'freeTier', { organizationId }],
     queryFn: () =>
       api.products
-        .listProducts({
+        .list({
           organizationId: organizationId ?? '',
           type: SubscriptionTierType.FREE,
         })
@@ -74,9 +71,9 @@ export const useFreeTier = (organizationId?: string) =>
 
 export const useCreateProduct = (organizationId?: string) =>
   useMutation({
-    mutationFn: (productCreate: ProductCreate) => {
-      return api.products.createProduct({
-        productCreate,
+    mutationFn: (body: ProductCreate) => {
+      return api.products.create({
+        body,
       })
     },
     onSuccess: (_result, _variables, _ctx) => {
@@ -88,16 +85,10 @@ export const useCreateProduct = (organizationId?: string) =>
 
 export const useUpdateProduct = (organizationId?: string) =>
   useMutation({
-    mutationFn: ({
-      id,
-      productUpdate,
-    }: {
-      id: string
-      productUpdate: ProductUpdate
-    }) => {
-      return api.products.updateProduct({
+    mutationFn: ({ id, body }: { id: string; body: ProductUpdate }) => {
+      return api.products.update({
         id,
-        productUpdate,
+        body,
       })
     },
     onSuccess: (_result, _variables, _ctx) => {
@@ -113,16 +104,10 @@ export const useUpdateProduct = (organizationId?: string) =>
 
 export const useUpdateProductBenefits = (organizationId?: string) =>
   useMutation({
-    mutationFn: ({
-      id,
-      productBenefitsUpdate,
-    }: {
-      id: string
-      productBenefitsUpdate: ProductBenefitsUpdate
-    }) => {
-      return api.products.updateProductBenefits({
+    mutationFn: ({ id, body }: { id: string; body: ProductBenefitsUpdate }) => {
+      return api.products.updateBenefits({
         id,
-        productBenefitsUpdate,
+        body,
       })
     },
     onSuccess: (_result, _variables, _ctx) => {

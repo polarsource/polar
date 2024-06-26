@@ -108,7 +108,7 @@ export default async function Page({
     notFound()
   }
 
-  const products = await api.products.listProducts(
+  const products = await api.products.list(
     { organizationId: organization.id, isRecurring: false },
     {
       ...cacheConfig,

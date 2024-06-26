@@ -151,7 +151,7 @@ export default async function Page({
   let products: ListResourceProduct | undefined
 
   try {
-    products = await api.products.listProducts(
+    products = await api.products.list(
       { organizationId: article.organization_id, isRecurring: true },
       cacheConfig,
     )

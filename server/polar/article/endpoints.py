@@ -1,135 +1,58 @@
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import Depends, Query
+from fastapi import Depends, Path, Query
+from pydantic import UUID4
 
-from polar.auth.dependencies import Authenticator, WebUser, WebUserOrAnonymous
-from polar.auth.models import Anonymous, AuthSubject, User
-from polar.auth.scope import Scope
 from polar.authz.service import AccessType, Authz
-from polar.exceptions import ResourceNotFound, Unauthorized
+from polar.exceptions import NotPermitted, ResourceNotFound
 from polar.kit.pagination import ListResource, PaginationParamsQuery
-from polar.kit.utils import utc_now
+from polar.models import Article
 from polar.openapi import IN_DEVELOPMENT_ONLY
-from polar.organization.dependencies import OrganizationNamePlatform
-from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession, get_db_session
-from polar.posthog import posthog
 from polar.routing import APIRouter
-from polar.user.service.user import user as user_service
-from polar.worker import enqueue_job
 
+from . import auth
 from .schemas import Article as ArticleSchema
-from .schemas import (
-    ArticleCreate,
-    ArticleDeleteResponse,
-    ArticlePreview,
-    ArticlePreviewResponse,
-    ArticleReceiversResponse,
-    ArticleSentResponse,
-    ArticleUnsubscribeResponse,
-    ArticleUpdate,
-    ArticleViewedResponse,
-)
+from .schemas import ArticleCreate, ArticlePreview, ArticleReceivers, ArticleUpdate
 from .service import article_service
 
-router = APIRouter(tags=["articles"])
-
-_ArticlesReadOrAnonymous = Authenticator(
-    allowed_subjects={User, Anonymous},
-    required_scopes={Scope.web_default, Scope.articles_read},
-)
-ArticlesReadOrAnonymous = Annotated[
-    AuthSubject[Anonymous | User], Depends(_ArticlesReadOrAnonymous)
-]
+router = APIRouter(tags=["articles"], prefix="/articles")
 
 
-@router.get(
-    "/articles/unsubscribe",
-    include_in_schema=IN_DEVELOPMENT_ONLY,
-    response_model=ArticleUnsubscribeResponse,
-    description="Unsubscribe user from articles in emails.",
-    summary="Unsubscribe user",
-    status_code=200,
-    responses={404: {}},
-)
-async def email_unsubscribe(
-    article_subscription_id: UUID,
-    session: AsyncSession = Depends(get_db_session),
-) -> ArticleUnsubscribeResponse:
-    await article_service.unsubscribe(session, article_subscription_id)
-    return ArticleUnsubscribeResponse(ok=True)
+ArticleID = Annotated[UUID4, Path(description="The article ID.")]
+ArticleNotFound = {
+    "description": "Article not found.",
+    "model": ResourceNotFound.schema(),
+}
 
 
-@router.get(
-    "/articles",
-    response_model=ListResource[ArticleSchema],
-    description="List articles.",
-    summary="List articles",
-    status_code=200,
-    responses={404: {}},
-)
+@router.get("/", response_model=ListResource[ArticleSchema])
 async def list(
+    auth_subject: auth.ArticlesReadOrAnonymous,
     pagination: PaginationParamsQuery,
-    auth_subject: WebUser,
+    organization_id: UUID4 | None = Query(
+        None, description="Filter by organization ID."
+    ),
+    slug: str | None = Query(None, description="Filter by slug."),
+    visibility: Article.Visibility | None = Query(
+        None, description="Filter by visibility."
+    ),
+    is_published: bool | None = Query(None, description="Filter by published status."),
+    is_pinned: bool | None = Query(None, description="Filter by pinned status."),
     session: AsyncSession = Depends(get_db_session),
     authz: Authz = Depends(Authz.authz),
 ) -> ListResource[ArticleSchema]:
+    """List articles."""
     results, count = await article_service.list(
-        session, auth_subject.subject, pagination=pagination
-    )
-
-    return ListResource.from_paginated_results(
-        [
-            ArticleSchema.from_db(
-                art,
-                include_admin_fields=await authz.can(
-                    auth_subject.subject, AccessType.write, art
-                ),
-                is_paid_subscriber=is_paid_subscriber,
-            )
-            for art, is_paid_subscriber in results
-        ],
-        count,
-        pagination,
-    )
-
-
-@router.get(
-    "/articles/search",
-    response_model=ListResource[ArticleSchema],
-    description="Search articles.",
-    summary="Search articles",
-    status_code=200,
-    responses={404: {}},
-)
-async def search(
-    organization_name_platform: OrganizationNamePlatform,
-    pagination: PaginationParamsQuery,
-    auth_subject: ArticlesReadOrAnonymous,
-    show_unpublished: bool = Query(
-        default=False,
-        description="Set to true to also include unpublished articles. Requires the authenticated subject to be an admin in the organization.",
-    ),
-    is_pinned: bool | None = Query(
-        default=None,
-        description="Set to true or false to include or exclude pinned articles",
-    ),
-    session: AsyncSession = Depends(get_db_session),
-    authz: Authz = Depends(Authz.authz),
-) -> ListResource[ArticleSchema]:
-    (organization_name, platform) = organization_name_platform
-    org = await organization_service.get_by_name(session, platform, organization_name)
-    if not org:
-        raise ResourceNotFound()
-
-    results, count = await article_service.search(
         session,
-        auth_subject.subject,
-        pagination=pagination,
-        show_unpublished=show_unpublished,
-        organization_id=org.id,
+        auth_subject,
+        organization_id=organization_id,
+        slug=slug,
+        visibility=visibility,
+        is_published=is_published,
         is_pinned=is_pinned,
+        pagination=pagination,
     )
 
     return ListResource.from_paginated_results(
@@ -148,333 +71,216 @@ async def search(
     )
 
 
-@router.get(
-    "/articles/lookup",
-    response_model=ArticleSchema,
-    description="Lookup article.",
-    summary="Lookup article",
-    status_code=200,
-    responses={404: {}},
-)
-async def lookup(
-    slug: str,
-    organization_name_platform: OrganizationNamePlatform,
-    auth_subject: WebUserOrAnonymous,
+@router.get("/{id}", response_model=ArticleSchema, responses={404: ArticleNotFound})
+async def get(
+    id: ArticleID,
+    auth_subject: auth.ArticlesReadOrAnonymous,
     session: AsyncSession = Depends(get_db_session),
     authz: Authz = Depends(Authz.authz),
 ) -> ArticleSchema:
-    (organization_name, platform) = organization_name_platform
-    org = await organization_service.get_by_name(session, platform, organization_name)
-    if not org:
+    """Get an article by ID."""
+    result = await article_service.get_by_id(session, auth_subject, id)
+
+    if result is None:
         raise ResourceNotFound()
 
-    result = await article_service.get_readable_by_organization_and_slug(
-        session, auth_subject.subject, organization_id=org.id, slug=slug
-    )
-    if not result:
-        raise ResourceNotFound()
-
-    art, is_paid_subscriber = result
+    article, is_paid_subscriber = result
 
     return ArticleSchema.from_db(
-        art,
+        article,
         include_admin_fields=await authz.can(
-            auth_subject.subject, AccessType.write, art
+            auth_subject.subject, AccessType.write, article
         ),
         is_paid_subscriber=is_paid_subscriber,
     )
 
 
 @router.post(
-    "/articles",
+    "/",
     response_model=ArticleSchema,
-    description="Create a new article.",
-    summary="Create article",
-    status_code=200,
-    responses={404: {}},
+    status_code=201,
+    responses={201: {"description": "Article created."}},
 )
 async def create(
-    create: ArticleCreate,
-    auth_subject: WebUser,
+    body: ArticleCreate,
+    auth_subject: auth.ArticlesWrite,
     session: AsyncSession = Depends(get_db_session),
     authz: Authz = Depends(Authz.authz),
 ) -> ArticleSchema:
-    org = await organization_service.get(session, create.organization_id)
-    if not org:
+    """Create an article."""
+    article = await article_service.create(session, authz, body, auth_subject)
+    return ArticleSchema.from_db(
+        article, include_admin_fields=True, is_paid_subscriber=True
+    )
+
+
+@router.patch(
+    "/{id}",
+    response_model=ArticleSchema,
+    responses={
+        200: {"description": "Article updated."},
+        403: {
+            "description": "You don't have the permission to update this article.",
+            "model": NotPermitted.schema(),
+        },
+        404: ArticleNotFound,
+    },
+)
+async def update(
+    id: ArticleID,
+    body: ArticleUpdate,
+    auth_subject: auth.ArticlesWrite,
+    session: AsyncSession = Depends(get_db_session),
+    authz: Authz = Depends(Authz.authz),
+) -> ArticleSchema:
+    """Update an article."""
+    result = await article_service.get_by_id(session, auth_subject, id)
+
+    if result is None:
         raise ResourceNotFound()
 
-    if not await authz.can(auth_subject.subject, AccessType.write, org):
-        raise Unauthorized()
+    article, _ = result
 
-    art = await article_service.create(session, auth_subject.subject, create)
-    await session.refresh(art, {"created_by_user", "organization"})
-
-    posthog.auth_subject_event(
-        auth_subject, "articles", "api", "create", {"article_id": art.id}
+    updated_article = await article_service.update(
+        session, authz, article, body, auth_subject
     )
 
     return ArticleSchema.from_db(
-        art,
-        include_admin_fields=await authz.can(
-            auth_subject.subject, AccessType.write, art
-        ),
-        is_paid_subscriber=True,
+        updated_article, include_admin_fields=True, is_paid_subscriber=True
     )
 
 
-@router.get(
-    "/articles/receivers",
-    response_model=ArticleReceiversResponse,
-    description="Get number of potential receivers for an article.",
-    summary="Potential article receivers",
-    status_code=200,
-    responses={404: {}},
+@router.delete(
+    "/{id}",
+    description="Delete an article.",
+    summary="Delete an article",
+    status_code=204,
+    responses={
+        204: {"description": "Article deleted."},
+        403: {
+            "description": "You don't have the permission to delete this article.",
+            "model": NotPermitted.schema(),
+        },
+        404: ArticleNotFound,
+    },
 )
-async def receivers(
-    organization_name_platform: OrganizationNamePlatform,
-    auth_subject: WebUser,
-    paid_subscribers_only: bool = Query(...),
+async def delete(
+    id: ArticleID,
+    auth_subject: auth.ArticlesWrite,
     session: AsyncSession = Depends(get_db_session),
     authz: Authz = Depends(Authz.authz),
-) -> ArticleReceiversResponse:
-    (organization_name, platform) = organization_name_platform
-    org = await organization_service.get_by_name(session, platform, organization_name)
-    if not org:
+) -> None:
+    """Delete an article."""
+    result = await article_service.get_by_id(session, auth_subject, id)
+
+    if result is None:
         raise ResourceNotFound()
 
-    # admin required
-    if not await authz.can(auth_subject.subject, AccessType.write, org):
-        raise Unauthorized()
+    article, _ = result
+
+    await article_service.delete(session, authz, article, auth_subject)
+
+    return None
+
+
+@router.get("/{id}/receivers", response_model=ArticleReceivers)
+async def receivers(
+    id: ArticleID,
+    auth_subject: auth.ArticlesWrite,
+    session: AsyncSession = Depends(get_db_session),
+    authz: Authz = Depends(Authz.authz),
+) -> ArticleReceivers:
+    """Get number of potential receivers for an article."""
+    result = await article_service.get_by_id(session, auth_subject, id)
+
+    if result is None:
+        raise ResourceNotFound()
+
+    article, _ = result
 
     (
         free_subscribers,
         premium_subscribers,
         organization_members,
-    ) = await article_service.count_receivers(session, org.id, paid_subscribers_only)
+    ) = await article_service.count_receivers(session, authz, article, auth_subject)
 
-    return ArticleReceiversResponse(
+    return ArticleReceivers(
         free_subscribers=free_subscribers,
         premium_subscribers=premium_subscribers,
         organization_members=organization_members,
     )
 
 
-@router.get(
-    "/articles/{id}",
-    response_model=ArticleSchema,
-    description="Get article.",
-    summary="Get article",
-    status_code=200,
-    responses={404: {}},
-)
-async def get(
-    id: UUID,
-    auth_subject: WebUserOrAnonymous,
-    session: AsyncSession = Depends(get_db_session),
-    authz: Authz = Depends(Authz.authz),
-) -> ArticleSchema:
-    result = await article_service.get_readable_by_id(
-        session, auth_subject.subject, id=id
-    )
-    if not result:
-        raise ResourceNotFound()
-
-    art, is_paid_subscriber = result
-
-    return ArticleSchema.from_db(
-        art,
-        include_admin_fields=await authz.can(
-            auth_subject.subject, AccessType.write, art
-        ),
-        is_paid_subscriber=is_paid_subscriber,
-    )
-
-
 @router.post(
-    "/articles/{id}/viewed",
-    response_model=ArticleViewedResponse,
-    description="Track article view",
-    summary="Track article",
-    status_code=200,
-    responses={404: {}},
+    "/{id}/preview",
+    status_code=202,
+    responses={
+        202: {"description": "Article preview sent."},
+        403: {
+            "description": "You don't have the permission to manage this article.",
+            "model": NotPermitted.schema(),
+        },
+        404: ArticleNotFound,
+    },
 )
-async def viewed(
-    id: UUID,
-    auth_subject: WebUserOrAnonymous,
-    session: AsyncSession = Depends(get_db_session),
-) -> ArticleViewedResponse:
-    result = await article_service.get_readable_by_id(
-        session, auth_subject.subject, id=id
-    )
-    if not result:
-        raise ResourceNotFound()
-
-    # Track view
-    # TODO: very simplistic for now, might need some improvements later :-)
-    await article_service.track_view(
-        session,
-        id,
-    )
-
-    return ArticleViewedResponse(ok=True)
-
-
-@router.post(
-    "/articles/{id}/send_preview",
-    response_model=ArticlePreviewResponse,
-    description="Send preview email",
-    summary="Send preview email",
-    status_code=200,
-    responses={404: {}},
-)
-async def send_preview(
-    id: UUID,
-    preview: ArticlePreview,
-    auth_subject: WebUser,
+async def preview(
+    id: ArticleID,
+    body: ArticlePreview,
+    auth_subject: auth.ArticlesWrite,
     session: AsyncSession = Depends(get_db_session),
     authz: Authz = Depends(Authz.authz),
-) -> ArticlePreviewResponse:
-    result = await article_service.get_readable_by_id(
-        session, auth_subject.subject, id=id
-    )
-    if not result:
-        raise ResourceNotFound()
+) -> None:
+    """Send an article preview by email."""
+    result = await article_service.get_by_id(session, auth_subject, id)
 
-    art, _ = result
-
-    # admin required
-    if not await authz.can(auth_subject.subject, AccessType.write, art):
-        raise Unauthorized()
-
-    send_to_user = await user_service.get_by_email(session, preview.email)
-    if not send_to_user:
-        raise ResourceNotFound()
-
-    posthog.auth_subject_event(
-        auth_subject,
-        "articles",
-        "email_preview",
-        "send",
-        {"article_id": art.id},
-    )
-
-    enqueue_job(
-        "articles.send_to_user",
-        article_id=art.id,
-        user_id=send_to_user.id,
-        is_test=True,
-    )
-
-    return ArticlePreviewResponse(ok=True)
-
-
-@router.post(
-    "/articles/{id}/send",
-    response_model=ArticleSentResponse,
-    description="Send email to all subscribers",
-    summary="Send email to all subscribers",
-    status_code=200,
-    responses={404: {}},
-)
-async def send(
-    id: UUID,
-    auth_subject: WebUser,
-    session: AsyncSession = Depends(get_db_session),
-    authz: Authz = Depends(Authz.authz),
-) -> ArticleSentResponse:
-    result = await article_service.get_readable_by_id(
-        session, auth_subject.subject, id=id
-    )
-    if not result:
-        raise ResourceNotFound()
-
-    art, _ = result
-
-    # admin required
-    if not await authz.can(auth_subject.subject, AccessType.write, art):
-        raise Unauthorized()
-
-    posthog.auth_subject_event(
-        auth_subject, "articles", "email", "send", {"article_id": art.id}
-    )
-
-    await article_service.send_to_subscribers(session, art)
-    return ArticleSentResponse(ok=True)
-
-
-@router.put(
-    "/articles/{id}",
-    response_model=ArticleSchema,
-    description="Update an article.",
-    summary="Update an article",
-    status_code=200,
-    responses={404: {}},
-)
-async def update(
-    id: UUID,
-    update: ArticleUpdate,
-    auth_subject: WebUser,
-    session: AsyncSession = Depends(get_db_session),
-    authz: Authz = Depends(Authz.authz),
-) -> ArticleSchema:
-    result = await article_service.get_readable_by_id(
-        session, auth_subject.subject, id=id
-    )
-    if not result:
+    if result is None:
         raise ResourceNotFound()
 
     article, _ = result
 
-    if not await authz.can(auth_subject.subject, AccessType.write, article):
-        raise Unauthorized()
+    await article_service.preview(session, authz, article, body, auth_subject)
 
-    await article_service.update(session, article, update)
-
-    # get for return
-    art = await article_service.get_loaded(session, id)
-    if not art:
-        raise ResourceNotFound()
-
-    posthog.auth_subject_event(
-        auth_subject, "articles", "api", "update", {"article_id": art.id}
-    )
-
-    return ArticleSchema.from_db(
-        art,
-        include_admin_fields=await authz.can(
-            auth_subject.subject, AccessType.write, art
-        ),
-        # TODO
-        is_paid_subscriber=await authz.can(auth_subject.subject, AccessType.write, art),
-    )
+    return None
 
 
-@router.delete(
-    "/articles/{id}",
-    response_model=ArticleDeleteResponse,
-    description="Delete an article.",
-    summary="Delete an article",
-    status_code=200,
-    responses={404: {}},
+@router.post(
+    "/{id}/send",
+    status_code=202,
+    responses={
+        202: {"description": "Article sent to subscribers."},
+        400: {
+            "description": "Article is either not published, already sent or not ready to be sent."
+        },
+        403: {
+            "description": "You don't have the permission to manage this article.",
+            "model": NotPermitted.schema(),
+        },
+        404: ArticleNotFound,
+    },
 )
-async def delete(
-    id: UUID,
-    auth_subject: WebUser,
+async def send(
+    id: ArticleID,
+    auth_subject: auth.ArticlesWrite,
     session: AsyncSession = Depends(get_db_session),
     authz: Authz = Depends(Authz.authz),
-) -> ArticleDeleteResponse:
-    art = await article_service.get_loaded(session, id)
-    if not art:
+) -> None:
+    """Send an article by email to all subscribers."""
+    result = await article_service.get_by_id(session, auth_subject, id)
+
+    if result is None:
         raise ResourceNotFound()
 
-    if not await authz.can(auth_subject.subject, AccessType.write, art):
-        raise Unauthorized()
+    article, _ = result
 
-    art.deleted_at = utc_now()
-    session.add(art)
+    await article_service.send(session, authz, article, auth_subject)
 
-    posthog.auth_subject_event(
-        auth_subject, "articles", "api", "delete", {"article_id": art.id}
-    )
+    return None
 
-    return ArticleDeleteResponse(ok=True)
+
+@router.get("/unsubscribe", include_in_schema=IN_DEVELOPMENT_ONLY, status_code=204)
+async def email_unsubscribe(
+    article_subscription_id: UUID,
+    session: AsyncSession = Depends(get_db_session),
+) -> None:
+    await article_service.unsubscribe(session, article_subscription_id)
+    return None

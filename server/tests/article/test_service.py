@@ -8,7 +8,7 @@ import pytest
 import pytest_asyncio
 
 from polar.article.service import article_service
-from polar.auth.models import Anonymous, Subject
+from polar.auth.models import Anonymous, AuthSubject, Subject
 from polar.kit.pagination import PaginationParams
 from polar.kit.utils import utc_now
 from polar.models import (
@@ -19,6 +19,7 @@ from polar.models import (
     UserOrganization,
 )
 from polar.postgres import AsyncSession
+from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_organization, create_user
 
@@ -30,7 +31,7 @@ def random_string(length: int = 32) -> str:
 async def create_article(
     save_fixture: SaveFixture,
     *,
-    created_by_user: User,
+    user: User,
     organization: Organization,
     visibility: Article.Visibility,
     paid_subscribers_only: bool,
@@ -40,7 +41,7 @@ async def create_article(
         slug=random_string(),
         title=random_string(),
         body=random_string(),
-        created_by_user=created_by_user,
+        user=user,
         organization=organization,
         published_at=published_at,
         visibility=visibility,
@@ -76,7 +77,7 @@ async def article_public_free_published(
 ) -> Article:
     return await create_article(
         save_fixture,
-        created_by_user=user,
+        user=user,
         organization=organization,
         visibility=Article.Visibility.public,
         paid_subscribers_only=False,
@@ -90,7 +91,7 @@ async def article_public_paid_published(
 ) -> Article:
     return await create_article(
         save_fixture,
-        created_by_user=user,
+        user=user,
         organization=organization,
         visibility=Article.Visibility.public,
         paid_subscribers_only=True,
@@ -104,7 +105,7 @@ async def article_hidden_free_published(
 ) -> Article:
     return await create_article(
         save_fixture,
-        created_by_user=user,
+        user=user,
         organization=organization,
         visibility=Article.Visibility.hidden,
         paid_subscribers_only=False,
@@ -118,7 +119,7 @@ async def article_hidden_paid_published(
 ) -> Article:
     return await create_article(
         save_fixture,
-        created_by_user=user,
+        user=user,
         organization=organization,
         visibility=Article.Visibility.hidden,
         paid_subscribers_only=True,
@@ -132,7 +133,7 @@ async def article_private_published(
 ) -> Article:
     return await create_article(
         save_fixture,
-        created_by_user=user,
+        user=user,
         organization=organization,
         visibility=Article.Visibility.private,
         paid_subscribers_only=False,
@@ -146,7 +147,7 @@ async def article_unpublished(
 ) -> Article:
     return await create_article(
         save_fixture,
-        created_by_user=user,
+        user=user,
         organization=organization,
         visibility=Article.Visibility.public,
         paid_subscribers_only=False,
@@ -187,25 +188,15 @@ async def other_subscriptions(
 @pytest.mark.asyncio
 @pytest.mark.usefixtures("other_subscriptions")
 class TestList:
-    async def test_no_subscription(
-        self, session: AsyncSession, articles: list[Article], user_second: User
-    ) -> None:
-        # then
-        session.expunge_all()
-
-        results, count = await article_service.list(
-            session, user_second, pagination=PaginationParams(1, 10)
-        )
-
-        assert len(results) == 0
-        assert count == 0
-
-    async def test_no_subscription_org_member(
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="anonymous"),
+        AuthSubjectFixture(subject="user_second"),
+    )
+    async def test_anonymous_or_user(
         self,
         session: AsyncSession,
         articles: list[Article],
-        user: User,
-        user_organization: UserOrganization,
+        auth_subject: AuthSubject[Anonymous | User],
         article_public_free_published: Article,
         article_public_paid_published: Article,
     ) -> None:
@@ -213,40 +204,7 @@ class TestList:
         session.expunge_all()
 
         results, count = await article_service.list(
-            session, user, pagination=PaginationParams(1, 10)
-        )
-
-        assert len(results) == 2
-        assert count == 2
-
-        assert article_public_free_published.id in get_articles_ids(results)
-        assert article_public_paid_published.id in get_articles_ids(results)
-
-        for _, is_paid_subscriber in results:
-            assert is_paid_subscriber is True
-
-    async def test_free_subscription(
-        self,
-        session: AsyncSession,
-        save_fixture: SaveFixture,
-        articles: list[Article],
-        article_public_free_published: Article,
-        article_public_paid_published: Article,
-        organization: Organization,
-        user_second: User,
-    ) -> None:
-        await create_articles_subscription(
-            save_fixture,
-            user=user_second,
-            organization=organization,
-            paid_subscriber=False,
-        )
-
-        # then
-        session.expunge_all()
-
-        results, count = await article_service.list(
-            session, user_second, pagination=PaginationParams(1, 10)
+            session, auth_subject, pagination=PaginationParams(1, 10)
         )
 
         assert len(results) == 2
@@ -258,174 +216,21 @@ class TestList:
         for _, is_paid_subscriber in results:
             assert is_paid_subscriber is False
 
-    async def test_paid_subscription(
-        self,
-        session: AsyncSession,
-        save_fixture: SaveFixture,
-        articles: list[Article],
-        article_public_free_published: Article,
-        article_public_paid_published: Article,
-        organization: Organization,
-        user_second: User,
-    ) -> None:
-        await create_articles_subscription(
-            save_fixture,
-            user=user_second,
-            organization=organization,
-            paid_subscriber=True,
-        )
-
-        # then
-        session.expunge_all()
-
-        results, count = await article_service.list(
-            session, user_second, pagination=PaginationParams(1, 10)
-        )
-
-        assert len(results) == 2
-        assert count == 2
-
-        assert article_public_free_published.id in get_articles_ids(results)
-        assert article_public_paid_published.id in get_articles_ids(results)
-
-        for _, is_paid_subscriber in results:
-            assert is_paid_subscriber is True
-
-
-@pytest.mark.asyncio
-@pytest.mark.usefixtures("other_subscriptions")
-class TestSearch:
-    async def test_anonymous(
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"), AuthSubjectFixture(subject="organization")
+    )
+    async def test_organization_member_or_organization(
         self,
         session: AsyncSession,
         articles: list[Article],
-        article_public_free_published: Article,
-        article_public_paid_published: Article,
-        organization: Organization,
-        user_second: User,
-    ) -> None:
-        # then
-        session.expunge_all()
-
-        results, count = await article_service.search(
-            session,
-            Anonymous(),
-            organization_id=organization.id,
-            pagination=PaginationParams(1, 10),
-        )
-
-        assert len(results) == 2
-        assert count == 2
-
-        assert article_public_free_published.id in get_articles_ids(results)
-        assert article_public_paid_published.id in get_articles_ids(results)
-
-        for _, is_paid_subscriber in results:
-            assert is_paid_subscriber is False
-
-    async def test_no_subscription(
-        self,
-        session: AsyncSession,
-        articles: list[Article],
-        article_public_free_published: Article,
-        article_public_paid_published: Article,
-        organization: Organization,
-        user_second: User,
-    ) -> None:
-        # then
-        session.expunge_all()
-
-        results, count = await article_service.search(
-            session,
-            user_second,
-            organization_id=organization.id,
-            pagination=PaginationParams(1, 10),
-        )
-
-        assert len(results) == 2
-        assert count == 2
-
-        assert article_public_free_published.id in get_articles_ids(results)
-        assert article_public_paid_published.id in get_articles_ids(results)
-
-        for _, is_paid_subscriber in results:
-            assert is_paid_subscriber is False
-
-    async def test_no_subscription_show_unpublished(
-        self,
-        session: AsyncSession,
-        articles: list[Article],
-        article_public_free_published: Article,
-        article_public_paid_published: Article,
-        organization: Organization,
-        user_second: User,
-    ) -> None:
-        # then
-        session.expunge_all()
-
-        results, count = await article_service.search(
-            session,
-            user_second,
-            show_unpublished=True,
-            organization_id=organization.id,
-            pagination=PaginationParams(1, 10),
-        )
-
-        assert len(results) == 2
-        assert count == 2
-
-        assert article_public_free_published.id in get_articles_ids(results)
-        assert article_public_paid_published.id in get_articles_ids(results)
-
-        for _, is_paid_subscriber in results:
-            assert is_paid_subscriber is False
-
-    async def test_no_subscription_org_member(
-        self,
-        session: AsyncSession,
-        articles: list[Article],
-        article_public_free_published: Article,
-        article_public_paid_published: Article,
-        organization: Organization,
-        user: User,
+        auth_subject: AuthSubject[User | Organization],
         user_organization: UserOrganization,
     ) -> None:
         # then
         session.expunge_all()
 
-        results, count = await article_service.search(
-            session,
-            user,
-            organization_id=organization.id,
-            pagination=PaginationParams(1, 10),
-        )
-
-        assert len(results) == 2
-        assert count == 2
-
-        assert article_public_free_published.id in get_articles_ids(results)
-        assert article_public_paid_published.id in get_articles_ids(results)
-
-        for _, is_paid_subscriber in results:
-            assert is_paid_subscriber is True
-
-    async def test_no_subscription_org_member_show_unpublished(
-        self,
-        session: AsyncSession,
-        articles: list[Article],
-        organization: Organization,
-        user: User,
-        user_organization: UserOrganization,
-    ) -> None:
-        # then
-        session.expunge_all()
-
-        results, count = await article_service.search(
-            session,
-            user,
-            show_unpublished=True,
-            organization_id=organization.id,
-            pagination=PaginationParams(1, 10),
+        results, count = await article_service.list(
+            session, auth_subject, pagination=PaginationParams(1, 10)
         )
 
         assert len(results) == 6
@@ -434,6 +239,42 @@ class TestSearch:
         for _, is_paid_subscriber in results:
             assert is_paid_subscriber is True
 
+    @pytest.mark.auth(AuthSubjectFixture(subject="user_second"))
+    async def test_free_subscription(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        articles: list[Article],
+        article_public_free_published: Article,
+        article_public_paid_published: Article,
+        organization: Organization,
+        user_second: User,
+        auth_subject: AuthSubject[User],
+    ) -> None:
+        await create_articles_subscription(
+            save_fixture,
+            user=user_second,
+            organization=organization,
+            paid_subscriber=False,
+        )
+
+        # then
+        session.expunge_all()
+
+        results, count = await article_service.list(
+            session, auth_subject, pagination=PaginationParams(1, 10)
+        )
+
+        assert len(results) == 2
+        assert count == 2
+
+        assert article_public_free_published.id in get_articles_ids(results)
+        assert article_public_paid_published.id in get_articles_ids(results)
+
+        for _, is_paid_subscriber in results:
+            assert is_paid_subscriber is False
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="user_second"))
     async def test_paid_subscription(
         self,
         session: AsyncSession,
@@ -443,6 +284,7 @@ class TestSearch:
         article_public_paid_published: Article,
         organization: Organization,
         user_second: User,
+        auth_subject: AuthSubject[User],
     ) -> None:
         await create_articles_subscription(
             save_fixture,
@@ -454,11 +296,8 @@ class TestSearch:
         # then
         session.expunge_all()
 
-        results, count = await article_service.search(
-            session,
-            user_second,
-            organization_id=organization.id,
-            pagination=PaginationParams(1, 10),
+        results, count = await article_service.list(
+            session, auth_subject, pagination=PaginationParams(1, 10)
         )
 
         assert len(results) == 2
@@ -471,43 +310,22 @@ class TestSearch:
             assert is_paid_subscriber is True
 
 
-# Define wrappers for get_readable_by_organization_and_slug and get_readable_by_id
-# to mutualise the tests
-
-
-async def get_readable_by_organization_and_slug(
-    session: AsyncSession, auth_subject: Subject, article: Article
+async def getter(
+    session: AsyncSession, auth_subject: AuthSubject[Subject], article: Article
 ) -> tuple[Article, bool] | None:
-    return await article_service.get_readable_by_organization_and_slug(
-        session,
-        auth_subject,
-        organization_id=article.organization_id,
-        slug=article.slug,
-    )
-
-
-async def get_readable_by_id(
-    session: AsyncSession, auth_subject: Subject, article: Article
-) -> tuple[Article, bool] | None:
-    return await article_service.get_readable_by_id(
-        session, auth_subject, id=article.id
-    )
+    return await article_service.get_by_id(session, auth_subject, id=article.id)
 
 
 GetterType = Callable[
-    [AsyncSession, Subject, Article], Coroutine[None, None, tuple[Article, bool] | None]
+    [AsyncSession, AuthSubject[Subject], Article],
+    Coroutine[None, None, tuple[Article, bool] | None],
 ]
 
 
-@pytest.mark.parametrize(
-    "getter",
-    [
-        get_readable_by_organization_and_slug,
-        get_readable_by_id,
-    ],
-)
+@pytest.mark.parametrize("getter", [getter])
 @pytest.mark.asyncio
-class TestGetReadableBy:
+class TestReadable:
+    @pytest.mark.auth(AuthSubjectFixture(subject="user_second"))
     async def test_no_subscription(
         self,
         getter: GetterType,
@@ -517,30 +335,31 @@ class TestGetReadableBy:
         article_hidden_free_published: Article,
         article_hidden_paid_published: Article,
         article_private_published: Article,
-        user_second: User,
+        auth_subject: AuthSubject[User],
     ) -> None:
         # then
         session.expunge_all()
 
-        result = await getter(session, user_second, article_public_free_published)
+        result = await getter(session, auth_subject, article_public_free_published)
         assert result is not None
         assert result[1] is False
 
-        result = await getter(session, user_second, article_public_paid_published)
+        result = await getter(session, auth_subject, article_public_paid_published)
         assert result is not None
         assert result[1] is False
 
-        result = await getter(session, user_second, article_hidden_free_published)
+        result = await getter(session, auth_subject, article_hidden_free_published)
         assert result is not None
         assert result[1] is False
 
-        result = await getter(session, user_second, article_hidden_paid_published)
+        result = await getter(session, auth_subject, article_hidden_paid_published)
         assert result is not None
         assert result[1] is False
 
-        result = await getter(session, user_second, article_private_published)
+        result = await getter(session, auth_subject, article_private_published)
         assert result is None
 
+    @pytest.mark.auth(AuthSubjectFixture(subject="user"))
     async def test_no_subscription_org_member(
         self,
         getter: GetterType,
@@ -552,30 +371,32 @@ class TestGetReadableBy:
         article_private_published: Article,
         user: User,
         user_organization: UserOrganization,
+        auth_subject: AuthSubject[User],
     ) -> None:
         # then
         session.expunge_all()
 
-        result = await getter(session, user, article_public_free_published)
+        result = await getter(session, auth_subject, article_public_free_published)
         assert result is not None
         assert result[1] is True
 
-        result = await getter(session, user, article_public_paid_published)
+        result = await getter(session, auth_subject, article_public_paid_published)
         assert result is not None
         assert result[1] is True
 
-        result = await getter(session, user, article_hidden_free_published)
+        result = await getter(session, auth_subject, article_hidden_free_published)
         assert result is not None
         assert result[1] is True
 
-        result = await getter(session, user, article_hidden_paid_published)
+        result = await getter(session, auth_subject, article_hidden_paid_published)
         assert result is not None
         assert result[1] is True
 
-        result = await getter(session, user, article_private_published)
+        result = await getter(session, auth_subject, article_private_published)
         assert result is not None
         assert result[1] is True
 
+    @pytest.mark.auth(AuthSubjectFixture(subject="user_second"))
     async def test_free_subscription(
         self,
         getter: GetterType,
@@ -588,6 +409,7 @@ class TestGetReadableBy:
         article_private_published: Article,
         user_second: User,
         organization: Organization,
+        auth_subject: AuthSubject[User],
     ) -> None:
         await create_articles_subscription(
             save_fixture,
@@ -599,25 +421,26 @@ class TestGetReadableBy:
         # then
         session.expunge_all()
 
-        result = await getter(session, user_second, article_public_free_published)
+        result = await getter(session, auth_subject, article_public_free_published)
         assert result is not None
         assert result[1] is False
 
-        result = await getter(session, user_second, article_public_paid_published)
+        result = await getter(session, auth_subject, article_public_paid_published)
         assert result is not None
         assert result[1] is False
 
-        result = await getter(session, user_second, article_hidden_free_published)
+        result = await getter(session, auth_subject, article_hidden_free_published)
         assert result is not None
         assert result[1] is False
 
-        result = await getter(session, user_second, article_hidden_paid_published)
+        result = await getter(session, auth_subject, article_hidden_paid_published)
         assert result is not None
         assert result[1] is False
 
-        result = await getter(session, user_second, article_private_published)
+        result = await getter(session, auth_subject, article_private_published)
         assert result is None
 
+    @pytest.mark.auth(AuthSubjectFixture(subject="user_second"))
     async def test_paid_subscription(
         self,
         getter: GetterType,
@@ -630,6 +453,7 @@ class TestGetReadableBy:
         article_private_published: Article,
         user_second: User,
         organization: Organization,
+        auth_subject: AuthSubject[User],
     ) -> None:
         await create_articles_subscription(
             save_fixture,
@@ -641,23 +465,23 @@ class TestGetReadableBy:
         # then
         session.expunge_all()
 
-        result = await getter(session, user_second, article_public_free_published)
+        result = await getter(session, auth_subject, article_public_free_published)
         assert result is not None
         assert result[1] is True
 
-        result = await getter(session, user_second, article_public_paid_published)
+        result = await getter(session, auth_subject, article_public_paid_published)
         assert result is not None
         assert result[1] is True
 
-        result = await getter(session, user_second, article_hidden_free_published)
+        result = await getter(session, auth_subject, article_hidden_free_published)
         assert result is not None
         assert result[1] is True
 
-        result = await getter(session, user_second, article_hidden_paid_published)
+        result = await getter(session, auth_subject, article_hidden_paid_published)
         assert result is not None
         assert result[1] is True
 
-        result = await getter(session, user_second, article_private_published)
+        result = await getter(session, auth_subject, article_private_published)
         assert result is None
 
 

@@ -1,12 +1,11 @@
 import base64
 import datetime
 import re
-from typing import Literal, Self
-from uuid import UUID
+from typing import Self
 
-from pydantic import Field, FutureDatetime, HttpUrl, model_validator
+from pydantic import UUID4, Field, FutureDatetime, HttpUrl, model_validator
 
-from polar.kit.schemas import Schema
+from polar.kit.schemas import EmailStrDNS, Schema
 from polar.models.article import Article as ArticleModel
 from polar.organization.schemas import Organization
 
@@ -18,16 +17,17 @@ class Byline(Schema):
     avatar_url: str | None = None
 
 
-Visibility = Literal["private", "hidden", "public"]
-
-
 class Article(Schema):
-    id: UUID
+    id: UUID4
     slug: str
     title: str
     body: str
     byline: Byline
-    visibility: Visibility
+    visibility: ArticleModel.Visibility
+
+    user_id: UUID4 | None = None
+    organization_id: UUID4
+
     organization: Organization
 
     published_at: datetime.datetime | None = None
@@ -39,7 +39,6 @@ class Article(Schema):
     notify_subscribers: bool | None = None
     notifications_sent_at: datetime.datetime | None = None
     email_sent_to_count: int | None = None
-    web_view_count: int | None = None
 
     og_image_url: str | None = None
     og_description: str | None = None
@@ -115,23 +114,14 @@ class Article(Schema):
                 name=i.organization.name,
                 avatar_url=i.organization.avatar_url,
             )
-        if i.byline == i.Byline.user:
+        if i.byline == i.Byline.user and i.user:
             byline = Byline(
-                name=i.created_by_user.public_name,
-                avatar_url=i.created_by_user.avatar_url,
+                name=i.user.public_name,
+                avatar_url=i.user.avatar_url,
             )
 
         if not byline:
             raise ValueError("article has no byline")
-
-        visibility: Visibility = "private"
-        match i.visibility:
-            case "private":
-                visibility = "private"
-            case "hidden":
-                visibility = "hidden"
-            case "public":
-                visibility = "public"
 
         return cls(
             id=i.id,
@@ -141,7 +131,9 @@ class Article(Schema):
                 i.body, i.paid_subscribers_only, is_paid_subscriber
             ),
             byline=byline,
-            visibility=visibility,
+            visibility=i.visibility,
+            user_id=i.user_id,
+            organization_id=i.organization_id,
             organization=Organization.from_db(i.organization),
             published_at=i.published_at,
             paid_subscribers_only=i.paid_subscribers_only,
@@ -152,7 +144,6 @@ class Article(Schema):
             if include_admin_fields
             else None,
             email_sent_to_count=i.email_sent_to_count if include_admin_fields else None,
-            web_view_count=i.web_view_count if include_admin_fields else None,
             is_pinned=i.is_pinned,
             og_image_url=i.og_image_url,
             og_description=i.og_description,
@@ -178,12 +169,19 @@ class ArticleCreate(Schema):
         description="Body in base64-encoded format. Can be helpful to bypass Web Application Firewalls (WAF). Either one of body or body_base64 is required.",
     )
 
-    organization_id: UUID
-    byline: Literal["user", "organization"] = Field(
-        default="organization",
+    organization_id: UUID4 | None = Field(
+        default=None,
+        description=(
+            "The ID of the organization owning the article. "
+            "**Required unless you use an organization token.**"
+        ),
+    )
+
+    byline: ArticleModel.Byline = Field(
+        default=ArticleModel.Byline.organization,
         description="If the user or organization should be credited in the byline.",
     )
-    visibility: Visibility = Field(default="private")
+    visibility: ArticleModel.Visibility = Field(default=ArticleModel.Visibility.private)
     paid_subscribers_only: bool = Field(
         default=False,
         description="Set to true to only make this article available for subscribers to a paid subscription tier in the organization.",
@@ -244,13 +242,11 @@ class ArticleUpdate(Schema):
     )
 
     slug: str | None = None
-    byline: Literal["user", "organization"] | None = Field(
+    byline: ArticleModel.Byline | None = Field(
         default=None,
         description="If the user or organization should be credited in the byline.",
-        min_length=1,
-        max_length=64,
     )
-    visibility: Visibility | None = Field(default=None)
+    visibility: ArticleModel.Visibility | None = Field(default=None)
     paid_subscribers_only: bool | None = Field(
         default=None,
         description="Set to true to only make this article available for subscribers to a paid subscription tier in the organization.",
@@ -263,14 +259,9 @@ class ArticleUpdate(Schema):
             "Only relevant if `paid_subscribers_only` is true."
         ),
     )
-
     published_at: datetime.datetime | None = Field(
         default=None,
         description="Time of publishing. If this date is in the future, the post will be scheduled to publish at this time.",
-    )
-    set_published_at: bool | None = Field(
-        default=None,
-        description="Set to true for changes to published_at to take effect.",
     )
     notify_subscribers: bool | None = Field(
         default=None,
@@ -279,18 +270,8 @@ class ArticleUpdate(Schema):
     is_pinned: bool | None = Field(
         default=None, description="If the article should be pinned"
     )
-
-    set_og_image_url: bool | None = Field(
-        default=None,
-        description="Set to true for changes to og_image_url to take effect.",
-    )
     og_image_url: HttpUrl | None = Field(
         default=None, description="Custom og:image URL value"
-    )
-
-    set_og_description: bool | None = Field(
-        default=None,
-        description="Set to true for changes to og_description to take effect.",
     )
     og_description: str | None = Field(
         default=None, description="Custom og:description value"
@@ -312,33 +293,13 @@ class ArticleUpdate(Schema):
         return None
 
 
-class ArticleViewedResponse(Schema):
-    ok: bool
-
-
-class ArticlePreviewResponse(Schema):
-    ok: bool
-
-
 class ArticlePreview(Schema):
-    email: str = Field(
-        description="Send a preview of the article to this email address"
+    email: EmailStrDNS = Field(
+        description="Email address to send the preview to. The user must be registered on Polar."
     )
 
 
-class ArticleReceiversResponse(Schema):
+class ArticleReceivers(Schema):
     free_subscribers: int
     premium_subscribers: int
     organization_members: int
-
-
-class ArticleSentResponse(Schema):
-    ok: bool
-
-
-class ArticleDeleteResponse(Schema):
-    ok: bool
-
-
-class ArticleUnsubscribeResponse(Schema):
-    ok: bool

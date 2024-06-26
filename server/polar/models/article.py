@@ -1,5 +1,5 @@
-import enum
 from datetime import datetime
+from enum import StrEnum
 from uuid import UUID
 
 from sqlalchemy import (
@@ -27,20 +27,11 @@ class Article(RecordModel):
     slug: Mapped[str] = mapped_column(String(255), nullable=False)
     title: Mapped[str] = mapped_column(String(255), nullable=False)
     body: Mapped[str] = mapped_column(String, nullable=False)
-
-    created_by: Mapped[UUID] = mapped_column(
-        PostgresUUID, ForeignKey("users.id"), nullable=False
-    )
-
-    organization_id: Mapped[UUID] = mapped_column(
-        PostgresUUID, ForeignKey("organizations.id"), nullable=False
-    )
-
     published_at: Mapped[datetime | None] = mapped_column(
         TIMESTAMP(timezone=True), nullable=True, default=None
     )
 
-    class Byline(str, enum.Enum):
+    class Byline(StrEnum):
         user = "user"
         organization = "organization"
 
@@ -48,7 +39,7 @@ class Article(RecordModel):
         StringEnum(Byline), nullable=False, default=Byline.user
     )
 
-    class Visibility(str, enum.Enum):
+    class Visibility(StrEnum):
         public = "public"
         hidden = "hidden"  # visible if you have the link
         private = "private"  # only visible to org members
@@ -57,21 +48,21 @@ class Article(RecordModel):
         StringEnum(Visibility), nullable=False, default=Visibility.private
     )
 
-    @declared_attr
-    def organization(cls) -> Mapped[Organization]:
-        return relationship(
-            Organization,
-            lazy="raise",
-            primaryjoin=Organization.id == cls.organization_id,
-        )
+    user_id: Mapped[UUID | None] = mapped_column(
+        PostgresUUID, ForeignKey("users.id"), nullable=True
+    )
 
     @declared_attr
-    def created_by_user(cls) -> Mapped[User]:
-        return relationship(
-            User,
-            lazy="raise",
-            primaryjoin=User.id == cls.created_by,
-        )
+    def user(cls) -> Mapped[User | None]:
+        return relationship(User, lazy="raise")
+
+    organization_id: Mapped[UUID] = mapped_column(
+        PostgresUUID, ForeignKey("organizations.id"), nullable=False
+    )
+
+    @declared_attr
+    def organization(cls) -> Mapped[Organization]:
+        return relationship(Organization, lazy="raise")
 
     paid_subscribers_only: Mapped[bool] = mapped_column(
         Boolean, nullable=False, default=False
@@ -92,8 +83,6 @@ class Article(RecordModel):
         Integer, nullable=True, default=None
     )
     email_open_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
-
-    web_view_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
 
     is_pinned: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
 

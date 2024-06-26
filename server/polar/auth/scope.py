@@ -9,7 +9,6 @@ class Scope(StrEnum):
     openid = "openid"
     profile = "profile"
     email = "email"
-    articles_read = "articles:read"  # article read only scope (used by RSS auth)
     user_read = "user:read"
 
     admin = "admin"  # Admin scope. For Polar staff only.
@@ -33,6 +32,9 @@ class Scope(StrEnum):
     orders_read = "orders:read"
 
     metrics_read = "metrics:read"
+
+    articles_read = "articles:read"
+    articles_write = "articles:write"
 
     webhooks_read = "webhooks:read"
     webhooks_write = "webhooks:write"
@@ -62,7 +64,6 @@ SCOPES_SUPPORTED_DISPLAY_NAMES: dict[Scope, str] = {
     Scope.profile: "Read your profile",
     Scope.email: "Read your email address",
     Scope.web_default: "Web Default",
-    Scope.articles_read: "Articles Read",
     Scope.user_read: "User Read",
     Scope.organizations_read: "Read your organizations",
     Scope.organizations_write: "Create or modify organizations",
@@ -80,6 +81,8 @@ SCOPES_SUPPORTED_DISPLAY_NAMES: dict[Scope, str] = {
     Scope.metrics_read: "Read metrics",
     Scope.webhooks_read: "Read webhooks",
     Scope.webhooks_write: "Create or modify webhooks",
+    Scope.articles_read: "Read posts",
+    Scope.articles_write: "Create or modify posts",
     Scope.user_benefits_read: "Read your granted benefits",
     Scope.user_orders_read: "Read your orders",
     Scope.user_subscriptions_read: "Read your subscriptions",

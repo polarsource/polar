@@ -73,7 +73,7 @@ async def statistics(
     # filter by article id
     if article_id:
         # authz
-        article = await article_service.get_loaded(session, article_id)
+        article = await article_service.get(session, article_id)
         if not article:
             raise ResourceNotFound()
 

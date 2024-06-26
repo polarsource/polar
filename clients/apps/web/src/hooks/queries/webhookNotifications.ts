@@ -57,9 +57,9 @@ export const useCreateWebhookNotification: () => UseMutationResult<
   unknown
 > = () =>
   useMutation({
-    mutationFn: (variables: WebhookIntegrationCreate) => {
+    mutationFn: (body: WebhookIntegrationCreate) => {
       return api.webhookNotifications.create({
-        webhookIntegrationCreate: variables,
+        body,
       })
     },
     onSuccess: (_result, _variables, _ctx) => {

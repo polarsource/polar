@@ -299,7 +299,7 @@ const useCreateBaselineTier = (
 
     await updateProductBenefits.mutateAsync({
       id: product.id,
-      productBenefitsUpdate: {
+      body: {
         benefits: [premiumArticlesBenefit.id],
       },
     })

@@ -7,7 +7,7 @@ export const useUpdateProject = () =>
   useMutation({
     mutationFn: (variables: {
       id: string
-      repositoryUpdate: RepositoryUpdate
+      body: RepositoryUpdate
     }) => {
       return api.repositories.update(variables)
     },

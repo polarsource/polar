@@ -93,7 +93,7 @@ const PledgeCheckoutFundToday = ({
   const createPaymentIntent = useCallback(
     async (pledgeSync: PledgeFormState) => {
       return await api.pledges.createPaymentIntent({
-        pledgeStripePaymentIntentCreate: {
+        body: {
           issue_id: issue.id,
           amount: pledgeSync.amount,
           email: pledgeSync.email,
@@ -112,7 +112,7 @@ const PledgeCheckoutFundToday = ({
 
       return await api.pledges.updatePaymentIntent({
         id: polarPaymentIntent.payment_intent_id,
-        pledgeStripePaymentIntentUpdate: {
+        body: {
           amount: pledgeSync.amount,
           email: pledgeSync.email,
           setup_future_usage: pledgeSync.setup_future_usage,

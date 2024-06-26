@@ -110,7 +110,7 @@ export const useUpdateOrganizationBadgeSettings: () => UseMutationResult<
     }) => {
       return api.organizations.updateBadgeSettings({
         id: variables.id,
-        organizationBadgeSettingsUpdate: variables.settings,
+        body: variables.settings,
       })
     },
     onSuccess: (_result, variables, _ctx) => {
@@ -175,7 +175,7 @@ export const useUpdateOrganization = () =>
     mutationFn: (variables: { id: string; settings: OrganizationUpdate }) => {
       return api.organizations.update({
         id: variables.id,
-        organizationUpdate: variables.settings,
+        body: variables.settings,
       })
     },
     onSuccess: (result, variables, _ctx) => {

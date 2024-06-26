@@ -96,7 +96,7 @@ export const CreateProductModal = ({
         })
         await updateBenefits.mutateAsync({
           id: product.id,
-          productBenefitsUpdate: {
+          body: {
             benefits: enabledBenefitIds,
           },
         })

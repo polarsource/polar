@@ -64,7 +64,7 @@ _If you already have a Polar account setup, you don't need to do anything._
     setIsLoading(true)
     await api.issues.addIssueComment({
       id: props.issue.id,
-      postIssueComment: {
+      body: {
         message: value,
       },
     })

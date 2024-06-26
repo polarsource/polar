@@ -204,23 +204,22 @@ export const useUpdateProduct = (orgName?: string) =>
   useMutation({
     mutationFn: ({
       id,
-      productUpdate,
+      body,
     }: {
       id: string
-      productUpdate: Omit<Product, 'id' | 'created_at' | 'updated_at'>
+      body: Omit<Product, 'id' | 'created_at' | 'updated_at'>
     }) => {
       return new Promise((resolve) => {
         products = [
           ...products.filter((product) => product.id !== id),
           {
             id: (Math.random() * 1000).toString(),
-            ...productUpdate,
+            ...body,
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
           },
         ]
-
-        resolve(productUpdate)
+        resolve(body)
       })
     },
     onSuccess: (_result, _variables, _ctx) => {

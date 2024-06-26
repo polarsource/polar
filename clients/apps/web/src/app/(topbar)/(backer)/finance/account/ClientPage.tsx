@@ -42,11 +42,11 @@ export default function ClientPage() {
         if (personalOrganization) {
           await api.organizations.setAccount({
             id: personalOrganization.id,
-            organizationSetAccount: { account_id: accountId },
+            body: { account_id: accountId },
           })
         }
         await api.users.setAccount({
-          userSetAccount: { account_id: accountId },
+          body: { account_id: accountId },
         })
         await reloadUser()
         window.location.reload()

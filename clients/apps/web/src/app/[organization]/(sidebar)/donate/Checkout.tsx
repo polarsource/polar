@@ -80,7 +80,7 @@ const Checkout = ({
   const createPaymentIntent = useCallback(
     async (formState: DonateFormState) => {
       return await api.donations.createPaymentIntent({
-        donationCreateStripePaymentIntent: {
+        body: {
           to_organization_id: formState.to_organization_id,
           amount: formState.amount,
           email: formState.email,
@@ -102,7 +102,7 @@ const Checkout = ({
 
       return await api.donations.updatePaymentIntent({
         id: polarPaymentIntent.payment_intent_id,
-        donationUpdateStripePaymentIntent: {
+        body: {
           amount: formState.amount,
           email: formState.email,
           setup_future_usage: formState.setup_future_usage,

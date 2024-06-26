@@ -17,7 +17,7 @@ export const useCheckOrganizationPermissions: (
       try {
         await api.integrationsGitHub.checkOrganizationPermissions({
           id: id || '',
-          organizationCheckPermissionsInput: { permissions },
+          body: { permissions },
         })
         return true
       } catch (err) {

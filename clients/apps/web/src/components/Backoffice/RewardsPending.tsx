@@ -310,7 +310,7 @@ const Pledges = () => {
                           size="sm"
                           onClick={async () => {
                             await api.backoffice.pledgeRewardTransfer({
-                              pledgeRewardTransfer: {
+                              body: {
                                 pledge_id: r.pledge.id,
                                 issue_reward_id: r.issue_reward_id,
                               },

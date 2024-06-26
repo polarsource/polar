@@ -51,7 +51,7 @@ const WithdrawModal: React.FC<WithdrawModalProps> = ({
     setLoading(true)
     try {
       const { id } = await api.transactions.createPayout({
-        payoutCreate: { account_id: account.id },
+        body: { account_id: account.id },
       })
       if (onSuccess) {
         onSuccess(id)

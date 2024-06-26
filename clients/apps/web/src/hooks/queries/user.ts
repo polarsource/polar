@@ -38,7 +38,7 @@ export const useUserPreferencesMutation: () => UseMutationResult<
   useMutation({
     mutationFn: (variables: { userUpdateSettings: UserUpdateSettings }) => {
       return api.users.updatePreferences({
-        userUpdateSettings: variables.userUpdateSettings,
+        body: variables.userUpdateSettings,
       })
     },
     onSuccess: (_result, _variables, _ctx) => {
@@ -55,9 +55,9 @@ export const usePersonalAccessTokens = () =>
 
 export const useCreatePersonalAccessToken = () =>
   useMutation({
-    mutationFn: (personalAccessTokenCreate: PersonalAccessTokenCreate) => {
+    mutationFn: (body: PersonalAccessTokenCreate) => {
       return api.personalAccessToken.createPersonalAccessToken({
-        personalAccessTokenCreate,
+        body,
       })
     },
     onSuccess: (_result, _variables, _ctx) => {
@@ -98,8 +98,8 @@ export const useUserSubscriptions = (
 
 export const useCreateSubscription = () =>
   useMutation({
-    mutationFn: (userFreeSubscriptionCreate: UserFreeSubscriptionCreate) => {
-      return api.users.createSubscription({ userFreeSubscriptionCreate })
+    mutationFn: (body: UserFreeSubscriptionCreate) => {
+      return api.users.createSubscription({ body })
     },
     onSuccess: (_result, _variables, _ctx) => {
       queryClient.invalidateQueries({
@@ -152,11 +152,9 @@ export const useUserAdvertisementCampaigns = (
 
 export const useUserCreateAdvertisementCampaign = () =>
   useMutation({
-    mutationFn: (
-      userAdvertisementCampaignCreate: UserAdvertisementCampaignCreate,
-    ) => {
+    mutationFn: (body: UserAdvertisementCampaignCreate) => {
       return api.users.createAdvertisementCampaign({
-        userAdvertisementCampaignCreate,
+        body,
       })
     },
     onSuccess: (_result, _variables, _ctx) => {
@@ -168,12 +166,10 @@ export const useUserCreateAdvertisementCampaign = () =>
 
 export const useUserUpdateAdvertisementCampaign = (id: string) =>
   useMutation({
-    mutationFn: (
-      userAdvertisementCampaignUpdate: UserAdvertisementCampaignUpdate,
-    ) => {
+    mutationFn: (body: UserAdvertisementCampaignUpdate) => {
       return api.users.updateAdvertisementCampaign({
         id,
-        userAdvertisementCampaignUpdate,
+        body,
       })
     },
     onSuccess: (_result, _variables, _ctx) => {

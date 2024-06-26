@@ -51,7 +51,7 @@ export const useTrafficRecordPageView = (opts: {
 
       // record page view in traffic api
       api.traffic.trackPageView({
-        trackPageView: {
+        body: {
           organization_id: opts.organization?.id,
           article_id: opts.article?.id,
           location_href: window.location.href,

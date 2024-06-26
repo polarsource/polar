@@ -65,7 +65,7 @@ const AccountCreateModal = ({
 
     try {
       const account = await api.accounts.create({
-        accountCreate: {
+        body: {
           account_type: accountType,
           country,
           ...(openCollectiveSlug
@@ -76,12 +76,12 @@ const AccountCreateModal = ({
       if (forOrganizationId) {
         await api.organizations.setAccount({
           id: forOrganizationId,
-          organizationSetAccount: { account_id: account.id },
+          body: { account_id: account.id },
         })
       }
       if (forUserId) {
         await api.users.setAccount({
-          userSetAccount: { account_id: account.id },
+          body: { account_id: account.id },
         })
       }
 

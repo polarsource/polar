@@ -158,7 +158,7 @@ const AuthenticatedRecurringCheckoutButton: React.FC<
     } else {
       await api.users.updateSubscription({
         id: upgradableSubscription.id,
-        userSubscriptionUpdate: {
+        body: {
           product_price_id: price.id,
         },
       })

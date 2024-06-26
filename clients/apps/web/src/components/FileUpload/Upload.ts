@@ -73,7 +73,7 @@ export class Upload {
     }
 
     return api.files.create({
-      fileCreate: params,
+      body: params,
     })
   }
 
@@ -192,7 +192,7 @@ export class Upload {
     return api.files
       .uploaded({
         id: createFileResponse.id,
-        fileUploadCompleted: {
+        body: {
           id: createFileResponse.upload.id,
           path: createFileResponse.upload.path,
           parts: uploadedParts,

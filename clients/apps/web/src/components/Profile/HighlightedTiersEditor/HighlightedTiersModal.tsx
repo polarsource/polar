@@ -31,7 +31,7 @@ export const HighlightedTiersModal = ({
     async (id: string) => {
       await updateProductMutation.mutateAsync({
         id,
-        productUpdate: {
+        body: {
           is_highlighted: true,
         },
       })

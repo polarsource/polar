@@ -10,6 +10,7 @@ from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.sorting import Sorting, SortingGetter
 from polar.models import AdvertisementCampaign as AdvertisementCampaignModel
 from polar.models.benefit import BenefitAds
+from polar.openapi import IN_DEVELOPMENT_ONLY
 from polar.postgres import AsyncSession, get_db_session
 from polar.routing import APIRouter
 
@@ -36,8 +37,10 @@ ListSorting = Annotated[
 ]
 
 
-@router.get("/", response_model=AdvertisementCampaignListResource)
-async def list_advertisement_campaigns(
+@router.get(
+    "/", summary="List Campaigns", response_model=AdvertisementCampaignListResource
+)
+async def list(
     pagination: PaginationParamsQuery,
     sorting: ListSorting,
     benefit_id: UUID4 = Query(
@@ -87,10 +90,11 @@ async def list_advertisement_campaigns(
 
 @router.get(
     "/{id}",
+    summary="Get Campaign",
     response_model=AdvertisementCampaign,
     responses={404: AdvertisementCampaignNotFound},
 )
-async def get_advertisement_campaign(
+async def get(
     id: AdvertisementCampaignID,
     session: AsyncSession = Depends(get_db_session),
 ) -> AdvertisementCampaignModel:
@@ -105,13 +109,15 @@ async def get_advertisement_campaign(
 
 @router.post(
     "/{id}/view",
+    summary="Track View",
     status_code=204,
     responses={
         204: {"description": "The view was successfully tracked."},
         404: AdvertisementCampaignNotFound,
     },
+    include_in_schema=IN_DEVELOPMENT_ONLY,
 )
-async def track_advertisement_campaign_view(
+async def track_view(
     id: AdvertisementCampaignID,
     session: AsyncSession = Depends(get_db_session),
 ) -> None:

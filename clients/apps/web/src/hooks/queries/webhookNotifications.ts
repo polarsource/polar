@@ -41,7 +41,7 @@ export const useDeleteWebhookNotification: () => UseMutationResult<
 > = () =>
   useMutation({
     mutationFn: (variables: { id: string }) => {
-      return api.webhookNotifications._delete({
+      return api.webhookNotifications.delete({
         id: variables.id,
       })
     },

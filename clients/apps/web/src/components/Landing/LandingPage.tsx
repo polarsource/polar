@@ -8,12 +8,12 @@ import { Separator } from 'polarkit/components/ui/separator'
 import { API } from './API'
 import { Pricing } from './Pricing'
 import { Section } from './Section'
-import { Circles } from './molecules/Circles'
 
 export default function Page() {
   return (
     <div className="flex flex-col items-center">
       <Hero />
+      <Separator className="w-screen" />
       <PageContent />
     </div>
   )
@@ -22,23 +22,25 @@ export default function Page() {
 export const PageContent = () => {
   return (
     <>
-      <Section className="flex flex-col gap-y-24">
+      <Section className="flex flex-col gap-y-32">
         <Monetization />
+      </Section>
+
+      <Separator className="w-screen" />
+
+      <Section>
         <MerchantOfRecord />
+      </Section>
+
+      <Separator className="w-screen" />
+
+      <Section>
         <Community />
       </Section>
 
       <Separator className="w-screen" />
 
-      <Section
-        id="integrations"
-        className="gap-y-24"
-        wrapperClassName="overflow-hidden"
-      >
-        <Circles className="absolute inset-0 top-1/2 -z-10 hidden -translate-y-1/2 text-white dark:block" />
-        <Circles className="absolute inset-0 top-1/2 -z-10 block -translate-y-1/2 text-black dark:hidden" />
-        <API />
-      </Section>
+      <API />
 
       <Separator className="w-screen" />
 

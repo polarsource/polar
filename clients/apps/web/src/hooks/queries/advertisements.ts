@@ -7,7 +7,7 @@ export const useAdvertisementDisplays = (benefit_id: string) =>
   useQuery({
     queryKey: ['advertisements', 'displays', benefit_id],
     queryFn: () =>
-      api.advertisements.listAdvertisementCampaigns({
+      api.advertisements.list({
         benefitId: benefit_id,
       }),
     retry: defaultRetry,

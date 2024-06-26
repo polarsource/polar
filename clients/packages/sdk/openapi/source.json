@@ -7679,8 +7679,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "subscriptions:write",
-                            "subscriptions:read"
+                            "subscriptions:read",
+                            "subscriptions:write"
                         ]
                     },
                     {
@@ -7980,8 +7980,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "subscriptions:write",
-                            "subscriptions:read"
+                            "subscriptions:read",
+                            "subscriptions:write"
                         ]
                     },
                     {
@@ -10959,8 +10959,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "benefits:read",
-                            "benefits:write"
+                            "benefits:write",
+                            "benefits:read"
                         ]
                     },
                     {
@@ -11175,8 +11175,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "benefits:read",
-                            "benefits:write"
+                            "benefits:write",
+                            "benefits:read"
                         ]
                     },
                     {
@@ -11465,8 +11465,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "benefits:read",
-                            "benefits:write"
+                            "benefits:write",
+                            "benefits:read"
                         ]
                     },
                     {
@@ -12172,12 +12172,12 @@
                 ],
                 "summary": "List Products",
                 "description": "List products.",
-                "operationId": "products:list_products",
+                "operationId": "products:list",
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "products:write",
-                            "products:read"
+                            "products:read",
+                            "products:write"
                         ]
                     },
                     {
@@ -12330,7 +12330,7 @@
                 ],
                 "summary": "Create Product",
                 "description": "Create a product.",
-                "operationId": "products:create_product",
+                "operationId": "products:create",
                 "security": [
                     {
                         "OpenIdConnect": [
@@ -12394,12 +12394,12 @@
                 ],
                 "summary": "Get Product",
                 "description": "Get a product by ID.",
-                "operationId": "products:get_product",
+                "operationId": "products:get",
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "products:write",
-                            "products:read"
+                            "products:read",
+                            "products:write"
                         ]
                     },
                     {
@@ -12464,7 +12464,7 @@
                 ],
                 "summary": "Update Product",
                 "description": "Update a product.",
-                "operationId": "products:update_product",
+                "operationId": "products:update",
                 "security": [
                     {
                         "OpenIdConnect": [
@@ -12554,7 +12554,7 @@
                 ],
                 "summary": "Update Product Benefits",
                 "description": "Update benefits granted by a product.",
-                "operationId": "products:update_product_benefits",
+                "operationId": "products:update_benefits",
                 "security": [
                     {
                         "OpenIdConnect": [

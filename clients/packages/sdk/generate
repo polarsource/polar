@@ -6,10 +6,6 @@ SCRIPTPATH="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
 
 docker rm generate-api || true
 
-# TODO(zegl): enable runtime checks again (withoutRuntimeChecks)
-# It's currently disabled as the Dashboard API requires unions/anyOf which the generator does not support.
-# Unfortionately there is no way to disable it for a single service.
-
 docker run \
     --volume "${SCRIPTPATH}":/sdk \
     --name generate-api \

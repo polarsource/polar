@@ -7,7 +7,7 @@ import FeatureItem from './molecules/FeatureItem'
 export const Community = () => {
   return (
     <div key="section-community" className="flex flex-col gap-y-24">
-      <div className="flex flex-col gap-y-4">
+      <div className="flex flex-col items-center gap-y-4 text-center md:gap-y-8">
         <h2 className="text-4xl leading-snug md:text-5xl">
           Grow community alongside transactions
         </h2>

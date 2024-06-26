@@ -51,11 +51,12 @@ const BenefitCard = ({
 const Benefits = () => {
   return (
     <>
-      <div className="flex flex-col items-center gap-y-4">
-        <h1 className="text-center text-4xl">Powerful & built-in benefits</h1>
-        <p className="dark:text-polar-200 text-center text-xl text-gray-500">
-          We&apos;re building common developer upsells so you don&apos;t have
-          to.
+      <div className="flex flex-col items-center gap-y-4 md:gap-y-8">
+        <h2 className="text-2xl leading-snug md:text-5xl">
+          Powerful & built-in benefits
+        </h2>
+        <p className="dark:text-polar-600 text-xl leading-snug text-gray-300 md:text-4xl">
+          We&apos;re building common developer upsells so you don&apos;t have to
         </p>
       </div>
       <div className="grid grid-cols-1 overflow-hidden rounded-3xl border md:grid-cols-3">
@@ -183,10 +184,12 @@ export const Monetization = () => {
 
         <Benefits />
 
-        <div className="flex flex-col items-center gap-y-4">
-          <h1 className="text-center text-4xl">Supporting all use cases</h1>
-          <p className="dark:text-polar-200 text-center text-xl text-gray-500">
-            From sustainable open source, sponsorware to full-fledged SaaS.
+        <div className="flex flex-col items-center gap-y-4 text-center md:gap-y-8">
+          <h2 className="text-2xl leading-snug md:text-5xl">
+            Supporting all use cases
+          </h2>
+          <p className="dark:text-polar-600 text-xl leading-snug text-gray-300 md:text-4xl">
+            From sustainable open source, sponsorware to full-fledged SaaS
           </p>
         </div>
         <div className="flex flex-col divide-y overflow-hidden rounded-3xl border md:flex-row md:divide-x md:divide-y-0">

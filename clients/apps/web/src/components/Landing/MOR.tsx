@@ -5,18 +5,17 @@ import {
   ReceiptLongOutlined,
   TrendingUpOutlined,
 } from '@mui/icons-material'
-import { motion } from 'framer-motion'
 import FeatureItem from './molecules/FeatureItem'
 
 export const MerchantOfRecord = () => {
   return (
     <div className="flex flex-col gap-y-24">
-      <div className="flex flex-col gap-y-4">
+      <div className="flex flex-col items-center gap-y-4 text-center md:gap-y-8">
         <h2 className="text-4xl leading-snug md:text-5xl">
           Increase sales, not overhead
         </h2>
         <h3 className="dark:text-polar-600 text-4xl leading-snug text-gray-500">
-          Polar handles VAT, sales tax and billing so you don&apos;t have to.
+          Polar handles VAT, sales tax and billing so you don&apos;t have to
         </h3>
       </div>
       <div className="grid grid-cols-1 gap-8 md:grid-cols-3">

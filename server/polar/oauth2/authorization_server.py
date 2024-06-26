@@ -60,7 +60,7 @@ class ClientRegistrationEndpoint(_ClientRegistrationEndpoint):
         return {
             "registration_client_uri": str(
                 request._request.url_for(
-                    "oauth2.configure_get", client_id=client.client_id
+                    "oauth2:get_client", client_id=client.client_id
                 )
             ),
             "registration_access_token": client.registration_access_token,
@@ -107,7 +107,7 @@ class ClientConfigurationEndpoint(_ClientConfigurationEndpoint):
         return {
             "registration_client_uri": str(
                 request._request.url_for(
-                    "oauth2.configure_get", client_id=client.client_id
+                    "oauth2:get_client", client_id=client.client_id
                 )
             ),
             "registration_access_token": client.registration_access_token,

@@ -158,6 +158,9 @@ const _generateScalarSchemaExample = (schema: OpenAPIV3_1.SchemaObject) => {
   }
 
   if (schema.type === 'object') {
+    if (schema.additionalProperties) {
+      return {}
+    }
     return generateSchemaExample(schema)
   }
 

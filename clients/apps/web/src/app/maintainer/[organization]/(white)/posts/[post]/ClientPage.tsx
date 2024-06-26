@@ -6,11 +6,12 @@ import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import DashboardTopbar from '@/components/Navigation/DashboardTopbar'
 import Spinner from '@/components/Shared/Spinner'
 import { useAlertIfUnsaved } from '@/hooks/editor'
-import { useArticleLookup, useUpdateArticle } from '@/hooks/queries'
+import { useArticleBySlug, useUpdateArticle } from '@/hooks/queries'
+import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
 import { organizationPageLink } from '@/utils/nav'
 import { captureEvent } from '@/utils/posthog'
 import { ArrowUpRightIcon } from '@heroicons/react/24/solid'
-import { ArticleVisibilityEnum } from '@polar-sh/sdk'
+import { ArticleVisibility } from '@polar-sh/sdk'
 import { AnimatePresence, motion } from 'framer-motion'
 import Link from 'next/link'
 import { redirect, useParams, useRouter } from 'next/navigation'
@@ -18,12 +19,13 @@ import Button from 'polarkit/components/ui/atoms/button'
 import { Tabs } from 'polarkit/components/ui/atoms/tabs'
 import { Banner } from 'polarkit/components/ui/molecules'
 import { Separator } from 'polarkit/components/ui/separator'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useContext, useEffect, useRef, useState } from 'react'
 
 const ClientPage = () => {
   const params = useParams()
-  const post = useArticleLookup(
-    params?.organization as string,
+  const orgContext = useContext(MaintainerOrganizationContext)
+  const post = useArticleBySlug(
+    orgContext?.organization?.id,
     params?.post as string,
   )
   const [animateSaveBanner, setAnimateSaveBanner] = useState(false)
@@ -93,7 +95,7 @@ const ClientPage = () => {
         })
 
         // Invalidate cache on public pages
-        revalidate(`articles:${post.data.organization.name}:${post.data.slug}`)
+        revalidate(`articles:${post.data.organization_id}:${post.data.slug}`)
 
         if (showBanner) {
           setAnimateSaveBanner(true)
@@ -144,7 +146,7 @@ const ClientPage = () => {
     post.data &&
       post.data.published_at &&
       new Date(post.data.published_at) <= new Date() &&
-      post.data.visibility === ArticleVisibilityEnum.PUBLIC,
+      post.data.visibility === ArticleVisibility.PUBLIC,
   )
 
   const onTabChange = async (tab: string) => {

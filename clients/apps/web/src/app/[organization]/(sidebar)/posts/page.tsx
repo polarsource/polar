@@ -1,5 +1,6 @@
 import { getServerSideAPI } from '@/utils/api/serverside'
 import {
+  ArticleVisibility,
   ListResourceArticle,
   Organization,
   Platforms,
@@ -100,34 +101,33 @@ export default async function Page({
   let articles: ListResourceArticle | undefined
 
   try {
-    const [loadOrganization, loadPinnedArticles, loadArticles] =
-      await Promise.all([
-        api.organizations.lookup(
-          {
-            platform: Platforms.GITHUB,
-            organizationName: params.organization,
-          },
-          cacheConfig,
-        ),
-        api.articles.search(
-          {
-            platform: Platforms.GITHUB,
-            organizationName: params.organization,
-            isPinned: true,
-          },
-          cacheConfig,
-        ),
-        api.articles.search(
-          {
-            platform: Platforms.GITHUB,
-            organizationName: params.organization,
-            isPinned: false,
-          },
-          cacheConfig,
-        ),
-      ])
-
-    organization = loadOrganization
+    organization = await api.organizations.lookup(
+      {
+        platform: Platforms.GITHUB,
+        organizationName: params.organization,
+      },
+      cacheConfig,
+    )
+    const [loadPinnedArticles, loadArticles] = await Promise.all([
+      api.articles.list(
+        {
+          organizationId: organization.id,
+          isPublished: true,
+          visibility: ArticleVisibility.PUBLIC,
+          isPinned: true,
+        },
+        cacheConfig,
+      ),
+      api.articles.list(
+        {
+          organizationId: organization.id,
+          isPublished: true,
+          visibility: ArticleVisibility.PUBLIC,
+          isPinned: false,
+        },
+        cacheConfig,
+      ),
+    ])
     pinnedArticles = loadPinnedArticles
     articles = loadArticles
   } catch (e) {

@@ -1,5 +1,5 @@
 import { useArticleReceivers } from '@/hooks/queries'
-import { Article, ArticleUpdate, ArticleVisibilityEnum } from '@polar-sh/sdk'
+import { Article, ArticleUpdate, ArticleVisibility } from '@polar-sh/sdk'
 import Button from 'polarkit/components/ui/atoms/button'
 import { ShadowBoxOnMd } from 'polarkit/components/ui/atoms/shadowbox'
 import { useFormContext } from 'react-hook-form'
@@ -13,7 +13,7 @@ export const isPublished = (article: Article): boolean => {
   return Boolean(
     article.published_at &&
       new Date(article.published_at) <= new Date() &&
-      article.visibility === ArticleVisibilityEnum.PUBLIC,
+      article.visibility === ArticleVisibility.PUBLIC,
   )
 }
 
@@ -21,7 +21,7 @@ export const isScheduled = (article: Article): boolean => {
   return Boolean(
     article.published_at &&
       new Date(article.published_at) > new Date() &&
-      article.visibility === ArticleVisibilityEnum.PUBLIC,
+      article.visibility === ArticleVisibility.PUBLIC,
   )
 }
 
@@ -30,10 +30,7 @@ export const PublishSummary = ({ article, isSaving }: ArticleSummaryProps) => {
 
   const formValues = watch()
 
-  const { data: articleReceivers } = useArticleReceivers(
-    article.organization.name,
-    formValues.paid_subscribers_only ?? false,
-  )
+  const { data: articleReceivers } = useArticleReceivers(article.id)
 
   const paidSubscribersOnlyEndsAt = formValues.paid_subscribers_only_ends_at
     ? new Date(formValues.paid_subscribers_only_ends_at)

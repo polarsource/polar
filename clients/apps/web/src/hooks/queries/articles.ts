@@ -1,92 +1,29 @@
+import revalidate from '@/app/actions'
 import { api, queryClient } from '@/utils/api'
 import {
   Article,
   ArticleCreate,
-  ArticleReceiversResponse,
   ArticleUpdate,
+  ArticlesApiListRequest,
   ListResourceArticle,
-  Platforms,
 } from '@polar-sh/sdk'
 import {
   InfiniteData,
   UseInfiniteQueryResult,
   UseMutationResult,
-  UseQueryResult,
   useInfiniteQuery,
   useMutation,
   useQuery,
 } from '@tanstack/react-query'
 import { defaultRetry } from './retry'
 
-export const useOrganizationArticles = (variables: {
-  orgName?: string
-  platform?: Platforms
-  showUnpublished?: boolean
-}): UseQueryResult<ListResourceArticle> =>
-  useQuery({
-    queryKey: [
-      'article',
-      'organization',
-      variables.orgName,
-      variables.showUnpublished,
-    ],
-    queryFn: () =>
-      api.articles.search({
-        organizationName: variables.orgName ?? '',
-        platform: variables.platform ?? Platforms.GITHUB,
-        showUnpublished: variables.showUnpublished,
-        limit: 100,
-      }),
-    retry: defaultRetry,
-    enabled: !!variables.orgName,
-  })
-
-export const useListArticles = (): UseInfiniteQueryResult<
-  InfiniteData<ListResourceArticle>
-> =>
-  useInfiniteQuery({
-    queryKey: ['article', 'list'],
-    queryFn: ({ signal, pageParam = 1 }) => {
-      const promise = api.articles.list({ page: pageParam, limit: 20 })
-
-      signal?.addEventListener('abort', () => {
-        // TODO!
-        // promise.cancel()
-      })
-
-      return promise
-    },
-    getNextPageParam: (
-      lastPage: ListResourceArticle,
-      pages,
-    ): number | undefined => {
-      return lastPage.pagination.max_page > pages.length
-        ? pages.length + 1
-        : undefined
-    },
-    initialPageParam: 1,
-    retry: defaultRetry,
-  })
-
-export const useSearchArticles = (
-  organizationName: string,
-  isPinned?: boolean,
+export const useListArticles = (
+  parameters?: Omit<ArticlesApiListRequest, 'page'>,
 ): UseInfiniteQueryResult<InfiniteData<ListResourceArticle>> =>
   useInfiniteQuery({
-    queryKey: [
-      'article',
-      'organization',
-      organizationName,
-      JSON.stringify({ isPinned }),
-    ],
+    queryKey: ['articles', 'list', { ...parameters }],
     queryFn: ({ signal, pageParam = 1 }) => {
-      const promise = api.articles.search({
-        organizationName,
-        platform: Platforms.GITHUB,
-        page: pageParam,
-        limit: 20,
-        isPinned,
-      })
+      const promise = api.articles.list({ page: pageParam, ...parameters })
 
       signal?.addEventListener('abort', () => {
         // TODO!
@@ -128,11 +65,13 @@ export const useCreateArticle = (): UseMutationResult<
       }),
     onSuccess: (result, _variables, _ctx) => {
       queryClient.invalidateQueries({
-        queryKey: ['article', 'organization', result.organization.name],
+        queryKey: [
+          'articles',
+          'list',
+          { organizationId: result.organization_id },
+        ],
       })
-      queryClient.invalidateQueries({
-        queryKey: ['article', 'list'],
-      })
+      revalidate(`articles:${result.organization_id}`)
     },
   })
 
@@ -153,17 +92,20 @@ export const useUpdateArticle = () =>
       }),
     onSuccess: (result, _variables, _ctx) => {
       queryClient.invalidateQueries({
-        queryKey: ['article', 'organization', result.organization.name],
+        queryKey: [
+          'articles',
+          'list',
+          { organizationId: result.organization_id },
+        ],
       })
       queryClient.invalidateQueries({
-        queryKey: ['article', 'id', result.id],
+        queryKey: ['articles', 'id', result.id],
       })
       queryClient.invalidateQueries({
-        queryKey: ['article', 'lookup'],
+        queryKey: ['articles', 'receivers', result.id],
       })
-      queryClient.invalidateQueries({
-        queryKey: ['article', 'list'],
-      })
+      revalidate(`articles:${result.organization_id}`)
+      revalidate(`articles:${result.organization_id}:${result.slug}`)
     },
   })
 
@@ -175,43 +117,41 @@ export const useDeleteArticle = () =>
       }),
     onSuccess: (_result, _variables, _ctx) => {
       queryClient.invalidateQueries({
-        queryKey: ['article'],
+        queryKey: ['articles', 'list'],
+      })
+      queryClient.invalidateQueries({
+        queryKey: ['articles', 'id', _variables.id],
       })
     },
   })
 
 export const useArticle = (id: string) =>
   useQuery({
-    queryKey: ['article', 'id', id],
+    queryKey: ['articles', 'id', id],
     queryFn: () => api.articles.get({ id }),
     retry: defaultRetry,
-    enabled: !!id,
   })
 
-export const useArticleLookup = (organization_name?: string, slug?: string) =>
+export const useArticleBySlug = (
+  organizationId: string | undefined,
+  slug: string,
+) =>
   useQuery({
-    queryKey: ['article', 'lookup', organization_name, slug],
+    queryKey: ['articles', { organizationId, slug }],
     queryFn: () =>
-      api.articles.lookup({
-        platform: Platforms.GITHUB,
-        organizationName: organization_name || '',
-        slug: slug || '',
-      }),
+      api.articles
+        .list({ organizationId, slug, limit: 1 })
+        .then((r) => r.items?.[0]),
     retry: defaultRetry,
-    enabled: !!organization_name && !!slug,
+    enabled: !!organizationId,
   })
 
-export const useArticleReceivers = (
-  organizationName: string,
-  paidSubscribersOnly: boolean,
-): UseQueryResult<ArticleReceiversResponse> =>
+export const useArticleReceivers = (id: string) =>
   useQuery({
-    queryKey: ['article', 'receivers', organizationName, paidSubscribersOnly],
+    queryKey: ['articles', 'receivers', id],
     queryFn: () =>
       api.articles.receivers({
-        platform: Platforms.GITHUB,
-        organizationName,
-        paidSubscribersOnly,
+        id,
       }),
     retry: defaultRetry,
   })
@@ -219,7 +159,7 @@ export const useArticleReceivers = (
 export const useSendArticlePreview = () =>
   useMutation({
     mutationFn: ({ id, email }: { id: string; email: string }) =>
-      api.articles.sendPreview({
+      api.articles.preview({
         id,
         articlePreview: {
           email,

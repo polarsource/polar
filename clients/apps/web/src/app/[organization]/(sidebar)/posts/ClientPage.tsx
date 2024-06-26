@@ -2,11 +2,16 @@
 
 import { Post as PostComponent } from '@/components/Feed/Posts/Post'
 import { useIsOrganizationAdmin } from '@/hooks'
-import { useSearchArticles } from '@/hooks/queries'
+import { useListArticles } from '@/hooks/queries'
 import { organizationPageLink } from '@/utils/nav'
 import { useTrafficRecordPageView } from '@/utils/traffic'
 import { StickyNote2Outlined } from '@mui/icons-material'
-import { Article, ListResourceArticle, Organization } from '@polar-sh/sdk'
+import {
+  Article,
+  ArticleVisibility,
+  ListResourceArticle,
+  Organization,
+} from '@polar-sh/sdk'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import Button from 'polarkit/components/ui/atoms/button'
@@ -25,7 +30,11 @@ const ClientPage = ({
   useTrafficRecordPageView({ organization })
 
   const isAdmin = useIsOrganizationAdmin(organization)
-  const posts = useSearchArticles(organization.name, false)
+  const posts = useListArticles({
+    organizationId: organization.id,
+    isPublished: true,
+    visibility: ArticleVisibility.PUBLIC,
+  })
   const infinitePosts =
     posts.data?.pages
       .flatMap((page) => page.items)

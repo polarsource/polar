@@ -8,14 +8,14 @@ import { StaggerReveal } from '@/components/Shared/StaggerReveal'
 import { Chart } from '@/components/Subscriptions/SubscriptionsChart'
 import { useCurrentOrgAndRepoFromURL } from '@/hooks'
 import {
-  useOrganizationArticles,
+  useListArticles,
   useTrafficStatistics,
   useTrafficTopReferrers,
   useUpdateOrganization,
 } from '@/hooks/queries'
 import { captureEvent } from '@/utils/posthog'
 import { prettyReferrerURL } from '@/utils/traffic'
-import { EnvelopeIcon, EyeIcon } from '@heroicons/react/24/outline'
+import { EnvelopeIcon } from '@heroicons/react/24/outline'
 import {
   AddOutlined,
   ArrowForward,
@@ -29,7 +29,8 @@ import { useRouter } from 'next/navigation'
 import { PolarTimeAgo } from 'polarkit/components/ui/atoms'
 import Button from 'polarkit/components/ui/atoms/button'
 import { Card } from 'polarkit/components/ui/atoms/card'
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { useInView } from 'react-intersection-observer'
 import { useHoverDirty } from 'react-use'
 import { twMerge } from 'tailwind-merge'
 
@@ -59,11 +60,24 @@ const ClientPage = () => {
   const [enablingPosts, setEnablingPosts] = useState(false)
   const { org } = useCurrentOrgAndRepoFromURL()
 
-  const posts = useOrganizationArticles({
-    orgName: org?.name,
-    platform: org?.platform,
-    showUnpublished: true,
+  const posts = useListArticles({
+    organizationId: org?.id,
   })
+  const infinitePosts =
+    posts.data?.pages
+      .flatMap((page) => page.items)
+      .filter((item): item is Article => Boolean(item)) ?? []
+
+  const [inViewRef, inView] = useInView()
+
+  useEffect(() => {
+    if (inView && posts.hasNextPage) {
+      posts.fetchNextPage()
+    }
+  }, [inView, posts])
+
+  const showPosts = infinitePosts.length > 0 && posts.isFetched
+  const showNoPostsYet = infinitePosts.length === 0 && posts.isFetched
 
   const trafficStatistics = useTrafficStatistics({
     orgName: org?.name ?? '',
@@ -92,10 +106,6 @@ const ClientPage = () => {
   const prettyReferrerrs = (referrers.data?.items ?? []).map((r) => {
     return { ...r, prettyURL: prettyReferrerURL(r) }
   })
-
-  const showPosts = (posts.data?.items?.length ?? 0) > 0
-  const showNoPostsYet =
-    !showPosts && posts.data?.items && posts.data.items.length === 0
 
   const router = useRouter()
 
@@ -165,13 +175,12 @@ const ClientPage = () => {
             <div className="flex flex-col gap-y-12">
               {showPosts ? (
                 <StaggerReveal className="flex w-full flex-col gap-y-4">
-                  {posts.data?.items
-                    ? posts.data.items.map((post) => (
-                        <StaggerReveal.Child key={post.id}>
-                          <PostItem {...post} />
-                        </StaggerReveal.Child>
-                      ))
-                    : null}
+                  {infinitePosts.map((post) => (
+                    <StaggerReveal.Child key={post.id}>
+                      <PostItem {...post} />
+                    </StaggerReveal.Child>
+                  ))}
+                  <div ref={inViewRef} />
                 </StaggerReveal>
               ) : null}
 
@@ -336,18 +345,6 @@ const PostItem = (post: Article) => {
                       Pinned
                     </span>
                   </div>
-                </div>
-              </>
-            ) : null}
-            {post.web_view_count !== undefined ? (
-              <>
-                &middot;
-                <div className="flex flex-row items-center gap-x-2 text-sm">
-                  <EyeIcon className="h-4 w-4" />
-                  <span>
-                    {post.web_view_count}{' '}
-                    {post.web_view_count === 1 ? 'view' : 'views'}
-                  </span>
                 </div>
               </>
             ) : null}

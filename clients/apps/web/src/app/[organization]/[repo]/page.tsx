@@ -7,6 +7,7 @@ import { Link } from '@/components/Profile/LinksEditor/LinksEditor'
 import { getServerSideAPI } from '@/utils/api/serverside'
 import { CONFIG } from '@/utils/config'
 import {
+  ArticleVisibility,
   ListResourceArticle,
   ListResourceIssueFunding,
   ListResourceOrganization,
@@ -164,10 +165,11 @@ export default async function Page({
         },
         cacheConfig,
       ),
-      api.articles.search(
+      api.articles.list(
         {
-          organizationName: params.organization,
-          platform: Platforms.GITHUB,
+          organizationId: repository.organization.id,
+          isPublished: true,
+          visibility: ArticleVisibility.PUBLIC,
           limit: 3,
         },
         cacheConfig,

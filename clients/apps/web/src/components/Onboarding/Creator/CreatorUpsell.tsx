@@ -2,7 +2,7 @@ import { DiscordIcon } from '@/components/Benefit/utils'
 import LogoIcon from '@/components/Brand/LogoIcon'
 import SubscriptionGroupIcon from '@/components/Subscriptions/SubscriptionGroupIcon'
 import { useCurrentOrgAndRepoFromURL } from '@/hooks'
-import { useOrganizationArticles, useProducts } from '@/hooks/queries'
+import { useListArticles, useProducts } from '@/hooks/queries'
 import { organizationPageLink } from '@/utils/nav'
 import {
   CloseOutlined,
@@ -10,7 +10,6 @@ import {
   StickyNote2Outlined,
   WifiTetheringOutlined,
 } from '@mui/icons-material'
-import { Platforms } from '@polar-sh/sdk'
 import Link from 'next/link'
 import ShadowBox from 'polarkit/components/ui/atoms/shadowbox'
 import { useCallback, useEffect, useRef, useState } from 'react'
@@ -39,11 +38,12 @@ export const useUpsellSteps = () => {
   const { data: products, isPending: tiersPending } = useProducts(
     currentOrg?.id ?? '',
   )
-  const { data: posts, isPending: articlesPending } = useOrganizationArticles({
-    orgName: currentOrg?.name,
-    platform: Platforms.GITHUB,
-    showUnpublished: false,
+  const { data: posts, isPending: articlesPending } = useListArticles({
+    organizationId: currentOrg?.id,
+    isPublished: true,
+    limit: 1,
   })
+  const postsCount = posts?.pages[0].pagination.total_count
 
   const handleDismiss = useCallback(
     (onboardingKey: keyof OnboardingMap) => {
@@ -77,7 +77,7 @@ export const useUpsellSteps = () => {
     }
 
     if (
-      posts?.items?.length === 0 &&
+      postsCount === 0 &&
       !onboardingCompletedMap.postCreated &&
       currentOrg?.feature_settings?.articles_enabled
     ) {

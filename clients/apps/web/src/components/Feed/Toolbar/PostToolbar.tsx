@@ -1,4 +1,4 @@
-import { Article, ArticleVisibilityEnum } from '@polar-sh/sdk'
+import { Article, ArticleVisibility } from '@polar-sh/sdk'
 import {
   TabsContent,
   TabsList,
@@ -23,7 +23,7 @@ export const PostToolbar = ({
     article &&
       article.published_at &&
       new Date(article.published_at) <= new Date() &&
-      article.visibility === ArticleVisibilityEnum.PUBLIC,
+      article.visibility === ArticleVisibility.PUBLIC,
   )
 
   return (

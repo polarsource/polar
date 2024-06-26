@@ -71,7 +71,7 @@ export default async function Layout({
           return undefined
         }),
       api.products
-        .listProducts(
+        .list(
           {
             organizationId: organization.id,
             isRecurring: true,

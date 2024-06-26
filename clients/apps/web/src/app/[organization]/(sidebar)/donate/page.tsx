@@ -113,7 +113,7 @@ export default async function Page({
             return undefined
           }),
 
-        api.products.listProducts(
+        api.products.list(
           {
             organizationId: organization.id,
             isRecurring: true,

@@ -119,10 +119,6 @@ const _generateScalarSchemaExample = (schema: OpenAPIV3_1.SchemaObject) => {
     return schema.example
   }
 
-  if (schema.default) {
-    return schema.default
-  }
-
   if (schema.const) {
     return schema.const
   }
@@ -326,17 +322,12 @@ export const buildNodeJSCommand = (
   const parametersExamples = getParametersExample(endpoint, ['path', 'query'])
   const bodySchema = getRequestBodySchema(endpoint)
   const bodyExample = bodySchema ? generateSchemaExample(bodySchema) : undefined
-  const bodyTitle =
-    bodySchema &&
-    isDereferenced(bodySchema) &&
-    bodySchema.title &&
-    titleToCamel(bodySchema.title)
 
   const requestParameters = {
     ...(parametersExamples ? convertToCamelCase(parametersExamples) : {}),
     ...(bodySchema && isDereferenced(bodySchema) && bodyExample
       ? {
-          [bodyTitle || 'body']: bodyExample,
+          body: bodyExample,
         }
       : {}),
   }

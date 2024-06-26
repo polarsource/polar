@@ -158,7 +158,7 @@ export default async function Page({
           // Handle unauthenticated
           return undefined
         }),
-      api.products.listProducts(
+      api.products.list(
         {
           organizationId: repository.organization.id,
           isRecurring: true,

@@ -110,10 +110,7 @@ export default async function Page({
 
   let product: Product | undefined
   try {
-    product = await api.products.getProduct(
-      { id: params.productId },
-      cacheConfig,
-    )
+    product = await api.products.get({ id: params.productId }, cacheConfig)
   } catch (e) {
     if (e instanceof ResponseError && e.response.status === 404) {
       notFound()

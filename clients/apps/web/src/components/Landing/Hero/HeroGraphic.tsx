@@ -1,17 +1,18 @@
 'use client'
 
 import LogoIcon from '@/components/Brand/LogoIcon'
+import GitHubIcon from '@/components/Icons/GitHubIcon'
+import SubscriptionTierCard from '@/components/Subscriptions/SubscriptionTierCard'
 import {
-  AccountBalance,
+  AccountBalanceOutlined,
   AttachMoneyOutlined,
   DiamondOutlined,
-  HowToVoteOutlined,
-  TrendingUpOutlined,
-  VolunteerActivism,
+  HiveOutlined,
 } from '@mui/icons-material'
 import { Transition, motion } from 'framer-motion'
 import { useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
+import { MOCKED_PRODUCTS } from '../utils'
 import { quadraticCurve } from './Hero.utils'
 
 export const HeroGraphic = () => {
@@ -23,7 +24,7 @@ export const HeroGraphic = () => {
 
   return (
     <div
-      className="relative hidden h-full w-1/3 md:block"
+      className="relative flex h-full w-full flex-col"
       ref={(el) => {
         if (el) {
           const boundingBox = el.getBoundingClientRect()
@@ -37,63 +38,56 @@ export const HeroGraphic = () => {
         xmlns="http://www.w3.org/2000/svg"
       >
         <Path
-          start={{ x: 40, y: 80 }}
-          end={{ x: midPointX, y: midPointY }}
+          start={{ x: 45, y: 90 }}
+          end={{ x: 125, y: midPointY + 60 }}
           vertical
         />
         <Path
-          start={{ x: midPointX, y: 80 }}
-          end={{ x: midPointX, y: midPointY }}
-        />
-        <Path
-          start={{ x: width - 40, y: 80 }}
-          end={{ x: midPointX, y: midPointY }}
-          vertical
-        />
-
-        <Path
-          start={{ x: midPointX, y: midPointY }}
-          end={{ x: 40, y: height - 40 }}
-          transition={{ delay: 1 }}
-          vertical
-        />
-        <Path
-          start={{ x: midPointX, y: midPointY }}
-          end={{ x: midPointX, y: height - 40 }}
-          transition={{ delay: 1 }}
-        />
-        <Path
-          start={{ x: midPointX, y: midPointY }}
-          end={{ x: width - 40, y: height - 40 }}
-          transition={{ delay: 1 }}
-          vertical
+          start={{ x: width - 123, y: height - 45 }}
+          end={{ x: width - 45, y: 160 }}
+          transition={{ delay: 1.5 }}
         />
       </motion.svg>
-      <div className="relative z-20 grid grid-cols-3 grid-rows-3 gap-16">
-        <Box icon={<DiamondOutlined fontSize="large" />} title="Products" />
-        <Box icon={<HowToVoteOutlined fontSize="large" />} title="Issues" />
-        <Box icon={<VolunteerActivism fontSize="large" />} title="Donations" />
+      <div className="relative z-20 grid grid-flow-col grid-cols-5 grid-rows-4 gap-8">
+        <Box icon={<GitHubIcon width={40} height={40} />} title="Repository" />
         <Box
-          className="col-start-2 col-end-3"
-          icon={<AttachMoneyOutlined fontSize="large" />}
-          title="Funding"
+          icon={<HiveOutlined fontSize="large" />}
+          title="Community"
+          transition={{ delay: 0.5 }}
+        />
+        <Box
+          icon={<DiamondOutlined fontSize="large" />}
+          title="Sponsorware"
           transition={{ delay: 1 }}
         />
+        <motion.div
+          className="col-start-2 col-end-5 row-start-1 row-end-5"
+          initial={{ filter: 'grayscale(100%)' }}
+          animate={{ filter: 'grayscale(0%)' }}
+          transition={{ delay: 1.5 }}
+        >
+          <SubscriptionTierCard
+            className="dark:bg-polar-950 h-full w-full"
+            subscriptionTier={MOCKED_PRODUCTS[1]}
+          />
+        </motion.div>
         <Box
-          className="col-start-1 col-end-2"
-          icon={<AccountBalance fontSize="large" />}
-          title="Payout"
-          transition={{ delay: 2.2 }}
+          className="col-start-5 col-end-5 row-start-2 row-end-2"
+          icon={<AttachMoneyOutlined fontSize="large" />}
+          title="Funding"
+          transition={{ delay: 3 }}
         />
         <Box
+          className="col-start-5 row-start-3"
+          icon={<AccountBalanceOutlined fontSize="large" />}
+          title="Payout"
+          transition={{ delay: 2.5 }}
+        />
+        <Box
+          className="col-start-5 row-start-4"
           icon={<LogoIcon size={40} />}
           title="VAT"
-          transition={{ delay: 1.8 }}
-        />
-        <Box
-          icon={<TrendingUpOutlined fontSize="large" />}
-          title="Metrics"
-          transition={{ delay: 2.2 }}
+          transition={{ delay: 2 }}
         />
       </div>
     </div>
@@ -121,7 +115,7 @@ const Box = ({ className, icon, title, transition }: BoxProps) => {
       className={twMerge(
         'dark:border-polar-800 flex aspect-square flex-col items-center justify-center gap-y-2 rounded-2xl border border-gray-100 text-xs transition-all duration-500',
         animationEnd
-          ? 'dark:bg-polar-900 bg-white shadow-2xl'
+          ? 'dark:bg-polar-900 bg-white shadow-sm'
           : 'dark:bg-polar-950 bg-gray-100',
         className,
       )}

@@ -19,7 +19,6 @@ export const HeroGraphic = () => {
   const [width, setWidth] = useState(0)
   const [height, setHeight] = useState(0)
 
-  const midPointX = useMemo(() => width / 2, [width])
   const midPointY = useMemo(() => height / 2, [height])
 
   return (

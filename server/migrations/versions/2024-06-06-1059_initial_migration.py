@@ -14,7 +14,8 @@ from sqlalchemy_utils.types.ts_vector import TSVectorType
 
 from polar.enums import Platforms
 from polar.kit.extensions.sqlalchemy import PostgresUUID, StringEnum
-from polar.models import Account, Article, Issue
+from polar.models import Account, Issue
+from polar.models.article import ArticleByline, ArticleVisibility
 from polar.models.issue_reference import ReferenceType
 
 # revision identifiers, used by Alembic.
@@ -326,10 +327,10 @@ def upgrade() -> None:
         sa.Column("created_by", sa.UUID(), nullable=False),
         sa.Column("organization_id", sa.UUID(), nullable=False),
         sa.Column("published_at", sa.TIMESTAMP(timezone=True), nullable=True),
-        sa.Column("byline", StringEnum(Article.Byline), nullable=False),
+        sa.Column("byline", StringEnum(ArticleByline), nullable=False),
         sa.Column(
             "visibility",
-            StringEnum(Article.Visibility),
+            StringEnum(ArticleVisibility),
             nullable=False,
         ),
         sa.Column("paid_subscribers_only", sa.Boolean(), nullable=False),

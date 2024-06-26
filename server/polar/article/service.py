@@ -26,7 +26,7 @@ from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.services import ResourceServiceReader
 from polar.kit.utils import utc_now
 from polar.models import ArticlesSubscription
-from polar.models.article import Article
+from polar.models.article import Article, ArticleByline, ArticleVisibility
 from polar.models.organization import Organization
 from polar.models.user import User
 from polar.models.user_organization import UserOrganization
@@ -56,7 +56,7 @@ class ArticleService(ResourceServiceReader[Article]):
         *,
         organization_id: UUID | None = None,
         slug: str | None = None,
-        visibility: Article.Visibility | None = None,
+        visibility: ArticleVisibility | None = None,
         is_published: bool | None = None,
         is_pinned: bool | None = None,
         pagination: PaginationParams,
@@ -141,7 +141,7 @@ class ArticleService(ResourceServiceReader[Article]):
 
         byline = create_schema.byline
         if is_organization(auth_subject):
-            byline = Article.Byline.organization
+            byline = ArticleByline.organization
 
         article = Article(
             slug=slug,
@@ -184,16 +184,16 @@ class ArticleService(ResourceServiceReader[Article]):
             slug = polar_slugify(update.slug)
             slug = await self._get_available_slug(session, article.organization, slug)
 
-        if update.byline == Article.Byline.user and article.user is not None:
-            article.byline = Article.Byline.user
+        if update.byline == ArticleByline.user and article.user is not None:
+            article.byline = ArticleByline.user
 
         should_notify_on_discord = False
         if update.visibility is not None:
             # if article was not already visible, and it's changed to visible:
             # set published at
             if (
-                article.visibility != Article.Visibility.public
-                and update.visibility == Article.Visibility.public
+                article.visibility != ArticleVisibility.public
+                and update.visibility == ArticleVisibility.public
                 and article.published_at is None
             ):
                 article.published_at = utc_now()
@@ -368,7 +368,7 @@ class ArticleService(ResourceServiceReader[Article]):
             Article.notifications_sent_at.is_(None),
             Article.notify_subscribers.is_(True),
             Article.deleted_at.is_(None),
-            Article.visibility == Article.Visibility.public,
+            Article.visibility == ArticleVisibility.public,
             Article.published_at < utc_now(),
         )
         res = await session.execute(statement)
@@ -451,14 +451,14 @@ class ArticleService(ResourceServiceReader[Article]):
 
         # Articles are readable if they are public and published
         visibility_clause = and_(
-            Article.visibility == Article.Visibility.public,
+            Article.visibility == ArticleVisibility.public,
             Article.published_at <= utc_now(),
         )
         # OR if they are hidden
         if include_hidden:
             visibility_clause = or_(
                 visibility_clause,
-                Article.visibility == Article.Visibility.hidden,
+                Article.visibility == ArticleVisibility.hidden,
             )
 
         statement: Select[tuple[Article, bool]]

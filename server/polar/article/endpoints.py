@@ -7,7 +7,7 @@ from pydantic import UUID4
 from polar.authz.service import AccessType, Authz
 from polar.exceptions import NotPermitted, ResourceNotFound
 from polar.kit.pagination import ListResource, PaginationParamsQuery
-from polar.models import Article
+from polar.models.article import ArticleVisibility
 from polar.openapi import IN_DEVELOPMENT_ONLY
 from polar.postgres import AsyncSession, get_db_session
 from polar.routing import APIRouter
@@ -35,7 +35,7 @@ async def list(
         None, description="Filter by organization ID."
     ),
     slug: str | None = Query(None, description="Filter by slug."),
-    visibility: Article.Visibility | None = Query(
+    visibility: ArticleVisibility | None = Query(
         None, description="Filter by visibility."
     ),
     is_published: bool | None = Query(None, description="Filter by published status."),

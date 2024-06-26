@@ -1,10 +1,8 @@
 import pytest
 from httpx import AsyncClient
 
-from polar.models import Article
-from polar.models.organization import Organization
-from polar.models.user import User
-from polar.models.user_organization import UserOrganization
+from polar.models import Article, Organization, User, UserOrganization
+from polar.models.article import ArticleVisibility
 from polar.postgres import AsyncSession
 from tests.fixtures.database import SaveFixture
 
@@ -268,7 +266,7 @@ async def test_get_private_user(
         body="Body body",
         user=user,
         organization=organization,
-        visibility=Article.Visibility.private,
+        visibility=ArticleVisibility.private,
     )
     await save_fixture(article)
 
@@ -303,7 +301,7 @@ async def test_get_private_anonymous(
         body="Body body",
         user=user,
         organization=organization,
-        visibility=Article.Visibility.private,
+        visibility=ArticleVisibility.private,
     )
     await save_fixture(article)
 

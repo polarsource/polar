@@ -5,6 +5,7 @@ import {
   ReceiptLongOutlined,
   TrendingUpOutlined,
 } from '@mui/icons-material'
+import { motion } from 'framer-motion'
 import FeatureItem from './molecules/FeatureItem'
 
 export const MerchantOfRecord = () => {

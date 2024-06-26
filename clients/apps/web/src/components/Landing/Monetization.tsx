@@ -9,6 +9,7 @@ import {
   TuneOutlined,
   VerifiedOutlined,
 } from '@mui/icons-material'
+import { motion } from 'framer-motion'
 import Link from 'next/link'
 import Avatar from 'polarkit/components/ui/atoms/avatar'
 import { twMerge } from 'tailwind-merge'
@@ -73,13 +74,13 @@ const Benefits = () => {
           description="From e-books, source code to executibles - any file is supported up to 10GB/each."
         />
         <BenefitCard
-          className="border-b md:border-r"
+          className="border-b"
           icon={<StickyNote2Outlined className="text-4xl" fontSize="inherit" />}
           title="Free & Premium Newsletters"
           description="Write a free, premium or early access newsletter in GitHub flavoured markdown."
         />
         <BenefitCard
-          className="border-b md:border-r"
+          className="border-b md:border-b-0 md:border-r"
           icon={<DiscordIcon size={30} />}
           title="Discord Invites & Roles"
           description="Give customers exclusive access or premium appearances and permissions."
@@ -109,14 +110,30 @@ export const Monetization = () => {
   return (
     <>
       <div className="flex flex-col gap-y-24 md:gap-y-32">
-        <div className="flex flex-col gap-y-4">
-          <h2 className="text-4xl leading-snug md:text-5xl">
-            From first donation to IPO
-          </h2>
-          <h3 className="dark:text-polar-600 text-4xl leading-snug text-gray-500">
-            Polar offers features to scale with your needs.
-          </h3>
-        </div>
+        <motion.div
+          className="relative flex flex-col gap-y-4"
+          initial={{ opacity: 0 }}
+          whileInView={{ opacity: 1, transition: { duration: 2 } }}
+        >
+          <picture>
+            <source
+              media="(prefers-color-scheme: dark)"
+              srcSet={`/assets/landing/public_page_dark.png`}
+            />
+            <img
+              className="dark:border-polar-700 rounded-3xl border border-gray-200"
+              srcSet={`/assets/landing/public_page.png`}
+            />
+          </picture>
+          <div className="dark:from-polar-950 absolute inset-0 flex flex-col items-center justify-end gap-y-6 bg-gradient-to-t from-white from-30% to-transparent p-12 text-center dark:to-transparent">
+            <h2 className="text-4xl leading-snug md:text-5xl">
+              From first donation to IPO
+            </h2>
+            <h3 className="dark:text-polar-600 text-4xl leading-snug text-gray-300">
+              Polar offers features to scale with your needs
+            </h3>
+          </div>
+        </motion.div>
         <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
           <FeatureItem
             className="md:row-span-2"

@@ -48,9 +48,9 @@ const LandingPageTopbar = () => {
       <div className="flex flex-row items-center gap-x-6">
         <a
           href="https://github.com/polarsource/polar"
-          className="dark:border-polar-700 dark:text-polar-200 dark:hover:bg-polar-800 transition-color rounded-full border border-gray-200 py-1.5 pl-3 pr-1.5 text-sm hover:bg-gray-100"
+          className="dark:border-polar-700 dark:text-polar-200 dark:hover:bg-polar-800 transition-color hidden flex-row items-center gap-x-2 rounded-full border border-gray-200 py-1.5 pl-3 pr-1.5 text-sm hover:bg-gray-100 md:flex"
         >
-          Star on GitHub&nbsp;&nbsp;
+          Star on GitHub
           <span className="dark:bg-polar-700 rounded-full bg-gray-100 px-2 py-0.5 text-black dark:text-white">
             1.5k
           </span>

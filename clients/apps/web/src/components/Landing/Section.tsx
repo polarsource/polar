@@ -23,7 +23,7 @@ export const Section = ({
     >
       <div
         className={twMerge(
-          'flex w-full max-w-[100vw] flex-col px-4 py-24 md:max-w-7xl md:px-12 md:py-32',
+          'flex w-full max-w-[100vw] flex-col px-4 py-16 md:max-w-7xl md:px-12 md:py-32',
           className,
         )}
       >

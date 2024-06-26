@@ -2,9 +2,8 @@
 
 import GithubLoginButton from '@/components/Auth/GithubLoginButton'
 import { Section } from '@/components/Landing/Section'
-import { ProductCard } from '@/components/Products/ProductCard'
 import SubscriptionTierCard from '@/components/Subscriptions/SubscriptionTierCard'
-import { Product, UserSignupType } from '@polar-sh/sdk'
+import { UserSignupType } from '@polar-sh/sdk'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
 import { Circles } from '../molecules/Circles'
@@ -89,14 +88,7 @@ export const Hero = () => {
             />
           </Link>
         </motion.div>
-        <motion.div
-          className="shadow-3xl overflow-hidden rounded-3xl"
-          variants={cardVariants}
-        >
-          <Link className="h-full" href="/products">
-            <ProductCard product={MOCKED_PRODUCTS[3] as Product} />
-          </Link>
-        </motion.div>
+        <motion.div variants={cardVariants}></motion.div>
 
         <motion.div className="col-span-2" variants={cardVariants}>
           <Link className="h-full" href="/issue-funding">

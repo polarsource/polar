@@ -108,9 +108,11 @@ const Benefits = () => {
 }
 
 export const Monetization = () => {
+  const circleRadius = 80
+
   return (
     <>
-      <div className="flex flex-col gap-y-24 md:gap-y-32">
+      <div className="flex flex-col items-center gap-y-24 md:gap-y-32">
         <motion.div
           className="relative flex flex-col gap-y-4"
           initial={{ opacity: 0 }}
@@ -126,7 +128,7 @@ export const Monetization = () => {
               srcSet={`/assets/landing/public_page.png`}
             />
           </picture>
-          <div className="dark:from-polar-950 absolute inset-0 flex flex-col items-center justify-end gap-y-2 bg-gradient-to-t from-white from-30% to-transparent p-6 text-center md:gap-y-6 md:p-12 dark:to-transparent">
+          <div className="dark:from-polar-950 absolute inset-0 flex flex-col items-center justify-end gap-y-2 bg-gradient-to-t from-white from-30% to-transparent p-6 text-center md:gap-y-8 md:p-12 dark:to-transparent">
             <h2 className="text-2xl leading-snug md:text-5xl">
               From first donation to IPO
             </h2>
@@ -242,6 +244,42 @@ export const Monetization = () => {
               </div>
             </Link>
           ))}
+        </div>
+
+        <div className="relative flex h-64 w-64 flex-col items-center justify-center rounded-full">
+          <GitHubIcon
+            className="text-black dark:text-white"
+            width={60}
+            height={60}
+          />
+          <div className="absolute inset-0 h-full w-full animate-spin fill-black text-xl font-semibold uppercase tracking-wide [animation-duration:32s] dark:fill-white">
+            <svg
+              x="0"
+              y="0"
+              viewBox="0 0 300 300"
+              enable-background="new 0 0 300 300"
+              xmlSpace="preserve"
+            >
+              <defs>
+                <path
+                  id="circlePath"
+                  d={`
+          M 150, 150
+          m -${circleRadius}, 0
+          a ${circleRadius},${circleRadius} 0 0,1 ${circleRadius * 2},0
+          a ${circleRadius},${circleRadius} 0 0,1 -${circleRadius * 2},0
+          `}
+                />
+              </defs>
+              <g>
+                <text fontSize={12}>
+                  <textPath xlinkHref="#circlePath" textLength={80 * 6.1}>
+                    Official Funding Option · Official Funding Option ·
+                  </textPath>
+                </text>
+              </g>
+            </svg>
+          </div>
         </div>
       </div>
     </>

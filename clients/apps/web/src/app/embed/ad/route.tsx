@@ -17,8 +17,8 @@ export async function GET(req: NextRequest) {
   const api = getServerSideAPI()
 
   const [ad, _] = await Promise.all([
-    api.advertisements.getAdvertisementCampaign({ id: id }),
-    api.advertisements.trackAdvertisementCampaignView({ id: id }),
+    api.advertisements.get({ id: id }),
+    api.advertisements.trackView({ id: id }),
   ])
 
   const url = dark && ad.image_url_dark ? ad.image_url_dark : ad.image_url

@@ -125,11 +125,11 @@ export const Monetization = () => {
               srcSet={`/assets/landing/public_page.png`}
             />
           </picture>
-          <div className="dark:from-polar-950 absolute inset-0 flex flex-col items-center justify-end gap-y-6 bg-gradient-to-t from-white from-30% to-transparent p-12 text-center dark:to-transparent">
-            <h2 className="text-4xl leading-snug md:text-5xl">
+          <div className="dark:from-polar-950 absolute inset-0 flex flex-col items-center justify-end gap-y-2 bg-gradient-to-t from-white from-30% to-transparent p-6 text-center md:gap-y-6 md:p-12 dark:to-transparent">
+            <h2 className="text-2xl leading-snug md:text-5xl">
               From first donation to IPO
             </h2>
-            <h3 className="dark:text-polar-600 text-4xl leading-snug text-gray-300">
+            <h3 className="dark:text-polar-600 text-xl leading-snug text-gray-300 md:text-4xl">
               Polar offers features to scale with your needs
             </h3>
           </div>

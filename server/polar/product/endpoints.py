@@ -25,8 +25,8 @@ ProductNotFound = {
 }
 
 
-@router.get("/", response_model=ListResource[ProductSchema])
-async def list_products(
+@router.get("/", summary="List Products", response_model=ListResource[ProductSchema])
+async def list(
     pagination: PaginationParamsQuery,
     auth_subject: auth.CreatorProductsReadOrAnonymous,
     organization_id: UUID4 | None = Query(
@@ -70,10 +70,11 @@ async def list_products(
 
 @router.get(
     "/{id}",
+    summary="Get Product",
     response_model=ProductSchema,
     responses={404: ProductNotFound},
 )
-async def get_product(
+async def get(
     id: ProductID,
     auth_subject: auth.CreatorProductsReadOrAnonymous,
     session: AsyncSession = Depends(get_db_session),
@@ -91,9 +92,10 @@ async def get_product(
     "/",
     response_model=ProductSchema,
     status_code=201,
+    summary="Create Product",
     responses={201: {"description": "Product created."}},
 )
-async def create_product(
+async def create(
     product_create: ProductCreate,
     auth_subject: auth.CreatorProductsWrite,
     authz: Authz = Depends(Authz.authz),
@@ -108,6 +110,7 @@ async def create_product(
 @router.patch(
     "/{id}",
     response_model=ProductSchema,
+    summary="Update Product",
     responses={
         200: {"description": "Product updated."},
         403: {
@@ -117,7 +120,7 @@ async def create_product(
         404: ProductNotFound,
     },
 )
-async def update_product(
+async def update(
     id: ProductID,
     product_update: ProductUpdate,
     auth_subject: auth.CreatorProductsWrite,
@@ -142,6 +145,7 @@ async def update_product(
 @router.post(
     "/{id}/benefits",
     response_model=ProductSchema,
+    summary="Update Product Benefits",
     responses={
         200: {"description": "Product benefits updated."},
         403: {
@@ -151,7 +155,7 @@ async def update_product(
         404: ProductNotFound,
     },
 )
-async def update_product_benefits(
+async def update_benefits(
     id: ProductID,
     benefits_update: ProductBenefitsUpdate,
     auth_subject: auth.CreatorProductsWrite,

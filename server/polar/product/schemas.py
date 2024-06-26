@@ -159,7 +159,10 @@ class ProductOneTimeCreate(ProductCreateBase):
     )
 
 
-ProductCreate = ProductRecurringCreate | ProductOneTimeCreate
+ProductCreate = Annotated[
+    ProductRecurringCreate | ProductOneTimeCreate,
+    MergeJSONSchema({"title": "ProductCreate"}),
+]
 
 
 class ExistingProductPrice(Schema):

@@ -43,10 +43,7 @@ FileNotFoundResponse = {
 ListOfFileIDs: TypeAlias = list[UUID4]
 
 
-@router.get(
-    "/",
-    response_model=ListResource[FileRead],
-)
+@router.get("/", summary="List Files", response_model=ListResource[FileRead])
 async def list(
     auth_subject: auth.CreatorFilesWrite,
     pagination: PaginationParamsQuery,
@@ -58,6 +55,7 @@ async def list(
     authz: Authz = Depends(Authz.authz),
     session: AsyncSession = Depends(get_db_session),
 ) -> ListResource[FileRead]:
+    """List files."""
     subject = auth_subject.subject
 
     if not organization_id:
@@ -82,16 +80,14 @@ async def list(
     )
 
 
-@router.post(
-    "/",
-    response_model=FileUpload,
-)
+@router.post("/", summary="Create File", response_model=FileUpload)
 async def create(
     file_create: FileCreate,
     auth_subject: auth.CreatorFilesWrite,
     authz: Authz = Depends(Authz.authz),
     session: AsyncSession = Depends(get_db_session),
 ) -> FileUpload:
+    """Create a file."""
     subject = auth_subject.subject
 
     organization = await get_payload_organization(session, auth_subject, file_create)
@@ -108,6 +104,7 @@ async def create(
 
 @router.post(
     "/{id}/uploaded",
+    summary="Complete File Upload",
     response_model=FileRead,
 )
 async def uploaded(
@@ -117,6 +114,7 @@ async def uploaded(
     authz: Authz = Depends(Authz.authz),
     session: AsyncSession = Depends(get_db_session),
 ) -> File:
+    """Complete a file upload."""
     subject = auth_subject.subject
 
     file = await file_service.get(session, id)
@@ -138,6 +136,7 @@ async def uploaded(
 # Re-introduce with changing version
 @router.patch(
     "/{id}",
+    summary="Update File",
     response_model=FileRead,
 )
 async def update(
@@ -147,6 +146,7 @@ async def update(
     authz: Authz = Depends(Authz.authz),
     session: AsyncSession = Depends(get_db_session),
 ) -> File:
+    """Update a file."""
     subject = auth_subject.subject
 
     file = await file_service.get(session, id)
@@ -165,6 +165,7 @@ async def update(
 
 @router.delete(
     "/{id}",
+    summary="Delete File",
     status_code=204,
     responses={
         204: {"description": "File deleted."},
@@ -184,6 +185,7 @@ async def delete(
     authz: Authz = Depends(Authz.authz),
     session: AsyncSession = Depends(get_db_session),
 ) -> None:
+    """Delete a file."""
     subject = auth_subject.subject
 
     file = await file_service.get(session, id)

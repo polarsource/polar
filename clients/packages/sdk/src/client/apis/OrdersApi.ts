@@ -23,15 +23,15 @@ import type {
   ResourceNotFound,
 } from '../models/index';
 
-export interface OrdersApiGetOrderRequest {
+export interface OrdersApiGetRequest {
     id: string;
 }
 
-export interface OrdersApiGetOrderInvoiceRequest {
+export interface OrdersApiGetInvoiceRequest {
     id: string;
 }
 
-export interface OrdersApiListOrdersRequest {
+export interface OrdersApiListRequest {
     organizationId?: string;
     productId?: string;
     productPriceType?: ProductPriceType;
@@ -50,11 +50,11 @@ export class OrdersApi extends runtime.BaseAPI {
      * Get an order by ID.
      * Get Order
      */
-    async getOrderRaw(requestParameters: OrdersApiGetOrderRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Order>> {
+    async getRaw(requestParameters: OrdersApiGetRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Order>> {
         if (requestParameters['id'] == null) {
             throw new runtime.RequiredError(
                 'id',
-                'Required parameter "id" was null or undefined when calling getOrder().'
+                'Required parameter "id" was null or undefined when calling get().'
             );
         }
 
@@ -84,8 +84,8 @@ export class OrdersApi extends runtime.BaseAPI {
      * Get an order by ID.
      * Get Order
      */
-    async getOrder(requestParameters: OrdersApiGetOrderRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Order> {
-        const response = await this.getOrderRaw(requestParameters, initOverrides);
+    async get(requestParameters: OrdersApiGetRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Order> {
+        const response = await this.getRaw(requestParameters, initOverrides);
         return await response.value();
     }
 
@@ -93,11 +93,11 @@ export class OrdersApi extends runtime.BaseAPI {
      * Get an order\'s invoice data.
      * Get Order Invoice
      */
-    async getOrderInvoiceRaw(requestParameters: OrdersApiGetOrderInvoiceRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<OrderInvoice>> {
+    async getInvoiceRaw(requestParameters: OrdersApiGetInvoiceRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<OrderInvoice>> {
         if (requestParameters['id'] == null) {
             throw new runtime.RequiredError(
                 'id',
-                'Required parameter "id" was null or undefined when calling getOrderInvoice().'
+                'Required parameter "id" was null or undefined when calling getInvoice().'
             );
         }
 
@@ -127,8 +127,8 @@ export class OrdersApi extends runtime.BaseAPI {
      * Get an order\'s invoice data.
      * Get Order Invoice
      */
-    async getOrderInvoice(requestParameters: OrdersApiGetOrderInvoiceRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<OrderInvoice> {
-        const response = await this.getOrderInvoiceRaw(requestParameters, initOverrides);
+    async getInvoice(requestParameters: OrdersApiGetInvoiceRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<OrderInvoice> {
+        const response = await this.getInvoiceRaw(requestParameters, initOverrides);
         return await response.value();
     }
 
@@ -136,7 +136,7 @@ export class OrdersApi extends runtime.BaseAPI {
      * List orders.
      * List Orders
      */
-    async listOrdersRaw(requestParameters: OrdersApiListOrdersRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListResourceOrder>> {
+    async listRaw(requestParameters: OrdersApiListRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListResourceOrder>> {
         const queryParameters: any = {};
 
         if (requestParameters['organizationId'] != null) {
@@ -191,8 +191,8 @@ export class OrdersApi extends runtime.BaseAPI {
      * List orders.
      * List Orders
      */
-    async listOrders(requestParameters: OrdersApiListOrdersRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ListResourceOrder> {
-        const response = await this.listOrdersRaw(requestParameters, initOverrides);
+    async list(requestParameters: OrdersApiListRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ListResourceOrder> {
+        const response = await this.listRaw(requestParameters, initOverrides);
         return await response.value();
     }
 

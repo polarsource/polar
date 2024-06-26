@@ -22,7 +22,7 @@ import type {
   ProductPriceType,
 } from '../models/index';
 
-export interface MetricsApiGetMetricsRequest {
+export interface MetricsApiGetRequest {
     startDate: string;
     endDate: string;
     interval: Interval;
@@ -40,25 +40,25 @@ export class MetricsApi extends runtime.BaseAPI {
      * Get metrics about your orders and subscriptions.
      * Get Metrics
      */
-    async getMetricsRaw(requestParameters: MetricsApiGetMetricsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<MetricsResponse>> {
+    async getRaw(requestParameters: MetricsApiGetRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<MetricsResponse>> {
         if (requestParameters['startDate'] == null) {
             throw new runtime.RequiredError(
                 'startDate',
-                'Required parameter "startDate" was null or undefined when calling getMetrics().'
+                'Required parameter "startDate" was null or undefined when calling get().'
             );
         }
 
         if (requestParameters['endDate'] == null) {
             throw new runtime.RequiredError(
                 'endDate',
-                'Required parameter "endDate" was null or undefined when calling getMetrics().'
+                'Required parameter "endDate" was null or undefined when calling get().'
             );
         }
 
         if (requestParameters['interval'] == null) {
             throw new runtime.RequiredError(
                 'interval',
-                'Required parameter "interval" was null or undefined when calling getMetrics().'
+                'Required parameter "interval" was null or undefined when calling get().'
             );
         }
 
@@ -112,8 +112,8 @@ export class MetricsApi extends runtime.BaseAPI {
      * Get metrics about your orders and subscriptions.
      * Get Metrics
      */
-    async getMetrics(requestParameters: MetricsApiGetMetricsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<MetricsResponse> {
-        const response = await this.getMetricsRaw(requestParameters, initOverrides);
+    async get(requestParameters: MetricsApiGetRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<MetricsResponse> {
+        const response = await this.getRaw(requestParameters, initOverrides);
         return await response.value();
     }
 
@@ -121,7 +121,7 @@ export class MetricsApi extends runtime.BaseAPI {
      * Get the interval limits for the metrics endpoint.
      * Get Metrics Limits
      */
-    async getMetricsLimitsRaw(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<MetricsLimits>> {
+    async getLimitsRaw(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<MetricsLimits>> {
         const queryParameters: any = {};
 
         const headerParameters: runtime.HTTPHeaders = {};
@@ -148,8 +148,8 @@ export class MetricsApi extends runtime.BaseAPI {
      * Get the interval limits for the metrics endpoint.
      * Get Metrics Limits
      */
-    async getMetricsLimits(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<MetricsLimits> {
-        const response = await this.getMetricsLimitsRaw(initOverrides);
+    async getLimits(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<MetricsLimits> {
+        const response = await this.getLimitsRaw(initOverrides);
         return await response.value();
     }
 

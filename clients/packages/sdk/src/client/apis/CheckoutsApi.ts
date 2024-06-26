@@ -20,11 +20,11 @@ import type {
   HTTPValidationError,
 } from '../models/index';
 
-export interface CheckoutsApiCreateCheckoutRequest {
+export interface CheckoutsApiCreateRequest {
     body: CheckoutCreate;
 }
 
-export interface CheckoutsApiGetCheckoutRequest {
+export interface CheckoutsApiGetRequest {
     id: string;
 }
 
@@ -34,13 +34,14 @@ export interface CheckoutsApiGetCheckoutRequest {
 export class CheckoutsApi extends runtime.BaseAPI {
 
     /**
+     * Create a checkout session.
      * Create Checkout
      */
-    async createCheckoutRaw(requestParameters: CheckoutsApiCreateCheckoutRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Checkout>> {
+    async createRaw(requestParameters: CheckoutsApiCreateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Checkout>> {
         if (requestParameters['body'] == null) {
             throw new runtime.RequiredError(
                 'body',
-                'Required parameter "body" was null or undefined when calling createCheckout().'
+                'Required parameter "body" was null or undefined when calling create().'
             );
         }
 
@@ -70,21 +71,23 @@ export class CheckoutsApi extends runtime.BaseAPI {
     }
 
     /**
+     * Create a checkout session.
      * Create Checkout
      */
-    async createCheckout(requestParameters: CheckoutsApiCreateCheckoutRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Checkout> {
-        const response = await this.createCheckoutRaw(requestParameters, initOverrides);
+    async create(requestParameters: CheckoutsApiCreateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Checkout> {
+        const response = await this.createRaw(requestParameters, initOverrides);
         return await response.value();
     }
 
     /**
+     * Get an active checkout session by ID.
      * Get Checkout
      */
-    async getCheckoutRaw(requestParameters: CheckoutsApiGetCheckoutRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Checkout>> {
+    async getRaw(requestParameters: CheckoutsApiGetRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Checkout>> {
         if (requestParameters['id'] == null) {
             throw new runtime.RequiredError(
                 'id',
-                'Required parameter "id" was null or undefined when calling getCheckout().'
+                'Required parameter "id" was null or undefined when calling get().'
             );
         }
 
@@ -103,10 +106,11 @@ export class CheckoutsApi extends runtime.BaseAPI {
     }
 
     /**
+     * Get an active checkout session by ID.
      * Get Checkout
      */
-    async getCheckout(requestParameters: CheckoutsApiGetCheckoutRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Checkout> {
-        const response = await this.getCheckoutRaw(requestParameters, initOverrides);
+    async get(requestParameters: CheckoutsApiGetRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Checkout> {
+        const response = await this.getRaw(requestParameters, initOverrides);
         return await response.value();
     }
 

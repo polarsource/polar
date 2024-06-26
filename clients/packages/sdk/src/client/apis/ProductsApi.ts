@@ -26,15 +26,15 @@ import type {
   SubscriptionTierType,
 } from '../models/index';
 
-export interface ProductsApiCreateProductRequest {
+export interface ProductsApiCreateRequest {
     body: ProductCreate;
 }
 
-export interface ProductsApiGetProductRequest {
+export interface ProductsApiGetRequest {
     id: string;
 }
 
-export interface ProductsApiListProductsRequest {
+export interface ProductsApiListRequest {
     organizationId?: string;
     includeArchived?: boolean;
     isRecurring?: boolean;
@@ -44,12 +44,12 @@ export interface ProductsApiListProductsRequest {
     limit?: number;
 }
 
-export interface ProductsApiUpdateProductRequest {
+export interface ProductsApiUpdateRequest {
     id: string;
     body: ProductUpdate;
 }
 
-export interface ProductsApiUpdateProductBenefitsRequest {
+export interface ProductsApiUpdateBenefitsRequest {
     id: string;
     body: ProductBenefitsUpdate;
 }
@@ -63,11 +63,11 @@ export class ProductsApi extends runtime.BaseAPI {
      * Create a product.
      * Create Product
      */
-    async createProductRaw(requestParameters: ProductsApiCreateProductRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Product>> {
+    async createRaw(requestParameters: ProductsApiCreateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Product>> {
         if (requestParameters['body'] == null) {
             throw new runtime.RequiredError(
                 'body',
-                'Required parameter "body" was null or undefined when calling createProduct().'
+                'Required parameter "body" was null or undefined when calling create().'
             );
         }
 
@@ -100,8 +100,8 @@ export class ProductsApi extends runtime.BaseAPI {
      * Create a product.
      * Create Product
      */
-    async createProduct(requestParameters: ProductsApiCreateProductRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Product> {
-        const response = await this.createProductRaw(requestParameters, initOverrides);
+    async create(requestParameters: ProductsApiCreateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Product> {
+        const response = await this.createRaw(requestParameters, initOverrides);
         return await response.value();
     }
 
@@ -109,11 +109,11 @@ export class ProductsApi extends runtime.BaseAPI {
      * Get a product by ID.
      * Get Product
      */
-    async getProductRaw(requestParameters: ProductsApiGetProductRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Product>> {
+    async getRaw(requestParameters: ProductsApiGetRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Product>> {
         if (requestParameters['id'] == null) {
             throw new runtime.RequiredError(
                 'id',
-                'Required parameter "id" was null or undefined when calling getProduct().'
+                'Required parameter "id" was null or undefined when calling get().'
             );
         }
 
@@ -143,8 +143,8 @@ export class ProductsApi extends runtime.BaseAPI {
      * Get a product by ID.
      * Get Product
      */
-    async getProduct(requestParameters: ProductsApiGetProductRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Product> {
-        const response = await this.getProductRaw(requestParameters, initOverrides);
+    async get(requestParameters: ProductsApiGetRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Product> {
+        const response = await this.getRaw(requestParameters, initOverrides);
         return await response.value();
     }
 
@@ -152,7 +152,7 @@ export class ProductsApi extends runtime.BaseAPI {
      * List products.
      * List Products
      */
-    async listProductsRaw(requestParameters: ProductsApiListProductsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListResourceProduct>> {
+    async listRaw(requestParameters: ProductsApiListRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListResourceProduct>> {
         const queryParameters: any = {};
 
         if (requestParameters['organizationId'] != null) {
@@ -207,8 +207,8 @@ export class ProductsApi extends runtime.BaseAPI {
      * List products.
      * List Products
      */
-    async listProducts(requestParameters: ProductsApiListProductsRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ListResourceProduct> {
-        const response = await this.listProductsRaw(requestParameters, initOverrides);
+    async list(requestParameters: ProductsApiListRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ListResourceProduct> {
+        const response = await this.listRaw(requestParameters, initOverrides);
         return await response.value();
     }
 
@@ -216,18 +216,18 @@ export class ProductsApi extends runtime.BaseAPI {
      * Update a product.
      * Update Product
      */
-    async updateProductRaw(requestParameters: ProductsApiUpdateProductRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Product>> {
+    async updateRaw(requestParameters: ProductsApiUpdateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Product>> {
         if (requestParameters['id'] == null) {
             throw new runtime.RequiredError(
                 'id',
-                'Required parameter "id" was null or undefined when calling updateProduct().'
+                'Required parameter "id" was null or undefined when calling update().'
             );
         }
 
         if (requestParameters['body'] == null) {
             throw new runtime.RequiredError(
                 'body',
-                'Required parameter "body" was null or undefined when calling updateProduct().'
+                'Required parameter "body" was null or undefined when calling update().'
             );
         }
 
@@ -260,8 +260,8 @@ export class ProductsApi extends runtime.BaseAPI {
      * Update a product.
      * Update Product
      */
-    async updateProduct(requestParameters: ProductsApiUpdateProductRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Product> {
-        const response = await this.updateProductRaw(requestParameters, initOverrides);
+    async update(requestParameters: ProductsApiUpdateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Product> {
+        const response = await this.updateRaw(requestParameters, initOverrides);
         return await response.value();
     }
 
@@ -269,18 +269,18 @@ export class ProductsApi extends runtime.BaseAPI {
      * Update benefits granted by a product.
      * Update Product Benefits
      */
-    async updateProductBenefitsRaw(requestParameters: ProductsApiUpdateProductBenefitsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Product>> {
+    async updateBenefitsRaw(requestParameters: ProductsApiUpdateBenefitsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Product>> {
         if (requestParameters['id'] == null) {
             throw new runtime.RequiredError(
                 'id',
-                'Required parameter "id" was null or undefined when calling updateProductBenefits().'
+                'Required parameter "id" was null or undefined when calling updateBenefits().'
             );
         }
 
         if (requestParameters['body'] == null) {
             throw new runtime.RequiredError(
                 'body',
-                'Required parameter "body" was null or undefined when calling updateProductBenefits().'
+                'Required parameter "body" was null or undefined when calling updateBenefits().'
             );
         }
 
@@ -313,8 +313,8 @@ export class ProductsApi extends runtime.BaseAPI {
      * Update benefits granted by a product.
      * Update Product Benefits
      */
-    async updateProductBenefits(requestParameters: ProductsApiUpdateProductBenefitsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Product> {
-        const response = await this.updateProductBenefitsRaw(requestParameters, initOverrides);
+    async updateBenefits(requestParameters: ProductsApiUpdateBenefitsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Product> {
+        const response = await this.updateBenefitsRaw(requestParameters, initOverrides);
         return await response.value();
     }
 

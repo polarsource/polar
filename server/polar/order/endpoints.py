@@ -22,8 +22,8 @@ OrderID = Annotated[UUID4, Path(description="The order ID.")]
 OrderNotFound = {"description": "Order not found.", "model": ResourceNotFound.schema()}
 
 
-@router.get("/", response_model=ListResource[OrderSchema])
-async def list_orders(
+@router.get("/", summary="List Orders", response_model=ListResource[OrderSchema])
+async def list(
     auth_subject: auth.OrdersRead,
     pagination: PaginationParamsQuery,
     sorting: sorting.ListSorting,
@@ -64,10 +64,11 @@ async def list_orders(
 
 @router.get(
     "/{id}",
+    summary="Get Order",
     response_model=OrderSchema,
     responses={404: OrderNotFound},
 )
-async def get_order(
+async def get(
     id: OrderID,
     auth_subject: auth.OrdersRead,
     session: AsyncSession = Depends(get_db_session),
@@ -83,10 +84,11 @@ async def get_order(
 
 @router.get(
     "/{id}/invoice",
+    summary="Get Order Invoice",
     response_model=OrderInvoice,
     responses={404: OrderNotFound},
 )
-async def get_order_invoice(
+async def get_invoice(
     id: OrderID,
     auth_subject: auth.OrdersRead,
     session: AsyncSession = Depends(get_db_session),

@@ -13,7 +13,7 @@ export default async function Page({
   let checkout: Checkout | undefined
 
   try {
-    checkout = await api.checkouts.getCheckout({
+    checkout = await api.checkouts.get({
       id: searchParams.session_id,
     })
   } catch (e) {

@@ -53,7 +53,7 @@ export const useCreateArticle = (): UseMutationResult<
   useMutation({
     mutationFn: (articleCreate: ArticleCreate) =>
       api.articles.create({
-        articleCreate: {
+        body: {
           ...articleCreate,
 
           // Base64 encoded body over the wire. To "bypass" WAF.
@@ -80,7 +80,7 @@ export const useUpdateArticle = () =>
     mutationFn: (variables: { id: string; articleUpdate: ArticleUpdate }) =>
       api.articles.update({
         id: variables.id,
-        articleUpdate: {
+        body: {
           ...variables.articleUpdate,
 
           // Base64 encoded body over the wire. To "bypass" WAF.
@@ -150,7 +150,7 @@ export const useArticleReceivers = (id: string) =>
   useQuery({
     queryKey: ['articles', 'receivers', id],
     queryFn: () =>
-      api.articles.receivers({
+      api.articles.getReceivers({
         id,
       }),
     retry: defaultRetry,
@@ -159,9 +159,9 @@ export const useArticleReceivers = (id: string) =>
 export const useSendArticlePreview = () =>
   useMutation({
     mutationFn: ({ id, email }: { id: string; email: string }) =>
-      api.articles.preview({
+      api.articles.sendPreview({
         id,
-        articlePreview: {
+        body: {
           email,
         },
       }),

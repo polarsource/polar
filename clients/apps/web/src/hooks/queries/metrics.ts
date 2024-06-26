@@ -44,7 +44,7 @@ export const useMetrics = ({
       },
     ],
     queryFn: async () => {
-      const metrics = await api.metrics.getMetrics({
+      const metrics = await api.metrics.get({
         startDate: toISODate(startDate),
         endDate: toISODate(endDate),
         ...parameters,

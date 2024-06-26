@@ -27,7 +27,7 @@ ArticleNotFound = {
 }
 
 
-@router.get("/", response_model=ListResource[ArticleSchema])
+@router.get("/", summary="List Articles", response_model=ListResource[ArticleSchema])
 async def list(
     auth_subject: auth.ArticlesReadOrAnonymous,
     pagination: PaginationParamsQuery,
@@ -71,7 +71,12 @@ async def list(
     )
 
 
-@router.get("/{id}", response_model=ArticleSchema, responses={404: ArticleNotFound})
+@router.get(
+    "/{id}",
+    summary="Get Article",
+    response_model=ArticleSchema,
+    responses={404: ArticleNotFound},
+)
 async def get(
     id: ArticleID,
     auth_subject: auth.ArticlesReadOrAnonymous,
@@ -97,6 +102,7 @@ async def get(
 
 @router.post(
     "/",
+    summary="Create Article",
     response_model=ArticleSchema,
     status_code=201,
     responses={201: {"description": "Article created."}},
@@ -116,6 +122,7 @@ async def create(
 
 @router.patch(
     "/{id}",
+    summary="Update Article",
     response_model=ArticleSchema,
     responses={
         200: {"description": "Article updated."},
@@ -152,8 +159,7 @@ async def update(
 
 @router.delete(
     "/{id}",
-    description="Delete an article.",
-    summary="Delete an article",
+    summary="Delete Article",
     status_code=204,
     responses={
         204: {"description": "Article deleted."},
@@ -183,8 +189,12 @@ async def delete(
     return None
 
 
-@router.get("/{id}/receivers", response_model=ArticleReceivers)
-async def receivers(
+@router.get(
+    "/{id}/receivers",
+    summary="Get Article Receivers Count",
+    response_model=ArticleReceivers,
+)
+async def get_receivers(
     id: ArticleID,
     auth_subject: auth.ArticlesWrite,
     session: AsyncSession = Depends(get_db_session),
@@ -213,6 +223,7 @@ async def receivers(
 
 @router.post(
     "/{id}/preview",
+    summary="Send Article Preview",
     status_code=202,
     responses={
         202: {"description": "Article preview sent."},
@@ -223,7 +234,7 @@ async def receivers(
         404: ArticleNotFound,
     },
 )
-async def preview(
+async def send_preview(
     id: ArticleID,
     body: ArticlePreview,
     auth_subject: auth.ArticlesWrite,
@@ -245,6 +256,7 @@ async def preview(
 
 @router.post(
     "/{id}/send",
+    summary="Send Article",
     status_code=202,
     responses={
         202: {"description": "Article sent to subscribers."},

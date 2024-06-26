@@ -29,7 +29,7 @@ import type {
 
 export interface IntegrationsGithubApiCheckOrganizationPermissionsRequest {
     id: string;
-    organizationCheckPermissionsInput: OrganizationCheckPermissionsInput;
+    body: OrganizationCheckPermissionsInput;
 }
 
 export interface IntegrationsGithubApiGetOrganizationBillingPlanRequest {
@@ -37,7 +37,7 @@ export interface IntegrationsGithubApiGetOrganizationBillingPlanRequest {
 }
 
 export interface IntegrationsGithubApiInstallRequest {
-    installationCreate: InstallationCreate;
+    body: InstallationCreate;
 }
 
 export interface IntegrationsGithubApiIntegrationsGithubAuthorizeRequest {
@@ -54,7 +54,7 @@ export interface IntegrationsGithubApiIntegrationsGithubCallbackRequest {
 }
 
 export interface IntegrationsGithubApiLookupUserOperationRequest {
-    lookupUserRequest: LookupUserRequest;
+    body: LookupUserRequest;
 }
 
 export interface IntegrationsGithubApiRedirectToOrganizationInstallationRequest {
@@ -82,10 +82,10 @@ export class IntegrationsGithubApi extends runtime.BaseAPI {
             );
         }
 
-        if (requestParameters['organizationCheckPermissionsInput'] == null) {
+        if (requestParameters['body'] == null) {
             throw new runtime.RequiredError(
-                'organizationCheckPermissionsInput',
-                'Required parameter "organizationCheckPermissionsInput" was null or undefined when calling checkOrganizationPermissions().'
+                'body',
+                'Required parameter "body" was null or undefined when calling checkOrganizationPermissions().'
             );
         }
 
@@ -108,7 +108,7 @@ export class IntegrationsGithubApi extends runtime.BaseAPI {
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
-            body: requestParameters['organizationCheckPermissionsInput'],
+            body: requestParameters['body'],
         }, initOverrides);
 
         return new runtime.VoidApiResponse(response);
@@ -166,10 +166,10 @@ export class IntegrationsGithubApi extends runtime.BaseAPI {
      * Install
      */
     async installRaw(requestParameters: IntegrationsGithubApiInstallRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Organization>> {
-        if (requestParameters['installationCreate'] == null) {
+        if (requestParameters['body'] == null) {
             throw new runtime.RequiredError(
-                'installationCreate',
-                'Required parameter "installationCreate" was null or undefined when calling install().'
+                'body',
+                'Required parameter "body" was null or undefined when calling install().'
             );
         }
 
@@ -192,7 +192,7 @@ export class IntegrationsGithubApi extends runtime.BaseAPI {
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
-            body: requestParameters['installationCreate'],
+            body: requestParameters['body'],
         }, initOverrides);
 
         return new runtime.JSONApiResponse(response);
@@ -314,10 +314,10 @@ export class IntegrationsGithubApi extends runtime.BaseAPI {
      * Lookup User
      */
     async lookupUserRaw(requestParameters: IntegrationsGithubApiLookupUserOperationRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<GithubUser>> {
-        if (requestParameters['lookupUserRequest'] == null) {
+        if (requestParameters['body'] == null) {
             throw new runtime.RequiredError(
-                'lookupUserRequest',
-                'Required parameter "lookupUserRequest" was null or undefined when calling lookupUser().'
+                'body',
+                'Required parameter "body" was null or undefined when calling lookupUser().'
             );
         }
 
@@ -340,7 +340,7 @@ export class IntegrationsGithubApi extends runtime.BaseAPI {
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
-            body: requestParameters['lookupUserRequest'],
+            body: requestParameters['body'],
         }, initOverrides);
 
         return new runtime.JSONApiResponse(response);

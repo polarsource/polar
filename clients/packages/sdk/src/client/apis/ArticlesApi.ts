@@ -32,7 +32,7 @@ export interface ArticlesApiDeleteRequest {
 }
 
 export interface ArticlesApiCreateRequest {
-    articleCreate: ArticleCreate;
+    body: ArticleCreate;
 }
 
 export interface ArticlesApiEmailUnsubscribeRequest {
@@ -55,7 +55,7 @@ export interface ArticlesApiListRequest {
 
 export interface ArticlesApiPreviewRequest {
     id: string;
-    articlePreview: ArticlePreview;
+    body: ArticlePreview;
 }
 
 export interface ArticlesApiReceiversRequest {
@@ -68,7 +68,7 @@ export interface ArticlesApiSendRequest {
 
 export interface ArticlesApiUpdateRequest {
     id: string;
-    articleUpdate: ArticleUpdate;
+    body: ArticleUpdate;
 }
 
 /**
@@ -123,10 +123,10 @@ export class ArticlesApi extends runtime.BaseAPI {
      * Create
      */
     async createRaw(requestParameters: ArticlesApiCreateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Article>> {
-        if (requestParameters['articleCreate'] == null) {
+        if (requestParameters['body'] == null) {
             throw new runtime.RequiredError(
-                'articleCreate',
-                'Required parameter "articleCreate" was null or undefined when calling create().'
+                'body',
+                'Required parameter "body" was null or undefined when calling create().'
             );
         }
 
@@ -149,7 +149,7 @@ export class ArticlesApi extends runtime.BaseAPI {
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
-            body: requestParameters['articleCreate'],
+            body: requestParameters['body'],
         }, initOverrides);
 
         return new runtime.JSONApiResponse(response);
@@ -319,10 +319,10 @@ export class ArticlesApi extends runtime.BaseAPI {
             );
         }
 
-        if (requestParameters['articlePreview'] == null) {
+        if (requestParameters['body'] == null) {
             throw new runtime.RequiredError(
-                'articlePreview',
-                'Required parameter "articlePreview" was null or undefined when calling preview().'
+                'body',
+                'Required parameter "body" was null or undefined when calling preview().'
             );
         }
 
@@ -345,7 +345,7 @@ export class ArticlesApi extends runtime.BaseAPI {
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
-            body: requestParameters['articlePreview'],
+            body: requestParameters['body'],
         }, initOverrides);
 
         if (this.isJsonMime(response.headers.get('content-type'))) {
@@ -466,10 +466,10 @@ export class ArticlesApi extends runtime.BaseAPI {
             );
         }
 
-        if (requestParameters['articleUpdate'] == null) {
+        if (requestParameters['body'] == null) {
             throw new runtime.RequiredError(
-                'articleUpdate',
-                'Required parameter "articleUpdate" was null or undefined when calling update().'
+                'body',
+                'Required parameter "body" was null or undefined when calling update().'
             );
         }
 
@@ -492,7 +492,7 @@ export class ArticlesApi extends runtime.BaseAPI {
             method: 'PATCH',
             headers: headerParameters,
             query: queryParameters,
-            body: requestParameters['articleUpdate'],
+            body: requestParameters['body'],
         }, initOverrides);
 
         return new runtime.JSONApiResponse(response);

@@ -40,7 +40,7 @@ export interface RepositoriesApiSearchRequest {
 
 export interface RepositoriesApiUpdateRequest {
     id: string;
-    repositoryUpdate: RepositoryUpdate;
+    body: RepositoryUpdate;
 }
 
 /**
@@ -270,10 +270,10 @@ export class RepositoriesApi extends runtime.BaseAPI {
             );
         }
 
-        if (requestParameters['repositoryUpdate'] == null) {
+        if (requestParameters['body'] == null) {
             throw new runtime.RequiredError(
-                'repositoryUpdate',
-                'Required parameter "repositoryUpdate" was null or undefined when calling update().'
+                'body',
+                'Required parameter "body" was null or undefined when calling update().'
             );
         }
 
@@ -296,7 +296,7 @@ export class RepositoriesApi extends runtime.BaseAPI {
             method: 'PATCH',
             headers: headerParameters,
             query: queryParameters,
-            body: requestParameters['repositoryUpdate'],
+            body: requestParameters['body'],
         }, initOverrides);
 
         return new runtime.JSONApiResponse(response);

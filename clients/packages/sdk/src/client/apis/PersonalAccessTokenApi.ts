@@ -22,7 +22,7 @@ import type {
 } from '../models/index';
 
 export interface PersonalAccessTokenApiCreatePersonalAccessTokenRequest {
-    personalAccessTokenCreate: PersonalAccessTokenCreate;
+    body: PersonalAccessTokenCreate;
 }
 
 export interface PersonalAccessTokenApiDeletePersonalAccessTokenRequest {
@@ -43,10 +43,10 @@ export class PersonalAccessTokenApi extends runtime.BaseAPI {
      * Create Personal Access Token
      */
     async createPersonalAccessTokenRaw(requestParameters: PersonalAccessTokenApiCreatePersonalAccessTokenRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<PersonalAccessTokenCreateResponse>> {
-        if (requestParameters['personalAccessTokenCreate'] == null) {
+        if (requestParameters['body'] == null) {
             throw new runtime.RequiredError(
-                'personalAccessTokenCreate',
-                'Required parameter "personalAccessTokenCreate" was null or undefined when calling createPersonalAccessToken().'
+                'body',
+                'Required parameter "body" was null or undefined when calling createPersonalAccessToken().'
             );
         }
 
@@ -69,7 +69,7 @@ export class PersonalAccessTokenApi extends runtime.BaseAPI {
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
-            body: requestParameters['personalAccessTokenCreate'],
+            body: requestParameters['body'],
         }, initOverrides);
 
         return new runtime.JSONApiResponse(response);

@@ -21,7 +21,7 @@ import type {
 } from '../models/index';
 
 export interface CheckoutsApiCreateCheckoutRequest {
-    checkoutCreate: CheckoutCreate;
+    body: CheckoutCreate;
 }
 
 export interface CheckoutsApiGetCheckoutRequest {
@@ -37,10 +37,10 @@ export class CheckoutsApi extends runtime.BaseAPI {
      * Create Checkout
      */
     async createCheckoutRaw(requestParameters: CheckoutsApiCreateCheckoutRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Checkout>> {
-        if (requestParameters['checkoutCreate'] == null) {
+        if (requestParameters['body'] == null) {
             throw new runtime.RequiredError(
-                'checkoutCreate',
-                'Required parameter "checkoutCreate" was null or undefined when calling createCheckout().'
+                'body',
+                'Required parameter "body" was null or undefined when calling createCheckout().'
             );
         }
 
@@ -63,7 +63,7 @@ export class CheckoutsApi extends runtime.BaseAPI {
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
-            body: requestParameters['checkoutCreate'],
+            body: requestParameters['body'],
         }, initOverrides);
 
         return new runtime.JSONApiResponse(response);

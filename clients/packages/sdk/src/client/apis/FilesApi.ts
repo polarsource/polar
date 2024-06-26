@@ -32,7 +32,7 @@ export interface FilesApiDeleteRequest {
 }
 
 export interface FilesApiCreateRequest {
-    fileCreate: FileCreate;
+    body: FileCreate;
 }
 
 export interface FilesApiListRequest {
@@ -44,12 +44,12 @@ export interface FilesApiListRequest {
 
 export interface FilesApiUpdateRequest {
     id: string;
-    filePatch: FilePatch;
+    body: FilePatch;
 }
 
 export interface FilesApiUploadedRequest {
     id: string;
-    fileUploadCompleted: FileUploadCompleted;
+    body: FileUploadCompleted;
 }
 
 /**
@@ -101,10 +101,10 @@ export class FilesApi extends runtime.BaseAPI {
      * Create
      */
     async createRaw(requestParameters: FilesApiCreateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<FileUpload>> {
-        if (requestParameters['fileCreate'] == null) {
+        if (requestParameters['body'] == null) {
             throw new runtime.RequiredError(
-                'fileCreate',
-                'Required parameter "fileCreate" was null or undefined when calling create().'
+                'body',
+                'Required parameter "body" was null or undefined when calling create().'
             );
         }
 
@@ -127,7 +127,7 @@ export class FilesApi extends runtime.BaseAPI {
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
-            body: requestParameters['fileCreate'],
+            body: requestParameters['body'],
         }, initOverrides);
 
         return new runtime.JSONApiResponse(response);
@@ -202,10 +202,10 @@ export class FilesApi extends runtime.BaseAPI {
             );
         }
 
-        if (requestParameters['filePatch'] == null) {
+        if (requestParameters['body'] == null) {
             throw new runtime.RequiredError(
-                'filePatch',
-                'Required parameter "filePatch" was null or undefined when calling update().'
+                'body',
+                'Required parameter "body" was null or undefined when calling update().'
             );
         }
 
@@ -228,7 +228,7 @@ export class FilesApi extends runtime.BaseAPI {
             method: 'PATCH',
             headers: headerParameters,
             query: queryParameters,
-            body: requestParameters['filePatch'],
+            body: requestParameters['body'],
         }, initOverrides);
 
         return new runtime.JSONApiResponse(response);
@@ -253,10 +253,10 @@ export class FilesApi extends runtime.BaseAPI {
             );
         }
 
-        if (requestParameters['fileUploadCompleted'] == null) {
+        if (requestParameters['body'] == null) {
             throw new runtime.RequiredError(
-                'fileUploadCompleted',
-                'Required parameter "fileUploadCompleted" was null or undefined when calling uploaded().'
+                'body',
+                'Required parameter "body" was null or undefined when calling uploaded().'
             );
         }
 
@@ -279,7 +279,7 @@ export class FilesApi extends runtime.BaseAPI {
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
-            body: requestParameters['fileUploadCompleted'],
+            body: requestParameters['body'],
         }, initOverrides);
 
         return new runtime.JSONApiResponse(response);

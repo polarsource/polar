@@ -29,7 +29,7 @@ import type {
 } from '../models/index';
 
 export interface PledgesApiCreateRequest {
-    createPledgeFromPaymentIntent: CreatePledgeFromPaymentIntent;
+    body: CreatePledgeFromPaymentIntent;
 }
 
 export interface PledgesApiCreateInvoiceRequest {
@@ -37,11 +37,11 @@ export interface PledgesApiCreateInvoiceRequest {
 }
 
 export interface PledgesApiCreatePayOnCompletionRequest {
-    createPledgePayLater: CreatePledgePayLater;
+    body: CreatePledgePayLater;
 }
 
 export interface PledgesApiCreatePaymentIntentRequest {
-    pledgeStripePaymentIntentCreate: PledgeStripePaymentIntentCreate;
+    body: PledgeStripePaymentIntentCreate;
 }
 
 export interface PledgesApiDisputePledgeRequest {
@@ -72,7 +72,7 @@ export interface PledgesApiSummaryRequest {
 
 export interface PledgesApiUpdatePaymentIntentRequest {
     id: string;
-    pledgeStripePaymentIntentUpdate: PledgeStripePaymentIntentUpdate;
+    body: PledgeStripePaymentIntentUpdate;
 }
 
 /**
@@ -85,10 +85,10 @@ export class PledgesApi extends runtime.BaseAPI {
      * Create
      */
     async createRaw(requestParameters: PledgesApiCreateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Pledge>> {
-        if (requestParameters['createPledgeFromPaymentIntent'] == null) {
+        if (requestParameters['body'] == null) {
             throw new runtime.RequiredError(
-                'createPledgeFromPaymentIntent',
-                'Required parameter "createPledgeFromPaymentIntent" was null or undefined when calling create().'
+                'body',
+                'Required parameter "body" was null or undefined when calling create().'
             );
         }
 
@@ -111,7 +111,7 @@ export class PledgesApi extends runtime.BaseAPI {
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
-            body: requestParameters['createPledgeFromPaymentIntent'],
+            body: requestParameters['body'],
         }, initOverrides);
 
         return new runtime.JSONApiResponse(response);
@@ -174,10 +174,10 @@ export class PledgesApi extends runtime.BaseAPI {
      * Create Pay On Completion
      */
     async createPayOnCompletionRaw(requestParameters: PledgesApiCreatePayOnCompletionRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Pledge>> {
-        if (requestParameters['createPledgePayLater'] == null) {
+        if (requestParameters['body'] == null) {
             throw new runtime.RequiredError(
-                'createPledgePayLater',
-                'Required parameter "createPledgePayLater" was null or undefined when calling createPayOnCompletion().'
+                'body',
+                'Required parameter "body" was null or undefined when calling createPayOnCompletion().'
             );
         }
 
@@ -200,7 +200,7 @@ export class PledgesApi extends runtime.BaseAPI {
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
-            body: requestParameters['createPledgePayLater'],
+            body: requestParameters['body'],
         }, initOverrides);
 
         return new runtime.JSONApiResponse(response);
@@ -219,10 +219,10 @@ export class PledgesApi extends runtime.BaseAPI {
      * Create Payment Intent
      */
     async createPaymentIntentRaw(requestParameters: PledgesApiCreatePaymentIntentRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<PledgeStripePaymentIntentMutationResponse>> {
-        if (requestParameters['pledgeStripePaymentIntentCreate'] == null) {
+        if (requestParameters['body'] == null) {
             throw new runtime.RequiredError(
-                'pledgeStripePaymentIntentCreate',
-                'Required parameter "pledgeStripePaymentIntentCreate" was null or undefined when calling createPaymentIntent().'
+                'body',
+                'Required parameter "body" was null or undefined when calling createPaymentIntent().'
             );
         }
 
@@ -245,7 +245,7 @@ export class PledgesApi extends runtime.BaseAPI {
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
-            body: requestParameters['pledgeStripePaymentIntentCreate'],
+            body: requestParameters['body'],
         }, initOverrides);
 
         return new runtime.JSONApiResponse(response);
@@ -519,10 +519,10 @@ export class PledgesApi extends runtime.BaseAPI {
             );
         }
 
-        if (requestParameters['pledgeStripePaymentIntentUpdate'] == null) {
+        if (requestParameters['body'] == null) {
             throw new runtime.RequiredError(
-                'pledgeStripePaymentIntentUpdate',
-                'Required parameter "pledgeStripePaymentIntentUpdate" was null or undefined when calling updatePaymentIntent().'
+                'body',
+                'Required parameter "body" was null or undefined when calling updatePaymentIntent().'
             );
         }
 
@@ -545,7 +545,7 @@ export class PledgesApi extends runtime.BaseAPI {
             method: 'PATCH',
             headers: headerParameters,
             query: queryParameters,
-            body: requestParameters['pledgeStripePaymentIntentUpdate'],
+            body: requestParameters['body'],
         }, initOverrides);
 
         return new runtime.JSONApiResponse(response);

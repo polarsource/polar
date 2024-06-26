@@ -23,7 +23,7 @@ import type {
 } from '../models/index';
 
 export interface AccountsApiCreateRequest {
-    accountCreate: AccountCreate;
+    body: AccountCreate;
 }
 
 export interface AccountsApiDashboardLinkRequest {
@@ -53,10 +53,10 @@ export class AccountsApi extends runtime.BaseAPI {
      * Create
      */
     async createRaw(requestParameters: AccountsApiCreateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Account>> {
-        if (requestParameters['accountCreate'] == null) {
+        if (requestParameters['body'] == null) {
             throw new runtime.RequiredError(
-                'accountCreate',
-                'Required parameter "accountCreate" was null or undefined when calling create().'
+                'body',
+                'Required parameter "body" was null or undefined when calling create().'
             );
         }
 
@@ -79,7 +79,7 @@ export class AccountsApi extends runtime.BaseAPI {
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
-            body: requestParameters['accountCreate'],
+            body: requestParameters['body'],
         }, initOverrides);
 
         return new runtime.JSONApiResponse(response);

@@ -50,11 +50,11 @@ export interface UsersApiCancelSubscriptionRequest {
 }
 
 export interface UsersApiCreateAdvertisementCampaignRequest {
-    userAdvertisementCampaignCreate: UserAdvertisementCampaignCreate;
+    body: UserAdvertisementCampaignCreate;
 }
 
 export interface UsersApiCreateSubscriptionRequest {
-    userFreeSubscriptionCreate: UserFreeSubscriptionCreate;
+    body: UserFreeSubscriptionCreate;
 }
 
 export interface UsersApiDeleteAdvertisementCampaignRequest {
@@ -63,7 +63,7 @@ export interface UsersApiDeleteAdvertisementCampaignRequest {
 
 export interface UsersApiEnableAdvertisementCampaignRequest {
     id: string;
-    userAdvertisementCampaignEnable: UserAdvertisementCampaignEnable;
+    body: UserAdvertisementCampaignEnable;
 }
 
 export interface UsersApiGetAdvertisementCampaignRequest {
@@ -135,29 +135,29 @@ export interface UsersApiListSubscriptionsRequest {
 }
 
 export interface UsersApiSetAccountRequest {
-    userSetAccount: UserSetAccount;
+    body: UserSetAccount;
 }
 
 export interface UsersApiSetAccount0Request {
-    userSetAccount: UserSetAccount;
+    body: UserSetAccount;
 }
 
 export interface UsersApiUpdateAdvertisementCampaignRequest {
     id: string;
-    userAdvertisementCampaignUpdate: UserAdvertisementCampaignUpdate;
+    body: UserAdvertisementCampaignUpdate;
 }
 
 export interface UsersApiUpdatePreferencesRequest {
-    userUpdateSettings: UserUpdateSettings;
+    body: UserUpdateSettings;
 }
 
 export interface UsersApiUpdatePreferences0Request {
-    userUpdateSettings: UserUpdateSettings;
+    body: UserUpdateSettings;
 }
 
 export interface UsersApiUpdateSubscriptionRequest {
     id: string;
-    userSubscriptionUpdate: UserSubscriptionUpdate;
+    body: UserSubscriptionUpdate;
 }
 
 /**
@@ -213,10 +213,10 @@ export class UsersApi extends runtime.BaseAPI {
      * Create Advertisement Campaign
      */
     async createAdvertisementCampaignRaw(requestParameters: UsersApiCreateAdvertisementCampaignRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<UserAdvertisementCampaign>> {
-        if (requestParameters['userAdvertisementCampaignCreate'] == null) {
+        if (requestParameters['body'] == null) {
             throw new runtime.RequiredError(
-                'userAdvertisementCampaignCreate',
-                'Required parameter "userAdvertisementCampaignCreate" was null or undefined when calling createAdvertisementCampaign().'
+                'body',
+                'Required parameter "body" was null or undefined when calling createAdvertisementCampaign().'
             );
         }
 
@@ -239,7 +239,7 @@ export class UsersApi extends runtime.BaseAPI {
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
-            body: requestParameters['userAdvertisementCampaignCreate'],
+            body: requestParameters['body'],
         }, initOverrides);
 
         return new runtime.JSONApiResponse(response);
@@ -327,10 +327,10 @@ export class UsersApi extends runtime.BaseAPI {
      * Create Subscription
      */
     async createSubscriptionRaw(requestParameters: UsersApiCreateSubscriptionRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<UserSubscription>> {
-        if (requestParameters['userFreeSubscriptionCreate'] == null) {
+        if (requestParameters['body'] == null) {
             throw new runtime.RequiredError(
-                'userFreeSubscriptionCreate',
-                'Required parameter "userFreeSubscriptionCreate" was null or undefined when calling createSubscription().'
+                'body',
+                'Required parameter "body" was null or undefined when calling createSubscription().'
             );
         }
 
@@ -353,7 +353,7 @@ export class UsersApi extends runtime.BaseAPI {
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
-            body: requestParameters['userFreeSubscriptionCreate'],
+            body: requestParameters['body'],
         }, initOverrides);
 
         return new runtime.JSONApiResponse(response);
@@ -434,10 +434,10 @@ export class UsersApi extends runtime.BaseAPI {
             );
         }
 
-        if (requestParameters['userAdvertisementCampaignEnable'] == null) {
+        if (requestParameters['body'] == null) {
             throw new runtime.RequiredError(
-                'userAdvertisementCampaignEnable',
-                'Required parameter "userAdvertisementCampaignEnable" was null or undefined when calling enableAdvertisementCampaign().'
+                'body',
+                'Required parameter "body" was null or undefined when calling enableAdvertisementCampaign().'
             );
         }
 
@@ -460,7 +460,7 @@ export class UsersApi extends runtime.BaseAPI {
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
-            body: requestParameters['userAdvertisementCampaignEnable'],
+            body: requestParameters['body'],
         }, initOverrides);
 
         return new runtime.VoidApiResponse(response);
@@ -1236,10 +1236,10 @@ export class UsersApi extends runtime.BaseAPI {
      * Set Account
      */
     async setAccountRaw(requestParameters: UsersApiSetAccountRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<UserRead>> {
-        if (requestParameters['userSetAccount'] == null) {
+        if (requestParameters['body'] == null) {
             throw new runtime.RequiredError(
-                'userSetAccount',
-                'Required parameter "userSetAccount" was null or undefined when calling setAccount().'
+                'body',
+                'Required parameter "body" was null or undefined when calling setAccount().'
             );
         }
 
@@ -1262,7 +1262,7 @@ export class UsersApi extends runtime.BaseAPI {
             method: 'PATCH',
             headers: headerParameters,
             query: queryParameters,
-            body: requestParameters['userSetAccount'],
+            body: requestParameters['body'],
         }, initOverrides);
 
         return new runtime.JSONApiResponse(response);
@@ -1280,10 +1280,10 @@ export class UsersApi extends runtime.BaseAPI {
      * Set Account
      */
     async setAccount_5Raw(requestParameters: UsersApiSetAccount0Request, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<UserRead>> {
-        if (requestParameters['userSetAccount'] == null) {
+        if (requestParameters['body'] == null) {
             throw new runtime.RequiredError(
-                'userSetAccount',
-                'Required parameter "userSetAccount" was null or undefined when calling setAccount_5().'
+                'body',
+                'Required parameter "body" was null or undefined when calling setAccount_5().'
             );
         }
 
@@ -1306,7 +1306,7 @@ export class UsersApi extends runtime.BaseAPI {
             method: 'PATCH',
             headers: headerParameters,
             query: queryParameters,
-            body: requestParameters['userSetAccount'],
+            body: requestParameters['body'],
         }, initOverrides);
 
         return new runtime.JSONApiResponse(response);
@@ -1332,10 +1332,10 @@ export class UsersApi extends runtime.BaseAPI {
             );
         }
 
-        if (requestParameters['userAdvertisementCampaignUpdate'] == null) {
+        if (requestParameters['body'] == null) {
             throw new runtime.RequiredError(
-                'userAdvertisementCampaignUpdate',
-                'Required parameter "userAdvertisementCampaignUpdate" was null or undefined when calling updateAdvertisementCampaign().'
+                'body',
+                'Required parameter "body" was null or undefined when calling updateAdvertisementCampaign().'
             );
         }
 
@@ -1358,7 +1358,7 @@ export class UsersApi extends runtime.BaseAPI {
             method: 'PATCH',
             headers: headerParameters,
             query: queryParameters,
-            body: requestParameters['userAdvertisementCampaignUpdate'],
+            body: requestParameters['body'],
         }, initOverrides);
 
         return new runtime.JSONApiResponse(response);
@@ -1377,10 +1377,10 @@ export class UsersApi extends runtime.BaseAPI {
      * Update Preferences
      */
     async updatePreferencesRaw(requestParameters: UsersApiUpdatePreferencesRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<UserRead>> {
-        if (requestParameters['userUpdateSettings'] == null) {
+        if (requestParameters['body'] == null) {
             throw new runtime.RequiredError(
-                'userUpdateSettings',
-                'Required parameter "userUpdateSettings" was null or undefined when calling updatePreferences().'
+                'body',
+                'Required parameter "body" was null or undefined when calling updatePreferences().'
             );
         }
 
@@ -1403,7 +1403,7 @@ export class UsersApi extends runtime.BaseAPI {
             method: 'PUT',
             headers: headerParameters,
             query: queryParameters,
-            body: requestParameters['userUpdateSettings'],
+            body: requestParameters['body'],
         }, initOverrides);
 
         return new runtime.JSONApiResponse(response);
@@ -1421,10 +1421,10 @@ export class UsersApi extends runtime.BaseAPI {
      * Update Preferences
      */
     async updatePreferences_6Raw(requestParameters: UsersApiUpdatePreferences0Request, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<UserRead>> {
-        if (requestParameters['userUpdateSettings'] == null) {
+        if (requestParameters['body'] == null) {
             throw new runtime.RequiredError(
-                'userUpdateSettings',
-                'Required parameter "userUpdateSettings" was null or undefined when calling updatePreferences_6().'
+                'body',
+                'Required parameter "body" was null or undefined when calling updatePreferences_6().'
             );
         }
 
@@ -1447,7 +1447,7 @@ export class UsersApi extends runtime.BaseAPI {
             method: 'PUT',
             headers: headerParameters,
             query: queryParameters,
-            body: requestParameters['userUpdateSettings'],
+            body: requestParameters['body'],
         }, initOverrides);
 
         return new runtime.JSONApiResponse(response);
@@ -1473,10 +1473,10 @@ export class UsersApi extends runtime.BaseAPI {
             );
         }
 
-        if (requestParameters['userSubscriptionUpdate'] == null) {
+        if (requestParameters['body'] == null) {
             throw new runtime.RequiredError(
-                'userSubscriptionUpdate',
-                'Required parameter "userSubscriptionUpdate" was null or undefined when calling updateSubscription().'
+                'body',
+                'Required parameter "body" was null or undefined when calling updateSubscription().'
             );
         }
 
@@ -1499,7 +1499,7 @@ export class UsersApi extends runtime.BaseAPI {
             method: 'PATCH',
             headers: headerParameters,
             query: queryParameters,
-            body: requestParameters['userSubscriptionUpdate'],
+            body: requestParameters['body'],
         }, initOverrides);
 
         return new runtime.JSONApiResponse(response);

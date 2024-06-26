@@ -26,7 +26,7 @@ import type {
 } from '../models/index';
 
 export interface TransactionsApiCreatePayoutRequest {
-    payoutCreate: PayoutCreate;
+    body: PayoutCreate;
 }
 
 export interface TransactionsApiGetPayoutCsvRequest {
@@ -65,10 +65,10 @@ export class TransactionsApi extends runtime.BaseAPI {
      * Create Payout
      */
     async createPayoutRaw(requestParameters: TransactionsApiCreatePayoutRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Transaction>> {
-        if (requestParameters['payoutCreate'] == null) {
+        if (requestParameters['body'] == null) {
             throw new runtime.RequiredError(
-                'payoutCreate',
-                'Required parameter "payoutCreate" was null or undefined when calling createPayout().'
+                'body',
+                'Required parameter "body" was null or undefined when calling createPayout().'
             );
         }
 
@@ -91,7 +91,7 @@ export class TransactionsApi extends runtime.BaseAPI {
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
-            body: requestParameters['payoutCreate'],
+            body: requestParameters['body'],
         }, initOverrides);
 
         return new runtime.JSONApiResponse(response);

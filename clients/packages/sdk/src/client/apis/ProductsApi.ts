@@ -27,7 +27,7 @@ import type {
 } from '../models/index';
 
 export interface ProductsApiCreateProductRequest {
-    productCreate: ProductCreate;
+    body: ProductCreate;
 }
 
 export interface ProductsApiGetProductRequest {
@@ -46,12 +46,12 @@ export interface ProductsApiListProductsRequest {
 
 export interface ProductsApiUpdateProductRequest {
     id: string;
-    productUpdate: ProductUpdate;
+    body: ProductUpdate;
 }
 
 export interface ProductsApiUpdateProductBenefitsRequest {
     id: string;
-    productBenefitsUpdate: ProductBenefitsUpdate;
+    body: ProductBenefitsUpdate;
 }
 
 /**
@@ -64,10 +64,10 @@ export class ProductsApi extends runtime.BaseAPI {
      * Create Product
      */
     async createProductRaw(requestParameters: ProductsApiCreateProductRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Product>> {
-        if (requestParameters['productCreate'] == null) {
+        if (requestParameters['body'] == null) {
             throw new runtime.RequiredError(
-                'productCreate',
-                'Required parameter "productCreate" was null or undefined when calling createProduct().'
+                'body',
+                'Required parameter "body" was null or undefined when calling createProduct().'
             );
         }
 
@@ -90,7 +90,7 @@ export class ProductsApi extends runtime.BaseAPI {
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
-            body: requestParameters['productCreate'],
+            body: requestParameters['body'],
         }, initOverrides);
 
         return new runtime.JSONApiResponse(response);
@@ -224,10 +224,10 @@ export class ProductsApi extends runtime.BaseAPI {
             );
         }
 
-        if (requestParameters['productUpdate'] == null) {
+        if (requestParameters['body'] == null) {
             throw new runtime.RequiredError(
-                'productUpdate',
-                'Required parameter "productUpdate" was null or undefined when calling updateProduct().'
+                'body',
+                'Required parameter "body" was null or undefined when calling updateProduct().'
             );
         }
 
@@ -250,7 +250,7 @@ export class ProductsApi extends runtime.BaseAPI {
             method: 'PATCH',
             headers: headerParameters,
             query: queryParameters,
-            body: requestParameters['productUpdate'],
+            body: requestParameters['body'],
         }, initOverrides);
 
         return new runtime.JSONApiResponse(response);
@@ -277,10 +277,10 @@ export class ProductsApi extends runtime.BaseAPI {
             );
         }
 
-        if (requestParameters['productBenefitsUpdate'] == null) {
+        if (requestParameters['body'] == null) {
             throw new runtime.RequiredError(
-                'productBenefitsUpdate',
-                'Required parameter "productBenefitsUpdate" was null or undefined when calling updateProductBenefits().'
+                'body',
+                'Required parameter "body" was null or undefined when calling updateProductBenefits().'
             );
         }
 
@@ -303,7 +303,7 @@ export class ProductsApi extends runtime.BaseAPI {
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
-            body: requestParameters['productBenefitsUpdate'],
+            body: requestParameters['body'],
         }, initOverrides);
 
         return new runtime.JSONApiResponse(response);

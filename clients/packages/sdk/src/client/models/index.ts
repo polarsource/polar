@@ -1019,16 +1019,28 @@ export interface Article {
     body: string;
     /**
      * 
-     * @type {Byline}
+     * @type {BylineProfile}
      * @memberof Article
      */
-    byline: Byline;
+    byline: BylineProfile;
+    /**
+     * 
+     * @type {ArticleVisibility}
+     * @memberof Article
+     */
+    visibility: ArticleVisibility;
     /**
      * 
      * @type {string}
      * @memberof Article
      */
-    visibility: ArticleVisibilityEnum;
+    user_id?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof Article
+     */
+    organization_id: string;
     /**
      * 
      * @type {Organization}
@@ -1085,12 +1097,6 @@ export interface Article {
     email_sent_to_count?: number;
     /**
      * 
-     * @type {number}
-     * @memberof Article
-     */
-    web_view_count?: number;
-    /**
-     * 
      * @type {string}
      * @memberof Article
      */
@@ -1103,16 +1109,15 @@ export interface Article {
     og_description?: string;
 }
 
-
 /**
+ * 
  * @export
  */
-export const ArticleVisibilityEnum = {
-    PRIVATE: 'private',
-    HIDDEN: 'hidden',
-    PUBLIC: 'public'
+export const ArticleByline = {
+    USER: 'user',
+    ORGANIZATION: 'organization'
 } as const;
-export type ArticleVisibilityEnum = typeof ArticleVisibilityEnum[keyof typeof ArticleVisibilityEnum];
+export type ArticleByline = typeof ArticleByline[keyof typeof ArticleByline];
 
 /**
  * 
@@ -1149,19 +1154,19 @@ export interface ArticleCreate {
      * @type {string}
      * @memberof ArticleCreate
      */
-    organization_id: string;
+    organization_id?: string;
     /**
      * If the user or organization should be credited in the byline.
-     * @type {string}
+     * @type {ArticleByline}
      * @memberof ArticleCreate
      */
-    byline?: ArticleCreateBylineEnum;
+    byline?: ArticleByline;
     /**
      * 
-     * @type {string}
+     * @type {ArticleVisibility}
      * @memberof ArticleCreate
      */
-    visibility?: ArticleCreateVisibilityEnum;
+    visibility?: ArticleVisibility;
     /**
      * Set to true to only make this article available for subscribers to a paid subscription tier in the organization.
      * @type {boolean}
@@ -1205,40 +1210,6 @@ export interface ArticleCreate {
      */
     og_description?: string;
 }
-
-
-/**
- * @export
- */
-export const ArticleCreateBylineEnum = {
-    USER: 'user',
-    ORGANIZATION: 'organization'
-} as const;
-export type ArticleCreateBylineEnum = typeof ArticleCreateBylineEnum[keyof typeof ArticleCreateBylineEnum];
-
-/**
- * @export
- */
-export const ArticleCreateVisibilityEnum = {
-    PRIVATE: 'private',
-    HIDDEN: 'hidden',
-    PUBLIC: 'public'
-} as const;
-export type ArticleCreateVisibilityEnum = typeof ArticleCreateVisibilityEnum[keyof typeof ArticleCreateVisibilityEnum];
-
-/**
- * 
- * @export
- * @interface ArticleDeleteResponse
- */
-export interface ArticleDeleteResponse {
-    /**
-     * 
-     * @type {boolean}
-     * @memberof ArticleDeleteResponse
-     */
-    ok: boolean;
-}
 /**
  * 
  * @export
@@ -1246,7 +1217,7 @@ export interface ArticleDeleteResponse {
  */
 export interface ArticlePreview {
     /**
-     * Send a preview of the article to this email address
+     * Email address to send the preview to. The user must be registered on Polar.
      * @type {string}
      * @memberof ArticlePreview
      */
@@ -1255,66 +1226,27 @@ export interface ArticlePreview {
 /**
  * 
  * @export
- * @interface ArticlePreviewResponse
+ * @interface ArticleReceivers
  */
-export interface ArticlePreviewResponse {
-    /**
-     * 
-     * @type {boolean}
-     * @memberof ArticlePreviewResponse
-     */
-    ok: boolean;
-}
-/**
- * 
- * @export
- * @interface ArticleReceiversResponse
- */
-export interface ArticleReceiversResponse {
+export interface ArticleReceivers {
     /**
      * 
      * @type {number}
-     * @memberof ArticleReceiversResponse
+     * @memberof ArticleReceivers
      */
     free_subscribers: number;
     /**
      * 
      * @type {number}
-     * @memberof ArticleReceiversResponse
+     * @memberof ArticleReceivers
      */
     premium_subscribers: number;
     /**
      * 
      * @type {number}
-     * @memberof ArticleReceiversResponse
+     * @memberof ArticleReceivers
      */
     organization_members: number;
-}
-/**
- * 
- * @export
- * @interface ArticleSentResponse
- */
-export interface ArticleSentResponse {
-    /**
-     * 
-     * @type {boolean}
-     * @memberof ArticleSentResponse
-     */
-    ok: boolean;
-}
-/**
- * 
- * @export
- * @interface ArticleUnsubscribeResponse
- */
-export interface ArticleUnsubscribeResponse {
-    /**
-     * 
-     * @type {boolean}
-     * @memberof ArticleUnsubscribeResponse
-     */
-    ok: boolean;
 }
 /**
  * 
@@ -1348,16 +1280,16 @@ export interface ArticleUpdate {
     slug?: string;
     /**
      * 
-     * @type {string}
+     * @type {ArticleByline}
      * @memberof ArticleUpdate
      */
-    byline?: ArticleUpdateBylineEnum;
+    byline?: ArticleByline;
     /**
      * 
-     * @type {string}
+     * @type {ArticleVisibility}
      * @memberof ArticleUpdate
      */
-    visibility?: ArticleUpdateVisibilityEnum;
+    visibility?: ArticleVisibility;
     /**
      * 
      * @type {boolean}
@@ -1381,12 +1313,6 @@ export interface ArticleUpdate {
      * @type {boolean}
      * @memberof ArticleUpdate
      */
-    set_published_at?: boolean;
-    /**
-     * 
-     * @type {boolean}
-     * @memberof ArticleUpdate
-     */
     notify_subscribers?: boolean;
     /**
      * 
@@ -1396,22 +1322,10 @@ export interface ArticleUpdate {
     is_pinned?: boolean;
     /**
      * 
-     * @type {boolean}
-     * @memberof ArticleUpdate
-     */
-    set_og_image_url?: boolean;
-    /**
-     * 
      * @type {string}
      * @memberof ArticleUpdate
      */
     og_image_url?: string;
-    /**
-     * 
-     * @type {boolean}
-     * @memberof ArticleUpdate
-     */
-    set_og_description?: boolean;
     /**
      * 
      * @type {string}
@@ -1420,39 +1334,17 @@ export interface ArticleUpdate {
     og_description?: string;
 }
 
-
-/**
- * @export
- */
-export const ArticleUpdateBylineEnum = {
-    USER: 'user',
-    ORGANIZATION: 'organization'
-} as const;
-export type ArticleUpdateBylineEnum = typeof ArticleUpdateBylineEnum[keyof typeof ArticleUpdateBylineEnum];
-
-/**
- * @export
- */
-export const ArticleUpdateVisibilityEnum = {
-    PRIVATE: 'private',
-    HIDDEN: 'hidden',
-    PUBLIC: 'public'
-} as const;
-export type ArticleUpdateVisibilityEnum = typeof ArticleUpdateVisibilityEnum[keyof typeof ArticleUpdateVisibilityEnum];
-
 /**
  * 
  * @export
- * @interface ArticleViewedResponse
  */
-export interface ArticleViewedResponse {
-    /**
-     * 
-     * @type {boolean}
-     * @memberof ArticleViewedResponse
-     */
-    ok: boolean;
-}
+export const ArticleVisibility = {
+    PUBLIC: 'public',
+    HIDDEN: 'hidden',
+    PRIVATE: 'private'
+} as const;
+export type ArticleVisibility = typeof ArticleVisibility[keyof typeof ArticleVisibility];
+
 /**
  * 
  * @export
@@ -1680,7 +1572,6 @@ export const AvailableScope = {
     OPENID: 'openid',
     PROFILE: 'profile',
     EMAIL: 'email',
-    ARTICLESREAD: 'articles:read',
     USERREAD: 'user:read',
     ORGANIZATIONSREAD: 'organizations:read',
     ORGANIZATIONSWRITE: 'organizations:write',
@@ -1694,6 +1585,8 @@ export const AvailableScope = {
     SUBSCRIPTIONSWRITE: 'subscriptions:write',
     ORDERSREAD: 'orders:read',
     METRICSREAD: 'metrics:read',
+    ARTICLESREAD: 'articles:read',
+    ARTICLESWRITE: 'articles:write',
     WEBHOOKSREAD: 'webhooks:read',
     WEBHOOKSWRITE: 'webhooks:write',
     USERBENEFITSREAD: 'user:benefits:read',
@@ -3913,19 +3806,19 @@ export type BenefitUpdate = BenefitAdsUpdate | BenefitArticlesUpdate | BenefitCu
 /**
  * 
  * @export
- * @interface Byline
+ * @interface BylineProfile
  */
-export interface Byline {
+export interface BylineProfile {
     /**
      * 
      * @type {string}
-     * @memberof Byline
+     * @memberof BylineProfile
      */
     name: string;
     /**
      * 
      * @type {string}
-     * @memberof Byline
+     * @memberof BylineProfile
      */
     avatar_url?: string;
 }
@@ -11156,7 +11049,6 @@ export const Scope = {
     OPENID: 'openid',
     PROFILE: 'profile',
     EMAIL: 'email',
-    ARTICLESREAD: 'articles:read',
     USERREAD: 'user:read',
     ADMIN: 'admin',
     WEB_DEFAULT: 'web_default',
@@ -11172,6 +11064,8 @@ export const Scope = {
     SUBSCRIPTIONSWRITE: 'subscriptions:write',
     ORDERSREAD: 'orders:read',
     METRICSREAD: 'metrics:read',
+    ARTICLESREAD: 'articles:read',
+    ARTICLESWRITE: 'articles:write',
     WEBHOOKSREAD: 'webhooks:read',
     WEBHOOKSWRITE: 'webhooks:write',
     USERBENEFITSREAD: 'user:benefits:read',

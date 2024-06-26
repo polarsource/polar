@@ -6876,8 +6876,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -6957,8 +6957,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -7041,8 +7041,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -7103,8 +7103,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             },
             "patch": {
@@ -7172,8 +7172,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -7222,8 +7222,8 @@
                             "description": "Filter by the type of purchase the customer made.",
                             "default": [
                                 "subscription",
-                                "order",
-                                "donation"
+                                "donation",
+                                "order"
                             ],
                             "title": "Customer Types"
                         },
@@ -7289,8 +7289,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -7360,8 +7360,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -7425,8 +7425,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -7483,8 +7483,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -7541,8 +7541,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -7598,8 +7598,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             },
             "post": {
@@ -7663,8 +7663,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -7679,8 +7679,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "subscriptions:read",
-                            "subscriptions:write"
+                            "subscriptions:write",
+                            "subscriptions:read"
                         ]
                     },
                     {
@@ -7854,8 +7854,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             },
             "post": {
@@ -7908,8 +7908,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -7964,8 +7964,8 @@
                     }
                 ],
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -7980,8 +7980,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "subscriptions:read",
-                            "subscriptions:write"
+                            "subscriptions:write",
+                            "subscriptions:read"
                         ]
                     },
                     {
@@ -8030,75 +8030,121 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
-        "/api/v1/articles/unsubscribe": {
+        "/api/v1/articles/": {
             "get": {
                 "tags": [
                     "articles"
                 ],
-                "summary": "Unsubscribe user",
-                "description": "Unsubscribe user from articles in emails.",
-                "operationId": "email_unsubscribe",
-                "parameters": [
-                    {
-                        "name": "article_subscription_id",
-                        "in": "query",
-                        "required": true,
-                        "schema": {
-                            "type": "string",
-                            "format": "uuid",
-                            "title": "Article Subscription Id"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Successful Response",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/ArticleUnsubscribeResponse"
-                                }
-                            }
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found"
-                    },
-                    "422": {
-                        "description": "Validation Error",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/HTTPValidationError"
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/articles": {
-            "get": {
-                "tags": [
-                    "articles"
-                ],
-                "summary": "List articles",
+                "summary": "List",
                 "description": "List articles.",
                 "operationId": "list",
                 "security": [
                     {
-                        "OpenIdConnect": []
+                        "OpenIdConnect": [
+                            "articles:read"
+                        ]
                     },
                     {
                         "HTTPBearer": []
                     }
                 ],
                 "parameters": [
+                    {
+                        "name": "organization_id",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string",
+                                    "format": "uuid4"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "description": "Filter by organization ID.",
+                            "title": "Organization Id"
+                        },
+                        "description": "Filter by organization ID."
+                    },
+                    {
+                        "name": "slug",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "description": "Filter by slug.",
+                            "title": "Slug"
+                        },
+                        "description": "Filter by slug."
+                    },
+                    {
+                        "name": "visibility",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "$ref": "#/components/schemas/ArticleVisibility"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "description": "Filter by visibility.",
+                            "title": "Visibility"
+                        },
+                        "description": "Filter by visibility."
+                    },
+                    {
+                        "name": "is_published",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "boolean"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "description": "Filter by published status.",
+                            "title": "Is Published"
+                        },
+                        "description": "Filter by published status."
+                    },
+                    {
+                        "name": "is_pinned",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "boolean"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "description": "Filter by pinned status.",
+                            "title": "Is Pinned"
+                        },
+                        "description": "Filter by pinned status."
+                    },
                     {
                         "name": "page",
                         "in": "query",
@@ -8137,9 +8183,6 @@
                             }
                         }
                     },
-                    "404": {
-                        "description": "Not Found"
-                    },
                     "422": {
                         "description": "Validation Error",
                         "content": {
@@ -8152,19 +8195,23 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User"
+                    "User",
+                    "Organization",
+                    "Anonymous"
                 ]
             },
             "post": {
                 "tags": [
                     "articles"
                 ],
-                "summary": "Create article",
-                "description": "Create a new article.",
+                "summary": "Create",
+                "description": "Create an article.",
                 "operationId": "create",
                 "security": [
                     {
-                        "OpenIdConnect": []
+                        "OpenIdConnect": [
+                            "articles:write"
+                        ]
                     },
                     {
                         "HTTPBearer": []
@@ -8181,8 +8228,8 @@
                     }
                 },
                 "responses": {
-                    "200": {
-                        "description": "Successful Response",
+                    "201": {
+                        "description": "Article created.",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -8190,9 +8237,6 @@
                                 }
                             }
                         }
-                    },
-                    "404": {
-                        "description": "Not Found"
                     },
                     "422": {
                         "description": "Validation Error",
@@ -8206,18 +8250,19 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
-        "/api/v1/articles/search": {
+        "/api/v1/articles/{id}": {
             "get": {
                 "tags": [
                     "articles"
                 ],
-                "summary": "Search articles",
-                "description": "Search articles.",
-                "operationId": "search",
+                "summary": "Get",
+                "description": "Get an article by ID.",
+                "operationId": "get",
                 "security": [
                     {
                         "OpenIdConnect": [
@@ -8230,333 +8275,16 @@
                 ],
                 "parameters": [
                     {
-                        "name": "show_unpublished",
-                        "in": "query",
-                        "required": false,
-                        "schema": {
-                            "type": "boolean",
-                            "description": "Set to true to also include unpublished articles. Requires the authenticated subject to be an admin in the organization.",
-                            "default": false,
-                            "title": "Show Unpublished"
-                        },
-                        "description": "Set to true to also include unpublished articles. Requires the authenticated subject to be an admin in the organization."
-                    },
-                    {
-                        "name": "is_pinned",
-                        "in": "query",
-                        "required": false,
-                        "schema": {
-                            "anyOf": [
-                                {
-                                    "type": "boolean"
-                                },
-                                {
-                                    "type": "null"
-                                }
-                            ],
-                            "description": "Set to true or false to include or exclude pinned articles",
-                            "title": "Is Pinned"
-                        },
-                        "description": "Set to true or false to include or exclude pinned articles"
-                    },
-                    {
-                        "name": "organization_name",
-                        "in": "query",
-                        "required": true,
-                        "schema": {
-                            "type": "string",
-                            "minLength": 1,
-                            "description": "Filter by organization name. Required unless you are authenticated as an organization.",
-                            "examples": [
-                                "my-org"
-                            ],
-                            "title": "Organization Name"
-                        },
-                        "description": "Filter by organization name. Required unless you are authenticated as an organization."
-                    },
-                    {
-                        "name": "platform",
-                        "in": "query",
-                        "required": true,
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/components/schemas/Platforms"
-                                }
-                            ],
-                            "description": "Platform linked to `organization_name`. Required if `organization_name` is set. Currently, only `github` is supported.",
-                            "examples": [
-                                "github"
-                            ],
-                            "title": "Platform"
-                        },
-                        "description": "Platform linked to `organization_name`. Required if `organization_name` is set. Currently, only `github` is supported."
-                    },
-                    {
-                        "name": "page",
-                        "in": "query",
-                        "required": false,
-                        "schema": {
-                            "type": "integer",
-                            "exclusiveMinimum": 0,
-                            "description": "Page number, defaults to 1.",
-                            "default": 1,
-                            "title": "Page"
-                        },
-                        "description": "Page number, defaults to 1."
-                    },
-                    {
-                        "name": "limit",
-                        "in": "query",
-                        "required": false,
-                        "schema": {
-                            "type": "integer",
-                            "exclusiveMinimum": 0,
-                            "description": "Size of a page, defaults to 10. Maximum is 100.",
-                            "default": 10,
-                            "title": "Limit"
-                        },
-                        "description": "Size of a page, defaults to 10. Maximum is 100."
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Successful Response",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/ListResource_Article_"
-                                }
-                            }
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found"
-                    },
-                    "422": {
-                        "description": "Validation Error",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/HTTPValidationError"
-                                }
-                            }
-                        }
-                    }
-                },
-                "x-polar-allowed-subjects": [
-                    "User",
-                    "Anonymous"
-                ]
-            }
-        },
-        "/api/v1/articles/lookup": {
-            "get": {
-                "tags": [
-                    "articles"
-                ],
-                "summary": "Lookup article",
-                "description": "Lookup article.",
-                "operationId": "lookup",
-                "security": [
-                    {
-                        "OpenIdConnect": []
-                    },
-                    {
-                        "HTTPBearer": []
-                    }
-                ],
-                "parameters": [
-                    {
-                        "name": "slug",
-                        "in": "query",
-                        "required": true,
-                        "schema": {
-                            "type": "string",
-                            "title": "Slug"
-                        }
-                    },
-                    {
-                        "name": "organization_name",
-                        "in": "query",
-                        "required": true,
-                        "schema": {
-                            "type": "string",
-                            "minLength": 1,
-                            "description": "Filter by organization name. Required unless you are authenticated as an organization.",
-                            "examples": [
-                                "my-org"
-                            ],
-                            "title": "Organization Name"
-                        },
-                        "description": "Filter by organization name. Required unless you are authenticated as an organization."
-                    },
-                    {
-                        "name": "platform",
-                        "in": "query",
-                        "required": true,
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/components/schemas/Platforms"
-                                }
-                            ],
-                            "description": "Platform linked to `organization_name`. Required if `organization_name` is set. Currently, only `github` is supported.",
-                            "examples": [
-                                "github"
-                            ],
-                            "title": "Platform"
-                        },
-                        "description": "Platform linked to `organization_name`. Required if `organization_name` is set. Currently, only `github` is supported."
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Successful Response",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/Article"
-                                }
-                            }
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found"
-                    },
-                    "422": {
-                        "description": "Validation Error",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/HTTPValidationError"
-                                }
-                            }
-                        }
-                    }
-                },
-                "x-polar-allowed-subjects": [
-                    "User",
-                    "Anonymous"
-                ]
-            }
-        },
-        "/api/v1/articles/receivers": {
-            "get": {
-                "tags": [
-                    "articles"
-                ],
-                "summary": "Potential article receivers",
-                "description": "Get number of potential receivers for an article.",
-                "operationId": "receivers",
-                "security": [
-                    {
-                        "OpenIdConnect": []
-                    },
-                    {
-                        "HTTPBearer": []
-                    }
-                ],
-                "parameters": [
-                    {
-                        "name": "paid_subscribers_only",
-                        "in": "query",
-                        "required": true,
-                        "schema": {
-                            "type": "boolean",
-                            "title": "Paid Subscribers Only"
-                        }
-                    },
-                    {
-                        "name": "organization_name",
-                        "in": "query",
-                        "required": true,
-                        "schema": {
-                            "type": "string",
-                            "minLength": 1,
-                            "description": "Filter by organization name. Required unless you are authenticated as an organization.",
-                            "examples": [
-                                "my-org"
-                            ],
-                            "title": "Organization Name"
-                        },
-                        "description": "Filter by organization name. Required unless you are authenticated as an organization."
-                    },
-                    {
-                        "name": "platform",
-                        "in": "query",
-                        "required": true,
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/components/schemas/Platforms"
-                                }
-                            ],
-                            "description": "Platform linked to `organization_name`. Required if `organization_name` is set. Currently, only `github` is supported.",
-                            "examples": [
-                                "github"
-                            ],
-                            "title": "Platform"
-                        },
-                        "description": "Platform linked to `organization_name`. Required if `organization_name` is set. Currently, only `github` is supported."
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Successful Response",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/ArticleReceiversResponse"
-                                }
-                            }
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found"
-                    },
-                    "422": {
-                        "description": "Validation Error",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/HTTPValidationError"
-                                }
-                            }
-                        }
-                    }
-                },
-                "x-polar-allowed-subjects": [
-                    "User"
-                ]
-            }
-        },
-        "/api/v1/articles/{id}": {
-            "get": {
-                "tags": [
-                    "articles"
-                ],
-                "summary": "Get article",
-                "description": "Get article.",
-                "operationId": "get",
-                "security": [
-                    {
-                        "OpenIdConnect": []
-                    },
-                    {
-                        "HTTPBearer": []
-                    }
-                ],
-                "parameters": [
-                    {
                         "name": "id",
                         "in": "path",
                         "required": true,
                         "schema": {
                             "type": "string",
-                            "format": "uuid",
+                            "format": "uuid4",
+                            "description": "The article ID.",
                             "title": "Id"
-                        }
+                        },
+                        "description": "The article ID."
                     }
                 ],
                 "responses": {
@@ -8571,7 +8299,14 @@
                         }
                     },
                     "404": {
-                        "description": "Not Found"
+                        "description": "Article not found.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ResourceNotFound"
+                                }
+                            }
+                        }
                     },
                     "422": {
                         "description": "Validation Error",
@@ -8586,19 +8321,22 @@
                 },
                 "x-polar-allowed-subjects": [
                     "User",
+                    "Organization",
                     "Anonymous"
                 ]
             },
-            "put": {
+            "patch": {
                 "tags": [
                     "articles"
                 ],
-                "summary": "Update an article",
+                "summary": "Update",
                 "description": "Update an article.",
                 "operationId": "update",
                 "security": [
                     {
-                        "OpenIdConnect": []
+                        "OpenIdConnect": [
+                            "articles:write"
+                        ]
                     },
                     {
                         "HTTPBearer": []
@@ -8611,9 +8349,11 @@
                         "required": true,
                         "schema": {
                             "type": "string",
-                            "format": "uuid",
+                            "format": "uuid4",
+                            "description": "The article ID.",
                             "title": "Id"
-                        }
+                        },
+                        "description": "The article ID."
                     }
                 ],
                 "requestBody": {
@@ -8628,7 +8368,7 @@
                 },
                 "responses": {
                     "200": {
-                        "description": "Successful Response",
+                        "description": "Article updated.",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -8637,122 +8377,25 @@
                             }
                         }
                     },
-                    "404": {
-                        "description": "Not Found"
-                    },
-                    "422": {
-                        "description": "Validation Error",
+                    "403": {
+                        "description": "You don't have the permission to update this article.",
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/HTTPValidationError"
-                                }
-                            }
-                        }
-                    }
-                },
-                "x-polar-allowed-subjects": [
-                    "User"
-                ]
-            },
-            "delete": {
-                "tags": [
-                    "articles"
-                ],
-                "summary": "Delete an article",
-                "description": "Delete an article.",
-                "operationId": "delete",
-                "security": [
-                    {
-                        "OpenIdConnect": []
-                    },
-                    {
-                        "HTTPBearer": []
-                    }
-                ],
-                "parameters": [
-                    {
-                        "name": "id",
-                        "in": "path",
-                        "required": true,
-                        "schema": {
-                            "type": "string",
-                            "format": "uuid",
-                            "title": "Id"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Successful Response",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/ArticleDeleteResponse"
+                                    "$ref": "#/components/schemas/NotPermitted"
                                 }
                             }
                         }
                     },
                     "404": {
-                        "description": "Not Found"
-                    },
-                    "422": {
-                        "description": "Validation Error",
+                        "description": "Article not found.",
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                    "$ref": "#/components/schemas/ResourceNotFound"
                                 }
                             }
                         }
-                    }
-                },
-                "x-polar-allowed-subjects": [
-                    "User"
-                ]
-            }
-        },
-        "/api/v1/articles/{id}/viewed": {
-            "post": {
-                "tags": [
-                    "articles"
-                ],
-                "summary": "Track article",
-                "description": "Track article view",
-                "operationId": "viewed",
-                "security": [
-                    {
-                        "OpenIdConnect": []
-                    },
-                    {
-                        "HTTPBearer": []
-                    }
-                ],
-                "parameters": [
-                    {
-                        "name": "id",
-                        "in": "path",
-                        "required": true,
-                        "schema": {
-                            "type": "string",
-                            "format": "uuid",
-                            "title": "Id"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Successful Response",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/ArticleViewedResponse"
-                                }
-                            }
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found"
                     },
                     "422": {
                         "description": "Validation Error",
@@ -8767,21 +8410,21 @@
                 },
                 "x-polar-allowed-subjects": [
                     "User",
-                    "Anonymous"
+                    "Organization"
                 ]
-            }
-        },
-        "/api/v1/articles/{id}/send_preview": {
-            "post": {
+            },
+            "delete": {
                 "tags": [
                     "articles"
                 ],
-                "summary": "Send preview email",
-                "description": "Send preview email",
-                "operationId": "send_preview",
+                "summary": "Delete an article",
+                "description": "Delete an article.",
+                "operationId": "delete",
                 "security": [
                     {
-                        "OpenIdConnect": []
+                        "OpenIdConnect": [
+                            "articles:write"
+                        ]
                     },
                     {
                         "HTTPBearer": []
@@ -8794,9 +8437,144 @@
                         "required": true,
                         "schema": {
                             "type": "string",
-                            "format": "uuid",
+                            "format": "uuid4",
+                            "description": "The article ID.",
                             "title": "Id"
+                        },
+                        "description": "The article ID."
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Article deleted."
+                    },
+                    "403": {
+                        "description": "You don't have the permission to delete this article.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/NotPermitted"
+                                }
+                            }
                         }
+                    },
+                    "404": {
+                        "description": "Article not found.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ResourceNotFound"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                },
+                "x-polar-allowed-subjects": [
+                    "User",
+                    "Organization"
+                ]
+            }
+        },
+        "/api/v1/articles/{id}/receivers": {
+            "get": {
+                "tags": [
+                    "articles"
+                ],
+                "summary": "Receivers",
+                "description": "Get number of potential receivers for an article.",
+                "operationId": "receivers",
+                "security": [
+                    {
+                        "OpenIdConnect": [
+                            "articles:write"
+                        ]
+                    },
+                    {
+                        "HTTPBearer": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid4",
+                            "description": "The article ID.",
+                            "title": "Id"
+                        },
+                        "description": "The article ID."
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ArticleReceivers"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                },
+                "x-polar-allowed-subjects": [
+                    "User",
+                    "Organization"
+                ]
+            }
+        },
+        "/api/v1/articles/{id}/preview": {
+            "post": {
+                "tags": [
+                    "articles"
+                ],
+                "summary": "Preview",
+                "description": "Send an article preview by email.",
+                "operationId": "preview",
+                "security": [
+                    {
+                        "OpenIdConnect": [
+                            "articles:write"
+                        ]
+                    },
+                    {
+                        "HTTPBearer": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid4",
+                            "description": "The article ID.",
+                            "title": "Id"
+                        },
+                        "description": "The article ID."
                     }
                 ],
                 "requestBody": {
@@ -8810,18 +8588,33 @@
                     }
                 },
                 "responses": {
-                    "200": {
-                        "description": "Successful Response",
+                    "202": {
+                        "description": "Article preview sent.",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "You don't have the permission to manage this article.",
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/ArticlePreviewResponse"
+                                    "$ref": "#/components/schemas/NotPermitted"
                                 }
                             }
                         }
                     },
                     "404": {
-                        "description": "Not Found"
+                        "description": "Article not found.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ResourceNotFound"
+                                }
+                            }
+                        }
                     },
                     "422": {
                         "description": "Validation Error",
@@ -8835,7 +8628,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -8844,12 +8638,14 @@
                 "tags": [
                     "articles"
                 ],
-                "summary": "Send email to all subscribers",
-                "description": "Send email to all subscribers",
+                "summary": "Send",
+                "description": "Send an article by email to all subscribers.",
                 "operationId": "send",
                 "security": [
                     {
-                        "OpenIdConnect": []
+                        "OpenIdConnect": [
+                            "articles:write"
+                        ]
                     },
                     {
                         "HTTPBearer": []
@@ -8862,24 +8658,44 @@
                         "required": true,
                         "schema": {
                             "type": "string",
-                            "format": "uuid",
+                            "format": "uuid4",
+                            "description": "The article ID.",
                             "title": "Id"
-                        }
+                        },
+                        "description": "The article ID."
                     }
                 ],
                 "responses": {
-                    "200": {
-                        "description": "Successful Response",
+                    "202": {
+                        "description": "Article sent to subscribers.",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Article is either not published, already sent or not ready to be sent."
+                    },
+                    "403": {
+                        "description": "You don't have the permission to manage this article.",
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/ArticleSentResponse"
+                                    "$ref": "#/components/schemas/NotPermitted"
                                 }
                             }
                         }
                     },
                     "404": {
-                        "description": "Not Found"
+                        "description": "Article not found.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ResourceNotFound"
+                                }
+                            }
+                        }
                     },
                     "422": {
                         "description": "Validation Error",
@@ -8893,8 +8709,45 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User"
+                    "User",
+                    "Organization"
                 ]
+            }
+        },
+        "/api/v1/articles/unsubscribe": {
+            "get": {
+                "tags": [
+                    "articles"
+                ],
+                "summary": "Email Unsubscribe",
+                "operationId": "email_unsubscribe",
+                "parameters": [
+                    {
+                        "name": "article_subscription_id",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid",
+                            "title": "Article Subscription Id"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Successful Response"
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
             }
         },
         "/api/v1/transactions/search": {
@@ -11106,8 +10959,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "benefits:write",
-                            "benefits:read"
+                            "benefits:read",
+                            "benefits:write"
                         ]
                     },
                     {
@@ -11205,8 +11058,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             },
             "post": {
@@ -11306,8 +11159,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -11322,8 +11175,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "benefits:write",
-                            "benefits:read"
+                            "benefits:read",
+                            "benefits:write"
                         ]
                     },
                     {
@@ -11397,8 +11250,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             },
             "patch": {
@@ -11525,8 +11378,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             },
             "delete": {
@@ -11596,8 +11449,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -11612,8 +11465,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "benefits:write",
-                            "benefits:read"
+                            "benefits:read",
+                            "benefits:write"
                         ]
                     },
                     {
@@ -11748,8 +11601,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -11764,8 +11617,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "webhooks:write",
-                            "webhooks:read"
+                            "webhooks:read",
+                            "webhooks:write"
                         ]
                     },
                     {
@@ -11861,8 +11714,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             },
             "post": {
@@ -11915,8 +11768,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -11931,8 +11784,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "webhooks:write",
-                            "webhooks:read"
+                            "webhooks:read",
+                            "webhooks:write"
                         ]
                     },
                     {
@@ -11986,8 +11839,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             },
             "patch": {
@@ -12074,8 +11927,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             },
             "delete": {
@@ -12145,8 +11998,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -12161,8 +12014,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "webhooks:write",
-                            "webhooks:read"
+                            "webhooks:read",
+                            "webhooks:write"
                         ]
                     },
                     {
@@ -12239,8 +12092,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -12307,8 +12160,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -12466,8 +12319,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
                     "User",
+                    "Organization",
                     "Anonymous"
                 ]
             },
@@ -12529,8 +12382,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -12600,8 +12453,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
                     "User",
+                    "Organization",
                     "Anonymous"
                 ]
             },
@@ -12689,8 +12542,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -12779,8 +12632,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -12965,8 +12818,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -13035,8 +12888,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -13105,8 +12958,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -13312,8 +13165,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             },
             "post": {
@@ -13380,8 +13233,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -13464,8 +13317,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -13548,8 +13401,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             },
             "delete": {
@@ -13616,8 +13469,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -13760,8 +13613,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -13796,8 +13649,8 @@
                     }
                 ],
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         }
@@ -14489,7 +14342,7 @@
                 "properties": {
                     "id": {
                         "type": "string",
-                        "format": "uuid",
+                        "format": "uuid4",
                         "title": "Id"
                     },
                     "slug": {
@@ -14505,16 +14358,27 @@
                         "title": "Body"
                     },
                     "byline": {
-                        "$ref": "#/components/schemas/Byline"
+                        "$ref": "#/components/schemas/BylineProfile"
                     },
                     "visibility": {
-                        "type": "string",
-                        "enum": [
-                            "private",
-                            "hidden",
-                            "public"
+                        "$ref": "#/components/schemas/ArticleVisibility"
+                    },
+                    "user_id": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "uuid4"
+                            },
+                            {
+                                "type": "null"
+                            }
                         ],
-                        "title": "Visibility"
+                        "title": "User Id"
+                    },
+                    "organization_id": {
+                        "type": "string",
+                        "format": "uuid4",
+                        "title": "Organization Id"
                     },
                     "organization": {
                         "$ref": "#/components/schemas/Organization"
@@ -14596,17 +14460,6 @@
                         ],
                         "title": "Email Sent To Count"
                     },
-                    "web_view_count": {
-                        "anyOf": [
-                            {
-                                "type": "integer"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Web View Count"
-                    },
                     "og_image_url": {
                         "anyOf": [
                             {
@@ -14638,11 +14491,20 @@
                     "body",
                     "byline",
                     "visibility",
+                    "organization_id",
                     "organization",
                     "is_preview",
                     "is_pinned"
                 ],
                 "title": "Article"
+            },
+            "ArticleByline": {
+                "type": "string",
+                "enum": [
+                    "user",
+                    "organization"
+                ],
+                "title": "ArticleByline"
             },
             "ArticleCreate": {
                 "properties": {
@@ -14689,28 +14551,33 @@
                         "description": "Body in base64-encoded format. Can be helpful to bypass Web Application Firewalls (WAF). Either one of body or body_base64 is required."
                     },
                     "organization_id": {
-                        "type": "string",
-                        "format": "uuid",
-                        "title": "Organization Id"
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "uuid4"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Organization Id",
+                        "description": "The ID of the organization owning the article. **Required unless you use an organization token.**"
                     },
                     "byline": {
-                        "type": "string",
-                        "enum": [
-                            "user",
-                            "organization"
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/ArticleByline"
+                            }
                         ],
-                        "title": "Byline",
                         "description": "If the user or organization should be credited in the byline.",
                         "default": "organization"
                     },
                     "visibility": {
-                        "type": "string",
-                        "enum": [
-                            "private",
-                            "hidden",
-                            "public"
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/ArticleVisibility"
+                            }
                         ],
-                        "title": "Visibility",
                         "default": "private"
                     },
                     "paid_subscribers_only": {
@@ -14799,30 +14666,17 @@
                 },
                 "type": "object",
                 "required": [
-                    "title",
-                    "organization_id"
+                    "title"
                 ],
                 "title": "ArticleCreate"
-            },
-            "ArticleDeleteResponse": {
-                "properties": {
-                    "ok": {
-                        "type": "boolean",
-                        "title": "Ok"
-                    }
-                },
-                "type": "object",
-                "required": [
-                    "ok"
-                ],
-                "title": "ArticleDeleteResponse"
             },
             "ArticlePreview": {
                 "properties": {
                     "email": {
                         "type": "string",
+                        "format": "email",
                         "title": "Email",
-                        "description": "Send a preview of the article to this email address"
+                        "description": "Email address to send the preview to. The user must be registered on Polar."
                     }
                 },
                 "type": "object",
@@ -14831,20 +14685,7 @@
                 ],
                 "title": "ArticlePreview"
             },
-            "ArticlePreviewResponse": {
-                "properties": {
-                    "ok": {
-                        "type": "boolean",
-                        "title": "Ok"
-                    }
-                },
-                "type": "object",
-                "required": [
-                    "ok"
-                ],
-                "title": "ArticlePreviewResponse"
-            },
-            "ArticleReceiversResponse": {
+            "ArticleReceivers": {
                 "properties": {
                     "free_subscribers": {
                         "type": "integer",
@@ -14865,33 +14706,7 @@
                     "premium_subscribers",
                     "organization_members"
                 ],
-                "title": "ArticleReceiversResponse"
-            },
-            "ArticleSentResponse": {
-                "properties": {
-                    "ok": {
-                        "type": "boolean",
-                        "title": "Ok"
-                    }
-                },
-                "type": "object",
-                "required": [
-                    "ok"
-                ],
-                "title": "ArticleSentResponse"
-            },
-            "ArticleUnsubscribeResponse": {
-                "properties": {
-                    "ok": {
-                        "type": "boolean",
-                        "title": "Ok"
-                    }
-                },
-                "type": "object",
-                "required": [
-                    "ok"
-                ],
-                "title": "ArticleUnsubscribeResponse"
+                "title": "ArticleReceivers"
             },
             "ArticleUpdate": {
                 "properties": {
@@ -14944,36 +14759,23 @@
                     "byline": {
                         "anyOf": [
                             {
-                                "type": "string",
-                                "enum": [
-                                    "user",
-                                    "organization"
-                                ],
-                                "maxLength": 64,
-                                "minLength": 1
+                                "$ref": "#/components/schemas/ArticleByline"
                             },
                             {
                                 "type": "null"
                             }
                         ],
-                        "title": "Byline",
                         "description": "If the user or organization should be credited in the byline."
                     },
                     "visibility": {
                         "anyOf": [
                             {
-                                "type": "string",
-                                "enum": [
-                                    "private",
-                                    "hidden",
-                                    "public"
-                                ]
+                                "$ref": "#/components/schemas/ArticleVisibility"
                             },
                             {
                                 "type": "null"
                             }
-                        ],
-                        "title": "Visibility"
+                        ]
                     },
                     "paid_subscribers_only": {
                         "anyOf": [
@@ -15013,18 +14815,6 @@
                         "title": "Published At",
                         "description": "Time of publishing. If this date is in the future, the post will be scheduled to publish at this time."
                     },
-                    "set_published_at": {
-                        "anyOf": [
-                            {
-                                "type": "boolean"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Set Published At",
-                        "description": "Set to true for changes to published_at to take effect."
-                    },
                     "notify_subscribers": {
                         "anyOf": [
                             {
@@ -15049,18 +14839,6 @@
                         "title": "Is Pinned",
                         "description": "If the article should be pinned"
                     },
-                    "set_og_image_url": {
-                        "anyOf": [
-                            {
-                                "type": "boolean"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Set Og Image Url",
-                        "description": "Set to true for changes to og_image_url to take effect."
-                    },
                     "og_image_url": {
                         "anyOf": [
                             {
@@ -15075,18 +14853,6 @@
                         ],
                         "title": "Og Image Url",
                         "description": "Custom og:image URL value"
-                    },
-                    "set_og_description": {
-                        "anyOf": [
-                            {
-                                "type": "boolean"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Set Og Description",
-                        "description": "Set to true for changes to og_description to take effect."
                     },
                     "og_description": {
                         "anyOf": [
@@ -15104,18 +14870,14 @@
                 "type": "object",
                 "title": "ArticleUpdate"
             },
-            "ArticleViewedResponse": {
-                "properties": {
-                    "ok": {
-                        "type": "boolean",
-                        "title": "Ok"
-                    }
-                },
-                "type": "object",
-                "required": [
-                    "ok"
+            "ArticleVisibility": {
+                "type": "string",
+                "enum": [
+                    "public",
+                    "hidden",
+                    "private"
                 ],
-                "title": "ArticleViewedResponse"
+                "title": "ArticleVisibility"
             },
             "Assignee": {
                 "properties": {
@@ -15346,7 +15108,6 @@
                     "openid",
                     "profile",
                     "email",
-                    "articles:read",
                     "user:read",
                     "organizations:read",
                     "organizations:write",
@@ -15360,6 +15121,8 @@
                     "subscriptions:write",
                     "orders:read",
                     "metrics:read",
+                    "articles:read",
+                    "articles:write",
                     "webhooks:read",
                     "webhooks:write",
                     "user:benefits:read",
@@ -17785,7 +17548,7 @@
                 ],
                 "title": "Body_subscriptions:subscriptions_import"
             },
-            "Byline": {
+            "BylineProfile": {
                 "properties": {
                     "name": {
                         "type": "string",
@@ -17807,7 +17570,7 @@
                 "required": [
                     "name"
                 ],
-                "title": "Byline"
+                "title": "BylineProfile"
             },
             "Checkout": {
                 "properties": {
@@ -21578,7 +21341,7 @@
                     "scope": {
                         "type": "string",
                         "title": "Scope",
-                        "default": "openid profile email articles:read user:read organizations:read organizations:write products:read products:write benefits:read benefits:write files:read files:write subscriptions:read subscriptions:write orders:read metrics:read webhooks:read webhooks:write user:benefits:read user:orders:read user:subscriptions:read user:subscriptions:write user:downloadables:read user:advertisement_campaigns:read user:advertisement_campaigns:write"
+                        "default": "openid profile email user:read organizations:read organizations:write products:read products:write benefits:read benefits:write files:read files:write subscriptions:read subscriptions:write orders:read metrics:read articles:read articles:write webhooks:read webhooks:write user:benefits:read user:orders:read user:subscriptions:read user:subscriptions:write user:downloadables:read user:advertisement_campaigns:read user:advertisement_campaigns:write"
                     },
                     "client_name": {
                         "type": "string",
@@ -21739,7 +21502,7 @@
                     "scope": {
                         "type": "string",
                         "title": "Scope",
-                        "default": "openid profile email articles:read user:read organizations:read organizations:write products:read products:write benefits:read benefits:write files:read files:write subscriptions:read subscriptions:write orders:read metrics:read webhooks:read webhooks:write user:benefits:read user:orders:read user:subscriptions:read user:subscriptions:write user:downloadables:read user:advertisement_campaigns:read user:advertisement_campaigns:write"
+                        "default": "openid profile email user:read organizations:read organizations:write products:read products:write benefits:read benefits:write files:read files:write subscriptions:read subscriptions:write orders:read metrics:read articles:read articles:write webhooks:read webhooks:write user:benefits:read user:orders:read user:subscriptions:read user:subscriptions:write user:downloadables:read user:advertisement_campaigns:read user:advertisement_campaigns:write"
                     },
                     "client_name": {
                         "type": "string",
@@ -21860,7 +21623,7 @@
                     "scope": {
                         "type": "string",
                         "title": "Scope",
-                        "default": "openid profile email articles:read user:read organizations:read organizations:write products:read products:write benefits:read benefits:write files:read files:write subscriptions:read subscriptions:write orders:read metrics:read webhooks:read webhooks:write user:benefits:read user:orders:read user:subscriptions:read user:subscriptions:write user:downloadables:read user:advertisement_campaigns:read user:advertisement_campaigns:write"
+                        "default": "openid profile email user:read organizations:read organizations:write products:read products:write benefits:read benefits:write files:read files:write subscriptions:read subscriptions:write orders:read metrics:read articles:read articles:write webhooks:read webhooks:write user:benefits:read user:orders:read user:subscriptions:read user:subscriptions:write user:downloadables:read user:advertisement_campaigns:read user:advertisement_campaigns:write"
                     },
                     "client_name": {
                         "type": "string",
@@ -25324,7 +25087,6 @@
                     "openid",
                     "profile",
                     "email",
-                    "articles:read",
                     "user:read",
                     "admin",
                     "web_default",
@@ -25340,6 +25102,8 @@
                     "subscriptions:write",
                     "orders:read",
                     "metrics:read",
+                    "articles:read",
+                    "articles:write",
                     "webhooks:read",
                     "webhooks:write",
                     "user:benefits:read",
@@ -25352,7 +25116,8 @@
                 ],
                 "title": "Scope",
                 "enumNames": {
-                    "articles:read": "Articles Read",
+                    "articles:read": "Read posts",
+                    "articles:write": "Create or modify posts",
                     "benefits:read": "Read benefits",
                     "benefits:write": "Create or modify benefits",
                     "email": "Read your email address",

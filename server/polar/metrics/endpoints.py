@@ -17,8 +17,8 @@ from .service import metrics as metrics_service
 router = APIRouter(prefix="/metrics", tags=["metrics"])
 
 
-@router.get("/", response_model=MetricsResponse)
-async def get_metrics(
+@router.get("/", summary="Get Metrics", response_model=MetricsResponse)
+async def get(
     auth_subject: auth.MetricsRead,
     start_date: date = Query(
         ...,
@@ -71,8 +71,8 @@ async def get_metrics(
     )
 
 
-@router.get("/limits", response_model=MetricsLimits)
-async def get_metrics_limits(auth_subject: auth.MetricsRead) -> MetricsLimits:
+@router.get("/limits", summary="Get Metrics Limits", response_model=MetricsLimits)
+async def get_limits(auth_subject: auth.MetricsRead) -> MetricsLimits:
     """Get the interval limits for the metrics endpoint."""
     return MetricsLimits.model_validate(
         {

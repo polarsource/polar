@@ -37,8 +37,8 @@ const AddSubscriberModal = ({
 
       setLoading(true)
       try {
-        await api.subscriptions.createSubscription({
-          subscriptionCreateEmail: {
+        await api.subscriptions.create({
+          body: {
             ...formData,
             product_id: freeTier.id,
           },

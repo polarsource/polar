@@ -248,76 +248,72 @@ ${url}${queryParametersString ? '?' + queryParametersString : ''} \\
 ${bodyString}`
 }
 
+const snakeToCamel = (str: string) =>
+  str
+    .toLowerCase()
+    .replace(/([-_][a-z])/g, (group: string) =>
+      group.toUpperCase().replace('-', '').replace('_', ''),
+    )
+
+const objectToString = (obj: any, indent: number = 0): string => {
+  const indentBase = '  '
+  let result = '{\n'
+  const entries = Object.entries(obj)
+
+  entries.forEach(([key, value], index) => {
+    const isLast = index === entries.length - 1
+    const lineIndent = indentBase.repeat(indent + 1)
+    const nextIndent = indent + 1
+    let valueString
+
+    if (typeof value === 'object' && !Array.isArray(value) && value !== null) {
+      valueString = objectToString(value, nextIndent)
+    } else if (Array.isArray(value)) {
+      valueString = `[${value
+        .map((v) => {
+          if (typeof v === 'object' && !Array.isArray(v) && v !== null) {
+            return objectToString(v, nextIndent)
+          } else if (typeof v === 'string') {
+            return `'${v}'`
+          } else {
+            return v
+          }
+        })
+        .join(', ')}]`
+    } else if (typeof value === 'string') {
+      valueString = `'${value}'`
+    } else {
+      valueString = value
+    }
+
+    result += `${lineIndent}${key}: ${valueString}${isLast ? '' : ','}\n`
+  })
+
+  result += `${indentBase.repeat(indent)}}`
+  return result
+}
+
+const convertToCamelCase = (obj: Record<string, any>): Record<string, any> =>
+  Object.keys(obj).reduce(
+    (acc, key) => {
+      const newKey = snakeToCamel(key)
+      return {
+        ...acc,
+        [newKey]: obj[key],
+      }
+    },
+    {} as Record<string, any>,
+  )
+
 export const buildNodeJSCommand = (
   endpoint: OpenAPIV3_1.OperationObject,
 ): string => {
-  const [namespace, endpointName] = endpoint.operationId?.split(':') ?? ['', '']
-
-  const snakeToCamel = (str: string) =>
-    str
-      .toLowerCase()
-      .replace(/([-_][a-z])/g, (group: string) =>
-        group.toUpperCase().replace('-', '').replace('_', ''),
-      )
-
-  const titleToCamel = (str: string) => {
-    const joined = str.split(' ').join('')
-    return joined.charAt(0).toLowerCase() + joined.slice(1)
+  const RESERVED_KEYWORDS = ['import', 'export']
+  let [namespace, endpointName] = endpoint.operationId?.split(':') ?? ['', '']
+  endpointName = snakeToCamel(endpointName)
+  if (RESERVED_KEYWORDS.includes(endpointName)) {
+    endpointName = `_${endpointName}`
   }
-
-  const objectToString = (obj: any, indent: number = 0): string => {
-    const indentBase = '  '
-    let result = '{\n'
-    const entries = Object.entries(obj)
-
-    entries.forEach(([key, value], index) => {
-      const isLast = index === entries.length - 1
-      const lineIndent = indentBase.repeat(indent + 1)
-      const nextIndent = indent + 1
-      let valueString
-
-      if (
-        typeof value === 'object' &&
-        !Array.isArray(value) &&
-        value !== null
-      ) {
-        valueString = objectToString(value, nextIndent)
-      } else if (Array.isArray(value)) {
-        valueString = `[${value
-          .map((v) => {
-            if (typeof v === 'object' && !Array.isArray(v) && v !== null) {
-              return objectToString(v, nextIndent)
-            } else if (typeof v === 'string') {
-              return `'${v}'`
-            } else {
-              return v
-            }
-          })
-          .join(', ')}]`
-      } else if (typeof value === 'string') {
-        valueString = `'${value}'`
-      } else {
-        valueString = value
-      }
-
-      result += `${lineIndent}${key}: ${valueString}${isLast ? '' : ','}\n`
-    })
-
-    result += `${indentBase.repeat(indent)}}`
-    return result
-  }
-
-  const convertToCamelCase = (obj: Record<string, any>): Record<string, any> =>
-    Object.keys(obj).reduce(
-      (acc, key) => {
-        const newKey = snakeToCamel(key)
-        return {
-          ...acc,
-          [newKey]: obj[key],
-        }
-      },
-      {} as Record<string, any>,
-    )
 
   const parametersExamples = getParametersExample(endpoint, ['path', 'query'])
   const bodySchema = getRequestBodySchema(endpoint)
@@ -342,7 +338,7 @@ const polar = new PolarAPI(
     })
 );
 
-polar.${namespace}.${snakeToCamel(endpointName)}(${objectToString(requestParameters)})
+polar.${namespace}.${endpointName}(${objectToString(requestParameters)})
   .then(console.log)
   .catch(console.error);
 `

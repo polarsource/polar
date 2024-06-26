@@ -8,22 +8,11 @@ import { motion } from 'framer-motion'
 import Link from 'next/link'
 import { Circles } from '../molecules/Circles'
 import { MOCKED_PRODUCTS } from '../utils'
+import { HeroGraphic } from './HeroGraphic'
 
 export const Hero = () => {
   const transition = {
     staggerChildren: 0.2,
-  }
-
-  const cardVariants = {
-    visible: {
-      opacity: 1,
-      transition: {
-        duration: 2,
-      },
-    },
-    hidden: {
-      opacity: 0,
-    },
   }
 
   return (
@@ -75,36 +64,23 @@ export const Hero = () => {
         </div>
       </div>
       <motion.div
-        className="relative z-20 hidden h-fit w-1/2 gap-8 md:grid md:grid-cols-2"
+        className="relative z-20 hidden h-fit xl:flex xl:w-1/2"
         initial="hidden"
         animate="visible"
         transition={transition}
       >
-        <motion.div className="h-full" variants={cardVariants}>
-          <Link className="h-full" href="/products">
-            <SubscriptionTierCard
-              className="dark:bg-polar-950 shadow-3xl h-full w-full max-w-[280px]"
-              subscriptionTier={{ ...MOCKED_PRODUCTS[1] }}
-            />
-          </Link>
-        </motion.div>
-        <motion.div variants={cardVariants}></motion.div>
-
-        <motion.div className="col-span-2" variants={cardVariants}>
-          <Link className="h-full" href="/issue-funding">
-            <picture>
-              <source
-                media="(prefers-color-scheme: dark)"
-                srcSet={`/assets/landing/fund_dark.svg`}
-              />
-              <img
-                className="dark:border-polar-700 shadow-3xl rounded-2xl border border-gray-100"
-                srcSet={`/assets/landing/fund.svg`}
-                alt="Polar crowdfunding badge embedded on a GitHub issue"
-              />
-            </picture>
-          </Link>
-        </motion.div>
+        <HeroGraphic />
+      </motion.div>
+      <motion.div
+        className="relative z-20 flex h-fit w-1/2 flex-row-reverse xl:hidden"
+        initial="hidden"
+        animate="visible"
+        transition={transition}
+      >
+        <SubscriptionTierCard
+          className="hidden max-w-[300px] md:flex"
+          subscriptionTier={MOCKED_PRODUCTS[1]}
+        />
       </motion.div>
     </Section>
   )

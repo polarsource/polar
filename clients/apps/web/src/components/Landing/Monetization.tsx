@@ -146,7 +146,7 @@ export const Monetization = () => {
             link="/products"
           >
             <SubscriptionTierCard
-              className="dark:bg-polar-900 dark:border-polar-800 border-transparent bg-white shadow-sm"
+              className="dark:bg-polar-900 dark:border-polar-800 border-transparent from-white to-white shadow-sm"
               subscriptionTier={MOCKED_PRODUCTS[1]}
             />
           </FeatureItem>
@@ -246,7 +246,10 @@ export const Monetization = () => {
           ))}
         </div>
 
-        <div className="relative flex h-64 w-64 flex-col items-center justify-center rounded-full">
+        <Link
+          className="relative hidden h-64 w-64 flex-col items-center justify-center rounded-full md:flex"
+          href="https://polar.sh/polarsource/posts/github-supports-polar-in-funding-yaml"
+        >
           <GitHubIcon
             className="text-black dark:text-white"
             width={60}
@@ -280,7 +283,7 @@ export const Monetization = () => {
               </g>
             </svg>
           </div>
-        </div>
+        </Link>
       </div>
     </>
   )

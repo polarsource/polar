@@ -55,11 +55,9 @@ export default function Page() {
           </div>
         </div>
         <div className="relative grid grid-cols-1 gap-4 md:w-1/2 md:grid-cols-2">
-          <div className="shadow-3xl overflow-hidden rounded-3xl">
-            <ProductCard product={MOCKED_PRODUCTS[3] as Product} />
-          </div>
+          <ProductCard product={MOCKED_PRODUCTS[3] as Product} />
           <SubscriptionTierCard
-            className="dark:bg-polar-950 shadow-3xl w-full max-w-[280px]"
+            className="dark:bg-polar-950 w-full max-w-[280px]"
             subscriptionTier={MOCKED_PRODUCTS[1]}
           />
         </div>

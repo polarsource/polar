@@ -69,7 +69,12 @@ class OrganizationService(ResourceServiceReader[Organization]):
 
     # Override get method to include `blocked_at` filter
     async def get(
-        self, session: AsyncSession, id: UUID, allow_deleted: bool = False
+        self,
+        session: AsyncSession,
+        id: UUID,
+        allow_deleted: bool = False,
+        *,
+        options: Sequence[sql.ExecutableOption] | None = None,
     ) -> Organization | None:
         conditions = [Organization.id == id]
         if not allow_deleted:
@@ -77,6 +82,10 @@ class OrganizationService(ResourceServiceReader[Organization]):
 
         conditions.append(Organization.blocked_at.is_(None))
         query = sql.select(Organization).where(*conditions)
+
+        if options is not None:
+            query = query.options(*options)
+
         res = await session.execute(query)
         return res.scalars().unique().one_or_none()
 

@@ -2,6 +2,7 @@ from uuid import UUID
 
 import httpx
 import structlog
+from sqlalchemy.orm import joinedload
 
 from polar.auth.service import AuthService
 from polar.config import settings
@@ -36,7 +37,14 @@ async def articles_send_to_user(
             # err?
             return
 
-        article = await article_service.get_loaded(session, article_id)
+        article = await article_service.get(
+            session,
+            article_id,
+            options=(
+                joinedload(Article.user),
+                joinedload(Article.organization),
+            ),
+        )
         if not article:
             return
 
@@ -83,17 +91,15 @@ async def articles_send_to_user(
             return None
 
         from_name = ""
-        if article.byline == Article.Byline.organization:
+        if article.byline == Article.Byline.user and article.user is not None:
+            from_name = article.user.public_name
+            if article.user.email:
+                email_headers["Reply-To"] = f"{from_name} <{article.user.email}>"
+        else:
             from_name = article.organization.pretty_name or article.organization.name
             if article.organization.email:
                 email_headers["Reply-To"] = (
                     f"{from_name} <{article.organization.email}>"
-                )
-        else:
-            from_name = article.created_by_user.public_name
-            if article.created_by_user.email:
-                email_headers["Reply-To"] = (
-                    f"{from_name} <{article.created_by_user.email}>"
                 )
 
         email_sender = get_email_sender()
@@ -115,7 +121,7 @@ async def articles_send_scheduled(
     async with AsyncSessionMaker(ctx) as session:
         articles = await article_service.list_scheduled_unsent_posts(session)
         for article in articles:
-            await article_service.send_to_subscribers(session, article)
+            await article_service.enqueue_send(session, article)
 
 
 @interval(second=0)

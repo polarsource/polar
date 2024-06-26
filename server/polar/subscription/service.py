@@ -49,6 +49,7 @@ from polar.notifications.notification import (
 from polar.notifications.service import PartialNotification
 from polar.notifications.service import notifications as notifications_service
 from polar.organization.service import organization as organization_service
+from polar.postgres import sql
 from polar.posthog import posthog
 from polar.user.service.user import user as user_service
 from polar.webhook.service import webhook as webhook_service
@@ -133,18 +134,26 @@ class SearchSortProperty(StrEnum):
 
 class SubscriptionService(ResourceServiceReader[Subscription]):
     async def get(
-        self, session: AsyncSession, id: uuid.UUID, allow_deleted: bool = False
+        self,
+        session: AsyncSession,
+        id: uuid.UUID,
+        allow_deleted: bool = False,
+        *,
+        options: Sequence[sql.ExecutableOption] | None = None,
     ) -> Subscription | None:
         query = select(Subscription).where(Subscription.id == id)
 
         if not allow_deleted:
             query = query.where(Subscription.deleted_at.is_(None))
 
-        query = query.options(
-            joinedload(Subscription.user),
-            joinedload(Subscription.price),
-            joinedload(Subscription.product).selectinload(Product.product_medias),
-        )
+        if options is not None:
+            query = query.options(*options)
+        else:
+            query = query.options(
+                joinedload(Subscription.user),
+                joinedload(Subscription.price),
+                joinedload(Subscription.product).selectinload(Product.product_medias),
+            )
 
         res = await session.execute(query)
         return res.scalars().unique().one_or_none()

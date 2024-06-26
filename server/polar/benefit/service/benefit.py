@@ -24,6 +24,7 @@ from polar.models import (
 from polar.models.benefit import BenefitArticles, BenefitType
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.organization.resolver import get_payload_organization
+from polar.postgres import sql
 from polar.webhook.service import webhook as webhook_service
 
 from ..benefits import get_benefit_service
@@ -46,6 +47,7 @@ class BenefitService(ResourceService[Benefit, BenefitCreate, BenefitUpdate]):
         loaded: bool = False,
         *,
         class_: None = None,
+        options: Sequence[sql.ExecutableOption] | None = None,
     ) -> Benefit | None: ...
 
     @overload
@@ -57,6 +59,7 @@ class BenefitService(ResourceService[Benefit, BenefitCreate, BenefitUpdate]):
         loaded: bool = False,
         *,
         class_: type[B] | None = None,
+        options: Sequence[sql.ExecutableOption] | None = None,
     ) -> B | None: ...
 
     async def get(
@@ -67,6 +70,7 @@ class BenefitService(ResourceService[Benefit, BenefitCreate, BenefitUpdate]):
         loaded: bool = False,
         *,
         class_: Any = None,
+        options: Sequence[sql.ExecutableOption] | None = None,
     ) -> Any | None:
         if class_ is None:
             class_ = Benefit
@@ -77,6 +81,9 @@ class BenefitService(ResourceService[Benefit, BenefitCreate, BenefitUpdate]):
 
         if loaded:
             query = query.options(joinedload(class_.organization))
+
+        if options is not None:
+            query = query.options(*options)
 
         res = await session.execute(query)
         return res.scalar_one_or_none()

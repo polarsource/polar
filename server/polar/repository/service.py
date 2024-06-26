@@ -83,6 +83,8 @@ class RepositoryService(
         id: UUID,
         allow_deleted: bool = False,
         load_organization: bool = False,
+        *,
+        options: Sequence[sql.ExecutableOption] | None = None,
     ) -> Repository | None:
         query = sql.select(Repository).where(Repository.id == id)
 
@@ -91,6 +93,9 @@ class RepositoryService(
 
         if load_organization:
             query = query.options(joinedload(Repository.organization))
+
+        if options is not None:
+            query = query.options(*options)
 
         res = await session.execute(query)
         return res.scalars().unique().one_or_none()

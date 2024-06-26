@@ -829,11 +829,11 @@ async def article(
 ) -> Article:
     article = Article(
         id=uuid.uuid4(),
-        organization_id=organization.id,
         slug="test",
         title="test",
         body="test!",
-        created_by=user.id,
+        organization=organization,
+        user=user,
     )
     await save_fixture(article)
     return article

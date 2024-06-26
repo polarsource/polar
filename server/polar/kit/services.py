@@ -5,6 +5,7 @@ from typing import Any, Generic, TypeVar
 from uuid import UUID
 
 from sqlalchemy.orm import InstrumentedAttribute
+from sqlalchemy.sql.base import ExecutableOption
 
 from polar.kit.utils import utc_now
 
@@ -25,11 +26,18 @@ class ResourceServiceReader(
         self.model = model
 
     async def get(
-        self, session: AsyncSession, id: UUID, allow_deleted: bool = False
+        self,
+        session: AsyncSession,
+        id: UUID,
+        allow_deleted: bool = False,
+        *,
+        options: Sequence[ExecutableOption] | None = None,
     ) -> ModelType | None:
         query = sql.select(self.model).where(self.model.id == id)
         if not allow_deleted:
             query = query.where(self.model.deleted_at.is_(None))
+        if options is not None:
+            query = query.options(*options)
         res = await session.execute(query)
         return res.scalars().unique().one_or_none()
 

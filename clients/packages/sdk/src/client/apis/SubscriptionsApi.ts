@@ -23,11 +23,20 @@ import type {
   SubscriptionsImported,
 } from '../models/index';
 
-export interface SubscriptionsApiCreateSubscriptionRequest {
+export interface SubscriptionsApiCreateRequest {
     body: SubscriptionCreateEmail;
 }
 
-export interface SubscriptionsApiListSubscriptionsRequest {
+export interface SubscriptionsApiExportRequest {
+    organizationId?: string;
+}
+
+export interface SubscriptionsApiImportRequest {
+    file: Blob;
+    organizationId: string;
+}
+
+export interface SubscriptionsApiListRequest {
     organizationId?: string;
     productId?: string;
     type?: SubscriptionTierType;
@@ -37,15 +46,6 @@ export interface SubscriptionsApiListSubscriptionsRequest {
     sorting?: Array<string>;
 }
 
-export interface SubscriptionsApiSubscriptionsExportRequest {
-    organizationId?: string;
-}
-
-export interface SubscriptionsApiSubscriptionsImportRequest {
-    file: Blob;
-    organizationId: string;
-}
-
 /**
  * 
  */
@@ -53,13 +53,13 @@ export class SubscriptionsApi extends runtime.BaseAPI {
 
     /**
      * Create a subscription on the free tier for a given email.
-     * Create Subscription
+     * Create Free Subscription
      */
-    async createSubscriptionRaw(requestParameters: SubscriptionsApiCreateSubscriptionRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Subscription>> {
+    async createRaw(requestParameters: SubscriptionsApiCreateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Subscription>> {
         if (requestParameters['body'] == null) {
             throw new runtime.RequiredError(
                 'body',
-                'Required parameter "body" was null or undefined when calling createSubscription().'
+                'Required parameter "body" was null or undefined when calling create().'
             );
         }
 
@@ -90,10 +90,129 @@ export class SubscriptionsApi extends runtime.BaseAPI {
 
     /**
      * Create a subscription on the free tier for a given email.
-     * Create Subscription
+     * Create Free Subscription
      */
-    async createSubscription(requestParameters: SubscriptionsApiCreateSubscriptionRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Subscription> {
-        const response = await this.createSubscriptionRaw(requestParameters, initOverrides);
+    async create(requestParameters: SubscriptionsApiCreateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Subscription> {
+        const response = await this.createRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
+     * Export subscriptions as a CSV file.
+     * Export Subscriptions
+     */
+    async exportRaw(requestParameters: SubscriptionsApiExportRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<any>> {
+        const queryParameters: any = {};
+
+        if (requestParameters['organizationId'] != null) {
+            queryParameters['organization_id'] = requestParameters['organizationId'];
+        }
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("HTTPBearer", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+        const response = await this.request({
+            path: `/api/v1/subscriptions/export`,
+            method: 'GET',
+            headers: headerParameters,
+            query: queryParameters,
+        }, initOverrides);
+
+        if (this.isJsonMime(response.headers.get('content-type'))) {
+            return new runtime.JSONApiResponse<any>(response);
+        } else {
+            return new runtime.TextApiResponse(response) as any;
+        }
+    }
+
+    /**
+     * Export subscriptions as a CSV file.
+     * Export Subscriptions
+     */
+    async export(requestParameters: SubscriptionsApiExportRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<any> {
+        const response = await this.exportRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
+     * Import subscriptions from a CSV file.
+     * Import Subscriptions
+     */
+    async importRaw(requestParameters: SubscriptionsApiImportRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<SubscriptionsImported>> {
+        if (requestParameters['file'] == null) {
+            throw new runtime.RequiredError(
+                'file',
+                'Required parameter "file" was null or undefined when calling import().'
+            );
+        }
+
+        if (requestParameters['organizationId'] == null) {
+            throw new runtime.RequiredError(
+                'organizationId',
+                'Required parameter "organizationId" was null or undefined when calling import().'
+            );
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("HTTPBearer", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+        const consumes: runtime.Consume[] = [
+            { contentType: 'multipart/form-data' },
+        ];
+        // @ts-ignore: canConsumeForm may be unused
+        const canConsumeForm = runtime.canConsumeForm(consumes);
+
+        let formParams: { append(param: string, value: any): any };
+        let useForm = false;
+        // use FormData to transmit files using content-type "multipart/form-data"
+        useForm = canConsumeForm;
+        if (useForm) {
+            formParams = new FormData();
+        } else {
+            formParams = new URLSearchParams();
+        }
+
+        if (requestParameters['file'] != null) {
+            formParams.append('file', requestParameters['file'] as any);
+        }
+
+        if (requestParameters['organizationId'] != null) {
+            formParams.append('organization_id', requestParameters['organizationId'] as any);
+        }
+
+        const response = await this.request({
+            path: `/api/v1/subscriptions/import`,
+            method: 'POST',
+            headers: headerParameters,
+            query: queryParameters,
+            body: formParams,
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse(response);
+    }
+
+    /**
+     * Import subscriptions from a CSV file.
+     * Import Subscriptions
+     */
+    async import(requestParameters: SubscriptionsApiImportRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<SubscriptionsImported> {
+        const response = await this.importRaw(requestParameters, initOverrides);
         return await response.value();
     }
 
@@ -101,7 +220,7 @@ export class SubscriptionsApi extends runtime.BaseAPI {
      * List subscriptions.
      * List Subscriptions
      */
-    async listSubscriptionsRaw(requestParameters: SubscriptionsApiListSubscriptionsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListResourceSubscription>> {
+    async listRaw(requestParameters: SubscriptionsApiListRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListResourceSubscription>> {
         const queryParameters: any = {};
 
         if (requestParameters['organizationId'] != null) {
@@ -156,127 +275,8 @@ export class SubscriptionsApi extends runtime.BaseAPI {
      * List subscriptions.
      * List Subscriptions
      */
-    async listSubscriptions(requestParameters: SubscriptionsApiListSubscriptionsRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ListResourceSubscription> {
-        const response = await this.listSubscriptionsRaw(requestParameters, initOverrides);
-        return await response.value();
-    }
-
-    /**
-     * Export subscriptions as a CSV file.
-     * Subscriptions Export
-     */
-    async subscriptionsExportRaw(requestParameters: SubscriptionsApiSubscriptionsExportRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<any>> {
-        const queryParameters: any = {};
-
-        if (requestParameters['organizationId'] != null) {
-            queryParameters['organization_id'] = requestParameters['organizationId'];
-        }
-
-        const headerParameters: runtime.HTTPHeaders = {};
-
-        if (this.configuration && this.configuration.accessToken) {
-            const token = this.configuration.accessToken;
-            const tokenString = await token("HTTPBearer", []);
-
-            if (tokenString) {
-                headerParameters["Authorization"] = `Bearer ${tokenString}`;
-            }
-        }
-        const response = await this.request({
-            path: `/api/v1/subscriptions/export`,
-            method: 'GET',
-            headers: headerParameters,
-            query: queryParameters,
-        }, initOverrides);
-
-        if (this.isJsonMime(response.headers.get('content-type'))) {
-            return new runtime.JSONApiResponse<any>(response);
-        } else {
-            return new runtime.TextApiResponse(response) as any;
-        }
-    }
-
-    /**
-     * Export subscriptions as a CSV file.
-     * Subscriptions Export
-     */
-    async subscriptionsExport(requestParameters: SubscriptionsApiSubscriptionsExportRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<any> {
-        const response = await this.subscriptionsExportRaw(requestParameters, initOverrides);
-        return await response.value();
-    }
-
-    /**
-     * Import subscriptions from a CSV file.
-     * Subscriptions Import
-     */
-    async subscriptionsImportRaw(requestParameters: SubscriptionsApiSubscriptionsImportRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<SubscriptionsImported>> {
-        if (requestParameters['file'] == null) {
-            throw new runtime.RequiredError(
-                'file',
-                'Required parameter "file" was null or undefined when calling subscriptionsImport().'
-            );
-        }
-
-        if (requestParameters['organizationId'] == null) {
-            throw new runtime.RequiredError(
-                'organizationId',
-                'Required parameter "organizationId" was null or undefined when calling subscriptionsImport().'
-            );
-        }
-
-        const queryParameters: any = {};
-
-        const headerParameters: runtime.HTTPHeaders = {};
-
-        if (this.configuration && this.configuration.accessToken) {
-            const token = this.configuration.accessToken;
-            const tokenString = await token("HTTPBearer", []);
-
-            if (tokenString) {
-                headerParameters["Authorization"] = `Bearer ${tokenString}`;
-            }
-        }
-        const consumes: runtime.Consume[] = [
-            { contentType: 'multipart/form-data' },
-        ];
-        // @ts-ignore: canConsumeForm may be unused
-        const canConsumeForm = runtime.canConsumeForm(consumes);
-
-        let formParams: { append(param: string, value: any): any };
-        let useForm = false;
-        // use FormData to transmit files using content-type "multipart/form-data"
-        useForm = canConsumeForm;
-        if (useForm) {
-            formParams = new FormData();
-        } else {
-            formParams = new URLSearchParams();
-        }
-
-        if (requestParameters['file'] != null) {
-            formParams.append('file', requestParameters['file'] as any);
-        }
-
-        if (requestParameters['organizationId'] != null) {
-            formParams.append('organization_id', requestParameters['organizationId'] as any);
-        }
-
-        const response = await this.request({
-            path: `/api/v1/subscriptions/import`,
-            method: 'POST',
-            headers: headerParameters,
-            query: queryParameters,
-            body: formParams,
-        }, initOverrides);
-
-        return new runtime.JSONApiResponse(response);
-    }
-
-    /**
-     * Import subscriptions from a CSV file.
-     * Subscriptions Import
-     */
-    async subscriptionsImport(requestParameters: SubscriptionsApiSubscriptionsImportRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<SubscriptionsImported> {
-        const response = await this.subscriptionsImportRaw(requestParameters, initOverrides);
+    async list(requestParameters: SubscriptionsApiListRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ListResourceSubscription> {
+        const response = await this.listRaw(requestParameters, initOverrides);
         return await response.value();
     }
 

@@ -23,12 +23,12 @@ import type {
   WebhookIntegrationUpdate,
 } from '../models/index';
 
-export interface WebhookNotificationsApiDeleteRequest {
-    id: string;
-}
-
 export interface WebhookNotificationsApiCreateRequest {
     body: WebhookIntegrationCreate;
+}
+
+export interface WebhookNotificationsApiDeleteRequest {
+    id: string;
 }
 
 export interface WebhookNotificationsApiSearchRequest {
@@ -45,49 +45,6 @@ export interface WebhookNotificationsApiUpdateRequest {
  * 
  */
 export class WebhookNotificationsApi extends runtime.BaseAPI {
-
-    /**
-     * Delete webhook notification integration.
-     * Delete webhook notification integration
-     */
-    async _deleteRaw(requestParameters: WebhookNotificationsApiDeleteRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<WebhookIntegration>> {
-        if (requestParameters['id'] == null) {
-            throw new runtime.RequiredError(
-                'id',
-                'Required parameter "id" was null or undefined when calling _delete().'
-            );
-        }
-
-        const queryParameters: any = {};
-
-        const headerParameters: runtime.HTTPHeaders = {};
-
-        if (this.configuration && this.configuration.accessToken) {
-            const token = this.configuration.accessToken;
-            const tokenString = await token("HTTPBearer", []);
-
-            if (tokenString) {
-                headerParameters["Authorization"] = `Bearer ${tokenString}`;
-            }
-        }
-        const response = await this.request({
-            path: `/api/v1/webhook_notifications/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
-            method: 'DELETE',
-            headers: headerParameters,
-            query: queryParameters,
-        }, initOverrides);
-
-        return new runtime.JSONApiResponse(response);
-    }
-
-    /**
-     * Delete webhook notification integration.
-     * Delete webhook notification integration
-     */
-    async _delete(requestParameters: WebhookNotificationsApiDeleteRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<WebhookIntegration> {
-        const response = await this._deleteRaw(requestParameters, initOverrides);
-        return await response.value();
-    }
 
     /**
      * Create a webhook notification integration.
@@ -132,6 +89,49 @@ export class WebhookNotificationsApi extends runtime.BaseAPI {
      */
     async create(requestParameters: WebhookNotificationsApiCreateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<WebhookIntegration> {
         const response = await this.createRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
+     * Delete webhook notification integration.
+     * Delete webhook notification integration
+     */
+    async deleteRaw(requestParameters: WebhookNotificationsApiDeleteRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<WebhookIntegration>> {
+        if (requestParameters['id'] == null) {
+            throw new runtime.RequiredError(
+                'id',
+                'Required parameter "id" was null or undefined when calling delete().'
+            );
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("HTTPBearer", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+        const response = await this.request({
+            path: `/api/v1/webhook_notifications/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
+            method: 'DELETE',
+            headers: headerParameters,
+            query: queryParameters,
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse(response);
+    }
+
+    /**
+     * Delete webhook notification integration.
+     * Delete webhook notification integration
+     */
+    async delete(requestParameters: WebhookNotificationsApiDeleteRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<WebhookIntegration> {
+        const response = await this.deleteRaw(requestParameters, initOverrides);
         return await response.value();
     }
 

@@ -14,13 +14,6 @@
 
 
 import * as runtime from '../runtime';
-import type {
-  HTTPValidationError,
-} from '../models/index';
-
-export interface AuthApiLogoutRequest {
-    organizationId?: string;
-}
 
 /**
  * 
@@ -30,12 +23,8 @@ export class AuthApi extends runtime.BaseAPI {
     /**
      * Logout
      */
-    async logoutRaw(requestParameters: AuthApiLogoutRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<any>> {
+    async logoutRaw(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<any>> {
         const queryParameters: any = {};
-
-        if (requestParameters['organizationId'] != null) {
-            queryParameters['organization_id'] = requestParameters['organizationId'];
-        }
 
         const headerParameters: runtime.HTTPHeaders = {};
 
@@ -56,8 +45,8 @@ export class AuthApi extends runtime.BaseAPI {
     /**
      * Logout
      */
-    async logout(requestParameters: AuthApiLogoutRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<any> {
-        const response = await this.logoutRaw(requestParameters, initOverrides);
+    async logout(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<any> {
+        const response = await this.logoutRaw(initOverrides);
         return await response.value();
     }
 

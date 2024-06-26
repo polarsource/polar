@@ -21,18 +21,18 @@ import type {
   ResourceNotFound,
 } from '../models/index';
 
-export interface AdvertisementsApiGetAdvertisementCampaignRequest {
+export interface AdvertisementsApiGetRequest {
     id: string;
 }
 
-export interface AdvertisementsApiListAdvertisementCampaignsRequest {
+export interface AdvertisementsApiListRequest {
     benefitId: string;
     page?: number;
     limit?: number;
     sorting?: Array<string>;
 }
 
-export interface AdvertisementsApiTrackAdvertisementCampaignViewRequest {
+export interface AdvertisementsApiTrackViewRequest {
     id: string;
 }
 
@@ -43,13 +43,13 @@ export class AdvertisementsApi extends runtime.BaseAPI {
 
     /**
      * Get an advertisement campaign by ID.
-     * Get Advertisement Campaign
+     * Get Campaign
      */
-    async getAdvertisementCampaignRaw(requestParameters: AdvertisementsApiGetAdvertisementCampaignRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<AdvertisementCampaign>> {
+    async getRaw(requestParameters: AdvertisementsApiGetRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<AdvertisementCampaign>> {
         if (requestParameters['id'] == null) {
             throw new runtime.RequiredError(
                 'id',
-                'Required parameter "id" was null or undefined when calling getAdvertisementCampaign().'
+                'Required parameter "id" was null or undefined when calling get().'
             );
         }
 
@@ -69,22 +69,22 @@ export class AdvertisementsApi extends runtime.BaseAPI {
 
     /**
      * Get an advertisement campaign by ID.
-     * Get Advertisement Campaign
+     * Get Campaign
      */
-    async getAdvertisementCampaign(requestParameters: AdvertisementsApiGetAdvertisementCampaignRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<AdvertisementCampaign> {
-        const response = await this.getAdvertisementCampaignRaw(requestParameters, initOverrides);
+    async get(requestParameters: AdvertisementsApiGetRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<AdvertisementCampaign> {
+        const response = await this.getRaw(requestParameters, initOverrides);
         return await response.value();
     }
 
     /**
      * List active advertisement campaigns for a benefit.
-     * List Advertisement Campaigns
+     * List Campaigns
      */
-    async listAdvertisementCampaignsRaw(requestParameters: AdvertisementsApiListAdvertisementCampaignsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<AdvertisementCampaignListResource>> {
+    async listRaw(requestParameters: AdvertisementsApiListRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<AdvertisementCampaignListResource>> {
         if (requestParameters['benefitId'] == null) {
             throw new runtime.RequiredError(
                 'benefitId',
-                'Required parameter "benefitId" was null or undefined when calling listAdvertisementCampaigns().'
+                'Required parameter "benefitId" was null or undefined when calling list().'
             );
         }
 
@@ -120,22 +120,22 @@ export class AdvertisementsApi extends runtime.BaseAPI {
 
     /**
      * List active advertisement campaigns for a benefit.
-     * List Advertisement Campaigns
+     * List Campaigns
      */
-    async listAdvertisementCampaigns(requestParameters: AdvertisementsApiListAdvertisementCampaignsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<AdvertisementCampaignListResource> {
-        const response = await this.listAdvertisementCampaignsRaw(requestParameters, initOverrides);
+    async list(requestParameters: AdvertisementsApiListRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<AdvertisementCampaignListResource> {
+        const response = await this.listRaw(requestParameters, initOverrides);
         return await response.value();
     }
 
     /**
      * Track a view on an advertisement campaign.
-     * Track Advertisement Campaign View
+     * Track View
      */
-    async trackAdvertisementCampaignViewRaw(requestParameters: AdvertisementsApiTrackAdvertisementCampaignViewRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<void>> {
+    async trackViewRaw(requestParameters: AdvertisementsApiTrackViewRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<void>> {
         if (requestParameters['id'] == null) {
             throw new runtime.RequiredError(
                 'id',
-                'Required parameter "id" was null or undefined when calling trackAdvertisementCampaignView().'
+                'Required parameter "id" was null or undefined when calling trackView().'
             );
         }
 
@@ -155,10 +155,10 @@ export class AdvertisementsApi extends runtime.BaseAPI {
 
     /**
      * Track a view on an advertisement campaign.
-     * Track Advertisement Campaign View
+     * Track View
      */
-    async trackAdvertisementCampaignView(requestParameters: AdvertisementsApiTrackAdvertisementCampaignViewRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<void> {
-        await this.trackAdvertisementCampaignViewRaw(requestParameters, initOverrides);
+    async trackView(requestParameters: AdvertisementsApiTrackViewRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<void> {
+        await this.trackViewRaw(requestParameters, initOverrides);
     }
 
 }

@@ -1118,8 +1118,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Anonymous",
-                    "User"
+                    "User",
+                    "Anonymous"
                 ]
             }
         },
@@ -4076,8 +4076,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Anonymous",
-                    "User"
+                    "User",
+                    "Anonymous"
                 ]
             }
         },
@@ -4131,8 +4131,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Anonymous",
-                    "User"
+                    "User",
+                    "Anonymous"
                 ]
             }
         },
@@ -4238,8 +4238,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Anonymous",
-                    "User"
+                    "User",
+                    "Anonymous"
                 ]
             }
         },
@@ -4435,8 +4435,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Anonymous",
-                    "User"
+                    "User",
+                    "Anonymous"
                 ]
             }
         },
@@ -4510,8 +4510,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Anonymous",
-                    "User"
+                    "User",
+                    "Anonymous"
                 ]
             }
         },
@@ -4569,8 +4569,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Anonymous",
-                    "User"
+                    "User",
+                    "Anonymous"
                 ]
             },
             "patch": {
@@ -4793,8 +4793,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Anonymous",
-                    "User"
+                    "User",
+                    "Anonymous"
                 ]
             }
         },
@@ -5114,8 +5114,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Anonymous",
-                    "User"
+                    "User",
+                    "Anonymous"
                 ]
             }
         },
@@ -5559,8 +5559,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Anonymous",
-                    "User"
+                    "User",
+                    "Anonymous"
                 ]
             }
         },
@@ -5625,8 +5625,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Anonymous",
-                    "User"
+                    "User",
+                    "Anonymous"
                 ]
             }
         },
@@ -5678,8 +5678,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Anonymous",
-                    "User"
+                    "User",
+                    "Anonymous"
                 ]
             }
         },
@@ -5766,8 +5766,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Anonymous",
-                    "User"
+                    "User",
+                    "Anonymous"
                 ]
             },
             "post": {
@@ -6293,8 +6293,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Anonymous",
-                    "User"
+                    "User",
+                    "Anonymous"
                 ]
             }
         },
@@ -6349,8 +6349,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Anonymous",
-                    "User"
+                    "User",
+                    "Anonymous"
                 ]
             }
         },
@@ -6515,8 +6515,8 @@
                     }
                 ],
                 "x-polar-allowed-subjects": [
-                    "Anonymous",
-                    "User"
+                    "User",
+                    "Anonymous"
                 ]
             }
         },
@@ -6688,8 +6688,8 @@
                     }
                 ],
                 "x-polar-allowed-subjects": [
-                    "Anonymous",
-                    "User"
+                    "User",
+                    "Anonymous"
                 ]
             }
         },
@@ -6752,8 +6752,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Anonymous",
-                    "User"
+                    "User",
+                    "Anonymous"
                 ]
             }
         },
@@ -6831,8 +6831,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "organizations:read",
-                            "organizations:write"
+                            "organizations:write",
+                            "organizations:read"
                         ]
                     },
                     {
@@ -6892,8 +6892,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "organizations:read",
-                            "organizations:write"
+                            "organizations:write",
+                            "organizations:read"
                         ]
                     },
                     {
@@ -6973,8 +6973,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "organizations:read",
-                            "organizations:write"
+                            "organizations:write",
+                            "organizations:read"
                         ]
                     },
                     {
@@ -7057,8 +7057,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "organizations:read",
-                            "organizations:write"
+                            "organizations:write",
+                            "organizations:read"
                         ]
                     },
                     {
@@ -7188,8 +7188,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "organizations:read",
-                            "organizations:write"
+                            "organizations:write",
+                            "organizations:read"
                         ]
                     },
                     {
@@ -7221,9 +7221,9 @@
                             },
                             "description": "Filter by the type of purchase the customer made.",
                             "default": [
-                                "order",
                                 "donation",
-                                "subscription"
+                                "subscription",
+                                "order"
                             ],
                             "title": "Customer Types"
                         },
@@ -7675,7 +7675,7 @@
                 ],
                 "summary": "List Subscriptions",
                 "description": "List subscriptions.",
-                "operationId": "list_subscriptions",
+                "operationId": "list",
                 "security": [
                     {
                         "OpenIdConnect": [
@@ -7862,9 +7862,9 @@
                 "tags": [
                     "subscriptions"
                 ],
-                "summary": "Create Subscription",
+                "summary": "Create Free Subscription",
                 "description": "Create a subscription on the free tier for a given email.",
-                "operationId": "create_subscription",
+                "operationId": "create",
                 "security": [
                     {
                         "OpenIdConnect": [
@@ -7918,14 +7918,14 @@
                 "tags": [
                     "subscriptions"
                 ],
-                "summary": "Subscriptions Import",
+                "summary": "Import Subscriptions",
                 "description": "Import subscriptions from a CSV file.",
-                "operationId": "subscriptions_import",
+                "operationId": "import",
                 "requestBody": {
                     "content": {
                         "multipart/form-data": {
                             "schema": {
-                                "$ref": "#/components/schemas/Body_subscriptions_subscriptions_import"
+                                "$ref": "#/components/schemas/Body_subscriptions_import"
                             }
                         }
                     },
@@ -7974,9 +7974,9 @@
                 "tags": [
                     "subscriptions"
                 ],
-                "summary": "Subscriptions Export",
+                "summary": "Export Subscriptions",
                 "description": "Export subscriptions as a CSV file.",
-                "operationId": "subscriptions_export",
+                "operationId": "export",
                 "security": [
                     {
                         "OpenIdConnect": [
@@ -8040,7 +8040,7 @@
                 "tags": [
                     "articles"
                 ],
-                "summary": "List",
+                "summary": "List Articles",
                 "description": "List articles.",
                 "operationId": "list",
                 "security": [
@@ -8195,16 +8195,16 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Anonymous",
                     "Organization",
-                    "User"
+                    "User",
+                    "Anonymous"
                 ]
             },
             "post": {
                 "tags": [
                     "articles"
                 ],
-                "summary": "Create",
+                "summary": "Create Article",
                 "description": "Create an article.",
                 "operationId": "create",
                 "security": [
@@ -8260,7 +8260,7 @@
                 "tags": [
                     "articles"
                 ],
-                "summary": "Get",
+                "summary": "Get Article",
                 "description": "Get an article by ID.",
                 "operationId": "get",
                 "security": [
@@ -8320,16 +8320,16 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Anonymous",
                     "Organization",
-                    "User"
+                    "User",
+                    "Anonymous"
                 ]
             },
             "patch": {
                 "tags": [
                     "articles"
                 ],
-                "summary": "Update",
+                "summary": "Update Article",
                 "description": "Update an article.",
                 "operationId": "update",
                 "security": [
@@ -8417,7 +8417,7 @@
                 "tags": [
                     "articles"
                 ],
-                "summary": "Delete an article",
+                "summary": "Delete Article",
                 "description": "Delete an article.",
                 "operationId": "delete",
                 "security": [
@@ -8490,9 +8490,9 @@
                 "tags": [
                     "articles"
                 ],
-                "summary": "Receivers",
+                "summary": "Get Article Receivers Count",
                 "description": "Get number of potential receivers for an article.",
-                "operationId": "receivers",
+                "operationId": "get_receivers",
                 "security": [
                     {
                         "OpenIdConnect": [
@@ -8550,9 +8550,9 @@
                 "tags": [
                     "articles"
                 ],
-                "summary": "Preview",
+                "summary": "Send Article Preview",
                 "description": "Send an article preview by email.",
-                "operationId": "preview",
+                "operationId": "send_preview",
                 "security": [
                     {
                         "OpenIdConnect": [
@@ -8638,7 +8638,7 @@
                 "tags": [
                     "articles"
                 ],
-                "summary": "Send",
+                "summary": "Send Article",
                 "description": "Send an article by email to all subscribers.",
                 "operationId": "send",
                 "security": [
@@ -9458,9 +9458,9 @@
                 "tags": [
                     "advertisements"
                 ],
-                "summary": "List Advertisement Campaigns",
+                "summary": "List Campaigns",
                 "description": "List active advertisement campaigns for a benefit.",
-                "operationId": "list_advertisement_campaigns",
+                "operationId": "list",
                 "parameters": [
                     {
                         "name": "benefit_id",
@@ -9565,9 +9565,9 @@
                 "tags": [
                     "advertisements"
                 ],
-                "summary": "Get Advertisement Campaign",
+                "summary": "Get Campaign",
                 "description": "Get an advertisement campaign by ID.",
-                "operationId": "get_advertisement_campaign",
+                "operationId": "get",
                 "parameters": [
                     {
                         "name": "id",
@@ -9621,9 +9621,9 @@
                 "tags": [
                     "advertisements"
                 ],
-                "summary": "Track Advertisement Campaign View",
+                "summary": "Track View",
                 "description": "Track a view on an advertisement campaign.",
-                "operationId": "track_advertisement_campaign_view",
+                "operationId": "track_view",
                 "parameters": [
                     {
                         "name": "id",
@@ -9984,41 +9984,12 @@
                 ],
                 "summary": "Logout",
                 "operationId": "logout",
-                "parameters": [
-                    {
-                        "name": "organization_id",
-                        "in": "query",
-                        "required": false,
-                        "schema": {
-                            "anyOf": [
-                                {
-                                    "type": "string",
-                                    "format": "uuid"
-                                },
-                                {
-                                    "type": "null"
-                                }
-                            ],
-                            "title": "Organization Id"
-                        }
-                    }
-                ],
                 "responses": {
                     "200": {
                         "description": "Successful Response",
                         "content": {
                             "application/json": {
                                 "schema": {}
-                            }
-                        }
-                    },
-                    "422": {
-                        "description": "Validation Error",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/HTTPValidationError"
-                                }
                             }
                         }
                     }
@@ -10184,8 +10155,8 @@
                     }
                 ],
                 "x-polar-allowed-subjects": [
-                    "Anonymous",
-                    "User"
+                    "User",
+                    "Anonymous"
                 ]
             }
         },
@@ -10248,8 +10219,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Anonymous",
-                    "User"
+                    "User",
+                    "Anonymous"
                 ]
             }
         },
@@ -10469,9 +10440,9 @@
                 "tags": [
                     "oauth2"
                 ],
-                "summary": "List Oauth2 Clients",
+                "summary": "List Clients",
                 "description": "List OAuth2 clients.",
-                "operationId": "list_oauth2_clients",
+                "operationId": "list_clients",
                 "security": [
                     {
                         "OpenIdConnect": []
@@ -10540,8 +10511,9 @@
                 "tags": [
                     "oauth2"
                 ],
-                "summary": "Oauth2.Register",
-                "operationId": "oauth2.register",
+                "summary": "Create Client",
+                "description": "Create an OAuth2 client.",
+                "operationId": "create_client",
                 "requestBody": {
                     "content": {
                         "application/json": {
@@ -10590,8 +10562,9 @@
                 "tags": [
                     "oauth2"
                 ],
-                "summary": "Oauth2.Configure Get",
-                "operationId": "oauth2.configure_get",
+                "summary": "Get Client",
+                "description": "Get an OAuth2 client by Client ID.",
+                "operationId": "get_client",
                 "security": [
                     {
                         "OpenIdConnect": []
@@ -10632,16 +10605,17 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Anonymous",
-                    "User"
+                    "User",
+                    "Anonymous"
                 ]
             },
             "put": {
                 "tags": [
                     "oauth2"
                 ],
-                "summary": "Oauth2.Configure Put",
-                "operationId": "oauth2.configure_put",
+                "summary": "Update Client",
+                "description": "Update an OAuth2 client.",
+                "operationId": "update_client",
                 "security": [
                     {
                         "OpenIdConnect": []
@@ -10692,16 +10666,17 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Anonymous",
-                    "User"
+                    "User",
+                    "Anonymous"
                 ]
             },
             "delete": {
                 "tags": [
                     "oauth2"
                 ],
-                "summary": "Oauth2.Configure Delete",
-                "operationId": "oauth2.configure_delete",
+                "summary": "Delete Client",
+                "description": "Delete an OAuth2 client.",
+                "operationId": "delete_client",
                 "security": [
                     {
                         "OpenIdConnect": []
@@ -10742,8 +10717,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Anonymous",
-                    "User"
+                    "User",
+                    "Anonymous"
                 ]
             }
         },
@@ -10752,8 +10727,8 @@
                 "tags": [
                     "oauth2"
                 ],
-                "summary": "Oauth2.Authorize",
-                "operationId": "oauth2.authorize",
+                "summary": "Authorize",
+                "operationId": "authorize",
                 "responses": {
                     "200": {
                         "description": "Successful Response",
@@ -10768,7 +10743,7 @@
                                             "$ref": "#/components/schemas/AuthorizeResponseOrganization"
                                         }
                                     ],
-                                    "title": "Response Oauth2:Oauth2.Authorize",
+                                    "title": "Response Oauth2:Authorize",
                                     "discriminator": {
                                         "propertyName": "sub_type",
                                         "mapping": {
@@ -10790,8 +10765,8 @@
                     }
                 ],
                 "x-polar-allowed-subjects": [
-                    "Anonymous",
-                    "User"
+                    "User",
+                    "Anonymous"
                 ]
             }
         },
@@ -10800,13 +10775,13 @@
                 "tags": [
                     "oauth2"
                 ],
-                "summary": "Oauth2.Consent",
-                "operationId": "oauth2.consent",
+                "summary": "Consent",
+                "operationId": "consent",
                 "requestBody": {
                     "content": {
                         "application/x-www-form-urlencoded": {
                             "schema": {
-                                "$ref": "#/components/schemas/consent"
+                                "$ref": "#/components/schemas/Body_oauth2_consent"
                             }
                         }
                     },
@@ -10850,8 +10825,9 @@
                 "tags": [
                     "oauth2"
                 ],
-                "summary": "Oauth2.Token",
-                "operationId": "oauth2.token",
+                "summary": "Request Token",
+                "description": "Request an access token using a valid grant.",
+                "operationId": "request_token",
                 "responses": {
                     "200": {
                         "description": "Successful Response",
@@ -10869,8 +10845,9 @@
                 "tags": [
                     "oauth2"
                 ],
-                "summary": "Oauth2.Revoke",
-                "operationId": "oauth2.revoke",
+                "summary": "Revoke Token",
+                "description": "Revoke an access token or a refresh token.",
+                "operationId": "revoke_token",
                 "responses": {
                     "200": {
                         "description": "Successful Response",
@@ -10888,8 +10865,9 @@
                 "tags": [
                     "oauth2"
                 ],
-                "summary": "Oauth2.Introspect",
-                "operationId": "oauth2.introspect",
+                "summary": "Introspect Token",
+                "description": "Get information about an access token.",
+                "operationId": "introspect_token",
                 "responses": {
                     "200": {
                         "description": "Successful Response",
@@ -10907,8 +10885,9 @@
                 "tags": [
                     "oauth2"
                 ],
-                "summary": "Oauth2.Userinfo",
-                "operationId": "oauth2.userinfo",
+                "summary": "Get User Info",
+                "description": "Get information about the authenticated user.",
+                "operationId": "userinfo",
                 "responses": {
                     "200": {
                         "description": "Successful Response",
@@ -10929,8 +10908,9 @@
                 "tags": [
                     "oauth2"
                 ],
-                "summary": "Oauth2.Userinfo",
-                "operationId": "oauth2.userinfo",
+                "summary": "Get User Info",
+                "description": "Get information about the authenticated user.",
+                "operationId": "userinfo",
                 "responses": {
                     "200": {
                         "description": "Successful Response",
@@ -10955,7 +10935,7 @@
                 ],
                 "summary": "List Benefits",
                 "description": "List benefits.",
-                "operationId": "list_benefits",
+                "operationId": "list",
                 "security": [
                     {
                         "OpenIdConnect": [
@@ -11068,7 +11048,7 @@
                 ],
                 "summary": "Create Benefit",
                 "description": "Create a benefit.",
-                "operationId": "create_benefit",
+                "operationId": "create",
                 "security": [
                     {
                         "OpenIdConnect": [
@@ -11142,7 +11122,7 @@
                                             "$ref": "#/components/schemas/BenefitDownloadables"
                                         }
                                     ],
-                                    "title": "Response Benefits:Create Benefit"
+                                    "title": "Response Benefits:Create"
                                 }
                             }
                         }
@@ -11171,7 +11151,7 @@
                 ],
                 "summary": "Get Benefit",
                 "description": "Get a benefit by ID.",
-                "operationId": "get_benefit",
+                "operationId": "get",
                 "security": [
                     {
                         "OpenIdConnect": [
@@ -11223,7 +11203,7 @@
                                             "$ref": "#/components/schemas/BenefitDownloadables"
                                         }
                                     ],
-                                    "title": "Response Benefits:Get Benefit"
+                                    "title": "Response Benefits:Get"
                                 }
                             }
                         }
@@ -11260,7 +11240,7 @@
                 ],
                 "summary": "Update Benefit",
                 "description": "Update a benefit.",
-                "operationId": "update_benefit",
+                "operationId": "update",
                 "security": [
                     {
                         "OpenIdConnect": [
@@ -11341,7 +11321,7 @@
                                             "$ref": "#/components/schemas/BenefitDownloadables"
                                         }
                                     ],
-                                    "title": "Response Benefits:Update Benefit"
+                                    "title": "Response Benefits:Update"
                                 }
                             }
                         }
@@ -11388,7 +11368,7 @@
                 ],
                 "summary": "Delete Benefit",
                 "description": "Delete a benefit.\n\n> [!WARNING]\n> Every grants associated with the benefit will be revoked.\n> Users will lose access to the benefit.",
-                "operationId": "delete_benefit",
+                "operationId": "delete",
                 "security": [
                     {
                         "OpenIdConnect": [
@@ -11461,7 +11441,7 @@
                 ],
                 "summary": "List Benefit Grants",
                 "description": "List the individual grants for a benefit.\n\nIt's especially useful to check if a user has been granted a benefit.",
-                "operationId": "list_benefit_grants",
+                "operationId": "list_grants",
                 "security": [
                     {
                         "OpenIdConnect": [
@@ -12172,12 +12152,12 @@
                 ],
                 "summary": "List Products",
                 "description": "List products.",
-                "operationId": "list_products",
+                "operationId": "list",
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "products:read",
-                            "products:write"
+                            "products:write",
+                            "products:read"
                         ]
                     },
                     {
@@ -12319,9 +12299,9 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Anonymous",
                     "Organization",
-                    "User"
+                    "User",
+                    "Anonymous"
                 ]
             },
             "post": {
@@ -12330,7 +12310,7 @@
                 ],
                 "summary": "Create Product",
                 "description": "Create a product.",
-                "operationId": "create_product",
+                "operationId": "create",
                 "security": [
                     {
                         "OpenIdConnect": [
@@ -12394,12 +12374,12 @@
                 ],
                 "summary": "Get Product",
                 "description": "Get a product by ID.",
-                "operationId": "get_product",
+                "operationId": "get",
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "products:read",
-                            "products:write"
+                            "products:write",
+                            "products:read"
                         ]
                     },
                     {
@@ -12453,9 +12433,9 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Anonymous",
                     "Organization",
-                    "User"
+                    "User",
+                    "Anonymous"
                 ]
             },
             "patch": {
@@ -12464,7 +12444,7 @@
                 ],
                 "summary": "Update Product",
                 "description": "Update a product.",
-                "operationId": "update_product",
+                "operationId": "update",
                 "security": [
                     {
                         "OpenIdConnect": [
@@ -12554,7 +12534,7 @@
                 ],
                 "summary": "Update Product Benefits",
                 "description": "Update benefits granted by a product.",
-                "operationId": "update_product_benefits",
+                "operationId": "update_benefits",
                 "security": [
                     {
                         "OpenIdConnect": [
@@ -12644,7 +12624,7 @@
                 ],
                 "summary": "List Orders",
                 "description": "List orders.",
-                "operationId": "list_orders",
+                "operationId": "list",
                 "security": [
                     {
                         "OpenIdConnect": [
@@ -12830,7 +12810,7 @@
                 ],
                 "summary": "Get Order",
                 "description": "Get an order by ID.",
-                "operationId": "get_order",
+                "operationId": "get",
                 "security": [
                     {
                         "OpenIdConnect": [
@@ -12900,7 +12880,7 @@
                 ],
                 "summary": "Get Order Invoice",
                 "description": "Get an order's invoice data.",
-                "operationId": "get_order_invoice",
+                "operationId": "get_invoice",
                 "security": [
                     {
                         "OpenIdConnect": [
@@ -12969,7 +12949,8 @@
                     "checkouts"
                 ],
                 "summary": "Create Checkout",
-                "operationId": "create_checkout",
+                "description": "Create a checkout session.",
+                "operationId": "create",
                 "requestBody": {
                     "content": {
                         "application/json": {
@@ -13011,8 +12992,8 @@
                     }
                 ],
                 "x-polar-allowed-subjects": [
-                    "Anonymous",
-                    "User"
+                    "User",
+                    "Anonymous"
                 ]
             }
         },
@@ -13022,7 +13003,8 @@
                     "checkouts"
                 ],
                 "summary": "Get Checkout",
-                "operationId": "get_checkout",
+                "description": "Get an active checkout session by ID.",
+                "operationId": "get",
                 "parameters": [
                     {
                         "name": "id",
@@ -13063,7 +13045,8 @@
                 "tags": [
                     "files"
                 ],
-                "summary": "List",
+                "summary": "List Files",
+                "description": "List files.",
                 "operationId": "list",
                 "security": [
                     {
@@ -13173,7 +13156,8 @@
                 "tags": [
                     "files"
                 ],
-                "summary": "Create",
+                "summary": "Create File",
+                "description": "Create a file.",
                 "operationId": "create",
                 "security": [
                     {
@@ -13243,7 +13227,8 @@
                 "tags": [
                     "files"
                 ],
-                "summary": "Uploaded",
+                "summary": "Complete File Upload",
+                "description": "Complete a file upload.",
                 "operationId": "uploaded",
                 "security": [
                     {
@@ -13327,7 +13312,8 @@
                 "tags": [
                     "files"
                 ],
-                "summary": "Update",
+                "summary": "Update File",
+                "description": "Update a file.",
                 "operationId": "update",
                 "security": [
                     {
@@ -13409,7 +13395,8 @@
                 "tags": [
                     "files"
                 ],
-                "summary": "Delete",
+                "summary": "Delete File",
+                "description": "Delete a file.",
                 "operationId": "delete",
                 "security": [
                     {
@@ -13481,7 +13468,7 @@
                 ],
                 "summary": "Get Metrics",
                 "description": "Get metrics about your orders and subscriptions.",
-                "operationId": "get_metrics",
+                "operationId": "get",
                 "security": [
                     {
                         "OpenIdConnect": [
@@ -13625,7 +13612,7 @@
                 ],
                 "summary": "Get Metrics Limits",
                 "description": "Get the interval limits for the metrics endpoint.",
-                "operationId": "get_metrics_limits",
+                "operationId": "get_limits",
                 "responses": {
                     "200": {
                         "description": "Successful Response",
@@ -17526,7 +17513,24 @@
                 ],
                 "title": "BenefitType"
             },
-            "Body_subscriptions_subscriptions_import": {
+            "Body_oauth2_consent": {
+                "properties": {
+                    "action": {
+                        "type": "string",
+                        "enum": [
+                            "allow",
+                            "deny"
+                        ],
+                        "title": "Action"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "action"
+                ],
+                "title": "Body_oauth2:consent"
+            },
+            "Body_subscriptions_import": {
                 "properties": {
                     "file": {
                         "type": "string",
@@ -17546,7 +17550,7 @@
                     "file",
                     "organization_id"
                 ],
-                "title": "Body_subscriptions:subscriptions_import"
+                "title": "Body_subscriptions:import"
             },
             "BylineProfile": {
                 "properties": {
@@ -28533,23 +28537,6 @@
                     "data"
                 ],
                 "title": "WebhookSubscriptionUpdatedPayload"
-            },
-            "consent": {
-                "properties": {
-                    "action": {
-                        "type": "string",
-                        "enum": [
-                            "allow",
-                            "deny"
-                        ],
-                        "title": "Action"
-                    }
-                },
-                "type": "object",
-                "required": [
-                    "action"
-                ],
-                "title": "Body_oauth2:oauth2.consent"
             },
             "BenefitDiscord": {
                 "properties": {

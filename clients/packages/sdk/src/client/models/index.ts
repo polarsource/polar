@@ -10649,22 +10649,22 @@ export const ResourceNotFoundTypeEnum = {
 export type ResourceNotFoundTypeEnum = typeof ResourceNotFoundTypeEnum[keyof typeof ResourceNotFoundTypeEnum];
 
 /**
- * @type ResponseBenefitsCreateBenefit
+ * @type ResponseBenefitsCreate
  * @export
  */
-export type ResponseBenefitsCreateBenefit = BenefitAds | BenefitArticles | BenefitCustom | BenefitDiscord | BenefitDownloadables | BenefitGitHubRepository;
+export type ResponseBenefitsCreate = BenefitAds | BenefitArticles | BenefitCustom | BenefitDiscord | BenefitDownloadables | BenefitGitHubRepository;
 
 /**
- * @type ResponseBenefitsGetBenefit
+ * @type ResponseBenefitsGet
  * @export
  */
-export type ResponseBenefitsGetBenefit = BenefitAds | BenefitArticles | BenefitCustom | BenefitDiscord | BenefitDownloadables | BenefitGitHubRepository;
+export type ResponseBenefitsGet = BenefitAds | BenefitArticles | BenefitCustom | BenefitDiscord | BenefitDownloadables | BenefitGitHubRepository;
 
 /**
- * @type ResponseBenefitsUpdateBenefit
+ * @type ResponseBenefitsUpdate
  * @export
  */
-export type ResponseBenefitsUpdateBenefit = BenefitAds | BenefitArticles | BenefitCustom | BenefitDiscord | BenefitDownloadables | BenefitGitHubRepository;
+export type ResponseBenefitsUpdate = BenefitAds | BenefitArticles | BenefitCustom | BenefitDiscord | BenefitDownloadables | BenefitGitHubRepository;
 
 /**
  * @type ResponseFilesUpdate
@@ -10679,11 +10679,11 @@ export type ResponseFilesUpdate = { service: 'downloadable' } & DownloadableFile
  */
 export type ResponseFilesUploaded = { service: 'downloadable' } & DownloadableFileRead | { service: 'product_media' } & ProductMediaFileRead;
 /**
- * @type ResponseOauth2Oauth2Authorize
+ * @type ResponseOauth2Authorize
  * 
  * @export
  */
-export type ResponseOauth2Oauth2Authorize = { sub_type: 'organization' } & AuthorizeResponseOrganization | { sub_type: 'user' } & AuthorizeResponseUser;
+export type ResponseOauth2Authorize = { sub_type: 'organization' } & AuthorizeResponseOrganization | { sub_type: 'user' } & AuthorizeResponseUser;
 /**
  * @type ResponseUsersGetBenefit
  * 

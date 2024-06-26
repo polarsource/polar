@@ -30,8 +30,8 @@ BenefitNotFound = {
 }
 
 
-@router.get("/", response_model=ListResource[BenefitSchema])
-async def list_benefits(
+@router.get("/", summary="List Benefits", response_model=ListResource[BenefitSchema])
+async def list(
     auth_subject: auth.BenefitsRead,
     pagination: PaginationParamsQuery,
     organization_id: UUID4 | None = Query(
@@ -62,10 +62,11 @@ async def list_benefits(
 
 @router.get(
     "/{id}",
+    summary="Get Benefit",
     response_model=BenefitSchema,
     responses={404: BenefitNotFound},
 )
-async def get_benefit(
+async def get(
     id: BenefitID,
     auth_subject: auth.BenefitsRead,
     session: AsyncSession = Depends(get_db_session),
@@ -81,10 +82,11 @@ async def get_benefit(
 
 @router.get(
     "/{id}/grants",
+    summary="List Benefit Grants",
     response_model=ListResource[BenefitGrant],
     responses={404: BenefitNotFound},
 )
-async def list_benefit_grants(
+async def list_grants(
     id: BenefitID,
     auth_subject: auth.BenefitsRead,
     pagination: PaginationParamsQuery,
@@ -137,11 +139,12 @@ async def list_benefit_grants(
 
 @router.post(
     "/",
+    summary="Create Benefit",
     response_model=BenefitSchema,
     status_code=201,
     responses={201: {"description": "Benefit created."}},
 )
-async def create_benefit(
+async def create(
     auth_subject: auth.BenefitsWrite,
     benefit_create: BenefitCreate = Body(..., discriminator="type"),
     authz: Authz = Depends(Authz.authz),
@@ -167,6 +170,7 @@ async def create_benefit(
 
 @router.patch(
     "/{id}",
+    summary="Update Benefit",
     response_model=BenefitSchema,
     responses={
         200: {"description": "Benefit updated."},
@@ -177,7 +181,7 @@ async def create_benefit(
         404: BenefitNotFound,
     },
 )
-async def update_benefit(
+async def update(
     id: BenefitID,
     benefit_update: BenefitUpdate,
     auth_subject: auth.BenefitsWrite,
@@ -210,6 +214,7 @@ async def update_benefit(
 
 @router.delete(
     "/{id}",
+    summary="Delete Benefit",
     status_code=204,
     responses={
         204: {"description": "Benefit deleted."},
@@ -223,7 +228,7 @@ async def update_benefit(
         404: BenefitNotFound,
     },
 )
-async def delete_benefit(
+async def delete(
     id: BenefitID,
     auth_subject: auth.BenefitsWrite,
     authz: Authz = Depends(Authz.authz),

@@ -112,7 +112,7 @@ export const useUpdateArticle = () =>
 export const useDeleteArticle = () =>
   useMutation({
     mutationFn: (variables: { id: string }) =>
-      api.articles._delete({
+      api.articles.delete({
         id: variables.id,
       }),
     onSuccess: (_result, _variables, _ctx) => {

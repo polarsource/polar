@@ -27,7 +27,7 @@ const ImportSubscribersModal = ({
     setIsLoading(true)
 
     await api.subscriptions
-      .subscriptionsImport({
+      .import({
         organizationId: organization.id,
         file: selectedFile,
       })

@@ -20,4 +20,5 @@ docker run \
     --additional-properties=enumPropertyNaming=UPPERCASE \
     --additional-properties=supportsES6=true \
     --additional-properties=prefixParameterInterfaces=true \
-    --additional-properties=withoutRuntimeChecks=true
+    --additional-properties=withoutRuntimeChecks=true \
+    --reserved-words-mappings import=import,export=export,delete=delete # Force to ignore some reserved keywords to generate proper method names

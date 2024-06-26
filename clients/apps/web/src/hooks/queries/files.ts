@@ -69,7 +69,7 @@ export const usePatchFile = (
 export const useDeleteFile = (id: string, onSuccessCallback?: () => void) =>
   useMutation({
     mutationFn: () => {
-      return api.files._delete({
+      return api.files.delete({
         id: id,
       })
     },

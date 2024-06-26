@@ -52,7 +52,7 @@ export const useIssueAddComment = () =>
     mutationFn: (variables: { id: string; body: PostIssueComment }) => {
       return api.issues.addIssueComment({
         id: variables.id,
-        postIssueComment: variables.body,
+        body: variables.body,
       })
     },
   })
@@ -62,7 +62,7 @@ export const useBadgeWithComment = () =>
     mutationFn: (variables: { id: string; body: IssueUpdateBadgeMessage }) => {
       return api.issues.badgeWithMessage({
         id: variables.id,
-        issueUpdateBadgeMessage: variables.body,
+        body: variables.body,
       })
     },
   })
@@ -77,7 +77,7 @@ export const useUpdateIssue = () =>
     }) => {
       return api.issues.update({
         id: variables.id,
-        updateIssue: {
+        body: {
           funding_goal: variables.funding_goal,
           upfront_split_to_contributors:
             variables.upfront_split_to_contributors,
@@ -263,7 +263,7 @@ export const useIssueMarkConfirmed = () =>
     mutationFn: (variables: { id: string; splits: ConfirmIssueSplit[] }) => {
       return api.issues.confirm({
         id: variables.id,
-        confirmIssue: {
+        body: {
           splits: variables.splits,
         },
       })

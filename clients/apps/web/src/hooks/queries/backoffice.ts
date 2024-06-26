@@ -59,7 +59,7 @@ export const useBackofficePledgeRewardTransfer: () => UseMutationResult<
   useMutation({
     mutationFn: (variables: { pledgeId: string; issueRewardId: string }) => {
       return api.backoffice.pledgeRewardTransfer({
-        pledgeRewardTransfer: {
+        body: {
           pledge_id: variables.pledgeId,
           issue_reward_id: variables.issueRewardId,
         },
@@ -86,7 +86,7 @@ export const useBackofficeBadgeAction = () =>
   useMutation({
     mutationFn: (badgeAction: BackofficeBadge) => {
       return api.backoffice.manageBadge({
-        backofficeBadge: badgeAction,
+        body: badgeAction,
       })
     },
   })

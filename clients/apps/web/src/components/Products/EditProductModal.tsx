@@ -67,14 +67,14 @@ export const EditProductModal = ({
         const { full_medias, ...productUpdateRest } = productUpdate
         await updateProduct.mutateAsync({
           id: product.id,
-          productUpdate: {
+          body: {
             ...productUpdateRest,
             medias: full_medias.map((media) => media.id),
           },
         })
         await updateBenefits.mutateAsync({
           id: product.id,
-          productBenefitsUpdate: {
+          body: {
             benefits: enabledBenefitIds,
           },
         })
@@ -153,7 +153,7 @@ export const EditProductModal = ({
   const handleArchiveProduct = useCallback(async () => {
     await updateProduct.mutateAsync({
       id: product.id,
-      productUpdate: { is_archived: true },
+      body: { is_archived: true },
     })
 
     revalidate(`products:${organization.id}:recurring`)

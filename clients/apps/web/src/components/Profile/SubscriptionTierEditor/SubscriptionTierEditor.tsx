@@ -48,7 +48,7 @@ export const SubscriptionTierEditor = ({
       updateProjectMutation
         .mutateAsync({
           id: repository.id,
-          repositoryUpdate: {
+          body: {
             profile_settings: {
               highlighted_subscription_tiers: tiers.map((tier) => tier.id),
             },

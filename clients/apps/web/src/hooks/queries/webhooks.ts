@@ -60,8 +60,8 @@ export const useWebhookEndpoint = (id?: string) =>
 
 export const useCreateWebhookEndpoint = () =>
   useMutation({
-    mutationFn: (variables: WebhookEndpointCreate) =>
-      api.webhooks.createWebhookEndpoint({ webhookEndpointCreate: variables }),
+    mutationFn: (body: WebhookEndpointCreate) =>
+      api.webhooks.createWebhookEndpoint({ body }),
     onSuccess: (_result, _variables, _ctx) => {
       queryClient.invalidateQueries({
         queryKey: ['webhookEndpoints', 'list'],
@@ -71,10 +71,8 @@ export const useCreateWebhookEndpoint = () =>
 
 export const useEditWebhookEndpoint = () =>
   useMutation({
-    mutationFn: (variables: {
-      id: string
-      webhookEndpointUpdate: WebhookEndpointUpdate
-    }) => api.webhooks.updateWebhookEndpoint(variables),
+    mutationFn: (variables: { id: string; body: WebhookEndpointUpdate }) =>
+      api.webhooks.updateWebhookEndpoint(variables),
     onSuccess: (_result, _variables, _ctx) => {
       queryClient.invalidateQueries({
         queryKey: ['webhookEndpoints', 'list'],

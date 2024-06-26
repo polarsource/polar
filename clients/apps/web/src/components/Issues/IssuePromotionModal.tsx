@@ -549,7 +549,7 @@ const RewardsTab = (props: { issue: Issue; user: UserRead }) => {
     setPledgeIsLoading(true)
 
     const p = await api.pledges.createPayOnCompletion({
-      createPledgePayLater: {
+      body: {
         issue_id: props.issue.id,
         amount: selfPledgeAmount,
       },

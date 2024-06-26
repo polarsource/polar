@@ -27,7 +27,7 @@ const UpdateBenefitModalContent = ({
         setIsLoading(true)
         await updateSubscriptionBenefit.mutateAsync({
           id: benefit.id,
-          benefitUpdate: {
+          body: {
             type: benefit.type,
             ...benefitUpdate,
           },

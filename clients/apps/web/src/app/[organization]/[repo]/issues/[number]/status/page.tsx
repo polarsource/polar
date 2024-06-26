@@ -17,7 +17,7 @@ export default async function Page({
 
   try {
     pledge = await api.pledges.create({
-      createPledgeFromPaymentIntent: {
+      body: {
         payment_intent_id: paymentIntentId,
       },
     })

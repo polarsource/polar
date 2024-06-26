@@ -258,7 +258,7 @@ const RssModal = ({
 
     api.personalAccessToken
       .createPersonalAccessToken({
-        personalAccessTokenCreate: {
+        body: {
           comment: `RSS for ${organization.name}`,
           scopes: ['organizations:read', 'articles:read'],
         },

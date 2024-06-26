@@ -9,7 +9,7 @@ export const useSendMagicLink = () => {
   const func = useCallback(
     async (email: string, return_to?: string) => {
       await api.magicLink.magicLinkRequest({
-        magicLinkRequest: { email, return_to },
+        body: { email, return_to },
       })
       const searchParams = new URLSearchParams({ email: email })
       router.push(`/login/magic-link/request?${searchParams}`)

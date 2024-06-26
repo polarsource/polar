@@ -45,7 +45,7 @@ export default function Page() {
 
     const request = api.integrationsGitHub.install(
       {
-        installationCreate: {
+        body: {
           platform: InstallationCreatePlatformEnum.GITHUB,
           external_id: parseInt(installationID),
         },

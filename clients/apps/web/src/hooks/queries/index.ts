@@ -86,7 +86,7 @@ export const useNotificationsMarkRead: () => UseMutationResult<
   useMutation({
     mutationFn: (variables: { notification_id: string }) => {
       return api.notifications.markRead({
-        notificationsMarkRead: {
+        body: {
           notification_id: variables.notification_id,
         },
       })

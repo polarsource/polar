@@ -53,7 +53,7 @@ export default function EditWebhookModal({
       setIsSaving(true)
       await updateWebhookEndpoint.mutateAsync({
         id: endpoint.id,
-        webhookEndpointUpdate: form,
+        body: form,
       })
       setIsSaving(false)
       hide()

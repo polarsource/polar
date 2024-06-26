@@ -54,7 +54,7 @@ export const usePatchFile = (
 
       return api.files.update({
         id: id,
-        filePatch: patch,
+        body: patch,
       })
     },
     onSuccess: (response: FileRead) => {

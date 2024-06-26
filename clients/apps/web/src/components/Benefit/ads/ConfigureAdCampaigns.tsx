@@ -90,7 +90,7 @@ const ConfigureAdCampaigns = ({
     async (campaign: UserAdvertisementCampaign) => {
       await enable.mutateAsync({
         id: campaign.id,
-        userAdvertisementCampaignEnable: { benefit_id: benefit.id },
+        body: { benefit_id: benefit.id },
       })
       setCreate(false)
       setSelectedCampaign(campaign)

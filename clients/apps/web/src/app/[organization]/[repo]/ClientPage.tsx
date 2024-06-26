@@ -66,7 +66,7 @@ const ClientPage = ({
     return updateProjectMutation
       .mutateAsync({
         id: repository.id,
-        repositoryUpdate: {
+        body: {
           profile_settings: setting,
         },
       })

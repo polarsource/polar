@@ -34,7 +34,7 @@ export default function ClientPage({
       try {
         await api.organizations.setAccount({
           id: organization.id,
-          organizationSetAccount: { account_id: accountId },
+          body: { account_id: accountId },
         })
         window.location.reload()
       } finally {

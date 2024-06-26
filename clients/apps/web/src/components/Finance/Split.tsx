@@ -201,7 +201,7 @@ const Split = (props: {
 
     try {
       const lookup = await api.integrationsGitHub.lookupUser({
-        lookupUserRequest: { username: searchGithubUsername },
+        body: { username: searchGithubUsername },
       })
 
       // Add to shares if not exists

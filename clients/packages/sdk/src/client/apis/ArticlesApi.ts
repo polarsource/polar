@@ -17,17 +17,14 @@ import * as runtime from '../runtime';
 import type {
   Article,
   ArticleCreate,
-  ArticleDeleteResponse,
   ArticlePreview,
-  ArticlePreviewResponse,
-  ArticleReceiversResponse,
-  ArticleSentResponse,
-  ArticleUnsubscribeResponse,
+  ArticleReceivers,
   ArticleUpdate,
-  ArticleViewedResponse,
+  ArticleVisibility,
   HTTPValidationError,
   ListResourceArticle,
-  Platforms,
+  NotPermitted,
+  ResourceNotFound,
 } from '../models/index';
 
 export interface ArticlesApiDeleteRequest {
@@ -47,47 +44,31 @@ export interface ArticlesApiGetRequest {
 }
 
 export interface ArticlesApiListRequest {
-    page?: number;
-    limit?: number;
-}
-
-export interface ArticlesApiLookupRequest {
-    slug: string;
-    organizationName: string;
-    platform: Platforms;
-}
-
-export interface ArticlesApiReceiversRequest {
-    paidSubscribersOnly: boolean;
-    organizationName: string;
-    platform: Platforms;
-}
-
-export interface ArticlesApiSearchRequest {
-    organizationName: string;
-    platform: Platforms;
-    showUnpublished?: boolean;
+    organizationId?: string;
+    slug?: string;
+    visibility?: ArticleVisibility;
+    isPublished?: boolean;
     isPinned?: boolean;
     page?: number;
     limit?: number;
+}
+
+export interface ArticlesApiPreviewRequest {
+    id: string;
+    articlePreview: ArticlePreview;
+}
+
+export interface ArticlesApiReceiversRequest {
+    id: string;
 }
 
 export interface ArticlesApiSendRequest {
     id: string;
 }
 
-export interface ArticlesApiSendPreviewRequest {
-    id: string;
-    articlePreview: ArticlePreview;
-}
-
 export interface ArticlesApiUpdateRequest {
     id: string;
     articleUpdate: ArticleUpdate;
-}
-
-export interface ArticlesApiViewedRequest {
-    id: string;
 }
 
 /**
@@ -99,7 +80,7 @@ export class ArticlesApi extends runtime.BaseAPI {
      * Delete an article.
      * Delete an article
      */
-    async _deleteRaw(requestParameters: ArticlesApiDeleteRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ArticleDeleteResponse>> {
+    async _deleteRaw(requestParameters: ArticlesApiDeleteRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<void>> {
         if (requestParameters['id'] == null) {
             throw new runtime.RequiredError(
                 'id',
@@ -126,21 +107,20 @@ export class ArticlesApi extends runtime.BaseAPI {
             query: queryParameters,
         }, initOverrides);
 
-        return new runtime.JSONApiResponse(response);
+        return new runtime.VoidApiResponse(response);
     }
 
     /**
      * Delete an article.
      * Delete an article
      */
-    async _delete(requestParameters: ArticlesApiDeleteRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ArticleDeleteResponse> {
-        const response = await this._deleteRaw(requestParameters, initOverrides);
-        return await response.value();
+    async _delete(requestParameters: ArticlesApiDeleteRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<void> {
+        await this._deleteRaw(requestParameters, initOverrides);
     }
 
     /**
-     * Create a new article.
-     * Create article
+     * Create an article.
+     * Create
      */
     async createRaw(requestParameters: ArticlesApiCreateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Article>> {
         if (requestParameters['articleCreate'] == null) {
@@ -165,7 +145,7 @@ export class ArticlesApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/articles`,
+            path: `/api/v1/articles/`,
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
@@ -176,8 +156,8 @@ export class ArticlesApi extends runtime.BaseAPI {
     }
 
     /**
-     * Create a new article.
-     * Create article
+     * Create an article.
+     * Create
      */
     async create(requestParameters: ArticlesApiCreateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Article> {
         const response = await this.createRaw(requestParameters, initOverrides);
@@ -185,10 +165,9 @@ export class ArticlesApi extends runtime.BaseAPI {
     }
 
     /**
-     * Unsubscribe user from articles in emails.
-     * Unsubscribe user
+     * Email Unsubscribe
      */
-    async emailUnsubscribeRaw(requestParameters: ArticlesApiEmailUnsubscribeRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ArticleUnsubscribeResponse>> {
+    async emailUnsubscribeRaw(requestParameters: ArticlesApiEmailUnsubscribeRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<void>> {
         if (requestParameters['articleSubscriptionId'] == null) {
             throw new runtime.RequiredError(
                 'articleSubscriptionId',
@@ -211,21 +190,19 @@ export class ArticlesApi extends runtime.BaseAPI {
             query: queryParameters,
         }, initOverrides);
 
-        return new runtime.JSONApiResponse(response);
+        return new runtime.VoidApiResponse(response);
     }
 
     /**
-     * Unsubscribe user from articles in emails.
-     * Unsubscribe user
+     * Email Unsubscribe
      */
-    async emailUnsubscribe(requestParameters: ArticlesApiEmailUnsubscribeRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ArticleUnsubscribeResponse> {
-        const response = await this.emailUnsubscribeRaw(requestParameters, initOverrides);
-        return await response.value();
+    async emailUnsubscribe(requestParameters: ArticlesApiEmailUnsubscribeRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<void> {
+        await this.emailUnsubscribeRaw(requestParameters, initOverrides);
     }
 
     /**
-     * Get article.
-     * Get article
+     * Get an article by ID.
+     * Get
      */
     async getRaw(requestParameters: ArticlesApiGetRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Article>> {
         if (requestParameters['id'] == null) {
@@ -258,8 +235,8 @@ export class ArticlesApi extends runtime.BaseAPI {
     }
 
     /**
-     * Get article.
-     * Get article
+     * Get an article by ID.
+     * Get
      */
     async get(requestParameters: ArticlesApiGetRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Article> {
         const response = await this.getRaw(requestParameters, initOverrides);
@@ -268,10 +245,30 @@ export class ArticlesApi extends runtime.BaseAPI {
 
     /**
      * List articles.
-     * List articles
+     * List
      */
     async listRaw(requestParameters: ArticlesApiListRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListResourceArticle>> {
         const queryParameters: any = {};
+
+        if (requestParameters['organizationId'] != null) {
+            queryParameters['organization_id'] = requestParameters['organizationId'];
+        }
+
+        if (requestParameters['slug'] != null) {
+            queryParameters['slug'] = requestParameters['slug'];
+        }
+
+        if (requestParameters['visibility'] != null) {
+            queryParameters['visibility'] = requestParameters['visibility'];
+        }
+
+        if (requestParameters['isPublished'] != null) {
+            queryParameters['is_published'] = requestParameters['isPublished'];
+        }
+
+        if (requestParameters['isPinned'] != null) {
+            queryParameters['is_pinned'] = requestParameters['isPinned'];
+        }
 
         if (requestParameters['page'] != null) {
             queryParameters['page'] = requestParameters['page'];
@@ -292,7 +289,7 @@ export class ArticlesApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/articles`,
+            path: `/api/v1/articles/`,
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
@@ -303,7 +300,7 @@ export class ArticlesApi extends runtime.BaseAPI {
 
     /**
      * List articles.
-     * List articles
+     * List
      */
     async list(requestParameters: ArticlesApiListRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ListResourceArticle> {
         const response = await this.listRaw(requestParameters, initOverrides);
@@ -311,46 +308,29 @@ export class ArticlesApi extends runtime.BaseAPI {
     }
 
     /**
-     * Lookup article.
-     * Lookup article
+     * Send an article preview by email.
+     * Preview
      */
-    async lookupRaw(requestParameters: ArticlesApiLookupRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Article>> {
-        if (requestParameters['slug'] == null) {
+    async previewRaw(requestParameters: ArticlesApiPreviewRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<any>> {
+        if (requestParameters['id'] == null) {
             throw new runtime.RequiredError(
-                'slug',
-                'Required parameter "slug" was null or undefined when calling lookup().'
+                'id',
+                'Required parameter "id" was null or undefined when calling preview().'
             );
         }
 
-        if (requestParameters['organizationName'] == null) {
+        if (requestParameters['articlePreview'] == null) {
             throw new runtime.RequiredError(
-                'organizationName',
-                'Required parameter "organizationName" was null or undefined when calling lookup().'
-            );
-        }
-
-        if (requestParameters['platform'] == null) {
-            throw new runtime.RequiredError(
-                'platform',
-                'Required parameter "platform" was null or undefined when calling lookup().'
+                'articlePreview',
+                'Required parameter "articlePreview" was null or undefined when calling preview().'
             );
         }
 
         const queryParameters: any = {};
 
-        if (requestParameters['slug'] != null) {
-            queryParameters['slug'] = requestParameters['slug'];
-        }
-
-        if (requestParameters['organizationName'] != null) {
-            queryParameters['organization_name'] = requestParameters['organizationName'];
-        }
-
-        if (requestParameters['platform'] != null) {
-            queryParameters['platform'] = requestParameters['platform'];
-        }
-
         const headerParameters: runtime.HTTPHeaders = {};
+
+        headerParameters['Content-Type'] = 'application/json';
 
         if (this.configuration && this.configuration.accessToken) {
             const token = this.configuration.accessToken;
@@ -361,63 +341,42 @@ export class ArticlesApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/articles/lookup`,
-            method: 'GET',
+            path: `/api/v1/articles/{id}/preview`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
+            method: 'POST',
             headers: headerParameters,
             query: queryParameters,
+            body: requestParameters['articlePreview'],
         }, initOverrides);
 
-        return new runtime.JSONApiResponse(response);
+        if (this.isJsonMime(response.headers.get('content-type'))) {
+            return new runtime.JSONApiResponse<any>(response);
+        } else {
+            return new runtime.TextApiResponse(response) as any;
+        }
     }
 
     /**
-     * Lookup article.
-     * Lookup article
+     * Send an article preview by email.
+     * Preview
      */
-    async lookup(requestParameters: ArticlesApiLookupRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Article> {
-        const response = await this.lookupRaw(requestParameters, initOverrides);
+    async preview(requestParameters: ArticlesApiPreviewRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<any> {
+        const response = await this.previewRaw(requestParameters, initOverrides);
         return await response.value();
     }
 
     /**
      * Get number of potential receivers for an article.
-     * Potential article receivers
+     * Receivers
      */
-    async receiversRaw(requestParameters: ArticlesApiReceiversRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ArticleReceiversResponse>> {
-        if (requestParameters['paidSubscribersOnly'] == null) {
+    async receiversRaw(requestParameters: ArticlesApiReceiversRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ArticleReceivers>> {
+        if (requestParameters['id'] == null) {
             throw new runtime.RequiredError(
-                'paidSubscribersOnly',
-                'Required parameter "paidSubscribersOnly" was null or undefined when calling receivers().'
-            );
-        }
-
-        if (requestParameters['organizationName'] == null) {
-            throw new runtime.RequiredError(
-                'organizationName',
-                'Required parameter "organizationName" was null or undefined when calling receivers().'
-            );
-        }
-
-        if (requestParameters['platform'] == null) {
-            throw new runtime.RequiredError(
-                'platform',
-                'Required parameter "platform" was null or undefined when calling receivers().'
+                'id',
+                'Required parameter "id" was null or undefined when calling receivers().'
             );
         }
 
         const queryParameters: any = {};
-
-        if (requestParameters['paidSubscribersOnly'] != null) {
-            queryParameters['paid_subscribers_only'] = requestParameters['paidSubscribersOnly'];
-        }
-
-        if (requestParameters['organizationName'] != null) {
-            queryParameters['organization_name'] = requestParameters['organizationName'];
-        }
-
-        if (requestParameters['platform'] != null) {
-            queryParameters['platform'] = requestParameters['platform'];
-        }
 
         const headerParameters: runtime.HTTPHeaders = {};
 
@@ -430,7 +389,7 @@ export class ArticlesApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/articles/receivers`,
+            path: `/api/v1/articles/{id}/receivers`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
@@ -441,92 +400,18 @@ export class ArticlesApi extends runtime.BaseAPI {
 
     /**
      * Get number of potential receivers for an article.
-     * Potential article receivers
+     * Receivers
      */
-    async receivers(requestParameters: ArticlesApiReceiversRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ArticleReceiversResponse> {
+    async receivers(requestParameters: ArticlesApiReceiversRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ArticleReceivers> {
         const response = await this.receiversRaw(requestParameters, initOverrides);
         return await response.value();
     }
 
     /**
-     * Search articles.
-     * Search articles
+     * Send an article by email to all subscribers.
+     * Send
      */
-    async searchRaw(requestParameters: ArticlesApiSearchRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListResourceArticle>> {
-        if (requestParameters['organizationName'] == null) {
-            throw new runtime.RequiredError(
-                'organizationName',
-                'Required parameter "organizationName" was null or undefined when calling search().'
-            );
-        }
-
-        if (requestParameters['platform'] == null) {
-            throw new runtime.RequiredError(
-                'platform',
-                'Required parameter "platform" was null or undefined when calling search().'
-            );
-        }
-
-        const queryParameters: any = {};
-
-        if (requestParameters['showUnpublished'] != null) {
-            queryParameters['show_unpublished'] = requestParameters['showUnpublished'];
-        }
-
-        if (requestParameters['isPinned'] != null) {
-            queryParameters['is_pinned'] = requestParameters['isPinned'];
-        }
-
-        if (requestParameters['organizationName'] != null) {
-            queryParameters['organization_name'] = requestParameters['organizationName'];
-        }
-
-        if (requestParameters['platform'] != null) {
-            queryParameters['platform'] = requestParameters['platform'];
-        }
-
-        if (requestParameters['page'] != null) {
-            queryParameters['page'] = requestParameters['page'];
-        }
-
-        if (requestParameters['limit'] != null) {
-            queryParameters['limit'] = requestParameters['limit'];
-        }
-
-        const headerParameters: runtime.HTTPHeaders = {};
-
-        if (this.configuration && this.configuration.accessToken) {
-            const token = this.configuration.accessToken;
-            const tokenString = await token("HTTPBearer", []);
-
-            if (tokenString) {
-                headerParameters["Authorization"] = `Bearer ${tokenString}`;
-            }
-        }
-        const response = await this.request({
-            path: `/api/v1/articles/search`,
-            method: 'GET',
-            headers: headerParameters,
-            query: queryParameters,
-        }, initOverrides);
-
-        return new runtime.JSONApiResponse(response);
-    }
-
-    /**
-     * Search articles.
-     * Search articles
-     */
-    async search(requestParameters: ArticlesApiSearchRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ListResourceArticle> {
-        const response = await this.searchRaw(requestParameters, initOverrides);
-        return await response.value();
-    }
-
-    /**
-     * Send email to all subscribers
-     * Send email to all subscribers
-     */
-    async sendRaw(requestParameters: ArticlesApiSendRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ArticleSentResponse>> {
+    async sendRaw(requestParameters: ArticlesApiSendRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<any>> {
         if (requestParameters['id'] == null) {
             throw new runtime.RequiredError(
                 'id',
@@ -553,74 +438,25 @@ export class ArticlesApi extends runtime.BaseAPI {
             query: queryParameters,
         }, initOverrides);
 
-        return new runtime.JSONApiResponse(response);
+        if (this.isJsonMime(response.headers.get('content-type'))) {
+            return new runtime.JSONApiResponse<any>(response);
+        } else {
+            return new runtime.TextApiResponse(response) as any;
+        }
     }
 
     /**
-     * Send email to all subscribers
-     * Send email to all subscribers
+     * Send an article by email to all subscribers.
+     * Send
      */
-    async send(requestParameters: ArticlesApiSendRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ArticleSentResponse> {
+    async send(requestParameters: ArticlesApiSendRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<any> {
         const response = await this.sendRaw(requestParameters, initOverrides);
         return await response.value();
     }
 
     /**
-     * Send preview email
-     * Send preview email
-     */
-    async sendPreviewRaw(requestParameters: ArticlesApiSendPreviewRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ArticlePreviewResponse>> {
-        if (requestParameters['id'] == null) {
-            throw new runtime.RequiredError(
-                'id',
-                'Required parameter "id" was null or undefined when calling sendPreview().'
-            );
-        }
-
-        if (requestParameters['articlePreview'] == null) {
-            throw new runtime.RequiredError(
-                'articlePreview',
-                'Required parameter "articlePreview" was null or undefined when calling sendPreview().'
-            );
-        }
-
-        const queryParameters: any = {};
-
-        const headerParameters: runtime.HTTPHeaders = {};
-
-        headerParameters['Content-Type'] = 'application/json';
-
-        if (this.configuration && this.configuration.accessToken) {
-            const token = this.configuration.accessToken;
-            const tokenString = await token("HTTPBearer", []);
-
-            if (tokenString) {
-                headerParameters["Authorization"] = `Bearer ${tokenString}`;
-            }
-        }
-        const response = await this.request({
-            path: `/api/v1/articles/{id}/send_preview`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
-            method: 'POST',
-            headers: headerParameters,
-            query: queryParameters,
-            body: requestParameters['articlePreview'],
-        }, initOverrides);
-
-        return new runtime.JSONApiResponse(response);
-    }
-
-    /**
-     * Send preview email
-     * Send preview email
-     */
-    async sendPreview(requestParameters: ArticlesApiSendPreviewRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ArticlePreviewResponse> {
-        const response = await this.sendPreviewRaw(requestParameters, initOverrides);
-        return await response.value();
-    }
-
-    /**
      * Update an article.
-     * Update an article
+     * Update
      */
     async updateRaw(requestParameters: ArticlesApiUpdateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Article>> {
         if (requestParameters['id'] == null) {
@@ -653,7 +489,7 @@ export class ArticlesApi extends runtime.BaseAPI {
         }
         const response = await this.request({
             path: `/api/v1/articles/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
-            method: 'PUT',
+            method: 'PATCH',
             headers: headerParameters,
             query: queryParameters,
             body: requestParameters['articleUpdate'],
@@ -664,53 +500,10 @@ export class ArticlesApi extends runtime.BaseAPI {
 
     /**
      * Update an article.
-     * Update an article
+     * Update
      */
     async update(requestParameters: ArticlesApiUpdateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Article> {
         const response = await this.updateRaw(requestParameters, initOverrides);
-        return await response.value();
-    }
-
-    /**
-     * Track article view
-     * Track article
-     */
-    async viewedRaw(requestParameters: ArticlesApiViewedRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ArticleViewedResponse>> {
-        if (requestParameters['id'] == null) {
-            throw new runtime.RequiredError(
-                'id',
-                'Required parameter "id" was null or undefined when calling viewed().'
-            );
-        }
-
-        const queryParameters: any = {};
-
-        const headerParameters: runtime.HTTPHeaders = {};
-
-        if (this.configuration && this.configuration.accessToken) {
-            const token = this.configuration.accessToken;
-            const tokenString = await token("HTTPBearer", []);
-
-            if (tokenString) {
-                headerParameters["Authorization"] = `Bearer ${tokenString}`;
-            }
-        }
-        const response = await this.request({
-            path: `/api/v1/articles/{id}/viewed`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
-            method: 'POST',
-            headers: headerParameters,
-            query: queryParameters,
-        }, initOverrides);
-
-        return new runtime.JSONApiResponse(response);
-    }
-
-    /**
-     * Track article view
-     * Track article
-     */
-    async viewed(requestParameters: ArticlesApiViewedRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ArticleViewedResponse> {
-        const response = await this.viewedRaw(requestParameters, initOverrides);
         return await response.value();
     }
 

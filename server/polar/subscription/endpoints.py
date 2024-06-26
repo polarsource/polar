@@ -41,8 +41,10 @@ SearchSorting = Annotated[
 ]
 
 
-@router.get("/", response_model=ListResource[SubscriptionSchema])
-async def list_subscriptions(
+@router.get(
+    "/", response_model=ListResource[SubscriptionSchema], summary="List Subscriptions"
+)
+async def list(
     auth_subject: auth.SubscriptionsRead,
     pagination: PaginationParamsQuery,
     sorting: SearchSorting,
@@ -77,8 +79,13 @@ async def list_subscriptions(
     )
 
 
-@router.post("/", response_model=SubscriptionSchema, status_code=201)
-async def create_subscription(
+@router.post(
+    "/",
+    response_model=SubscriptionSchema,
+    status_code=201,
+    summary="Create Free Subscription",
+)
+async def create(
     subscription_create: SubscriptionCreateEmail,
     auth_subject: auth.SubscriptionsWrite,
     authz: Authz = Depends(Authz.authz),
@@ -135,7 +142,13 @@ async def create_subscription(
     return subscription
 
 
-@router.post("/import", response_model=SubscriptionsImported)
+@router.post(
+    "/import",
+    response_model=SubscriptionsImported,
+    # Set operation ID manually because `import` is a reserved keyword.
+    operation_id="subscriptions:import",
+    summary="Import Subscriptions",
+)
 async def subscriptions_import(
     auth_subject: auth.SubscriptionsWrite,
     file: Annotated[UploadFile, File(description="CSV file with emails.")],
@@ -196,8 +209,8 @@ async def subscriptions_import(
     return SubscriptionsImported(count=count)
 
 
-@router.get("/export")
-async def subscriptions_export(
+@router.get("/export", summary="Export Subscriptions")
+async def export(
     auth_subject: auth.SubscriptionsRead,
     organization_id: UUID4 | None = Query(
         None, description="Filter by organization ID."

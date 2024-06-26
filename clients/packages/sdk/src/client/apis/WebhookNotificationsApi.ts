@@ -28,7 +28,7 @@ export interface WebhookNotificationsApiDeleteRequest {
 }
 
 export interface WebhookNotificationsApiCreateRequest {
-    webhookIntegrationCreate: WebhookIntegrationCreate;
+    body: WebhookIntegrationCreate;
 }
 
 export interface WebhookNotificationsApiSearchRequest {
@@ -38,7 +38,7 @@ export interface WebhookNotificationsApiSearchRequest {
 
 export interface WebhookNotificationsApiUpdateRequest {
     id: string;
-    webhookIntegrationUpdate: WebhookIntegrationUpdate;
+    body: WebhookIntegrationUpdate;
 }
 
 /**
@@ -94,10 +94,10 @@ export class WebhookNotificationsApi extends runtime.BaseAPI {
      * Create a webhook notification integration
      */
     async createRaw(requestParameters: WebhookNotificationsApiCreateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<WebhookIntegration>> {
-        if (requestParameters['webhookIntegrationCreate'] == null) {
+        if (requestParameters['body'] == null) {
             throw new runtime.RequiredError(
-                'webhookIntegrationCreate',
-                'Required parameter "webhookIntegrationCreate" was null or undefined when calling create().'
+                'body',
+                'Required parameter "body" was null or undefined when calling create().'
             );
         }
 
@@ -120,7 +120,7 @@ export class WebhookNotificationsApi extends runtime.BaseAPI {
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
-            body: requestParameters['webhookIntegrationCreate'],
+            body: requestParameters['body'],
         }, initOverrides);
 
         return new runtime.JSONApiResponse(response);
@@ -205,10 +205,10 @@ export class WebhookNotificationsApi extends runtime.BaseAPI {
             );
         }
 
-        if (requestParameters['webhookIntegrationUpdate'] == null) {
+        if (requestParameters['body'] == null) {
             throw new runtime.RequiredError(
-                'webhookIntegrationUpdate',
-                'Required parameter "webhookIntegrationUpdate" was null or undefined when calling update().'
+                'body',
+                'Required parameter "body" was null or undefined when calling update().'
             );
         }
 
@@ -231,7 +231,7 @@ export class WebhookNotificationsApi extends runtime.BaseAPI {
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
-            body: requestParameters['webhookIntegrationUpdate'],
+            body: requestParameters['body'],
         }, initOverrides);
 
         return new runtime.JSONApiResponse(response);

@@ -30,7 +30,7 @@ export interface BackofficeApiIssueRequest {
 }
 
 export interface BackofficeApiManageBadgeRequest {
-    backofficeBadge: BackofficeBadge;
+    body: BackofficeBadge;
 }
 
 export interface BackofficeApiPledgeCreateInvoiceRequest {
@@ -42,7 +42,7 @@ export interface BackofficeApiPledgeMarkDisputedRequest {
 }
 
 export interface BackofficeApiPledgeRewardTransferRequest {
-    pledgeRewardTransfer: PledgeRewardTransfer;
+    body: PledgeRewardTransfer;
 }
 
 export interface BackofficeApiRewardsRequest {
@@ -104,10 +104,10 @@ export class BackofficeApi extends runtime.BaseAPI {
      * Manage Badge
      */
     async manageBadgeRaw(requestParameters: BackofficeApiManageBadgeRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<BackofficeBadgeResponse>> {
-        if (requestParameters['backofficeBadge'] == null) {
+        if (requestParameters['body'] == null) {
             throw new runtime.RequiredError(
-                'backofficeBadge',
-                'Required parameter "backofficeBadge" was null or undefined when calling manageBadge().'
+                'body',
+                'Required parameter "body" was null or undefined when calling manageBadge().'
             );
         }
 
@@ -130,7 +130,7 @@ export class BackofficeApi extends runtime.BaseAPI {
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
-            body: requestParameters['backofficeBadge'],
+            body: requestParameters['body'],
         }, initOverrides);
 
         return new runtime.JSONApiResponse(response);
@@ -230,10 +230,10 @@ export class BackofficeApi extends runtime.BaseAPI {
      * Pledge Reward Transfer
      */
     async pledgeRewardTransferRaw(requestParameters: BackofficeApiPledgeRewardTransferRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<BackofficeReward>> {
-        if (requestParameters['pledgeRewardTransfer'] == null) {
+        if (requestParameters['body'] == null) {
             throw new runtime.RequiredError(
-                'pledgeRewardTransfer',
-                'Required parameter "pledgeRewardTransfer" was null or undefined when calling pledgeRewardTransfer().'
+                'body',
+                'Required parameter "body" was null or undefined when calling pledgeRewardTransfer().'
             );
         }
 
@@ -256,7 +256,7 @@ export class BackofficeApi extends runtime.BaseAPI {
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
-            body: requestParameters['pledgeRewardTransfer'],
+            body: requestParameters['body'],
         }, initOverrides);
 
         return new runtime.JSONApiResponse(response);

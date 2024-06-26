@@ -37,7 +37,7 @@ export interface Oauth2ApiOauth2ConfigureGetRequest {
 
 export interface Oauth2ApiOauth2ConfigurePutRequest {
     clientId: string;
-    oAuth2ClientConfigurationUpdate: OAuth2ClientConfigurationUpdate;
+    body: OAuth2ClientConfigurationUpdate;
 }
 
 export interface Oauth2ApiOauth2ConsentRequest {
@@ -45,7 +45,7 @@ export interface Oauth2ApiOauth2ConsentRequest {
 }
 
 export interface Oauth2ApiOauth2RegisterRequest {
-    oAuth2ClientConfiguration: OAuth2ClientConfiguration;
+    body: OAuth2ClientConfiguration;
 }
 
 /**
@@ -232,10 +232,10 @@ export class Oauth2Api extends runtime.BaseAPI {
             );
         }
 
-        if (requestParameters['oAuth2ClientConfigurationUpdate'] == null) {
+        if (requestParameters['body'] == null) {
             throw new runtime.RequiredError(
-                'oAuth2ClientConfigurationUpdate',
-                'Required parameter "oAuth2ClientConfigurationUpdate" was null or undefined when calling oauth2ConfigurePut().'
+                'body',
+                'Required parameter "body" was null or undefined when calling oauth2ConfigurePut().'
             );
         }
 
@@ -258,7 +258,7 @@ export class Oauth2Api extends runtime.BaseAPI {
             method: 'PUT',
             headers: headerParameters,
             query: queryParameters,
-            body: requestParameters['oAuth2ClientConfigurationUpdate'],
+            body: requestParameters['body'],
         }, initOverrides);
 
         if (this.isJsonMime(response.headers.get('content-type'))) {
@@ -374,10 +374,10 @@ export class Oauth2Api extends runtime.BaseAPI {
      * Oauth2.Register
      */
     async oauth2RegisterRaw(requestParameters: Oauth2ApiOauth2RegisterRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<any>> {
-        if (requestParameters['oAuth2ClientConfiguration'] == null) {
+        if (requestParameters['body'] == null) {
             throw new runtime.RequiredError(
-                'oAuth2ClientConfiguration',
-                'Required parameter "oAuth2ClientConfiguration" was null or undefined when calling oauth2Register().'
+                'body',
+                'Required parameter "body" was null or undefined when calling oauth2Register().'
             );
         }
 
@@ -400,7 +400,7 @@ export class Oauth2Api extends runtime.BaseAPI {
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
-            body: requestParameters['oAuth2ClientConfiguration'],
+            body: requestParameters['body'],
         }, initOverrides);
 
         if (this.isJsonMime(response.headers.get('content-type'))) {

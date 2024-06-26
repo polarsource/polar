@@ -43,7 +43,7 @@ export interface TrafficApiStatisticsRequest {
 }
 
 export interface TrafficApiTrackPageViewRequest {
-    trackPageView: TrackPageView;
+    body: TrackPageView;
 }
 
 /**
@@ -224,10 +224,10 @@ export class TrafficApi extends runtime.BaseAPI {
      * Track Page View
      */
     async trackPageViewRaw(requestParameters: TrafficApiTrackPageViewRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<TrackPageViewResponse>> {
-        if (requestParameters['trackPageView'] == null) {
+        if (requestParameters['body'] == null) {
             throw new runtime.RequiredError(
-                'trackPageView',
-                'Required parameter "trackPageView" was null or undefined when calling trackPageView().'
+                'body',
+                'Required parameter "body" was null or undefined when calling trackPageView().'
             );
         }
 
@@ -242,7 +242,7 @@ export class TrafficApi extends runtime.BaseAPI {
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
-            body: requestParameters['trackPageView'],
+            body: requestParameters['body'],
         }, initOverrides);
 
         return new runtime.JSONApiResponse(response);

@@ -15,3 +15,6 @@ indent_size = 4
 
 [*.py]
 indent_size = 4
+
+[*.mustache]
+insert_final_newline = false

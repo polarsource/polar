@@ -24,7 +24,7 @@ import type {
 } from '../models/index';
 
 export interface SubscriptionsApiCreateSubscriptionRequest {
-    subscriptionCreateEmail: SubscriptionCreateEmail;
+    body: SubscriptionCreateEmail;
 }
 
 export interface SubscriptionsApiListSubscriptionsRequest {
@@ -56,10 +56,10 @@ export class SubscriptionsApi extends runtime.BaseAPI {
      * Create Subscription
      */
     async createSubscriptionRaw(requestParameters: SubscriptionsApiCreateSubscriptionRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Subscription>> {
-        if (requestParameters['subscriptionCreateEmail'] == null) {
+        if (requestParameters['body'] == null) {
             throw new runtime.RequiredError(
-                'subscriptionCreateEmail',
-                'Required parameter "subscriptionCreateEmail" was null or undefined when calling createSubscription().'
+                'body',
+                'Required parameter "body" was null or undefined when calling createSubscription().'
             );
         }
 
@@ -82,7 +82,7 @@ export class SubscriptionsApi extends runtime.BaseAPI {
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
-            body: requestParameters['subscriptionCreateEmail'],
+            body: requestParameters['body'],
         }, initOverrides);
 
         return new runtime.JSONApiResponse(response);

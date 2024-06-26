@@ -25,7 +25,7 @@ export interface MagicLinkApiMagicLinkAuthenticateRequest {
 }
 
 export interface MagicLinkApiMagicLinkRequestRequest {
-    magicLinkRequest: MagicLinkRequest;
+    body: MagicLinkRequest;
 }
 
 /**
@@ -90,10 +90,10 @@ export class MagicLinkApi extends runtime.BaseAPI {
      * Magic Link.Request
      */
     async magicLinkRequestRaw(requestParameters: MagicLinkApiMagicLinkRequestRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<any>> {
-        if (requestParameters['magicLinkRequest'] == null) {
+        if (requestParameters['body'] == null) {
             throw new runtime.RequiredError(
-                'magicLinkRequest',
-                'Required parameter "magicLinkRequest" was null or undefined when calling magicLinkRequest().'
+                'body',
+                'Required parameter "body" was null or undefined when calling magicLinkRequest().'
             );
         }
 
@@ -108,7 +108,7 @@ export class MagicLinkApi extends runtime.BaseAPI {
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
-            body: requestParameters['magicLinkRequest'],
+            body: requestParameters['body'],
         }, initOverrides);
 
         if (this.isJsonMime(response.headers.get('content-type'))) {

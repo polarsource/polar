@@ -26,7 +26,7 @@ import type {
 } from '../models/index';
 
 export interface DonationsApiCreatePaymentIntentRequest {
-    donationCreateStripePaymentIntent: DonationCreateStripePaymentIntent;
+    body: DonationCreateStripePaymentIntent;
 }
 
 export interface DonationsApiDonationsPublicSearchRequest {
@@ -53,7 +53,7 @@ export interface DonationsApiStatisticsRequest {
 
 export interface DonationsApiUpdatePaymentIntentRequest {
     id: string;
-    donationUpdateStripePaymentIntent: DonationUpdateStripePaymentIntent;
+    body: DonationUpdateStripePaymentIntent;
 }
 
 /**
@@ -65,10 +65,10 @@ export class DonationsApi extends runtime.BaseAPI {
      * Create Payment Intent
      */
     async createPaymentIntentRaw(requestParameters: DonationsApiCreatePaymentIntentRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<DonationStripePaymentIntentMutationResponse>> {
-        if (requestParameters['donationCreateStripePaymentIntent'] == null) {
+        if (requestParameters['body'] == null) {
             throw new runtime.RequiredError(
-                'donationCreateStripePaymentIntent',
-                'Required parameter "donationCreateStripePaymentIntent" was null or undefined when calling createPaymentIntent().'
+                'body',
+                'Required parameter "body" was null or undefined when calling createPaymentIntent().'
             );
         }
 
@@ -91,7 +91,7 @@ export class DonationsApi extends runtime.BaseAPI {
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
-            body: requestParameters['donationCreateStripePaymentIntent'],
+            body: requestParameters['body'],
         }, initOverrides);
 
         return new runtime.JSONApiResponse(response);
@@ -311,10 +311,10 @@ export class DonationsApi extends runtime.BaseAPI {
             );
         }
 
-        if (requestParameters['donationUpdateStripePaymentIntent'] == null) {
+        if (requestParameters['body'] == null) {
             throw new runtime.RequiredError(
-                'donationUpdateStripePaymentIntent',
-                'Required parameter "donationUpdateStripePaymentIntent" was null or undefined when calling updatePaymentIntent().'
+                'body',
+                'Required parameter "body" was null or undefined when calling updatePaymentIntent().'
             );
         }
 
@@ -337,7 +337,7 @@ export class DonationsApi extends runtime.BaseAPI {
             method: 'PATCH',
             headers: headerParameters,
             query: queryParameters,
-            body: requestParameters['donationUpdateStripePaymentIntent'],
+            body: requestParameters['body'],
         }, initOverrides);
 
         return new runtime.JSONApiResponse(response);

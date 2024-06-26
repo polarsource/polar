@@ -74,17 +74,17 @@ export interface OrganizationsApiSearchRequest {
 
 export interface OrganizationsApiSetAccountRequest {
     id: string;
-    organizationSetAccount: OrganizationSetAccount;
+    body: OrganizationSetAccount;
 }
 
 export interface OrganizationsApiUpdateRequest {
     id: string;
-    organizationUpdate: OrganizationUpdate;
+    body: OrganizationUpdate;
 }
 
 export interface OrganizationsApiUpdateBadgeSettingsRequest {
     id: string;
-    organizationBadgeSettingsUpdate: OrganizationBadgeSettingsUpdate;
+    body: OrganizationBadgeSettingsUpdate;
 }
 
 /**
@@ -500,10 +500,10 @@ export class OrganizationsApi extends runtime.BaseAPI {
             );
         }
 
-        if (requestParameters['organizationSetAccount'] == null) {
+        if (requestParameters['body'] == null) {
             throw new runtime.RequiredError(
-                'organizationSetAccount',
-                'Required parameter "organizationSetAccount" was null or undefined when calling setAccount().'
+                'body',
+                'Required parameter "body" was null or undefined when calling setAccount().'
             );
         }
 
@@ -526,7 +526,7 @@ export class OrganizationsApi extends runtime.BaseAPI {
             method: 'PATCH',
             headers: headerParameters,
             query: queryParameters,
-            body: requestParameters['organizationSetAccount'],
+            body: requestParameters['body'],
         }, initOverrides);
 
         return new runtime.JSONApiResponse(response);
@@ -553,10 +553,10 @@ export class OrganizationsApi extends runtime.BaseAPI {
             );
         }
 
-        if (requestParameters['organizationUpdate'] == null) {
+        if (requestParameters['body'] == null) {
             throw new runtime.RequiredError(
-                'organizationUpdate',
-                'Required parameter "organizationUpdate" was null or undefined when calling update().'
+                'body',
+                'Required parameter "body" was null or undefined when calling update().'
             );
         }
 
@@ -579,7 +579,7 @@ export class OrganizationsApi extends runtime.BaseAPI {
             method: 'PATCH',
             headers: headerParameters,
             query: queryParameters,
-            body: requestParameters['organizationUpdate'],
+            body: requestParameters['body'],
         }, initOverrides);
 
         return new runtime.JSONApiResponse(response);
@@ -605,10 +605,10 @@ export class OrganizationsApi extends runtime.BaseAPI {
             );
         }
 
-        if (requestParameters['organizationBadgeSettingsUpdate'] == null) {
+        if (requestParameters['body'] == null) {
             throw new runtime.RequiredError(
-                'organizationBadgeSettingsUpdate',
-                'Required parameter "organizationBadgeSettingsUpdate" was null or undefined when calling updateBadgeSettings().'
+                'body',
+                'Required parameter "body" was null or undefined when calling updateBadgeSettings().'
             );
         }
 
@@ -631,7 +631,7 @@ export class OrganizationsApi extends runtime.BaseAPI {
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
-            body: requestParameters['organizationBadgeSettingsUpdate'],
+            body: requestParameters['body'],
         }, initOverrides);
 
         return new runtime.JSONApiResponse(response);

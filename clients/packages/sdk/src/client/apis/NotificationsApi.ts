@@ -21,7 +21,7 @@ import type {
 } from '../models/index';
 
 export interface NotificationsApiMarkReadRequest {
-    notificationsMarkRead: NotificationsMarkRead;
+    body: NotificationsMarkRead;
 }
 
 /**
@@ -67,10 +67,10 @@ export class NotificationsApi extends runtime.BaseAPI {
      * Mark Read
      */
     async markReadRaw(requestParameters: NotificationsApiMarkReadRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<any>> {
-        if (requestParameters['notificationsMarkRead'] == null) {
+        if (requestParameters['body'] == null) {
             throw new runtime.RequiredError(
-                'notificationsMarkRead',
-                'Required parameter "notificationsMarkRead" was null or undefined when calling markRead().'
+                'body',
+                'Required parameter "body" was null or undefined when calling markRead().'
             );
         }
 
@@ -93,7 +93,7 @@ export class NotificationsApi extends runtime.BaseAPI {
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
-            body: requestParameters['notificationsMarkRead'],
+            body: requestParameters['body'],
         }, initOverrides);
 
         if (this.isJsonMime(response.headers.get('content-type'))) {

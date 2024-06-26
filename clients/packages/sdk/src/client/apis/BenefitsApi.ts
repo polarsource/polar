@@ -29,7 +29,7 @@ import type {
 } from '../models/index';
 
 export interface BenefitsApiCreateBenefitRequest {
-    benefitCreate: BenefitCreate;
+    body: BenefitCreate;
 }
 
 export interface BenefitsApiDeleteBenefitRequest {
@@ -58,7 +58,7 @@ export interface BenefitsApiListBenefitsRequest {
 
 export interface BenefitsApiUpdateBenefitRequest {
     id: string;
-    benefitUpdate: BenefitUpdate;
+    body: BenefitUpdate;
 }
 
 /**
@@ -71,10 +71,10 @@ export class BenefitsApi extends runtime.BaseAPI {
      * Create Benefit
      */
     async createBenefitRaw(requestParameters: BenefitsApiCreateBenefitRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ResponseBenefitsCreateBenefit>> {
-        if (requestParameters['benefitCreate'] == null) {
+        if (requestParameters['body'] == null) {
             throw new runtime.RequiredError(
-                'benefitCreate',
-                'Required parameter "benefitCreate" was null or undefined when calling createBenefit().'
+                'body',
+                'Required parameter "body" was null or undefined when calling createBenefit().'
             );
         }
 
@@ -97,7 +97,7 @@ export class BenefitsApi extends runtime.BaseAPI {
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
-            body: requestParameters['benefitCreate'],
+            body: requestParameters['body'],
         }, initOverrides);
 
         return new runtime.JSONApiResponse(response);
@@ -324,10 +324,10 @@ export class BenefitsApi extends runtime.BaseAPI {
             );
         }
 
-        if (requestParameters['benefitUpdate'] == null) {
+        if (requestParameters['body'] == null) {
             throw new runtime.RequiredError(
-                'benefitUpdate',
-                'Required parameter "benefitUpdate" was null or undefined when calling updateBenefit().'
+                'body',
+                'Required parameter "body" was null or undefined when calling updateBenefit().'
             );
         }
 
@@ -350,7 +350,7 @@ export class BenefitsApi extends runtime.BaseAPI {
             method: 'PATCH',
             headers: headerParameters,
             query: queryParameters,
-            body: requestParameters['benefitUpdate'],
+            body: requestParameters['body'],
         }, initOverrides);
 
         return new runtime.JSONApiResponse(response);

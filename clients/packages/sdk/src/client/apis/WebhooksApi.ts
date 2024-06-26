@@ -26,7 +26,7 @@ import type {
 } from '../models/index';
 
 export interface WebhooksApiCreateWebhookEndpointRequest {
-    webhookEndpointCreate: WebhookEndpointCreate;
+    body: WebhookEndpointCreate;
 }
 
 export interface WebhooksApiDeleteWebhookEndpointRequest {
@@ -56,7 +56,7 @@ export interface WebhooksApiRedeliverWebhookEventRequest {
 
 export interface WebhooksApiUpdateWebhookEndpointRequest {
     id: string;
-    webhookEndpointUpdate: WebhookEndpointUpdate;
+    body: WebhookEndpointUpdate;
 }
 
 /**
@@ -69,10 +69,10 @@ export class WebhooksApi extends runtime.BaseAPI {
      * Create Webhook Endpoint
      */
     async createWebhookEndpointRaw(requestParameters: WebhooksApiCreateWebhookEndpointRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<WebhookEndpoint>> {
-        if (requestParameters['webhookEndpointCreate'] == null) {
+        if (requestParameters['body'] == null) {
             throw new runtime.RequiredError(
-                'webhookEndpointCreate',
-                'Required parameter "webhookEndpointCreate" was null or undefined when calling createWebhookEndpoint().'
+                'body',
+                'Required parameter "body" was null or undefined when calling createWebhookEndpoint().'
             );
         }
 
@@ -95,7 +95,7 @@ export class WebhooksApi extends runtime.BaseAPI {
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
-            body: requestParameters['webhookEndpointCreate'],
+            body: requestParameters['body'],
         }, initOverrides);
 
         return new runtime.JSONApiResponse(response);
@@ -354,10 +354,10 @@ export class WebhooksApi extends runtime.BaseAPI {
             );
         }
 
-        if (requestParameters['webhookEndpointUpdate'] == null) {
+        if (requestParameters['body'] == null) {
             throw new runtime.RequiredError(
-                'webhookEndpointUpdate',
-                'Required parameter "webhookEndpointUpdate" was null or undefined when calling updateWebhookEndpoint().'
+                'body',
+                'Required parameter "body" was null or undefined when calling updateWebhookEndpoint().'
             );
         }
 
@@ -380,7 +380,7 @@ export class WebhooksApi extends runtime.BaseAPI {
             method: 'PATCH',
             headers: headerParameters,
             query: queryParameters,
-            body: requestParameters['webhookEndpointUpdate'],
+            body: requestParameters['body'],
         }, initOverrides);
 
         return new runtime.JSONApiResponse(response);

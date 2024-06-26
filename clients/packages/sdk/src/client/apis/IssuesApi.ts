@@ -28,7 +28,7 @@ import type {
 
 export interface IssuesApiAddIssueCommentRequest {
     id: string;
-    postIssueComment: PostIssueComment;
+    body: PostIssueComment;
 }
 
 export interface IssuesApiAddPolarBadgeRequest {
@@ -37,12 +37,12 @@ export interface IssuesApiAddPolarBadgeRequest {
 
 export interface IssuesApiBadgeWithMessageRequest {
     id: string;
-    issueUpdateBadgeMessage: IssueUpdateBadgeMessage;
+    body: IssueUpdateBadgeMessage;
 }
 
 export interface IssuesApiConfirmRequest {
     id: string;
-    confirmIssue: ConfirmIssue;
+    body: ConfirmIssue;
 }
 
 export interface IssuesApiGetRequest {
@@ -73,7 +73,7 @@ export interface IssuesApiSearchRequest {
 
 export interface IssuesApiUpdateRequest {
     id: string;
-    updateIssue: UpdateIssue;
+    body: UpdateIssue;
 }
 
 /**
@@ -92,10 +92,10 @@ export class IssuesApi extends runtime.BaseAPI {
             );
         }
 
-        if (requestParameters['postIssueComment'] == null) {
+        if (requestParameters['body'] == null) {
             throw new runtime.RequiredError(
-                'postIssueComment',
-                'Required parameter "postIssueComment" was null or undefined when calling addIssueComment().'
+                'body',
+                'Required parameter "body" was null or undefined when calling addIssueComment().'
             );
         }
 
@@ -118,7 +118,7 @@ export class IssuesApi extends runtime.BaseAPI {
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
-            body: requestParameters['postIssueComment'],
+            body: requestParameters['body'],
         }, initOverrides);
 
         return new runtime.JSONApiResponse(response);
@@ -184,10 +184,10 @@ export class IssuesApi extends runtime.BaseAPI {
             );
         }
 
-        if (requestParameters['issueUpdateBadgeMessage'] == null) {
+        if (requestParameters['body'] == null) {
             throw new runtime.RequiredError(
-                'issueUpdateBadgeMessage',
-                'Required parameter "issueUpdateBadgeMessage" was null or undefined when calling badgeWithMessage().'
+                'body',
+                'Required parameter "body" was null or undefined when calling badgeWithMessage().'
             );
         }
 
@@ -210,7 +210,7 @@ export class IssuesApi extends runtime.BaseAPI {
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
-            body: requestParameters['issueUpdateBadgeMessage'],
+            body: requestParameters['body'],
         }, initOverrides);
 
         return new runtime.JSONApiResponse(response);
@@ -236,10 +236,10 @@ export class IssuesApi extends runtime.BaseAPI {
             );
         }
 
-        if (requestParameters['confirmIssue'] == null) {
+        if (requestParameters['body'] == null) {
             throw new runtime.RequiredError(
-                'confirmIssue',
-                'Required parameter "confirmIssue" was null or undefined when calling confirm().'
+                'body',
+                'Required parameter "body" was null or undefined when calling confirm().'
             );
         }
 
@@ -262,7 +262,7 @@ export class IssuesApi extends runtime.BaseAPI {
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
-            body: requestParameters['confirmIssue'],
+            body: requestParameters['body'],
         }, initOverrides);
 
         return new runtime.JSONApiResponse(response);
@@ -568,10 +568,10 @@ export class IssuesApi extends runtime.BaseAPI {
             );
         }
 
-        if (requestParameters['updateIssue'] == null) {
+        if (requestParameters['body'] == null) {
             throw new runtime.RequiredError(
-                'updateIssue',
-                'Required parameter "updateIssue" was null or undefined when calling update().'
+                'body',
+                'Required parameter "body" was null or undefined when calling update().'
             );
         }
 
@@ -594,7 +594,7 @@ export class IssuesApi extends runtime.BaseAPI {
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
-            body: requestParameters['updateIssue'],
+            body: requestParameters['body'],
         }, initOverrides);
 
         return new runtime.JSONApiResponse(response);

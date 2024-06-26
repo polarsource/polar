@@ -2,22 +2,22 @@ import { api, queryClient } from '@/utils/api'
 import {
   OAuth2Client,
   OAuth2ClientConfiguration,
-  Oauth2ApiListOauth2ClientsRequest,
-  Oauth2ApiOauth2ConfigurePutRequest,
+  Oauth2ApiListClientsRequest,
+  Oauth2ApiUpdateClientRequest,
 } from '@polar-sh/sdk'
 import { useMutation, useQuery } from '@tanstack/react-query'
 
-export const useOAuth2Clients = (options?: Oauth2ApiListOauth2ClientsRequest) =>
+export const useOAuth2Clients = (options?: Oauth2ApiListClientsRequest) =>
   useQuery({
     queryKey: ['oauth2Clients'],
-    queryFn: async () => api.oauth2.listOauth2Clients(options),
+    queryFn: async () => api.oauth2.listClients(options),
   })
 
 export const useCreateOAuth2Client = () =>
   useMutation({
-    mutationFn: (config: OAuth2ClientConfiguration) =>
-      api.oauth2.oauth2Register({
-        oAuth2ClientConfiguration: config,
+    mutationFn: (body: OAuth2ClientConfiguration) =>
+      api.oauth2.createClient({
+        body,
       }) as Promise<OAuth2Client>,
     onSuccess(_data, _variables, _context) {
       queryClient.invalidateQueries({
@@ -26,10 +26,10 @@ export const useCreateOAuth2Client = () =>
     },
   })
 
-export const useEditOAuth2Client = () =>
+export const useUpdateOAuth2Client = () =>
   useMutation({
-    mutationFn: (options: Oauth2ApiOauth2ConfigurePutRequest) =>
-      api.oauth2.oauth2ConfigurePut(options),
+    mutationFn: (options: Oauth2ApiUpdateClientRequest) =>
+      api.oauth2.updateClient(options),
     onSuccess(_data, _variables, _context) {
       queryClient.invalidateQueries({
         queryKey: ['oauth2Clients'],
@@ -39,8 +39,7 @@ export const useEditOAuth2Client = () =>
 
 export const useDeleteOAuthClient = () =>
   useMutation({
-    mutationFn: (clientId: string) =>
-      api.oauth2.oauth2ConfigureDelete({ clientId }),
+    mutationFn: (clientId: string) => api.oauth2.deleteClient({ clientId }),
     onSuccess(_data, _variables, _context) {
       queryClient.invalidateQueries({
         queryKey: ['oauth2Clients'],

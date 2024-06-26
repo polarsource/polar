@@ -3,7 +3,7 @@ import { InlineModalHeader } from '@/components/Modal/InlineModal'
 import { useModal } from '@/components/Modal/useModal'
 import {
   useDeleteOAuthClient,
-  useEditOAuth2Client,
+  useUpdateOAuth2Client,
 } from '@/hooks/queries/oauth'
 import { OAuth2Client, OAuth2ClientConfigurationUpdate } from '@polar-sh/sdk'
 import { useRouter } from 'next/navigation'
@@ -61,7 +61,7 @@ export const EditOAuthClientModal = ({
   const [updated, setUpdated] = useState<OAuth2ClientConfigurationUpdate>()
   const [isUpdating, setIsUpdating] = useState(false)
 
-  const createOAuth2Client = useEditOAuth2Client()
+  const createOAuth2Client = useUpdateOAuth2Client()
 
   const onSubmit = useCallback(
     async (form: EnhancedOAuth2ClientConfigurationUpdate) => {
@@ -69,7 +69,7 @@ export const EditOAuthClientModal = ({
       const res = await createOAuth2Client
         .mutateAsync({
           clientId: client.client_id,
-          oAuth2ClientConfigurationUpdate: {
+          body: {
             ...form,
             redirect_uris: form.redirect_uris.map(({ uri }) => uri),
             scope: form.scope.join(' '),

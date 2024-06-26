@@ -7,6 +7,7 @@ from polar.auth.dependencies import WebUser, WebUserOrAnonymous
 from polar.auth.models import is_user
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.models import OAuth2Token, Organization
+from polar.openapi import IN_DEVELOPMENT_ONLY
 from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession, get_db_session
 from polar.routing import APIRouter
@@ -34,8 +35,8 @@ from ..userinfo import UserInfo, generate_user_info
 router = APIRouter(prefix="/oauth2", tags=["oauth2"])
 
 
-@router.get("/", response_model=ListResource[OAuth2Client])
-async def list_oauth2_clients(
+@router.get("/", summary="List Clients", response_model=ListResource[OAuth2Client])
+async def list_clients(
     auth_subject: WebUser,
     pagination: PaginationParamsQuery,
     session: AsyncSession = Depends(get_db_session),
@@ -49,13 +50,14 @@ async def list_oauth2_clients(
     )
 
 
-@router.post("/register", name="oauth2.register")
-async def oauth2_register(
+@router.post("/register", summary="Create Client", name="oauth2:create_client")
+async def create_client(
     client_configuration: OAuth2ClientConfiguration,
     request: Request,
     auth_subject: WebUser,
     authorization_server: AuthorizationServer = Depends(get_authorization_server),
 ) -> Response:
+    """Create an OAuth2 client."""
     request.state.user = auth_subject.subject
     request.state.parsed_data = client_configuration.model_dump(mode="json")
     return authorization_server.create_endpoint_response(
@@ -63,27 +65,31 @@ async def oauth2_register(
     )
 
 
-@router.get("/register/{client_id}", name="oauth2.configure_get")
-async def oauth2_configure_get(
+@router.get("/register/{client_id}", summary="Get Client", name="oauth2:get_client")
+async def get_client(
     client_id: str,
     request: Request,
     auth_subject: WebUserOrAnonymous,
     authorization_server: AuthorizationServer = Depends(get_authorization_server),
 ) -> Response:
+    """Get an OAuth2 client by Client ID."""
     request.state.user = auth_subject.subject if is_user(auth_subject) else None
     return authorization_server.create_endpoint_response(
         ClientConfigurationEndpoint.ENDPOINT_NAME, request
     )
 
 
-@router.put("/register/{client_id}", name="oauth2.configure_put")
-async def oauth2_configure_put(
+@router.put(
+    "/register/{client_id}", summary="Update Client", name="oauth2:update_client"
+)
+async def update_client(
     client_id: str,
     client_configuration: OAuth2ClientConfigurationUpdate,
     request: Request,
     auth_subject: WebUserOrAnonymous,
     authorization_server: AuthorizationServer = Depends(get_authorization_server),
 ) -> Response:
+    """Update an OAuth2 client."""
     request.state.user = auth_subject.subject if is_user(auth_subject) else None
     request.state.parsed_data = client_configuration.model_dump(mode="json")
     return authorization_server.create_endpoint_response(
@@ -91,21 +97,24 @@ async def oauth2_configure_put(
     )
 
 
-@router.delete("/register/{client_id}", name="oauth2.configure_delete")
-async def oauth2_configure_delete(
+@router.delete(
+    "/register/{client_id}", summary="Delete Client", name="oauth2:delete_client"
+)
+async def delete_client(
     client_id: str,
     request: Request,
     auth_subject: WebUserOrAnonymous,
     authorization_server: AuthorizationServer = Depends(get_authorization_server),
 ) -> Response:
+    """Delete an OAuth2 client."""
     request.state.user = auth_subject.subject if is_user(auth_subject) else None
     return authorization_server.create_endpoint_response(
         ClientConfigurationEndpoint.ENDPOINT_NAME, request
     )
 
 
-@router.get("/authorize", name="oauth2.authorize")
-async def oauth2_authorize(
+@router.get("/authorize", include_in_schema=IN_DEVELOPMENT_ONLY)
+async def authorize(
     request: Request,
     auth_subject: WebUserOrAnonymous,
     authorization_server: AuthorizationServer = Depends(get_authorization_server),
@@ -142,8 +151,8 @@ async def oauth2_authorize(
     )
 
 
-@router.post("/consent", name="oauth2.consent")
-async def oauth2_consent(
+@router.post("/consent", include_in_schema=IN_DEVELOPMENT_ONLY)
+async def consent(
     request: Request,
     auth_subject: WebUser,
     action: Literal["allow", "deny"] = Form(...),
@@ -156,31 +165,34 @@ async def oauth2_consent(
     )
 
 
-@router.post("/token", name="oauth2.token")
-async def oauth2_token(
+@router.post("/token", summary="Request Token", name="oauth2:request_token")
+async def request_token(
     request: Request,
     authorization_server: AuthorizationServer = Depends(get_authorization_server),
 ) -> Response:
+    """Request an access token using a valid grant."""
     await request.form()
     return authorization_server.create_token_response(request)
 
 
-@router.post("/revoke", name="oauth2.revoke")
-async def oauth2_revoke(
+@router.post("/revoke", summary="Revoke Token", name="oauth2:revoke_token")
+async def revoke_token(
     request: Request,
     authorization_server: AuthorizationServer = Depends(get_authorization_server),
 ) -> Response:
+    """Revoke an access token or a refresh token."""
     await request.form()
     return authorization_server.create_endpoint_response(
         RevocationEndpoint.ENDPOINT_NAME, request
     )
 
 
-@router.post("/introspect", name="oauth2.introspect")
-async def oauth2_introspect(
+@router.post("/introspect", summary="Introspect Token", name="oauth2:introspect_token")
+async def introspect_token(
     request: Request,
     authorization_server: AuthorizationServer = Depends(get_authorization_server),
 ) -> Response:
+    """Get information about an access token."""
     await request.form()
     return authorization_server.create_endpoint_response(
         IntrospectionEndpoint.ENDPOINT_NAME, request
@@ -189,9 +201,11 @@ async def oauth2_introspect(
 
 @router.api_route(
     "/userinfo",
+    summary="Get User Info",
     methods=["GET", "POST"],
-    name="oauth2.userinfo",
+    name="oauth2:userinfo",
     response_model=None,
 )
-async def oauth2_userinfo(token: OAuth2Token = Depends(get_token)) -> UserInfo:
+async def userinfo(token: OAuth2Token = Depends(get_token)) -> UserInfo:
+    """Get information about the authenticated user."""
     return generate_user_info(token.get_sub_type_value(), cast(str, token.scope))

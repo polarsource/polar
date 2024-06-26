@@ -339,6 +339,7 @@ export const pullRequest: PullRequest = {
 export const article: Article = {
   id: 'xxxx',
   slug: 'build-saas-with-polar',
+  organization_id: org.id,
   organization: {
     ...org,
     name: 'polarsource',

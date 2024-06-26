@@ -1,6 +1,6 @@
 import { AnimatedIconButton } from '@/components/Feed/Posts/Post'
 import { useCurrentOrgAndRepoFromURL } from '@/hooks'
-import { useOrganizationArticles } from '@/hooks/queries'
+import { useListArticles } from '@/hooks/queries'
 import {
   ArrowForward,
   BiotechOutlined,
@@ -8,7 +8,7 @@ import {
   EmojiPeople,
   ShortTextOutlined,
 } from '@mui/icons-material'
-import { Article, Organization, Platforms } from '@polar-sh/sdk'
+import { Article, Organization } from '@polar-sh/sdk'
 import Link from 'next/link'
 import {
   Card,
@@ -64,16 +64,16 @@ const postTemplates = (organization: Organization, hasNoPosts: boolean) =>
 export const PostWizard = () => {
   const { org } = useCurrentOrgAndRepoFromURL()
 
-  const { data: posts, isPending: articlesPending } = useOrganizationArticles({
-    orgName: org?.name,
-    platform: Platforms.GITHUB,
-    showUnpublished: true,
+  const { data: posts, isPending: articlesPending } = useListArticles({
+    organizationId: org?.id,
+    limit: 100,
   })
 
   const publishedPosts =
-    posts?.items?.filter((post) => !!post.published_at) ?? []
+    posts?.pages[0].items?.filter((post) => !!post.published_at) ?? []
 
-  const drafts = posts?.items?.filter((post) => !post.published_at) ?? []
+  const drafts =
+    posts?.pages[0].items?.filter((post) => !post.published_at) ?? []
 
   if (!org || !org.feature_settings?.articles_enabled) return null
 

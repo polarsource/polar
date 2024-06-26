@@ -17,30 +17,37 @@ const cacheConfig = {
   },
 }
 
-export async function generateMetadata({
-  params,
-}: {
-  params: { organization: string; postSlug: string }
-}): Promise<Metadata> {
+const getArticle = async (
+  organizationName: string,
+  postSlug: string,
+): Promise<Article> => {
   const api = getServerSideAPI()
 
-  let article: Article | undefined
-
   try {
-    article = await api.articles.lookup(
+    const organization = await api.organizations.lookup(
       {
         platform: Platforms.GITHUB,
-        organizationName: params.organization,
-        slug: params.postSlug,
+        organizationName,
+      },
+      cacheConfig,
+    )
+    const articles = await api.articles.list(
+      {
+        organizationId: organization.id,
+        slug: postSlug,
       },
       {
         ...cacheConfig,
         next: {
           ...cacheConfig.next,
-          tags: [`articles:${params.organization}:${params.postSlug}`],
+          tags: [`articles:${organization.id}:${postSlug}`],
         },
       },
     )
+    if (!articles.items?.length) {
+      notFound()
+    }
+    return articles.items[0]
   } catch (e) {
     if (e instanceof ResponseError && e.response.status === 404) {
       notFound()
@@ -48,11 +55,14 @@ export async function generateMetadata({
       throw e
     }
   }
+}
 
-  if (!article) {
-    notFound()
-  }
-
+export async function generateMetadata({
+  params,
+}: {
+  params: { organization: string; postSlug: string }
+}): Promise<Metadata> {
+  const article = await getArticle(params.organization, params.postSlug)
   // og:description or fallback
   let description = UnescapeText(article.og_description ?? '')
   if (!description) {
@@ -136,27 +146,13 @@ export default async function Page({
   params: { organization: string; postSlug: string }
 }) {
   const api = getServerSideAPI()
+  const article = await getArticle(params.organization, params.postSlug)
 
-  let article: Article | undefined
   let products: ListResourceProduct | undefined
 
   try {
-    article = await api.articles.lookup(
-      {
-        platform: Platforms.GITHUB,
-        organizationName: params.organization,
-        slug: params.postSlug,
-      },
-      {
-        ...cacheConfig,
-        next: {
-          ...cacheConfig.next,
-          tags: [`articles:${params.organization}:${params.postSlug}`],
-        },
-      },
-    )
     products = await api.products.listProducts(
-      { organizationId: article.organization.id, isRecurring: true },
+      { organizationId: article.organization_id, isRecurring: true },
       cacheConfig,
     )
   } catch (e) {
@@ -165,10 +161,6 @@ export default async function Page({
     } else {
       throw e
     }
-  }
-
-  if (!article) {
-    notFound()
   }
 
   const jsonLd: WithContext<JSONLDArticle> = {

@@ -6,7 +6,7 @@ import {
   EnvelopeIcon,
   EyeIcon,
 } from '@heroicons/react/24/outline'
-import { Article, ArticleUpdateVisibilityEnum } from '@polar-sh/sdk'
+import { Article, ArticleVisibility } from '@polar-sh/sdk'
 import { DropdownMenuItemIndicator } from '@radix-ui/react-dropdown-menu'
 import Button from 'polarkit/components/ui/atoms/button'
 import Input from 'polarkit/components/ui/atoms/input'
@@ -150,7 +150,7 @@ const PreviewEmailModal = ({ article, hideModal }: PreviewEmailModalProps) => {
         <p className="dark:text-polar-400  w-2/3 text-sm text-gray-400">
           Sends a preview of the post via email.
         </p>
-        {article.visibility === ArticleUpdateVisibilityEnum.PRIVATE ? (
+        {article.visibility === ArticleVisibility.PRIVATE ? (
           <Banner color="blue">
             <p>
               Note: This post is currently <em>private</em>. The receiver might
@@ -191,7 +191,7 @@ const VisibilityModalContent = ({
   article,
   hideModal,
 }: VisibilityModalContentProps) => {
-  const [visibility, setVisibility] = useState<ArticleUpdateVisibilityEnum>(
+  const [visibility, setVisibility] = useState<ArticleVisibility>(
     article.visibility,
   )
   const updateArticle = useUpdateArticle()
@@ -200,7 +200,7 @@ const VisibilityModalContent = ({
     await updateArticle.mutateAsync({
       id: article.id,
       articleUpdate: {
-        visibility: visibility as ArticleUpdateVisibilityEnum,
+        visibility: visibility as ArticleVisibility,
       },
     })
 
@@ -218,35 +218,35 @@ const VisibilityModalContent = ({
       <div className="flex flex-col gap-y-6">
         <RadioGroup
           value={visibility}
-          onValueChange={(v: ArticleUpdateVisibilityEnum) =>
-            setVisibility(v as ArticleUpdateVisibilityEnum)
+          onValueChange={(v: ArticleVisibility) =>
+            setVisibility(v as ArticleVisibility)
           }
         >
           <div className="flex items-center space-x-2">
             <RadioGroupItem
-              value={ArticleUpdateVisibilityEnum.PRIVATE}
-              id={ArticleUpdateVisibilityEnum.PRIVATE}
+              value={ArticleVisibility.PRIVATE}
+              id={ArticleVisibility.PRIVATE}
             />
-            <Label htmlFor={ArticleUpdateVisibilityEnum.PRIVATE}>
+            <Label htmlFor={ArticleVisibility.PRIVATE}>
               Members of {article.organization.name}
             </Label>
           </div>
           <div className="flex items-center space-x-2">
             <RadioGroupItem
-              value={ArticleUpdateVisibilityEnum.HIDDEN}
-              id={ArticleUpdateVisibilityEnum.HIDDEN}
+              value={ArticleVisibility.HIDDEN}
+              id={ArticleVisibility.HIDDEN}
             />
-            <Label htmlFor={ArticleUpdateVisibilityEnum.HIDDEN}>
+            <Label htmlFor={ArticleVisibility.HIDDEN}>
               Anyone with the link
             </Label>
           </div>
           <div className="flex items-center space-x-2">
             <RadioGroupItem
-              value={ArticleUpdateVisibilityEnum.PUBLIC}
-              id={ArticleUpdateVisibilityEnum.PUBLIC}
+              value={ArticleVisibility.PUBLIC}
+              id={ArticleVisibility.PUBLIC}
               disabled={true}
             />
-            <Label htmlFor={ArticleUpdateVisibilityEnum.PUBLIC}>
+            <Label htmlFor={ArticleVisibility.PUBLIC}>
               Public
               {article.paid_subscribers_only
                 ? '(premium subscribers only)'
@@ -255,7 +255,7 @@ const VisibilityModalContent = ({
           </div>
         </RadioGroup>
 
-        {article.visibility !== ArticleUpdateVisibilityEnum.PUBLIC ? (
+        {article.visibility !== ArticleVisibility.PUBLIC ? (
           <Banner color={'blue'}>
             To publish this post, click &quot;Publish&quot; in the Toolbar.
           </Banner>

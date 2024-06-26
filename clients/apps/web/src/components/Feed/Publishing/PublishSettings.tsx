@@ -9,7 +9,7 @@ import { firstImageUrlFromMarkdown } from '@/utils/markdown'
 import {
   Article,
   ArticleUpdate,
-  ArticleVisibilityEnum,
+  ArticleVisibility,
   ResponseError,
   ValidationError,
 } from '@polar-sh/sdk'
@@ -67,13 +67,9 @@ export const PublishSettings = ({ article }: PublishModalContentProps) => {
   const archiveArticle = useDeleteArticle()
 
   const handleArchiveArticle = useCallback(async () => {
-    const response = await archiveArticle.mutateAsync({ id: article.id })
-
-    if (response.ok) {
-      router.push(`/maintainer/${article.organization.name}/posts`)
-    } else {
-      hideArchiveModal()
-    }
+    await archiveArticle.mutateAsync({ id: article.id })
+    router.push(`/maintainer/${article.organization.name}/posts`)
+    hideArchiveModal()
   }, [archiveArticle, article, hideArchiveModal, router])
 
   const update = useUpdateArticle()
@@ -99,15 +95,8 @@ export const PublishSettings = ({ article }: PublishModalContentProps) => {
         id: article.id,
         articleUpdate: {
           ...form.getValues(),
-
-          // Always set published at, even if unset.
-          set_published_at: true,
           published_at: publishedAt ?? new Date().toISOString(),
-
-          visibility: ArticleVisibilityEnum.PUBLIC,
-
-          set_og_description: true,
-          set_og_image_url: true,
+          visibility: ArticleVisibility.PUBLIC,
         },
       })
 

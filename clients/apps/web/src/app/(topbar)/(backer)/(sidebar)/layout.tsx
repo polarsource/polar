@@ -7,7 +7,8 @@ import {
 } from '@/components/Dashboard/Upsell'
 import PurchaseSidebar from '@/components/Purchases/PurchasesSidebar'
 import { useAuth, useGitHubAccount, usePersonalOrganization } from '@/hooks'
-import { useListAdminOrganizations, useSearchArticles } from '@/hooks/queries'
+import { useListAdminOrganizations, useListArticles } from '@/hooks/queries'
+import { ArticleVisibility } from '@polar-sh/sdk'
 import { PropsWithChildren, useEffect } from 'react'
 
 export default function Layout({ children }: PropsWithChildren) {
@@ -20,7 +21,11 @@ export default function Layout({ children }: PropsWithChildren) {
     reloadUser()
   }, [])
 
-  const posts = useSearchArticles(personalOrg?.name ?? '')
+  const posts = useListArticles({
+    organizationId: personalOrg?.id,
+    isPublished: true,
+    visibility: ArticleVisibility.PUBLIC,
+  })
   const postsAreLoading = posts.isLoading
   const shouldShowPostUpsell =
     !adminOrgsAreLoading &&

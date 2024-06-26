@@ -49,11 +49,6 @@ export const useTrafficRecordPageView = (opts: {
       // Write to local storage
       localStorage.setItem(pageViewKey, JSON.stringify(views))
 
-      if (opts.article) {
-        // record page view on article
-        api.articles.viewed({ id: opts.article.id })
-      }
-
       // record page view in traffic api
       api.traffic.trackPageView({
         trackPageView: {

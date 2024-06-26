@@ -1,16 +1,16 @@
-import { Article, ArticleUpdateVisibilityEnum } from '@polar-sh/sdk'
+import { Article, ArticleVisibility } from '@polar-sh/sdk'
 import { Label } from 'polarkit/components/ui/label'
 import { RadioGroup, RadioGroupItem } from 'polarkit/components/ui/radio-group'
 import { useCallback } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 interface VisibilityPickerProps {
-  visibility: ArticleUpdateVisibilityEnum
+  visibility: ArticleVisibility
   paidSubscribersOnly: boolean
   privateVisibilityAllowed: boolean
   linkVisibilityAllowed: boolean
   article: Article
-  onChange: (visibility: ArticleUpdateVisibilityEnum) => void
+  onChange: (visibility: ArticleVisibility) => void
 }
 
 export const VisibilityPicker = ({
@@ -21,7 +21,7 @@ export const VisibilityPicker = ({
 }: VisibilityPickerProps) => {
   const handleVisibilityChange = useCallback(
     (visibility: string) => {
-      onChange(visibility as ArticleUpdateVisibilityEnum)
+      onChange(visibility as ArticleVisibility)
     },
     [onChange],
   )
@@ -35,11 +35,10 @@ export const VisibilityPicker = ({
         </p>
       </div>
       <RadioGroup value={visibility} onValueChange={handleVisibilityChange}>
-        {Object.values(ArticleUpdateVisibilityEnum).map((v) => {
+        {Object.values(ArticleVisibility).map((v) => {
           const disabled =
-            (v === ArticleUpdateVisibilityEnum.PRIVATE &&
-              !privateVisibilityAllowed) ||
-            (v === ArticleUpdateVisibilityEnum.HIDDEN && !linkVisibilityAllowed)
+            (v === ArticleVisibility.PRIVATE && !privateVisibilityAllowed) ||
+            (v === ArticleVisibility.HIDDEN && !linkVisibilityAllowed)
 
           return (
             <div key={v} className="flex items-center space-x-2">

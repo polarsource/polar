@@ -1,5 +1,6 @@
 import { getServerSideAPI } from '@/utils/api/serverside'
 import {
+  ArticleVisibility,
   ListResourceArticle,
   ListResourceIssueFunding,
   ListResourceOrganization,
@@ -141,23 +142,37 @@ export default async function Page({
       loadListIssueFunding,
       loadDonations,
     ] = await Promise.all([
-      api.articles.search(
+      api.articles.list(
         {
-          platform: Platforms.GITHUB,
-          organizationName: params.organization,
+          organizationId: organization.id,
+          isPublished: true,
+          visibility: ArticleVisibility.PUBLIC,
           isPinned: false,
           limit: 3,
         },
-        cacheConfig,
-      ),
-      api.articles.search(
         {
-          platform: Platforms.GITHUB,
-          organizationName: params.organization,
+          ...cacheConfig,
+          next: {
+            ...cacheConfig.next,
+            tags: [`articles:${organization.id}`],
+          },
+        },
+      ),
+      api.articles.list(
+        {
+          organizationId: organization.id,
+          isPublished: true,
+          visibility: ArticleVisibility.PUBLIC,
           isPinned: true,
           limit: 3,
         },
-        cacheConfig,
+        {
+          ...cacheConfig,
+          next: {
+            ...cacheConfig.next,
+            tags: [`articles:${organization.id}`],
+          },
+        },
       ),
       api.products.listProducts(
         {

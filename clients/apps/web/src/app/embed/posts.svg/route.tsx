@@ -16,11 +16,11 @@ const getOrg = async (org: string): Promise<Organization> => {
 }
 
 const getPosts = async (
-  org: string,
+  organization: Organization,
   limit: number = 3,
   pinnedPosts: boolean = false,
 ): Promise<Article[]> => {
-  let url = `${getServerURL()}/api/v1/articles/search?platform=github&organization_name=${org}&limit=${limit}&is_pinned=${pinnedPosts}`
+  let url = `${getServerURL()}/api/v1/articles/?organization_id=${organization.id}&is_pinned=${pinnedPosts}&is_published=true&visibility=public&limit=${limit}`
 
   const response = await fetch(url, {
     method: 'GET',
@@ -84,10 +84,10 @@ export async function GET(request: Request) {
   }
 
   try {
-    const [organization, pinnedPosts, latestPosts] = await Promise.all([
-      getOrg(org),
-      getPosts(org, 3, true),
-      getPosts(org, 3, false),
+    const organization = await getOrg(org)
+    const [pinnedPosts, latestPosts] = await Promise.all([
+      getPosts(organization, 3, true),
+      getPosts(organization, 3, false),
     ])
 
     const posts = [...pinnedPosts, ...latestPosts].slice(0, 3)

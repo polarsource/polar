@@ -434,12 +434,14 @@ class PayoutTransactionService(BaseTransactionService):
                 and balance_transaction.payment_transaction.charge_id is not None
             ):
                 source_transaction = balance_transaction.payment_transaction.charge_id
-                transfer_amount = max(balance_transaction.net_amount - payout_fees, 0)
+                transfer_amount = max(
+                    balance_transaction.transferable_amount - payout_fees, 0
+                )
                 if transfer_amount > 0:
                     transfers.append(
                         (source_transaction, transfer_amount, balance_transaction)
                     )
-                payout_fees -= balance_transaction.net_amount - transfer_amount
+                payout_fees -= balance_transaction.transferable_amount - transfer_amount
 
         transfers_sum = sum(amount for _, amount, _ in transfers)
         if transfers_sum != -transaction.amount:
@@ -520,7 +522,7 @@ class PayoutTransactionService(BaseTransactionService):
                 Transaction.payout_transaction_id.is_(None),
             )
             .options(
-                selectinload(Transaction.account_incurred_transactions),
+                selectinload(Transaction.balance_reversal_transactions),
                 selectinload(Transaction.payment_transaction),
             )
         )

@@ -83,14 +83,18 @@ async def to_schema(
 )
 async def list(
     auth_subject: OrganizationsRead,
+    name: str | None = Query(
+        default=None,
+        description="Filter organizations by name (one item in case of match)",
+    ),
     is_admin_only: bool = Query(
         default=True,
-        description="Include only organizations that the user is an admin of.",
+        description="Filter organizations to include only the ones the user is an admin of.",
     ),
     session: AsyncSession = Depends(get_db_session),
 ) -> ListResource[OrganizationSchema]:
     orgs = await organization_service.list_all_orgs_by_user_id(
-        session, auth_subject.subject.id, is_admin_only
+        session, auth_subject.subject.id, is_admin_only, filter_by_name=name
     )
 
     return ListResource(

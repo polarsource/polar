@@ -38,7 +38,10 @@ async def create_transaction(
     issue_reward: IssueReward | None = None,
     order: Order | None = None,
     payout_transaction: Transaction | None = None,
+    payment_transaction: Transaction | None = None,
     donation: Donation | None = None,
+    charge_id: str | None = None,
+    dispute_id: str | None = None,
 ) -> Transaction:
     transaction = Transaction(
         type=type,
@@ -56,6 +59,9 @@ async def create_transaction(
         order=order,
         donation=donation,
         payout_transaction=payout_transaction,
+        payment_transaction=payment_transaction,
+        charge_id=charge_id,
+        dispute_id=dispute_id,
     )
     await save_fixture(transaction)
     return transaction

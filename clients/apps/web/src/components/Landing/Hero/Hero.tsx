@@ -17,7 +17,7 @@ export const Hero = () => {
 
   return (
     <Section
-      className="flex w-full flex-col gap-4 md:flex-row md:items-center md:py-24"
+      className="flex w-full flex-col gap-12 md:flex-row md:items-center md:py-24"
       wrapperClassName="relative isolate overflow-hidden"
     >
       <Circles className="absolute inset-0 top-1/2 block -translate-y-1/2 text-black dark:hidden" />

@@ -1,93 +1,84 @@
 'use client'
 
-import LogoIcon from '@/components/Brand/LogoIcon'
-import GitHubIcon from '@/components/Icons/GitHubIcon'
+import IssueBadge from '@/components/Embed/IssueBadge'
 import SubscriptionTierCard from '@/components/Subscriptions/SubscriptionTierCard'
-import {
-  AccountBalanceOutlined,
-  AttachMoneyOutlined,
-  DiamondOutlined,
-  HiveOutlined,
-} from '@mui/icons-material'
 import { Transition, motion } from 'framer-motion'
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
-import { MOCKED_PRODUCTS } from '../utils'
+import { MOCKED_SUBSCRIPTIONS } from '../utils'
 import { quadraticCurve } from './Hero.utils'
 
 export const HeroGraphic = () => {
-  const [width, setWidth] = useState(0)
-  const [height, setHeight] = useState(0)
-
-  const midPointY = useMemo(() => height / 2, [height])
-
   return (
-    <div
-      className="relative flex h-full w-full flex-col"
-      ref={(el) => {
-        if (el) {
-          const boundingBox = el.getBoundingClientRect()
-          setWidth(boundingBox.width)
-          setHeight(boundingBox.height)
-        }
-      }}
-    >
-      <motion.svg
-        className="absolute inset-0 z-10 h-full w-full text-blue-500 dark:text-blue-500"
-        xmlns="http://www.w3.org/2000/svg"
-      >
-        <Path
-          start={{ x: 45, y: 90 }}
-          end={{ x: 125, y: midPointY + 60 }}
-          vertical
+    <div className="flex w-full flex-col items-center gap-y-12">
+      <div className="relative flex h-full w-full flex-row items-center justify-center gap-6">
+        <SubscriptionTierCard
+          className="dark:bg-polar-950 absolute left-0 scale-90"
+          subscriptionTier={{ ...MOCKED_SUBSCRIPTIONS[1], description: ' ' }}
+          variant="small"
         />
-        <Path
-          start={{ x: width - 123, y: height - 45 }}
-          end={{ x: width - 45, y: 160 }}
-          transition={{ delay: 1.5 }}
+        <SubscriptionTierCard
+          className="dark:bg-polar-950 shadow-3xl z-20"
+          subscriptionTier={{ ...MOCKED_SUBSCRIPTIONS[0], description: ' ' }}
+          variant="small"
         />
-      </motion.svg>
-      <div className="relative z-20 grid grid-flow-col grid-cols-5 grid-rows-4 gap-8">
-        <Box icon={<GitHubIcon width={40} height={40} />} title="Repository" />
-        <Box
-          icon={<HiveOutlined fontSize="large" />}
-          title="Community"
-          transition={{ delay: 0.5 }}
+        <SubscriptionTierCard
+          className="dark:bg-polar-950 absolute right-0 scale-90"
+          subscriptionTier={{ ...MOCKED_SUBSCRIPTIONS[2], description: ' ' }}
+          variant="small"
         />
-        <Box
-          icon={<DiamondOutlined fontSize="large" />}
-          title="Sponsorware"
-          transition={{ delay: 1 }}
-        />
-        <motion.div
-          className="col-start-2 col-end-5 row-start-1 row-end-5"
-          initial={{ filter: 'grayscale(100%)' }}
-          animate={{ filter: 'grayscale(0%)' }}
-          transition={{ delay: 1.5 }}
-        >
-          <SubscriptionTierCard
-            className="dark:bg-polar-950 h-full w-full"
-            subscriptionTier={MOCKED_PRODUCTS[1]}
-          />
-        </motion.div>
-        <Box
-          className="col-start-5 col-end-5 row-start-2 row-end-2"
-          icon={<AttachMoneyOutlined fontSize="large" />}
-          title="Funding"
-          transition={{ delay: 3 }}
-        />
-        <Box
-          className="col-start-5 row-start-3"
-          icon={<AccountBalanceOutlined fontSize="large" />}
-          title="Payout"
-          transition={{ delay: 2.5 }}
-        />
-        <Box
-          className="col-start-5 row-start-4"
-          icon={<LogoIcon size={40} />}
-          title="VAT"
-          transition={{ delay: 2 }}
-        />
+      </div>
+      <div className="flex h-fit w-full flex-col items-center gap-y-4">
+        <div className="flex-center flex flex-col">
+          <span className="hidden dark:inline-block">
+            <IssueBadge
+              darkmode={true}
+              funding={{
+                funding_goal: {
+                  amount: 90000,
+                  currency: 'USD',
+                },
+                pledges_sum: {
+                  amount: 45000,
+                  currency: 'USD',
+                },
+              }}
+              avatarsUrls={[
+                'https://avatars.githubusercontent.com/u/1144727?v=4',
+                'https://avatars.githubusercontent.com/u/281715?v=4',
+                'https://avatars.githubusercontent.com/u/10053249?v=4',
+              ]}
+              upfront_split_to_contributors={75}
+              orgName="polarsource"
+              issueIsClosed={false}
+              donationsEnabled={true}
+            />
+          </span>
+          <span className="dark:hidden">
+            <IssueBadge
+              darkmode={false}
+              funding={{
+                funding_goal: {
+                  amount: 90000,
+                  currency: 'USD',
+                },
+                pledges_sum: {
+                  amount: 45000,
+                  currency: 'USD',
+                },
+              }}
+              avatarsUrls={[
+                'https://avatars.githubusercontent.com/u/1144727?v=4',
+                'https://avatars.githubusercontent.com/u/281715?v=4',
+                'https://avatars.githubusercontent.com/u/10053249?v=4',
+              ]}
+              upfront_split_to_contributors={75}
+              orgName="polarsource"
+              issueIsClosed={false}
+              donationsEnabled={true}
+            />
+          </span>
+        </div>
       </div>
     </div>
   )

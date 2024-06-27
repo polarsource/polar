@@ -177,3 +177,147 @@ export const MOCKED_PRODUCTS: Partial<Product>[] = [
     ],
   },
 ]
+
+export const MOCKED_SUBSCRIPTIONS: Partial<Product>[] = [
+  {
+    name: 'Supporter',
+    type: 'individual',
+    description:
+      'Access to software releases, my private GitHub repository & support in my Discord server.',
+    prices: [
+      {
+        id: '123',
+        created_at: new Date().toDateString(),
+        price_amount: 1900,
+        price_currency: 'usd',
+        type: 'recurring',
+        recurring_interval: 'month',
+        is_archived: false,
+      },
+    ],
+    benefits: [
+      {
+        id: '123',
+        description: 'Binary Downloads',
+        type: 'downloadables',
+        created_at: new Date().toDateString(),
+        selectable: false,
+        deletable: false,
+        organization_id: '123',
+      },
+      {
+        id: '456',
+        description: 'Private GitHub repository',
+        type: 'github_repository',
+        created_at: new Date().toDateString(),
+        selectable: false,
+        deletable: false,
+        organization_id: '123',
+      },
+      {
+        id: '789',
+        description: 'Discord Invite',
+        type: 'discord',
+        created_at: new Date().toDateString(),
+        selectable: false,
+        deletable: false,
+        organization_id: '123',
+      },
+    ],
+    created_at: new Date().toDateString(),
+  },
+  {
+    name: 'Startup',
+    type: 'business',
+    description:
+      'Exclusive support, access to software releases & premium role on Discord.',
+    prices: [
+      {
+        id: '123',
+        created_at: new Date().toDateString(),
+        price_amount: 199900,
+        price_currency: 'usd',
+        type: 'recurring',
+        recurring_interval: 'month',
+        is_archived: false,
+      },
+    ],
+    benefits: [
+      {
+        id: '456',
+        description: 'Private GitHub repository',
+        type: 'github_repository',
+        created_at: new Date().toDateString(),
+        selectable: false,
+        deletable: false,
+        organization_id: '123',
+      },
+      {
+        id: '123',
+        description: 'Binary Downloads',
+        type: 'downloadables',
+        created_at: new Date().toDateString(),
+        selectable: false,
+        deletable: false,
+        organization_id: '123',
+      },
+      {
+        id: '789',
+        description: 'Premium Role on Discord',
+        type: 'discord',
+        created_at: new Date().toDateString(),
+        selectable: false,
+        deletable: false,
+        organization_id: '123',
+      },
+    ],
+    created_at: new Date().toDateString(),
+  },
+  {
+    name: 'Enterprise',
+    type: 'business',
+    description:
+      'Exclusive support, exposure in weekly newsletter & premium role on Discord.',
+    prices: [
+      {
+        id: '123',
+        created_at: new Date().toDateString(),
+        price_amount: 299900,
+        price_currency: 'usd',
+        type: 'recurring',
+        recurring_interval: 'month',
+        is_archived: false,
+      },
+    ],
+    benefits: [
+      {
+        id: '123',
+        description: 'Logotype in Newsletter',
+        type: 'articles',
+        created_at: new Date().toDateString(),
+        selectable: false,
+        deletable: false,
+        organization_id: '123',
+      },
+      {
+        id: '456',
+        description: 'Private GitHub repository',
+        type: 'github_repository',
+        created_at: new Date().toDateString(),
+        selectable: false,
+        deletable: false,
+        organization_id: '123',
+      },
+      {
+        id: '789',
+        description: 'Premium Role on Discord',
+        type: 'discord',
+        created_at: new Date().toDateString(),
+        selectable: false,
+        deletable: false,
+        organization_id: '123',
+      },
+    ],
+    created_at: new Date().toDateString(),
+  },
+]

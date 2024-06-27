@@ -54,11 +54,11 @@ const IssueBadge = ({
           borderRadius: 11,
           boxShadow: '0px 1px 2px rgba(0, 0, 0, 0.06)',
           border: darkmode
-            ? '1px solid rgba(255, 255, 255, 0.05)'
+            ? '1px solid rgba(255, 255, 255, 0.1)'
             : '1px solid rgba(0, 0, 0, 0.11)',
 
           overflow: 'hidden',
-          backgroundColor: darkmode ? '#1D1E27' /*gray-700*/ : 'white',
+          backgroundColor: darkmode ? '#0C0C12' /*gray-700*/ : 'white',
           fontFamily: 'var(--font-inter), Inter var, Inter, sans-serif',
           width: '100%',
         }}
@@ -194,7 +194,7 @@ const BelowBox = ({
   <div
     style={{
       width: '100%',
-      backgroundColor: darkmode ? '#1D1E27' : '#F3F5FC',
+      backgroundColor: darkmode ? '#0C0C12' : '#F3F5FC',
       color: darkmode ? '#8186A4' : '#3381FF',
       fontSize: 10,
       padding: '4px 8px',
@@ -266,13 +266,15 @@ const PolarLogo = ({ darkmode }: { darkmode: boolean }) => (
   <div
     style={{
       display: 'flex',
-      backgroundColor: darkmode ? '#343748' /*polar-600*/ : '#FDFDFC', // gray-50
+      backgroundColor: darkmode ? 'transparent' /*polar-600*/ : '#FDFDFC', // gray-50
       height: 40,
       flexDirection: 'row',
       alignItems: 'center',
       paddingLeft: 12,
       paddingRight: 12,
-      borderLeft: darkmode ? 'none' : '1px solid rgba(0, 0, 0, 0.05)',
+      borderLeft: darkmode
+        ? '1px solid rgba(255, 255, 255, 0.1)'
+        : '1px solid rgba(0, 0, 0, 0.05)',
       flexShrink: '0',
     }}
   >

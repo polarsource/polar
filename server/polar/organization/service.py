@@ -126,6 +126,7 @@ class OrganizationService(ResourceServiceReader[Organization]):
         session: AsyncSession,
         user_id: UUID,
         is_admin_only: bool,
+        filter_by_name: str | None = None,
     ) -> Sequence[Organization]:
         statement = (
             sql.select(Organization)
@@ -140,6 +141,9 @@ class OrganizationService(ResourceServiceReader[Organization]):
 
         if is_admin_only:
             statement = statement.where(UserOrganization.is_admin.is_(True))
+
+        if filter_by_name:
+            statement = statement.where(Organization.name == filter_by_name)
 
         res = await session.execute(statement)
         return res.scalars().unique().all()

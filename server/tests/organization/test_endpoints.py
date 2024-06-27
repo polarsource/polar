@@ -193,6 +193,49 @@ async def test_list_organization_member_admin(
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
 @pytest.mark.auth
+async def test_organization_lookup_not_found_v2(
+    organization: Organization,
+    user_organization: UserOrganization,  # makes User a member of Organization
+    client: AsyncClient,
+) -> None:
+    response = await client.get("/api/v1/organizations?name=foobar")
+
+    assert response.status_code == 200
+    items = response.json()["items"]
+    assert len(items) == 0
+
+
+@pytest.mark.asyncio
+@pytest.mark.http_auto_expunge
+@pytest.mark.auth
+async def test_organization_lookup_v2(
+    organization: Organization,
+    organization_second: Organization,
+    user_organization_admin: UserOrganization,  # makes User an admin of Organization
+    client: AsyncClient,
+    save_fixture: SaveFixture,
+) -> None:
+    user_organization_second_admin = UserOrganization(
+        user_id=user_organization_admin.user_id,
+        organization_id=organization_second.id,
+        is_admin=True,
+    )
+    await save_fixture(user_organization_second_admin)
+    unfiltered = await client.get("/api/v1/organizations")
+    assert unfiltered.status_code == 200
+    items = unfiltered.json()["items"]
+    assert len(items) == 2
+
+    filtered = await client.get(f"/api/v1/organizations?name={organization.name}")
+    assert filtered.status_code == 200
+    items = filtered.json()["items"]
+    assert len(items) == 1
+    assert items[0]["id"] == str(organization.id)
+
+
+@pytest.mark.asyncio
+@pytest.mark.http_auto_expunge
+@pytest.mark.auth
 async def test_organization_lookup_not_found(
     organization: Organization, client: AsyncClient
 ) -> None:

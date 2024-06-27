@@ -10,7 +10,6 @@
         "/api/v1/users/me": {
             "get": {
                 "tags": [
-                    "users",
                     "users"
                 ],
                 "summary": "Get Authenticated",
@@ -41,7 +40,6 @@
             },
             "put": {
                 "tags": [
-                    "users",
                     "users"
                 ],
                 "summary": "Update Preferences",
@@ -94,7 +92,6 @@
         "/api/v1/users/me/scopes": {
             "get": {
                 "tags": [
-                    "users",
                     "users"
                 ],
                 "summary": "Scopes",
@@ -127,7 +124,6 @@
         "/api/v1/users/me/upgrade": {
             "post": {
                 "tags": [
-                    "users",
                     "users"
                 ],
                 "summary": "Maintainer Upgrade",
@@ -160,7 +156,6 @@
         "/api/v1/users/me/account": {
             "patch": {
                 "tags": [
-                    "users",
                     "users"
                 ],
                 "summary": "Set Account",
@@ -213,7 +208,6 @@
         "/api/v1/users/me/stripe_customer_portal": {
             "post": {
                 "tags": [
-                    "users",
                     "users"
                 ],
                 "summary": "Create Stripe Customer Portal",
@@ -1118,8 +1112,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Anonymous"
+                    "Anonymous",
+                    "User"
                 ]
             }
         },
@@ -1804,8 +1798,7 @@
         "/api/v1/users/downloadables/": {
             "get": {
                 "tags": [
-                    "users",
-                    "downloadables"
+                    "users"
                 ],
                 "summary": "List Downloadables",
                 "operationId": "users:list_downloadables",
@@ -1915,8 +1908,7 @@
         "/api/v1/users/downloadables/{token}": {
             "get": {
                 "tags": [
-                    "users",
-                    "downloadables"
+                    "users"
                 ],
                 "summary": "Get Downloadable",
                 "operationId": "users:get_downloadable",
@@ -4076,8 +4068,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Anonymous"
+                    "Anonymous",
+                    "User"
                 ]
             }
         },
@@ -4131,8 +4123,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Anonymous"
+                    "Anonymous",
+                    "User"
                 ]
             }
         },
@@ -4238,8 +4230,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Anonymous"
+                    "Anonymous",
+                    "User"
                 ]
             }
         },
@@ -4435,8 +4427,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Anonymous"
+                    "Anonymous",
+                    "User"
                 ]
             }
         },
@@ -4510,8 +4502,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Anonymous"
+                    "Anonymous",
+                    "User"
                 ]
             }
         },
@@ -4569,8 +4561,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Anonymous"
+                    "Anonymous",
+                    "User"
                 ]
             },
             "patch": {
@@ -4793,8 +4785,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Anonymous"
+                    "Anonymous",
+                    "User"
                 ]
             }
         },
@@ -5114,8 +5106,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Anonymous"
+                    "Anonymous",
+                    "User"
                 ]
             }
         },
@@ -5559,8 +5551,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Anonymous"
+                    "Anonymous",
+                    "User"
                 ]
             }
         },
@@ -5625,8 +5617,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Anonymous"
+                    "Anonymous",
+                    "User"
                 ]
             }
         },
@@ -5678,8 +5670,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Anonymous"
+                    "Anonymous",
+                    "User"
                 ]
             }
         },
@@ -5766,8 +5758,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Anonymous"
+                    "Anonymous",
+                    "User"
                 ]
             },
             "post": {
@@ -6293,8 +6285,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Anonymous"
+                    "Anonymous",
+                    "User"
                 ]
             }
         },
@@ -6349,8 +6341,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Anonymous"
+                    "Anonymous",
+                    "User"
                 ]
             }
         },
@@ -6515,8 +6507,8 @@
                     }
                 ],
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Anonymous"
+                    "Anonymous",
+                    "User"
                 ]
             }
         },
@@ -6688,8 +6680,8 @@
                     }
                 ],
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Anonymous"
+                    "Anonymous",
+                    "User"
                 ]
             }
         },
@@ -6752,8 +6744,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Anonymous"
+                    "Anonymous",
+                    "User"
                 ]
             }
         },
@@ -7221,9 +7213,9 @@
                             },
                             "description": "Filter by the type of purchase the customer made.",
                             "default": [
-                                "donation",
+                                "order",
                                 "subscription",
-                                "order"
+                                "donation"
                             ],
                             "title": "Customer Types"
                         },
@@ -8195,9 +8187,9 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
+                    "Anonymous",
                     "Organization",
-                    "User",
-                    "Anonymous"
+                    "User"
                 ]
             },
             "post": {
@@ -8320,9 +8312,9 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
+                    "Anonymous",
                     "Organization",
-                    "User",
-                    "Anonymous"
+                    "User"
                 ]
             },
             "patch": {
@@ -10155,8 +10147,8 @@
                     }
                 ],
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Anonymous"
+                    "Anonymous",
+                    "User"
                 ]
             }
         },
@@ -10219,8 +10211,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Anonymous"
+                    "Anonymous",
+                    "User"
                 ]
             }
         },
@@ -10605,8 +10597,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Anonymous"
+                    "Anonymous",
+                    "User"
                 ]
             },
             "put": {
@@ -10666,8 +10658,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Anonymous"
+                    "Anonymous",
+                    "User"
                 ]
             },
             "delete": {
@@ -10717,8 +10709,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Anonymous"
+                    "Anonymous",
+                    "User"
                 ]
             }
         },
@@ -10765,8 +10757,8 @@
                     }
                 ],
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Anonymous"
+                    "Anonymous",
+                    "User"
                 ]
             }
         },
@@ -10939,8 +10931,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "benefits:write",
-                            "benefits:read"
+                            "benefits:read",
+                            "benefits:write"
                         ]
                     },
                     {
@@ -11155,8 +11147,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "benefits:write",
-                            "benefits:read"
+                            "benefits:read",
+                            "benefits:write"
                         ]
                     },
                     {
@@ -11445,8 +11437,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "benefits:write",
-                            "benefits:read"
+                            "benefits:read",
+                            "benefits:write"
                         ]
                     },
                     {
@@ -12148,7 +12140,8 @@
         "/api/v1/products/": {
             "get": {
                 "tags": [
-                    "products"
+                    "products",
+                    "featured"
                 ],
                 "summary": "List Products",
                 "description": "List products.",
@@ -12299,14 +12292,15 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
+                    "Anonymous",
                     "Organization",
-                    "User",
-                    "Anonymous"
+                    "User"
                 ]
             },
             "post": {
                 "tags": [
-                    "products"
+                    "products",
+                    "featured"
                 ],
                 "summary": "Create Product",
                 "description": "Create a product.",
@@ -12370,7 +12364,8 @@
         "/api/v1/products/{id}": {
             "get": {
                 "tags": [
-                    "products"
+                    "products",
+                    "featured"
                 ],
                 "summary": "Get Product",
                 "description": "Get a product by ID.",
@@ -12433,14 +12428,15 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
+                    "Anonymous",
                     "Organization",
-                    "User",
-                    "Anonymous"
+                    "User"
                 ]
             },
             "patch": {
                 "tags": [
-                    "products"
+                    "products",
+                    "featured"
                 ],
                 "summary": "Update Product",
                 "description": "Update a product.",
@@ -12530,7 +12526,8 @@
         "/api/v1/products/{id}/benefits": {
             "post": {
                 "tags": [
-                    "products"
+                    "products",
+                    "featured"
                 ],
                 "summary": "Update Product Benefits",
                 "description": "Update benefits granted by a product.",
@@ -12992,8 +12989,8 @@
                     }
                 ],
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Anonymous"
+                    "Anonymous",
+                    "User"
                 ]
             }
         },

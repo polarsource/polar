@@ -33,7 +33,8 @@ const BenefitCard = ({
   icon,
 }: BenefitCardProps) => {
   return (
-    <div
+    <Link
+      href="/benefits"
       className={twMerge(
         'hover:bg-gray-75 dark:hover:bg-polar-900 dark:bg-polar-950 flex flex-col justify-between gap-y-8 bg-white p-8 transition-colors',
         className,
@@ -44,7 +45,7 @@ const BenefitCard = ({
         <h3>{title}</h3>
         <p className="dark:text-polar-200 text-gray-500">{description}</p>
       </div>
-    </div>
+    </Link>
   )
 }
 

@@ -87,37 +87,37 @@ const PlatformPopover = () => {
               <PopoverLinkItem
                 title="Introducing Benefits"
                 description="Offer exclusive benefits to your supporters"
-                link="/#benefits"
+                link="/benefits"
               />
               <PopoverLinkItem
                 title="Private GitHub Repositories"
                 description="Grant access to private repositories"
-                link="/#benefits"
+                link="/benefits"
               />
               <PopoverLinkItem
                 title="Discord Server Access"
                 description="Automatic Discord role assignment"
-                link="/#benefits"
+                link="/benefits"
               />
               <PopoverLinkItem
                 title="File Downloads"
                 description="Access to exclusive file downloads"
-                link="/#benefits"
+                link="/benefits"
               />
               <PopoverLinkItem
                 title="Advertisements"
                 description="Promote your supporters in READMEs & Newsletters"
-                link="/#benefits"
+                link="/benefits"
               />
               <PopoverLinkItem
                 title="Premium Newsletters"
                 description="Early & private access to newsletters"
-                link="/#benefits"
+                link="/benefits"
               />
               <PopoverLinkItem
                 title="Custom"
                 description="Offer custom benefits for your special usecase"
-                link="/#benefits"
+                link="/benefits"
               />
             </div>
           </div>

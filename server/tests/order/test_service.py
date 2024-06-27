@@ -46,6 +46,7 @@ def construct_stripe_invoice(
     customer_id: str = "CUSTOMER_ID",
     lines: list[tuple[str, bool]] = [("PRICE_ID", False)],
     metadata: dict[str, str] = {},
+    billing_reason: str = "subscription_create",
 ) -> stripe_lib.Invoice:
     return stripe_lib.Invoice.construct_from(
         {
@@ -63,6 +64,7 @@ def construct_stripe_invoice(
                 ]
             },
             "metadata": metadata,
+            "billing_reason": billing_reason,
         },
         None,
     )
@@ -286,7 +288,10 @@ class TestCreateOrderFromStripe:
         assert updated_payment_transaction is not None
         assert updated_payment_transaction.order_id == order.id
 
-        enqueue_job_mock.assert_not_called()
+        enqueue_job_mock.assert_called_once_with(
+            "order.discord_notification",
+            order_id=order.id,
+        )
 
     async def test_subscription_proration(
         self,
@@ -394,7 +399,10 @@ class TestCreateOrderFromStripe:
         assert updated_payment_transaction is not None
         assert updated_payment_transaction.order_id == order.id
 
-        enqueue_job_mock.assert_not_called()
+        enqueue_job_mock.assert_called_once_with(
+            "order.discord_notification",
+            order_id=order.id,
+        )
 
     async def test_one_time_product(
         self,
@@ -409,6 +417,7 @@ class TestCreateOrderFromStripe:
         invoice = construct_stripe_invoice(
             lines=[(product_one_time.prices[0].stripe_price_id, False)],
             subscription_id=None,
+            billing_reason="manual",
         )
         invoice_total = invoice.total - (invoice.tax or 0)
 

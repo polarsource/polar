@@ -27,7 +27,7 @@ from ..schemas.user import (
 
 log = structlog.get_logger()
 
-router = APIRouter(tags=["users"])
+router = APIRouter()
 
 
 @router.get("/me", response_model=UserRead)

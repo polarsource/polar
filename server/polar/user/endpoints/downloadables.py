@@ -13,7 +13,7 @@ from ..service.downloadables import downloadable as downloadable_service
 
 log = structlog.get_logger()
 
-router = APIRouter(prefix="/downloadables", tags=["downloadables"])
+router = APIRouter(prefix="/downloadables")
 
 
 @router.get(

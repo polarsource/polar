@@ -488,3 +488,13 @@ class Transaction(RecordModel):
     def net_amount(self) -> int:
         inclusive = 1 if self.type == TransactionType.balance else -1
         return self.gross_amount + inclusive * self.incurred_amount
+
+    @property
+    def reversed_amount(self) -> int:
+        return sum(
+            transaction.amount for transaction in self.balance_reversal_transactions
+        )
+
+    @property
+    def transferable_amount(self) -> int:
+        return self.amount + self.reversed_amount

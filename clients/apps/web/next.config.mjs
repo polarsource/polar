@@ -236,11 +236,6 @@ const nextConfig = {
         permanent: false,
       },
       {
-        source: '/benefits(.*)',
-        destination: '/subscriptions',
-        permanent: false,
-      },
-      {
         source: '/finance',
         destination: '/finance/incoming',
         permanent: false,

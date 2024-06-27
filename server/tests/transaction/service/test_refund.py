@@ -10,6 +10,9 @@ from polar.models import Account, Pledge, Transaction, User
 from polar.models.transaction import PaymentProcessor, TransactionType
 from polar.postgres import AsyncSession
 from polar.transaction.service.balance import BalanceTransactionService
+from polar.transaction.service.balance import (
+    balance_transaction as balance_transaction_service,
+)
 from polar.transaction.service.processor_fee import ProcessorFeeTransactionService
 from polar.transaction.service.refund import (  # type: ignore[attr-defined]
     RefundUnknownPaymentTransaction,
@@ -19,6 +22,7 @@ from polar.transaction.service.refund import (
     refund_transaction as refund_transaction_service,
 )
 from tests.fixtures.database import SaveFixture
+from tests.transaction.conftest import create_transaction
 
 
 def build_stripe_balance_transaction(
@@ -273,3 +277,36 @@ class TestCreateRefunds:
         assert second_call[1]["amount"] == new_refund.amount * 0.25
 
         create_refund_fees_mock.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+@pytest.mark.skip_db_asserts
+class TestCreateReversalBalancesForPayment:
+    async def test_valid(
+        self, save_fixture: SaveFixture, session: AsyncSession, account: Account
+    ) -> None:
+        payment_transaction = await create_transaction(
+            save_fixture, type=TransactionType.payment, charge_id="STRIPE_CHARGE_ID"
+        )
+        await balance_transaction_service.create_balance(
+            session,
+            source_account=None,
+            amount=payment_transaction.amount,
+            destination_account=account,
+            payment_transaction=payment_transaction,
+        )
+        await create_transaction(
+            save_fixture,
+            type=TransactionType.refund,
+            amount=-payment_transaction.amount,
+            payment_transaction=payment_transaction,
+            charge_id="STRIPE_CHARGE_ID",
+        )
+
+        reversal_balances = (
+            await refund_transaction_service.create_reversal_balances_for_payment(
+                session, payment_transaction=payment_transaction
+            )
+        )
+
+        assert len(reversal_balances) == 1

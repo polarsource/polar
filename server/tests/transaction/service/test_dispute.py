@@ -9,6 +9,9 @@ from polar.models import Account, Pledge, Transaction, User
 from polar.models.transaction import PaymentProcessor, TransactionType
 from polar.postgres import AsyncSession
 from polar.transaction.service.balance import BalanceTransactionService
+from polar.transaction.service.balance import (
+    balance_transaction as balance_transaction_service,
+)
 from polar.transaction.service.dispute import (  # type: ignore[attr-defined]
     DisputeUnknownPaymentTransaction,
     processor_fee_transaction_service,
@@ -18,6 +21,7 @@ from polar.transaction.service.dispute import (
 )
 from polar.transaction.service.processor_fee import ProcessorFeeTransactionService
 from tests.fixtures.database import SaveFixture
+from tests.transaction.conftest import create_transaction
 
 
 def build_stripe_balance_transaction(
@@ -304,7 +308,7 @@ class TestCreateDisputeReversal:
         )
         await save_fixture(payment_transaction)
 
-        dispute_transaction = Transaction(
+        dispute_reversal_transaction = Transaction(
             type=TransactionType.dispute,
             processor=PaymentProcessor.stripe,
             currency=charge.currency,
@@ -315,7 +319,7 @@ class TestCreateDisputeReversal:
             charge_id=charge.id,
             pledge=pledge,
         )
-        await save_fixture(dispute_transaction)
+        await save_fixture(dispute_reversal_transaction)
 
         # First balance
         outgoing_balance_1 = Transaction(
@@ -446,13 +450,15 @@ class TestCreateDisputeReversal:
         # then
         session.expunge_all()
 
-        dispute_transaction = await dispute_transaction_service.create_dispute_reversal(
-            session, dispute=dispute
+        dispute_reversal_transaction = (
+            await dispute_transaction_service.create_dispute_reversal(
+                session, dispute=dispute
+            )
         )
 
-        assert dispute_transaction.type == TransactionType.dispute
-        assert dispute_transaction.processor == PaymentProcessor.stripe
-        assert dispute_transaction.amount == dispute.amount
+        assert dispute_reversal_transaction.type == TransactionType.dispute_reversal
+        assert dispute_reversal_transaction.processor == PaymentProcessor.stripe
+        assert dispute_reversal_transaction.amount == dispute.amount
 
         assert balance_transaction_service_mock.create_balance.call_count == 2
 
@@ -465,3 +471,72 @@ class TestCreateDisputeReversal:
         assert second_call[1]["amount"] == incoming_balance_2.amount
 
         create_dispute_fees_mock.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+@pytest.mark.skip_db_asserts
+class TestCreateReversalBalancesForPayment:
+    async def test_not_reversed(
+        self, save_fixture: SaveFixture, session: AsyncSession, account: Account
+    ) -> None:
+        payment_transaction = await create_transaction(
+            save_fixture, type=TransactionType.payment, charge_id="STRIPE_CHARGE_ID"
+        )
+        await balance_transaction_service.create_balance(
+            session,
+            source_account=None,
+            amount=payment_transaction.amount,
+            destination_account=account,
+            payment_transaction=payment_transaction,
+        )
+        await create_transaction(
+            save_fixture,
+            type=TransactionType.dispute,
+            amount=-payment_transaction.amount,
+            charge_id="STRIPE_CHARGE_ID",
+            dispute_id="STRIPE_DISPUTE_ID",
+        )
+
+        reversal_balances = (
+            await dispute_transaction_service.create_reversal_balances_for_payment(
+                session, payment_transaction=payment_transaction
+            )
+        )
+
+        assert len(reversal_balances) == 1
+
+    async def test_reversed(
+        self, save_fixture: SaveFixture, session: AsyncSession, account: Account
+    ) -> None:
+        payment_transaction = await create_transaction(
+            save_fixture, type=TransactionType.payment, charge_id="STRIPE_CHARGE_ID"
+        )
+        await balance_transaction_service.create_balance(
+            session,
+            source_account=None,
+            amount=payment_transaction.amount,
+            destination_account=account,
+            payment_transaction=payment_transaction,
+        )
+        await create_transaction(
+            save_fixture,
+            type=TransactionType.dispute,
+            amount=-payment_transaction.amount,
+            dispute_id="STRIPE_DISPUTE_ID",
+            charge_id="STRIPE_CHARGE_ID",
+        )
+        await create_transaction(
+            save_fixture,
+            type=TransactionType.dispute_reversal,
+            amount=payment_transaction.amount,
+            dispute_id="STRIPE_DISPUTE_ID",
+            charge_id="STRIPE_CHARGE_ID",
+        )
+
+        reversal_balances = (
+            await dispute_transaction_service.create_reversal_balances_for_payment(
+                session, payment_transaction=payment_transaction
+            )
+        )
+
+        assert len(reversal_balances) == 0

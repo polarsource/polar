@@ -33,6 +33,8 @@ class TransactionType(StrEnum):
     """Polar refunded a payment (totally or partially)."""
     dispute = "dispute"
     """A Polar payment is disputed (totally or partially)."""
+    dispute_reversal = "dispute_reversal"
+    """A Polar payment dispute is reversed (totally or partially)."""
     balance = "balance"
     """Money flow between Polar and a user's account."""
     payout = "payout"

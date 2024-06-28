@@ -12297,6 +12297,7 @@ export const TransactionType = {
     PROCESSOR_FEE: 'processor_fee',
     REFUND: 'refund',
     DISPUTE: 'dispute',
+    DISPUTE_REVERSAL: 'dispute_reversal',
     BALANCE: 'balance',
     PAYOUT: 'payout'
 } as const;

@@ -50,7 +50,7 @@ const WebhookSettings = (props: { org: Organization }) => {
               Add Endpoint
             </Button>
             <Link
-              href="https://api.polar.sh/docs#/webhooks/"
+              href="https://docs.polar.sh/api/webhooks"
               className="shrink-0"
             >
               <Button className="gap-x-1" asChild variant="ghost">

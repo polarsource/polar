@@ -2,9 +2,19 @@ import openapiSchema from '@/openapi.json'
 import { CONFIG } from '@/utils/config'
 import SwaggerParser from '@apidevtools/swagger-parser'
 import { OpenAPIV3_1 } from 'openapi-types'
-import { APIMethod } from './APINavigation'
 
 const swaggerParser = new SwaggerParser()
+
+enum HttpMethods {
+  GET = 'get',
+  PUT = 'put',
+  POST = 'post',
+  DELETE = 'delete',
+  OPTIONS = 'options',
+  HEAD = 'head',
+  PATCH = 'patch',
+  TRACE = 'trace',
+}
 
 export const fetchSchema = async (): Promise<OpenAPIV3_1.Document> => {
   let schema = openapiSchema as any
@@ -22,8 +32,8 @@ export const fetchSchema = async (): Promise<OpenAPIV3_1.Document> => {
   )
 }
 
-const isMethod = (method: string): method is APIMethod =>
-  ['get', 'post', 'put', 'patch', 'delete'].includes(method)
+const isMethod = (method: string): method is HttpMethods =>
+  Object.values(HttpMethods).includes(method as HttpMethods)
 
 export class EndpointError extends Error {
   constructor(endpoint: string[]) {
@@ -33,7 +43,7 @@ export class EndpointError extends Error {
 
 export interface EndpointMetadata {
   operation: OpenAPIV3_1.OperationObject
-  method: APIMethod
+  method: HttpMethods
   apiEndpointPath: string
 }
 
@@ -114,7 +124,7 @@ export const getUnionSchemas = (schema: OpenAPIV3_1.SchemaObject) => {
   return null
 }
 
-const _generateScalarSchemaExample = (schema: OpenAPIV3_1.SchemaObject) => {
+const generateScalarSchemaExample = (schema: OpenAPIV3_1.SchemaObject) => {
   if (schema.example) {
     return schema.example
   }
@@ -197,7 +207,7 @@ export const generateSchemaExample = (
     }, {})
   }
 
-  return _generateScalarSchemaExample(schema)
+  return generateScalarSchemaExample(schema)
 }
 
 const getParametersExample = (
@@ -345,4 +355,110 @@ polar.${namespace}.${endpointName}(${objectToString(requestParameters)})
   .then(console.log)
   .catch(console.error);
 `
+}
+
+enum APITags {
+  documented = 'documented',
+  featured = 'featured',
+}
+
+export interface APISection {
+  name: string
+  endpoints: {
+    id: string
+    name: string
+    path: string
+    method: HttpMethods
+    documented: boolean
+    featured: boolean
+  }[]
+}
+
+export const isFeaturedEndpoint = (
+  endpoint: OpenAPIV3_1.OperationObject,
+): boolean => {
+  if (!endpoint.tags) {
+    return false
+  }
+  return endpoint.tags.includes(APITags.featured)
+}
+
+export const isNotFeaturedEndpoint = (
+  endpoint: OpenAPIV3_1.OperationObject,
+): boolean => !isFeaturedEndpoint(endpoint)
+
+export const getAPISections = (
+  schema: OpenAPIV3_1.Document,
+  endpointFilter?: (endpoint: OpenAPIV3_1.OperationObject) => boolean,
+): APISection[] => {
+  if (!schema.paths) {
+    return []
+  }
+
+  const sectionsMap: Record<string, APISection> = {}
+
+  // Iterate over all paths
+  for (const [path, endpoints] of Object.entries(schema.paths)) {
+    // No endpoints for this path
+    if (!endpoints) {
+      continue
+    }
+    // Iterate over all methods in this path
+    for (const method of Object.values(HttpMethods)) {
+      const endpoint = endpoints[method]
+      // No endpoint for this method
+      if (!endpoint) {
+        continue
+      }
+      // Skip if doesn't pass the filter
+      if (endpointFilter && !endpointFilter(endpoint)) {
+        continue
+      }
+
+      const tags = endpoint.tags
+      // No tag, skip this endpoint
+      if (!tags || tags.length === 0) {
+        console.warn(`Endpoint ${path} ${method} has no tags`)
+        continue
+      }
+
+      // No operationId, skip this endpoint
+      if (!endpoint.operationId) {
+        console.warn(`Endpoint ${path} ${method} has no operationId`)
+        continue
+      }
+
+      // Skip if not marked as documented
+      if (!tags.includes(APITags.documented)) {
+        continue
+      }
+
+      const groupTag = tags[0]
+      // Make sure the first tag is a valid group tag
+      if (Object.values(APITags).includes(groupTag as APITags)) {
+        console.warn(`Endpoint ${path} ${method} doesn't have a group tag`)
+        continue
+      }
+      const sectionEndpoint = {
+        id: endpoint.operationId,
+        name: endpoint.summary || endpoint.operationId,
+        path,
+        method,
+        documented: tags.includes(APITags.documented),
+        featured: tags.includes(APITags.featured),
+      }
+      const section = sectionsMap[groupTag] || {
+        name: groupTag
+          .replace(/_/g, ' ')
+          .replace(/\b\w/g, (match) => match.toUpperCase()),
+        endpoints: [],
+      }
+      section.endpoints.push(sectionEndpoint)
+      sectionsMap[groupTag] = section
+    }
+  }
+
+  return Object.values(sectionsMap)
+    .filter((section) => section.endpoints.length > 0)
+    .sort((a, b) => a.name.localeCompare(b.name, 'en-US'))
 }

@@ -15,14 +15,23 @@ import {
 } from '@mui/icons-material'
 import { AnimatePresence, motion } from 'framer-motion'
 import { usePathname } from 'next/navigation'
+import { OpenAPIV3_1 } from 'openapi-types'
 import { Separator } from 'polarkit/components/ui/separator'
 import { PropsWithChildren, useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
-import { useSections } from './APINavigation'
 import { NavigationItem } from './NavigationItem'
 import { SearchPalette } from './SearchPalette'
+import {
+  getAPISections,
+  isFeaturedEndpoint,
+  isNotFeaturedEndpoint,
+} from './openapi'
 
-export const Navigation = () => {
+const Navigation = ({
+  openAPISchema,
+}: {
+  openAPISchema: OpenAPIV3_1.Document
+}) => {
   const pathname = usePathname()
 
   const shouldRenderOverviewSections = pathname.includes('/docs/overview')
@@ -40,90 +49,19 @@ export const Navigation = () => {
         <>
           <APISections />
           <WebhooksReferenceSections />
-          <APIReferenceSections />
+          <APIReferenceSections
+            openAPISchema={openAPISchema}
+            filter={isFeaturedEndpoint}
+            title="Featured Endpoints"
+          />
+          <APIReferenceSections
+            openAPISchema={openAPISchema}
+            filter={isNotFeaturedEndpoint}
+            title="Other Endpoints"
+          />
         </>
       )}
     </div>
-  )
-}
-
-export const DocumentationPageSidebar = () => {
-  const { isShown, show, hide, toggle } = useModal()
-
-  return (
-    <div className="flex w-full flex-shrink-0 flex-col gap-y-12 md:w-60">
-      <div className="hidden flex-col gap-y-12 md:flex">
-        <CommandPaletteTrigger onClick={show} />
-      </div>
-      <ul className="flex flex-col">
-        <li>
-          <NavigationItem
-            icon={<SpaceDashboardOutlined fontSize="inherit" />}
-            href="/docs/overview"
-          >
-            Overview
-          </NavigationItem>
-        </li>
-        <li>
-          <NavigationItem
-            icon={<ApiOutlined fontSize="inherit" />}
-            href="/docs/api"
-          >
-            API Reference
-          </NavigationItem>
-        </li>
-        <li className="hidden">
-          <NavigationItem
-            icon={<DescriptionOutlined fontSize="inherit" />}
-            href="/docs/guides"
-          >
-            Guides
-          </NavigationItem>
-        </li>
-      </ul>
-      <Separator />
-      <Navigation />
-
-      <SearchPalette isShown={isShown} toggle={toggle} hide={hide} />
-    </div>
-  )
-}
-
-export const MobileNav = () => {
-  const [mobileNavOpen, setMobileNavOpen] = useState(false)
-  const pathname = usePathname()
-
-  useEffect(() => {
-    setMobileNavOpen(false)
-  }, [pathname])
-
-  const header = (
-    <div className="dark:bg-polar-900 dark:border-polar-700 fixed left-0 right-0 top-0 z-50 flex flex-row items-center justify-between border-b border-gray-200 bg-white p-4 md:hidden">
-      <a href="/" className="flex flex-shrink-0 flex-row items-center gap-x-3">
-        <LogoIcon className="h-10 w-10 text-blue-500 dark:text-blue-400" />
-        <span className="font-medium">Documentation</span>
-      </a>
-
-      <div
-        className="dark:text-polar-200 flex flex-row items-center justify-center text-gray-700"
-        onClick={() => setMobileNavOpen((toggle) => !toggle)}
-      >
-        {mobileNavOpen ? <CloseOutlined /> : <ShortTextOutlined />}
-      </div>
-    </div>
-  )
-
-  return mobileNavOpen ? (
-    <div className="flex h-full flex-col px-8 py-4">
-      <div className="dark:bg-polar-900 bg-gray-75 relative flex flex-row items-center justify-between">
-        {header}
-      </div>
-      <div className="z-10 flex h-full flex-col pt-8">
-        <DocumentationPageSidebar />
-      </div>
-    </div>
-  ) : (
-    header
   )
 }
 
@@ -264,18 +202,25 @@ const WebhooksReferenceSections = () => {
   )
 }
 
-const APIReferenceSections = () => {
-  const sections = useSections()
-
+const APIReferenceSections = ({
+  openAPISchema,
+  filter,
+  title,
+}: {
+  openAPISchema: OpenAPIV3_1.Document
+  filter: (endpoint: OpenAPIV3_1.PathItemObject) => boolean
+  title: string
+}) => {
+  const sections = getAPISections(openAPISchema, filter)
   return (
     <div className="flex flex-col gap-y-6">
-      <h3>API Endpoints</h3>
+      <h3>{title}</h3>
       <div className="flex flex-col gap-y-5">
         {sections.map((section) => (
           <CollapsibleSection key={section.name} title={section.name}>
             {section.endpoints.map((endpoint) => (
               <NavigationItem
-                key={endpoint.path + endpoint.method}
+                key={endpoint.id}
                 className="m-0 bg-transparent p-0 text-sm dark:bg-transparent"
                 href={`/docs/api-reference${endpoint.path}${endpoint.path.endsWith('/') ? '' : '/'}${endpoint.method}`}
                 active={(pathname) => {
@@ -364,5 +309,93 @@ const CollapsibleSection = ({
       </div>
       {isOpen && <div className="flex flex-col gap-y-4 py-2">{children}</div>}
     </div>
+  )
+}
+
+export const DocumentationPageSidebar = ({
+  openAPISchema,
+}: {
+  openAPISchema: OpenAPIV3_1.Document
+}) => {
+  const { isShown, show, hide, toggle } = useModal()
+
+  return (
+    <div className="flex w-full flex-shrink-0 flex-col gap-y-12 md:w-60">
+      <div className="hidden flex-col gap-y-12 md:flex">
+        <CommandPaletteTrigger onClick={show} />
+      </div>
+      <ul className="flex flex-col">
+        <li>
+          <NavigationItem
+            icon={<SpaceDashboardOutlined fontSize="inherit" />}
+            href="/docs/overview"
+          >
+            Overview
+          </NavigationItem>
+        </li>
+        <li>
+          <NavigationItem
+            icon={<ApiOutlined fontSize="inherit" />}
+            href="/docs/api"
+          >
+            API Reference
+          </NavigationItem>
+        </li>
+        <li className="hidden">
+          <NavigationItem
+            icon={<DescriptionOutlined fontSize="inherit" />}
+            href="/docs/guides"
+          >
+            Guides
+          </NavigationItem>
+        </li>
+      </ul>
+      <Separator />
+      <Navigation openAPISchema={openAPISchema} />
+
+      <SearchPalette isShown={isShown} toggle={toggle} hide={hide} />
+    </div>
+  )
+}
+
+export const MobileNav = ({
+  openAPISchema,
+}: {
+  openAPISchema: OpenAPIV3_1.Document
+}) => {
+  const [mobileNavOpen, setMobileNavOpen] = useState(false)
+  const pathname = usePathname()
+
+  useEffect(() => {
+    setMobileNavOpen(false)
+  }, [pathname])
+
+  const header = (
+    <div className="dark:bg-polar-900 dark:border-polar-700 fixed left-0 right-0 top-0 z-50 flex flex-row items-center justify-between border-b border-gray-200 bg-white p-4 md:hidden">
+      <a href="/" className="flex flex-shrink-0 flex-row items-center gap-x-3">
+        <LogoIcon className="h-10 w-10 text-blue-500 dark:text-blue-400" />
+        <span className="font-medium">Documentation</span>
+      </a>
+
+      <div
+        className="dark:text-polar-200 flex flex-row items-center justify-center text-gray-700"
+        onClick={() => setMobileNavOpen((toggle) => !toggle)}
+      >
+        {mobileNavOpen ? <CloseOutlined /> : <ShortTextOutlined />}
+      </div>
+    </div>
+  )
+
+  return mobileNavOpen ? (
+    <div className="flex h-full flex-col px-8 py-4">
+      <div className="dark:bg-polar-900 bg-gray-75 relative flex flex-row items-center justify-between">
+        {header}
+      </div>
+      <div className="z-10 flex h-full flex-col pt-8">
+        <DocumentationPageSidebar openAPISchema={openAPISchema} />
+      </div>
+    </div>
+  ) : (
+    header
   )
 }

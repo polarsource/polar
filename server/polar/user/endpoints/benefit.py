@@ -9,6 +9,7 @@ from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.sorting import Sorting, SortingGetter
 from polar.models import Benefit
 from polar.models.benefit import BenefitType
+from polar.openapi import APITag
 from polar.postgres import get_db_session
 from polar.routing import APIRouter
 
@@ -17,7 +18,7 @@ from ..schemas.benefit import UserBenefit, UserBenefitAdapter
 from ..service.benefit import SortProperty
 from ..service.benefit import user_benefit as user_benefit_service
 
-router = APIRouter(prefix="/benefits")
+router = APIRouter(prefix="/benefits", tags=[APITag.documented, APITag.featured])
 
 BenefitID = Annotated[UUID4, Path(description="The benefit ID.")]
 BenefitNotFound = {

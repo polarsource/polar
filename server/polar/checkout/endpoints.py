@@ -1,6 +1,7 @@
 import structlog
 from fastapi import Depends
 
+from polar.openapi import APITag
 from polar.postgres import AsyncSession, get_db_session
 from polar.routing import APIRouter
 
@@ -10,7 +11,9 @@ from .service import checkout as checkout_service
 
 log = structlog.get_logger()
 
-router = APIRouter(prefix="/checkouts", tags=["checkouts"])
+router = APIRouter(
+    prefix="/checkouts", tags=["checkouts", APITag.documented, APITag.featured]
+)
 
 
 @router.post("/", summary="Create Checkout", response_model=Checkout, status_code=201)

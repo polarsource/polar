@@ -9,6 +9,7 @@ from polar.exceptions import BadRequest, NotPermitted, ResourceNotFound
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.models import Benefit
 from polar.models.benefit import BenefitType
+from polar.openapi import APITag
 from polar.postgres import AsyncSession, get_db_session
 from polar.posthog import posthog
 from polar.routing import APIRouter
@@ -21,7 +22,7 @@ from .service.benefit_grant import benefit_grant as benefit_grant_service
 
 log = structlog.get_logger()
 
-router = APIRouter(prefix="/benefits", tags=["benefits"])
+router = APIRouter(prefix="/benefits", tags=["benefits", APITag.documented])
 
 BenefitID = Annotated[UUID4, Path(description="The benefit ID.")]
 BenefitNotFound = {

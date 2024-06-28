@@ -5,6 +5,7 @@ from pydantic import UUID4
 
 from polar.exceptions import PolarRequestValidationError
 from polar.models.product_price import ProductPriceType
+from polar.openapi import APITag
 from polar.postgres import AsyncSession, get_db_session
 from polar.routing import APIRouter
 
@@ -14,7 +15,7 @@ from .queries import Interval
 from .schemas import MetricsLimits, MetricsResponse
 from .service import metrics as metrics_service
 
-router = APIRouter(prefix="/metrics", tags=["metrics"])
+router = APIRouter(prefix="/metrics", tags=["metrics", APITag.documented])
 
 
 @router.get("/", summary="Get Metrics", response_model=MetricsResponse)

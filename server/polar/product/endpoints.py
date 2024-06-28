@@ -8,6 +8,7 @@ from polar.exceptions import NotPermitted, ResourceNotFound
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.models import Product
 from polar.models.product import SubscriptionTierType
+from polar.openapi import APITag
 from polar.postgres import AsyncSession, get_db_session
 from polar.routing import APIRouter
 
@@ -16,7 +17,9 @@ from .schemas import Product as ProductSchema
 from .schemas import ProductBenefitsUpdate, ProductCreate, ProductUpdate
 from .service.product import product as product_service
 
-router = APIRouter(prefix="/products", tags=["products"])
+router = APIRouter(
+    prefix="/products", tags=["products", APITag.documented, APITag.featured]
+)
 
 ProductID = Annotated[UUID4, Path(description="The product ID.")]
 ProductNotFound = {

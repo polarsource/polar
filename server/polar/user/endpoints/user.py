@@ -11,6 +11,7 @@ from polar.integrations.github.service.organization import (
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.locker import Locker, get_locker
 from polar.models import User
+from polar.openapi import IN_DEVELOPMENT_ONLY
 from polar.organization.schemas import Organization
 from polar.postgres import AsyncSession, get_db_session
 from polar.posthog import posthog
@@ -27,7 +28,7 @@ from ..schemas.user import (
 
 log = structlog.get_logger()
 
-router = APIRouter()
+router = APIRouter(include_in_schema=IN_DEVELOPMENT_ONLY)
 
 
 @router.get("/me", response_model=UserRead)

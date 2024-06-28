@@ -18,6 +18,7 @@ from polar.kit.pagination import ListResource, PaginationParams, PaginationParam
 from polar.kit.sorting import Sorting, SortingGetter
 from polar.models import Subscription
 from polar.models.product import SubscriptionTierType
+from polar.openapi import APITag
 from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession, get_db_session
 from polar.routing import APIRouter
@@ -32,7 +33,7 @@ from .service import subscription as subscription_service
 
 log = structlog.get_logger()
 
-router = APIRouter(prefix="/subscriptions", tags=["subscriptions"])
+router = APIRouter(prefix="/subscriptions", tags=["subscriptions", APITag.documented])
 
 
 SearchSorting = Annotated[

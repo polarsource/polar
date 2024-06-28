@@ -54,12 +54,6 @@ class GithubOrganizationService(OrganizationService):
     async def fetch_installations(
         self, session: AsyncSession, locker: Locker, user: User
     ) -> list[types.Installation] | None:
-        oauth = await oauth_account_service.get_by_platform_and_user_id(
-            session, OAuthPlatform.github, user.id
-        )
-        if not oauth:
-            raise Exception("fetch_installations: no user oauth found")
-
         client = await github.get_user_client(session, locker, user)
         response = (
             await client.rest.apps.async_list_installations_for_authenticated_user()

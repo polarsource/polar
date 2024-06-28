@@ -30,7 +30,7 @@ class TestWebhook:
 
     async def send(self) -> Response:
         response = await self.client.post(
-            "/api/v1/integrations/github/webhook",
+            "/v1/integrations/github/webhook",
             json=self.json,
             headers=self.headers,
         )

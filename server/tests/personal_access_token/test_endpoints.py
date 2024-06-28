@@ -8,7 +8,7 @@ class TestCreatePersonalAccessToken:
     @pytest.mark.auth
     async def test_expires_in_validation(self, client: AsyncClient) -> None:
         response = await client.post(
-            "/api/v1/personal_access_tokens/",
+            "/v1/personal_access_tokens/",
             json={
                 "comment": "hello world",
                 "scopes": ["metrics:read"],
@@ -21,7 +21,7 @@ class TestCreatePersonalAccessToken:
     @pytest.mark.auth
     async def test_valid(self, client: AsyncClient) -> None:
         response = await client.post(
-            "/api/v1/personal_access_tokens/",
+            "/v1/personal_access_tokens/",
             json={"comment": "hello world", "scopes": ["metrics:read"]},
         )
 

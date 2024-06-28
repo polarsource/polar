@@ -26,7 +26,7 @@ async def test_get(
     issue: Issue,
     client: AsyncClient,
 ) -> None:
-    response = await client.get(f"/api/v1/dashboard/github/{organization.name}")
+    response = await client.get(f"/v1/dashboard/github/{organization.name}")
 
     assert response.status_code == 200
     res = response.json()
@@ -38,7 +38,7 @@ async def test_get(
 @pytest.mark.http_auto_expunge
 @pytest.mark.auth
 async def test_get_personal(client: AsyncClient) -> None:
-    response = await client.get("/api/v1/dashboard/personal")
+    response = await client.get("/v1/dashboard/personal")
 
     assert response.status_code == 200
 
@@ -53,7 +53,7 @@ async def test_get_no_member(
     issue: Issue,
     client: AsyncClient,
 ) -> None:
-    response = await client.get(f"/api/v1/dashboard/github/{organization.name}")
+    response = await client.get(f"/v1/dashboard/github/{organization.name}")
 
     assert response.status_code == 401
 
@@ -71,7 +71,7 @@ async def test_get_with_pledge_from_org(
     issue: Issue,
     client: AsyncClient,
 ) -> None:
-    response = await client.get(f"/api/v1/dashboard/github/{organization.name}")
+    response = await client.get(f"/v1/dashboard/github/{organization.name}")
 
     assert response.status_code == 200
     res = response.json()
@@ -106,7 +106,7 @@ async def test_get_with_pledge_from_user(
     pledging_user = await user_service.get(session, pledge_by_user.by_user_id)
     assert pledging_user
 
-    response = await client.get(f"/api/v1/dashboard/github/{organization.name}")
+    response = await client.get(f"/v1/dashboard/github/{organization.name}")
 
     assert response.status_code == 200
     res = response.json()
@@ -145,7 +145,7 @@ async def test_get_with_pledge_from_user_github_oauth(
     assert pledging_user
     pledger_gh = await create_user_github_oauth(save_fixture, pledging_user)
 
-    response = await client.get(f"/api/v1/dashboard/github/{organization.name}")
+    response = await client.get(f"/v1/dashboard/github/{organization.name}")
 
     assert response.status_code == 200
     res = response.json()
@@ -181,7 +181,7 @@ async def test_get_with_pledge_initiated(
     pledge.state = PledgeState.initiated
     await save_fixture(pledge)
 
-    response = await client.get(f"/api/v1/dashboard/github/{organization.name}")
+    response = await client.get(f"/v1/dashboard/github/{organization.name}")
 
     assert response.status_code == 200
     res = response.json()
@@ -206,7 +206,7 @@ async def test_get_only_pledged_with_pledge(
     client: AsyncClient,
 ) -> None:
     response = await client.get(
-        f"/api/v1/dashboard/github/{organization.name}?only_pledged=True"
+        f"/v1/dashboard/github/{organization.name}?only_pledged=True"
     )
 
     assert response.status_code == 200
@@ -236,7 +236,7 @@ async def test_get_only_pledged_no_pledge(
     client: AsyncClient,
 ) -> None:
     response = await client.get(
-        f"/api/v1/dashboard/github/{organization.name}?only_pledged=True"
+        f"/v1/dashboard/github/{organization.name}?only_pledged=True"
     )
 
     assert response.status_code == 200
@@ -259,7 +259,7 @@ async def test_get_only_badged_no_badge(
     client: AsyncClient,
 ) -> None:
     response = await client.get(
-        f"/api/v1/dashboard/github/{organization.name}?only_badged=True"
+        f"/v1/dashboard/github/{organization.name}?only_badged=True"
     )
 
     assert response.status_code == 200
@@ -286,7 +286,7 @@ async def test_get_only_badged_is_badged(
     await save_fixture(issue)
 
     response = await client.get(
-        f"/api/v1/dashboard/github/{organization.name}?only_badged=True"
+        f"/v1/dashboard/github/{organization.name}?only_badged=True"
     )
 
     assert response.status_code == 200

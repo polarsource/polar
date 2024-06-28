@@ -35,7 +35,7 @@ class TestListBenefits:
             subscription=subscription,
         )
 
-        response = await client.get("/api/v1/users/benefits/")
+        response = await client.get("/v1/users/benefits/")
 
         assert response.status_code == 200
         json = response.json()

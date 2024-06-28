@@ -37,7 +37,7 @@ async def oauth2_client(save_fixture: SaveFixture, user: User) -> OAuth2Client:
 @pytest.mark.http_auto_expunge
 class TestListOAuth2Clients:
     async def test_unauthenticated(self, client: AsyncClient) -> None:
-        response = await client.get("/api/v1/oauth2/")
+        response = await client.get("/v1/oauth2/")
 
         assert response.status_code == 401
 
@@ -48,7 +48,7 @@ class TestListOAuth2Clients:
         session.add(oauth2_client)
         await session.flush()
 
-        response = await client.get("/api/v1/oauth2/")
+        response = await client.get("/v1/oauth2/")
 
         assert response.status_code == 200
         json = response.json()
@@ -59,7 +59,7 @@ class TestListOAuth2Clients:
     async def test_user_not_owner(
         self, client: AsyncClient, oauth2_client: OAuth2Client
     ) -> None:
-        response = await client.get("/api/v1/oauth2/")
+        response = await client.get("/v1/oauth2/")
 
         assert response.status_code == 200
         json = response.json()
@@ -88,7 +88,7 @@ class TestListOAuth2Clients:
         session.add(oauth2_client)
         await session.flush()
 
-        response = await client.get("/api/v1/oauth2/")
+        response = await client.get("/v1/oauth2/")
 
         assert response.status_code == 200
         json = response.json()
@@ -103,7 +103,7 @@ class TestListOAuth2Clients:
         session.add(oauth2_client)
         await session.flush()
 
-        response = await client.get("/api/v1/oauth2/")
+        response = await client.get("/v1/oauth2/")
 
         assert response.status_code == 200
         json = response.json()

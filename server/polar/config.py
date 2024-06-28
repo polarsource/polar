@@ -44,7 +44,7 @@ class Settings(BaseSettings):
 
     # Base URL for the backend. Used by generate_external_url to
     # generate URLs to the backend accessible from the outside.
-    BASE_URL: str = "http://127.0.0.1:8000/api/v1"
+    BASE_URL: str = "http://127.0.0.1:8000/v1"
 
     # URL to frontend app.
     # Update to ngrok domain or similar in case you want

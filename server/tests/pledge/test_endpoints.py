@@ -39,7 +39,7 @@ async def test_get_pledge(
     # then
     session.expunge_all()
 
-    response = await client.get(f"/api/v1/pledges/{pledge.id}")
+    response = await client.get(f"/v1/pledges/{pledge.id}")
 
     assert response.status_code == 200
     assert response.json()["id"] == str(pledge.id)
@@ -84,7 +84,7 @@ async def test_get_pledge_member_sending_org(
     )
     await save_fixture(user_organization)
 
-    response = await client.get(f"/api/v1/pledges/{pledge.id}")
+    response = await client.get(f"/v1/pledges/{pledge.id}")
 
     assert response.status_code == 200
 
@@ -131,7 +131,7 @@ async def test_get_pledge_member_sending_org_user_has_github(
     )
     await save_fixture(user_organization)
 
-    response = await client.get(f"/api/v1/pledges/{pledge.id}")
+    response = await client.get(f"/v1/pledges/{pledge.id}")
 
     assert response.status_code == 200
 
@@ -175,7 +175,7 @@ async def test_get_pledge_member_receiving_org(
     )
     await save_fixture(user_organization)
 
-    response = await client.get(f"/api/v1/pledges/{pledge.id}")
+    response = await client.get(f"/v1/pledges/{pledge.id}")
 
     assert response.status_code == 200
 
@@ -201,7 +201,7 @@ async def test_get_pledge_not_admin(
     user_organization.is_admin = False
     await save_fixture(user_organization)
 
-    response = await client.get(f"/api/v1/pledges/{pledge.id}")
+    response = await client.get(f"/v1/pledges/{pledge.id}")
 
     assert response.status_code == 200
 
@@ -216,7 +216,7 @@ async def test_get_pledge_not_member(
     session: AsyncSession,
     client: AsyncClient,
 ) -> None:
-    response = await client.get(f"/api/v1/pledges/{pledge.id}")
+    response = await client.get(f"/v1/pledges/{pledge.id}")
 
     assert response.status_code == 401
 
@@ -237,7 +237,7 @@ async def test_search_pledge(
     await save_fixture(user_organization)
 
     response = await client.get(
-        f"/api/v1/pledges/search?platform=github&organization_name={organization.name}"
+        f"/v1/pledges/search?platform=github&organization_name={organization.name}"
     )
 
     assert response.status_code == 200
@@ -266,7 +266,7 @@ async def test_search_pledge_no_admin(
     await save_fixture(user_organization)
 
     response = await client.get(
-        f"/api/v1/pledges/search?platform=github&organization_name={organization.name}"
+        f"/v1/pledges/search?platform=github&organization_name={organization.name}"
     )
 
     assert response.status_code == 200
@@ -283,7 +283,7 @@ async def test_search_pledge_no_member(
     client: AsyncClient,
 ) -> None:
     response = await client.get(
-        f"/api/v1/pledges/search?platform=github&organization_name={organization.name}"
+        f"/v1/pledges/search?platform=github&organization_name={organization.name}"
     )
 
     assert response.status_code == 200
@@ -338,7 +338,7 @@ async def test_search_pledge_by_issue_id(
     # then
     session.expunge_all()
 
-    response = await client.get(f"/api/v1/pledges/search?issue_id={pledge.issue_id}")
+    response = await client.get(f"/v1/pledges/search?issue_id={pledge.issue_id}")
 
     assert response.status_code == 200
     assert len(response.json()["items"]) == 1
@@ -351,7 +351,7 @@ async def test_search_pledge_by_issue_id(
         "id"
     ] == str(organization.id)
 
-    response = await client.get(f"/api/v1/pledges/search?issue_id={other_issue.id}")
+    response = await client.get(f"/v1/pledges/search?issue_id={other_issue.id}")
 
     assert response.status_code == 200
     assert len(response.json()["items"]) == 2
@@ -370,7 +370,7 @@ async def test_search_no_params(
     pledge: Pledge,
     client: AsyncClient,
 ) -> None:
-    response = await client.get("/api/v1/pledges/search")
+    response = await client.get("/v1/pledges/search")
 
     assert response.status_code == 400
     assert response.json() == {"detail": "No search criteria specified"}
@@ -386,7 +386,7 @@ async def test_create_pay_on_completion(
     client: AsyncClient,
 ) -> None:
     create_pledge = await client.post(
-        "/api/v1/pledges/pay_on_completion",
+        "/v1/pledges/pay_on_completion",
         json={"issue_id": str(issue.id), "amount": 133700},
     )
 
@@ -398,7 +398,7 @@ async def test_create_pay_on_completion(
 
     # pledge_id = pledge["id"]
     # create_invoice = await client.post(
-    #     f"/api/v1/pledges/{pledge_id}/create_invoice"
+    #     f"/v1/pledges/{pledge_id}/create_invoice"
     # )
     # assert create_invoice.status_code == 200
     # pledge = create_invoice.json()
@@ -427,7 +427,7 @@ async def test_summary(
     session.expunge_all()
 
     response = await client.get(
-        f"/api/v1/pledges/summary?issue_id={pledge.issue_id}",
+        f"/v1/pledges/summary?issue_id={pledge.issue_id}",
     )
 
     assert response.status_code == 200
@@ -461,7 +461,7 @@ async def test_summary_private_repo(
     await save_fixture(repository)
 
     response = await client.get(
-        f"/api/v1/pledges/summary?issue_id={pledge.issue_id}",
+        f"/v1/pledges/summary?issue_id={pledge.issue_id}",
     )
 
     assert response.status_code == 401
@@ -487,7 +487,7 @@ async def test_create_pay_on_completion_total_monthly_spending_limit(
 
     # first pledge is OK
     create_pledge = await client.post(
-        "/api/v1/pledges/pay_on_completion",
+        "/v1/pledges/pay_on_completion",
         json={
             "issue_id": str(issue.id),
             "amount": 6000,
@@ -502,7 +502,7 @@ async def test_create_pay_on_completion_total_monthly_spending_limit(
 
     # not OK, reached spending limit
     create_pledge = await client.post(
-        "/api/v1/pledges/pay_on_completion",
+        "/v1/pledges/pay_on_completion",
         json={
             "issue_id": str(issue.id),
             "amount": 6000,
@@ -538,7 +538,7 @@ async def test_create_pay_on_completion_per_user_monthly_spending_limit(
 
     # first pledge is OK
     create_pledge = await client.post(
-        "/api/v1/pledges/pay_on_completion",
+        "/v1/pledges/pay_on_completion",
         json={
             "issue_id": str(issue.id),
             "amount": 6000,
@@ -553,7 +553,7 @@ async def test_create_pay_on_completion_per_user_monthly_spending_limit(
 
     # not OK, reached spending limit
     create_pledge = await client.post(
-        "/api/v1/pledges/pay_on_completion",
+        "/v1/pledges/pay_on_completion",
         json={
             "issue_id": str(issue.id),
             "amount": 6000,
@@ -585,7 +585,7 @@ async def test_no_billing_email(
 
     # not OK, reached spending limit
     create_pledge = await client.post(
-        "/api/v1/pledges/pay_on_completion",
+        "/v1/pledges/pay_on_completion",
         json={
             "issue_id": str(issue.id),
             "amount": 6000,
@@ -621,7 +621,7 @@ async def test_spending(
 
     # make a pledge
     create_pledge = await client.post(
-        "/api/v1/pledges/pay_on_completion",
+        "/v1/pledges/pay_on_completion",
         json={
             "issue_id": str(issue.id),
             "amount": 6000,
@@ -637,7 +637,7 @@ async def test_spending(
     # get spending
 
     spending = await client.get(
-        f"/api/v1/pledges/spending?organization_id={organization.id}"
+        f"/v1/pledges/spending?organization_id={organization.id}"
     )
 
     assert spending.status_code == 200
@@ -651,7 +651,7 @@ async def test_spending_zero(organization: Organization, client: AsyncClient) ->
     # get spending
 
     spending = await client.get(
-        f"/api/v1/pledges/spending?organization_id={organization.id}"
+        f"/v1/pledges/spending?organization_id={organization.id}"
     )
 
     assert spending.status_code == 200

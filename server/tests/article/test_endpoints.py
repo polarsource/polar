@@ -21,7 +21,7 @@ async def test_create_no_body(
     await save_fixture(user_organization)
 
     response = await client.post(
-        "/api/v1/articles/",
+        "/v1/articles/",
         json={
             "title": "Hello World!",
             "organization_id": str(organization.id),
@@ -45,7 +45,7 @@ async def test_create(
     await save_fixture(user_organization)
 
     response = await client.post(
-        "/api/v1/articles/",
+        "/v1/articles/",
         json={
             "title": "Hello World!",
             "body": "Body body",
@@ -73,7 +73,7 @@ async def test_create_with_slug(
     await save_fixture(user_organization)
 
     response = await client.post(
-        "/api/v1/articles/",
+        "/v1/articles/",
         json={
             "title": "Hello World!",
             "slug": "this-is-the-slug",
@@ -102,7 +102,7 @@ async def test_create_with_slug_slugify(
     await save_fixture(user_organization)
 
     response = await client.post(
-        "/api/v1/articles/",
+        "/v1/articles/",
         json={
             "title": "Hello World!",
             "slug": "this SLUG will be formatted",
@@ -124,7 +124,7 @@ async def test_create_non_member(
     user: User, organization: Organization, client: AsyncClient
 ) -> None:
     response = await client.post(
-        "/api/v1/articles/",
+        "/v1/articles/",
         json={
             "title": "Hello",
             "body": "Body body",
@@ -145,7 +145,7 @@ async def test_create_non_admin(
     client: AsyncClient,
 ) -> None:
     response = await client.post(
-        "/api/v1/articles/",
+        "/v1/articles/",
         json={
             "title": "Hello",
             "body": "Body body",
@@ -173,7 +173,7 @@ async def test_get_public(
     session.expunge_all()
 
     response = await client.post(
-        "/api/v1/articles/",
+        "/v1/articles/",
         json={
             "title": "Hello World!",
             "body": "Body body",
@@ -188,7 +188,7 @@ async def test_get_public(
     assert res["slug"] == "hello-world"
 
     get = await client.get(
-        f"/api/v1/articles/{res['id']}",
+        f"/v1/articles/{res['id']}",
     )
     assert get.status_code == 200
     get_json = get.json()
@@ -197,7 +197,7 @@ async def test_get_public(
     assert get_json["title"] == "Hello World!"
     assert get_json["visibility"] == "public"
 
-    get = await client.get(f"/api/v1/articles/{res['id']}")
+    get = await client.get(f"/v1/articles/{res['id']}")
     assert get.status_code == 200
     get_json = get.json()
     assert get_json["id"] == res["id"]
@@ -222,7 +222,7 @@ async def test_get_hidden(
     session.expunge_all()
 
     response = await client.post(
-        "/api/v1/articles/",
+        "/v1/articles/",
         json={
             "title": "Hello World!",
             "body": "Body body",
@@ -237,7 +237,7 @@ async def test_get_hidden(
     assert res["slug"] == "hello-world"
 
     get = await client.get(
-        f"/api/v1/articles/{res['id']}",
+        f"/v1/articles/{res['id']}",
     )
     assert get.status_code == 200
     get_json = get.json()
@@ -273,7 +273,7 @@ async def test_get_private_user(
     # then
     session.expunge_all()
 
-    get = await client.get(f"/api/v1/articles/{article.id}")
+    get = await client.get(f"/v1/articles/{article.id}")
     assert get.status_code == 200
 
     get_json = get.json()
@@ -308,7 +308,7 @@ async def test_get_private_anonymous(
     # then
     session.expunge_all()
 
-    get_anon = await client.get(f"/api/v1/articles/{article.id}")
+    get_anon = await client.get(f"/v1/articles/{article.id}")
     assert get_anon.status_code == 404
 
 
@@ -329,7 +329,7 @@ async def test_byline_default(
     session.expunge_all()
 
     response = await client.post(
-        "/api/v1/articles/",
+        "/v1/articles/",
         json={
             "title": "Hello World!",
             "body": "Body body",
@@ -359,7 +359,7 @@ async def test_byline_user_github(
     session.expunge_all()
 
     response = await client.post(
-        "/api/v1/articles/",
+        "/v1/articles/",
         json={
             "title": "Hello World!",
             "body": "Body body",
@@ -390,7 +390,7 @@ async def test_byline_user_no_oauth(
     session.expunge_all()
 
     response = await client.post(
-        "/api/v1/articles/",
+        "/v1/articles/",
         json={
             "title": "Hello World!",
             "body": "Body body",
@@ -421,7 +421,7 @@ async def test_byline_org(
     session.expunge_all()
 
     response = await client.post(
-        "/api/v1/articles/",
+        "/v1/articles/",
         json={
             "title": "Hello World!",
             "body": "Body body",
@@ -452,7 +452,7 @@ async def test_slug_collision(
     session.expunge_all()
 
     create_0 = await client.post(
-        "/api/v1/articles/",
+        "/v1/articles/",
         json={
             "title": "Hello World!",
             "body": "Body body",
@@ -464,7 +464,7 @@ async def test_slug_collision(
     assert create_0.json()["slug"] == "hello-world"
 
     create_1 = await client.post(
-        "/api/v1/articles/",
+        "/v1/articles/",
         json={
             "title": "Hello World!",
             "body": "Body body",
@@ -476,7 +476,7 @@ async def test_slug_collision(
     assert create_1.json()["slug"] == "hello-world-1"
 
     create_2 = await client.post(
-        "/api/v1/articles/",
+        "/v1/articles/",
         json={
             "title": "Hello World!",
             "body": "Body body",
@@ -505,7 +505,7 @@ async def test_update(
     session.expunge_all()
 
     response = await client.post(
-        "/api/v1/articles/",
+        "/v1/articles/",
         json={
             "title": "Hello World!",
             "body": "Body body",
@@ -520,7 +520,7 @@ async def test_update(
     assert res["slug"] == "hello-world"
 
     get = await client.patch(
-        f"/api/v1/articles/{res['id']}",
+        f"/v1/articles/{res['id']}",
         json={
             "body": "Here comes the post...",
             "visibility": "public",
@@ -550,7 +550,7 @@ async def test_body_base64(
     await save_fixture(user_organization)
 
     response = await client.post(
-        "/api/v1/articles/",
+        "/v1/articles/",
         json={
             "title": "Hello World!",
             "body_base64": "aGVsbG8gaW4gYjY0",
@@ -566,7 +566,7 @@ async def test_body_base64(
 
     # update
     response = await client.patch(
-        f"/api/v1/articles/{article_id}",
+        f"/v1/articles/{article_id}",
         json={
             "body_base64": "dXBkYXRlZCBiNjQ=",
         },

@@ -29,7 +29,7 @@ class TestDownloadablesEndpoints:
         session: AsyncSession,
         client: AsyncClient,
     ) -> None:
-        response = await client.get("/api/v1/users/downloadables/")
+        response = await client.get("/v1/users/downloadables/")
         assert response.status_code == 401
 
     async def test_anonymous_download_401s(
@@ -37,7 +37,7 @@ class TestDownloadablesEndpoints:
         session: AsyncSession,
         client: AsyncClient,
     ) -> None:
-        response = await client.get("/api/v1/users/downloadables/i-am-hacker")
+        response = await client.get("/v1/users/downloadables/i-am-hacker")
         assert response.status_code == 401
 
     @pytest.mark.auth
@@ -63,7 +63,7 @@ class TestDownloadablesEndpoints:
         )
 
         # List of downloadables
-        response = await client.get("/api/v1/users/downloadables/")
+        response = await client.get("/v1/users/downloadables/")
         assert response.status_code == 200
         data = response.json()
         downloadable_list = data["items"]
@@ -103,7 +103,7 @@ class TestDownloadablesEndpoints:
         )
 
         # List of downloadables
-        response = await client.get("/api/v1/users/downloadables/")
+        response = await client.get("/v1/users/downloadables/")
         assert response.status_code == 200
         data = response.json()
         downloadable_list = data["items"]
@@ -117,7 +117,7 @@ class TestDownloadablesEndpoints:
 
         # Polar download endpoint will now 404
         response = await client.get(
-            "/api/v1/users/downloadables/i-am-a-hacker", follow_redirects=False
+            "/v1/users/downloadables/i-am-a-hacker", follow_redirects=False
         )
         assert response.status_code == 404
 
@@ -144,7 +144,7 @@ class TestDownloadablesEndpoints:
         )
 
         # List of downloadables
-        response = await client.get("/api/v1/users/downloadables/")
+        response = await client.get("/v1/users/downloadables/")
         assert response.status_code == 200
         data = response.json()
         downloadable_list = data["items"]
@@ -188,7 +188,7 @@ class TestDownloadablesEndpoints:
         )
 
         # List of downloadables
-        response = await client.get("/api/v1/users/downloadables/")
+        response = await client.get("/v1/users/downloadables/")
         assert response.status_code == 200
         data = response.json()
         downloadable_list = data["items"]
@@ -234,7 +234,7 @@ class TestDownloadablesEndpoints:
         )
 
         # List of downloadables
-        response = await client.get("/api/v1/users/downloadables/")
+        response = await client.get("/v1/users/downloadables/")
         assert response.status_code == 200
         data = response.json()
         downloadable_list = data["items"]
@@ -252,7 +252,7 @@ class TestDownloadablesEndpoints:
         )
         await session.execute(statement)
 
-        response = await client.get("/api/v1/users/downloadables/")
+        response = await client.get("/v1/users/downloadables/")
         assert response.status_code == 200
         data = response.json()
         downloadable_list = data["items"]
@@ -283,7 +283,7 @@ class TestDownloadablesEndpoints:
         )
 
         # List of downloadables
-        response = await client.get("/api/v1/users/downloadables/")
+        response = await client.get("/v1/users/downloadables/")
         assert response.status_code == 200
         data = response.json()
         downloadable_list = data["items"]

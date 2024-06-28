@@ -155,7 +155,7 @@ async def create_oauth2_token(
 @pytest.mark.http_auto_expunge
 class TestOAuth2Register:
     async def test_unauthenticated(self, client: AsyncClient) -> None:
-        response = await client.post("/api/v1/oauth2/register", json={})
+        response = await client.post("/v1/oauth2/register", json={})
 
         assert response.status_code == 401
 
@@ -165,7 +165,7 @@ class TestOAuth2Register:
         self, redirect_uri: str, client: AsyncClient
     ) -> None:
         response = await client.post(
-            "/api/v1/oauth2/register",
+            "/v1/oauth2/register",
             json={"client_name": "Test Client", "redirect_uris": [redirect_uri]},
         )
 
@@ -182,7 +182,7 @@ class TestOAuth2Register:
     )
     async def test_valid(self, redirect_uri: str, client: AsyncClient) -> None:
         response = await client.post(
-            "/api/v1/oauth2/register",
+            "/v1/oauth2/register",
             json={
                 "client_name": "Test Client",
                 "redirect_uris": [redirect_uri],
@@ -204,15 +204,13 @@ class TestOAuth2ConfigureGet:
     async def test_unauthenticated(
         self, client: AsyncClient, oauth2_client: OAuth2Client
     ) -> None:
-        response = await client.get(
-            f"/api/v1/oauth2/register/{oauth2_client.client_id}"
-        )
+        response = await client.get(f"/v1/oauth2/register/{oauth2_client.client_id}")
 
         assert response.status_code == 400
 
     async def test_token_not_existing_client(self, client: AsyncClient) -> None:
         response = await client.get(
-            "/api/v1/oauth2/register/INVALID_CLIENT_ID",
+            "/v1/oauth2/register/INVALID_CLIENT_ID",
             headers={"Authorization": "Bearer REGISTRATION_ACCESS_TOKEN"},
         )
 
@@ -222,7 +220,7 @@ class TestOAuth2ConfigureGet:
         self, client: AsyncClient, oauth2_client: OAuth2Client
     ) -> None:
         response = await client.get(
-            f"/api/v1/oauth2/register/{oauth2_client.client_id}",
+            f"/v1/oauth2/register/{oauth2_client.client_id}",
             headers={"Authorization": "Bearer INVALID_REGISTRATION_ACCESS_TOKEN"},
         )
 
@@ -232,7 +230,7 @@ class TestOAuth2ConfigureGet:
         self, client: AsyncClient, oauth2_client: OAuth2Client
     ) -> None:
         response = await client.get(
-            f"/api/v1/oauth2/register/{oauth2_client.client_id}",
+            f"/v1/oauth2/register/{oauth2_client.client_id}",
             headers={
                 "Authorization": f"Bearer {oauth2_client.registration_access_token}"
             },
@@ -246,9 +244,7 @@ class TestOAuth2ConfigureGet:
     async def test_user_not_owner(
         self, client: AsyncClient, oauth2_client: OAuth2Client
     ) -> None:
-        response = await client.get(
-            f"/api/v1/oauth2/register/{oauth2_client.client_id}"
-        )
+        response = await client.get(f"/v1/oauth2/register/{oauth2_client.client_id}")
 
         assert response.status_code == 401
 
@@ -256,9 +252,7 @@ class TestOAuth2ConfigureGet:
     async def test_user_valid(
         self, client: AsyncClient, oauth2_client: OAuth2Client
     ) -> None:
-        response = await client.get(
-            f"/api/v1/oauth2/register/{oauth2_client.client_id}"
-        )
+        response = await client.get(f"/v1/oauth2/register/{oauth2_client.client_id}")
 
         assert response.status_code == 200
         json = response.json()
@@ -272,7 +266,7 @@ class TestOAuth2ConfigurePut:
         self, client: AsyncClient, oauth2_client: OAuth2Client
     ) -> None:
         response = await client.put(
-            f"/api/v1/oauth2/register/{oauth2_client.client_id}",
+            f"/v1/oauth2/register/{oauth2_client.client_id}",
             headers={
                 "Authorization": f"Bearer {oauth2_client.registration_access_token}"
             },
@@ -294,7 +288,7 @@ class TestOAuth2ConfigurePut:
         self, client: AsyncClient, oauth2_client: OAuth2Client
     ) -> None:
         response = await client.put(
-            f"/api/v1/oauth2/register/{oauth2_client.client_id}",
+            f"/v1/oauth2/register/{oauth2_client.client_id}",
             json={
                 "client_id": oauth2_client.client_id,
                 "client_name": "Test Client Updated",
@@ -316,7 +310,7 @@ class TestOAuth2ConfigureDelete:
         self, client: AsyncClient, oauth2_client: OAuth2Client
     ) -> None:
         response = await client.delete(
-            f"/api/v1/oauth2/register/{oauth2_client.client_id}",
+            f"/v1/oauth2/register/{oauth2_client.client_id}",
             headers={
                 "Authorization": f"Bearer {oauth2_client.registration_access_token}"
             },
@@ -328,9 +322,7 @@ class TestOAuth2ConfigureDelete:
     async def test_user_valid(
         self, client: AsyncClient, oauth2_client: OAuth2Client
     ) -> None:
-        response = await client.delete(
-            f"/api/v1/oauth2/register/{oauth2_client.client_id}"
-        )
+        response = await client.delete(f"/v1/oauth2/register/{oauth2_client.client_id}")
 
         assert response.status_code == 204
 
@@ -347,7 +339,7 @@ class TestOAuth2Authorize:
             "redirect_uri": "http://127.0.0.1:8000/docs/oauth2-redirect",
             "scope": "openid profile email",
         }
-        response = await client.get("/api/v1/oauth2/authorize", params=params)
+        response = await client.get("/v1/oauth2/authorize", params=params)
 
         assert response.status_code == 401
 
@@ -361,7 +353,7 @@ class TestOAuth2Authorize:
             "scope": "openid profile email",
             "prompt": "none",
         }
-        response = await client.get("/api/v1/oauth2/authorize", params=params)
+        response = await client.get("/v1/oauth2/authorize", params=params)
 
         assert response.status_code == 302
         location = response.headers["location"]
@@ -378,7 +370,7 @@ class TestOAuth2Authorize:
             "scope": "openid profile email",
             "sub_type": "foo",
         }
-        response = await client.get("/api/v1/oauth2/authorize", params=params)
+        response = await client.get("/v1/oauth2/authorize", params=params)
 
         assert response.status_code == 400
 
@@ -402,7 +394,7 @@ class TestOAuth2Authorize:
         }
         if input_sub_type is not None:
             params["sub_type"] = input_sub_type
-        response = await client.get("/api/v1/oauth2/authorize", params=params)
+        response = await client.get("/v1/oauth2/authorize", params=params)
 
         assert response.status_code == 200
 
@@ -422,7 +414,7 @@ class TestOAuth2Authorize:
             "scope": "openid profile email",
             "prompt": "login",
         }
-        response = await client.get("/api/v1/oauth2/authorize", params=params)
+        response = await client.get("/v1/oauth2/authorize", params=params)
 
         assert response.status_code == 401
 
@@ -448,7 +440,7 @@ class TestOAuth2Authorize:
             "redirect_uri": "http://127.0.0.1:8000/docs/oauth2-redirect",
             "scope": scope,
         }
-        response = await client.get("/api/v1/oauth2/authorize", params=params)
+        response = await client.get("/v1/oauth2/authorize", params=params)
 
         assert response.status_code == 302
         location = response.headers["location"]
@@ -476,7 +468,7 @@ class TestOAuth2Authorize:
             "scope": "openid profile email",
             "prompt": "consent",
         }
-        response = await client.get("/api/v1/oauth2/authorize", params=params)
+        response = await client.get("/v1/oauth2/authorize", params=params)
 
         json = response.json()
         assert json["client"]["client_id"] == oauth2_client.client_id
@@ -493,7 +485,7 @@ class TestOAuth2Authorize:
             "scope": "openid profile email",
             "prompt": "none",
         }
-        response = await client.get("/api/v1/oauth2/authorize", params=params)
+        response = await client.get("/v1/oauth2/authorize", params=params)
 
         assert response.status_code == 302
         location = response.headers["location"]
@@ -524,7 +516,7 @@ class TestOAuth2Authorize:
             "sub_type": "organization",
             "sub": str(organization.id),
         }
-        response = await client.get("/api/v1/oauth2/authorize", params=params)
+        response = await client.get("/v1/oauth2/authorize", params=params)
 
         assert response.status_code == 302
         location = response.headers["location"]
@@ -555,7 +547,7 @@ class TestOAuth2Authorize:
             "sub": str(organization.id),
             "prompt": "consent",
         }
-        response = await client.get("/api/v1/oauth2/authorize", params=params)
+        response = await client.get("/v1/oauth2/authorize", params=params)
 
         json = response.json()
         assert json["client"]["client_id"] == oauth2_client.client_id
@@ -578,7 +570,7 @@ class TestOAuth2Authorize:
             "sub_type": "organization",
             "sub": str(organization.id),
         }
-        response = await client.get("/api/v1/oauth2/authorize", params=params)
+        response = await client.get("/v1/oauth2/authorize", params=params)
 
         assert response.status_code == 302
         location = response.headers["location"]
@@ -605,7 +597,7 @@ class TestOAuth2Authorize:
             "sub_type": "organization",
             "sub": str(organization.id),
         }
-        response = await client.get("/api/v1/oauth2/authorize", params=params)
+        response = await client.get("/v1/oauth2/authorize", params=params)
 
         json = response.json()
         assert json["client"]["client_id"] == oauth2_client.client_id
@@ -618,7 +610,7 @@ class TestOAuth2Authorize:
 @pytest.mark.http_auto_expunge
 class TestOAuth2Consent:
     async def test_unauthenticated(self, client: AsyncClient) -> None:
-        response = await client.post("/api/v1/oauth2/consent")
+        response = await client.post("/v1/oauth2/consent")
 
         assert response.status_code == 401
 
@@ -631,7 +623,7 @@ class TestOAuth2Consent:
             "scope": "openid profile email",
         }
         response = await client.post(
-            "/api/v1/oauth2/consent", params=params, data={"action": "deny"}
+            "/v1/oauth2/consent", params=params, data={"action": "deny"}
         )
 
         assert response.status_code == 302
@@ -653,7 +645,7 @@ class TestOAuth2Consent:
             "scope": "openid profile email",
         }
         response = await client.post(
-            "/api/v1/oauth2/consent", params=params, data={"action": "allow"}
+            "/v1/oauth2/consent", params=params, data={"action": "allow"}
         )
 
         assert response.status_code == 302
@@ -687,7 +679,7 @@ class TestOAuth2Consent:
             "sub_type": "organization",
         }
         response = await client.post(
-            "/api/v1/oauth2/consent", params=params, data={"action": "allow"}
+            "/v1/oauth2/consent", params=params, data={"action": "allow"}
         )
 
         assert response.status_code == 400
@@ -712,7 +704,7 @@ class TestOAuth2Consent:
             "sub": str(organization.id),
         }
         response = await client.post(
-            "/api/v1/oauth2/consent", params=params, data={"action": "allow"}
+            "/v1/oauth2/consent", params=params, data={"action": "allow"}
         )
 
         assert response.status_code == 400
@@ -737,7 +729,7 @@ class TestOAuth2Consent:
             "sub": str(organization.id),
         }
         response = await client.post(
-            "/api/v1/oauth2/consent", params=params, data={"action": "deny"}
+            "/v1/oauth2/consent", params=params, data={"action": "deny"}
         )
 
         assert response.status_code == 302
@@ -762,7 +754,7 @@ class TestOAuth2Consent:
             "sub": str(organization.id),
         }
         response = await client.post(
-            "/api/v1/oauth2/consent", params=params, data={"action": "allow"}
+            "/v1/oauth2/consent", params=params, data={"action": "allow"}
         )
 
         assert response.status_code == 302
@@ -802,7 +794,7 @@ class TestOAuth2Consent:
             "sub": str(organization.id),
         }
         response = await client.post(
-            "/api/v1/oauth2/consent", params=params, data={"action": "allow"}
+            "/v1/oauth2/consent", params=params, data={"action": "allow"}
         )
 
         assert response.status_code == 302
@@ -847,7 +839,7 @@ class TestOAuth2Token:
             "redirect_uri": "http://127.0.0.1:8000/docs/oauth2-redirect",
         }
 
-        response = await client.post("/api/v1/oauth2/token", data=data)
+        response = await client.post("/v1/oauth2/token", data=data)
 
         assert response.status_code == 200
         json = response.json()
@@ -884,7 +876,7 @@ class TestOAuth2Token:
             "redirect_uri": "http://127.0.0.1:8000/docs/oauth2-redirect",
         }
 
-        response = await client.post("/api/v1/oauth2/token", data=data)
+        response = await client.post("/v1/oauth2/token", data=data)
 
         assert response.status_code == 200
         json = response.json()
@@ -918,7 +910,7 @@ class TestOAuth2Token:
             "redirect_uri": "http://127.0.0.1:8000/docs/oauth2-redirect",
         }
 
-        response = await client.post("/api/v1/oauth2/token", data=data)
+        response = await client.post("/v1/oauth2/token", data=data)
 
         assert response.status_code == 200
         json = response.json()
@@ -951,7 +943,7 @@ class TestOAuth2Token:
             "client_secret": oauth2_client.client_secret,
         }
 
-        response = await client.post("/api/v1/oauth2/token", data=data)
+        response = await client.post("/v1/oauth2/token", data=data)
 
         assert response.status_code == 200
         json = response.json()
@@ -984,7 +976,7 @@ class TestOAuth2Token:
             "client_secret": oauth2_client.client_secret,
         }
 
-        response = await client.post("/api/v1/oauth2/token", data=data)
+        response = await client.post("/v1/oauth2/token", data=data)
 
         assert response.status_code == 200
         json = response.json()

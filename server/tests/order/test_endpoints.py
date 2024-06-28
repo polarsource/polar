@@ -20,7 +20,7 @@ async def orders(
 @pytest.mark.http_auto_expunge
 class TestListOrders:
     async def test_anonymous(self, client: AsyncClient) -> None:
-        response = await client.get("/api/v1/orders/")
+        response = await client.get("/v1/orders/")
 
         assert response.status_code == 401
 
@@ -28,7 +28,7 @@ class TestListOrders:
     async def test_user_not_organization_member(
         self, client: AsyncClient, orders: list[Order]
     ) -> None:
-        response = await client.get("/api/v1/orders/")
+        response = await client.get("/v1/orders/")
 
         assert response.status_code == 200
 
@@ -45,7 +45,7 @@ class TestListOrders:
         user_organization_admin: UserOrganization,
         orders: list[Order],
     ) -> None:
-        response = await client.get("/api/v1/orders/")
+        response = await client.get("/v1/orders/")
 
         assert response.status_code == 200
 
@@ -56,7 +56,7 @@ class TestListOrders:
         AuthSubjectFixture(subject="organization", scopes={Scope.orders_read}),
     )
     async def test_organization(self, client: AsyncClient, orders: list[Order]) -> None:
-        response = await client.get("/api/v1/orders/")
+        response = await client.get("/v1/orders/")
 
         assert response.status_code == 200
 
@@ -68,7 +68,7 @@ class TestListOrders:
 @pytest.mark.http_auto_expunge
 class TesGetOrdersStatistics:
     async def test_anonymous(self, client: AsyncClient) -> None:
-        response = await client.get("/api/v1/orders/statistics")
+        response = await client.get("/v1/orders/statistics")
 
         assert response.status_code == 401
 
@@ -79,7 +79,7 @@ class TesGetOrdersStatistics:
     async def test_user_valid(
         self, client: AsyncClient, user_organization_admin: UserOrganization
     ) -> None:
-        response = await client.get("/api/v1/orders/statistics")
+        response = await client.get("/v1/orders/statistics")
 
         assert response.status_code == 200
 
@@ -90,7 +90,7 @@ class TesGetOrdersStatistics:
         AuthSubjectFixture(subject="organization", scopes={Scope.orders_read}),
     )
     async def test_organization(self, client: AsyncClient) -> None:
-        response = await client.get("/api/v1/orders/statistics")
+        response = await client.get("/v1/orders/statistics")
 
         assert response.status_code == 200
 

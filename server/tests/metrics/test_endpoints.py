@@ -11,7 +11,7 @@ from tests.fixtures.auth import AuthSubjectFixture
 @pytest.mark.http_auto_expunge
 class TestGetMetrics:
     async def test_anonymous(self, client: AsyncClient) -> None:
-        response = await client.get("/api/v1/metrics/")
+        response = await client.get("/v1/metrics/")
 
         assert response.status_code == 401
 
@@ -23,7 +23,7 @@ class TestGetMetrics:
         self, client: AsyncClient, user_organization_admin: UserOrganization
     ) -> None:
         response = await client.get(
-            "/api/v1/metrics/",
+            "/v1/metrics/",
             params={
                 "start_date": "2024-01-01",
                 "end_date": "2024-12-31",
@@ -41,7 +41,7 @@ class TestGetMetrics:
         self, client: AsyncClient, user_organization_admin: UserOrganization
     ) -> None:
         response = await client.get(
-            "/api/v1/metrics/",
+            "/v1/metrics/",
             params={
                 "start_date": "2024-01-01",
                 "end_date": "2024-12-31",
@@ -59,7 +59,7 @@ class TestGetMetrics:
     )
     async def test_organization(self, client: AsyncClient) -> None:
         response = await client.get(
-            "/api/v1/metrics/",
+            "/v1/metrics/",
             params={
                 "start_date": "2024-01-01",
                 "end_date": "2024-12-31",
@@ -77,7 +77,7 @@ class TestGetMetrics:
 @pytest.mark.http_auto_expunge
 class TestGetMetricsLimits:
     async def test_anonymous(self, client: AsyncClient) -> None:
-        response = await client.get("/api/v1/metrics/limits")
+        response = await client.get("/v1/metrics/limits")
 
         assert response.status_code == 401
 
@@ -87,7 +87,7 @@ class TestGetMetricsLimits:
         AuthSubjectFixture(subject="organization", scopes={Scope.metrics_read}),
     )
     async def test_valid(self, client: AsyncClient) -> None:
-        response = await client.get("/api/v1/metrics/limits")
+        response = await client.get("/v1/metrics/limits")
 
         assert response.status_code == 200
 

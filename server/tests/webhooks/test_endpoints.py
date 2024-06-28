@@ -21,7 +21,7 @@ class TestListWebhookEndpoints:
         webhook_endpoint_organization: WebhookEndpoint,
     ) -> None:
         params = {"organization_id": str(organization.id)}
-        response = await client.get("/api/v1/webhooks/endpoints", params=params)
+        response = await client.get("/v1/webhooks/endpoints", params=params)
         assert response.status_code == 401
 
     @pytest.mark.auth
@@ -32,7 +32,7 @@ class TestListWebhookEndpoints:
         webhook_endpoint_organization: WebhookEndpoint,
     ) -> None:
         params = {"organization_id": str(organization.id)}
-        response = await client.get("/api/v1/webhooks/endpoints", params=params)
+        response = await client.get("/v1/webhooks/endpoints", params=params)
 
         assert response.status_code == 200
         json = response.json()
@@ -52,7 +52,7 @@ class TestListWebhookEndpoints:
         await save_fixture(user_organization)
 
         params = {"organization_id": str(organization.id)}
-        response = await client.get("/api/v1/webhooks/endpoints", params=params)
+        response = await client.get("/v1/webhooks/endpoints", params=params)
 
         assert response.status_code == 200
         json = response.json()
@@ -72,7 +72,7 @@ class TestListWebhookEndpoints:
         await save_fixture(user_organization)
 
         params = {"organization_id": str(organization.id)}
-        response = await client.get("/api/v1/webhooks/endpoints", params=params)
+        response = await client.get("/v1/webhooks/endpoints", params=params)
 
         assert response.status_code == 200
         json = response.json()
@@ -90,7 +90,7 @@ class TestCreateWebhookEndpoint:
             "secret": "foo",
             "events": [],
         }
-        response = await client.post("/api/v1/webhooks/endpoints", json=params)
+        response = await client.post("/v1/webhooks/endpoints", json=params)
 
         assert response.status_code == 403
 
@@ -104,7 +104,7 @@ class TestCreateWebhookEndpoint:
             "secret": "foo",
             "events": [],
         }
-        response = await client.post("/api/v1/webhooks/endpoints", json=params)
+        response = await client.post("/v1/webhooks/endpoints", json=params)
 
         assert response.status_code == 201
 
@@ -115,7 +115,7 @@ class TestCreateWebhookEndpoint:
             "secret": "foo",
             "events": [],
         }
-        response = await client.post("/api/v1/webhooks/endpoints", json=params)
+        response = await client.post("/v1/webhooks/endpoints", json=params)
 
         assert response.status_code == 403
 
@@ -130,7 +130,7 @@ class TestCreateWebhookEndpoint:
             "secret": "foo",
             "events": [],
         }
-        response = await client.post("/api/v1/webhooks/endpoints", json=params)
+        response = await client.post("/v1/webhooks/endpoints", json=params)
 
         assert response.status_code == 201
 
@@ -146,7 +146,7 @@ class TestUpdateWebhookEndpoint:
         user_organization_admin: UserOrganization,
     ) -> None:
         response = await client.patch(
-            f"/api/v1/webhooks/endpoints/{webhook_endpoint_organization.id}", json={}
+            f"/v1/webhooks/endpoints/{webhook_endpoint_organization.id}", json={}
         )
 
         assert response.status_code == 403
@@ -162,7 +162,7 @@ class TestUpdateWebhookEndpoint:
         user_organization_admin: UserOrganization,
     ) -> None:
         response = await client.patch(
-            f"/api/v1/webhooks/endpoints/{webhook_endpoint_organization.id}", json={}
+            f"/v1/webhooks/endpoints/{webhook_endpoint_organization.id}", json={}
         )
 
         assert response.status_code == 200
@@ -172,7 +172,7 @@ class TestUpdateWebhookEndpoint:
         self, client: AsyncClient, webhook_endpoint_organization: WebhookEndpoint
     ) -> None:
         response = await client.patch(
-            f"/api/v1/webhooks/endpoints/{webhook_endpoint_organization.id}", json={}
+            f"/v1/webhooks/endpoints/{webhook_endpoint_organization.id}", json={}
         )
 
         assert response.status_code == 403
@@ -184,7 +184,7 @@ class TestUpdateWebhookEndpoint:
         self, client: AsyncClient, webhook_endpoint_organization: WebhookEndpoint
     ) -> None:
         response = await client.patch(
-            f"/api/v1/webhooks/endpoints/{webhook_endpoint_organization.id}", json={}
+            f"/v1/webhooks/endpoints/{webhook_endpoint_organization.id}", json={}
         )
 
         assert response.status_code == 200
@@ -201,7 +201,7 @@ class TestDeleteWebhookEndpoint:
         user_organization_admin: UserOrganization,
     ) -> None:
         response = await client.delete(
-            f"/api/v1/webhooks/endpoints/{webhook_endpoint_organization.id}"
+            f"/v1/webhooks/endpoints/{webhook_endpoint_organization.id}"
         )
 
         assert response.status_code == 403
@@ -217,7 +217,7 @@ class TestDeleteWebhookEndpoint:
         user_organization_admin: UserOrganization,
     ) -> None:
         response = await client.delete(
-            f"/api/v1/webhooks/endpoints/{webhook_endpoint_organization.id}"
+            f"/v1/webhooks/endpoints/{webhook_endpoint_organization.id}"
         )
 
         assert response.status_code == 204
@@ -227,7 +227,7 @@ class TestDeleteWebhookEndpoint:
         self, client: AsyncClient, webhook_endpoint_organization: WebhookEndpoint
     ) -> None:
         response = await client.delete(
-            f"/api/v1/webhooks/endpoints/{webhook_endpoint_organization.id}"
+            f"/v1/webhooks/endpoints/{webhook_endpoint_organization.id}"
         )
 
         assert response.status_code == 403
@@ -239,7 +239,7 @@ class TestDeleteWebhookEndpoint:
         self, client: AsyncClient, webhook_endpoint_organization: WebhookEndpoint
     ) -> None:
         response = await client.delete(
-            f"/api/v1/webhooks/endpoints/{webhook_endpoint_organization.id}"
+            f"/v1/webhooks/endpoints/{webhook_endpoint_organization.id}"
         )
 
         assert response.status_code == 204
@@ -255,7 +255,7 @@ class TestListWebhookDeliveries:
         webhook_endpoint_organization: WebhookEndpoint,
         webhook_delivery: WebhookDelivery,
     ) -> None:
-        response = await client.get("/api/v1/webhooks/deliveries")
+        response = await client.get("/v1/webhooks/deliveries")
 
         assert response.status_code == 200
         json = response.json()
@@ -270,7 +270,7 @@ class TestListWebhookDeliveries:
         webhook_delivery: WebhookDelivery,
         user_organization: UserOrganization,
     ) -> None:
-        response = await client.get("/api/v1/webhooks/deliveries")
+        response = await client.get("/v1/webhooks/deliveries")
 
         assert response.status_code == 200
         json = response.json()
@@ -285,7 +285,7 @@ class TestListWebhookDeliveries:
         webhook_delivery: WebhookDelivery,
         user_organization_admin: UserOrganization,
     ) -> None:
-        response = await client.get("/api/v1/webhooks/deliveries")
+        response = await client.get("/v1/webhooks/deliveries")
 
         assert response.status_code == 200
         json = response.json()
@@ -301,7 +301,7 @@ class TestListWebhookDeliveries:
         webhook_endpoint_organization: WebhookEndpoint,
         webhook_delivery: WebhookDelivery,
     ) -> None:
-        response = await client.get("/api/v1/webhooks/deliveries")
+        response = await client.get("/v1/webhooks/deliveries")
 
         assert response.status_code == 200
         json = response.json()

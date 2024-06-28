@@ -19,7 +19,7 @@ class TestEndpoints:
     async def test_anonymous_create_401(
         self, client: AsyncClient, organization: Organization
     ) -> None:
-        response = await client.post("/api/v1/files/")
+        response = await client.post("/v1/files/")
 
         assert response.status_code == 401
 
@@ -28,7 +28,7 @@ class TestEndpoints:
         self, client: AsyncClient, organization: Organization, logo_png: TestFile
     ) -> None:
         response = await client.post(
-            "/api/v1/files/",
+            "/v1/files/",
             json=logo_png.build_create_json(organization.id),
         )
 

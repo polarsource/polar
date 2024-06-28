@@ -26,7 +26,7 @@ from tests.transaction.conftest import create_account, create_transaction
 @pytest.mark.http_auto_expunge
 class TestSearchTransactions:
     async def test_anonymous(self, client: AsyncClient) -> None:
-        response = await client.get("/api/v1/transactions/search")
+        response = await client.get("/v1/transactions/search")
 
         assert response.status_code == 401
 
@@ -39,7 +39,7 @@ class TestSearchTransactions:
         readable_user_transactions: list[Transaction],
         all_transactions: list[Transaction],
     ) -> None:
-        response = await client.get("/api/v1/transactions/search")
+        response = await client.get("/v1/transactions/search")
 
         assert response.status_code == 200
 
@@ -52,7 +52,7 @@ class TestSearchTransactions:
 class TestLookupTransaction:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.get(
-            "/api/v1/transactions/lookup", params={"transaction_id": str(uuid.uuid4())}
+            "/v1/transactions/lookup", params={"transaction_id": str(uuid.uuid4())}
         )
 
         assert response.status_code == 401
@@ -83,7 +83,7 @@ class TestLookupTransaction:
         ]
 
         response = await client.get(
-            "/api/v1/transactions/lookup",
+            "/v1/transactions/lookup",
             params={"transaction_id": str(transaction.id)},
         )
 
@@ -99,7 +99,7 @@ class TestLookupTransaction:
 class TestGetSummary:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.get(
-            "/api/v1/transactions/summary", params={"account_id": str(uuid.uuid4())}
+            "/v1/transactions/summary", params={"account_id": str(uuid.uuid4())}
         )
 
         assert response.status_code == 401
@@ -107,7 +107,7 @@ class TestGetSummary:
     @pytest.mark.auth
     async def test_not_existing_account(self, client: AsyncClient) -> None:
         response = await client.get(
-            "/api/v1/transactions/summary", params={"account_id": str(uuid.uuid4())}
+            "/v1/transactions/summary", params={"account_id": str(uuid.uuid4())}
         )
 
         assert response.status_code == 404
@@ -121,7 +121,7 @@ class TestGetSummary:
         account_transactions: list[Transaction],
     ) -> None:
         response = await client.get(
-            "/api/v1/transactions/summary", params={"account_id": str(account.id)}
+            "/v1/transactions/summary", params={"account_id": str(account.id)}
         )
 
         assert response.status_code == 200
@@ -136,7 +136,7 @@ class TestGetSummary:
 class TestCreatePayout:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.post(
-            "/api/v1/transactions/payouts", json={"account_id": str(uuid.uuid4())}
+            "/v1/transactions/payouts", json={"account_id": str(uuid.uuid4())}
         )
 
         assert response.status_code == 401
@@ -144,7 +144,7 @@ class TestCreatePayout:
     @pytest.mark.auth
     async def test_not_existing_account(self, client: AsyncClient) -> None:
         response = await client.post(
-            "/api/v1/transactions/payouts", json={"account_id": str(uuid.uuid4())}
+            "/v1/transactions/payouts", json={"account_id": str(uuid.uuid4())}
         )
 
         assert response.status_code == 404
@@ -160,7 +160,7 @@ class TestCreatePayout:
     ) -> None:
         account = await create_account(save_fixture, organization, user_second)
         response = await client.post(
-            "/api/v1/transactions/payouts", json={"account_id": str(account.id)}
+            "/v1/transactions/payouts", json={"account_id": str(account.id)}
         )
 
         # then
@@ -206,7 +206,7 @@ class TestCreatePayout:
         session.expunge_all()
 
         response = await client.post(
-            "/api/v1/transactions/payouts", json={"account_id": str(account.id)}
+            "/v1/transactions/payouts", json={"account_id": str(account.id)}
         )
 
         assert response.status_code == 201

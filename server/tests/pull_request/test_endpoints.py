@@ -32,7 +32,7 @@ async def test_search_references(
     await save_fixture(ir)
 
     response = await client.get(
-        f"/api/v1/pull_requests/search?references_issue_id={issue.id}"
+        f"/v1/pull_requests/search?references_issue_id={issue.id}"
     )
 
     assert response.status_code == 200

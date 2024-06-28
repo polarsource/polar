@@ -3,7 +3,7 @@
     "info": {
         "title": "Polar API",
         "summary": "Polar HTTP and Webhooks API",
-        "description": "\nWelcome to the **Polar API** for [polar.sh](https://polar.sh).\n\nThis specification contains both the definitions of the Polar HTTP API and the Webhook API.\n\n#### Authentication\n\nUse a [Personal Access Token](https://polar.sh/settings) and send it in the `Authorization` header on the format `Bearer [YOUR_TOKEN]`.\n\n#### Feedback\n\nIf you have any feedback or comments, reach out in the [Polar API-issue](https://github.com/polarsource/polar/issues/834), or reach out on the Polar Discord server.\n\nWe'd love to see what you've built with the API and to get your thoughts on how we can make the API better!\n\n#### Connecting\n\nThe Polar API is online at `https://api.polar.sh`.\n",
+        "description": "Read the docs at https://polar.sh/docs/api-reference",
         "version": "0.1.0"
     },
     "paths": {
@@ -240,7 +240,9 @@
         "/api/v1/users/benefits/": {
             "get": {
                 "tags": [
-                    "users"
+                    "users",
+                    "documented",
+                    "featured"
                 ],
                 "summary": "List Benefits",
                 "description": "List my granted benefits.",
@@ -421,7 +423,9 @@
         "/api/v1/users/benefits/{id}": {
             "get": {
                 "tags": [
-                    "users"
+                    "users",
+                    "documented",
+                    "featured"
                 ],
                 "summary": "Get Benefit",
                 "description": "Get a granted benefit by ID.",
@@ -521,7 +525,9 @@
         "/api/v1/users/orders/": {
             "get": {
                 "tags": [
-                    "users"
+                    "users",
+                    "documented",
+                    "featured"
                 ],
                 "summary": "List Orders",
                 "description": "List my orders.",
@@ -724,7 +730,9 @@
         "/api/v1/users/orders/{id}": {
             "get": {
                 "tags": [
-                    "users"
+                    "users",
+                    "documented",
+                    "featured"
                 ],
                 "summary": "Get Order",
                 "description": "Get an order by ID.",
@@ -793,7 +801,9 @@
         "/api/v1/users/orders/{id}/invoice": {
             "get": {
                 "tags": [
-                    "users"
+                    "users",
+                    "documented",
+                    "featured"
                 ],
                 "summary": "Get Order Invoice",
                 "description": "Get an order's invoice data.",
@@ -862,7 +872,9 @@
         "/api/v1/users/subscriptions/": {
             "get": {
                 "tags": [
-                    "users"
+                    "users",
+                    "documented",
+                    "featured"
                 ],
                 "summary": "List Subscriptions",
                 "description": "List my subscriptions.",
@@ -1044,7 +1056,9 @@
             },
             "post": {
                 "tags": [
-                    "users"
+                    "users",
+                    "documented",
+                    "featured"
                 ],
                 "summary": "Create Subscription",
                 "description": "Create a subscription on a **free** tier.\n\nIf you want to subscribe to a paid tier, you need to create a checkout session.",
@@ -1120,7 +1134,9 @@
         "/api/v1/users/subscriptions/{id}": {
             "get": {
                 "tags": [
-                    "users"
+                    "users",
+                    "documented",
+                    "featured"
                 ],
                 "summary": "Get Subscription",
                 "description": "Get a subscription by ID.",
@@ -1187,7 +1203,9 @@
             },
             "patch": {
                 "tags": [
-                    "users"
+                    "users",
+                    "documented",
+                    "featured"
                 ],
                 "summary": "Update Subscription",
                 "description": "Update a subscription.",
@@ -1274,7 +1292,9 @@
             },
             "delete": {
                 "tags": [
-                    "users"
+                    "users",
+                    "documented",
+                    "featured"
                 ],
                 "summary": "Cancel Subscription",
                 "description": "Cancel a subscription.",
@@ -1353,7 +1373,8 @@
         "/api/v1/users/advertisements/": {
             "get": {
                 "tags": [
-                    "users"
+                    "users",
+                    "documented"
                 ],
                 "summary": "List Advertisement Campaigns",
                 "description": "List advertisement campaigns.",
@@ -1457,7 +1478,8 @@
             },
             "post": {
                 "tags": [
-                    "users"
+                    "users",
+                    "documented"
                 ],
                 "summary": "Create Advertisement Campaign",
                 "description": "Create an advertisement campaign.",
@@ -1512,7 +1534,8 @@
         "/api/v1/users/advertisements/{id}": {
             "get": {
                 "tags": [
-                    "users"
+                    "users",
+                    "documented"
                 ],
                 "summary": "Get Advertisement Campaign",
                 "description": "Get an advertisement campaign by ID.",
@@ -1579,7 +1602,8 @@
             },
             "patch": {
                 "tags": [
-                    "users"
+                    "users",
+                    "documented"
                 ],
                 "summary": "Update Advertisement Campaign",
                 "description": "Update an advertisement campaign.",
@@ -1656,7 +1680,8 @@
             },
             "delete": {
                 "tags": [
-                    "users"
+                    "users",
+                    "documented"
                 ],
                 "summary": "Delete Advertisement Campaign",
                 "description": "Delete an advertisement campaign.\n\nIt'll be automatically disabled on all granted benefits.",
@@ -1726,7 +1751,8 @@
         "/api/v1/users/advertisements/{id}/enable": {
             "post": {
                 "tags": [
-                    "users"
+                    "users",
+                    "documented"
                 ],
                 "summary": "Enable Advertisement Campaign",
                 "description": "Enable an advertisement campaign on a granted benefit.",
@@ -1798,7 +1824,9 @@
         "/api/v1/users/downloadables/": {
             "get": {
                 "tags": [
-                    "users"
+                    "users",
+                    "documented",
+                    "featured"
                 ],
                 "summary": "List Downloadables",
                 "operationId": "users:list_downloadables",
@@ -1908,7 +1936,9 @@
         "/api/v1/users/downloadables/{token}": {
             "get": {
                 "tags": [
-                    "users"
+                    "users",
+                    "documented",
+                    "featured"
                 ],
                 "summary": "Get Downloadable",
                 "operationId": "users:get_downloadable",
@@ -6823,8 +6853,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "organizations:write",
-                            "organizations:read"
+                            "organizations:read",
+                            "organizations:write"
                         ]
                     },
                     {
@@ -6833,16 +6863,34 @@
                 ],
                 "parameters": [
                     {
+                        "name": "name",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "description": "Filter organizations by name (one item in case of match)",
+                            "title": "Name"
+                        },
+                        "description": "Filter organizations by name (one item in case of match)"
+                    },
+                    {
                         "name": "is_admin_only",
                         "in": "query",
                         "required": false,
                         "schema": {
                             "type": "boolean",
-                            "description": "Include only organizations that the user is an admin of.",
+                            "description": "Filter organizations to include only the ones the user is an admin of.",
                             "default": true,
                             "title": "Is Admin Only"
                         },
-                        "description": "Include only organizations that the user is an admin of."
+                        "description": "Filter organizations to include only the ones the user is an admin of."
                     }
                 ],
                 "responses": {
@@ -6884,8 +6932,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "organizations:write",
-                            "organizations:read"
+                            "organizations:read",
+                            "organizations:write"
                         ]
                     },
                     {
@@ -6965,8 +7013,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "organizations:write",
-                            "organizations:read"
+                            "organizations:read",
+                            "organizations:write"
                         ]
                     },
                     {
@@ -7049,8 +7097,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "organizations:write",
-                            "organizations:read"
+                            "organizations:read",
+                            "organizations:write"
                         ]
                     },
                     {
@@ -7180,8 +7228,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "organizations:write",
-                            "organizations:read"
+                            "organizations:read",
+                            "organizations:write"
                         ]
                     },
                     {
@@ -7213,9 +7261,9 @@
                             },
                             "description": "Filter by the type of purchase the customer made.",
                             "default": [
-                                "order",
                                 "subscription",
-                                "donation"
+                                "donation",
+                                "order"
                             ],
                             "title": "Customer Types"
                         },
@@ -7663,7 +7711,8 @@
         "/api/v1/subscriptions/": {
             "get": {
                 "tags": [
-                    "subscriptions"
+                    "subscriptions",
+                    "documented"
                 ],
                 "summary": "List Subscriptions",
                 "description": "List subscriptions.",
@@ -7671,8 +7720,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "subscriptions:write",
-                            "subscriptions:read"
+                            "subscriptions:read",
+                            "subscriptions:write"
                         ]
                     },
                     {
@@ -7852,7 +7901,8 @@
             },
             "post": {
                 "tags": [
-                    "subscriptions"
+                    "subscriptions",
+                    "documented"
                 ],
                 "summary": "Create Free Subscription",
                 "description": "Create a subscription on the free tier for a given email.",
@@ -7908,7 +7958,8 @@
         "/api/v1/subscriptions/import": {
             "post": {
                 "tags": [
-                    "subscriptions"
+                    "subscriptions",
+                    "documented"
                 ],
                 "summary": "Import Subscriptions",
                 "description": "Import subscriptions from a CSV file.",
@@ -7964,7 +8015,8 @@
         "/api/v1/subscriptions/export": {
             "get": {
                 "tags": [
-                    "subscriptions"
+                    "subscriptions",
+                    "documented"
                 ],
                 "summary": "Export Subscriptions",
                 "description": "Export subscriptions as a CSV file.",
@@ -7972,8 +8024,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "subscriptions:write",
-                            "subscriptions:read"
+                            "subscriptions:read",
+                            "subscriptions:write"
                         ]
                     },
                     {
@@ -8030,7 +8082,9 @@
         "/api/v1/articles/": {
             "get": {
                 "tags": [
-                    "articles"
+                    "articles",
+                    "documented",
+                    "featured"
                 ],
                 "summary": "List Articles",
                 "description": "List articles.",
@@ -8194,7 +8248,9 @@
             },
             "post": {
                 "tags": [
-                    "articles"
+                    "articles",
+                    "documented",
+                    "featured"
                 ],
                 "summary": "Create Article",
                 "description": "Create an article.",
@@ -8250,7 +8306,9 @@
         "/api/v1/articles/{id}": {
             "get": {
                 "tags": [
-                    "articles"
+                    "articles",
+                    "documented",
+                    "featured"
                 ],
                 "summary": "Get Article",
                 "description": "Get an article by ID.",
@@ -8319,7 +8377,9 @@
             },
             "patch": {
                 "tags": [
-                    "articles"
+                    "articles",
+                    "documented",
+                    "featured"
                 ],
                 "summary": "Update Article",
                 "description": "Update an article.",
@@ -8407,7 +8467,9 @@
             },
             "delete": {
                 "tags": [
-                    "articles"
+                    "articles",
+                    "documented",
+                    "featured"
                 ],
                 "summary": "Delete Article",
                 "description": "Delete an article.",
@@ -8480,7 +8542,9 @@
         "/api/v1/articles/{id}/receivers": {
             "get": {
                 "tags": [
-                    "articles"
+                    "articles",
+                    "documented",
+                    "featured"
                 ],
                 "summary": "Get Article Receivers Count",
                 "description": "Get number of potential receivers for an article.",
@@ -8540,7 +8604,9 @@
         "/api/v1/articles/{id}/preview": {
             "post": {
                 "tags": [
-                    "articles"
+                    "articles",
+                    "documented",
+                    "featured"
                 ],
                 "summary": "Send Article Preview",
                 "description": "Send an article preview by email.",
@@ -8628,7 +8694,9 @@
         "/api/v1/articles/{id}/send": {
             "post": {
                 "tags": [
-                    "articles"
+                    "articles",
+                    "documented",
+                    "featured"
                 ],
                 "summary": "Send Article",
                 "description": "Send an article by email to all subscribers.",
@@ -8709,7 +8777,9 @@
         "/api/v1/articles/unsubscribe": {
             "get": {
                 "tags": [
-                    "articles"
+                    "articles",
+                    "documented",
+                    "featured"
                 ],
                 "summary": "Email Unsubscribe",
                 "operationId": "articles:email_unsubscribe",
@@ -9448,7 +9518,8 @@
         "/api/v1/advertisements/": {
             "get": {
                 "tags": [
-                    "advertisements"
+                    "advertisements",
+                    "documented"
                 ],
                 "summary": "List Campaigns",
                 "description": "List active advertisement campaigns for a benefit.",
@@ -9555,7 +9626,8 @@
         "/api/v1/advertisements/{id}": {
             "get": {
                 "tags": [
-                    "advertisements"
+                    "advertisements",
+                    "documented"
                 ],
                 "summary": "Get Campaign",
                 "description": "Get an advertisement campaign by ID.",
@@ -9611,7 +9683,8 @@
         "/api/v1/advertisements/{id}/view": {
             "post": {
                 "tags": [
-                    "advertisements"
+                    "advertisements",
+                    "documented"
                 ],
                 "summary": "Track View",
                 "description": "Track a view on an advertisement campaign.",
@@ -10430,7 +10503,9 @@
         "/api/v1/oauth2/": {
             "get": {
                 "tags": [
-                    "oauth2"
+                    "oauth2",
+                    "documented",
+                    "featured"
                 ],
                 "summary": "List Clients",
                 "description": "List OAuth2 clients.",
@@ -10501,7 +10576,9 @@
         "/api/v1/oauth2/register": {
             "post": {
                 "tags": [
-                    "oauth2"
+                    "oauth2",
+                    "documented",
+                    "featured"
                 ],
                 "summary": "Create Client",
                 "description": "Create an OAuth2 client.",
@@ -10552,7 +10629,9 @@
         "/api/v1/oauth2/register/{client_id}": {
             "get": {
                 "tags": [
-                    "oauth2"
+                    "oauth2",
+                    "documented",
+                    "featured"
                 ],
                 "summary": "Get Client",
                 "description": "Get an OAuth2 client by Client ID.",
@@ -10603,7 +10682,9 @@
             },
             "put": {
                 "tags": [
-                    "oauth2"
+                    "oauth2",
+                    "documented",
+                    "featured"
                 ],
                 "summary": "Update Client",
                 "description": "Update an OAuth2 client.",
@@ -10664,7 +10745,9 @@
             },
             "delete": {
                 "tags": [
-                    "oauth2"
+                    "oauth2",
+                    "documented",
+                    "featured"
                 ],
                 "summary": "Delete Client",
                 "description": "Delete an OAuth2 client.",
@@ -10717,7 +10800,9 @@
         "/api/v1/oauth2/authorize": {
             "get": {
                 "tags": [
-                    "oauth2"
+                    "oauth2",
+                    "documented",
+                    "featured"
                 ],
                 "summary": "Authorize",
                 "operationId": "oauth2:authorize",
@@ -10765,7 +10850,9 @@
         "/api/v1/oauth2/consent": {
             "post": {
                 "tags": [
-                    "oauth2"
+                    "oauth2",
+                    "documented",
+                    "featured"
                 ],
                 "summary": "Consent",
                 "operationId": "oauth2:consent",
@@ -10815,7 +10902,9 @@
         "/api/v1/oauth2/token": {
             "post": {
                 "tags": [
-                    "oauth2"
+                    "oauth2",
+                    "documented",
+                    "featured"
                 ],
                 "summary": "Request Token",
                 "description": "Request an access token using a valid grant.",
@@ -10835,7 +10924,9 @@
         "/api/v1/oauth2/revoke": {
             "post": {
                 "tags": [
-                    "oauth2"
+                    "oauth2",
+                    "documented",
+                    "featured"
                 ],
                 "summary": "Revoke Token",
                 "description": "Revoke an access token or a refresh token.",
@@ -10855,7 +10946,9 @@
         "/api/v1/oauth2/introspect": {
             "post": {
                 "tags": [
-                    "oauth2"
+                    "oauth2",
+                    "documented",
+                    "featured"
                 ],
                 "summary": "Introspect Token",
                 "description": "Get information about an access token.",
@@ -10875,7 +10968,9 @@
         "/api/v1/oauth2/userinfo": {
             "get": {
                 "tags": [
-                    "oauth2"
+                    "oauth2",
+                    "documented",
+                    "featured"
                 ],
                 "summary": "Get User Info",
                 "description": "Get information about the authenticated user.",
@@ -10898,7 +10993,9 @@
             },
             "post": {
                 "tags": [
-                    "oauth2"
+                    "oauth2",
+                    "documented",
+                    "featured"
                 ],
                 "summary": "Get User Info",
                 "description": "Get information about the authenticated user.",
@@ -10923,7 +11020,8 @@
         "/api/v1/benefits/": {
             "get": {
                 "tags": [
-                    "benefits"
+                    "benefits",
+                    "documented"
                 ],
                 "summary": "List Benefits",
                 "description": "List benefits.",
@@ -10931,8 +11029,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "benefits:read",
-                            "benefits:write"
+                            "benefits:write",
+                            "benefits:read"
                         ]
                     },
                     {
@@ -11036,7 +11134,8 @@
             },
             "post": {
                 "tags": [
-                    "benefits"
+                    "benefits",
+                    "documented"
                 ],
                 "summary": "Create Benefit",
                 "description": "Create a benefit.",
@@ -11139,7 +11238,8 @@
         "/api/v1/benefits/{id}": {
             "get": {
                 "tags": [
-                    "benefits"
+                    "benefits",
+                    "documented"
                 ],
                 "summary": "Get Benefit",
                 "description": "Get a benefit by ID.",
@@ -11147,8 +11247,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "benefits:read",
-                            "benefits:write"
+                            "benefits:write",
+                            "benefits:read"
                         ]
                     },
                     {
@@ -11228,7 +11328,8 @@
             },
             "patch": {
                 "tags": [
-                    "benefits"
+                    "benefits",
+                    "documented"
                 ],
                 "summary": "Update Benefit",
                 "description": "Update a benefit.",
@@ -11356,7 +11457,8 @@
             },
             "delete": {
                 "tags": [
-                    "benefits"
+                    "benefits",
+                    "documented"
                 ],
                 "summary": "Delete Benefit",
                 "description": "Delete a benefit.\n\n> [!WARNING]\n> Every grants associated with the benefit will be revoked.\n> Users will lose access to the benefit.",
@@ -11429,7 +11531,8 @@
         "/api/v1/benefits/{id}/grants": {
             "get": {
                 "tags": [
-                    "benefits"
+                    "benefits",
+                    "documented"
                 ],
                 "summary": "List Benefit Grants",
                 "description": "List the individual grants for a benefit.\n\nIt's especially useful to check if a user has been granted a benefit.",
@@ -11437,8 +11540,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "benefits:read",
-                            "benefits:write"
+                            "benefits:write",
+                            "benefits:read"
                         ]
                     },
                     {
@@ -11589,8 +11692,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "webhooks:read",
-                            "webhooks:write"
+                            "webhooks:write",
+                            "webhooks:read"
                         ]
                     },
                     {
@@ -11756,8 +11859,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "webhooks:read",
-                            "webhooks:write"
+                            "webhooks:write",
+                            "webhooks:read"
                         ]
                     },
                     {
@@ -11986,8 +12089,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "webhooks:read",
-                            "webhooks:write"
+                            "webhooks:write",
+                            "webhooks:read"
                         ]
                     },
                     {
@@ -12141,6 +12244,7 @@
             "get": {
                 "tags": [
                     "products",
+                    "documented",
                     "featured"
                 ],
                 "summary": "List Products",
@@ -12300,6 +12404,7 @@
             "post": {
                 "tags": [
                     "products",
+                    "documented",
                     "featured"
                 ],
                 "summary": "Create Product",
@@ -12365,6 +12470,7 @@
             "get": {
                 "tags": [
                     "products",
+                    "documented",
                     "featured"
                 ],
                 "summary": "Get Product",
@@ -12436,6 +12542,7 @@
             "patch": {
                 "tags": [
                     "products",
+                    "documented",
                     "featured"
                 ],
                 "summary": "Update Product",
@@ -12527,6 +12634,7 @@
             "post": {
                 "tags": [
                     "products",
+                    "documented",
                     "featured"
                 ],
                 "summary": "Update Product Benefits",
@@ -12617,7 +12725,8 @@
         "/api/v1/orders/": {
             "get": {
                 "tags": [
-                    "orders"
+                    "orders",
+                    "documented"
                 ],
                 "summary": "List Orders",
                 "description": "List orders.",
@@ -12803,7 +12912,8 @@
         "/api/v1/orders/{id}": {
             "get": {
                 "tags": [
-                    "orders"
+                    "orders",
+                    "documented"
                 ],
                 "summary": "Get Order",
                 "description": "Get an order by ID.",
@@ -12873,7 +12983,8 @@
         "/api/v1/orders/{id}/invoice": {
             "get": {
                 "tags": [
-                    "orders"
+                    "orders",
+                    "documented"
                 ],
                 "summary": "Get Order Invoice",
                 "description": "Get an order's invoice data.",
@@ -12943,7 +13054,9 @@
         "/api/v1/checkouts/": {
             "post": {
                 "tags": [
-                    "checkouts"
+                    "checkouts",
+                    "documented",
+                    "featured"
                 ],
                 "summary": "Create Checkout",
                 "description": "Create a checkout session.",
@@ -12997,7 +13110,9 @@
         "/api/v1/checkouts/{id}": {
             "get": {
                 "tags": [
-                    "checkouts"
+                    "checkouts",
+                    "documented",
+                    "featured"
                 ],
                 "summary": "Get Checkout",
                 "description": "Get an active checkout session by ID.",
@@ -13040,7 +13155,8 @@
         "/api/v1/files/": {
             "get": {
                 "tags": [
-                    "files"
+                    "files",
+                    "documented"
                 ],
                 "summary": "List Files",
                 "description": "List files.",
@@ -13151,7 +13267,8 @@
             },
             "post": {
                 "tags": [
-                    "files"
+                    "files",
+                    "documented"
                 ],
                 "summary": "Create File",
                 "description": "Create a file.",
@@ -13222,7 +13339,8 @@
         "/api/v1/files/{id}/uploaded": {
             "post": {
                 "tags": [
-                    "files"
+                    "files",
+                    "documented"
                 ],
                 "summary": "Complete File Upload",
                 "description": "Complete a file upload.",
@@ -13307,7 +13425,8 @@
         "/api/v1/files/{id}": {
             "patch": {
                 "tags": [
-                    "files"
+                    "files",
+                    "documented"
                 ],
                 "summary": "Update File",
                 "description": "Update a file.",
@@ -13390,7 +13509,8 @@
             },
             "delete": {
                 "tags": [
-                    "files"
+                    "files",
+                    "documented"
                 ],
                 "summary": "Delete File",
                 "description": "Delete a file.",
@@ -13461,7 +13581,8 @@
         "/api/v1/metrics/": {
             "get": {
                 "tags": [
-                    "metrics"
+                    "metrics",
+                    "documented"
                 ],
                 "summary": "Get Metrics",
                 "description": "Get metrics about your orders and subscriptions.",
@@ -13605,7 +13726,8 @@
         "/api/v1/metrics/limits": {
             "get": {
                 "tags": [
-                    "metrics"
+                    "metrics",
+                    "documented"
                 ],
                 "summary": "Get Metrics Limits",
                 "description": "Get the interval limits for the metrics endpoint.",
@@ -28946,6 +29068,7 @@
                     "processor_fee",
                     "refund",
                     "dispute",
+                    "dispute_reversal",
                     "balance",
                     "payout"
                 ],
@@ -30945,5 +31068,15 @@
                 "scheme": "bearer"
             }
         }
-    }
+    },
+    "tags": [
+        {
+            "name": "documented",
+            "description": "Endpoints shown and documented in the Polar API documentation."
+        },
+        {
+            "name": "featured",
+            "description": "Endpoints featured in the Polar API documentation for their interest in common use-cases."
+        }
+    ]
 }

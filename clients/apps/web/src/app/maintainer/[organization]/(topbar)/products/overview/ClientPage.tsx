@@ -81,7 +81,7 @@ export default function ClientPage() {
     return 0
   }, [])
 
-  if (!org?.feature_settings?.subscriptions_enabled) {
+  if (org && !org.feature_settings?.subscriptions_enabled) {
     return <EnableProductsView organization={org} />
   }
 

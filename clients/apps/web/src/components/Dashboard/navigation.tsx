@@ -1,7 +1,6 @@
 import { Organization } from '@polar-sh/sdk'
 
 import { shouldBeOnboarded } from '@/hooks/onboarding'
-import { isFeatureEnabled } from '@/utils/feature-flags'
 import { ArrowUpRightIcon } from '@heroicons/react/20/solid'
 import {
   AllInclusiveOutlined,
@@ -208,9 +207,7 @@ const maintainerRoutesList = (org: Organization): Route[] => [
     checkIsActive: (currentRoute: string): boolean => {
       return currentRoute.startsWith(`/maintainer/${org.name}/sales`)
     },
-    get if() {
-      return isFeatureEnabled('products')
-    },
+    if: true,
     subs: [
       {
         title: 'Overview',
@@ -316,9 +313,7 @@ const backerRoutesList = (): Route[] => [
     link: `/purchases`,
     icon: <DiamondOutlined className="h-5 w-5" fontSize="inherit" />,
     postIcon: undefined,
-    get if() {
-      return isFeatureEnabled('products')
-    },
+    if: true,
     subs: undefined,
   },
   {

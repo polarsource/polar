@@ -1,7 +1,6 @@
 'use client'
 
 import { useProducts } from '@/hooks/queries'
-import { isFeatureEnabled } from '@/utils/feature-flags'
 import { organizationPageLink } from '@/utils/nav'
 import { Organization } from '@polar-sh/sdk'
 import Link from 'next/link'
@@ -48,7 +47,7 @@ export const OrganizationPublicPageNav = ({
           </Link>
         )}
 
-        {isFeatureEnabled('products') && renderProductsTab && (
+        {renderProductsTab && (
           <Link href={organizationPageLink(organization, 'products')}>
             <TabsTrigger value="products" size="small">
               Products

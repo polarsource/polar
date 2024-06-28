@@ -7,7 +7,7 @@ from polar.auth.dependencies import WebUser, WebUserOrAnonymous
 from polar.auth.models import is_user
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.models import OAuth2Token, Organization
-from polar.openapi import IN_DEVELOPMENT_ONLY
+from polar.openapi import IN_DEVELOPMENT_ONLY, APITag
 from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession, get_db_session
 from polar.routing import APIRouter
@@ -32,7 +32,9 @@ from ..service.oauth2_client import oauth2_client as oauth2_client_service
 from ..sub_type import SubType
 from ..userinfo import UserInfo, generate_user_info
 
-router = APIRouter(prefix="/oauth2", tags=["oauth2"])
+router = APIRouter(
+    prefix="/oauth2", tags=["oauth2", APITag.documented, APITag.featured]
+)
 
 
 @router.get("/", summary="List Clients", response_model=ListResource[OAuth2Client])

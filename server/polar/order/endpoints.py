@@ -7,6 +7,7 @@ from polar.exceptions import ResourceNotFound
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.models import Order
 from polar.models.product_price import ProductPriceType
+from polar.openapi import APITag
 from polar.postgres import AsyncSession, get_db_session
 from polar.routing import APIRouter
 
@@ -15,7 +16,7 @@ from .schemas import Order as OrderSchema
 from .schemas import OrderInvoice
 from .service import order as order_service
 
-router = APIRouter(prefix="/orders", tags=["orders"])
+router = APIRouter(prefix="/orders", tags=["orders", APITag.documented])
 
 
 OrderID = Annotated[UUID4, Path(description="The order ID.")]

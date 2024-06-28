@@ -8,7 +8,7 @@ from polar.authz.service import AccessType, Authz
 from polar.exceptions import NotPermitted, ResourceNotFound
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.models.article import ArticleVisibility
-from polar.openapi import IN_DEVELOPMENT_ONLY
+from polar.openapi import IN_DEVELOPMENT_ONLY, APITag
 from polar.postgres import AsyncSession, get_db_session
 from polar.routing import APIRouter
 
@@ -17,7 +17,9 @@ from .schemas import Article as ArticleSchema
 from .schemas import ArticleCreate, ArticlePreview, ArticleReceivers, ArticleUpdate
 from .service import article_service
 
-router = APIRouter(tags=["articles"], prefix="/articles")
+router = APIRouter(
+    prefix="/articles", tags=["articles", APITag.documented, APITag.featured]
+)
 
 
 ArticleID = Annotated[UUID4, Path(description="The article ID.")]

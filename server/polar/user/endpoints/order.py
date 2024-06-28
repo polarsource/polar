@@ -9,6 +9,7 @@ from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.sorting import Sorting, SortingGetter
 from polar.models import Order
 from polar.models.product_price import ProductPriceType
+from polar.openapi import APITag
 from polar.postgres import get_db_session
 from polar.routing import APIRouter
 
@@ -17,7 +18,7 @@ from ..schemas.order import UserOrder, UserOrderInvoice
 from ..service.order import SortProperty
 from ..service.order import user_order as user_order_service
 
-router = APIRouter(prefix="/orders")
+router = APIRouter(prefix="/orders", tags=[APITag.documented, APITag.featured])
 
 OrderID = Annotated[UUID4, Path(description="The order ID.")]
 OrderNotFound = {"description": "Order not found.", "model": ResourceNotFound.schema()}

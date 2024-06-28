@@ -8,6 +8,7 @@ from polar.authz.service import AccessType, Authz
 from polar.exceptions import NotPermitted
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.models import File, Organization
+from polar.openapi import APITag
 from polar.organization.resolver import get_payload_organization
 from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession, get_db_session
@@ -27,7 +28,7 @@ from .service import file as file_service
 
 log = structlog.get_logger()
 
-router = APIRouter(prefix="/files", tags=["files"])
+router = APIRouter(prefix="/files", tags=["files", APITag.documented])
 
 FileID = Annotated[UUID4, Path(description="The file ID.")]
 FileNotFoundResponse = {

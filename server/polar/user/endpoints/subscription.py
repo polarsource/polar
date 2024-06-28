@@ -8,6 +8,7 @@ from polar.kit.db.postgres import AsyncSession
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.sorting import Sorting, SortingGetter
 from polar.models import Subscription
+from polar.openapi import APITag
 from polar.postgres import get_db_session
 from polar.routing import APIRouter
 from polar.subscription.service import AlreadySubscribed
@@ -25,7 +26,7 @@ from ..service.subscription import (
 )
 from ..service.subscription import user_subscription as user_subscription_service
 
-router = APIRouter(prefix="/subscriptions")
+router = APIRouter(prefix="/subscriptions", tags=[APITag.documented, APITag.featured])
 
 SubscriptionID = Annotated[UUID4, Path(description="The subscription ID.")]
 SubscriptionNotFound = {

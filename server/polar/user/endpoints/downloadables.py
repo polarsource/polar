@@ -4,6 +4,7 @@ from fastapi.responses import RedirectResponse
 from pydantic import UUID4
 
 from polar.kit.pagination import ListResource, PaginationParamsQuery
+from polar.openapi import APITag
 from polar.postgres import AsyncSession, get_db_session
 from polar.routing import APIRouter
 
@@ -13,7 +14,7 @@ from ..service.downloadables import downloadable as downloadable_service
 
 log = structlog.get_logger()
 
-router = APIRouter(prefix="/downloadables")
+router = APIRouter(prefix="/downloadables", tags=[APITag.documented, APITag.featured])
 
 
 @router.get(

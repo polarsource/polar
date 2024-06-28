@@ -10,7 +10,7 @@ from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.sorting import Sorting, SortingGetter
 from polar.models import AdvertisementCampaign as AdvertisementCampaignModel
 from polar.models.benefit import BenefitAds
-from polar.openapi import IN_DEVELOPMENT_ONLY
+from polar.openapi import IN_DEVELOPMENT_ONLY, APITag
 from polar.postgres import AsyncSession, get_db_session
 from polar.routing import APIRouter
 
@@ -20,7 +20,7 @@ from .service import advertisement_campaign as advertisement_campaign_service
 
 log = structlog.get_logger()
 
-router = APIRouter(prefix="/advertisements", tags=["advertisements"])
+router = APIRouter(prefix="/advertisements", tags=["advertisements", APITag.documented])
 
 AdvertisementCampaignID = Annotated[
     UUID4, Path(description="The advertisement campaign ID.")

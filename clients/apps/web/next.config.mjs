@@ -7,6 +7,9 @@ import { bundledLanguages, createHighlighter } from 'shiki';
 import { themeConfig, themesList, transformers } from './shiki.config.mjs'
 
 const POLAR_AUTH_COOKIE_KEY = 'polar_session'
+const ENVIRONMENT = process.env.VERCEL_ENV ||
+  process.env.NEXT_PUBLIC_VERCEL_ENV ||
+  'development'
 
 const defaultFrontendHostname = process.env.NEXT_PUBLIC_FRONTEND_BASE_URL
   ? new URL(process.env.NEXT_PUBLIC_FRONTEND_BASE_URL).hostname
@@ -18,10 +21,6 @@ const nextConfig = {
   swcMinify: true,
   transpilePackages: ['polarkit', 'shiki'],
   pageExtensions: ['js', 'jsx', 'md', 'mdx', 'ts', 'tsx'],
-
-  // Do not do any fiddling with trailing slashes
-  trailingSlash: undefined,
-  skipTrailingSlashRedirect: true,
 
   images: {
     remotePatterns: [
@@ -41,34 +40,48 @@ const nextConfig = {
   },
 
   async rewrites() {
-    return [
-      {
-        source: '/legal/privacy',
-        destination: 'https://polarsource.github.io/legal/privacy-policy.pdf',
-      },
-      {
-        source: '/legal/terms',
-        destination: 'https://polarsource.github.io/legal/terms.pdf',
-      },
+    return {
+      beforeFiles: [
+        // docs.polar.sh rewrite
+        {
+          source: '/:path*',
+          has: [
+            {
+              type: 'host',
+              value: 'docs.polar.sh',
+            },
+          ],
+          destination: '/docs/:path*',
+        },
 
-      // polar.new rewrite
-      {
-        source: '/',
-        destination: '/new',
-        has: [
-          {
-            type: 'host',
-            value: 'polar.new',
-          },
-        ],
-      },
+        {
+          source: '/legal/privacy',
+          destination: 'https://polarsource.github.io/legal/privacy-policy.pdf',
+        },
+        {
+          source: '/legal/terms',
+          destination: 'https://polarsource.github.io/legal/terms.pdf',
+        },
 
-      // PostHog Rewrite
-      {
-        source: '/ingest/:path*',
-        destination: 'https://app.posthog.com/:path*',
-      },
-    ]
+        // polar.new rewrite
+        {
+          source: '/',
+          destination: '/new',
+          has: [
+            {
+              type: 'host',
+              value: 'polar.new',
+            },
+          ],
+        },
+
+        // PostHog Rewrite
+        {
+          source: '/ingest/:path*',
+          destination: 'https://app.posthog.com/:path*',
+        },
+      ]
+    }
   },
   async redirects() {
     return [
@@ -186,22 +199,49 @@ const nextConfig = {
         permanent: false,
       },
 
-      // Docs redirects
-      {
-        source: '/docs',
-        destination: '/docs/overview',
-        permanent: false
-      },
-      {
-        source: '/docs/api',
-        destination: '/docs/api/introduction',
-        permanent: false
-      },
-      {
-        source: '/docs/guides',
-        destination: '/docs/guides/overview',
-        permanent: false
-      },
+
+      // Redirect /docs to docs.polar.sh
+      ...true ?
+        [{
+          source: '/docs/:path*',
+          destination: 'https://docs.polar.sh/:path*',
+          permanent: false,
+          missing: [
+            {
+              type: 'host',
+              value: 'docs.polar.sh'
+            }
+          ]
+        }] :
+        [],
+
+      // Generate docs redirections
+      // We have to explicitly define the ones for docs.polar.sh, because redirects are evalated **before** rewrites
+      ...[
+        { source: '/', destination: '/overview' },
+        { source: '/api', destination: '/api/introduction' },
+        { source: '/guides', destination: '/guides/overview' },
+      ].reduce((acc, { source, destination }) => (
+        [
+          ...acc,
+          {
+            source: `/docs${source}`,
+            destination: `/docs${destination}`,
+            permanent: false
+          },
+          {
+            source: `${source}`,
+            destination: `${destination}`,
+            permanent: false,
+            has: [
+              {
+                type: 'host',
+                value: 'docs.polar.sh'
+              }
+            ]
+          }
+        ]
+      ), []),
 
       {
         source: '/dashboard',

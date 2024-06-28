@@ -78,16 +78,17 @@ def ensure_expected_response(
 
 
 class RefreshAccessToken(BaseModel):
-    access_token: str = Field(default=...)  # The new access token
-    expires_in: int = Field(
-        default=...
-    )  # The number of seconds until access_token expires (will always be 28800)
-    refresh_token: str | None = Field(
-        default=...
-    )  # A new refresh token (is only set if the app is using expiring refresh tokens)
+    access_token: str = Field(default=...)
+    # The number of seconds until access_token expires (will always be 28800)
+    expires_in: int = Field(default=...)
+    # A new refresh token (is only set if the app is using expiring refresh tokens)
+    refresh_token: str | None = Field(default=...)
+    # The value will always be 15897600 (6 months) unless token expiration is disabled
     refresh_token_expires_in: int | None = Field(default=...)
-    scope: str = Field(default=...)  # Always an empty string
-    token_type: str = Field(default=...)  # Always "bearer"
+    # Always an empty string
+    scope: str = Field(default=...)
+    # Always "bearer"
+    token_type: str = Field(default=...)
 
 
 async def get_user_client(
@@ -165,10 +166,16 @@ async def refresh_oauth_account(
             refreshed = RefreshAccessToken.model_validate(data)
 
             # update
+            epoch_now = int(time.time())
             oauth_db.access_token = refreshed.access_token
-            oauth_db.expires_at = int(time.time()) + refreshed.expires_in
+            oauth_db.expires_at = epoch_now + refreshed.expires_in
             if refreshed.refresh_token:
                 oauth_db.refresh_token = refreshed.refresh_token
+
+            if refreshed.refresh_token_expires_in:
+                oauth_db.refresh_token_expires_at = (
+                    epoch_now + refreshed.refresh_token_expires_in
+                )
 
             log.info(
                 "github.auth.refresh.succeeded",

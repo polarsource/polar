@@ -38,6 +38,9 @@ class OAuthAccount(RecordModel):
     refresh_token: Mapped[str | None] = mapped_column(
         String(1024), nullable=True, default=None
     )
+    refresh_token_expires_at: Mapped[int | None] = mapped_column(
+        Integer, nullable=True, default=None
+    )
     account_id: Mapped[str] = mapped_column(String(320), nullable=False)
     account_email: Mapped[str] = mapped_column(String(320), nullable=False)
 

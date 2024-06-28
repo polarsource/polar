@@ -135,6 +135,7 @@ class GithubUserService(UserService):
                     access_token=tokens.access_token,
                     expires_at=tokens.expires_at,
                     refresh_token=tokens.refresh_token,
+                    refresh_token_expires_at=tokens.refresh_token_expires_at,
                     account_id=str(github_user.id),
                     account_email=email,
                     account_username=github_user.login,
@@ -201,6 +202,7 @@ class GithubUserService(UserService):
         oauth_account.access_token = tokens.access_token
         oauth_account.expires_at = tokens.expires_at
         oauth_account.refresh_token = tokens.refresh_token
+        oauth_account.refresh_token_expires_at = tokens.refresh_token_expires_at
         oauth_account.account_username = github_user.login
         session.add(oauth_account)
 
@@ -358,6 +360,7 @@ class GithubUserService(UserService):
         oauth_account.access_token = tokens.access_token
         oauth_account.expires_at = tokens.expires_at
         oauth_account.refresh_token = tokens.refresh_token
+        oauth_account.refresh_token_expires_at = tokens.refresh_token_expires_at
         oauth_account.account_email = email
         oauth_account.account_username = github_user.login
         session.add(oauth_account)

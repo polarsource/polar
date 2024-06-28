@@ -112,8 +112,8 @@ export const useMaintainerDisabledRoutes = (
       .filter((o) => {
         switch (o.id) {
           case 'org-issues':
-          case 'org-subscriptions':
           case 'newsletter':
+          case 'products':
           case 'donations':
             return true
           default:
@@ -207,7 +207,7 @@ const maintainerRoutesList = (org: Organization): Route[] => [
     checkIsActive: (currentRoute: string): boolean => {
       return currentRoute.startsWith(`/maintainer/${org.name}/sales`)
     },
-    if: true,
+    if: org.feature_settings?.subscriptions_enabled,
     subs: [
       {
         title: 'Overview',

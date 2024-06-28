@@ -3,7 +3,7 @@
     "info": {
         "title": "Polar API",
         "summary": "Polar HTTP and Webhooks API",
-        "description": "Read the docs at https://polar.sh/docs/api-reference",
+        "description": "Read the docs at https://docs.polar.sh/api",
         "version": "0.1.0"
     },
     "servers": [
@@ -6921,8 +6921,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -7002,8 +7002,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -7086,8 +7086,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -7148,8 +7148,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             },
             "patch": {
@@ -7217,8 +7217,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -7266,9 +7266,9 @@
                             },
                             "description": "Filter by the type of purchase the customer made.",
                             "default": [
-                                "donation",
+                                "subscription",
                                 "order",
-                                "subscription"
+                                "donation"
                             ],
                             "title": "Customer Types"
                         },
@@ -7334,8 +7334,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -7405,8 +7405,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -7470,8 +7470,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -7528,8 +7528,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -7586,8 +7586,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -7643,8 +7643,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             },
             "post": {
@@ -7708,8 +7708,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -7725,8 +7725,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "subscriptions:write",
-                            "subscriptions:read"
+                            "subscriptions:read",
+                            "subscriptions:write"
                         ]
                     },
                     {
@@ -7900,8 +7900,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             },
             "post": {
@@ -7955,8 +7955,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -8012,8 +8012,8 @@
                     }
                 ],
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -8029,8 +8029,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "subscriptions:write",
-                            "subscriptions:read"
+                            "subscriptions:read",
+                            "subscriptions:write"
                         ]
                     },
                     {
@@ -8079,8 +8079,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -8246,9 +8246,9 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
+                    "Organization",
                     "User",
-                    "Anonymous",
-                    "Organization"
+                    "Anonymous"
                 ]
             },
             "post": {
@@ -8303,8 +8303,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -8375,9 +8375,9 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
+                    "Organization",
                     "User",
-                    "Anonymous",
-                    "Organization"
+                    "Anonymous"
                 ]
             },
             "patch": {
@@ -8466,8 +8466,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             },
             "delete": {
@@ -8539,8 +8539,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -8601,8 +8601,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -8691,8 +8691,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -8774,8 +8774,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -11133,8 +11133,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             },
             "post": {
@@ -11235,8 +11235,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -11327,8 +11327,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             },
             "patch": {
@@ -11456,8 +11456,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             },
             "delete": {
@@ -11528,8 +11528,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -11681,8 +11681,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -11794,8 +11794,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             },
             "post": {
@@ -11848,8 +11848,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -11919,8 +11919,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             },
             "patch": {
@@ -12007,8 +12007,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             },
             "delete": {
@@ -12078,8 +12078,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -12172,8 +12172,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -12240,8 +12240,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -12258,8 +12258,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "products:read",
-                            "products:write"
+                            "products:write",
+                            "products:read"
                         ]
                     },
                     {
@@ -12401,9 +12401,9 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
+                    "Organization",
                     "User",
-                    "Anonymous",
-                    "Organization"
+                    "Anonymous"
                 ]
             },
             "post": {
@@ -12466,8 +12466,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -12484,8 +12484,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "products:read",
-                            "products:write"
+                            "products:write",
+                            "products:read"
                         ]
                     },
                     {
@@ -12539,9 +12539,9 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
+                    "Organization",
                     "User",
-                    "Anonymous",
-                    "Organization"
+                    "Anonymous"
                 ]
             },
             "patch": {
@@ -12630,8 +12630,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -12722,8 +12722,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -12909,8 +12909,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -12980,8 +12980,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -13051,8 +13051,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -13266,8 +13266,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             },
             "post": {
@@ -13336,8 +13336,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -13422,8 +13422,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -13508,8 +13508,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             },
             "delete": {
@@ -13578,8 +13578,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -13723,8 +13723,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -13760,8 +13760,8 @@
                     }
                 ],
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         }

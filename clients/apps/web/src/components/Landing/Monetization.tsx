@@ -261,7 +261,7 @@ export const Monetization = () => {
               x="0"
               y="0"
               viewBox="0 0 300 300"
-              enable-background="new 0 0 300 300"
+              enableBackground="new 0 0 300 300"
               xmlSpace="preserve"
             >
               <defs>

@@ -117,6 +117,7 @@ async def get_refreshed_oauth_client(
     if oauth.platform != OAuthPlatform.github:
         raise Exception("unexpected platform")
 
+    access_token = oauth.access_token
     # if token expires within 30 minutes, refresh it
     if _should_refresh(oauth):
         async with locker.lock(
@@ -164,6 +165,7 @@ async def get_refreshed_oauth_client(
                         platform=oauth.platform,
                     )
                     session.add(oauth_db)
+                    access_token = oauth_db.access_token
                 else:
                     log.error(
                         "github.auth.refresh.failed",
@@ -178,7 +180,7 @@ async def get_refreshed_oauth_client(
                     e=e,
                 )
 
-    return get_client(oauth.access_token)
+    return get_client(access_token)
 
 
 def get_client(access_token: str) -> GitHub[TokenAuthStrategy]:

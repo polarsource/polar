@@ -1,6 +1,5 @@
 'use client'
 
-import { isFeatureEnabled } from '@/utils/feature-flags'
 import { ErrorMessage } from '@hookform/error-message'
 import { ClearOutlined } from '@mui/icons-material'
 import {
@@ -269,7 +268,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
         <>
           <div className="flex flex-col gap-4">
             <FormLabel>Pricing</FormLabel>
-            {!update && isFeatureEnabled('products') && (
+            {!update && (
               <ToggleGroup
                 className="gap-4"
                 type="single"

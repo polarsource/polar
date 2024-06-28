@@ -1,6 +1,5 @@
 import { useDiscordGuild } from '@/hooks/queries'
 import { getBotDiscordAuthorizeURL } from '@/utils/auth'
-import { isFeatureEnabled } from '@/utils/feature-flags'
 import {
   BenefitAdsCreate,
   BenefitCreate,
@@ -377,8 +376,6 @@ const BenefitTypeSelect = ({}) => {
                       switch (value) {
                         case BenefitType.ARTICLES:
                           return false
-                        case BenefitType.DOWNLOADABLES:
-                          return isFeatureEnabled('benefit-downloadables')
                         default:
                           return true
                       }

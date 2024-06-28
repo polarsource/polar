@@ -65,7 +65,7 @@ export class PersonalAccessTokenApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/personal_access_tokens/`,
+            path: `/v1/personal_access_tokens/`,
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
@@ -107,7 +107,7 @@ export class PersonalAccessTokenApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/personal_access_tokens/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
+            path: `/v1/personal_access_tokens/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
             method: 'DELETE',
             headers: headerParameters,
             query: queryParameters,
@@ -149,7 +149,7 @@ export class PersonalAccessTokenApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/personal_access_tokens/`,
+            path: `/v1/personal_access_tokens/`,
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,

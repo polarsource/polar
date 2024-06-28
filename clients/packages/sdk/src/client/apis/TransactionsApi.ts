@@ -87,7 +87,7 @@ export class TransactionsApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/transactions/payouts`,
+            path: `/v1/transactions/payouts`,
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
@@ -129,7 +129,7 @@ export class TransactionsApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/transactions/payouts/{id}/csv`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
+            path: `/v1/transactions/payouts/{id}/csv`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
@@ -178,7 +178,7 @@ export class TransactionsApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/transactions/payouts`,
+            path: `/v1/transactions/payouts`,
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
@@ -223,7 +223,7 @@ export class TransactionsApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/transactions/summary`,
+            path: `/v1/transactions/summary`,
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
@@ -268,7 +268,7 @@ export class TransactionsApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/transactions/lookup`,
+            path: `/v1/transactions/lookup`,
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
@@ -334,7 +334,7 @@ export class TransactionsApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/transactions/search`,
+            path: `/v1/transactions/search`,
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,

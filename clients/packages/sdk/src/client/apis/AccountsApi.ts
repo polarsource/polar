@@ -75,7 +75,7 @@ export class AccountsApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/accounts`,
+            path: `/v1/accounts`,
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
@@ -117,7 +117,7 @@ export class AccountsApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/accounts/{id}/dashboard_link`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
+            path: `/v1/accounts/{id}/dashboard_link`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
@@ -158,7 +158,7 @@ export class AccountsApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/accounts/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
+            path: `/v1/accounts/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
@@ -210,7 +210,7 @@ export class AccountsApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/accounts/{id}/onboarding_link`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
+            path: `/v1/accounts/{id}/onboarding_link`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
@@ -252,7 +252,7 @@ export class AccountsApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/accounts/search`,
+            path: `/v1/accounts/search`,
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,

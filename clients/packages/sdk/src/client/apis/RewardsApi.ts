@@ -65,7 +65,7 @@ export class RewardsApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/rewards/search`,
+            path: `/v1/rewards/search`,
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
@@ -112,7 +112,7 @@ export class RewardsApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/rewards/summary`,
+            path: `/v1/rewards/summary`,
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,

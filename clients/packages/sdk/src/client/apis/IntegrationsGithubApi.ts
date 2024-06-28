@@ -104,7 +104,7 @@ export class IntegrationsGithubApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/integrations/github/organizations/{id}/check_permissions`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
+            path: `/v1/integrations/github/organizations/{id}/check_permissions`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
@@ -145,7 +145,7 @@ export class IntegrationsGithubApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/integrations/github/organizations/{id}/billing`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
+            path: `/v1/integrations/github/organizations/{id}/billing`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
@@ -188,7 +188,7 @@ export class IntegrationsGithubApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/integrations/github/installations`,
+            path: `/v1/integrations/github/installations`,
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
@@ -235,7 +235,7 @@ export class IntegrationsGithubApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/integrations/github/authorize`,
+            path: `/v1/integrations/github/authorize`,
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
@@ -289,7 +289,7 @@ export class IntegrationsGithubApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/integrations/github/callback`,
+            path: `/v1/integrations/github/callback`,
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
@@ -336,7 +336,7 @@ export class IntegrationsGithubApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/integrations/github/lookup_user`,
+            path: `/v1/integrations/github/lookup_user`,
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
@@ -382,7 +382,7 @@ export class IntegrationsGithubApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/integrations/github/organizations/{id}/installation`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
+            path: `/v1/integrations/github/organizations/{id}/installation`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
@@ -431,7 +431,7 @@ export class IntegrationsGithubApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/integrations/github/synchronize_members`,
+            path: `/v1/integrations/github/synchronize_members`,
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
@@ -457,7 +457,7 @@ export class IntegrationsGithubApi extends runtime.BaseAPI {
         const headerParameters: runtime.HTTPHeaders = {};
 
         const response = await this.request({
-            path: `/api/v1/integrations/github/webhook`,
+            path: `/v1/integrations/github/webhook`,
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,

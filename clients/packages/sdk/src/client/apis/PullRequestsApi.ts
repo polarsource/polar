@@ -50,7 +50,7 @@ export class PullRequestsApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/pull_requests/search`,
+            path: `/v1/pull_requests/search`,
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,

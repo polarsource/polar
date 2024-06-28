@@ -83,7 +83,7 @@ export class BackofficeApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/backoffice/issue/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
+            path: `/v1/backoffice/issue/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
@@ -126,7 +126,7 @@ export class BackofficeApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/backoffice/badge`,
+            path: `/v1/backoffice/badge`,
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
@@ -168,7 +168,7 @@ export class BackofficeApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/backoffice/pledges/create_invoice/{pledge_id}`.replace(`{${"pledge_id"}}`, encodeURIComponent(String(requestParameters['pledgeId']))),
+            path: `/v1/backoffice/pledges/create_invoice/{pledge_id}`.replace(`{${"pledge_id"}}`, encodeURIComponent(String(requestParameters['pledgeId']))),
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
@@ -209,7 +209,7 @@ export class BackofficeApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/backoffice/pledges/mark_disputed/{pledge_id}`.replace(`{${"pledge_id"}}`, encodeURIComponent(String(requestParameters['pledgeId']))),
+            path: `/v1/backoffice/pledges/mark_disputed/{pledge_id}`.replace(`{${"pledge_id"}}`, encodeURIComponent(String(requestParameters['pledgeId']))),
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
@@ -252,7 +252,7 @@ export class BackofficeApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/backoffice/pledges/approve`,
+            path: `/v1/backoffice/pledges/approve`,
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
@@ -287,7 +287,7 @@ export class BackofficeApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/backoffice/pledges`,
+            path: `/v1/backoffice/pledges`,
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
@@ -325,7 +325,7 @@ export class BackofficeApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/backoffice/rewards/by_issue`,
+            path: `/v1/backoffice/rewards/by_issue`,
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
@@ -359,7 +359,7 @@ export class BackofficeApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/backoffice/rewards/pending`,
+            path: `/v1/backoffice/rewards/pending`,
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
@@ -415,7 +415,7 @@ export class BackofficeApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/backoffice/update_badge_contents`,
+            path: `/v1/backoffice/update_badge_contents`,
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,

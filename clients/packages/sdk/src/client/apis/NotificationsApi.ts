@@ -46,7 +46,7 @@ export class NotificationsApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/notifications`,
+            path: `/v1/notifications`,
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
@@ -89,7 +89,7 @@ export class NotificationsApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/notifications/read`,
+            path: `/v1/notifications/read`,
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,

@@ -78,7 +78,7 @@ export class IntegrationsDiscordApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/integrations/discord/guild/lookup`,
+            path: `/v1/integrations/discord/guild/lookup`,
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
@@ -116,7 +116,7 @@ export class IntegrationsDiscordApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/integrations/discord/bot/authorize`,
+            path: `/v1/integrations/discord/bot/authorize`,
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
@@ -170,7 +170,7 @@ export class IntegrationsDiscordApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/integrations/discord/bot/callback`,
+            path: `/v1/integrations/discord/bot/callback`,
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
@@ -212,7 +212,7 @@ export class IntegrationsDiscordApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/integrations/discord/user/authorize`,
+            path: `/v1/integrations/discord/user/authorize`,
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
@@ -266,7 +266,7 @@ export class IntegrationsDiscordApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/integrations/discord/user/callback`,
+            path: `/v1/integrations/discord/user/callback`,
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,

@@ -60,7 +60,7 @@ export class CheckoutsApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/checkouts/`,
+            path: `/v1/checkouts/`,
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
@@ -96,7 +96,7 @@ export class CheckoutsApi extends runtime.BaseAPI {
         const headerParameters: runtime.HTTPHeaders = {};
 
         const response = await this.request({
-            path: `/api/v1/checkouts/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
+            path: `/v1/checkouts/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,

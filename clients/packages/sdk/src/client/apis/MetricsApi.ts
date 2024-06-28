@@ -99,7 +99,7 @@ export class MetricsApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/metrics/`,
+            path: `/v1/metrics/`,
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
@@ -135,7 +135,7 @@ export class MetricsApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/metrics/limits`,
+            path: `/v1/metrics/limits`,
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,

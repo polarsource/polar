@@ -182,7 +182,7 @@ export class UsersApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/users/subscriptions/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
+            path: `/v1/users/subscriptions/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
             method: 'DELETE',
             headers: headerParameters,
             query: queryParameters,
@@ -227,7 +227,7 @@ export class UsersApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/users/advertisements/`,
+            path: `/v1/users/advertisements/`,
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
@@ -263,7 +263,7 @@ export class UsersApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/users/me/stripe_customer_portal`,
+            path: `/v1/users/me/stripe_customer_portal`,
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
@@ -307,7 +307,7 @@ export class UsersApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/users/subscriptions/`,
+            path: `/v1/users/subscriptions/`,
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
@@ -351,7 +351,7 @@ export class UsersApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/users/advertisements/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
+            path: `/v1/users/advertisements/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
             method: 'DELETE',
             headers: headerParameters,
             query: queryParameters,
@@ -414,7 +414,7 @@ export class UsersApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/users/advertisements/{id}/enable`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
+            path: `/v1/users/advertisements/{id}/enable`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
@@ -457,7 +457,7 @@ export class UsersApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/users/advertisements/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
+            path: `/v1/users/advertisements/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
@@ -492,7 +492,7 @@ export class UsersApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/users/me`,
+            path: `/v1/users/me`,
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
@@ -534,7 +534,7 @@ export class UsersApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/users/benefits/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
+            path: `/v1/users/benefits/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
@@ -576,7 +576,7 @@ export class UsersApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/users/downloadables/{token}`.replace(`{${"token"}}`, encodeURIComponent(String(requestParameters['token']))),
+            path: `/v1/users/downloadables/{token}`.replace(`{${"token"}}`, encodeURIComponent(String(requestParameters['token']))),
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
@@ -622,7 +622,7 @@ export class UsersApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/users/orders/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
+            path: `/v1/users/orders/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
@@ -665,7 +665,7 @@ export class UsersApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/users/orders/{id}/invoice`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
+            path: `/v1/users/orders/{id}/invoice`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
@@ -708,7 +708,7 @@ export class UsersApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/users/subscriptions/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
+            path: `/v1/users/subscriptions/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
@@ -756,7 +756,7 @@ export class UsersApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/users/advertisements/`,
+            path: `/v1/users/advertisements/`,
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
@@ -820,7 +820,7 @@ export class UsersApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/users/benefits/`,
+            path: `/v1/users/benefits/`,
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
@@ -871,7 +871,7 @@ export class UsersApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/users/downloadables/`,
+            path: `/v1/users/downloadables/`,
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
@@ -938,7 +938,7 @@ export class UsersApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/users/orders/`,
+            path: `/v1/users/orders/`,
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
@@ -1002,7 +1002,7 @@ export class UsersApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/users/subscriptions/`,
+            path: `/v1/users/subscriptions/`,
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
@@ -1037,7 +1037,7 @@ export class UsersApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/users/me/upgrade`,
+            path: `/v1/users/me/upgrade`,
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
@@ -1071,7 +1071,7 @@ export class UsersApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/users/me/scopes`,
+            path: `/v1/users/me/scopes`,
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
@@ -1114,7 +1114,7 @@ export class UsersApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/users/me/account`,
+            path: `/v1/users/me/account`,
             method: 'PATCH',
             headers: headerParameters,
             query: queryParameters,
@@ -1166,7 +1166,7 @@ export class UsersApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/users/advertisements/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
+            path: `/v1/users/advertisements/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
             method: 'PATCH',
             headers: headerParameters,
             query: queryParameters,
@@ -1211,7 +1211,7 @@ export class UsersApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/users/me`,
+            path: `/v1/users/me`,
             method: 'PUT',
             headers: headerParameters,
             query: queryParameters,
@@ -1263,7 +1263,7 @@ export class UsersApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/users/subscriptions/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
+            path: `/v1/users/subscriptions/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
             method: 'PATCH',
             headers: headerParameters,
             query: queryParameters,

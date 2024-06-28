@@ -103,7 +103,7 @@ export class ArticlesApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/articles/`,
+            path: `/v1/articles/`,
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
@@ -147,7 +147,7 @@ export class ArticlesApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/articles/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
+            path: `/v1/articles/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
             method: 'DELETE',
             headers: headerParameters,
             query: queryParameters,
@@ -184,7 +184,7 @@ export class ArticlesApi extends runtime.BaseAPI {
         const headerParameters: runtime.HTTPHeaders = {};
 
         const response = await this.request({
-            path: `/api/v1/articles/unsubscribe`,
+            path: `/v1/articles/unsubscribe`,
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
@@ -225,7 +225,7 @@ export class ArticlesApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/articles/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
+            path: `/v1/articles/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
@@ -268,7 +268,7 @@ export class ArticlesApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/articles/{id}/receivers`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
+            path: `/v1/articles/{id}/receivers`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
@@ -332,7 +332,7 @@ export class ArticlesApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/articles/`,
+            path: `/v1/articles/`,
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
@@ -375,7 +375,7 @@ export class ArticlesApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/articles/{id}/send`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
+            path: `/v1/articles/{id}/send`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
@@ -431,7 +431,7 @@ export class ArticlesApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/articles/{id}/preview`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
+            path: `/v1/articles/{id}/preview`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
@@ -488,7 +488,7 @@ export class ArticlesApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/articles/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
+            path: `/v1/articles/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
             method: 'PATCH',
             headers: headerParameters,
             query: queryParameters,

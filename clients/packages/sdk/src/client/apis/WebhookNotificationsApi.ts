@@ -73,7 +73,7 @@ export class WebhookNotificationsApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/webhook_notifications`,
+            path: `/v1/webhook_notifications`,
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
@@ -117,7 +117,7 @@ export class WebhookNotificationsApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/webhook_notifications/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
+            path: `/v1/webhook_notifications/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
             method: 'DELETE',
             headers: headerParameters,
             query: queryParameters,
@@ -175,7 +175,7 @@ export class WebhookNotificationsApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/webhook_notifications/search`,
+            path: `/v1/webhook_notifications/search`,
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
@@ -227,7 +227,7 @@ export class WebhookNotificationsApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/webhook_notifications/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
+            path: `/v1/webhook_notifications/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,

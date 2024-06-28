@@ -70,7 +70,7 @@ export class Oauth2Api extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/oauth2/authorize`,
+            path: `/v1/oauth2/authorize`,
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
@@ -129,7 +129,7 @@ export class Oauth2Api extends runtime.BaseAPI {
         }
 
         const response = await this.request({
-            path: `/api/v1/oauth2/consent`,
+            path: `/v1/oauth2/consent`,
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
@@ -178,7 +178,7 @@ export class Oauth2Api extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/oauth2/register`,
+            path: `/v1/oauth2/register`,
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
@@ -226,7 +226,7 @@ export class Oauth2Api extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/oauth2/register/{client_id}`.replace(`{${"client_id"}}`, encodeURIComponent(String(requestParameters['clientId']))),
+            path: `/v1/oauth2/register/{client_id}`.replace(`{${"client_id"}}`, encodeURIComponent(String(requestParameters['clientId']))),
             method: 'DELETE',
             headers: headerParameters,
             query: queryParameters,
@@ -273,7 +273,7 @@ export class Oauth2Api extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/oauth2/register/{client_id}`.replace(`{${"client_id"}}`, encodeURIComponent(String(requestParameters['clientId']))),
+            path: `/v1/oauth2/register/{client_id}`.replace(`{${"client_id"}}`, encodeURIComponent(String(requestParameters['clientId']))),
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
@@ -305,7 +305,7 @@ export class Oauth2Api extends runtime.BaseAPI {
         const headerParameters: runtime.HTTPHeaders = {};
 
         const response = await this.request({
-            path: `/api/v1/oauth2/introspect`,
+            path: `/v1/oauth2/introspect`,
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
@@ -353,7 +353,7 @@ export class Oauth2Api extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/oauth2/`,
+            path: `/v1/oauth2/`,
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
@@ -381,7 +381,7 @@ export class Oauth2Api extends runtime.BaseAPI {
         const headerParameters: runtime.HTTPHeaders = {};
 
         const response = await this.request({
-            path: `/api/v1/oauth2/token`,
+            path: `/v1/oauth2/token`,
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
@@ -413,7 +413,7 @@ export class Oauth2Api extends runtime.BaseAPI {
         const headerParameters: runtime.HTTPHeaders = {};
 
         const response = await this.request({
-            path: `/api/v1/oauth2/revoke`,
+            path: `/v1/oauth2/revoke`,
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
@@ -469,7 +469,7 @@ export class Oauth2Api extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/oauth2/register/{client_id}`.replace(`{${"client_id"}}`, encodeURIComponent(String(requestParameters['clientId']))),
+            path: `/v1/oauth2/register/{client_id}`.replace(`{${"client_id"}}`, encodeURIComponent(String(requestParameters['clientId']))),
             method: 'PUT',
             headers: headerParameters,
             query: queryParameters,
@@ -502,7 +502,7 @@ export class Oauth2Api extends runtime.BaseAPI {
         const headerParameters: runtime.HTTPHeaders = {};
 
         const response = await this.request({
-            path: `/api/v1/oauth2/userinfo`,
+            path: `/v1/oauth2/userinfo`,
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
@@ -534,7 +534,7 @@ export class Oauth2Api extends runtime.BaseAPI {
         const headerParameters: runtime.HTTPHeaders = {};
 
         const response = await this.request({
-            path: `/api/v1/oauth2/userinfo`,
+            path: `/v1/oauth2/userinfo`,
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,

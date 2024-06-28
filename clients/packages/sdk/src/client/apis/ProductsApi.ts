@@ -86,7 +86,7 @@ export class ProductsApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/products/`,
+            path: `/v1/products/`,
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
@@ -130,7 +130,7 @@ export class ProductsApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/products/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
+            path: `/v1/products/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
@@ -194,7 +194,7 @@ export class ProductsApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/products/`,
+            path: `/v1/products/`,
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
@@ -246,7 +246,7 @@ export class ProductsApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/products/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
+            path: `/v1/products/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
             method: 'PATCH',
             headers: headerParameters,
             query: queryParameters,
@@ -299,7 +299,7 @@ export class ProductsApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/products/{id}/benefits`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
+            path: `/v1/products/{id}/benefits`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,

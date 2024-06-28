@@ -71,7 +71,7 @@ export class FundingApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/funding/lookup`,
+            path: `/v1/funding/lookup`,
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
@@ -155,7 +155,7 @@ export class FundingApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/funding/search`,
+            path: `/v1/funding/search`,
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,

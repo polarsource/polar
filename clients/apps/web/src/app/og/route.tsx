@@ -135,7 +135,7 @@ const listIssues = async (
   params.set('have_badge', 'true')
   params.set('sort', 'funding_goal_desc_and_most_positive_reactions')
   return await fetch(
-    `${getServerURL()}/api/v1/issues/search?${params.toString()}`,
+    `${getServerURL()}/v1/issues/search?${params.toString()}`,
     {
       method: 'GET',
     },
@@ -149,7 +149,7 @@ const listIssues = async (
 
 const getOrg = async (org: string): Promise<Organization> => {
   return await fetch(
-    `${getServerURL()}/api/v1/organizations/lookup?platform=github&organization_name=${org}`,
+    `${getServerURL()}/v1/organizations/lookup?platform=github&organization_name=${org}`,
     {
       method: 'GET',
     },
@@ -163,7 +163,7 @@ const getOrg = async (org: string): Promise<Organization> => {
 
 const getRepo = async (org: string, repo: string): Promise<Repository> => {
   return await fetch(
-    `${getServerURL()}/api/v1/repositories/lookup?platform=github&organization_name=${org}&repository_name=${repo}`,
+    `${getServerURL()}/v1/repositories/lookup?platform=github&organization_name=${org}&repository_name=${repo}`,
     {
       method: 'GET',
     },
@@ -179,7 +179,7 @@ const getIssue = async (externalUrl: string): Promise<Issue> => {
   const params = new URLSearchParams()
   params.set('external_url', externalUrl)
   return await fetch(
-    `${getServerURL()}/api/v1/issues/lookup?${params.toString()}`,
+    `${getServerURL()}/v1/issues/lookup?${params.toString()}`,
     {
       method: 'GET',
     },
@@ -192,7 +192,7 @@ const getIssue = async (externalUrl: string): Promise<Issue> => {
 }
 
 const getArticle = async (id: string): Promise<Article> => {
-  return await fetch(`${getServerURL()}/api/v1/articles/${id}`, {
+  return await fetch(`${getServerURL()}/v1/articles/${id}`, {
     method: 'GET',
   }).then((response) => {
     if (!response.ok) {

@@ -21,7 +21,7 @@ export const getGitHubAuthorizeURL = (
   if (params.userSignupType !== undefined) {
     searchParams.set('user_signup_type', params.userSignupType)
   }
-  return `${getServerURL()}/api/v1/integrations/github/authorize?${searchParams}`
+  return `${getServerURL()}/v1/integrations/github/authorize?${searchParams}`
 }
 
 export const getGitHubOrganizationInstallationURL = (
@@ -31,7 +31,7 @@ export const getGitHubOrganizationInstallationURL = (
   if (params.returnTo !== undefined) {
     searchParams.set('return_to', params.returnTo)
   }
-  return `${getServerURL()}/api/v1/integrations/github/organizations/${
+  return `${getServerURL()}/v1/integrations/github/organizations/${
     params.id
   }/installation?${searchParams}`
 }
@@ -43,7 +43,7 @@ export const getMagicLinkAuthenticateURL = (
   if (params.returnTo !== undefined) {
     searchParams.set('return_to', params.returnTo)
   }
-  return `${getServerURL()}/api/v1/magic_link/authenticate?${searchParams}`
+  return `${getServerURL()}/v1/magic_link/authenticate?${searchParams}`
 }
 
 export const getUserDiscordAuthorizeURL = (
@@ -53,7 +53,7 @@ export const getUserDiscordAuthorizeURL = (
   if (params.returnTo !== undefined) {
     searchParams.set('return_to', params.returnTo)
   }
-  return `${getServerURL()}/api/v1/integrations/discord/user/authorize?${searchParams}`
+  return `${getServerURL()}/v1/integrations/discord/user/authorize?${searchParams}`
 }
 
 export const getBotDiscordAuthorizeURL = (
@@ -63,7 +63,7 @@ export const getBotDiscordAuthorizeURL = (
   if (params.returnTo !== undefined) {
     searchParams.set('return_to', params.returnTo)
   }
-  return `${getServerURL()}/api/v1/integrations/discord/bot/authorize?${searchParams}`
+  return `${getServerURL()}/v1/integrations/discord/bot/authorize?${searchParams}`
 }
 
 export const getGitHubRepositoryBenefitAuthorizeURL = (
@@ -73,5 +73,5 @@ export const getGitHubRepositoryBenefitAuthorizeURL = (
   if (params.returnTo !== undefined) {
     searchParams.set('return_to', params.returnTo)
   }
-  return `${getServerURL()}/api/v1/integrations/github_repository_benefit/user/authorize?${searchParams}`
+  return `${getServerURL()}/v1/integrations/github_repository_benefit/user/authorize?${searchParams}`
 }

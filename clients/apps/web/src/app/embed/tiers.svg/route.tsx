@@ -14,11 +14,11 @@ const getHighlightedSubscriptions = async (
   limit: number = 100,
 ): Promise<Product[]> => {
   const { id: orgId } = await fetch(
-    `${getServerURL()}/api/v1/organizations/lookup?organization_name=${org}&platform=github`,
+    `${getServerURL()}/v1/organizations/lookup?organization_name=${org}&platform=github`,
     { method: 'GET' },
   ).then((res) => res.json())
 
-  let url = `${getServerURL()}/api/v1/products?organization_id=${orgId}&is_recurring=true&limit=${limit}`
+  let url = `${getServerURL()}/v1/products?organization_id=${orgId}&is_recurring=true&limit=${limit}`
 
   const response = await fetch(url, {
     method: 'GET',

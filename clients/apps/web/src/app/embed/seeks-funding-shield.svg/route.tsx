@@ -9,7 +9,7 @@ const getData = async (
   org: string,
   repo?: string,
 ): Promise<ListResourceIssue> => {
-  let url = `${getServerURL()}/api/v1/issues/search?platform=github&organization_name=${org}&sort=funding_goal_desc_and_most_positive_reactions&have_badge=true`
+  let url = `${getServerURL()}/v1/issues/search?platform=github&organization_name=${org}&sort=funding_goal_desc_and_most_positive_reactions&have_badge=true`
 
   if (repo) {
     url += `&repository_name=${repo}`

@@ -42,7 +42,7 @@ const Footer = ({
           <div className="flex flex-col gap-y-4">
             <h3 className="text-base dark:text-white">Platform</h3>
             <div className="flex flex-col gap-y-2">
-              <FooterLink href="https://api.polar.sh/api/v1/integrations/github/authorize?return_to=%2Fmaintainer&user_signup_type=maintainer">
+              <FooterLink href="https://api.polar.sh/v1/integrations/github/authorize?return_to=%2Fmaintainer&user_signup_type=maintainer">
                 Create an Account
               </FooterLink>
               <FooterLink href="/issue-funding">Issue Funding</FooterLink>

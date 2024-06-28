@@ -51,7 +51,7 @@ const PayoutTransactionsList = ({
           return (
             <div className="flex flex-row justify-end">
               <Link
-                href={`${getServerURL()}/api/v1/transactions/payouts/${id}/csv`}
+                href={`${getServerURL()}/v1/transactions/payouts/${id}/csv`}
               >
                 <DownloadOutlined />
               </Link>

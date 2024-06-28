@@ -44,7 +44,7 @@ const serverEnv = async ({
     POLAR_REDIS_PORT: '6379',
 
     POLAR_CORS_ORIGINS: `["http://127.0.0.1:3000", "http://localhost:3000", "https://github.com", "${ingressHostProto}"]`,
-    POLAR_BASE_URL: `${ingressHostProto}/api/v1`,
+    POLAR_BASE_URL: `${ingressHostProto}/v1`,
     POLAR_FRONTEND_BASE_URL: `${ingressHostProto}`,
     POLAR_AUTH_COOKIE_DOMAIN: `${ingressHost}`,
   }

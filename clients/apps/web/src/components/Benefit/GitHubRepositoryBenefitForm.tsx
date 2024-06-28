@@ -182,7 +182,7 @@ export const GitHubRepositoryBenefitForm = ({
 
   const openInstallationURL = useCallback(() => {
     const installationWindow = window.open(
-      `${defaultApiUrl}/api/v1/integrations/github_repository_benefit/installation/install`,
+      `${defaultApiUrl}/v1/integrations/github_repository_benefit/installation/install`,
       '_blank',
     )
 

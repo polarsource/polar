@@ -21,7 +21,7 @@ export const useSSE = (
   orgName?: string,
   repoName?: string,
 ): EventEmitter => {
-  let streamURL = getServerURL('/api/v1')
+  let streamURL = getServerURL('/v1')
   if (!orgName && !repoName) {
     streamURL += '/user'
   } else {

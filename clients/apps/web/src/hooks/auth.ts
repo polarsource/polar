@@ -59,7 +59,7 @@ export const useAuth = (): {
 export const useLogout = () => {
   const func = useCallback(async () => {
     // polar.sh logout
-    window.location.href = `${CONFIG.BASE_URL}/api/v1/auth/logout`
+    window.location.href = `${CONFIG.BASE_URL}/v1/auth/logout`
     return
   }, [])
 

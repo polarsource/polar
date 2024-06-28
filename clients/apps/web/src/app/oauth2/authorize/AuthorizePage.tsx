@@ -32,7 +32,7 @@ const AuthorizePage = ({
   searchParams: Record<string, string>
 }) => {
   const serializedSearchParams = new URLSearchParams(searchParams).toString()
-  const actionURL = `${getServerURL()}/api/v1/oauth2/consent?${serializedSearchParams}`
+  const actionURL = `${getServerURL()}/v1/oauth2/consent?${serializedSearchParams}`
 
   const clientName = client.client_name || client.client_id
   const hasTerms = client.policy_uri || client.tos_uri

@@ -13,11 +13,11 @@ const getCustomers = async (
   limit: number = 3,
 ): Promise<[OrganizationCustomer[], number]> => {
   const { id: orgId } = await fetch(
-    `${getServerURL()}/api/v1/organizations/lookup?organization_name=${org}&platform=github`,
+    `${getServerURL()}/v1/organizations/lookup?organization_name=${org}&platform=github`,
     { method: 'GET' },
   ).then((res) => res.json())
 
-  let url = `${getServerURL()}/api/v1/organizations/${orgId}/customers?customer_types=subscription&limit=${limit}`
+  let url = `${getServerURL()}/v1/organizations/${orgId}/customers?customer_types=subscription&limit=${limit}`
 
   const response = await fetch(url, {
     method: 'GET',

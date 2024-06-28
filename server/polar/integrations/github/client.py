@@ -101,86 +101,83 @@ async def get_user_client(
     return await get_refreshed_oauth_client(session, locker, oauth)
 
 
-def _should_refresh(oauth: OAuthAccount) -> bool:
-    if (
-        oauth.expires_at
-        and oauth.refresh_token
-        and oauth.expires_at <= (time.time() + 60 * 30)
+async def refresh_oauth_account(
+    session: AsyncSession, locker: Locker, oauth: OAuthAccount
+) -> OAuthAccount:
+    if oauth.platform != OAuthPlatform.github:
+        raise Exception("unexpected platform")
+
+    if not oauth.should_refresh_access_token():
+        return oauth
+
+    async with locker.lock(
+        f"oauth_refresh:{oauth.id}",
+        timeout=10.0,
+        blocking_timeout=10.0,
     ):
-        return True
-    return False
+        # first, reload from DB, a concurrent process might have already refreshed this token
+        # (and used the refresh token).
+        oauth_db = await oauth_account_service.get(session, oauth.id)
+
+        if not oauth_db:
+            raise Exception("oauth account not found")
+
+        # token is already refreshed
+        if not oauth_db.should_refresh_access_token():
+            return oauth_db
+
+        # refresh token
+        try:
+            refresh = await GitHub().arequest(
+                method="POST",
+                url="https://github.com/login/oauth/access_token",
+                params={
+                    "client_id": settings.GITHUB_CLIENT_ID,
+                    "client_secret": settings.GITHUB_CLIENT_SECRET,
+                    "refresh_token": oauth.refresh_token,
+                    "grant_type": "refresh_token",
+                },
+                headers={"Accept": "application/json"},
+                response_model=RefreshAccessToken,
+            )
+        except Exception as e:
+            log.error(
+                "github.auth.refresh.failed",
+                user_id=oauth_db.user_id,
+                platform=oauth_db.platform,
+                e=e,
+            )
+            return oauth_db
+
+        if not refresh:
+            log.error(
+                "github.auth.refresh.failed",
+                user_id=oauth_db.user_id,
+                platform=oauth_db.platform,
+            )
+            return oauth_db
+
+        # update
+        r = refresh.parsed_data
+        oauth_db.access_token = r.access_token
+        oauth_db.expires_at = int(time.time()) + r.expires_in
+        if r.refresh_token:
+            oauth_db.refresh_token = r.refresh_token
+
+        log.info(
+            "github.auth.refresh.succeeded",
+            user_id=oauth.user_id,
+            platform=oauth.platform,
+        )
+        session.add(oauth_db)
+        return oauth_db
 
 
 async def get_refreshed_oauth_client(
     session: AsyncSession, locker: Locker, oauth: OAuthAccount
 ) -> GitHub[TokenAuthStrategy]:
-    if oauth.platform != OAuthPlatform.github:
-        raise Exception("unexpected platform")
-
-    access_token = oauth.access_token
-    # if token expires within 30 minutes, refresh it
-    if _should_refresh(oauth):
-        async with locker.lock(
-            f"oauth_refresh:{oauth.id}",
-            timeout=10.0,
-            blocking_timeout=10.0,
-        ):
-            # first, reload from DB, a concurrent process might have already refreshed this token
-            # (and used the refresh token).
-            oauth_db = await oauth_account_service.get(session, oauth.id)
-
-            if not oauth_db:
-                raise Exception("oauth account not found")
-
-            # token is already refreshed
-            if not _should_refresh(oauth_db):
-                return get_client(oauth_db.access_token)
-
-            # refresh token
-            try:
-                refresh = await GitHub().arequest(
-                    method="POST",
-                    url="https://github.com/login/oauth/access_token",
-                    params={
-                        "client_id": settings.GITHUB_CLIENT_ID,
-                        "client_secret": settings.GITHUB_CLIENT_SECRET,
-                        "refresh_token": oauth.refresh_token,
-                        "grant_type": "refresh_token",
-                    },
-                    headers={"Accept": "application/json"},
-                    response_model=RefreshAccessToken,
-                )
-
-                if refresh:
-                    r = refresh.parsed_data
-                    # update
-                    oauth_db.access_token = r.access_token
-                    oauth_db.expires_at = int(time.time()) + r.expires_in
-                    if r.refresh_token:
-                        oauth_db.refresh_token = r.refresh_token
-
-                    log.info(
-                        "github.auth.refresh.succeeded",
-                        user_id=oauth.user_id,
-                        platform=oauth.platform,
-                    )
-                    session.add(oauth_db)
-                    access_token = oauth_db.access_token
-                else:
-                    log.error(
-                        "github.auth.refresh.failed",
-                        user_id=oauth_db.user_id,
-                        platform=oauth_db.platform,
-                    )
-            except Exception as e:
-                log.error(
-                    "github.auth.refresh.failed",
-                    user_id=oauth_db.user_id,
-                    platform=oauth_db.platform,
-                    e=e,
-                )
-
-    return get_client(access_token)
+    refreshed_oauth = await refresh_oauth_account(session, locker, oauth)
+    return get_client(refreshed_oauth.access_token)
 
 
 def get_client(access_token: str) -> GitHub[TokenAuthStrategy]:

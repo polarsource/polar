@@ -66,7 +66,7 @@ OPENAPI_PARAMETERS: OpenAPIParameters = {
     "title": "Polar API",
     "summary": "Polar HTTP and Webhooks API",
     "version": "0.1.0",
-    "description": "Read the docs at https://polar.sh/docs/api-reference",
+    "description": "Read the docs at https://docs.polar.sh/api",
     "docs_url": None if settings.is_production() else "/docs",
     "redoc_url": None if settings.is_production() else "/redoc",
     "openapi_tags": APITag.metadata(),  # type: ignore

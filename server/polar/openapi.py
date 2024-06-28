@@ -59,6 +59,7 @@ class OpenAPIParameters(TypedDict):
     docs_url: str | None
     redoc_url: str | None
     openapi_tags: list[dict[str, Any]]
+    servers: list[dict[str, Any]] | None
 
 
 OPENAPI_PARAMETERS: OpenAPIParameters = {
@@ -69,6 +70,7 @@ OPENAPI_PARAMETERS: OpenAPIParameters = {
     "docs_url": None if settings.is_production() else "/docs",
     "redoc_url": None if settings.is_production() else "/redoc",
     "openapi_tags": APITag.metadata(),  # type: ignore
+    "servers": [{"url": "https://api.polar.sh"}],
 }
 
 IN_DEVELOPMENT_ONLY = settings.is_development()

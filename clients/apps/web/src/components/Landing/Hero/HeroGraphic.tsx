@@ -2,11 +2,7 @@
 
 import IssueBadge from '@/components/Embed/IssueBadge'
 import SubscriptionTierCard from '@/components/Subscriptions/SubscriptionTierCard'
-import { Transition, motion } from 'framer-motion'
-import { useState } from 'react'
-import { twMerge } from 'tailwind-merge'
 import { MOCKED_SUBSCRIPTIONS } from '../utils'
-import { quadraticCurve } from './Hero.utils'
 
 export const HeroGraphic = () => {
   return (
@@ -81,86 +77,5 @@ export const HeroGraphic = () => {
         </div>
       </div>
     </div>
-  )
-}
-
-interface BoxProps {
-  className?: string
-  icon: JSX.Element
-  title: string
-  transition?: Transition
-}
-
-const Box = ({ className, icon, title, transition }: BoxProps) => {
-  const [animationEnd, setAnimationEnd] = useState(false)
-
-  const t: Transition = {
-    ease: 'easeInOut',
-    duration: 0.3,
-    ...transition,
-  }
-
-  return (
-    <motion.div
-      className={twMerge(
-        'dark:border-polar-800 flex aspect-square flex-col items-center justify-center gap-y-2 rounded-2xl border border-gray-100 text-xs transition-all duration-500',
-        animationEnd
-          ? 'dark:bg-polar-900 bg-white shadow-sm'
-          : 'dark:bg-polar-950 bg-gray-100',
-        className,
-      )}
-      transition={t}
-    >
-      <motion.div
-        initial={{ opacity: 0.2, y: 15, scale: 1 }}
-        whileInView={{
-          opacity: 1,
-          y: 0,
-          scale: 0.8,
-        }}
-        transition={t}
-        onAnimationComplete={() => {
-          setAnimationEnd(true)
-        }}
-      >
-        {icon}
-      </motion.div>
-      <motion.span
-        className="dark:text-polar-500 text-gray-500"
-        initial={{ opacity: 0 }}
-        whileInView={{
-          opacity: 1,
-        }}
-        transition={t}
-      >
-        {title}
-      </motion.span>
-    </motion.div>
-  )
-}
-
-interface PathProps {
-  start: { x: number; y: number }
-  end: { x: number; y: number }
-  transition?: Transition
-  vertical?: boolean
-}
-
-const Path = ({ start, end, transition, vertical }: PathProps) => {
-  return (
-    <motion.path
-      initial={{ pathLength: 0 }}
-      whileInView={{ pathLength: 1 }}
-      transition={{
-        ease: [0.75, 0, 0.25, 1],
-        duration: 2,
-        ...transition,
-      }}
-      strokeWidth={2}
-      strokeDasharray="0 1"
-      stroke="currentColor"
-      fill="none"
-      d={quadraticCurve(start, end, vertical)}
-    />
   )
 }

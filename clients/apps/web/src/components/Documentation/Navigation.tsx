@@ -35,7 +35,7 @@ const Navigation = ({
   const pathname = usePathname()
 
   const shouldRenderOverviewSections = pathname.includes('/docs/overview')
-  const shouldRenderAPISections = pathname.includes('/docs/api-reference/')
+  const shouldRenderAPISections = pathname.includes('/docs/api/')
 
   return (
     <div className="flex flex-col gap-y-8">
@@ -162,16 +162,14 @@ const FAQSections = () => {
 const APISections = () => {
   return (
     <div className="flex flex-col">
-      <NavigationItem href="/docs/api-reference/introduction">
+      <NavigationItem href="/docs/api/introduction">
         Introduction
       </NavigationItem>
-      <NavigationItem href="/docs/api-reference/authentication">
+      <NavigationItem href="/docs/api/authentication">
         Authentication
       </NavigationItem>
-      <NavigationItem href="/docs/api-reference/polar-sdk">
-        Polar SDK
-      </NavigationItem>
-      <NavigationItem href="/docs/api-reference/github-actions">
+      <NavigationItem href="/docs/api/polar-sdk">Polar SDK</NavigationItem>
+      <NavigationItem href="/docs/api/github-actions">
         GitHub Actions
       </NavigationItem>
     </div>
@@ -184,16 +182,14 @@ const WebhooksReferenceSections = () => {
       <h3>Webhooks</h3>
       <div className="flex flex-col">
         <NavigationItem
-          href="/docs/api-reference/webhooks"
-          active={(pathname) => pathname === '/docs/api-reference/webhooks'}
+          href="/docs/api/webhooks"
+          active={(pathname) => pathname === '/docs/api/webhooks'}
         >
           Overview
         </NavigationItem>
         <NavigationItem
-          href="/docs/api-reference/webhooks/events"
-          active={(pathname) =>
-            pathname === '/docs/api-reference/webhooks/events'
-          }
+          href="/docs/api/webhooks/events"
+          active={(pathname) => pathname === '/docs/api/webhooks/events'}
         >
           Events
         </NavigationItem>
@@ -222,7 +218,7 @@ const APIReferenceSections = ({
               <NavigationItem
                 key={endpoint.id}
                 className="m-0 bg-transparent p-0 text-sm dark:bg-transparent"
-                href={`/docs/api-reference${endpoint.path}${endpoint.path.endsWith('/') ? '' : '/'}${endpoint.method}`}
+                href={`/docs/api${endpoint.path}${endpoint.path.endsWith('/') ? '' : '/'}${endpoint.method}`}
                 active={(pathname) => {
                   const hasTrailingSlash = endpoint.path.endsWith('/')
                   const withTrailingSlash = hasTrailingSlash

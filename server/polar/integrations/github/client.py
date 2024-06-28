@@ -170,6 +170,7 @@ async def refresh_oauth_account(
             platform=oauth.platform,
         )
         session.add(oauth_db)
+        await session.flush()
         return oauth_db
 
 

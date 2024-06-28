@@ -31,7 +31,7 @@ export const API = () => {
             userSignupType={UserSignupType.MAINTAINER}
             returnTo="/maintainer"
           />
-          <Link href="/docs/api-reference/introduction">
+          <Link href="/docs/api/introduction">
             <Button size="lg" variant="ghost">
               Explore the Polar API (Beta)
             </Button>

@@ -69,7 +69,7 @@ export const createAPICommands = (key: SitemapKey): APICommand[] => {
           operation,
           action: ({ hidePalette, router }) => {
             hidePalette()
-            router.push(`/docs/api-reference/${path}/${method}`)
+            router.push(`/docs/api/${path}/${method}`)
           },
         }
       })

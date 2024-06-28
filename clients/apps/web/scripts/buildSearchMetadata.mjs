@@ -44,7 +44,7 @@ const buildOpenAPIMetadata = (schema) => {
       const operation = pathItem[method]
 
       const doc = {
-        id: `/docs/api-reference${path}/${method}`,
+        id: `/docs/api${path}/${method}`,
         title: operation.summary,
         body: operation.description,
         path: path,

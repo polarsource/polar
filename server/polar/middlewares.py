@@ -1,9 +1,12 @@
+import functools
+import re
+
 import structlog
 from starlette.datastructures import MutableHeaders
-from starlette.types import ASGIApp, Receive, Scope, Send
+from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 from polar.config import settings
-from polar.logging import generate_correlation_id
+from polar.logging import Logger, generate_correlation_id
 from polar.worker import flush_enqueued_jobs
 
 
@@ -68,3 +71,48 @@ class FlushEnqueuedWorkerJobsMiddleware:
 
         if not settings.is_testing():
             await flush_enqueued_jobs(scope["state"]["arq_pool"])
+
+
+class PathRewriteMiddleware:
+    def __init__(
+        self, app: ASGIApp, pattern: str | re.Pattern[str], replacement: str
+    ) -> None:
+        self.app = app
+        self.pattern = pattern
+        self.replacement = replacement
+        self.logger: Logger = structlog.get_logger()
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        if scope["type"] not in ("http", "websocket"):
+            await self.app(scope, receive, send)
+            return
+
+        scope["path"], replacements = re.subn(
+            self.pattern, self.replacement, scope["path"]
+        )
+
+        if replacements > 0:
+            self.logger.warning(
+                "PathRewriteMiddleware",
+                pattern=self.pattern,
+                replacement=self.replacement,
+                path=scope["path"],
+            )
+
+        send = functools.partial(self.send, send=send, replacements=replacements)
+        await self.app(scope, receive, send)
+
+    async def send(self, message: Message, send: Send, replacements: int) -> None:
+        if message["type"] != "http.response.start":
+            await send(message)
+            return
+
+        message.setdefault("headers", [])
+        headers = MutableHeaders(scope=message)
+        if replacements > 0:
+            headers["X-Polar-Deprecation-Notice"] = (
+                "The API root has moved from /api/v1 to /v1. "
+                "Please update your integration."
+            )
+
+        await send(message)

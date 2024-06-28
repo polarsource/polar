@@ -32,6 +32,7 @@ from polar.logging import configure as configure_logging
 from polar.middlewares import (
     FlushEnqueuedWorkerJobsMiddleware,
     LogCorrelationIdMiddleware,
+    PathRewriteMiddleware,
     XForwardedHostMiddleware,
 )
 from polar.oauth2.endpoints.well_known import router as well_known_router
@@ -127,6 +128,7 @@ def create_app() -> FastAPI:
     )
     configure_cors(app)
 
+    app.add_middleware(PathRewriteMiddleware, pattern=r"^/api/v1", replacement="/v1")
     app.add_middleware(FlushEnqueuedWorkerJobsMiddleware)
     app.add_middleware(
         XForwardedHostMiddleware,

@@ -12,7 +12,7 @@ export interface EnableSubscriptionsViewProps {
   organization: Organization
 }
 
-export const EnableSubscriptionsView = ({
+export const EnableProductsView = ({
   organization,
 }: EnableSubscriptionsViewProps) => {
   const [enablingSubscriptions, setEnablingSubscriptions] = useState(false)
@@ -47,14 +47,15 @@ export const EnableSubscriptionsView = ({
         </span>
         <div className="flex flex-col items-center gap-4 text-center">
           <h2 className="text-2xl font-medium text-gray-950 dark:text-white">
-            Subscriptions & Benefits
+            Products & Subscriptions
           </h2>
           <h2 className="text-lg">
-            Offer unique benefits to your supporters with Subscriptions
+            Offer unique benefits to your supporters with Products &
+            Subscriptions
           </h2>
         </div>
         <Button loading={enablingSubscriptions} onClick={enableSubscriptions}>
-          Enable Subscriptions
+          Enable Products
         </Button>
       </div>
     </EmptyLayout>

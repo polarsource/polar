@@ -1,4 +1,4 @@
-import { EnableSubscriptionsView } from '@/components/Subscriptions/EnableSubscriptionsView'
+import { EnableProductsView } from '@/components/Products/EnableProductsView'
 import { getServerSideAPI } from '@/utils/api/serverside'
 import { DataTableSearchParams, parseSearchParams } from '@/utils/datatable'
 import { Platforms, SubscriptionTierType } from '@polar-sh/sdk'
@@ -37,7 +37,7 @@ export default async function Page({
   ])
 
   if (!organization.feature_settings?.subscriptions_enabled) {
-    return <EnableSubscriptionsView organization={organization} />
+    return <EnableProductsView organization={organization} />
   }
 
   return (

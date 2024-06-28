@@ -5,6 +5,7 @@ import { InlineModal } from '@/components/Modal/InlineModal'
 import { useModal } from '@/components/Modal/useModal'
 import { CreateProductModal } from '@/components/Products/CreateProductModal'
 import { EditProductModal } from '@/components/Products/EditProductModal'
+import { EnableProductsView } from '@/components/Products/EnableProductsView'
 import { ProductCard } from '@/components/Products/ProductCard'
 import ProductPriceTypeSelect from '@/components/Products/ProductPriceTypeSelect'
 import SubscriptionTierCard from '@/components/Subscriptions/SubscriptionTierCard'
@@ -79,6 +80,10 @@ export default function ClientPage() {
     }
     return 0
   }, [])
+
+  if (!org?.feature_settings?.subscriptions_enabled) {
+    return <EnableProductsView organization={org} />
+  }
 
   return (
     <DashboardBody className="flex flex-col gap-8">

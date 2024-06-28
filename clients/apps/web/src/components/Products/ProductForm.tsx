@@ -44,7 +44,6 @@ import {
 import { twMerge } from 'tailwind-merge'
 import SubscriptionGroupIcon from '../Subscriptions/SubscriptionGroupIcon'
 import ProductMediasField from './ProductMediasField'
-import ProductPriceTypeIcon from './ProductPriceTypeIcon'
 
 export interface ProductFullMediasMixin {
   full_medias: ProductMediaFileRead[]
@@ -266,7 +265,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
       />
       {!isFreeTier && (
         <>
-          <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-6">
             <FormLabel>Pricing</FormLabel>
             {!update && (
               <ToggleGroup
@@ -280,15 +279,12 @@ const ProductForm: React.FC<ProductFormProps> = ({
                 <ToggleGroupItem
                   value={ProductPriceType.ONE_TIME}
                   className={twMerge(
-                    'h-20 w-full flex-col items-start gap-2 rounded-xl border',
+                    'h-20 w-full flex-col items-start gap-2 rounded-xl border p-4',
                     pricingType === ProductPriceType.ONE_TIME &&
                       'border-transparent',
                   )}
                 >
                   <div className="flex items-center gap-2">
-                    <ProductPriceTypeIcon
-                      productPriceType={ProductPriceType.ONE_TIME}
-                    />
                     One-time purchase
                   </div>
                   <div className="font-normal">Charge a one-time fee</div>
@@ -296,17 +292,12 @@ const ProductForm: React.FC<ProductFormProps> = ({
                 <ToggleGroupItem
                   value={ProductPriceType.RECURRING}
                   className={twMerge(
-                    'h-20 w-full flex-col items-start gap-2 rounded-xl border',
+                    'h-20 w-full flex-col items-start gap-2 rounded-xl border p-4',
                     pricingType === ProductPriceType.RECURRING &&
                       'border-transparent',
                   )}
                 >
-                  <div className="flex items-center gap-2">
-                    <ProductPriceTypeIcon
-                      productPriceType={ProductPriceType.RECURRING}
-                    />
-                    Subscription
-                  </div>
+                  <div className="flex items-center gap-2">Subscription</div>
                   <div className="font-normal">Charge an ongoing fee</div>
                 </ToggleGroupItem>
               </ToggleGroup>

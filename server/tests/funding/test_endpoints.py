@@ -15,15 +15,13 @@ from .conftest import IssuesPledgesFixture, create_issues_pledges
 @pytest.mark.http_auto_expunge
 class TestSearch:
     async def test_missing_organization_name(self, client: AsyncClient) -> None:
-        response = await client.get(
-            "/api/v1/funding/search", params={"platform": "github"}
-        )
+        response = await client.get("/v1/funding/search", params={"platform": "github"})
 
         assert response.status_code == 422
 
     async def test_unknown_organization(self, client: AsyncClient) -> None:
         response = await client.get(
-            "/api/v1/funding/search",
+            "/v1/funding/search",
             params={"platform": "github", "organization_name": "not-existing"},
         )
 
@@ -33,7 +31,7 @@ class TestSearch:
         self, client: AsyncClient, organization: Organization
     ) -> None:
         response = await client.get(
-            "/api/v1/funding/search",
+            "/v1/funding/search",
             params={
                 "platform": organization.platform.value,
                 "organization_name": organization.name,
@@ -55,7 +53,7 @@ class TestSearch:
         await save_fixture(repository)
 
         response = await client.get(
-            "/api/v1/funding/search",
+            "/v1/funding/search",
             params={
                 "platform": organization.platform.value,
                 "organization_name": organization.name,
@@ -79,7 +77,7 @@ class TestSearch:
         await save_fixture(repository)
 
         response = await client.get(
-            "/api/v1/funding/search",
+            "/v1/funding/search",
             params={
                 "platform": organization.platform.value,
                 "organization_name": organization.name,
@@ -111,7 +109,7 @@ class TestSearch:
         session.expunge_all()
 
         response = await client.get(
-            "/api/v1/funding/search",
+            "/v1/funding/search",
             params={
                 "platform": organization.platform.value,
                 "organization_name": organization.name,
@@ -144,7 +142,7 @@ class TestSearch:
         session.expunge_all()
 
         response = await client.get(
-            "/api/v1/funding/search",
+            "/v1/funding/search",
             params={
                 "platform": organization.platform.value,
                 "organization_name": organization.name,
@@ -163,7 +161,7 @@ class TestSearch:
         organization: Organization,
     ) -> None:
         response = await client.get(
-            "/api/v1/funding/search",
+            "/v1/funding/search",
             params={
                 "platform": organization.platform.value,
                 "organization_name": organization.name,

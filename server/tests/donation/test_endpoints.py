@@ -18,7 +18,7 @@ class TestSearch:
         organization: Organization,
     ) -> None:
         params = {"to_organization_id": str(organization.id)}
-        response = await client.get("/api/v1/donations/search", params=params)
+        response = await client.get("/v1/donations/search", params=params)
         assert response.status_code == 401
 
     @pytest.mark.auth
@@ -28,7 +28,7 @@ class TestSearch:
         organization: Organization,
     ) -> None:
         params = {"to_organization_id": str(organization.id)}
-        response = await client.get("/api/v1/donations/search", params=params)
+        response = await client.get("/v1/donations/search", params=params)
         assert response.status_code == 401
 
     @pytest.mark.auth
@@ -44,7 +44,7 @@ class TestSearch:
         await save_fixture(user_organization)
 
         params = {"to_organization_id": str(organization.id)}
-        response = await client.get("/api/v1/donations/search", params=params)
+        response = await client.get("/v1/donations/search", params=params)
 
         assert response.status_code == 401
 
@@ -61,7 +61,7 @@ class TestSearch:
         await save_fixture(user_organization)
 
         params = {"to_organization_id": str(organization.id)}
-        response = await client.get("/api/v1/donations/search", params=params)
+        response = await client.get("/v1/donations/search", params=params)
 
         assert response.status_code == 200
         json = response.json()
@@ -109,7 +109,7 @@ class TestSearch:
         )
 
         params = {"to_organization_id": str(organization.id)}
-        response = await client.get("/api/v1/donations/search", params=params)
+        response = await client.get("/v1/donations/search", params=params)
 
         assert response.status_code == 200
         json = response.json()
@@ -149,7 +149,7 @@ class TestSearch:
         )
 
         params = {"to_organization_id": str(organization.id)}
-        response = await client.get("/api/v1/donations/search", params=params)
+        response = await client.get("/v1/donations/search", params=params)
 
         assert response.status_code == 200
         json = response.json()
@@ -200,7 +200,7 @@ class TestSearch:
         )
 
         params = {"organization_name": str(organization.name), "platform": "github"}
-        response = await client.get("/api/v1/donations/public/search", params=params)
+        response = await client.get("/v1/donations/public/search", params=params)
 
         assert response.status_code == 200
         json = response.json()
@@ -245,7 +245,7 @@ class TestSearch:
         await save_fixture(organization)
 
         params = {"organization_name": str(organization.name), "platform": "github"}
-        response = await client.get("/api/v1/donations/public/search", params=params)
+        response = await client.get("/v1/donations/public/search", params=params)
 
         assert response.status_code == 200
         json = response.json()

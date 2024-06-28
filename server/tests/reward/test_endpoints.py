@@ -68,7 +68,7 @@ async def test_search(
     assert len(rewards) == 2
 
     response = await client.get(
-        f"/api/v1/rewards/search?pledges_to_organization={organization.id}"
+        f"/v1/rewards/search?pledges_to_organization={organization.id}"
     )
 
     assert response.status_code == 200

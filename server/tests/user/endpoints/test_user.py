@@ -10,7 +10,7 @@ from tests.fixtures.auth import AuthSubjectFixture
 @pytest.mark.http_auto_expunge
 @pytest.mark.auth
 async def test_get_users_me_authed(user: User, client: AsyncClient) -> None:
-    response = await client.get("/api/v1/users/me")
+    response = await client.get("/v1/users/me")
 
     assert response.status_code == 200
     json = response.json()
@@ -23,7 +23,7 @@ async def test_get_users_me_authed(user: User, client: AsyncClient) -> None:
 @pytest.mark.http_auto_expunge
 async def test_get_users_me_no_auth(client: AsyncClient) -> None:
     response = await client.get(
-        "/api/v1/users/me",
+        "/v1/users/me",
     )
 
     assert response.status_code == 401
@@ -33,7 +33,7 @@ async def test_get_users_me_no_auth(client: AsyncClient) -> None:
 @pytest.mark.http_auto_expunge
 @pytest.mark.auth(AuthSubjectFixture(subject="user_blocked"))
 async def test_get_users_me_blocked(user_blocked: User, client: AsyncClient) -> None:
-    response = await client.get("/api/v1/users/me")
+    response = await client.get("/v1/users/me")
     assert response.status_code == 403
 
 
@@ -42,7 +42,7 @@ async def test_get_users_me_blocked(user_blocked: User, client: AsyncClient) -> 
 @pytest.mark.http_auto_expunge
 async def test_set_preferences_true(client: AsyncClient) -> None:
     response = await client.put(
-        "/api/v1/users/me",
+        "/v1/users/me",
         json={
             "email_newsletters_and_changelogs": True,
             "email_promotions_and_events": True,
@@ -62,7 +62,7 @@ async def test_set_preferences_true(client: AsyncClient) -> None:
 @pytest.mark.http_auto_expunge
 async def test_set_preferences_false(client: AsyncClient) -> None:
     response = await client.put(
-        "/api/v1/users/me",
+        "/v1/users/me",
         json={
             "email_newsletters_and_changelogs": False,
             "email_promotions_and_events": False,
@@ -82,7 +82,7 @@ async def test_set_preferences_false(client: AsyncClient) -> None:
 @pytest.mark.http_auto_expunge
 async def test_blocked_user_set_preferences(client: AsyncClient) -> None:
     response = await client.put(
-        "/api/v1/users/me",
+        "/v1/users/me",
         json={
             "email_newsletters_and_changelogs": False,
             "email_promotions_and_events": False,
@@ -99,7 +99,7 @@ async def test_set_account(
     client: AsyncClient, open_collective_account: Account
 ) -> None:
     response = await client.patch(
-        "/api/v1/users/me/account",
+        "/v1/users/me/account",
         json={
             "account_id": str(open_collective_account.id),
         },
@@ -118,7 +118,7 @@ async def test_blocked_user_set_account(
     client: AsyncClient, open_collective_account: Account
 ) -> None:
     response = await client.patch(
-        "/api/v1/users/me/account",
+        "/v1/users/me/account",
         json={
             "account_id": str(open_collective_account.id),
         },

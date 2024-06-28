@@ -16,7 +16,7 @@ from tests.fixtures.random_objects import create_benefit
 @pytest.mark.http_auto_expunge
 class TestListBenefits:
     async def test_anonymous(self, client: AsyncClient) -> None:
-        response = await client.get("/api/v1/benefits/")
+        response = await client.get("/v1/benefits/")
 
         assert response.status_code == 401
 
@@ -24,7 +24,7 @@ class TestListBenefits:
     async def test_user_not_organization_member(
         self, client: AsyncClient, benefits: list[Benefit]
     ) -> None:
-        response = await client.get("/api/v1/benefits/")
+        response = await client.get("/v1/benefits/")
 
         assert response.status_code == 200
 
@@ -41,7 +41,7 @@ class TestListBenefits:
         user_organization: UserOrganization,
         benefits: list[Benefit],
     ) -> None:
-        response = await client.get("/api/v1/benefits/")
+        response = await client.get("/v1/benefits/")
 
         assert response.status_code == 200
 
@@ -58,7 +58,7 @@ class TestListBenefits:
     async def test_organization(
         self, client: AsyncClient, benefits: list[Benefit]
     ) -> None:
-        response = await client.get("/api/v1/benefits/")
+        response = await client.get("/v1/benefits/")
 
         assert response.status_code == 200
 
@@ -72,13 +72,13 @@ class TestGetBenefit:
     async def test_anonymous(
         self, client: AsyncClient, benefit_organization: Benefit
     ) -> None:
-        response = await client.get(f"/api/v1/benefits/{benefit_organization.id}")
+        response = await client.get(f"/v1/benefits/{benefit_organization.id}")
 
         assert response.status_code == 401
 
     @pytest.mark.auth
     async def test_not_existing(self, client: AsyncClient) -> None:
-        response = await client.get(f"/api/v1/benefits/{uuid.uuid4()}")
+        response = await client.get(f"/v1/benefits/{uuid.uuid4()}")
 
         assert response.status_code == 404
 
@@ -89,7 +89,7 @@ class TestGetBenefit:
         benefit_organization: Benefit,
         user_organization_admin: UserOrganization,
     ) -> None:
-        response = await client.get(f"/api/v1/benefits/{benefit_organization.id}")
+        response = await client.get(f"/v1/benefits/{benefit_organization.id}")
 
         assert response.status_code == 200
 
@@ -103,7 +103,7 @@ class TestGetBenefit:
 class TestCreateBenefit:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.post(
-            "/api/v1/benefits/",
+            "/v1/benefits/",
             json={
                 "type": "custom",
                 "description": "Benefit",
@@ -146,7 +146,7 @@ class TestCreateBenefit:
         user_organization_admin: UserOrganization,
     ) -> None:
         response = await client.post(
-            "/api/v1/benefits/",
+            "/v1/benefits/",
             json={
                 "type": "custom",
                 "organization_id": str(organization.id),
@@ -164,7 +164,7 @@ class TestCreateBenefit:
         user_organization_admin: UserOrganization,
     ) -> None:
         response = await client.post(
-            "/api/v1/benefits/",
+            "/v1/benefits/",
             json={
                 "type": "custom",
                 "description": "Benefit",
@@ -189,7 +189,7 @@ class TestUpdateBenefit:
         benefit_organization: Benefit,
     ) -> None:
         response = await client.patch(
-            f"/api/v1/benefits/{benefit_organization.id}",
+            f"/v1/benefits/{benefit_organization.id}",
             json={
                 "type": benefit_organization.type,
                 "description": "Updated Name",
@@ -201,7 +201,7 @@ class TestUpdateBenefit:
     @pytest.mark.auth
     async def test_not_existing(self, client: AsyncClient) -> None:
         response = await client.patch(
-            f"/api/v1/benefits/{uuid.uuid4()}",
+            f"/v1/benefits/{uuid.uuid4()}",
             json={"type": "custom", "description": "Updated Name"},
         )
 
@@ -226,7 +226,7 @@ class TestUpdateBenefit:
         user_organization_admin: UserOrganization,
     ) -> None:
         response = await client.patch(
-            f"/api/v1/benefits/{benefit_organization.id}",
+            f"/v1/benefits/{benefit_organization.id}",
             json={"type": benefit_organization.type, **payload},
         )
 
@@ -240,7 +240,7 @@ class TestUpdateBenefit:
         user_organization_admin: UserOrganization,
     ) -> None:
         response = await client.patch(
-            f"/api/v1/benefits/{benefit_organization.id}",
+            f"/v1/benefits/{benefit_organization.id}",
             json={
                 "type": benefit_organization.type,
                 "description": "Updated Description",
@@ -268,7 +268,7 @@ class TestUpdateBenefit:
             properties={"paid_articles": False},
         )
         response = await client.patch(
-            f"/api/v1/benefits/{benefit.id}",
+            f"/v1/benefits/{benefit.id}",
             json={
                 "type": benefit.type,
                 "description": "Updated Description",
@@ -299,7 +299,7 @@ class TestUpdateBenefit:
         )
 
         response = await client.patch(
-            f"/api/v1/benefits/{benefit.id}",
+            f"/v1/benefits/{benefit.id}",
             json={
                 "type": benefit.type,
                 "description": "Updated Description",
@@ -323,13 +323,13 @@ class TestDeleteBenefit:
         client: AsyncClient,
         benefit_organization: Benefit,
     ) -> None:
-        response = await client.delete(f"/api/v1/benefits/{benefit_organization.id}")
+        response = await client.delete(f"/v1/benefits/{benefit_organization.id}")
 
         assert response.status_code == 401
 
     @pytest.mark.auth
     async def test_not_existing(self, client: AsyncClient) -> None:
-        response = await client.delete(f"/api/v1/benefits/{uuid.uuid4()}")
+        response = await client.delete(f"/v1/benefits/{uuid.uuid4()}")
 
         assert response.status_code == 404
 
@@ -340,6 +340,6 @@ class TestDeleteBenefit:
         benefit_organization: Benefit,
         user_organization_admin: UserOrganization,
     ) -> None:
-        response = await client.delete(f"/api/v1/benefits/{benefit_organization.id}")
+        response = await client.delete(f"/v1/benefits/{benefit_organization.id}")
 
         assert response.status_code == 204

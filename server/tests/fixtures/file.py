@@ -85,7 +85,7 @@ class TestFile:
         self, client: AsyncClient, organization_id: UUID, parts: int = 1
     ) -> FileUpload:
         response = await client.post(
-            "/api/v1/files/",
+            "/v1/files/",
             json=self.build_create_json(organization_id, parts=parts),
         )
         return self.validate_create_response(response, organization_id)
@@ -211,7 +211,7 @@ class TestFile:
         payload_json = payload.model_dump(mode="json")
 
         response = await client.post(
-            f"/api/v1/files/{created.id}/uploaded",
+            f"/v1/files/{created.id}/uploaded",
             json=payload_json,
         )
 

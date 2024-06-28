@@ -14,7 +14,7 @@ class TestListSubscriptions:
     async def test_anonymous(
         self, client: AsyncClient, organization: Organization
     ) -> None:
-        response = await client.get("/api/v1/subscriptions/")
+        response = await client.get("/v1/subscriptions/")
 
         assert response.status_code == 401
 
@@ -35,7 +35,7 @@ class TestListSubscriptions:
             ended_at=datetime(2023, 6, 15),
         )
 
-        response = await client.get("/api/v1/subscriptions/")
+        response = await client.get("/v1/subscriptions/")
 
         assert response.status_code == 200
 

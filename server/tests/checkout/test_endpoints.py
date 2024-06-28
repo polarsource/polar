@@ -22,7 +22,7 @@ def stripe_service_mock(mocker: MockerFixture) -> MagicMock:
 class TestCreateCheckout:
     async def test_not_existing(self, client: AsyncClient) -> None:
         response = await client.post(
-            "/api/v1/checkouts/",
+            "/v1/checkouts/",
             json={
                 "product_id": str(uuid.uuid4()),
                 "product_price_id": str(uuid.uuid4()),
@@ -46,7 +46,7 @@ class TestCreateCheckout:
         if success_url is not None:
             json["success_url"] = success_url
 
-        response = await client.post("/api/v1/checkouts/", json=json)
+        response = await client.post("/v1/checkouts/", json=json)
 
         assert response.status_code == 422
 
@@ -54,7 +54,7 @@ class TestCreateCheckout:
         self, client: AsyncClient, product: Product
     ) -> None:
         response = await client.post(
-            "/api/v1/checkouts/",
+            "/v1/checkouts/",
             json={
                 "product_id": str(product.id),
                 "product_price_id": str(product.prices[0].id),
@@ -83,7 +83,7 @@ class TestCreateCheckout:
         )
 
         response = await client.post(
-            "/api/v1/checkouts/",
+            "/v1/checkouts/",
             json={
                 "product_id": str(product.id),
                 "product_price_id": str(product.prices[0].id),
@@ -121,7 +121,7 @@ class TestGetCheckout:
             },
         )
 
-        response = await client.get("/api/v1/checkouts/SESSION_ID")
+        response = await client.get("/v1/checkouts/SESSION_ID")
 
         assert response.status_code == 200
 

@@ -29,7 +29,7 @@ class TestListProducts:
         products: list[Product],
     ) -> None:
         response = await client.get(
-            "/api/v1/products/",
+            "/v1/products/",
             params={"organization_id": str(organization.id)},
         )
 
@@ -57,7 +57,7 @@ class TestListProducts:
         session.expunge_all()
 
         response = await client.get(
-            "/api/v1/products/",
+            "/v1/products/",
             params={"organization_id": str(organization.id)},
         )
 
@@ -79,7 +79,7 @@ class TestListProducts:
 class TestGetProduct:
     @pytest.mark.http_auto_expunge
     async def test_not_existing(self, client: AsyncClient) -> None:
-        response = await client.get(f"/api/v1/products/{uuid.uuid4()}")
+        response = await client.get(f"/v1/products/{uuid.uuid4()}")
 
         assert response.status_code == 404
 
@@ -89,7 +89,7 @@ class TestGetProduct:
         client: AsyncClient,
         product: Product,
     ) -> None:
-        response = await client.get(f"/api/v1/products/{product.id}")
+        response = await client.get(f"/v1/products/{product.id}")
 
         assert response.status_code == 200
 
@@ -113,7 +113,7 @@ class TestGetProduct:
         # then
         session.expunge_all()
 
-        response = await client.get(f"/api/v1/products/{product.id}")
+        response = await client.get(f"/v1/products/{product.id}")
 
         assert response.status_code == 200
 
@@ -130,7 +130,7 @@ class TestCreateProduct:
     @pytest.mark.http_auto_expunge
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.post(
-            "/api/v1/products/",
+            "/v1/products/",
             json={
                 "type": "individual",
                 "name": "Product",
@@ -150,7 +150,7 @@ class TestCreateProduct:
         user_organization_admin: UserOrganization,
     ) -> None:
         response = await client.post(
-            "/api/v1/products/",
+            "/v1/products/",
             json={
                 "type": "free",
                 "name": "Subscription Tier",
@@ -233,7 +233,7 @@ class TestCreateProduct:
         session.expunge_all()
 
         response = await client.post(
-            "/api/v1/products/",
+            "/v1/products/",
             json={
                 "type": "individual",
                 "organization_id": str(organization.id),
@@ -289,7 +289,7 @@ class TestCreateProduct:
         session.expunge_all()
 
         response = await client.post(
-            "/api/v1/products/",
+            "/v1/products/",
             json={
                 "type": "individual",
                 "name": "Product",
@@ -307,7 +307,7 @@ class TestCreateProduct:
 class TestUpdateProduct:
     async def test_anonymous(self, client: AsyncClient, product: Product) -> None:
         response = await client.patch(
-            f"/api/v1/products/{product.id}",
+            f"/v1/products/{product.id}",
             json={"name": "Updated Name"},
         )
 
@@ -316,7 +316,7 @@ class TestUpdateProduct:
     @pytest.mark.auth
     async def test_not_existing(self, client: AsyncClient) -> None:
         response = await client.patch(
-            f"/api/v1/products/{uuid.uuid4()}",
+            f"/v1/products/{uuid.uuid4()}",
             json={"name": "Updated Name"},
         )
 
@@ -337,7 +337,7 @@ class TestUpdateProduct:
         user_organization_admin: UserOrganization,
     ) -> None:
         response = await client.patch(
-            f"/api/v1/products/{product.id}",
+            f"/v1/products/{product.id}",
             json=payload,
         )
 
@@ -351,7 +351,7 @@ class TestUpdateProduct:
         user_organization_admin: UserOrganization,
     ) -> None:
         response = await client.patch(
-            f"/api/v1/products/{product.id}",
+            f"/v1/products/{product.id}",
             json={"name": "Updated Name"},
         )
 
@@ -375,7 +375,7 @@ class TestUpdateProduct:
         to get rid of the full schema.
         """
         response = await client.patch(
-            f"/api/v1/products/{product_one_time.id}",
+            f"/v1/products/{product_one_time.id}",
             json={
                 "prices": [
                     {
@@ -403,7 +403,7 @@ class TestUpdateProduct:
 class TestUpdateProductBenefits:
     async def test_anonymous(self, client: AsyncClient, product: Product) -> None:
         response = await client.post(
-            f"/api/v1/products/{product.id}/benefits",
+            f"/v1/products/{product.id}/benefits",
             json={"benefits": []},
         )
 
@@ -412,7 +412,7 @@ class TestUpdateProductBenefits:
     @pytest.mark.auth
     async def test_not_existing(self, client: AsyncClient) -> None:
         response = await client.post(
-            f"/api/v1/products/{uuid.uuid4()}/benefits",
+            f"/v1/products/{uuid.uuid4()}/benefits",
             json={"benefits": []},
         )
 
@@ -427,7 +427,7 @@ class TestUpdateProductBenefits:
         benefit_organization: Benefit,
     ) -> None:
         response = await client.post(
-            f"/api/v1/products/{product.id}/benefits",
+            f"/v1/products/{product.id}/benefits",
             json={"benefits": [str(benefit_organization.id)]},
         )
 

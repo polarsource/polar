@@ -1194,7 +1194,7 @@ async def test_pledge_states(
 
             async def confirm_solved() -> None:
                 response = await client.post(
-                    f"/api/v1/issues/{issue.id}/confirm_solved",
+                    f"/v1/issues/{issue.id}/confirm_solved",
                     json={
                         "splits": [
                             {

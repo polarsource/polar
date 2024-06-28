@@ -18,7 +18,7 @@ from tests.fixtures.random_objects import (
 class TestListAdvertisementCampaigns:
     async def test_not_existing_benefit(self, client: AsyncClient) -> None:
         response = await client.get(
-            "/api/v1/advertisements/", params={"benefit_id": str(uuid.uuid4())}
+            "/v1/advertisements/", params={"benefit_id": str(uuid.uuid4())}
         )
 
         assert response.status_code == 422
@@ -28,7 +28,7 @@ class TestListAdvertisementCampaigns:
     ) -> None:
         benefit = await create_benefit(save_fixture, organization=organization)
         response = await client.get(
-            "/api/v1/advertisements/", params={"benefit_id": str(benefit.id)}
+            "/v1/advertisements/", params={"benefit_id": str(benefit.id)}
         )
 
         assert response.status_code == 422
@@ -37,7 +37,7 @@ class TestListAdvertisementCampaigns:
         self, client: AsyncClient, ads_benefit_organization: BenefitAds
     ) -> None:
         response = await client.get(
-            "/api/v1/advertisements/",
+            "/v1/advertisements/",
             params={"benefit_id": str(ads_benefit_organization.id)},
         )
 
@@ -85,7 +85,7 @@ class TestListAdvertisementCampaigns:
         )
 
         response = await client.get(
-            "/api/v1/advertisements/",
+            "/v1/advertisements/",
             params={"benefit_id": str(ads_benefit_organization.id)},
         )
 

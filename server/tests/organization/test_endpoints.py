@@ -19,7 +19,7 @@ from tests.fixtures.database import SaveFixture
 async def test_get_organization(
     organization: Organization, client: AsyncClient
 ) -> None:
-    response = await client.get(f"/api/v1/organizations/{organization.id}")
+    response = await client.get(f"/v1/organizations/{organization.id}")
 
     assert response.status_code == 200
 
@@ -34,7 +34,7 @@ async def test_get_organization(
 async def test_get_blocked_organization_404(
     organization_blocked: Organization, client: AsyncClient
 ) -> None:
-    response = await client.get(f"/api/v1/organizations/{organization_blocked.id}")
+    response = await client.get(f"/v1/organizations/{organization_blocked.id}")
 
     assert response.status_code == 404
 
@@ -50,7 +50,7 @@ async def test_get_organization_member_only_fields_no_member(
     organization.billing_email = "billing@polar.sh"
     await save_fixture(organization)
 
-    response = await client.get(f"/api/v1/organizations/{organization.id}")
+    response = await client.get(f"/v1/organizations/{organization.id}")
 
     assert response.status_code == 200
 
@@ -72,7 +72,7 @@ async def test_get_organization_member_only_fields_is_member(
     organization.billing_email = "billing@polar.sh"
     await save_fixture(organization)
 
-    response = await client.get(f"/api/v1/organizations/{organization.id}")
+    response = await client.get(f"/v1/organizations/{organization.id}")
 
     assert response.status_code == 200
 
@@ -97,7 +97,7 @@ async def test_update_organization_billing_email(
     # then
     session.expunge_all()
 
-    response = await client.get(f"/api/v1/organizations/{organization.id}")
+    response = await client.get(f"/v1/organizations/{organization.id}")
 
     assert response.status_code == 200
 
@@ -108,7 +108,7 @@ async def test_update_organization_billing_email(
 
     # edit
     response = await client.patch(
-        f"/api/v1/organizations/{organization.id}",
+        f"/v1/organizations/{organization.id}",
         json={
             "billing_email": "billing_via_api@polar.sh",
         },
@@ -119,7 +119,7 @@ async def test_update_organization_billing_email(
     assert org.billing_email == "billing_via_api@polar.sh"
 
     # get again!
-    response = await client.get(f"/api/v1/organizations/{organization.id}")
+    response = await client.get(f"/v1/organizations/{organization.id}")
 
     assert response.status_code == 200
     org = OrganizationSchema.model_validate(response.json())
@@ -134,7 +134,7 @@ async def test_list_organization_member(
     user_organization: UserOrganization,  # makes User a member of Organization
     client: AsyncClient,
 ) -> None:
-    response = await client.get("/api/v1/organizations")
+    response = await client.get("/v1/organizations")
 
     assert response.status_code == 200
     assert len(response.json()["items"]) == 0
@@ -148,7 +148,7 @@ async def test_list_blocked_organization_member(
     user_organization_blocked: UserOrganization,  # makes User a member of Organization
     client: AsyncClient,
 ) -> None:
-    response = await client.get("/api/v1/organizations")
+    response = await client.get("/v1/organizations")
 
     assert response.status_code == 200
 
@@ -165,7 +165,7 @@ async def test_list_organization_member_allow_non_admin(
     user_organization: UserOrganization,  # makes User a member of Organization
     client: AsyncClient,
 ) -> None:
-    response = await client.get("/api/v1/organizations?is_admin_only=false")
+    response = await client.get("/v1/organizations?is_admin_only=false")
 
     assert response.status_code == 200
     assert response.json()["items"][0]["id"] == str(organization.id)
@@ -184,7 +184,7 @@ async def test_list_organization_member_admin(
     user_organization.is_admin = True
     await save_fixture(user_organization)
 
-    response = await client.get("/api/v1/organizations")
+    response = await client.get("/v1/organizations")
 
     assert response.status_code == 200
     assert response.json()["items"][0]["id"] == str(organization.id)
@@ -198,7 +198,7 @@ async def test_organization_lookup_not_found_v2(
     user_organization: UserOrganization,  # makes User a member of Organization
     client: AsyncClient,
 ) -> None:
-    response = await client.get("/api/v1/organizations?name=foobar")
+    response = await client.get("/v1/organizations?name=foobar")
 
     assert response.status_code == 200
     items = response.json()["items"]
@@ -221,12 +221,12 @@ async def test_organization_lookup_v2(
         is_admin=True,
     )
     await save_fixture(user_organization_second_admin)
-    unfiltered = await client.get("/api/v1/organizations")
+    unfiltered = await client.get("/v1/organizations")
     assert unfiltered.status_code == 200
     items = unfiltered.json()["items"]
     assert len(items) == 2
 
-    filtered = await client.get(f"/api/v1/organizations?name={organization.name}")
+    filtered = await client.get(f"/v1/organizations?name={organization.name}")
     assert filtered.status_code == 200
     items = filtered.json()["items"]
     assert len(items) == 1
@@ -240,7 +240,7 @@ async def test_organization_lookup_not_found(
     organization: Organization, client: AsyncClient
 ) -> None:
     response = await client.get(
-        "/api/v1/organizations/lookup?platform=github&organization_name=foobar"
+        "/v1/organizations/lookup?platform=github&organization_name=foobar"
     )
 
     assert response.status_code == 404
@@ -253,7 +253,7 @@ async def test_organization_lookup(
     organization: Organization, client: AsyncClient
 ) -> None:
     response = await client.get(
-        f"/api/v1/organizations/lookup?platform=github&organization_name={organization.name}"
+        f"/v1/organizations/lookup?platform=github&organization_name={organization.name}"
     )
 
     assert response.status_code == 200
@@ -267,7 +267,7 @@ async def test_organization_blocked_lookup_404(
     organization_blocked: Organization, client: AsyncClient
 ) -> None:
     response = await client.get(
-        f"/api/v1/organizations/lookup?platform=github&organization_name={organization_blocked.name}"
+        f"/v1/organizations/lookup?platform=github&organization_name={organization_blocked.name}"
     )
 
     assert response.status_code == 404
@@ -280,7 +280,7 @@ async def test_organization_search(
     organization: Organization, client: AsyncClient
 ) -> None:
     response = await client.get(
-        f"/api/v1/organizations/search?platform=github&organization_name={organization.name}"
+        f"/v1/organizations/search?platform=github&organization_name={organization.name}"
     )
 
     assert response.status_code == 200
@@ -294,7 +294,7 @@ async def test_organization_search_no_matches(
     organization: Organization, client: AsyncClient
 ) -> None:
     response = await client.get(
-        "/api/v1/organizations/search?platform=github&organization_name=foobar"
+        "/v1/organizations/search?platform=github&organization_name=foobar"
     )
 
     assert response.status_code == 200
@@ -308,7 +308,7 @@ async def test_organization_blocked_search(
     organization_blocked: Organization, client: AsyncClient
 ) -> None:
     response = await client.get(
-        f"/api/v1/organizations/search?platform=github&organization_name={organization_blocked.name}"
+        f"/v1/organizations/search?platform=github&organization_name={organization_blocked.name}"
     )
 
     assert response.status_code == 200
@@ -328,7 +328,7 @@ async def test_get_organization_deleted(
     organization.deleted_at = utc_now()
     await save_fixture(organization)
 
-    response = await client.get(f"/api/v1/organizations/{organization.id}")
+    response = await client.get(f"/v1/organizations/{organization.id}")
 
     assert response.status_code == 404
 
@@ -342,7 +342,7 @@ async def test_get_organization_blocked_404(
     user_organization: UserOrganization,  # makes User a member of Organization
     client: AsyncClient,
 ) -> None:
-    response = await client.get(f"/api/v1/organizations/{organization_blocked.id}")
+    response = await client.get(f"/v1/organizations/{organization_blocked.id}")
 
     assert response.status_code == 404
 
@@ -354,7 +354,7 @@ async def test_update_organization_no_admin(
     organization: Organization, client: AsyncClient
 ) -> None:
     response = await client.patch(
-        f"/api/v1/organizations/{organization.id}",
+        f"/v1/organizations/{organization.id}",
         json={"default_upfront_split_to_contributors": 85},
     )
 
@@ -368,7 +368,7 @@ async def test_update_blocked_organization_no_admin_404(
     organization_blocked: Organization, client: AsyncClient
 ) -> None:
     response = await client.patch(
-        f"/api/v1/organizations/{organization_blocked.id}",
+        f"/v1/organizations/{organization_blocked.id}",
         json={"default_upfront_split_to_contributors": 85},
     )
 
@@ -391,7 +391,7 @@ async def test_update_organization(
     session.expunge_all()
 
     response = await client.patch(
-        f"/api/v1/organizations/{organization.id}",
+        f"/v1/organizations/{organization.id}",
         json={
             "default_upfront_split_to_contributors": 85,
         },
@@ -402,7 +402,7 @@ async def test_update_organization(
     assert response.json()["default_upfront_split_to_contributors"] == 85
 
     response = await client.patch(
-        f"/api/v1/organizations/{organization.id}",
+        f"/v1/organizations/{organization.id}",
         json={},  # no change
     )
 
@@ -411,7 +411,7 @@ async def test_update_organization(
     assert response.json()["default_upfront_split_to_contributors"] == 85
 
     response = await client.patch(
-        f"/api/v1/organizations/{organization.id}",
+        f"/v1/organizations/{organization.id}",
         json={"default_upfront_split_to_contributors": None},
     )
 
@@ -430,7 +430,7 @@ async def test_list_members(
     user_organization_second: UserOrganization,  # adds another member
     client: AsyncClient,
 ) -> None:
-    response = await client.get(f"/api/v1/organizations/{organization.id}/members")
+    response = await client.get(f"/v1/organizations/{organization.id}/members")
 
     assert response.status_code == 200
 
@@ -456,7 +456,7 @@ async def test_list_members_not_member(
     user_organization_second: UserOrganization,  # adds another member
     client: AsyncClient,
 ) -> None:
-    response = await client.get(f"/api/v1/organizations/{organization.id}/members")
+    response = await client.get(f"/v1/organizations/{organization.id}/members")
 
     assert response.status_code == 401
 
@@ -479,7 +479,7 @@ async def test_update_organization_profile_settings(
 
     # default
     response = await client.get(
-        f"/api/v1/organizations/{organization.id}",
+        f"/v1/organizations/{organization.id}",
     )
     assert response.status_code == 200
     assert response.json()["id"] == str(organization.id)
@@ -492,7 +492,7 @@ async def test_update_organization_profile_settings(
 
     # set featured_projects
     response = await client.patch(
-        f"/api/v1/organizations/{organization.id}",
+        f"/v1/organizations/{organization.id}",
         json={
             "profile_settings": {
                 "featured_projects": [
@@ -513,7 +513,7 @@ async def test_update_organization_profile_settings(
 
     # set featured_organizations
     response = await client.patch(
-        f"/api/v1/organizations/{organization.id}",
+        f"/v1/organizations/{organization.id}",
         json={
             "profile_settings": {
                 "featured_organizations": [
@@ -551,7 +551,7 @@ async def test_update_organization_profile_settings_featured_projects(
 
     # set featured_projects
     response = await client.patch(
-        f"/api/v1/organizations/{organization.id}",
+        f"/v1/organizations/{organization.id}",
         json={
             "profile_settings": {
                 "featured_projects": [
@@ -569,7 +569,7 @@ async def test_update_organization_profile_settings_featured_projects(
 
     # unset featured_projects
     response = await client.patch(
-        f"/api/v1/organizations/{organization.id}",
+        f"/v1/organizations/{organization.id}",
         json={
             "profile_settings": {
                 "featured_projects": [],
@@ -600,7 +600,7 @@ async def test_update_organization_profile_settings_featured_organizations(
 
     # set featured_projects
     response = await client.patch(
-        f"/api/v1/organizations/{organization.id}",
+        f"/v1/organizations/{organization.id}",
         json={
             "profile_settings": {
                 "featured_organizations": [
@@ -618,7 +618,7 @@ async def test_update_organization_profile_settings_featured_organizations(
 
     # unset featured_projects
     response = await client.patch(
-        f"/api/v1/organizations/{organization.id}",
+        f"/v1/organizations/{organization.id}",
         json={
             "profile_settings": {
                 "featured_organizations": [],
@@ -648,7 +648,7 @@ async def test_update_organization_profile_settings_description(
 
     # set description
     response = await client.patch(
-        f"/api/v1/organizations/{organization.id}",
+        f"/v1/organizations/{organization.id}",
         json={"profile_settings": {"description": "Hello world!"}},
     )
 
@@ -658,7 +658,7 @@ async def test_update_organization_profile_settings_description(
 
     # should trim description of leading/trailing whitespace
     response = await client.patch(
-        f"/api/v1/organizations/{organization.id}",
+        f"/v1/organizations/{organization.id}",
         json={"profile_settings": {"description": "     Hello whitespace!    "}},
     )
 
@@ -668,7 +668,7 @@ async def test_update_organization_profile_settings_description(
 
     # omit description should not affect it
     response = await client.patch(
-        f"/api/v1/organizations/{organization.id}",
+        f"/v1/organizations/{organization.id}",
         json={"profile_settings": {}},
     )
 
@@ -678,7 +678,7 @@ async def test_update_organization_profile_settings_description(
 
     # setting a description which exceeds the maximum length
     response = await client.patch(
-        f"/api/v1/organizations/{organization.id}",
+        f"/v1/organizations/{organization.id}",
         json={"profile_settings": {"description": "a" * 161}},
     )
 
@@ -703,7 +703,7 @@ async def test_update_organization_profile_settings_links(
 
     # set links
     response = await client.patch(
-        f"/api/v1/organizations/{organization.id}",
+        f"/v1/organizations/{organization.id}",
         json={
             "profile_settings": {
                 "links": [
@@ -724,7 +724,7 @@ async def test_update_organization_profile_settings_links(
     # must be a valid URL with tld & hostname
     # with pytest.raises(ValidationError):
     response = await client.patch(
-        f"/api/v1/organizations/{organization.id}",
+        f"/v1/organizations/{organization.id}",
         json={
             "profile_settings": {
                 "links": [
@@ -753,14 +753,14 @@ async def test_issue_funding_enabled(
     session.expunge_all()
 
     response = await client.patch(
-        f"/api/v1/organizations/{organization.id}",
+        f"/v1/organizations/{organization.id}",
         json={"feature_settings": {"issue_funding_enabled": True}},
     )
     assert response.status_code == 200
     assert response.json()["feature_settings"]["issue_funding_enabled"] is True
 
     response = await client.patch(
-        f"/api/v1/organizations/{organization.id}",
+        f"/v1/organizations/{organization.id}",
         json={"feature_settings": {}},
     )
     assert response.status_code == 200
@@ -769,14 +769,14 @@ async def test_issue_funding_enabled(
     )  # no change
 
     response = await client.patch(
-        f"/api/v1/organizations/{organization.id}",
+        f"/v1/organizations/{organization.id}",
         json={"feature_settings": {"issue_funding_enabled": False}},
     )
     assert response.status_code == 200
     assert response.json()["feature_settings"]["issue_funding_enabled"] is False
 
     response = await client.patch(
-        f"/api/v1/organizations/{organization.id}",
+        f"/v1/organizations/{organization.id}",
         json={"feature_settings": {}},
     )
     assert response.status_code == 200
@@ -801,28 +801,28 @@ async def test_articles_enabled(
     session.expunge_all()
 
     response = await client.patch(
-        f"/api/v1/organizations/{organization.id}",
+        f"/v1/organizations/{organization.id}",
         json={"feature_settings": {"articles_enabled": True}},
     )
     assert response.status_code == 200
     assert response.json()["feature_settings"]["articles_enabled"] is True
 
     response = await client.patch(
-        f"/api/v1/organizations/{organization.id}",
+        f"/v1/organizations/{organization.id}",
         json={"feature_settings": {}},
     )
     assert response.status_code == 200
     assert response.json()["feature_settings"]["articles_enabled"] is True  # no change
 
     response = await client.patch(
-        f"/api/v1/organizations/{organization.id}",
+        f"/v1/organizations/{organization.id}",
         json={"feature_settings": {"articles_enabled": False}},
     )
     assert response.status_code == 200
     assert response.json()["feature_settings"]["articles_enabled"] is False
 
     response = await client.patch(
-        f"/api/v1/organizations/{organization.id}",
+        f"/v1/organizations/{organization.id}",
         json={"feature_settings": {}},
     )
     assert response.status_code == 200
@@ -845,14 +845,14 @@ async def test_subscriptions_enabled(
     session.expunge_all()
 
     response = await client.patch(
-        f"/api/v1/organizations/{organization.id}",
+        f"/v1/organizations/{organization.id}",
         json={"feature_settings": {"subscriptions_enabled": True}},
     )
     assert response.status_code == 200
     assert response.json()["feature_settings"]["subscriptions_enabled"] is True
 
     response = await client.patch(
-        f"/api/v1/organizations/{organization.id}",
+        f"/v1/organizations/{organization.id}",
         json={"feature_settings": {}},
     )
     assert response.status_code == 200
@@ -861,14 +861,14 @@ async def test_subscriptions_enabled(
     )  # no change
 
     response = await client.patch(
-        f"/api/v1/organizations/{organization.id}",
+        f"/v1/organizations/{organization.id}",
         json={"feature_settings": {"subscriptions_enabled": False}},
     )
     assert response.status_code == 200
     assert response.json()["feature_settings"]["subscriptions_enabled"] is False
 
     response = await client.patch(
-        f"/api/v1/organizations/{organization.id}",
+        f"/v1/organizations/{organization.id}",
         json={"feature_settings": {}},
     )
     assert response.status_code == 200
@@ -893,21 +893,21 @@ async def test_donations_enabled(
     session.expunge_all()
 
     response = await client.patch(
-        f"/api/v1/organizations/{organization.id}",
+        f"/v1/organizations/{organization.id}",
         json={"donations_enabled": True},
     )
     assert response.status_code == 200
     assert response.json()["donations_enabled"] is True
 
     response = await client.patch(
-        f"/api/v1/organizations/{organization.id}",
+        f"/v1/organizations/{organization.id}",
         json={},
     )
     assert response.status_code == 200
     assert response.json()["donations_enabled"] is True  # no change
 
     response = await client.patch(
-        f"/api/v1/organizations/{organization.id}",
+        f"/v1/organizations/{organization.id}",
         json={"donations_enabled": False},
     )
     assert response.status_code == 200
@@ -930,7 +930,7 @@ async def test_public_donation_timestamps(
     session.expunge_all()
 
     response = await client.patch(
-        f"/api/v1/organizations/{organization.id}",
+        f"/v1/organizations/{organization.id}",
         json={"public_donation_timestamps": True},
     )
     assert response.status_code == 200

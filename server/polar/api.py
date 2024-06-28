@@ -39,7 +39,7 @@ from polar.user.endpoints import router as user_router
 from polar.webhook.endpoints import router as webhook_router
 from polar.webhook_notifications.endpoints import router as webhook_notifications_router
 
-router = APIRouter(prefix="/api/v1")
+router = APIRouter(prefix="/v1")
 
 # /users
 router.include_router(user_router)

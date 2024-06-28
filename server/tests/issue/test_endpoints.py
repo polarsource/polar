@@ -27,7 +27,7 @@ async def test_get_issue(
     repository.is_private = False
     await save_fixture(repository)
 
-    response = await client.get(f"/api/v1/issues/{issue.id}")
+    response = await client.get(f"/v1/issues/{issue.id}")
 
     assert response.status_code == 200
     assert response.json()["id"] == str(issue.id)
@@ -61,7 +61,7 @@ async def test_get_issue_reactions(
     ).model_dump(mode="json")
     await save_fixture(issue)
 
-    response = await client.get(f"/api/v1/issues/{issue.id}")
+    response = await client.get(f"/v1/issues/{issue.id}")
 
     assert response.status_code == 200
     assert response.json()["id"] == str(issue.id)
@@ -81,7 +81,7 @@ async def test_get_not_found_private_repo(
     repository.is_private = True
     await save_fixture(repository)
 
-    response = await client.get(f"/api/v1/issues/{issue.id}")
+    response = await client.get(f"/v1/issues/{issue.id}")
 
     assert response.status_code == 404
 
@@ -100,7 +100,7 @@ async def test_get_private_repo_member(
     repository.is_private = True
     await save_fixture(repository)
 
-    response = await client.get(f"/api/v1/issues/{issue.id}")
+    response = await client.get(f"/v1/issues/{issue.id}")
 
     assert response.status_code == 200
     assert response.json()["id"] == str(issue.id)
@@ -121,7 +121,7 @@ async def test_issue_search_public_repo(
     await save_fixture(repository)
 
     response = await client.get(
-        f"/api/v1/issues/search?platform=github&organization_name={organization.name}&repository_name={repository.name}"
+        f"/v1/issues/search?platform=github&organization_name={organization.name}&repository_name={repository.name}"
     )
 
     assert response.status_code == 200
@@ -148,7 +148,7 @@ async def test_issue_search_public_repo_without_repo_selector(
     await save_fixture(repository)
 
     response = await client.get(
-        f"/api/v1/issues/search?platform=github&organization_name={organization.name}"
+        f"/v1/issues/search?platform=github&organization_name={organization.name}"
     )
 
     assert response.status_code == 200
@@ -171,7 +171,7 @@ async def test_issue_search_private_repo(
     await save_fixture(repository)
 
     response = await client.get(
-        f"/api/v1/issues/search?platform=github&organization_name={organization.name}&repository_name={repository.name}"
+        f"/v1/issues/search?platform=github&organization_name={organization.name}&repository_name={repository.name}"
     )
 
     assert response.status_code == 404
@@ -193,7 +193,7 @@ async def test_issue_search_private_repo_without_repo_selector(
     await save_fixture(repository)
 
     response = await client.get(
-        f"/api/v1/issues/search?platform=github&organization_name={organization.name}"
+        f"/v1/issues/search?platform=github&organization_name={organization.name}"
     )
 
     assert response.status_code == 200
@@ -218,7 +218,7 @@ async def test_update_funding_goal(
     session.expunge_all()
 
     # get, default value should be None
-    response = await client.get(f"/api/v1/issues/{issue.id}")
+    response = await client.get(f"/v1/issues/{issue.id}")
 
     assert response.status_code == 200
     assert response.json()["id"] == str(issue.id)
@@ -226,7 +226,7 @@ async def test_update_funding_goal(
 
     # update value
     response = await client.post(
-        f"/api/v1/issues/{issue.id}",
+        f"/v1/issues/{issue.id}",
         json={"funding_goal": {"currency": "USD", "amount": 12000}},
     )
 
@@ -238,7 +238,7 @@ async def test_update_funding_goal(
     }
 
     # get after post, should be persisted
-    response = await client.get(f"/api/v1/issues/{issue.id}")
+    response = await client.get(f"/v1/issues/{issue.id}")
 
     assert response.status_code == 200
     assert response.json()["id"] == str(issue.id)
@@ -272,7 +272,7 @@ async def test_confirm_solved(
 
     # fetch pledges
     pledges_response = await client.get(
-        f"/api/v1/pledges/search?issue_id={pledge.issue_id}"
+        f"/v1/pledges/search?issue_id={pledge.issue_id}"
     )
 
     assert pledges_response.status_code == 200
@@ -281,7 +281,7 @@ async def test_confirm_solved(
 
     # confirm as solved
     response = await client.post(
-        f"/api/v1/issues/{issue.id}/confirm_solved",
+        f"/v1/issues/{issue.id}/confirm_solved",
         json={
             "splits": [
                 {
@@ -301,7 +301,7 @@ async def test_confirm_solved(
 
     # fetch pledges
     pledges_response = await client.get(
-        f"/api/v1/pledges/search?issue_id={pledge.issue_id}"
+        f"/v1/pledges/search?issue_id={pledge.issue_id}"
     )
 
     assert pledges_response.status_code == 200

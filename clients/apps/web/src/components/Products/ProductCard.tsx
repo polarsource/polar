@@ -97,7 +97,7 @@ export const ProductCard = ({
           <Pill className="px-2.5 py-1" color="blue">
             {product.benefits.length === 1
               ? `${product.benefits.length} Benefit`
-              : `${product.benefits.length} Benefits`}{' '}
+              : `${product.benefits.length} Benefits`}
           </Pill>
         )}
       </div>

@@ -2,6 +2,7 @@ import time
 from enum import StrEnum
 from typing import Any
 
+import httpx
 import structlog
 from githubkit import (
     AppAuthStrategy,
@@ -83,7 +84,7 @@ class RefreshAccessToken(BaseModel):
     )  # The number of seconds until access_token expires (will always be 28800)
     refresh_token: str | None = Field(
         default=...
-    )  # A new refres token (is only set if the app is using expiring refresh tokens)
+    )  # A new refresh token (is only set if the app is using expiring refresh tokens)
     refresh_token_expires_in: int | None = Field(default=...)
     scope: str = Field(default=...)  # Always an empty string
     token_type: str = Field(default=...)  # Always "bearer"
@@ -127,10 +128,9 @@ async def refresh_oauth_account(
             return oauth_db
 
         # refresh token
-        try:
-            refresh = await GitHub().arequest(
-                method="POST",
-                url="https://github.com/login/oauth/access_token",
+        async with httpx.AsyncClient() as http_client:
+            response = await http_client.post(
+                "https://github.com/login/oauth/access_token",
                 params={
                     "client_id": settings.GITHUB_CLIENT_ID,
                     "client_secret": settings.GITHUB_CLIENT_SECRET,
@@ -138,40 +138,46 @@ async def refresh_oauth_account(
                     "grant_type": "refresh_token",
                 },
                 headers={"Accept": "application/json"},
-                response_model=RefreshAccessToken,
             )
-        except Exception as e:
-            log.error(
-                "github.auth.refresh.failed",
-                user_id=oauth_db.user_id,
-                platform=oauth_db.platform,
-                e=e,
+            if response.status_code != 200:
+                log.error(
+                    "github.auth.refresh.error",
+                    user_id=oauth_db.user_id,
+                    oauth_id=oauth_db.id,
+                    http_code=response.status_code,
+                )
+                return oauth_db
+
+            data = response.json()
+            # GitHub returns 200 in case of errors, but with an error payload
+            error = data.get("error", None)
+            if error:
+                log.error(
+                    "github.auth.refresh.error",
+                    user_id=oauth_db.user_id,
+                    oauth_id=oauth_db.id,
+                    http_code=response.status_code,
+                    error=error,
+                    error_description=data.get("error_description", None),
+                )
+                return oauth_db
+
+            refreshed = RefreshAccessToken.model_validate(data)
+
+            # update
+            oauth_db.access_token = refreshed.access_token
+            oauth_db.expires_at = int(time.time()) + refreshed.expires_in
+            if refreshed.refresh_token:
+                oauth_db.refresh_token = refreshed.refresh_token
+
+            log.info(
+                "github.auth.refresh.succeeded",
+                user_id=oauth.user_id,
+                platform=oauth.platform,
             )
+            session.add(oauth_db)
+            await session.flush()
             return oauth_db
-
-        if not refresh:
-            log.error(
-                "github.auth.refresh.failed",
-                user_id=oauth_db.user_id,
-                platform=oauth_db.platform,
-            )
-            return oauth_db
-
-        # update
-        r = refresh.parsed_data
-        oauth_db.access_token = r.access_token
-        oauth_db.expires_at = int(time.time()) + r.expires_in
-        if r.refresh_token:
-            oauth_db.refresh_token = r.refresh_token
-
-        log.info(
-            "github.auth.refresh.succeeded",
-            user_id=oauth.user_id,
-            platform=oauth.platform,
-        )
-        session.add(oauth_db)
-        await session.flush()
-        return oauth_db
 
 
 async def get_refreshed_oauth_client(

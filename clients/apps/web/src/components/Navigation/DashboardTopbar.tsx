@@ -45,10 +45,12 @@ const DashboardTopbar = ({
   children,
   title,
   marginBottom = true,
+  hideSubNav = false,
 }: PropsWithChildren<{
   title?: string
   useOrgFromURL: boolean
   marginBottom?: boolean
+  hideSubNav?: boolean
 }>) => {
   const { currentUser } = useAuth()
 
@@ -85,6 +87,7 @@ const DashboardTopbar = ({
           </div>
         </div>
         {currentRoute &&
+        !hideSubNav &&
         'subs' in currentRoute &&
         (currentRoute.subs?.length ?? 0) > 0 ? (
           <div className="flex flex-row items-center gap-4 gap-y-24">

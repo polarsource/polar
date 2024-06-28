@@ -1,7 +1,6 @@
 import { useDeleteBenefit } from '@/hooks/queries'
 import { LoyaltyOutlined, MoreVertOutlined } from '@mui/icons-material'
 import { BenefitPublicInner, Organization } from '@polar-sh/sdk'
-import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { Switch } from 'polarkit/components/ui/atoms'
 import Button from 'polarkit/components/ui/atoms/button'
@@ -17,8 +16,8 @@ import { twMerge } from 'tailwind-merge'
 import CreateBenefitModalContent from '../Benefit/CreateBenefitModalContent'
 import UpdateBenefitModalContent from '../Benefit/UpdateBenefitModalContent'
 import { resolveBenefitIcon } from '../Benefit/utils'
-import { Modal } from '../Modal'
 import { ConfirmModal } from '../Modal/ConfirmModal'
+import { InlineModal } from '../Modal/InlineModal'
 import { useModal } from '../Modal/useModal'
 
 interface BenefitRowProps {
@@ -88,8 +87,7 @@ const BenefitRow = ({
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
-      <Modal
-        className="overflow-visible"
+      <InlineModal
         isShown={isEditShown}
         hide={hideEdit}
         modalContent={
@@ -130,7 +128,7 @@ const ProductBenefitsForm = ({
   className,
 }: ProductBenefitsFormProps) => {
   const searchParams = useSearchParams()
-  const { isShown, toggle, hide } = useModal(
+  const { isShown, toggle, hide, show } = useModal(
     searchParams?.get('create_benefit') === 'true',
   )
 
@@ -150,11 +148,9 @@ const ProductBenefitsForm = ({
       <div className={twMerge('flex w-full flex-col gap-y-6', className)}>
         <div className="flex flex-row items-center justify-between">
           <h2 className="text-gray-950 dark:text-white">Benefits</h2>
-          <Link href={`/maintainer/${organization.name}/products/benefits`}>
-            <Button size="sm" className="self-start" type="button">
-              New Benefit
-            </Button>
-          </Link>
+          <Button size="sm" className="self-start" type="button" onClick={show}>
+            New Benefit
+          </Button>
         </div>
         <div className="flex flex-col gap-y-6">
           <div className="flex flex-col gap-y-4">
@@ -188,8 +184,7 @@ const ProductBenefitsForm = ({
           </div>
         </div>
       </div>
-      <Modal
-        className="overflow-visible"
+      <InlineModal
         isShown={isShown}
         hide={toggle}
         modalContent={

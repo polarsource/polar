@@ -10,30 +10,27 @@ import {
   BenefitPublicInner,
   Organization,
   ProductCreate,
-  ProductPriceRecurringInterval,
   ProductPriceType,
   ResponseError,
   ValidationError,
 } from '@polar-sh/sdk'
+import { useRouter } from 'next/navigation'
 import Button from 'polarkit/components/ui/atoms/button'
 import { Form } from 'polarkit/components/ui/form'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useForm } from 'react-hook-form'
-import { InlineModalHeader } from '../Modal/InlineModal'
+import { DashboardBody } from '../Layout/DashboardLayout'
+import DashboardTopbar from '../Navigation/DashboardTopbar'
 import ProductBenefitsForm from './ProductBenefitsForm'
 import ProductForm, { ProductFullMediasMixin } from './ProductForm'
 
-export interface CreateProductModalProps {
+export interface CreateProductPageProps {
   organization: Organization
   productPriceType?: ProductPriceType
-  hide: () => void
 }
 
-export const CreateProductModal = ({
-  organization,
-  productPriceType,
-  hide,
-}: CreateProductModalProps) => {
+export const CreateProductPage = ({ organization }: CreateProductPageProps) => {
+  const router = useRouter()
   const benefits = useBenefits(organization.id)
   const organizationBenefits = useMemo(
     () => benefits.data?.items ?? [],
@@ -53,22 +50,13 @@ export const CreateProductModal = ({
   const form = useForm<ProductCreate & ProductFullMediasMixin>({
     defaultValues: {
       ...{
-        prices: (productPriceType === ProductPriceType.RECURRING
-          ? [
-              {
-                type: ProductPriceType.RECURRING,
-                recurring_interval: ProductPriceRecurringInterval.MONTH,
-                price_amount: undefined,
-                price_currency: 'usd',
-              },
-            ]
-          : [
-              {
-                type: ProductPriceType.ONE_TIME,
-                price_amount: undefined,
-                price_currency: 'usd',
-              },
-            ]) as any,
+        prices: [
+          {
+            type: ProductPriceType.ONE_TIME,
+            price_amount: undefined,
+            price_currency: 'usd',
+          },
+        ],
       },
       ...{
         medias: [],
@@ -104,7 +92,7 @@ export const CreateProductModal = ({
         revalidate(`products:${organization.id}:recurring`)
         revalidate(`products:${organization.id}:one_time`)
 
-        hide()
+        router.push(`/maintainer/${organization.name}/products/overview`)
       } catch (e) {
         if (e instanceof ResponseError) {
           const body = await e.response.json()
@@ -122,7 +110,7 @@ export const CreateProductModal = ({
       updateBenefits,
       setError,
       clearDraft,
-      hide,
+      router,
     ],
   )
 
@@ -159,46 +147,44 @@ export const CreateProductModal = ({
   }, [newProduct, saveDraft])
 
   return (
-    <div className="flex h-full flex-col overflow-y-auto">
-      <div className="flex flex-col gap-y-4">
-        <InlineModalHeader hide={hide}>
-          <h3>Create Product</h3>
-        </InlineModalHeader>
-        <p className="dark:text-polar-500 px-8 text-sm leading-relaxed text-gray-500">
-          Products are benefits which can be purchased at a fixed price.
-          Configure the product metadata and select benefits you want to grant
-          below.
-        </p>
-      </div>
-      <div className="flex flex-col gap-y-8 p-8">
-        <Form {...form}>
-          <form
-            onSubmit={handleSubmit(onSubmit)}
-            className="flex flex-col gap-y-8"
-          >
-            <ProductForm organization={organization} update={false} />
-          </form>
-        </Form>
-        <ProductBenefitsForm
-          className="w-full"
-          organization={organization}
-          organizationBenefits={organizationBenefits.filter(
-            (benefit) =>
-              // Hide not selectable benefits unless they are already enabled
-              benefit.selectable ||
-              enabledBenefits.some((b) => b.id === benefit.id),
-          )}
-          benefits={enabledBenefits}
-          onSelectBenefit={onSelectBenefit}
-          onRemoveBenefit={onRemoveBenefit}
-        />
-      </div>
-      <div className="flex flex-row items-center gap-2 p-8">
-        <Button onClick={handleSubmit(onSubmit)}>Create Product</Button>
-        <Button variant="ghost" onClick={hide}>
-          Cancel
-        </Button>
-      </div>
-    </div>
+    <>
+      <DashboardTopbar title="Create Product" useOrgFromURL hideSubNav />
+      <DashboardBody className="flex flex-col pb-24">
+        <div className="flex w-full max-w-xl flex-col gap-y-16">
+          <div className="flex flex-col gap-y-4">
+            <p className="dark:text-polar-500 leading-relaxed text-gray-500">
+              Products are packaged benefits which can be purchased at a fixed
+              one-time or recurring price.
+            </p>
+          </div>
+          <div className="flex flex-col gap-y-8">
+            <Form {...form}>
+              <form
+                onSubmit={handleSubmit(onSubmit)}
+                className="flex flex-col gap-y-8"
+              >
+                <ProductForm organization={organization} update={false} />
+              </form>
+            </Form>
+            <ProductBenefitsForm
+              className="w-full"
+              organization={organization}
+              organizationBenefits={organizationBenefits.filter(
+                (benefit) =>
+                  // Hide not selectable benefits unless they are already enabled
+                  benefit.selectable ||
+                  enabledBenefits.some((b) => b.id === benefit.id),
+              )}
+              benefits={enabledBenefits}
+              onSelectBenefit={onSelectBenefit}
+              onRemoveBenefit={onRemoveBenefit}
+            />
+          </div>
+          <div className="flex flex-row items-center gap-2">
+            <Button onClick={handleSubmit(onSubmit)}>Create Product</Button>
+          </div>
+        </div>
+      </DashboardBody>
+    </>
   )
 }

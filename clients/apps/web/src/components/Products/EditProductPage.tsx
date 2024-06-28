@@ -14,29 +14,30 @@ import {
   SubscriptionTierType,
   ValidationError,
 } from '@polar-sh/sdk'
+import { useRouter } from 'next/navigation'
 import Button from 'polarkit/components/ui/atoms/button'
 import ShadowBox from 'polarkit/components/ui/atoms/shadowbox'
 import { Form } from 'polarkit/components/ui/form'
 import { useCallback, useMemo, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { isPremiumArticlesBenefit } from '../Benefit/utils'
+import { DashboardBody } from '../Layout/DashboardLayout'
 import { ConfirmModal } from '../Modal/ConfirmModal'
-import { InlineModalHeader } from '../Modal/InlineModal'
 import { useModal } from '../Modal/useModal'
+import DashboardTopbar from '../Navigation/DashboardTopbar'
 import ProductBenefitsForm from './ProductBenefitsForm'
 import ProductForm, { ProductFullMediasMixin } from './ProductForm'
 
-export interface EditProductModalProps {
-  product: Product
+export interface EditProductPageProps {
   organization: Organization
-  hide: () => void
+  product: Product
 }
 
-export const EditProductModal = ({
-  product,
+export const EditProductPage = ({
   organization,
-  hide,
-}: EditProductModalProps) => {
+  product,
+}: EditProductPageProps) => {
+  const router = useRouter()
   const isFreeTier = product.type === SubscriptionTierType.FREE
   const benefits = useBenefits(organization.id)
   const organizationBenefits = useMemo(
@@ -82,7 +83,7 @@ export const EditProductModal = ({
         revalidate(`products:${organization.id}:recurring`)
         revalidate(`products:${organization.id}:one_time`)
 
-        hide()
+        router.push(`/maintainer/${organization.name}/products/overview`)
       } catch (e) {
         if (e instanceof ResponseError) {
           const body = await e.response.json()
@@ -100,7 +101,7 @@ export const EditProductModal = ({
       updateProduct,
       updateBenefits,
       setError,
-      hide,
+      router,
     ],
   )
 
@@ -159,101 +160,100 @@ export const EditProductModal = ({
     revalidate(`products:${organization.id}:recurring`)
     revalidate(`products:${organization.id}:one_time`)
 
-    hide()
-  }, [product, updateProduct, organization, hide])
+    router.push(`/maintainer/${organization.name}/products/overview`)
+  }, [product, updateProduct, organization, router])
 
   return (
-    <div className="flex h-full flex-col overflow-y-auto">
-      <div className="flex flex-col gap-y-4">
-        <InlineModalHeader hide={hide}>
-          <h3>Edit Product</h3>
-        </InlineModalHeader>
-      </div>
-      <div className="flex flex-col gap-y-8 p-8">
-        <Form {...form}>
-          <form
-            onSubmit={handleSubmit(onSubmit)}
-            className="flex flex-col gap-y-8"
-          >
-            <ProductForm
-              organization={organization}
-              update={true}
-              isFreeTier={isFreeTier}
-            />
-          </form>
-        </Form>
-        <ProductBenefitsForm
-          className="w-full"
-          organization={organization}
-          organizationBenefits={organizationBenefits.filter(
-            (benefit) =>
-              // Hide not selectable benefits unless they are already enabled
-              (benefit.selectable ||
-                enabledBenefits.some((b) => b.id === benefit.id)) &&
-              // Hide premium articles benefit on free tier
-              (!isFreeTier || !isPremiumArticlesBenefit(benefit)),
-          )}
-          benefits={enabledBenefits}
-          onSelectBenefit={onSelectBenefit}
-          onRemoveBenefit={onRemoveBenefit}
-        />
-        {(benefitsAdded.length > 0 || benefitsRemoved.length > 0) && (
-          <div className="rounded-2xl bg-yellow-50 p-8 px-4 py-3 text-sm text-yellow-500 dark:bg-yellow-950">
-            Existing customers will immediately{' '}
-            {benefitsAdded.length > 0 && (
-              <>
-                get access to{' '}
-                {benefitsAdded.map((benefit) => benefit.description).join(', ')}
-              </>
-            )}
-            {benefitsRemoved.length > 0 && (
-              <>
-                {benefitsAdded.length > 0 && ' and '}lose access to{' '}
-                {benefitsRemoved
-                  .map((benefit) => benefit.description)
-                  .join(', ')}
-              </>
-            )}
-            .
-          </div>
-        )}
-        {!isFreeTier && (
-          <>
-            <ShadowBox className="flex flex-col gap-6 p-6">
-              <div className="flex flex-col gap-y-2">
-                <h3 className="text-sm font-medium">Archive Product</h3>
-                <p className="dark:text-polar-500 text-sm text-gray-500">
-                  Archiving a product will not affect its current customers,
-                  only prevent new subscribers and purchases.
-                </p>
-              </div>
-              <Button
-                className="self-start"
-                variant="destructive"
-                onClick={showArchiveModal}
-                size="sm"
+    <>
+      <DashboardTopbar title="Edit Product" useOrgFromURL hideSubNav />
+      <DashboardBody className="flex flex-col">
+        <div className="flex w-full max-w-xl flex-col gap-y-12">
+          <div className="flex flex-col gap-y-8">
+            <Form {...form}>
+              <form
+                onSubmit={handleSubmit(onSubmit)}
+                className="flex flex-col gap-y-8"
               >
-                Archive
-              </Button>
-            </ShadowBox>
-            <ConfirmModal
-              title="Archive Product"
-              description="Archiving a product will not affect its current customers, only prevent new subscribers and purchases."
-              onConfirm={handleArchiveProduct}
-              isShown={isArchiveModalShown}
-              hide={hideArchiveModal}
-              destructiveText="Archive"
-              destructive
+                <ProductForm
+                  organization={organization}
+                  update={true}
+                  isFreeTier={isFreeTier}
+                />
+              </form>
+            </Form>
+            <ProductBenefitsForm
+              className="w-full"
+              organization={organization}
+              organizationBenefits={organizationBenefits.filter(
+                (benefit) =>
+                  // Hide not selectable benefits unless they are already enabled
+                  (benefit.selectable ||
+                    enabledBenefits.some((b) => b.id === benefit.id)) &&
+                  // Hide premium articles benefit on free tier
+                  (!isFreeTier || !isPremiumArticlesBenefit(benefit)),
+              )}
+              benefits={enabledBenefits}
+              onSelectBenefit={onSelectBenefit}
+              onRemoveBenefit={onRemoveBenefit}
             />
-          </>
-        )}
-      </div>
-      <div className="flex flex-row items-center gap-2 p-8">
-        <Button onClick={handleSubmit(onSubmit)}>Save Product</Button>
-        <Button variant="ghost" onClick={hide}>
-          Cancel
-        </Button>
-      </div>
-    </div>
+            {(benefitsAdded.length > 0 || benefitsRemoved.length > 0) && (
+              <div className="rounded-2xl bg-yellow-50 p-8 px-4 py-3 text-sm text-yellow-500 dark:bg-yellow-950">
+                Existing customers will immediately{' '}
+                {benefitsAdded.length > 0 && (
+                  <>
+                    get access to{' '}
+                    {benefitsAdded
+                      .map((benefit) => benefit.description)
+                      .join(', ')}
+                  </>
+                )}
+                {benefitsRemoved.length > 0 && (
+                  <>
+                    {benefitsAdded.length > 0 && ' and '}lose access to{' '}
+                    {benefitsRemoved
+                      .map((benefit) => benefit.description)
+                      .join(', ')}
+                  </>
+                )}
+                .
+              </div>
+            )}
+            {!isFreeTier && (
+              <>
+                <ShadowBox className="flex flex-col gap-6 p-6">
+                  <div className="flex flex-col gap-y-2">
+                    <h3 className="text-sm font-medium">Archive Product</h3>
+                    <p className="dark:text-polar-500 text-sm text-gray-500">
+                      Archiving a product will not affect its current customers,
+                      only prevent new subscribers and purchases.
+                    </p>
+                  </div>
+                  <Button
+                    className="self-start"
+                    variant="destructive"
+                    onClick={showArchiveModal}
+                    size="sm"
+                  >
+                    Archive
+                  </Button>
+                </ShadowBox>
+                <ConfirmModal
+                  title="Archive Product"
+                  description="Archiving a product will not affect its current customers, only prevent new subscribers and purchases."
+                  onConfirm={handleArchiveProduct}
+                  isShown={isArchiveModalShown}
+                  hide={hideArchiveModal}
+                  destructiveText="Archive"
+                  destructive
+                />
+              </>
+            )}
+          </div>
+          <div className="flex flex-row items-center gap-2">
+            <Button onClick={handleSubmit(onSubmit)}>Save Product</Button>
+          </div>
+        </div>
+      </DashboardBody>
+    </>
   )
 }

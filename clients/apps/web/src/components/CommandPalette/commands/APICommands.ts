@@ -19,17 +19,17 @@ type FindMatchingPath<
   : never
 
 type Sitemap = {
-  products: FindMatchingPath<'/api/v1/products'>[]
-  issues: FindMatchingPath<'/api/v1/issues'>[]
-  donations: FindMatchingPath<'/api/v1/donations'>[]
-  subscriptions: FindMatchingPath<'/api/v1/subscriptions'>[]
-  benefits: FindMatchingPath<'/api/v1/benefits'>[]
-  newsletters: FindMatchingPath<'/api/v1/articles'>[]
-  users: FindMatchingPath<'/api/v1/users'>[]
-  accounts: FindMatchingPath<'/api/v1/accounts'>[]
-  webhooks: FindMatchingPath<'/api/v1/webhooks'>[]
-  funding: FindMatchingPath<'/api/v1/funding'>[]
-  oauth: FindMatchingPath<'/api/v1/oauth'>[]
+  products: FindMatchingPath<'/v1/products'>[]
+  issues: FindMatchingPath<'/v1/issues'>[]
+  donations: FindMatchingPath<'/v1/donations'>[]
+  subscriptions: FindMatchingPath<'/v1/subscriptions'>[]
+  benefits: FindMatchingPath<'/v1/benefits'>[]
+  newsletters: FindMatchingPath<'/v1/articles'>[]
+  users: FindMatchingPath<'/v1/users'>[]
+  accounts: FindMatchingPath<'/v1/accounts'>[]
+  webhooks: FindMatchingPath<'/v1/webhooks'>[]
+  funding: FindMatchingPath<'/v1/funding'>[]
+  oauth: FindMatchingPath<'/v1/oauth'>[]
 }
 
 type SitemapKey = keyof typeof sitemap
@@ -40,17 +40,17 @@ const filterPath = <T extends string>(key: T) =>
     .map(([path, methods]) => ({ path, methods }) as FindMatchingPath<T>)
 
 const sitemap: Sitemap = {
-  products: filterPath('/api/v1/products'),
-  issues: filterPath('/api/v1/issues'),
-  donations: filterPath('/api/v1/donations'),
-  subscriptions: filterPath('/api/v1/subscriptions'),
-  benefits: filterPath('/api/v1/benefits'),
-  newsletters: filterPath('/api/v1/articles'),
-  users: filterPath('/api/v1/users'),
-  accounts: filterPath('/api/v1/accounts'),
-  webhooks: filterPath('/api/v1/webhooks'),
-  funding: filterPath('/api/v1/funding'),
-  oauth: filterPath('/api/v1/oauth'),
+  products: filterPath('/v1/products'),
+  issues: filterPath('/v1/issues'),
+  donations: filterPath('/v1/donations'),
+  subscriptions: filterPath('/v1/subscriptions'),
+  benefits: filterPath('/v1/benefits'),
+  newsletters: filterPath('/v1/articles'),
+  users: filterPath('/v1/users'),
+  accounts: filterPath('/v1/accounts'),
+  webhooks: filterPath('/v1/webhooks'),
+  funding: filterPath('/v1/funding'),
+  oauth: filterPath('/v1/oauth'),
 }
 
 export const createAPICommands = (key: SitemapKey): APICommand[] => {

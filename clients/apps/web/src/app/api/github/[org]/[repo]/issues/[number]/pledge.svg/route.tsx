@@ -16,7 +16,7 @@ type Data = {
 }
 
 const lookupIssue = (externalUrl: string): Promise<Issue> =>
-  fetch(`${getServerURL()}/api/v1/issues/lookup?external_url=${externalUrl}`, {
+  fetch(`${getServerURL()}/v1/issues/lookup?external_url=${externalUrl}`, {
     method: 'GET',
     next: { revalidate: 60 },
   }).then((response) => {
@@ -27,7 +27,7 @@ const lookupIssue = (externalUrl: string): Promise<Issue> =>
   })
 
 const pledgesSummary = (issueId: string): Promise<PledgePledgesSummary> =>
-  fetch(`${getServerURL()}/api/v1/pledges/summary?issue_id=${issueId}`, {
+  fetch(`${getServerURL()}/v1/pledges/summary?issue_id=${issueId}`, {
     method: 'GET',
     next: { revalidate: 60 },
   }).then((response) => {

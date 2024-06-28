@@ -137,7 +137,7 @@ export const CommandPaletteContextProvider = ({
     const searchCommands = searchResults.map<DocumentationCommand | APICommand>(
       // @ts-ignore
       (result) => {
-        const isAPIEntry = result.ref.includes('/api/v1/')
+        const isAPIEntry = result.ref.includes('/v1/')
         console.log(result)
 
         if (!apiSchema) {

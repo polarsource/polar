@@ -6,7 +6,7 @@ const { default: satori } = require('satori')
 export const runtime = 'edge'
 
 const getOrg = async (org: string): Promise<Organization> => {
-  let url = `${getServerURL()}/api/v1/organizations/lookup?platform=github&organization_name=${org}`
+  let url = `${getServerURL()}/v1/organizations/lookup?platform=github&organization_name=${org}`
 
   const response = await fetch(url, {
     method: 'GET',
@@ -20,7 +20,7 @@ const getPosts = async (
   limit: number = 3,
   pinnedPosts: boolean = false,
 ): Promise<Article[]> => {
-  let url = `${getServerURL()}/api/v1/articles/?organization_id=${organization.id}&is_pinned=${pinnedPosts}&is_published=true&visibility=public&limit=${limit}`
+  let url = `${getServerURL()}/v1/articles/?organization_id=${organization.id}&is_pinned=${pinnedPosts}&is_published=true&visibility=public&limit=${limit}`
 
   const response = await fetch(url, {
     method: 'GET',

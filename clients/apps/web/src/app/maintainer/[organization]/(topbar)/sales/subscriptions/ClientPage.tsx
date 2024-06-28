@@ -302,7 +302,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
 
   const onExport = () => {
     const url = new URL(
-      `${getServerURL()}/api/v1/subscriptions/export?organization_id=${organization.id}`,
+      `${getServerURL()}/v1/subscriptions/export?organization_id=${organization.id}`,
     )
 
     window.open(url, '_blank')

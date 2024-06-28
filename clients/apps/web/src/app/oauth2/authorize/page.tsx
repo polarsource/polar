@@ -11,7 +11,7 @@ const getAuthorizeResponse = async (
   searchParams: Record<string, string>,
 ): Promise<Response> => {
   const serializedSearchParams = new URLSearchParams(searchParams).toString()
-  let url = `${getServerURL()}/api/v1/oauth2/authorize?${serializedSearchParams}`
+  let url = `${getServerURL()}/v1/oauth2/authorize?${serializedSearchParams}`
 
   const cookieStore = cookies()
   return await fetch(url, {

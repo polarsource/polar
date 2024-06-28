@@ -27,7 +27,7 @@ export const APIFirst = () => {
         </div>
         <span className="relative whitespace-pre-wrap text-sm leading-relaxed">
           {`curl -X GET \\
-https://api.polar.sh/api/v1/products/123 \\
+https://api.polar.sh/v1/products/123 \\
 -H "Accept: application/json" \\
 -H "Authorization: Bearer polar_at_XXXX"`}
           <motion.span

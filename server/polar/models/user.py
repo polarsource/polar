@@ -58,6 +58,15 @@ class OAuthAccount(RecordModel):
             return False
         return time.time() > self.expires_at
 
+    def should_refresh_access_token(self, unless_ttl_gt: int = 60 * 30) -> bool:
+        if (
+            self.expires_at
+            and self.refresh_token
+            and self.expires_at <= (time.time() + unless_ttl_gt)
+        ):
+            return True
+        return False
+
 
 class User(RecordModel):
     __tablename__ = "users"
@@ -149,27 +158,30 @@ class User(RecordModel):
             None,
         )
 
+    def get_github_account(self) -> OAuthAccount | None:
+        return self.get_oauth_account(OAuthPlatform.github)
+
     @property
     def posthog_distinct_id(self) -> str:
         return f"user:{self.id}"
 
     @property
     def public_name(self) -> str:
-        github_oauth_account = self.get_oauth_account(OAuthPlatform.github)
+        github_oauth_account = self.get_github_account()
         if github_oauth_account is not None and github_oauth_account.account_username:
             return github_oauth_account.account_username
         return self.email[0]
 
     @property
     def username_or_email(self) -> str:
-        github_oauth_account = self.get_oauth_account(OAuthPlatform.github)
+        github_oauth_account = self.get_github_account()
         if github_oauth_account is not None and github_oauth_account.account_username:
             return github_oauth_account.account_username
         return self.email
 
     @property
     def github_username(self) -> str | None:
-        github_oauth_account = self.get_oauth_account(OAuthPlatform.github)
+        github_oauth_account = self.get_github_account()
         if github_oauth_account is not None:
             return github_oauth_account.account_username
         return None

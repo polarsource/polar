@@ -6,6 +6,11 @@
         "description": "Read the docs at https://polar.sh/docs/api-reference",
         "version": "0.1.0"
     },
+    "servers": [
+        {
+            "url": "https://api.polar.sh"
+        }
+    ],
     "paths": {
         "/v1/users/me": {
             "get": {
@@ -1126,8 +1131,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Anonymous",
-                    "User"
+                    "User",
+                    "Anonymous"
                 ]
             }
         },
@@ -4098,8 +4103,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Anonymous",
-                    "User"
+                    "User",
+                    "Anonymous"
                 ]
             }
         },
@@ -4153,8 +4158,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Anonymous",
-                    "User"
+                    "User",
+                    "Anonymous"
                 ]
             }
         },
@@ -4260,8 +4265,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Anonymous",
-                    "User"
+                    "User",
+                    "Anonymous"
                 ]
             }
         },
@@ -4457,8 +4462,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Anonymous",
-                    "User"
+                    "User",
+                    "Anonymous"
                 ]
             }
         },
@@ -4532,8 +4537,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Anonymous",
-                    "User"
+                    "User",
+                    "Anonymous"
                 ]
             }
         },
@@ -4591,8 +4596,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Anonymous",
-                    "User"
+                    "User",
+                    "Anonymous"
                 ]
             },
             "patch": {
@@ -4815,8 +4820,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Anonymous",
-                    "User"
+                    "User",
+                    "Anonymous"
                 ]
             }
         },
@@ -5136,8 +5141,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Anonymous",
-                    "User"
+                    "User",
+                    "Anonymous"
                 ]
             }
         },
@@ -5581,8 +5586,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Anonymous",
-                    "User"
+                    "User",
+                    "Anonymous"
                 ]
             }
         },
@@ -5647,8 +5652,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Anonymous",
-                    "User"
+                    "User",
+                    "Anonymous"
                 ]
             }
         },
@@ -5700,8 +5705,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Anonymous",
-                    "User"
+                    "User",
+                    "Anonymous"
                 ]
             }
         },
@@ -5788,8 +5793,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Anonymous",
-                    "User"
+                    "User",
+                    "Anonymous"
                 ]
             },
             "post": {
@@ -6315,8 +6320,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Anonymous",
-                    "User"
+                    "User",
+                    "Anonymous"
                 ]
             }
         },
@@ -6371,8 +6376,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Anonymous",
-                    "User"
+                    "User",
+                    "Anonymous"
                 ]
             }
         },
@@ -6537,8 +6542,8 @@
                     }
                 ],
                 "x-polar-allowed-subjects": [
-                    "Anonymous",
-                    "User"
+                    "User",
+                    "Anonymous"
                 ]
             }
         },
@@ -6710,8 +6715,8 @@
                     }
                 ],
                 "x-polar-allowed-subjects": [
-                    "Anonymous",
-                    "User"
+                    "User",
+                    "Anonymous"
                 ]
             }
         },
@@ -6774,8 +6779,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Anonymous",
-                    "User"
+                    "User",
+                    "Anonymous"
                 ]
             }
         },
@@ -6916,8 +6921,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -6997,8 +7002,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -7081,8 +7086,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -7143,8 +7148,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             },
             "patch": {
@@ -7212,8 +7217,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -7329,8 +7334,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -7400,8 +7405,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -7465,8 +7470,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -7523,8 +7528,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -7581,8 +7586,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -7638,8 +7643,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             },
             "post": {
@@ -7703,8 +7708,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -7720,8 +7725,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "subscriptions:read",
-                            "subscriptions:write"
+                            "subscriptions:write",
+                            "subscriptions:read"
                         ]
                     },
                     {
@@ -7895,8 +7900,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             },
             "post": {
@@ -7950,8 +7955,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -8007,8 +8012,8 @@
                     }
                 ],
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -8024,8 +8029,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "subscriptions:read",
-                            "subscriptions:write"
+                            "subscriptions:write",
+                            "subscriptions:read"
                         ]
                     },
                     {
@@ -8074,8 +8079,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -8241,9 +8246,9 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
+                    "User",
                     "Anonymous",
-                    "Organization",
-                    "User"
+                    "Organization"
                 ]
             },
             "post": {
@@ -8298,8 +8303,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -8370,9 +8375,9 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
+                    "User",
                     "Anonymous",
-                    "Organization",
-                    "User"
+                    "Organization"
                 ]
             },
             "patch": {
@@ -8461,8 +8466,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             },
             "delete": {
@@ -8534,8 +8539,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -8596,8 +8601,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -8686,8 +8691,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -8769,8 +8774,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -10220,8 +10225,8 @@
                     }
                 ],
                 "x-polar-allowed-subjects": [
-                    "Anonymous",
-                    "User"
+                    "User",
+                    "Anonymous"
                 ]
             }
         },
@@ -10284,8 +10289,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Anonymous",
-                    "User"
+                    "User",
+                    "Anonymous"
                 ]
             }
         },
@@ -10676,8 +10681,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Anonymous",
-                    "User"
+                    "User",
+                    "Anonymous"
                 ]
             },
             "put": {
@@ -10739,8 +10744,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Anonymous",
-                    "User"
+                    "User",
+                    "Anonymous"
                 ]
             },
             "delete": {
@@ -10792,8 +10797,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Anonymous",
-                    "User"
+                    "User",
+                    "Anonymous"
                 ]
             }
         },
@@ -10842,8 +10847,8 @@
                     }
                 ],
                 "x-polar-allowed-subjects": [
-                    "Anonymous",
-                    "User"
+                    "User",
+                    "Anonymous"
                 ]
             }
         },
@@ -11029,8 +11034,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "benefits:read",
-                            "benefits:write"
+                            "benefits:write",
+                            "benefits:read"
                         ]
                     },
                     {
@@ -11128,8 +11133,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             },
             "post": {
@@ -11230,8 +11235,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -11247,8 +11252,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "benefits:read",
-                            "benefits:write"
+                            "benefits:write",
+                            "benefits:read"
                         ]
                     },
                     {
@@ -11322,8 +11327,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             },
             "patch": {
@@ -11451,8 +11456,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             },
             "delete": {
@@ -11523,8 +11528,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -11540,8 +11545,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "benefits:read",
-                            "benefits:write"
+                            "benefits:write",
+                            "benefits:read"
                         ]
                     },
                     {
@@ -11676,8 +11681,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -11692,8 +11697,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "webhooks:write",
-                            "webhooks:read"
+                            "webhooks:read",
+                            "webhooks:write"
                         ]
                     },
                     {
@@ -11789,8 +11794,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             },
             "post": {
@@ -11843,8 +11848,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -11859,8 +11864,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "webhooks:write",
-                            "webhooks:read"
+                            "webhooks:read",
+                            "webhooks:write"
                         ]
                     },
                     {
@@ -11914,8 +11919,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             },
             "patch": {
@@ -12002,8 +12007,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             },
             "delete": {
@@ -12073,8 +12078,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -12089,8 +12094,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "webhooks:write",
-                            "webhooks:read"
+                            "webhooks:read",
+                            "webhooks:write"
                         ]
                     },
                     {
@@ -12167,8 +12172,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -12235,8 +12240,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -12253,8 +12258,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "products:write",
-                            "products:read"
+                            "products:read",
+                            "products:write"
                         ]
                     },
                     {
@@ -12396,9 +12401,9 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
+                    "User",
                     "Anonymous",
-                    "Organization",
-                    "User"
+                    "Organization"
                 ]
             },
             "post": {
@@ -12461,8 +12466,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -12479,8 +12484,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "products:write",
-                            "products:read"
+                            "products:read",
+                            "products:write"
                         ]
                     },
                     {
@@ -12534,9 +12539,9 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
+                    "User",
                     "Anonymous",
-                    "Organization",
-                    "User"
+                    "Organization"
                 ]
             },
             "patch": {
@@ -12625,8 +12630,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -12717,8 +12722,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -12904,8 +12909,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -12975,8 +12980,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -13046,8 +13051,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -13102,8 +13107,8 @@
                     }
                 ],
                 "x-polar-allowed-subjects": [
-                    "Anonymous",
-                    "User"
+                    "User",
+                    "Anonymous"
                 ]
             }
         },
@@ -13261,8 +13266,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             },
             "post": {
@@ -13331,8 +13336,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -13417,8 +13422,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -13503,8 +13508,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             },
             "delete": {
@@ -13573,8 +13578,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -13718,8 +13723,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -13755,8 +13760,8 @@
                     }
                 ],
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         }

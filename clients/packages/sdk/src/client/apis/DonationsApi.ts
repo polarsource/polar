@@ -87,7 +87,7 @@ export class DonationsApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/donations/payment_intent`,
+            path: `/v1/donations/payment_intent`,
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
@@ -148,7 +148,7 @@ export class DonationsApi extends runtime.BaseAPI {
         const headerParameters: runtime.HTTPHeaders = {};
 
         const response = await this.request({
-            path: `/api/v1/donations/public/search`,
+            path: `/v1/donations/public/search`,
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
@@ -205,7 +205,7 @@ export class DonationsApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/donations/search`,
+            path: `/v1/donations/search`,
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
@@ -283,7 +283,7 @@ export class DonationsApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/donations/statistics`,
+            path: `/v1/donations/statistics`,
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
@@ -333,7 +333,7 @@ export class DonationsApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/donations/payment_intent/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
+            path: `/v1/donations/payment_intent/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
             method: 'PATCH',
             headers: headerParameters,
             query: queryParameters,

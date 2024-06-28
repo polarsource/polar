@@ -91,7 +91,7 @@ export class WebhooksApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/webhooks/endpoints`,
+            path: `/v1/webhooks/endpoints`,
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
@@ -135,7 +135,7 @@ export class WebhooksApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/webhooks/endpoints/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
+            path: `/v1/webhooks/endpoints/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
             method: 'DELETE',
             headers: headerParameters,
             query: queryParameters,
@@ -177,7 +177,7 @@ export class WebhooksApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/webhooks/endpoints/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
+            path: `/v1/webhooks/endpoints/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
@@ -225,7 +225,7 @@ export class WebhooksApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/webhooks/deliveries`,
+            path: `/v1/webhooks/deliveries`,
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
@@ -277,7 +277,7 @@ export class WebhooksApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/webhooks/endpoints`,
+            path: `/v1/webhooks/endpoints`,
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
@@ -320,7 +320,7 @@ export class WebhooksApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/webhooks/events/{id}/redeliver`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
+            path: `/v1/webhooks/events/{id}/redeliver`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
@@ -376,7 +376,7 @@ export class WebhooksApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/webhooks/endpoints/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
+            path: `/v1/webhooks/endpoints/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
             method: 'PATCH',
             headers: headerParameters,
             query: queryParameters,

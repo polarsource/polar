@@ -78,7 +78,7 @@ export class SubscriptionsApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/subscriptions/`,
+            path: `/v1/subscriptions/`,
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
@@ -119,7 +119,7 @@ export class SubscriptionsApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/subscriptions/export`,
+            path: `/v1/subscriptions/export`,
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
@@ -197,7 +197,7 @@ export class SubscriptionsApi extends runtime.BaseAPI {
         }
 
         const response = await this.request({
-            path: `/api/v1/subscriptions/import`,
+            path: `/v1/subscriptions/import`,
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
@@ -262,7 +262,7 @@ export class SubscriptionsApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/subscriptions/`,
+            path: `/v1/subscriptions/`,
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,

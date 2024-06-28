@@ -73,7 +73,7 @@ export class RepositoriesApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/repositories/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
+            path: `/v1/repositories/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
@@ -109,7 +109,7 @@ export class RepositoriesApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/repositories`,
+            path: `/v1/repositories`,
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
@@ -178,7 +178,7 @@ export class RepositoriesApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/repositories/lookup`,
+            path: `/v1/repositories/lookup`,
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
@@ -240,7 +240,7 @@ export class RepositoriesApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/repositories/search`,
+            path: `/v1/repositories/search`,
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
@@ -292,7 +292,7 @@ export class RepositoriesApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/repositories/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
+            path: `/v1/repositories/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
             method: 'PATCH',
             headers: headerParameters,
             query: queryParameters,

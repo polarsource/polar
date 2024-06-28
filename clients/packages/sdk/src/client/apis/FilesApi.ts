@@ -84,7 +84,7 @@ export class FilesApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/files/`,
+            path: `/v1/files/`,
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
@@ -128,7 +128,7 @@ export class FilesApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/files/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
+            path: `/v1/files/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
             method: 'DELETE',
             headers: headerParameters,
             query: queryParameters,
@@ -179,7 +179,7 @@ export class FilesApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/files/`,
+            path: `/v1/files/`,
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
@@ -231,7 +231,7 @@ export class FilesApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/files/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
+            path: `/v1/files/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
             method: 'PATCH',
             headers: headerParameters,
             query: queryParameters,
@@ -284,7 +284,7 @@ export class FilesApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/files/{id}/uploaded`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
+            path: `/v1/files/{id}/uploaded`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,

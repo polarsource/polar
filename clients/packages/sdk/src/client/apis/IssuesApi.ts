@@ -114,7 +114,7 @@ export class IssuesApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/issues/{id}/comment`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
+            path: `/v1/issues/{id}/comment`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
@@ -156,7 +156,7 @@ export class IssuesApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/issues/{id}/add_badge`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
+            path: `/v1/issues/{id}/add_badge`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
@@ -206,7 +206,7 @@ export class IssuesApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/issues/{id}/badge_with_message`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
+            path: `/v1/issues/{id}/badge_with_message`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
@@ -258,7 +258,7 @@ export class IssuesApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/issues/{id}/confirm_solved`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
+            path: `/v1/issues/{id}/confirm_solved`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
@@ -294,7 +294,7 @@ export class IssuesApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/issues/for_you`,
+            path: `/v1/issues/for_you`,
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
@@ -336,7 +336,7 @@ export class IssuesApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/issues/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
+            path: `/v1/issues/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
@@ -378,7 +378,7 @@ export class IssuesApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/issues/{id}/body`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
+            path: `/v1/issues/{id}/body`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
@@ -420,7 +420,7 @@ export class IssuesApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/issues/lookup`,
+            path: `/v1/issues/lookup`,
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
@@ -461,7 +461,7 @@ export class IssuesApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/issues/{id}/remove_badge`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
+            path: `/v1/issues/{id}/remove_badge`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
@@ -538,7 +538,7 @@ export class IssuesApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/issues/search`,
+            path: `/v1/issues/search`,
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
@@ -590,7 +590,7 @@ export class IssuesApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/issues/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
+            path: `/v1/issues/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,

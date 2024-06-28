@@ -57,7 +57,7 @@ export class DashboardApi extends runtime.BaseAPI {
         const headerParameters: runtime.HTTPHeaders = {};
 
         const response = await this.request({
-            path: `/api/v1/dashboard/dummy_do_not_use`,
+            path: `/v1/dashboard/dummy_do_not_use`,
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
@@ -133,7 +133,7 @@ export class DashboardApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/dashboard/{platform}/{org_name}`.replace(`{${"platform"}}`, encodeURIComponent(String(requestParameters['platform']))).replace(`{${"org_name"}}`, encodeURIComponent(String(requestParameters['orgName']))),
+            path: `/v1/dashboard/{platform}/{org_name}`.replace(`{${"platform"}}`, encodeURIComponent(String(requestParameters['platform']))).replace(`{${"org_name"}}`, encodeURIComponent(String(requestParameters['orgName']))),
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
@@ -191,7 +191,7 @@ export class DashboardApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/dashboard/personal`,
+            path: `/v1/dashboard/personal`,
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,

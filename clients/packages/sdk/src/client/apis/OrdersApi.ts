@@ -71,7 +71,7 @@ export class OrdersApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/orders/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
+            path: `/v1/orders/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
@@ -114,7 +114,7 @@ export class OrdersApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/orders/{id}/invoice`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
+            path: `/v1/orders/{id}/invoice`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
@@ -178,7 +178,7 @@ export class OrdersApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/orders/`,
+            path: `/v1/orders/`,
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,

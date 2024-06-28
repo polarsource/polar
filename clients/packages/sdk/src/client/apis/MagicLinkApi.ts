@@ -65,7 +65,7 @@ export class MagicLinkApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/magic_link/authenticate`,
+            path: `/v1/magic_link/authenticate`,
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
@@ -104,7 +104,7 @@ export class MagicLinkApi extends runtime.BaseAPI {
         headerParameters['Content-Type'] = 'application/json';
 
         const response = await this.request({
-            path: `/api/v1/magic_link/request`,
+            path: `/v1/magic_link/request`,
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,

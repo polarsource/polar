@@ -107,7 +107,7 @@ export class PledgesApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/pledges`,
+            path: `/v1/pledges`,
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
@@ -151,7 +151,7 @@ export class PledgesApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/pledges/{id}/create_invoice`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
+            path: `/v1/pledges/{id}/create_invoice`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
@@ -196,7 +196,7 @@ export class PledgesApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/pledges/pay_on_completion`,
+            path: `/v1/pledges/pay_on_completion`,
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
@@ -241,7 +241,7 @@ export class PledgesApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/pledges/payment_intent`,
+            path: `/v1/pledges/payment_intent`,
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
@@ -294,7 +294,7 @@ export class PledgesApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/pledges/{pledge_id}/dispute`.replace(`{${"pledge_id"}}`, encodeURIComponent(String(requestParameters['pledgeId']))),
+            path: `/v1/pledges/{pledge_id}/dispute`.replace(`{${"pledge_id"}}`, encodeURIComponent(String(requestParameters['pledgeId']))),
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
@@ -336,7 +336,7 @@ export class PledgesApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/pledges/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
+            path: `/v1/pledges/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
@@ -396,7 +396,7 @@ export class PledgesApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/pledges/search`,
+            path: `/v1/pledges/search`,
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
@@ -443,7 +443,7 @@ export class PledgesApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/pledges/spending`,
+            path: `/v1/pledges/spending`,
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
@@ -490,7 +490,7 @@ export class PledgesApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/pledges/summary`,
+            path: `/v1/pledges/summary`,
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
@@ -541,7 +541,7 @@ export class PledgesApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/pledges/payment_intent/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
+            path: `/v1/pledges/payment_intent/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
             method: 'PATCH',
             headers: headerParameters,
             query: queryParameters,

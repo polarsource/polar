@@ -93,7 +93,7 @@ export class BenefitsApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/benefits/`,
+            path: `/v1/benefits/`,
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
@@ -137,7 +137,7 @@ export class BenefitsApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/benefits/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
+            path: `/v1/benefits/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
             method: 'DELETE',
             headers: headerParameters,
             query: queryParameters,
@@ -179,7 +179,7 @@ export class BenefitsApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/benefits/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
+            path: `/v1/benefits/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
@@ -231,7 +231,7 @@ export class BenefitsApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/benefits/`,
+            path: `/v1/benefits/`,
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
@@ -294,7 +294,7 @@ export class BenefitsApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/benefits/{id}/grants`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
+            path: `/v1/benefits/{id}/grants`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
@@ -346,7 +346,7 @@ export class BenefitsApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/benefits/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
+            path: `/v1/benefits/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
             method: 'PATCH',
             headers: headerParameters,
             query: queryParameters,

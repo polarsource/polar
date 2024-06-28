@@ -118,7 +118,7 @@ export class OrganizationsApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/organizations/{id}/stripe_customer_portal`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
+            path: `/v1/organizations/{id}/stripe_customer_portal`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
@@ -161,7 +161,7 @@ export class OrganizationsApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/organizations/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
+            path: `/v1/organizations/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
@@ -203,7 +203,7 @@ export class OrganizationsApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/organizations/{id}/badge_settings`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
+            path: `/v1/organizations/{id}/badge_settings`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
@@ -245,7 +245,7 @@ export class OrganizationsApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/organizations/{id}/credit`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
+            path: `/v1/organizations/{id}/credit`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
@@ -289,7 +289,7 @@ export class OrganizationsApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/organizations`,
+            path: `/v1/organizations`,
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
@@ -332,7 +332,7 @@ export class OrganizationsApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/organizations/{id}/members`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
+            path: `/v1/organizations/{id}/members`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
@@ -387,7 +387,7 @@ export class OrganizationsApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/organizations/{id}/customers`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
+            path: `/v1/organizations/{id}/customers`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
@@ -431,7 +431,7 @@ export class OrganizationsApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/organizations/lookup`,
+            path: `/v1/organizations/lookup`,
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
@@ -475,7 +475,7 @@ export class OrganizationsApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/organizations/search`,
+            path: `/v1/organizations/search`,
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
@@ -527,7 +527,7 @@ export class OrganizationsApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/organizations/{id}/account`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
+            path: `/v1/organizations/{id}/account`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
             method: 'PATCH',
             headers: headerParameters,
             query: queryParameters,
@@ -580,7 +580,7 @@ export class OrganizationsApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/organizations/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
+            path: `/v1/organizations/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
             method: 'PATCH',
             headers: headerParameters,
             query: queryParameters,
@@ -632,7 +632,7 @@ export class OrganizationsApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/organizations/{id}/badge_settings`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
+            path: `/v1/organizations/{id}/badge_settings`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,

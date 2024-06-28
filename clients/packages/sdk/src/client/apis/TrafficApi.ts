@@ -120,7 +120,7 @@ export class TrafficApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/traffic/referrers`,
+            path: `/v1/traffic/referrers`,
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
@@ -203,7 +203,7 @@ export class TrafficApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/traffic/statistics`,
+            path: `/v1/traffic/statistics`,
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
@@ -238,7 +238,7 @@ export class TrafficApi extends runtime.BaseAPI {
         headerParameters['Content-Type'] = 'application/json';
 
         const response = await this.request({
-            path: `/api/v1/traffic/track_page_view`,
+            path: `/v1/traffic/track_page_view`,
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,

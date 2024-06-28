@@ -53,7 +53,7 @@ export class PaymentMethodsApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/payment_methods/{id}/detach`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
+            path: `/v1/payment_methods/{id}/detach`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
@@ -87,7 +87,7 @@ export class PaymentMethodsApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/payment_methods`,
+            path: `/v1/payment_methods`,
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,

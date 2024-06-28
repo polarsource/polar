@@ -52,7 +52,7 @@ export class IntegrationsGithubRepositoryBenefitApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/integrations/github_repository_benefit/installation/callback`,
+            path: `/v1/integrations/github_repository_benefit/installation/callback`,
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
@@ -90,7 +90,7 @@ export class IntegrationsGithubRepositoryBenefitApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/integrations/github_repository_benefit/installation/install`,
+            path: `/v1/integrations/github_repository_benefit/installation/install`,
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
@@ -132,7 +132,7 @@ export class IntegrationsGithubRepositoryBenefitApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/integrations/github_repository_benefit/user/authorize`,
+            path: `/v1/integrations/github_repository_benefit/user/authorize`,
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
@@ -186,7 +186,7 @@ export class IntegrationsGithubRepositoryBenefitApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/integrations/github_repository_benefit/user/callback`,
+            path: `/v1/integrations/github_repository_benefit/user/callback`,
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
@@ -225,7 +225,7 @@ export class IntegrationsGithubRepositoryBenefitApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/v1/integrations/github_repository_benefit/user/repositories`,
+            path: `/v1/integrations/github_repository_benefit/user/repositories`,
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,

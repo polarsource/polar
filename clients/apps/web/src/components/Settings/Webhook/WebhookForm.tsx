@@ -131,11 +131,7 @@ export const FieldEvents = () => {
           control={form.control}
           name="events"
           render={({ field }) => {
-            const docsKey = event.replaceAll('.', '_')
-
-            // Example: https://api.polar.sh/docs#/webhooks/subscription_tier_updatedsubscription_tier_updated_post
-            // yes, docsKey is repeated twice
-            const href = `https://api.polar.sh/docs#/webhooks/${docsKey}${docsKey}_post`
+            const href = `https://docs.polar.sh/api/webhooks/events#${event}`
 
             return (
               <FormItem className="flex flex-row items-center space-x-3 space-y-0">

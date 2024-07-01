@@ -181,7 +181,7 @@ const DocumentationPopover = () => {
               <PopoverLinkItem
                 title="API Reference"
                 description="Integrate Polar with your application"
-                link="/docs/api/introduction"
+                link="/docs/api"
               />
               <PopoverLinkItem
                 title="OAuth"

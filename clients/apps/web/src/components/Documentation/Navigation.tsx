@@ -124,9 +124,7 @@ const FAQSections = () => {
 const APISections = () => {
   return (
     <div className="flex flex-col">
-      <NavigationItem href="/docs/api/introduction">
-        Introduction
-      </NavigationItem>
+      <NavigationItem href="/docs/api">Introduction</NavigationItem>
       <NavigationItem href="/docs/api/authentication">
         Authentication
       </NavigationItem>
@@ -318,7 +316,7 @@ export const DocumentationPageSidebar = ({
         <li>
           <NavigationItem
             icon={<SpaceDashboardOutlined fontSize="inherit" />}
-            href="/docs/overview"
+            href="/docs"
           >
             Overview
           </NavigationItem>

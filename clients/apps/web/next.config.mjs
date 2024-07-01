@@ -208,34 +208,6 @@ const nextConfig = {
         :
         [],
 
-      // Generate docs redirections
-      // We have to explicitly define the ones for docs.polar.sh, because redirects are evalated **before** rewrites
-      ...[
-        { source: '/', destination: '/overview' },
-        { source: '/api', destination: '/api/introduction' },
-        { source: '/guides', destination: '/guides/overview' },
-      ].reduce((acc, { source, destination }) => (
-        [
-          ...acc,
-          {
-            source: `/docs${source}`,
-            destination: `/docs${destination}`,
-            permanent: false
-          },
-          {
-            source: `${source}`,
-            destination: `${destination}`,
-            permanent: false,
-            has: [
-              {
-                type: 'host',
-                value: 'docs.polar.sh'
-              }
-            ]
-          }
-        ]
-      ), []),
-
       {
         source: '/dashboard',
         destination: '/login',

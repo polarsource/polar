@@ -19,8 +19,7 @@ export const NavigationItem = ({
   }
 >) => {
   const pathname = decodeURIComponent(usePathname())
-  const fallbackActive =
-    active?.(pathname) ?? pathname.includes(props.href as string)
+  const fallbackActive = active?.(pathname) ?? pathname == props.href
 
   return (
     <Link

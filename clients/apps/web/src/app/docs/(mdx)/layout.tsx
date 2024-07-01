@@ -9,11 +9,11 @@ import { TableOfContents } from '@/components/Documentation/TableOfContents'
 export default function Layout({ children }: { children: React.ReactNode }) {
   return (
     <>
-      <MobileNav>
+      <MobileNav activeSection="overview">
         <MainNavigation />
       </MobileNav>
       <div className="hidden md:block">
-        <DocumentationPageSidebar>
+        <DocumentationPageSidebar activeSection="overview">
           <MainNavigation />
         </DocumentationPageSidebar>
       </div>

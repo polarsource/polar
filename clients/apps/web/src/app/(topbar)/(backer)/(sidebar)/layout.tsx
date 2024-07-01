@@ -7,8 +7,7 @@ import {
 } from '@/components/Dashboard/Upsell'
 import PurchaseSidebar from '@/components/Purchases/PurchasesSidebar'
 import { useAuth, useGitHubAccount, usePersonalOrganization } from '@/hooks'
-import { useListAdminOrganizations, useListArticles } from '@/hooks/queries'
-import { ArticleVisibility } from '@polar-sh/sdk'
+import { useListAdminOrganizations, useProducts } from '@/hooks/queries'
 import { PropsWithChildren, useEffect } from 'react'
 
 export default function Layout({ children }: PropsWithChildren) {
@@ -21,18 +20,14 @@ export default function Layout({ children }: PropsWithChildren) {
     reloadUser()
   }, [])
 
-  const posts = useListArticles({
-    organizationId: personalOrg?.id,
-    isPublished: true,
-    visibility: ArticleVisibility.PUBLIC,
-  })
-  const postsAreLoading = posts.isLoading
-  const shouldShowPostUpsell =
+  const products = useProducts(personalOrg?.id)
+  const productsAreLoading = products.isLoading
+  const shouldShowProductsUpsell =
     !adminOrgsAreLoading &&
-    !postsAreLoading &&
+    !productsAreLoading &&
     !!personalOrg &&
-    personalOrg.feature_settings?.articles_enabled &&
-    (posts.data?.pages.flatMap((page) => page.items).length ?? 0) < 1
+    personalOrg.feature_settings?.subscriptions_enabled &&
+    (products?.data?.items?.filter((p) => p.type !== 'free').length ?? 0) < 1
 
   const githubAccount = useGitHubAccount()
   const shouldShowGitHubAuthUpsell = authenticated && !githubAccount
@@ -50,7 +45,7 @@ export default function Layout({ children }: PropsWithChildren) {
           <GitHubAuthUpsell />
         ) : shouldShowMaintainerUpsell ? (
           <MaintainerUpsell />
-        ) : shouldShowPostUpsell ? (
+        ) : shouldShowProductsUpsell ? (
           <SetupProductsUpsell />
         ) : null}
       </div>

@@ -1,22 +1,9 @@
 import { MDXContentWrapper } from '@/components/Documentation/MDXContentWrapper'
-import {
-  DocumentationPageSidebar,
-  MainNavigation,
-  MobileNav,
-} from '@/components/Documentation/Navigation'
 import { TableOfContents } from '@/components/Documentation/TableOfContents'
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   return (
     <>
-      <MobileNav>
-        <MainNavigation />
-      </MobileNav>
-      <div className="hidden md:block">
-        <DocumentationPageSidebar>
-          <MainNavigation />
-        </DocumentationPageSidebar>
-      </div>
       <div
         id="mdx-wrapper"
         className="flex w-full max-w-3xl flex-shrink flex-col"

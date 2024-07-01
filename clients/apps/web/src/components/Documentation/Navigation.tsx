@@ -27,44 +27,6 @@ import {
   isNotFeaturedEndpoint,
 } from './openapi'
 
-const Navigation = ({
-  openAPISchema,
-}: {
-  openAPISchema: OpenAPIV3_1.Document
-}) => {
-  const pathname = usePathname()
-
-  const shouldRenderOverviewSections = pathname.includes('/docs/overview')
-  const shouldRenderAPISections = pathname.includes('/docs/api/')
-
-  return (
-    <div className="flex flex-col gap-y-8">
-      {shouldRenderOverviewSections && (
-        <>
-          <OverviewSections />
-          <FAQSections />
-        </>
-      )}
-      {shouldRenderAPISections && (
-        <>
-          <APISections />
-          <WebhooksReferenceSections />
-          <APIReferenceSections
-            openAPISchema={openAPISchema}
-            filter={isFeaturedEndpoint}
-            title="Featured Endpoints"
-          />
-          <APIReferenceSections
-            openAPISchema={openAPISchema}
-            filter={isNotFeaturedEndpoint}
-            title="Other Endpoints"
-          />
-        </>
-      )}
-    </div>
-  )
-}
-
 const OverviewSections = () => {
   return (
     <>
@@ -308,10 +270,42 @@ const CollapsibleSection = ({
   )
 }
 
-export const DocumentationPageSidebar = ({
+export const MainNavigation = () => {
+  return (
+    <>
+      <OverviewSections />
+      <FAQSections />
+    </>
+  )
+}
+
+export const APINavigation = ({
   openAPISchema,
 }: {
   openAPISchema: OpenAPIV3_1.Document
+}) => {
+  return (
+    <>
+      <APISections />
+      <WebhooksReferenceSections />
+      <APIReferenceSections
+        openAPISchema={openAPISchema}
+        filter={isFeaturedEndpoint}
+        title="Featured Endpoints"
+      />
+      <APIReferenceSections
+        openAPISchema={openAPISchema}
+        filter={isNotFeaturedEndpoint}
+        title="Other Endpoints"
+      />
+    </>
+  )
+}
+
+export const DocumentationPageSidebar = ({
+  children,
+}: {
+  children: React.ReactNode
 }) => {
   const { isShown, show, hide, toggle } = useModal()
 
@@ -347,18 +341,15 @@ export const DocumentationPageSidebar = ({
         </li>
       </ul>
       <Separator />
-      <Navigation openAPISchema={openAPISchema} />
+
+      <div className="flex flex-col gap-y-8">{children}</div>
 
       <SearchPalette isShown={isShown} toggle={toggle} hide={hide} />
     </div>
   )
 }
 
-export const MobileNav = ({
-  openAPISchema,
-}: {
-  openAPISchema: OpenAPIV3_1.Document
-}) => {
+export const MobileNav = ({ children }: { children: React.ReactNode }) => {
   const [mobileNavOpen, setMobileNavOpen] = useState(false)
   const pathname = usePathname()
 
@@ -388,7 +379,7 @@ export const MobileNav = ({
         {header}
       </div>
       <div className="z-10 flex h-full flex-col pt-8">
-        <DocumentationPageSidebar openAPISchema={openAPISchema} />
+        <DocumentationPageSidebar>{children}</DocumentationPageSidebar>
       </div>
     </div>
   ) : (

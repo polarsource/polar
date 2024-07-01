@@ -6,7 +6,7 @@ export const ListItem = (props: {
   className?: string
 }) => {
   const className = twMerge(
-    'animate-background duration-10 flex items-center gap-2 py-2 px-4 w-full rounded-lg transition-colors',
+    'animate-background duration-10 flex items-center gap-2 py-2 px-4 w-full rounded-full transition-colors',
     props.current
       ? 'bg-blue-50 dark:bg-polar-700 text-blue-500 dark:text-blue-50'
       : 'hover:text-blue-500 dark:hover:text-polar-50',

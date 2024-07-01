@@ -21,7 +21,7 @@ const DropzoneView = ({
     <>
       <div
         className={twMerge(
-          'flex aspect-square w-full cursor-pointer items-center justify-center rounded-3xl border border-transparent px-4 py-8',
+          'rounded-4xl flex aspect-square w-full cursor-pointer items-center justify-center border border-transparent px-4 py-8',
           isDragActive
             ? 'dark:border-polar-700 dark:bg-polar-950 border-blue-100 bg-blue-50'
             : 'dark:border-polar-700 bg-gray-100 dark:bg-transparent',

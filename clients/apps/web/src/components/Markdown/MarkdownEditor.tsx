@@ -103,7 +103,7 @@ export const MarkdownEditor = ({
     <div className="relative">
       <TextArea
         ref={bodyRef}
-        className={twMerge('z-10 rounded-3xl p-6 text-lg', className)}
+        className={twMerge('rounded-4xl z-10 p-6 text-lg', className)}
         style={{
           minHeight: '100vh',
         }}
@@ -182,7 +182,7 @@ export const MarkdownEditor = ({
       <div>
         <div
           className={twMerge(
-            'absolute left-0 top-0 z-0 overflow-hidden whitespace-pre-wrap rounded-3xl p-6 text-lg',
+            'rounded-4xl absolute left-0 top-0 z-0 overflow-hidden whitespace-pre-wrap p-6 text-lg',
             className,
             'pointer-events-none select-none bg-transparent text-transparent',
           )}

@@ -22,7 +22,7 @@ export const MerchantOfRecord = () => {
             srcSet={`/assets/landing/metrics_dark.png`}
           />
           <img
-            className="dark:border-polar-700 rounded-3xl border border-gray-200"
+            className="dark:border-polar-700 rounded-4xl border border-gray-200"
             srcSet={`/assets/landing/metrics.png`}
             alt="Metrics dashboard in Polar"
           />

@@ -77,7 +77,7 @@ export default function ClientPage({
             .map((tier, index) => (
               <div
                 className={twMerge(
-                  'flex w-full cursor-pointer flex-col rounded-3xl transition-shadow md:w-[300px]',
+                  'rounded-4xl flex w-full cursor-pointer flex-col transition-shadow md:w-[300px]',
                   selectedTierIndex === index
                     ? 'shadow-2xl grayscale-0'
                     : 'grayscale hover:grayscale-0',

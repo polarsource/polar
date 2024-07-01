@@ -68,7 +68,7 @@ export const Modal: FunctionComponent<ModalProps> = ({
             <div className="block h-[80px] w-2 lg:max-h-[10%] lg:grow-[2]"></div>
             <motion.div
               className={twMerge(
-                'dark:bg-polar-950 dark:border-polar-800 dark:border relative z-10 flex max-h-full w-full flex-col overflow-hidden rounded-3xl bg-white shadow lg:w-[800px] lg:max-w-full',
+                'dark:bg-polar-950 dark:border-polar-800 rounded-4xl relative z-10 flex max-h-full w-full flex-col overflow-hidden bg-white shadow lg:w-[800px] lg:max-w-full dark:border',
                 className,
               )}
               initial={{ opacity: 0, scale: 0.99 }}
@@ -110,11 +110,7 @@ export const CloseButton = (props: {
   hide: () => void
 }) => {
   return (
-    <Button
-      variant="ghost"
-      size="icon"
-      onClick={() => props.hide()}
-    >
+    <Button variant="ghost" size="icon" onClick={() => props.hide()}>
       <XIcon />
     </Button>
   )

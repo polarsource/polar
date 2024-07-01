@@ -138,8 +138,8 @@ module.exports = {
           600: '#343748',
           700: '#1D1E27',
           800: '#16171F',
-          900: '#0C0C12',
-          950: '#05050A',
+          900: '#101116',
+          950: '#0C0D11',
         },
 
         // chadcn/ui start
@@ -184,6 +184,7 @@ module.exports = {
         lg: 'var(--radius)',
         md: 'calc(var(--radius) - 2px)',
         sm: 'calc(var(--radius) - 4px)',
+        '4xl': '2rem'
       },
       keyframes: {
         'accordion-down': {

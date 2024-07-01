@@ -47,7 +47,7 @@ export const Slideshow = ({ images }: SlideshowProps) => {
   )
 
   return (
-    <div className="dark:bg-polar-900 dark:border-polar-700 relative flex aspect-video w-full items-center justify-center overflow-hidden rounded-3xl bg-gray-100 bg-cover bg-center dark:border">
+    <div className="dark:bg-polar-900 dark:border-polar-700 rounded-4xl relative flex aspect-video w-full items-center justify-center overflow-hidden bg-gray-100 bg-cover bg-center dark:border">
       <AnimatePresence initial={false} custom={direction}>
         <motion.div
           className="absolute inset-0 h-full w-full bg-cover bg-center"

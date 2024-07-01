@@ -199,18 +199,13 @@ const nextConfig = {
 
 
       // Redirect /docs to docs.polar.sh
-      ...true ?
+      ...ENVIRONMENT !== 'development' ?
         [{
           source: '/docs/:path*',
           destination: 'https://docs.polar.sh/:path*',
           permanent: false,
-          missing: [
-            {
-              type: 'host',
-              value: 'docs.polar.sh'
-            }
-          ]
-        }] :
+        }]
+        :
         [],
 
       // Generate docs redirections

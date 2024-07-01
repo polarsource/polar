@@ -89,7 +89,7 @@ const DashboardSidebar = () => {
           <div className="relative z-10 mt-5 hidden translate-x-0 flex-row items-center justify-between space-x-2 pl-7 pr-8 md:flex">
             <BrandingMenu />
           </div>
-          <div className="mb-4 mt-8 flex px-4">
+          <div className="mb-4 mt-8 flex px-6">
             <DashboardProfileDropdown />
           </div>
         </div>

@@ -40,48 +40,46 @@ const nextConfig = {
   },
 
   async rewrites() {
-    return {
-      beforeFiles: [
-        // docs.polar.sh rewrite
-        {
-          source: '/:path*',
-          has: [
-            {
-              type: 'host',
-              value: 'docs.polar.sh',
-            },
-          ],
-          destination: '/docs/:path*',
-        },
+    return [
+      // docs.polar.sh rewrite
+      {
+        source: '/:path*',
+        has: [
+          {
+            type: 'host',
+            value: 'docs.polar.sh',
+          },
+        ],
+        destination: '/docs/:path*',
+      },
 
-        {
-          source: '/legal/privacy',
-          destination: 'https://polarsource.github.io/legal/privacy-policy.pdf',
-        },
-        {
-          source: '/legal/terms',
-          destination: 'https://polarsource.github.io/legal/terms.pdf',
-        },
+      {
+        source: '/legal/privacy',
+        destination: 'https://polarsource.github.io/legal/privacy-policy.pdf',
+      },
+      {
+        source: '/legal/terms',
+        destination: 'https://polarsource.github.io/legal/terms.pdf',
+      },
 
-        // polar.new rewrite
-        {
-          source: '/',
-          destination: '/new',
-          has: [
-            {
-              type: 'host',
-              value: 'polar.new',
-            },
-          ],
-        },
+      // polar.new rewrite
+      {
+        source: '/',
+        destination: '/new',
+        has: [
+          {
+            type: 'host',
+            value: 'polar.new',
+          },
+        ],
+      },
 
-        // PostHog Rewrite
-        {
-          source: '/ingest/:path*',
-          destination: 'https://app.posthog.com/:path*',
-        },
-      ]
-    }
+      // PostHog Rewrite
+      {
+        source: '/ingest/:path*',
+        destination: 'https://app.posthog.com/:path*',
+      },
+    ]
   },
   async redirects() {
     return [

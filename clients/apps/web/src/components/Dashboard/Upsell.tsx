@@ -57,7 +57,7 @@ export const MaintainerUpsell = () => {
   )
 }
 
-export const CreatePostUpsell = () => {
+export const SetupProductsUpsell = () => {
   const personalOrg = usePersonalOrganization()
 
   if (!personalOrg) {
@@ -66,12 +66,12 @@ export const CreatePostUpsell = () => {
 
   return (
     <Upsell
-      title="Create your first post"
-      description="Start building a community & newsletter by writing your first post. You can find inspiration from highlighted creators below."
+      title="Create & Promote Products"
+      description="Monetize your projects by selling digital products, subscriptions, and services to your community."
     >
-      <Link href={`/maintainer/${personalOrg.name}/posts/new`}>
+      <Link href={`/maintainer/${personalOrg.name}/products/overview`}>
         <Button size="sm" className="-z-1">
-          <span>Write a Post</span>
+          <span>Get Started</span>
           <ArrowForwardOutlined className="ml-2" fontSize="inherit" />
         </Button>
       </Link>

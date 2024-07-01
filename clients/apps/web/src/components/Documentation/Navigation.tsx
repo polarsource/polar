@@ -22,6 +22,7 @@ import { twMerge } from 'tailwind-merge'
 import { NavigationItem } from './NavigationItem'
 import { SearchPalette } from './SearchPalette'
 import {
+  APISection,
   getAPISections,
   isFeaturedEndpoint,
   isNotFeaturedEndpoint,
@@ -141,18 +142,8 @@ const WebhooksReferenceSections = () => {
     <div className="flex flex-col gap-y-6">
       <h3>Webhooks</h3>
       <div className="flex flex-col">
-        <NavigationItem
-          href="/docs/api/webhooks"
-          active={(pathname) => pathname === '/docs/api/webhooks'}
-        >
-          Overview
-        </NavigationItem>
-        <NavigationItem
-          href="/docs/api/webhooks/events"
-          active={(pathname) => pathname === '/docs/api/webhooks/events'}
-        >
-          Events
-        </NavigationItem>
+        <NavigationItem href="/docs/api/webhooks">Overview</NavigationItem>
+        <NavigationItem href="/docs/api/webhooks/events">Events</NavigationItem>
       </div>
     </div>
   )
@@ -162,33 +153,33 @@ const APIReferenceSections = ({
   openAPISchema,
   filter,
   title,
+  activeOperationId,
 }: {
   openAPISchema: OpenAPIV3_1.Document
   filter: (endpoint: OpenAPIV3_1.PathItemObject) => boolean
   title: string
+  activeOperationId: string | undefined
 }) => {
   const sections = getAPISections(openAPISchema, filter)
+  const isOpenedSection = (section: APISection) =>
+    section.endpoints.some((endpoint) => endpoint.id === activeOperationId)
+
   return (
     <div className="flex flex-col gap-y-6">
       <h3>{title}</h3>
       <div className="flex flex-col gap-y-5">
         {sections.map((section) => (
-          <CollapsibleSection key={section.name} title={section.name}>
+          <CollapsibleSection
+            key={section.name}
+            title={section.name}
+            defaultOpened={isOpenedSection(section)}
+          >
             {section.endpoints.map((endpoint) => (
               <NavigationItem
                 key={endpoint.id}
                 className="m-0 bg-transparent p-0 text-sm dark:bg-transparent"
                 href={`/docs/api${endpoint.path}${endpoint.path.endsWith('/') ? '' : '/'}${endpoint.method}`}
-                active={(pathname) => {
-                  const hasTrailingSlash = endpoint.path.endsWith('/')
-                  const withTrailingSlash = hasTrailingSlash
-                    ? endpoint.path
-                    : `${endpoint.path}/`
-
-                  return pathname.includes(
-                    `${withTrailingSlash}${endpoint.method}`,
-                  )
-                }}
+                active={() => endpoint.id === activeOperationId}
               >
                 <div className="flex w-full flex-row items-center justify-between gap-x-4">
                   {endpoint.name}
@@ -208,21 +199,15 @@ const APIReferenceSections = ({
 const CollapsibleSection = ({
   title,
   children,
-}: PropsWithChildren<{ title: string }>) => {
-  const [isOpen, setIsOpen] = useState(false)
-  const pathname = usePathname()
-
-  const active = pathname.includes(title.toLowerCase().replaceAll(' ', '-'))
-
-  useEffect(() => {
-    setIsOpen(active)
-  }, [active])
+  defaultOpened,
+}: PropsWithChildren<{ title: string; defaultOpened?: boolean }>) => {
+  const [isOpen, setIsOpen] = useState(defaultOpened || false)
 
   return (
     <div
       className={twMerge(
         'hover:bg-gray-75 group -mx-4 -my-2 flex flex-col gap-y-2 rounded-xl px-4 py-2 transition-colors duration-100 dark:border dark:border-transparent',
-        isOpen || active
+        isOpen
           ? 'bg-gray-75 dark:border-polar-700 dark:bg-transparent'
           : 'dark:hover:bg-polar-800',
       )}
@@ -234,7 +219,7 @@ const CollapsibleSection = ({
         <h2
           className={twMerge(
             'dark:text-polar-500 dark:group-hover:text-polar-50 text-sm capitalize text-gray-500 transition-colors group-hover:text-black',
-            (isOpen || active) && 'text-black dark:text-white',
+            isOpen && 'text-black dark:text-white',
           )}
         >
           {title}
@@ -279,8 +264,10 @@ export const MainNavigation = () => {
 
 export const APINavigation = ({
   openAPISchema,
+  activeOperationId,
 }: {
   openAPISchema: OpenAPIV3_1.Document
+  activeOperationId: string | undefined
 }) => {
   return (
     <>
@@ -290,11 +277,13 @@ export const APINavigation = ({
         openAPISchema={openAPISchema}
         filter={isFeaturedEndpoint}
         title="Featured Endpoints"
+        activeOperationId={activeOperationId}
       />
       <APIReferenceSections
         openAPISchema={openAPISchema}
         filter={isNotFeaturedEndpoint}
         title="Other Endpoints"
+        activeOperationId={activeOperationId}
       />
     </>
   )
@@ -302,8 +291,10 @@ export const APINavigation = ({
 
 export const DocumentationPageSidebar = ({
   children,
+  activeSection,
 }: {
   children: React.ReactNode
+  activeSection: 'overview' | 'api' | 'guides'
 }) => {
   const { isShown, show, hide, toggle } = useModal()
 
@@ -317,6 +308,7 @@ export const DocumentationPageSidebar = ({
           <NavigationItem
             icon={<SpaceDashboardOutlined fontSize="inherit" />}
             href="/docs"
+            active={() => activeSection === 'overview'}
           >
             Overview
           </NavigationItem>
@@ -325,6 +317,7 @@ export const DocumentationPageSidebar = ({
           <NavigationItem
             icon={<ApiOutlined fontSize="inherit" />}
             href="/docs/api"
+            active={() => activeSection === 'api'}
           >
             API Reference
           </NavigationItem>
@@ -333,6 +326,7 @@ export const DocumentationPageSidebar = ({
           <NavigationItem
             icon={<DescriptionOutlined fontSize="inherit" />}
             href="/docs/guides"
+            active={() => activeSection === 'guides'}
           >
             Guides
           </NavigationItem>
@@ -347,7 +341,13 @@ export const DocumentationPageSidebar = ({
   )
 }
 
-export const MobileNav = ({ children }: { children: React.ReactNode }) => {
+export const MobileNav = ({
+  children,
+  activeSection,
+}: {
+  children: React.ReactNode
+  activeSection: 'overview' | 'api' | 'guides'
+}) => {
   const [mobileNavOpen, setMobileNavOpen] = useState(false)
   const pathname = usePathname()
 
@@ -377,7 +377,9 @@ export const MobileNav = ({ children }: { children: React.ReactNode }) => {
         {header}
       </div>
       <div className="z-10 flex h-full flex-col pt-8">
-        <DocumentationPageSidebar>{children}</DocumentationPageSidebar>
+        <DocumentationPageSidebar activeSection={activeSection}>
+          {children}
+        </DocumentationPageSidebar>
       </div>
     </div>
   ) : (

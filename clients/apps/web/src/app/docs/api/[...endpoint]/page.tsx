@@ -1,4 +1,5 @@
 import { APIContainer } from '@/components/Documentation/APIContainer'
+import APILayout from '@/components/Documentation/APILayout'
 import { AuthenticationSchema } from '@/components/Documentation/AuthenticationSchema'
 import { BodySchema } from '@/components/Documentation/BodySchema'
 import { MDXContentWrapper } from '@/components/Documentation/MDXContentWrapper'
@@ -59,11 +60,10 @@ export default async function Page({
   }
 
   const requestBodySchema = getRequestBodySchema(operation)
-
-  const subHeader = endpoint[2].replaceAll('_', ' ')
+  const subHeader = operation.tags?.[0] ?? null
 
   return (
-    <>
+    <APILayout openAPISchema={schema} activeOperationId={operation.operationId}>
       <div className="flex w-full max-w-3xl flex-shrink flex-col">
         <div className="flex flex-col gap-y-16">
           <div className="flex flex-col gap-y-4">
@@ -114,6 +114,6 @@ export default async function Page({
           />
         )}
       </div>
-    </>
+    </APILayout>
   )
 }

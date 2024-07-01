@@ -6,14 +6,25 @@ import FeatureItem from './molecules/FeatureItem'
 
 export const Community = () => {
   return (
-    <div key="section-community" className="flex flex-col gap-y-24">
-      <div className="flex flex-col items-center gap-y-4 text-center md:gap-y-8">
-        <h2 className="text-4xl leading-snug md:text-5xl">
+    <div key="section-community" className="flex flex-col gap-y-24 md:gap-y-32">
+      <picture>
+        <source
+          media="(prefers-color-scheme: dark)"
+          srcSet={`/assets/landing/post_dark.png`}
+        />
+        <img
+          className="dark:border-polar-700 rounded-3xl border border-gray-200"
+          srcSet={`/assets/landing/post.png`}
+          alt="Post in Polar"
+        />
+      </picture>
+      <div className="relative flex flex-col items-center gap-y-4 text-center">
+        <h2 className="text-2xl leading-snug md:text-5xl">
           Grow community alongside transactions
         </h2>
-        <h3 className="dark:text-polar-600 text-4xl leading-snug text-gray-500">
+        <h3 className="dark:text-polar-600 text-xl leading-snug text-gray-300 md:text-4xl">
           Crucial for successful developer tools. So it&apos;s built-in - for
-          free.
+          free
         </h3>
       </div>
       <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
@@ -25,24 +36,11 @@ export const Community = () => {
           linkDescription="Checkout our Polar Page"
         />
         <FeatureItem
-          className="md:col-span-2 md:row-span-2"
           icon={<TrendingUpOutlined />}
           title="Free & Premium Newsletters"
-          description="Offer online- and email newsletters to your community - at no additional cost. Write posts in GitHub flavoured markdown. Share them with all subscribers, paid ones or as early access."
+          description="Online- and email newsletters for your community. Write in GitHub flavoured markdown & share them with all subscribers."
           link="/newsletters"
-        >
-          <picture>
-            <source
-              media="(prefers-color-scheme: dark)"
-              srcSet={`/assets/landing/newsletter_dark.png`}
-            />
-            <img
-              className="dark:border-polar-700 rounded-2xl border border-gray-100"
-              srcSet={`/assets/landing/newsletter_light.png`}
-              alt="Write newsletters in GitHub flavoured markdown"
-            />
-          </picture>
-        </FeatureItem>
+        />
         <FeatureItem
           icon={<GitHubIcon width={20} height={20} />}
           title="Official GitHub Option"

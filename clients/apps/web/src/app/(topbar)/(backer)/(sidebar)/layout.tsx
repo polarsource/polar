@@ -1,9 +1,9 @@
 'use client'
 
 import {
-  CreatePostUpsell,
   GitHubAuthUpsell,
   MaintainerUpsell,
+  SetupProductsUpsell,
 } from '@/components/Dashboard/Upsell'
 import PurchaseSidebar from '@/components/Purchases/PurchasesSidebar'
 import { useAuth, useGitHubAccount, usePersonalOrganization } from '@/hooks'
@@ -51,7 +51,7 @@ export default function Layout({ children }: PropsWithChildren) {
         ) : shouldShowMaintainerUpsell ? (
           <MaintainerUpsell />
         ) : shouldShowPostUpsell ? (
-          <CreatePostUpsell />
+          <SetupProductsUpsell />
         ) : null}
       </div>
       {children}

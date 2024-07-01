@@ -127,7 +127,7 @@ const SubscriptionTierCard: React.FC<SubscriptionTierCardProps> = ({
       }}
       id={subscriptionTier.name}
       className={twMerge(
-        'dark:bg-polar-900 relative flex flex-col gap-y-6 overflow-hidden rounded-3xl bg-white hover:bg-gray-50',
+        'dark:bg-polar-900 rounded-4xl relative flex flex-col gap-y-6 overflow-hidden bg-white hover:bg-gray-50',
         draggable?.isDragging && 'opacity-30',
         variantStyles[variant]['card'],
         className,

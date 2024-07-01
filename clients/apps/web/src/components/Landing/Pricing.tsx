@@ -43,7 +43,7 @@ export const Pricing = () => {
           Transparent pricing aligned with your success.
         </p>
       </div>
-      <div className="flex flex-col divide-y overflow-hidden rounded-3xl border md:flex-row md:divide-x md:divide-y-0">
+      <div className="rounded-4xl flex flex-col divide-y overflow-hidden border md:flex-row md:divide-x md:divide-y-0">
         <PriceItem
           icon={<FavoriteBorderOutlined fontSize="large" />}
           title="Zero Fixed Costs"

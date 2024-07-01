@@ -16,7 +16,7 @@ import { LinkItem, ListItem, Profile, TextItem } from './Navigation'
 
 const DashboardProfileDropdown = ({ className = '' }) => {
   const classNames = twMerge(
-    'relative flex w-full flex-col rounded-full bg-gray-75 hover:bg-gray-100 dark:hover:bg-polar-600 dark:bg-polar-700 transition-colors z-50',
+    'relative flex w-full flex-col rounded-full bg-gray-75 hover:bg-gray-100 dark:hover:bg-polar-700 dark:bg-polar-800 transition-colors z-50',
     className,
   )
   const { currentUser: loggedUser } = useAuth()
@@ -78,7 +78,7 @@ const DashboardProfileDropdown = ({ className = '' }) => {
           <div
             ref={ref}
             className={twMerge(
-              'dark:bg-polar-700 dark:text-polar-400 absolute -left-2 -right-2 overflow-hidden rounded-3xl bg-white p-1 shadow-xl',
+              'dark:bg-polar-800 dark:text-polar-400 rounded-4xl absolute -left-3 -right-3 -top-1 overflow-hidden bg-white p-2 shadow-xl',
             )}
           >
             <>

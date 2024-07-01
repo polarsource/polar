@@ -30,7 +30,7 @@ export default async function Post({
             day: 'numeric',
           })}
         </p>
-        <Markdown className="prose prose-a:text-blue-600 prose-a:no-underline prose-img:rounded-3xl prose-headings:leading-normal">
+        <Markdown className="prose prose-a:text-blue-600 prose-a:no-underline prose-img:rounded-4xl prose-headings:leading-normal">
           {article.body}
         </Markdown>
       </article>

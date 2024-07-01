@@ -129,7 +129,7 @@ export default function LongformPost({
 
 const UpsellNonSubscriber = ({ article }: { article: RenderArticle }) => (
   <div className="flex flex-col gap-y-16">
-    <div className="dark:bg-polar-800 flex flex-col items-center gap-y-6 rounded-3xl bg-gray-100 p-8 py-12 md:px-16 ">
+    <div className="dark:bg-polar-800 rounded-4xl flex flex-col items-center gap-y-6 bg-gray-100 p-8 py-12 md:px-16 ">
       <Avatar
         className="h-12 w-12"
         avatar_url={article.organization.avatar_url}
@@ -163,7 +163,7 @@ const UpsellFreeSubscriberToPaid = ({
   article: RenderArticle
 }) => (
   <div className="flex flex-col gap-y-16">
-    <div className="dark:bg-polar-800 flex flex-col items-center gap-y-6 rounded-3xl bg-gray-100 p-8 py-12 md:px-16 ">
+    <div className="dark:bg-polar-800 rounded-4xl flex flex-col items-center gap-y-6 bg-gray-100 p-8 py-12 md:px-16 ">
       <Avatar
         className="h-12 w-12"
         avatar_url={article.organization.avatar_url}

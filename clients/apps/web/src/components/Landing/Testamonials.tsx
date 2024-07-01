@@ -84,7 +84,7 @@ export const Testamonials = () => {
       <h3 className="text-center text-4xl leading-snug">
         Serving world-class developers, world-wide
       </h3>
-      <div className="dark:border-polar-700 flex flex-col divide-y overflow-hidden rounded-3xl border">
+      <div className="dark:border-polar-700 rounded-4xl flex flex-col divide-y overflow-hidden border">
         <Link
           className="hover:bg-gray-75 dark:hover:bg-polar-900 flex flex-col gap-y-6 p-12 transition-colors"
           href={testamonials[0].link}

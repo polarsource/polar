@@ -72,7 +72,7 @@ export default function Page() {
             srcSet="assets/landing/subscriptions/subscriptions_dark.png"
           />
           <img
-            className="border-gray-75 dark:border-polar-700 rounded-3xl border shadow-2xl"
+            className="border-gray-75 dark:border-polar-700 rounded-4xl border shadow-2xl"
             alt="Products & Subscriptions"
             src="/assets/landing/subscriptions/subscriptions.png"
           />

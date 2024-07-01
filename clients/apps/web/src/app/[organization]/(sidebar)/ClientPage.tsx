@@ -228,7 +228,7 @@ export default ClientPage
 
 const GitHubAppUpsell = () => {
   return (
-    <div className="dark:from-polar-700 dark:to-polar-800 dark:border-polar-700 flex flex-row gap-y-8 rounded-3xl bg-gradient-to-r from-blue-200 to-blue-500 p-8 text-white dark:border">
+    <div className="dark:from-polar-700 dark:to-polar-800 dark:border-polar-700 rounded-4xl flex flex-row gap-y-8 bg-gradient-to-r from-blue-200 to-blue-500 p-8 text-white dark:border">
       <div className="flex w-full flex-col gap-y-8">
         <h3 className="text-4xl leading-normal [text-wrap:balance]">
           Highlight your projects & enable crowdfunding for issues

@@ -3,8 +3,11 @@
 import { useGitHubAccount, useLogout } from '@/hooks'
 import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
 import { useOutsideClick } from '@/utils/useOutsideClick'
-import { ChevronUpDownIcon } from '@heroicons/react/24/outline'
-import { AddOutlined, LogoutOutlined } from '@mui/icons-material'
+import {
+  AddOutlined,
+  KeyboardArrowDownOutlined,
+  LogoutOutlined,
+} from '@mui/icons-material'
 import Link from 'next/link'
 import { useContext, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -13,7 +16,7 @@ import { LinkItem, ListItem, Profile, TextItem } from './Navigation'
 
 const DashboardProfileDropdown = ({ className = '' }) => {
   const classNames = twMerge(
-    'relative flex w-full flex-col rounded-2xl bg-gray-75 hover:bg-gray-100 dark:hover:bg-polar-700 dark:bg-polar-800 transition-colors z-50',
+    'relative flex w-full flex-col rounded-full bg-gray-75 hover:bg-gray-100 dark:hover:bg-polar-600 dark:bg-polar-700 transition-colors z-50',
     className,
   )
   const { currentUser: loggedUser } = useAuth()
@@ -63,19 +66,19 @@ const DashboardProfileDropdown = ({ className = '' }) => {
       <div className={classNames}>
         <div
           className={twMerge(
-            'relative flex cursor-pointer flex-row items-center justify-between gap-x-2 px-4 py-3 transition-colors',
+            'relative flex cursor-pointer flex-row items-center justify-between gap-x-2 py-3 pl-3 pr-4 transition-colors',
           )}
           onClick={() => setOpen(true)}
         >
           <Profile name={current.name} avatar_url={current.avatar_url} />
-          <ChevronUpDownIcon className="dark:text-polar-500 h-5 w-5 flex-shrink-0 text-gray-400" />
+          <KeyboardArrowDownOutlined className="dark:text-polar-50 h-5 w-5 flex-shrink-0 text-gray-400" />
         </div>
 
         {isOpen && (
           <div
             ref={ref}
             className={twMerge(
-              'dark:bg-polar-800 dark:text-polar-400 dark:border-polar-700 absolute -left-2 -right-2 -top-1 overflow-hidden rounded-2xl bg-white p-2 shadow-xl dark:border',
+              'dark:bg-polar-700 dark:text-polar-400 absolute -left-2 -right-2 -top-1 overflow-hidden rounded-3xl bg-white p-2 shadow-xl',
             )}
           >
             <>

@@ -4,7 +4,7 @@ import LogoIcon from '@/components/Brand/LogoIcon'
 import { useAuth } from '@/hooks/auth'
 import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
 import { CONFIG } from '@/utils/config'
-import { CloseOutlined, GitHub, ShortTextOutlined } from '@mui/icons-material'
+import { CloseOutlined, ShortTextOutlined } from '@mui/icons-material'
 import { Repository } from '@polar-sh/sdk'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
@@ -32,9 +32,8 @@ import { BrandingMenu } from './Public/BrandingMenu'
 
 const GitHubAppUpsell = () => {
   return (
-    <div className="dark:from-polar-800 dark:to-polar-800 m-4 flex flex-row gap-y-8 rounded-3xl bg-gradient-to-r from-blue-200 to-blue-400 p-6 text-white">
-      <div className="flex w-full flex-col gap-y-6">
-        <GitHub fontSize="medium" />
+    <div className="dark:from-polar-800 dark:to-polar-800 m-6 flex flex-row gap-y-8 rounded-2xl bg-gradient-to-r from-blue-200 to-blue-400 p-4 text-white">
+      <div className="flex w-full flex-col gap-y-4">
         <h3 className="leading-normal [text-wrap:balance]">
           Import your repositories & enable crowdfunding for issues
         </h3>
@@ -51,7 +50,6 @@ const GitHubAppUpsell = () => {
 }
 
 const DashboardSidebar = () => {
-  const [scrollDistance, setScrollDistance] = useState(0)
   const [scrollTop, setScrollTop] = useState(0)
   const { currentUser } = useAuth()
 
@@ -71,16 +69,9 @@ const DashboardSidebar = () => {
   }, [])
 
   const shouldRenderUpperBorder = useMemo(() => scrollTop > 0, [scrollTop])
-  const shouldRenderLowerBorder = useMemo(
-    () => scrollTop < scrollDistance,
-    [scrollTop, scrollDistance],
-  )
 
   const upperScrollClassName = shouldRenderUpperBorder
     ? 'border-b dark:border-b-polar-700 border-b-gray-200'
-    : ''
-  const lowerScrollClassName = shouldRenderLowerBorder
-    ? 'border-t dark:border-t-polar-700 border-t-gray-200'
     : ''
 
   if (!currentUser) {
@@ -90,7 +81,7 @@ const DashboardSidebar = () => {
   return (
     <aside
       className={twMerge(
-        'dark:border-r-polar-700 dark:bg-polar-900 flex h-full w-full flex-shrink-0 flex-col justify-between gap-y-4 overflow-y-auto border-r border-r-gray-100 bg-white md:w-[320px] md:overflow-y-visible dark:md:bg-transparent',
+        'dark:bg-polar-900 flex h-full w-full flex-shrink-0 flex-col justify-between gap-y-4 overflow-y-auto rounded-3xl bg-white md:w-[320px] md:overflow-y-visible',
       )}
     >
       <div className="flex h-full flex-col">
@@ -99,36 +90,32 @@ const DashboardSidebar = () => {
             <BrandingMenu />
           </div>
           <div className="mb-4 mt-8 flex px-4">
-            <DashboardProfileDropdown className="shadow-xl" />
+            <DashboardProfileDropdown />
           </div>
         </div>
 
         <div
-          ref={(el) => {
-            if (el) {
-              setScrollDistance(el.scrollHeight - el.clientHeight)
-            }
-          }}
-          className="flex w-full flex-grow flex-col gap-y-2 md:h-full md:overflow-y-auto"
+          className="flex w-full flex-grow flex-col gap-y-2 md:h-full md:justify-between md:overflow-y-auto"
           onScroll={handleScroll}
         >
-          {currentOrg && !currentOrg.has_app_installed && <GitHubAppUpsell />}
-
-          {shouldRenderMaintainerNavigation && <MaintainerNavigation />}
-          <DashboardNavigation />
-          {shouldRenderMaintainerNavigation && <DisabledMaintainerNavigation />}
-        </div>
-
-        <div className={twMerge('hidden p-8 md:block', lowerScrollClassName)}>
-          <CommandPaletteTrigger
-            title="API & Documentation"
-            className="cursor-text "
-            onClick={showCommandPalette}
-          />
-        </div>
-
-        <div className="dark:border-t-polar-700 flex flex-col gap-y-2 border-t border-t-gray-200">
-          <MetaNavigation />
+          <div>
+            {currentOrg && !currentOrg.has_app_installed && <GitHubAppUpsell />}
+            {shouldRenderMaintainerNavigation && <MaintainerNavigation />}
+            <DashboardNavigation />
+            {shouldRenderMaintainerNavigation && (
+              <DisabledMaintainerNavigation />
+            )}
+          </div>
+          <div className="flex flex-col">
+            <div className="flex px-8">
+              <CommandPaletteTrigger
+                title="API & Documentation"
+                className="w-full cursor-text"
+                onClick={showCommandPalette}
+              />
+            </div>
+            <MetaNavigation />
+          </div>
         </div>
       </div>
     </aside>
@@ -138,14 +125,14 @@ const DashboardSidebar = () => {
 const DashboardLayout = (props: PropsWithChildren<{ className?: string }>) => {
   return (
     <DashboardProvider>
-      <div className="relative flex h-full w-full flex-col md:flex-row">
+      <div className="relative flex h-full w-full flex-col md:flex-row md:p-4">
         <MobileNav />
         <div className="hidden md:flex">
           <DashboardSidebar />
         </div>
         <div
           className={twMerge(
-            'dark:bg-polar-950 relative flex h-full w-full translate-x-0 flex-row overflow-hidden bg-white pt-8 md:pt-0',
+            'relative flex h-full w-full translate-x-0 flex-row overflow-hidden pt-8 md:pt-0',
             props.className,
           )}
         >

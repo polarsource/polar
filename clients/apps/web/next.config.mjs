@@ -197,17 +197,16 @@ const nextConfig = {
         permanent: false,
       },
 
-
       // Redirect /docs to docs.polar.sh
-      ...ENVIRONMENT !== 'development' ?
-        [{
-          source: '/docs/:path*',
-          destination: 'https://docs.polar.sh/:path*',
-          permanent: false,
-        }]
-        :
-        [],
-
+      // ...ENVIRONMENT !== 'development' ?
+      // [{
+      //   source: '/docs/:path*',
+      //   destination: 'https://docs.polar.sh/:path*',
+      //   permanent: false,
+      // }]
+      // :
+      // [],
+      //
       {
         source: '/dashboard',
         destination: '/login',

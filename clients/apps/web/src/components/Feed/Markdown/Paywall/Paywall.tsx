@@ -57,7 +57,7 @@ const BasePaywall = (props: {
     return (
       <div
         className={twMerge(
-          'my-4 flex flex-col items-center rounded-3xl bg-gray-100 px-8 py-4 text-center',
+          'rounded-4xl my-4 flex flex-col items-center bg-gray-100 px-8 py-4 text-center',
           props.classNames,
         )}
       >

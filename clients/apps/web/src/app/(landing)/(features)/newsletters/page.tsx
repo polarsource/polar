@@ -70,7 +70,7 @@ export default function Page() {
             srcSet="assets/landing/newsletters/newsletters_dark.png"
           />
           <img
-            className="border-gray-75 dark:border-polar-700 rounded-3xl border shadow-2xl"
+            className="border-gray-75 dark:border-polar-700 rounded-4xl border shadow-2xl"
             alt="Newsletters"
             src="/assets/landing/newsletters/newsletters.png"
           />

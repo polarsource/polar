@@ -60,7 +60,7 @@ const Benefits = () => {
           We&apos;re building common developer upsells so you don&apos;t have to
         </p>
       </div>
-      <div className="grid grid-cols-1 overflow-hidden rounded-3xl border md:grid-cols-3">
+      <div className="rounded-4xl grid grid-cols-1 overflow-hidden border md:grid-cols-3">
         <BenefitCard
           className="border-b md:border-r"
           icon={<GitHubIcon width={30} height={30} />}
@@ -125,7 +125,7 @@ export const Monetization = () => {
               srcSet={`/assets/landing/public_page_dark.png`}
             />
             <img
-              className="dark:border-polar-700 rounded-3xl border border-gray-200"
+              className="dark:border-polar-700 rounded-4xl border border-gray-200"
               srcSet={`/assets/landing/public_page.png`}
             />
           </picture>
@@ -195,7 +195,7 @@ export const Monetization = () => {
             From sustainable open source, sponsorware to full-fledged SaaS
           </p>
         </div>
-        <div className="flex flex-col divide-y overflow-hidden rounded-3xl border md:flex-row md:divide-x md:divide-y-0">
+        <div className="rounded-4xl flex flex-col divide-y overflow-hidden border md:flex-row md:divide-x md:divide-y-0">
           {[
             {
               name: 'Serenity OS',

@@ -37,7 +37,7 @@ export const APIContainer = ({
   return (
     <div
       className={twMerge(
-        'dark:border-polar-700 flex h-full w-full flex-col rounded-3xl bg-white shadow-sm dark:border dark:bg-transparent dark:shadow-none',
+        'dark:border-polar-700 rounded-4xl flex h-full w-full flex-col bg-white shadow-sm dark:border dark:bg-transparent dark:shadow-none',
         className,
       )}
     >

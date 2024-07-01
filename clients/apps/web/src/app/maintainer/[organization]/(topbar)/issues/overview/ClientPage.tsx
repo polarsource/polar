@@ -228,7 +228,7 @@ const OrganizationIssues = ({
     <DashboardBody className="flex flex-col gap-y-8">
       {!currentOrg.has_app_installed && <GitHubAppInstallationUpsell />}
       {showAddBadgeBanner && <OnboardingAddBadge />}
-      <ShadowBoxOnMd className="md:rounded-3xl md:px-12 md:py-8">
+      <ShadowBoxOnMd className="md:rounded-4xl md:px-12 md:py-8">
         <div className="-mx-6 space-y-8">
           <div className="mx-6">
             <RepoPickerHeader

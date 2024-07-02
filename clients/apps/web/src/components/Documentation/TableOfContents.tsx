@@ -2,6 +2,7 @@ import { ArrowForward } from '@mui/icons-material'
 import Link from 'next/link'
 import type { TocItem } from 'remark-flexible-toc'
 import { twMerge } from 'tailwind-merge'
+import TableOfContentsScrollSpy from './TableOfContentsScrollSpy'
 
 export const TableOfContents = ({
   items,
@@ -18,10 +19,11 @@ export const TableOfContents = ({
           {items.map((item) => (
             <li key={item.href}>
               <Link
+                id={`toc-entry-${item.href}`}
                 href={item.href}
                 className={twMerge(
                   'dark:text-polar-500 flex flex-row gap-x-2 leading-normal text-gray-500 transition-colors duration-200 ease-in-out hover:text-blue-500 dark:hover:text-white',
-                  false && 'text-blue-500 dark:text-white',
+                  'aria-selected:text-blue-500 aria-selected:dark:text-white',
                 )}
               >
                 {item.depth > 2 && (
@@ -33,6 +35,7 @@ export const TableOfContents = ({
           ))}
         </ul>
       </nav>
+      <TableOfContentsScrollSpy />
     </div>
   )
 }

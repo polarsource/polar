@@ -57,7 +57,7 @@ export const FileListItem = ({
       <img
         src={imageURL}
         alt={file.name}
-        className="relative aspect-square w-full cursor-grab rounded-2xl object-cover"
+        className="rounded-4xl relative aspect-square w-full cursor-grab object-cover"
         ref={sortable ? sortable.setDraggableNodeRef : undefined}
         {...sortable?.attributes}
         {...sortable?.listeners}
@@ -66,7 +66,7 @@ export const FileListItem = ({
         <button
           type="button"
           onClick={onDelete}
-          className="absolute right-2 top-2 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-xs text-white"
+          className="absolute right-4 top-4 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-xs text-white"
         >
           <ClearOutlined fontSize="inherit" />
         </button>

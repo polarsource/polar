@@ -6,7 +6,7 @@ export const ListItem = (props: {
   className?: string
 }) => {
   const className = twMerge(
-    'animate-background duration-10 flex items-center gap-2 py-2 px-4 w-full rounded-full transition-colors',
+    'animate-background duration-10 flex items-center gap-2 py-2 px-2 w-full rounded-full transition-colors',
     props.current
       ? 'bg-blue-50 dark:bg-polar-700 text-blue-500 dark:text-blue-50'
       : 'hover:text-blue-500 dark:hover:text-polar-50',
@@ -45,8 +45,8 @@ export const LinkItem = (props: {
 }) => {
   return (
     <a href={props.href}>
-      <ListItem current={false} className="rounded-lg px-6">
-        <div className="flex flex-row items-center gap-x-3 text-sm">
+      <ListItem current={false} className="rounded-lg px-4">
+        <div className="flex flex-row items-center gap-x-2 text-sm">
           <span className="text-lg">{props.icon}</span>
           {props.children}
         </div>
@@ -65,7 +65,7 @@ export const TextItem = (props: {
       className="flex cursor-pointer items-center text-sm"
       onClick={props.onClick}
     >
-      <ListItem current={false} className="px-6 py-0">
+      <ListItem current={false} className="gap-x-2 px-4 py-0 text-sm">
         <>
           <span className="text-lg">{props.icon}</span>
           {props.children}

@@ -82,7 +82,7 @@ export default function ClientPage({
   if (!organization.donations_enabled) {
     return (
       <EmptyLayout>
-        <div className="dark:text-polar-200 flex flex-col items-center justify-center space-y-10 py-96 text-gray-600">
+        <div className="dark:text-polar-200 flex flex-col items-center justify-center space-y-10 py-32 text-gray-600">
           <span className="text-6xl text-blue-400">
             <VolunteerActivismOutlined fontSize="inherit" />
           </span>
@@ -122,7 +122,7 @@ export default function ClientPage({
             />
           </>
         ) : (
-          <div className="dark:text-polar-200 flex flex-col items-center justify-center space-y-10 py-96 text-gray-600">
+          <div className="dark:text-polar-200 flex flex-col items-center justify-center space-y-10 py-32 text-gray-600">
             <span className="text-6xl text-blue-400">
               <VolunteerActivismOutlined fontSize="inherit" />
             </span>

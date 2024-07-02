@@ -145,7 +145,7 @@ const PostCard = ({ icon, title, description, link }: PostCardProps) => {
 
   return (
     <Link ref={ref} href={link}>
-      <Card className="dark:hover:bg-polar-900 relative flex h-full flex-col transition-colors hover:bg-gray-50">
+      <Card className="dark:hover:bg-polar-800 relative flex h-full flex-col transition-colors hover:bg-gray-50">
         <CardHeader className="gap-y-4 pb-4">
           {icon}
           <h3 className="text-2xl font-bold">{title}</h3>

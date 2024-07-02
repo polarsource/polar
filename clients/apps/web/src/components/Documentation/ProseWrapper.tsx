@@ -1,7 +1,7 @@
 import { PropsWithChildren } from 'react'
 import { twMerge } from 'tailwind-merge'
 
-export const MDXContentWrapper = ({
+const ProseWrapper = ({
   children,
   className,
 }: PropsWithChildren<{ className?: string }>) => {
@@ -21,3 +21,5 @@ export const MDXContentWrapper = ({
     </div>
   )
 }
+
+export default ProseWrapper

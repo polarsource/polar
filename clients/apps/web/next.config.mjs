@@ -5,6 +5,7 @@ import { withSentryConfig } from '@sentry/nextjs'
 import rehypeShikiFromHighlighter from '@shikijs/rehype/core'
 import { bundledLanguages, createHighlighter } from 'shiki';
 import { themeConfig, themesList, transformers } from './shiki.config.mjs'
+import remarkFlexibleToc from "remark-flexible-toc";
 
 const POLAR_AUTH_COOKIE_KEY = 'polar_session'
 const ENVIRONMENT = process.env.VERCEL_ENV ||
@@ -401,6 +402,30 @@ const createConfig = async () => {
   })
   const withMDX = createMDX({
     options: {
+      remarkPlugins: [
+        remarkFlexibleToc,
+        () => (tree, file) => ({
+          ...tree,
+          children: [
+            // Wrap the main content of the MDX file in a BodyWrapper (div) component
+            // so we might position the TOC on the right side of the content
+            {
+              type: 'mdxJsxFlowElement',
+              name: 'BodyWrapper',
+              attributes: [],
+              children: tree.children,
+            },
+            // Automatically add a TOCGenerator component to the end of the MDX file
+            // using the TOC data from the remarkFlexibleToc plugin
+            {
+              type: 'mdxJsxFlowElement',
+              name: 'TOCGenerator',
+              attributes: [{ type: 'mdxJsxAttribute', name: 'items', value: JSON.stringify(file.data.toc) }],
+              children: []
+            }
+          ]
+        }),
+      ],
       rehypePlugins: [
         rehypeSlug,
         [

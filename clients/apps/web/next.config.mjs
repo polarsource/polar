@@ -111,15 +111,22 @@ const nextConfig = {
         permanent: false,
       },
 
+      // Redirect /docs/overview to /docs/product
+      {
+        source: '/docs/overview/:path*',
+        destination: '/docs/:path*',
+        permanent: true,
+      },
+
       // FAQ to docs
       {
         source: '/faq',
-        destination: '/docs/overview/faq/overview',
+        destination: '/docs/faq/overview',
         permanent: false,
       },
       {
         source: '/faq/:path*',
-        destination: '/docs/overview/faq/:path*',
+        destination: '/docs/faq/:path*',
         permanent: false,
       },
 

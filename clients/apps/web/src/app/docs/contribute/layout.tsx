@@ -13,7 +13,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         <MainNavigation />
       </MobileNav>
       <div className="hidden md:block">
-        <DocumentationPageSidebar activeSection="contribute"></DocumentationPageSidebar>
+        <DocumentationPageSidebar activeSection="contribute" />
       </div>
       <div
         id="mdx-wrapper"

@@ -344,8 +344,8 @@ export const DocumentationPageSidebar = ({
 
   return (
     <div className="flex w-full flex-shrink-0 flex-col gap-y-12 md:w-60">
-      <div className="hidden flex-col gap-y-12 md:flex">
-        <CommandPaletteTrigger onClick={show} />
+      <div className="-mx-3 hidden flex-col gap-y-12 md:flex">
+        <CommandPaletteTrigger className="w-full" onClick={show} />
       </div>
       <ul className="flex flex-col">
         <li>

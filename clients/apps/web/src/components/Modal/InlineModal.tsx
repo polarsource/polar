@@ -57,7 +57,7 @@ export const InlineModal: FunctionComponent<InlineModalProps> = ({
           onKeyDown={onKeyDown}
         >
           <div
-            className="flex h-screen flex-col items-center bg-black/50 md:w-full md:flex-row md:items-start md:justify-end"
+            className="flex h-screen flex-col items-center bg-black/50 md:w-full md:flex-row md:items-start md:justify-end md:p-4"
             onClick={(e) => {
               e.preventDefault()
               e.stopPropagation()
@@ -66,7 +66,7 @@ export const InlineModal: FunctionComponent<InlineModalProps> = ({
           >
             <div
               className={twMerge(
-                'dark:bg-polar-900 relative z-10 flex h-full max-h-full w-full flex-col overflow-hidden bg-white shadow md:w-[540px]',
+                'dark:bg-polar-900 rounded-4xl relative z-10 flex h-full max-h-full w-full flex-col overflow-hidden bg-white shadow md:w-[540px]',
                 className,
               )}
               onClick={onInnerClick}

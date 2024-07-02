@@ -27,18 +27,18 @@ export const ProductCard = ({
     showOrganization,
   )
   return (
-    <div className="dark:hover:bg-polar-800 dark:bg-polar-900 rounded-4xl flex h-full w-full flex-col gap-6 overflow-hidden bg-white p-6 transition-colors hover:bg-gray-50">
+    <div className="dark:hover:bg-polar-800 dark:bg-polar-900 rounded-4xl bg-gray-75 flex h-full w-full flex-col gap-6 overflow-hidden p-6 transition-colors hover:bg-gray-50">
       {product.medias.length > 0 ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img
-          className="dark:bg-polar-950 bg-gray-75 aspect-square w-full rounded-2xl object-cover"
+          className="dark:bg-polar-950 aspect-square w-full rounded-2xl bg-gray-100 object-cover"
           alt={product.medias[0].name}
           width={600}
           height={600}
           src={product.medias[0].public_url}
         />
       ) : (
-        <div className="dark:bg-polar-950 bg-gray-75 flex aspect-square w-full flex-col items-center justify-center rounded-2xl">
+        <div className="dark:bg-polar-950 flex aspect-square w-full flex-col items-center justify-center rounded-2xl bg-gray-100">
           <div className="flex flex-col items-center justify-center text-4xl text-blue-500 dark:text-white">
             <DiamondOutlined fontSize="inherit" />
           </div>

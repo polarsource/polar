@@ -10,6 +10,7 @@ import {
   PolarQueryClientProvider,
   PolarThemeProvider,
 } from './providers'
+import NextTopLoader from 'nextjs-toploader'
 
 const inter = localFont({
   src: '../assets/fonts/Inter-Variable.woff2',
@@ -75,6 +76,7 @@ export default async function RootLayout({
           inter.className,
         )}
       >
+        <NextTopLoader showSpinner={false} />
         <UserContextProvider user={{ user: authenticatedUser }}>
           <PolarPostHogProvider>
             <PolarThemeProvider>

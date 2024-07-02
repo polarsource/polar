@@ -18,7 +18,6 @@ import { redirect, useParams, useRouter } from 'next/navigation'
 import Button from 'polarkit/components/ui/atoms/button'
 import { Tabs } from 'polarkit/components/ui/atoms/tabs'
 import { Banner } from 'polarkit/components/ui/molecules'
-import { Separator } from 'polarkit/components/ui/separator'
 import { useCallback, useContext, useEffect, useRef, useState } from 'react'
 
 const ClientPage = () => {
@@ -194,7 +193,6 @@ const ClientPage = () => {
           </Button>
         </div>
       </DashboardTopbar>
-      <Separator className="dark:bg-polar-700 bg-gray-100" />
       <PostEditor
         article={post.data}
         title={localArticle.title}

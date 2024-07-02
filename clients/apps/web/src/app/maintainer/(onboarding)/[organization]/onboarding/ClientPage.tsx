@@ -206,10 +206,10 @@ const OnboardingCard = ({
     <StaggerReveal.Child>
       <Card
         className={twMerge(
-          'dark:hover:bg-polar-900 dark:ring-polar-800 relative flex h-full select-none flex-col border-none ring-0 transition-colors hover:cursor-pointer hover:bg-gray-50 dark:ring-1',
+          'dark:hover:bg-polar-800 dark:ring-polar-800 dark:border-polar-700 relative flex h-full select-none flex-col border border-gray-100 ring-0 transition-colors hover:cursor-pointer hover:bg-gray-50 dark:ring-1',
           active
             ? 'dark:bg-polar-800 bg-white shadow-sm'
-            : 'dark:bg-polar-900 bg-gray-200',
+            : 'dark:bg-polar-900 bg-gray-75',
         )}
         onClick={onClick}
       >
@@ -264,7 +264,7 @@ const FeatureItem = ({
   return (
     <StaggerReveal.Child
       className={twMerge(
-        'dark:bg-polar-900 dark:hover:bg-polar-900 flex select-none flex-row items-center justify-between gap-4 rounded-2xl bg-gray-200/70 px-6 py-4 transition-colors hover:cursor-pointer hover:bg-gray-50',
+        'dark:bg-polar-900 dark:hover:bg-polar-800 bg-gray-75 flex select-none flex-row items-center justify-between gap-4 rounded-2xl border border-gray-100 px-6 py-4 transition-colors hover:cursor-pointer hover:bg-gray-50 dark:border-none',
         active ? 'dark:bg-polar-800 bg-white shadow-sm' : '',
       )}
       onClick={onClick(id)}

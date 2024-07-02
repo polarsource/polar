@@ -27,8 +27,8 @@ export const PostToolbar = ({
   )
 
   return (
-    <div className="dark:border-polar-700 sticky top-0 z-10 flex w-full flex-col border-b border-gray-100 bg-white dark:bg-transparent">
-      <div className="relative mx-auto flex w-full min-w-0 max-w-screen-xl flex-row items-center justify-between gap-x-4 px-4 py-4 sm:px-6 md:px-8">
+    <div className="sticky top-0 z-10 flex w-full flex-col bg-white dark:bg-transparent">
+      <div className="relative mx-auto flex w-full min-w-0 max-w-screen-xl flex-row items-center justify-between gap-x-4 px-4 py-4 sm:px-6 md:px-16">
         <TabsList>
           <TabsTrigger value="edit" size="small">
             Markdown
@@ -46,7 +46,7 @@ export const PostToolbar = ({
         </TabsList>
         <TabsContent
           value="preview"
-          className="absolute right-4 mt-0 flex flex-row items-center gap-x-2 sm:right-6 md:right-8"
+          className="flex flex-row items-center gap-x-2"
         >
           <PreviewToolbar
             article={article}

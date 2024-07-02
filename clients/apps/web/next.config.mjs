@@ -40,46 +40,50 @@ const nextConfig = {
   },
 
   async rewrites() {
-    return [
-      // docs.polar.sh rewrite
-      {
-        source: '/:path*',
-        has: [
-          {
-            type: 'host',
-            value: 'docs.polar.sh',
-          },
-        ],
-        destination: '/docs/:path*',
-      },
+    return {
+      beforeFiles: [
+        // docs.polar.sh rewrite
+        {
+          // The rewrite happens before everything else, so we need to make sure
+          // it doesn't match the _next and assets directories
+          source: '/:path((?!_next|assets).*)',
+          has: [
+            {
+              type: 'host',
+              value: 'docs.polar.sh',
+            },
+          ],
+          destination: '/docs/:path',
+        },
 
-      {
-        source: '/legal/privacy',
-        destination: 'https://polarsource.github.io/legal/privacy-policy.pdf',
-      },
-      {
-        source: '/legal/terms',
-        destination: 'https://polarsource.github.io/legal/terms.pdf',
-      },
+        {
+          source: '/legal/privacy',
+          destination: 'https://polarsource.github.io/legal/privacy-policy.pdf',
+        },
+        {
+          source: '/legal/terms',
+          destination: 'https://polarsource.github.io/legal/terms.pdf',
+        },
 
-      // polar.new rewrite
-      {
-        source: '/',
-        destination: '/new',
-        has: [
-          {
-            type: 'host',
-            value: 'polar.new',
-          },
-        ],
-      },
+        // polar.new rewrite
+        {
+          source: '/',
+          destination: '/new',
+          has: [
+            {
+              type: 'host',
+              value: 'polar.new',
+            },
+          ],
+        },
 
-      // PostHog Rewrite
-      {
-        source: '/ingest/:path*',
-        destination: 'https://app.posthog.com/:path*',
-      },
-    ]
+        // PostHog Rewrite
+        {
+          source: '/ingest/:path*',
+          destination: 'https://app.posthog.com/:path*',
+        },
+      ]
+    }
   },
   async redirects() {
     return [
@@ -198,15 +202,15 @@ const nextConfig = {
       },
 
       // Redirect /docs to docs.polar.sh
-      // ...ENVIRONMENT !== 'development' ?
-      // [{
-      //   source: '/docs/:path*',
-      //   destination: 'https://docs.polar.sh/:path*',
-      //   permanent: false,
-      // }]
-      // :
-      // [],
-      //
+      ...ENVIRONMENT !== 'development' ?
+        [{
+          source: '/docs/:path*',
+          destination: 'https://docs.polar.sh/:path*',
+          permanent: false,
+        }]
+        :
+        [],
+
       {
         source: '/dashboard',
         destination: '/login',

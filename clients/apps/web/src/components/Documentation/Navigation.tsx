@@ -30,6 +30,31 @@ import {
   isNotFeaturedEndpoint,
 } from './openapi'
 
+const NavigationSection = ({
+  key,
+  title,
+  children,
+  defaultOpened = false,
+}: {
+  key: string
+  title: string
+  children: React.ReactNode
+  defaultOpened: boolean
+}) => {
+  return (
+    <CollapsibleSection
+      key={key}
+      title={title}
+      defaultOpened={defaultOpened}
+      isSubMenu={false}
+    >
+      <div className="flex flex-col gap-y-4">
+        <div className="flex flex-col">{children}</div>
+      </div>
+    </CollapsibleSection>
+  )
+}
+
 const OverviewSections = () => {
   return (
     <>
@@ -50,49 +75,45 @@ const OverviewSections = () => {
         </NavigationItem>
       </div>
 
-      <div className="flex flex-col gap-y-4">
-        <h2 className="font-medium">Issue Funding</h2>
-        <div className="flex flex-col">
-          <NavigationItem
-            href="/docs/overview/issue-funding/overview"
-            icon={<ArrowForward fontSize="inherit" />}
-          >
-            Overview
-          </NavigationItem>
-          <NavigationItem
-            href="/docs/overview/issue-funding/getting-started"
-            icon={<ArrowForward fontSize="inherit" />}
-          >
-            Getting Started
-          </NavigationItem>
-          <NavigationItem
-            href="/docs/overview/issue-funding/workflow"
-            icon={<ArrowForward fontSize="inherit" />}
-          >
-            Workflow
-          </NavigationItem>
-          <NavigationItem
-            href="/docs/overview/issue-funding/promote"
-            icon={<ArrowForward fontSize="inherit" />}
-          >
-            Promote
-          </NavigationItem>
-          <NavigationItem
-            href="/docs/overview/issue-funding/reward-contributors"
-            icon={<ArrowForward fontSize="inherit" />}
-          >
-            Reward Contributors
-          </NavigationItem>
-        </div>
-      </div>
+      <NavigationSection title="Issue Funding" defaultOpened={true}>
+        <NavigationItem
+          href="/docs/overview/issue-funding/overview"
+          icon={<ArrowForward fontSize="inherit" />}
+        >
+          Overview
+        </NavigationItem>
+        <NavigationItem
+          href="/docs/overview/issue-funding/getting-started"
+          icon={<ArrowForward fontSize="inherit" />}
+        >
+          Getting Started
+        </NavigationItem>
+        <NavigationItem
+          href="/docs/overview/issue-funding/workflow"
+          icon={<ArrowForward fontSize="inherit" />}
+        >
+          Workflow
+        </NavigationItem>
+        <NavigationItem
+          href="/docs/overview/issue-funding/promote"
+          icon={<ArrowForward fontSize="inherit" />}
+        >
+          Promote
+        </NavigationItem>
+        <NavigationItem
+          href="/docs/overview/issue-funding/reward-contributors"
+          icon={<ArrowForward fontSize="inherit" />}
+        >
+          Reward Contributors
+        </NavigationItem>
+      </NavigationSection>
     </>
   )
 }
 
 const FAQSections = () => {
   return (
-    <div className="flex flex-col gap-y-4">
-      <h2 className="font-medium">FAQ</h2>
+    <NavigationSection title="FAQ" defaultOpened={true}>
       <div className="flex flex-col">
         <NavigationItem
           href="/docs/overview/faq/overview"
@@ -119,7 +140,7 @@ const FAQSections = () => {
           For Contributors
         </NavigationItem>
       </div>
-    </div>
+    </NavigationSection>
   )
 }
 
@@ -191,6 +212,7 @@ const APIReferenceSections = ({
             key={section.name}
             title={section.name}
             defaultOpened={isOpenedSection(section)}
+            isSubMenu={true}
           >
             {section.endpoints.map((endpoint) => (
               <NavigationItem
@@ -216,25 +238,34 @@ const CollapsibleSection = ({
   title,
   children,
   defaultOpened,
-}: PropsWithChildren<{ title: string; defaultOpened?: boolean }>) => {
+  isSubMenu = true,
+}: PropsWithChildren<{
+  title: string
+  defaultOpened?: boolean
+  isSubMenu: boolean
+}>) => {
   const [isOpen, setIsOpen] = useState(defaultOpened || false)
 
+  let containerClasses = ''
+  if (isSubMenu) {
+    containerClasses = twMerge(
+      '-mx-4 -my-2 flex flex-col gap-y-2  px-4 py-2 hover:bg-gray-75 group rounded-xl transition-colors duration-100 dark:border dark:border-transparent',
+      isOpen
+        ? 'bg-gray-75 dark:border-polar-700 dark:bg-transparent'
+        : 'dark:hover:bg-polar-800',
+    )
+  }
+
   return (
-    <div
-      className={twMerge(
-        'hover:bg-gray-75 group -mx-4 -my-2 flex flex-col gap-y-2 rounded-xl px-4 py-2 transition-colors duration-100 dark:border dark:border-transparent',
-        isOpen
-          ? 'bg-gray-75 dark:border-polar-700 dark:bg-transparent'
-          : 'dark:hover:bg-polar-800',
-      )}
-    >
+    <div className={containerClasses}>
       <div
         className="flex cursor-pointer flex-row items-center justify-between"
         onClick={() => setIsOpen((open) => !open)}
       >
         <h2
           className={twMerge(
-            'dark:text-polar-500 dark:group-hover:text-polar-50 text-sm capitalize text-gray-500 transition-colors group-hover:text-black',
+            isSubMenu &&
+              'dark:text-polar-500 dark:group-hover:text-polar-50 text-sm capitalize text-gray-500 transition-colors group-hover:text-black',
             isOpen && 'text-black dark:text-white',
           )}
         >

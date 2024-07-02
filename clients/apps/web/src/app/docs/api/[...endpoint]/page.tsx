@@ -2,7 +2,7 @@ import { APIContainer } from '@/components/Documentation/APIContainer'
 import APILayout from '@/components/Documentation/APILayout'
 import { AuthenticationSchema } from '@/components/Documentation/AuthenticationSchema'
 import { BodySchema } from '@/components/Documentation/BodySchema'
-import { MDXContentWrapper } from '@/components/Documentation/MDXContentWrapper'
+import ProseWrapper from '@/components/Documentation/ProseWrapper'
 import { ResponsesSchemas } from '@/components/Documentation/ResponsesSchemas'
 import {
   EndpointError,
@@ -84,9 +84,9 @@ export default async function Page({
             </div>
           </div>
 
-          <MDXContentWrapper>
+          <ProseWrapper>
             <Markdown>{operation.description ?? ''}</Markdown>
-          </MDXContentWrapper>
+          </ProseWrapper>
 
           <AuthenticationSchema operation={operation} />
 

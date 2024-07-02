@@ -1,11 +1,11 @@
 import Markdown from 'markdown-to-jsx'
 import { OpenAPIV3_1 } from 'openapi-types'
 import AnchoredElement from './AnchoredElement'
-import { MDXContentWrapper } from './MDXContentWrapper'
 import OptionalBadge from './OptionalBadge'
 import { ParameterItem } from './ParameterItem'
 import PropertyDefault from './PropertyDefault'
 import PropertyType from './PropertyType'
+import ProseWrapper from './ProseWrapper'
 import RequiredBadge from './RequiredBadge'
 import { isDereferenced } from './openapi'
 
@@ -45,9 +45,9 @@ export const Parameters = ({
             </AnchoredElement>
 
             {parameter.description && (
-              <MDXContentWrapper className="text-sm">
+              <ProseWrapper className="text-sm">
                 <Markdown>{parameter.description}</Markdown>
-              </MDXContentWrapper>
+              </ProseWrapper>
             )}
           </ParameterItem>
         ))}

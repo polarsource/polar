@@ -8,6 +8,7 @@ import {
   EndpointError,
   EndpointMetadata,
   fetchSchema,
+  getAPISections,
   getRequestBodySchema,
 } from '@/components/Documentation/openapi'
 import { getHighlighter } from '@/components/SyntaxHighlighterShiki/SyntaxHighlighterServer'
@@ -18,18 +19,20 @@ import { Parameters } from '../../../../components/Documentation/Parameters'
 import { ResponseContainer } from '../../../../components/Documentation/ResponseContainer'
 import { resolveEndpointMetadata } from '../../../../components/Documentation/openapi'
 
+export const dynamic = 'force-static'
+export const dynamicParams = false
+
 export async function generateStaticParams(): Promise<
   { endpoint: string[] }[]
 > {
   const schema = await fetchSchema()
-  return Object.entries(schema.paths || {}).reduce<{ endpoint: string[] }[]>(
-    (paths, [path, methods]) => [
+  const apiSections = getAPISections(schema)
+  return apiSections.reduce<{ endpoint: string[] }[]>(
+    (paths, { endpoints }) => [
       ...paths,
-      ...(methods
-        ? Object.entries(methods).map(([method, _]) => ({
-            endpoint: [...path.split('/').filter((part) => !!part), method],
-          }))
-        : []),
+      ...endpoints.map(({ path, method }) => ({
+        endpoint: [...path.split('/').filter((part) => !!part), method],
+      })),
     ],
     [],
   )

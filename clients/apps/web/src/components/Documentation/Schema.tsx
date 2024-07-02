@@ -87,7 +87,7 @@ const SchemaProperties = ({
           <ParameterItem key={key}>
             <AnchoredElement id={[...idPrefix, key]}>
               <div className="flex flex-row items-center gap-x-3">
-                <span className="font-mono text-sm text-blue-500 dark:text-blue-400">
+                <span className="font-mono font-medium text-black dark:text-white">
                   {key}
                 </span>
                 <PropertyType property={property} />
@@ -103,9 +103,6 @@ const SchemaProperties = ({
                 {showDefault && <PropertyDefault property={property} />}
               </div>
             </AnchoredElement>
-            <span className="text-lg font-medium text-black dark:text-white">
-              {property.title}
-            </span>
             {property.description && (
               <ProseWrapper className="text-sm">
                 <Markdown>{property.description}</Markdown>

@@ -8,6 +8,7 @@ import {
   ArrowForward,
   CloseOutlined,
   DescriptionOutlined,
+  FavoriteBorderOutlined,
   KeyboardArrowDown,
   KeyboardArrowUp,
   ShortTextOutlined,
@@ -309,7 +310,7 @@ export const DocumentationPageSidebar = ({
   activeSection,
 }: {
   children: React.ReactNode
-  activeSection: 'overview' | 'api' | 'guides' | 'support'
+  activeSection: 'overview' | 'api' | 'guides' | 'support' | 'contribute'
 }) => {
   const { isShown, show, hide, toggle } = useModal()
 
@@ -348,6 +349,15 @@ export const DocumentationPageSidebar = ({
         </li>
         <li>
           <NavigationItem
+            icon={<FavoriteBorderOutlined fontSize="inherit" />}
+            href="/docs/contribute"
+            active={() => activeSection === 'contribute'}
+          >
+            Contribute (Open Source)
+          </NavigationItem>
+        </li>
+        <li>
+          <NavigationItem
             icon={<SupportOutlined fontSize="inherit" />}
             href="/docs/support"
             active={() => activeSection === 'support'}
@@ -356,9 +366,13 @@ export const DocumentationPageSidebar = ({
           </NavigationItem>
         </li>
       </ul>
-      <Separator />
 
-      <div className="flex flex-col gap-y-8">{children}</div>
+      {children && (
+        <>
+          <Separator />
+          <div className="flex flex-col gap-y-8">{children}</div>
+        </>
+      )}
 
       <SearchPalette isShown={isShown} toggle={toggle} hide={hide} />
     </div>
@@ -370,7 +384,7 @@ export const MobileNav = ({
   activeSection,
 }: {
   children: React.ReactNode
-  activeSection: 'overview' | 'api' | 'guides' | 'support'
+  activeSection: 'overview' | 'api' | 'guides' | 'support' | 'contribute'
 }) => {
   const [mobileNavOpen, setMobileNavOpen] = useState(false)
   const pathname = usePathname()

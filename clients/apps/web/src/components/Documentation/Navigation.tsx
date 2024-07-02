@@ -309,7 +309,7 @@ export const DocumentationPageSidebar = ({
   children,
   activeSection,
 }: {
-  children: React.ReactNode
+  children?: React.ReactNode
   activeSection: 'overview' | 'api' | 'guides' | 'support' | 'contribute'
 }) => {
   const { isShown, show, hide, toggle } = useModal()

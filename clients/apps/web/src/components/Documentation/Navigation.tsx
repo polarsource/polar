@@ -149,6 +149,23 @@ const WebhooksReferenceSections = () => {
   )
 }
 
+const APIMethodPill = ({ method }: { method: string }) => {
+  const mc = method.toUpperCase()
+  return (
+    <span
+      className={twMerge(
+        'dark:bg-polar-800 rounded-sm bg-gray-200/50 px-1.5 py-0 font-mono text-[10px] font-normal',
+        mc === 'GET' && 'bg-green-100 text-green-500 dark:bg-green-950/50',
+        mc === 'POST' && 'bg-blue-100 text-blue-500 dark:bg-blue-950/50',
+        mc === 'DELETE' && 'bg-red-100 text-red-500 dark:bg-red-950/50',
+        mc === 'PATCH' && 'bg-orange-100 text-orange-500 dark:bg-orange-950/50',
+      )}
+    >
+      {mc}
+    </span>
+  )
+}
+
 const APIReferenceSections = ({
   openAPISchema,
   filter,
@@ -183,9 +200,7 @@ const APIReferenceSections = ({
               >
                 <div className="flex w-full flex-row items-center justify-between gap-x-4">
                   {endpoint.name}
-                  <span className="dark:bg-polar-800 rounded-sm bg-gray-200/50 px-1.5 py-0 font-mono text-[10px] font-normal uppercase">
-                    {endpoint.method}
-                  </span>
+                  <APIMethodPill method={endpoint.method} />
                 </div>
               </NavigationItem>
             ))}

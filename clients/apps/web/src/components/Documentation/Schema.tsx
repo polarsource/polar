@@ -10,6 +10,7 @@ import AnchoredElement from './AnchoredElement'
 import { MDXContentWrapper } from './MDXContentWrapper'
 import OptionalBadge from './OptionalBadge'
 import { ParameterItem } from './ParameterItem'
+import PropertyDefault from './PropertyDefault'
 import PropertyType from './PropertyType'
 import RequiredBadge from './RequiredBadge'
 import { getUnionSchemas, isDereferenced } from './openapi'
@@ -17,9 +18,13 @@ import { getUnionSchemas, isDereferenced } from './openapi'
 const UnionSchema = ({
   schemas: _schemas,
   idPrefix,
+  showRequired,
+  showDefault,
 }: {
   schemas: OpenAPIV3_1.SchemaObject[]
   idPrefix: string[]
+  showRequired?: boolean
+  showDefault?: boolean
 }) => {
   const schemas = _schemas.filter(isDereferenced)
   const schemaValues = schemas.map((schema, index) =>
@@ -47,6 +52,8 @@ const UnionSchema = ({
             <Schema
               schema={schema}
               idPrefix={[...idPrefix, schema.title || `schema_${index}`]}
+              showRequired={showRequired}
+              showDefault={showDefault}
             />
           </div>
         </TabsContent>
@@ -59,12 +66,16 @@ const SchemaProperties = ({
   properties,
   required,
   idPrefix,
+  showRequired,
+  showDefault,
 }: {
   properties: {
     [name: string]: OpenAPIV3_1.ReferenceObject | OpenAPIV3_1.SchemaObject
   }
   required: string[]
   idPrefix: string[]
+  showRequired?: boolean
+  showDefault?: boolean
 }) => {
   return (
     <div className="flex flex-col gap-y-4">
@@ -80,7 +91,16 @@ const SchemaProperties = ({
                   {key}
                 </span>
                 <PropertyType property={property} />
-                {required.includes(key) ? <RequiredBadge /> : <OptionalBadge />}
+                {showRequired && (
+                  <>
+                    {required.includes(key) ? (
+                      <RequiredBadge />
+                    ) : (
+                      <OptionalBadge />
+                    )}
+                  </>
+                )}
+                {showDefault && <PropertyDefault property={property} />}
               </div>
             </AnchoredElement>
             <span className="text-lg font-medium text-black dark:text-white">
@@ -93,12 +113,22 @@ const SchemaProperties = ({
             )}
             {property.type == 'object' && (
               <div className="rounded-md border border-gray-200 p-4 dark:border-gray-800">
-                <Schema schema={property} idPrefix={[...idPrefix, key]} />
+                <Schema
+                  schema={property}
+                  idPrefix={[...idPrefix, key]}
+                  showRequired={showRequired}
+                  showDefault={showDefault}
+                />
               </div>
             )}
             {property.type == 'array' && (
               <div className="rounded-md border border-gray-200 p-4 dark:border-gray-800">
-                <Schema schema={property.items} idPrefix={[...idPrefix, key]} />
+                <Schema
+                  schema={property.items}
+                  idPrefix={[...idPrefix, key]}
+                  showRequired={showRequired}
+                  showDefault={showDefault}
+                />
               </div>
             )}
           </ParameterItem>
@@ -111,13 +141,24 @@ const SchemaProperties = ({
 export const Schema = ({
   schema,
   idPrefix,
+  showRequired,
+  showDefault,
 }: {
   schema: OpenAPIV3_1.SchemaObject
   idPrefix: string[]
+  showRequired?: boolean
+  showDefault?: boolean
 }) => {
   const unionSchemas = getUnionSchemas(schema)
   if (unionSchemas) {
-    return <UnionSchema schemas={unionSchemas} idPrefix={idPrefix} />
+    return (
+      <UnionSchema
+        schemas={unionSchemas}
+        idPrefix={idPrefix}
+        showRequired={showRequired}
+        showDefault={showDefault}
+      />
+    )
   }
 
   if (schema.properties) {
@@ -126,6 +167,8 @@ export const Schema = ({
         properties={schema.properties ?? {}}
         required={schema.required || []}
         idPrefix={idPrefix}
+        showRequired={showRequired}
+        showDefault={showDefault}
       />
     )
   }

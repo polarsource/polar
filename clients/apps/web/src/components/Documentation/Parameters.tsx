@@ -4,6 +4,7 @@ import AnchoredElement from './AnchoredElement'
 import { MDXContentWrapper } from './MDXContentWrapper'
 import OptionalBadge from './OptionalBadge'
 import { ParameterItem } from './ParameterItem'
+import PropertyDefault from './PropertyDefault'
 import PropertyType from './PropertyType'
 import RequiredBadge from './RequiredBadge'
 import { isDereferenced } from './openapi'
@@ -33,7 +34,12 @@ export const Parameters = ({
                 {parameter.schema &&
                   isDereferenced<OpenAPIV3_1.SchemaObject>(
                     parameter.schema,
-                  ) && <PropertyType property={parameter.schema} />}
+                  ) && (
+                    <>
+                      <PropertyType property={parameter.schema} />
+                      <PropertyDefault property={parameter.schema} />
+                    </>
+                  )}
                 {parameter.required ? <RequiredBadge /> : <OptionalBadge />}
               </div>
             </AnchoredElement>

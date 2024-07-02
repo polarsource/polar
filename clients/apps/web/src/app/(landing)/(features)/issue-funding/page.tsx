@@ -74,7 +74,7 @@ export default function Page() {
             srcSet={`/assets/landing/fund_dark.svg`}
           />
           <img
-            className="border-gray-75 dark:border-polar-700 rounded-2xl border"
+            className="dark:border-polar-700 rounded-2xl border border-gray-100"
             alt="Issue Funding Badge"
             src={`/assets/landing/fund.svg`}
           />

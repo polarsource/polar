@@ -28,7 +28,7 @@ const SelectTrigger = React.forwardRef<
   <SelectTriggerPrimitive
     ref={ref}
     className={twMerge(
-      'rounded-lg',
+      'dark:bg-polar-800 dark:hover:bg-polar-700 hover:bg-gray-75 rounded-full border-none bg-gray-100 px-4 transition-colors',
       className,
     )}
     {...props}
@@ -44,10 +44,7 @@ const SelectContent = React.forwardRef<
 >(({ className, children, position = 'popper', ...props }, ref) => (
   <SelectContentPrimitive
     ref={ref}
-    className={twMerge(
-      'rounded-lg',
-      className,
-    )}
+    className={twMerge('dark:bg-polar-800 rounded-xl border-none', className)}
     {...props}
   >
     {children}
@@ -59,11 +56,7 @@ const SelectLabel = React.forwardRef<
   React.ElementRef<typeof SelectLabelPrimitive>,
   React.ComponentPropsWithoutRef<typeof SelectLabelPrimitive>
 >(({ className, ...props }, ref) => (
-  <SelectLabelPrimitive
-    ref={ref}
-    className={className}
-    {...props}
-  />
+  <SelectLabelPrimitive ref={ref} className={className} {...props} />
 ))
 SelectLabel.displayName = SelectLabelPrimitive.displayName
 
@@ -73,7 +66,7 @@ const SelectItem = React.forwardRef<
 >(({ className, children, ...props }, ref) => (
   <SelectItemPrimitive
     ref={ref}
-    className={className}
+    className={twMerge(className, 'rounded-lg')}
     {...props}
   >
     {children}

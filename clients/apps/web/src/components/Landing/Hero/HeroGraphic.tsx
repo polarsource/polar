@@ -15,7 +15,7 @@ const SubCard = ({
 }) => {
   return (
     <SubscriptionTierCard
-      className={twMerge('dark:bg-polar-950', className)}
+      className={twMerge(className, 'dark:border-polar-700 dark:border')}
       subscriptionTier={{ ...subscriptionTier, description: ' ' }}
       variant="small"
     />
@@ -28,7 +28,7 @@ export const HeroGraphic = () => {
       <div className="relative flex h-full w-full flex-row items-center justify-center gap-6">
         <SubCard
           className="absolute left-0 scale-75"
-          subscriptionTier={MOCKED_SUBSCRIPTIONS[2]}
+          subscriptionTier={MOCKED_SUBSCRIPTIONS[0]}
         />
         <SubCard
           className="shadow-3xl scale-90"
@@ -36,7 +36,7 @@ export const HeroGraphic = () => {
         />
         <SubCard
           className="shadow-3xl absolute -right-6 z-20"
-          subscriptionTier={MOCKED_SUBSCRIPTIONS[0]}
+          subscriptionTier={MOCKED_SUBSCRIPTIONS[2]}
         />
       </div>
       <div className="flex h-fit w-full flex-col items-center gap-y-4">

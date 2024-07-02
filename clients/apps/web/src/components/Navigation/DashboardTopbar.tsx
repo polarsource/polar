@@ -65,7 +65,7 @@ const DashboardTopbar = ({
 
   return (
     <div className={className}>
-      <div className="mx-auto flex w-full max-w-screen-xl flex-col gap-x-4 gap-y-6 px-4 py-8 sm:px-6 md:gap-x-12 md:px-8 xl:gap-x-24">
+      <div className="mx-auto flex w-full max-w-screen-xl flex-col gap-x-4 gap-y-6 px-4 py-8 sm:px-6 md:gap-x-12 md:px-16 xl:gap-x-24">
         <div className="flex flex-row flex-wrap items-center justify-start">
           <h4 className="whitespace-nowrap text-2xl font-medium dark:text-white">
             {title ?? currentRoute?.title}

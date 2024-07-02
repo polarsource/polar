@@ -150,7 +150,7 @@ export const List = ({
       <>
         {/*<div className="z-10 mr-8 -mb-7 h-6 w-6 rotate-45 border-t-[1px] border-l-[1px] border-black/5 bg-white dark:bg-polar-700"></div>*/}
         <div className={twMerge('z-20 h-full w-full max-w-md')}>
-          <div className="dark:bg-polar-900 pointer-events-auto w-full rounded-2xl bg-white shadow-lg">
+          <div className="dark:bg-polar-900 shadow-3xl pointer-events-auto w-full rounded-3xl bg-white">
             <div className="h-full max-h-[800px] space-y-5 overflow-x-scroll p-5">
               {notifications.length === 0 && (
                 <div className="dark:text-polar-400 flex w-full flex-row items-center justify-center p-4 text-center text-sm text-black/60">

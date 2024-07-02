@@ -2,12 +2,10 @@
 
 import GithubLoginButton from '@/components/Auth/GithubLoginButton'
 import { Section } from '@/components/Landing/Section'
-import SubscriptionTierCard from '@/components/Subscriptions/SubscriptionTierCard'
 import { UserSignupType } from '@polar-sh/sdk'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
 import { Circles } from '../molecules/Circles'
-import { MOCKED_PRODUCTS } from '../utils'
 import { HeroGraphic } from './HeroGraphic'
 
 export const Hero = () => {
@@ -22,21 +20,21 @@ export const Hero = () => {
     >
       <Circles className="absolute inset-0 top-1/2 block -translate-y-1/2 text-black dark:hidden" />
       <Circles className="absolute inset-0 top-1/2 hidden -translate-y-1/2 text-white dark:block" />
-      <div className="relative z-20 flex w-full flex-col gap-y-12 md:w-1/2">
+      <div className="relative z-20 flex w-full flex-col items-center gap-y-12 text-center xl:w-1/2 xl:items-start xl:text-left">
         <div className="z-20 flex flex-col gap-y-16">
           <h1 className="text-5xl leading-snug text-gray-950 md:text-7xl md:leading-tight dark:text-white">
             Get paid coding on your passion
           </h1>
           <div className="flex flex-col">
-            <p className="text-xl leading-relaxed">
+            <p className="dark:text-polar-500 text-xl leading-relaxed text-gray-500">
               Polar is the best funding & monetization platform for developers.
               Leave VAT, sales tax & billing to us.
             </p>
           </div>
         </div>
-        <div className="z-20 flex flex-col gap-y-8">
+        <div className="z-20 flex flex-col items-center gap-y-8 xl:items-start">
           <GithubLoginButton
-            className="self-start"
+            className="xl:self-start"
             size="large"
             text="Continue with GitHub"
             userSignupType={UserSignupType.MAINTAINER}
@@ -70,17 +68,6 @@ export const Hero = () => {
         transition={transition}
       >
         <HeroGraphic />
-      </motion.div>
-      <motion.div
-        className="relative z-20 flex h-fit w-1/2 flex-row-reverse xl:hidden"
-        initial="hidden"
-        animate="visible"
-        transition={transition}
-      >
-        <SubscriptionTierCard
-          className="hidden max-w-[300px] md:flex"
-          subscriptionTier={MOCKED_PRODUCTS[1]}
-        />
       </motion.div>
     </Section>
   )

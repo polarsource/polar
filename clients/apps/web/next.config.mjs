@@ -209,7 +209,7 @@ const nextConfig = {
       },
 
       // Redirect /docs to docs.polar.sh
-      ...ENVIRONMENT !== 'development' ?
+      ...ENVIRONMENT === 'production' ?
         [{
           source: '/docs/:path*',
           destination: 'https://docs.polar.sh/:path*',

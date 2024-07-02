@@ -75,7 +75,7 @@ const OverviewSections = () => {
         </NavigationItem>
       </div>
 
-      <NavigationSection title="Issue Funding" defaultOpened={true}>
+      <NavigationSection key="nav-issue-funding" title="Issue Funding" defaultOpened={true}>
         <NavigationItem
           href="/docs/overview/issue-funding/overview"
           icon={<ArrowForward fontSize="inherit" />}
@@ -113,7 +113,7 @@ const OverviewSections = () => {
 
 const FAQSections = () => {
   return (
-    <NavigationSection title="FAQ" defaultOpened={true}>
+    <NavigationSection key="nav-faq" title="FAQ" defaultOpened={true}>
       <div className="flex flex-col">
         <NavigationItem
           href="/docs/overview/faq/overview"

@@ -218,7 +218,7 @@ const GetFundingAsAnOrganization = () => {
     },
   ]
   return (
-    <div className="dark:bg-polar-800 dark:ring-polar-800 flex flex-col gap-10 rounded-3xl bg-white p-8 shadow dark:ring-1 md:max-w-[320px]">
+    <div className="dark:bg-polar-800 dark:ring-polar-800 flex flex-col gap-10 rounded-4xl bg-white p-8 shadow dark:ring-1 md:max-w-[320px]">
       <div className="flex flex-col gap-y-6">
         <AttachMoneyOutlined
           className="text-blue-500 dark:text-blue-400"
@@ -271,7 +271,7 @@ const FundAsAnOrganization = () => {
     },
   ]
   return (
-    <div className="dark:bg-polar-800 dark:ring-polar-800 flex flex-col gap-10 rounded-3xl bg-white p-8 shadow dark:ring-1 md:max-w-[320px]">
+    <div className="dark:bg-polar-800 dark:ring-polar-800 flex flex-col gap-10 rounded-4xl bg-white p-8 shadow dark:ring-1 md:max-w-[320px]">
       <div className="flex flex-col gap-y-6">
         <FavoriteBorderOutlined
           className="text-blue-500 dark:text-blue-400"

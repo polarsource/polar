@@ -47,7 +47,7 @@ export const HighlightedPost = ({ post }: HighlightedPostProps) => {
     >
       {image && (
         <div
-          className="aspect-video w-full rounded-3xl bg-cover bg-center"
+          className="rounded-4xl aspect-video w-full bg-cover bg-center"
           style={{ backgroundImage: `url(${image})` }}
         />
       )}

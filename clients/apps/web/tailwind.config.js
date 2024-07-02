@@ -89,9 +89,9 @@ module.exports = {
           950: '#00245E',
         },
         gray: {
-          50: '#FCFCFE',
-          75: '#F8F9FC',
-          100: '#F3F4F8',
+          50: '#FCFCFF',
+          75: '#f8faff',
+          100: '#F3F4FA',
           200: '#E3E7EE',
           300: '#D0D7E1',
           400: '#A2AEC3',
@@ -138,8 +138,8 @@ module.exports = {
           600: '#343748',
           700: '#1D1E27',
           800: '#16171F',
-          900: '#0C0C12',
-          950: '#05050A',
+          900: '#101116',
+          950: '#0C0D11',
         },
 
         // chadcn/ui start
@@ -184,6 +184,7 @@ module.exports = {
         lg: 'var(--radius)',
         md: 'calc(var(--radius) - 2px)',
         sm: 'calc(var(--radius) - 4px)',
+        '4xl': '2rem'
       },
       keyframes: {
         'accordion-down': {

@@ -34,7 +34,7 @@ export default async function Home() {
         </div>
       </div>
       <div className="flex w-full max-w-2xl flex-col gap-y-6">
-        <div className="flex flex-col gap-y-6 rounded-3xl bg-slate-100 p-8">
+        <div className="rounded-4xl flex flex-col gap-y-6 bg-slate-100 p-8">
           <span className="font-mono text-xs text-slate-400">README.md</span>
           <p className="text-pretty text-sm leading-normal text-slate-500">
             {`I'm Emil, a Creative Technologist who loves to play around with
@@ -60,7 +60,7 @@ export default async function Home() {
             .map((tier) => (
               <div
                 key={tier.id}
-                className="flex w-full flex-col gap-y-4 rounded-3xl bg-slate-100 p-6"
+                className="rounded-4xl flex w-full flex-col gap-y-4 bg-slate-100 p-6"
               >
                 <div className="flex flex-row items-baseline justify-between">
                   <h3 className="font-semibold">{tier.name}</h3>
@@ -98,7 +98,7 @@ export default async function Home() {
                 },
               )}
             </p>
-            <Markdown className="prose prose-a:text-blue-600 prose-a:no-underline prose-img:rounded-3xl prose-headings:leading-normal w-full">
+            <Markdown className="prose prose-a:text-blue-600 prose-a:no-underline prose-img:rounded-4xl prose-headings:leading-normal w-full">
               {article.body.split('\n\n')[0]}
             </Markdown>
           </a>

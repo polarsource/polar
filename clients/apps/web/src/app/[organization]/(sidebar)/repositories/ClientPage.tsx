@@ -48,7 +48,7 @@ export const ClientPage = ({
                 href={organizationPageLink(organization, repository.name)}
                 key={repository.id}
               >
-                <Card className="dark:hover:bg-polar-900 dark:text-polar-500 dark:hover:text-polar-300 transition-color flex h-full flex-col rounded-3xl text-gray-500 duration-100 hover:bg-gray-50 hover:text-gray-600">
+                <Card className="dark:hover:bg-polar-900 dark:text-polar-500 dark:hover:text-polar-300 transition-color rounded-4xl flex h-full flex-col text-gray-500 duration-100 hover:bg-gray-50 hover:text-gray-600">
                   <CardHeader className="flex flex-row justify-between p-6">
                     <div className="flex flex-row items-baseline gap-x-3">
                       <span className="text-[20px] text-blue-500">

@@ -347,8 +347,8 @@ export const DocumentationPageSidebar = ({
 
   return (
     <div className="flex w-full flex-shrink-0 flex-col gap-y-12 md:w-60">
-      <div className="hidden flex-col gap-y-12 md:flex">
-        <CommandPaletteTrigger onClick={show} />
+      <div className="-mx-3 hidden flex-col gap-y-12 md:flex">
+        <CommandPaletteTrigger className="w-full" onClick={show} />
       </div>
       <ul className="flex flex-col">
         <li>
@@ -442,7 +442,7 @@ export const MobileNav = ({
 
   return mobileNavOpen ? (
     <div className="flex h-full flex-col px-8 py-4">
-      <div className="dark:bg-polar-900 bg-gray-75 relative flex flex-row items-center justify-between">
+      <div className="dark:bg-polar-900 relative flex flex-row items-center justify-between bg-white">
         {header}
       </div>
       <div className="z-10 flex h-full flex-col pt-8">

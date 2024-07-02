@@ -16,7 +16,7 @@ export const APIFirst = () => {
         className="dark:bg-polar-950 max-w-[300px]"
         subscriptionTier={API_PRODUCT}
       />
-      <div className="dark:bg-polar-900/50 absolute -bottom-8 left-1/2 flex h-52 w-[480px] -translate-x-1/2 flex-col gap-y-6 rounded-3xl border p-6 font-mono shadow-2xl backdrop-blur-md">
+      <div className="dark:bg-polar-900/50 rounded-4xl absolute -bottom-8 left-1/2 flex h-52 w-[480px] -translate-x-1/2 flex-col gap-y-6 border p-6 font-mono shadow-2xl backdrop-blur-md">
         <div className="flex flex-row items-center gap-x-2">
           {Array.from({ length: 3 }).map((_, index) => (
             <div

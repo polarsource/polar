@@ -18,6 +18,7 @@ import { motion } from 'framer-motion'
 import { useRouter } from 'next/navigation'
 import Button from 'polarkit/components/ui/atoms/button'
 import MoneyInput from 'polarkit/components/ui/atoms/moneyinput'
+import ShadowBox from 'polarkit/components/ui/atoms/shadowbox'
 import { useEffect, useMemo, useState, type MouseEvent } from 'react'
 import { useTimeoutFn } from 'react-use'
 import { twMerge } from 'tailwind-merge'
@@ -275,8 +276,8 @@ const BadgeSetup = ({
         initial={isSettingPage ? false : 'hidden'}
         animate="show"
       >
-        <div className="dark:bg-polar-900 dark:ring-polar-700 w-full rounded-xl bg-white shadow dark:ring-1 dark:ring-inset">
-          <div className="flex flex-col space-y-4 p-5">
+        <ShadowBox className="flex flex-col gap-y-8">
+          <div className="flex flex-col space-y-4">
             <BadgeMessageForm
               value={settings.message || ''}
               onUpdateMessage={async (_value: string) => {}}
@@ -344,14 +345,10 @@ const BadgeSetup = ({
             />
           </div>
 
-          <div className="dark:bg-polar-800 dark:border-polar-700 dark:text-polar-300 flex flex-row items-center rounded-b-xl border-t border-gray-200 bg-gray-50 px-4 py-3 text-gray-500">
-            <InfoOutlined
-              width={24}
-              height={24}
-              className="dark:text-polar-400 text-gray-300"
-            />
-            <p className="dark:text-polar-400 ml-4 text-xs text-gray-400">
-              <strong className="dark:text-polar-100 mb-1 block font-medium text-gray-500">
+          <div className="dark:bg-polar-700 dark:text-polar-200 flex flex-row items-center rounded-full bg-white px-4 py-3 text-gray-500">
+            <InfoOutlined width={24} height={24} />
+            <p className="ml-4 text-xs">
+              <strong className="dark:text-polar-200 mb-1 block font-medium text-gray-950">
                 How is the Polar section added?
               </strong>
               Polar edits the issue description to add your custom promotion
@@ -359,7 +356,7 @@ const BadgeSetup = ({
               any time.
             </p>
           </div>
-        </div>
+        </ShadowBox>
       </motion.div>
       <BadgeRepositories
         repos={sortedRepos}

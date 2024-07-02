@@ -72,7 +72,7 @@ const PledgeCheckoutPanel = ({
           <PledgeTabsList className="w-full">
             <PledgeTabsTrigger
               value="fund"
-              className="dark:text-polar-500 dark:data-[state=active]:bg-polar-700 dark:hover:text-polar-50 flex w-full flex-row items-center gap-x-2 px-4 py-2 font-normal hover:text-gray-950 data-[state=active]:rounded-md data-[state=active]:font-medium data-[state=active]:text-red-600  dark:data-[state=active]:text-white"
+              className="dark:text-polar-500 dark:data-[state=active]:bg-polar-700 dark:hover:text-polar-50 flex w-full flex-row items-center gap-x-2 px-4 py-2 font-normal hover:text-gray-950 data-[state=active]:rounded-md data-[state=active]:font-medium data-[state=active]:text-red-600 dark:data-[state=active]:text-red-600"
             >
               <HeartIcon className="h-4 w-4" />
               <div className="dark:text-polar-300 text-gray-700">Fund</div>

@@ -21,7 +21,7 @@ const PriceItem = ({
 }) => {
   return (
     <div className="md:w-1/3">
-      <Card className="flex h-full flex-col border-none p-2 dark:border-none">
+      <Card className="flex h-full flex-col border-none bg-transparent p-2 dark:border-none dark:bg-transparent">
         <CardHeader className="flex flex-col text-blue-500">{icon}</CardHeader>
         <CardContent className="flex h-full flex-col gap-y-2 pb-6">
           <h3 className="text-lg leading-snug">{title}</h3>
@@ -43,7 +43,7 @@ export const Pricing = () => {
           Transparent pricing aligned with your success.
         </p>
       </div>
-      <div className="flex flex-col divide-y overflow-hidden rounded-3xl border md:flex-row md:divide-x md:divide-y-0">
+      <div className="rounded-4xl flex flex-col divide-y overflow-hidden border md:flex-row md:divide-x md:divide-y-0">
         <PriceItem
           icon={<FavoriteBorderOutlined fontSize="large" />}
           title="Zero Fixed Costs"

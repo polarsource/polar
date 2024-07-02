@@ -134,7 +134,7 @@ const ClientPage = () => {
   if (org && !org.feature_settings?.articles_enabled) {
     return (
       <EmptyLayout>
-        <div className="dark:text-polar-200 flex flex-col items-center justify-center space-y-10 py-96 text-gray-600">
+        <div className="dark:text-polar-200 flex flex-col items-center justify-center space-y-10 py-32 text-gray-600">
           <span className="text-6xl text-blue-400">
             <StickyNote2Outlined fontSize="inherit" />
           </span>
@@ -278,7 +278,7 @@ const PostItem = (post: Article) => {
     >
       <div
         className={twMerge(
-          'dark:border-polar-800 dark:hover:bg-polar-900 flex flex-col justify-between gap-x-8 gap-y-6 rounded-3xl border border-gray-100 p-8 shadow-sm transition-colors hover:bg-gray-50',
+          'dark:bg-polar-900 dark:hover:bg-polar-800 rounded-4xl bg-gray-75 flex flex-col justify-between gap-x-8 gap-y-6 p-8 shadow-sm transition-colors hover:bg-gray-50',
           post.paid_subscribers_only &&
             'border-white bg-gradient-to-l from-blue-50/80 to-transparent hover:from-blue-100 dark:from-blue-800/20 dark:hover:from-blue-800/30',
         )}

@@ -151,7 +151,7 @@ const DailyViews = ({ org }: { org: Organization }) => {
   return (
     <>
       {trafficStatistics.data && (
-        <Card className="flex w-full flex-col gap-y-4 rounded-3xl p-4">
+        <Card className="rounded-4xl flex w-full flex-col gap-y-4 p-4">
           <div className="flex w-full flex-grow flex-row items-center justify-between p-2">
             <h3 className="text-sm font-medium">Daily views</h3>
             <div className="flex flex-col">

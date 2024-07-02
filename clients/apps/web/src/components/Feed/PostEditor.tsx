@@ -97,7 +97,7 @@ export const PostEditor = ({
           canCreate={canCreate}
         />
         <div>
-          <DashboardBody className="mt-0 !p-0">
+          <DashboardBody className="mt-0 !p-8">
             <div className="flex flex-row">
               <div className="flex w-full flex-col px-4 pb-6 sm:px-6 md:px-8">
                 <TabsContent className="flex-grow" value="edit" tabIndex={-1}>
@@ -204,7 +204,7 @@ const Sidebar = () => {
 
   return (
     <div>
-      <div className="sticky top-52 hidden w-full min-w-[250px] max-w-[280px] flex-col gap-y-4 lg:flex">
+      <div className="sticky top-24 hidden w-full min-w-[250px] max-w-[280px] flex-col gap-y-4 lg:flex">
         <ShadowBoxOnMd className="dark:border-polar-800 w-full md:p-8 dark:border">
           <div className="flex flex-col gap-y-6">
             <div className="flex flex-col gap-y-2">

@@ -10,6 +10,7 @@ const IssueBadge = ({
   orgName,
   issueIsClosed,
   donationsEnabled,
+  maxWidth = '400px',
 }: {
   showAmountRaised?: boolean
   darkmode: boolean
@@ -19,6 +20,7 @@ const IssueBadge = ({
   orgName: string
   issueIsClosed: boolean
   donationsEnabled: boolean
+  maxWidth?: string
 }) => {
   let showFundingGoal =
     funding &&
@@ -49,16 +51,16 @@ const IssueBadge = ({
         style={{
           display: 'flex',
           marginBottom: 2,
-          maxWidth: '400px',
+          maxWidth,
           flexDirection: 'column',
           borderRadius: 11,
           boxShadow: '0px 1px 2px rgba(0, 0, 0, 0.06)',
           border: darkmode
-            ? '1px solid rgba(255, 255, 255, 0.1)'
+            ? '1px solid #1D1E27'
             : '1px solid rgba(0, 0, 0, 0.11)',
 
           overflow: 'hidden',
-          backgroundColor: darkmode ? '#0C0C12' /*gray-700*/ : 'white',
+          backgroundColor: darkmode ? '#0C0D11' /*gray-700*/ : 'white',
           fontFamily: 'var(--font-inter), Inter var, Inter, sans-serif',
           width: '100%',
         }}
@@ -194,7 +196,7 @@ const BelowBox = ({
   <div
     style={{
       width: '100%',
-      backgroundColor: darkmode ? '#0C0C12' : '#F3F5FC',
+      backgroundColor: darkmode ? '#0C0D11' : '#F3F5FC',
       color: darkmode ? '#8186A4' : '#3381FF',
       fontSize: 10,
       padding: '4px 8px',
@@ -273,7 +275,7 @@ const PolarLogo = ({ darkmode }: { darkmode: boolean }) => (
       paddingLeft: 12,
       paddingRight: 12,
       borderLeft: darkmode
-        ? '1px solid rgba(255, 255, 255, 0.1)'
+        ? '1px solid #1D1E27'
         : '1px solid rgba(0, 0, 0, 0.05)',
       flexShrink: '0',
     }}

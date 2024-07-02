@@ -33,7 +33,7 @@ export default function Page() {
             {PAGE_DESCRIPTION}
           </p>
         </div>
-        <div className="dark:border-polar-700 flex flex-col divide-y overflow-hidden rounded-3xl border md:flex-row md:divide-x md:divide-y-0">
+        <div className="dark:border-polar-700 rounded-4xl flex flex-col divide-y overflow-hidden border md:flex-row md:divide-x md:divide-y-0">
           {steps.map((step, index) => (
             <div
               key={step.title}

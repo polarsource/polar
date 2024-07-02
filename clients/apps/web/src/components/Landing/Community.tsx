@@ -13,7 +13,7 @@ export const Community = () => {
           srcSet={`/assets/landing/post_dark.png`}
         />
         <img
-          className="dark:border-polar-700 rounded-3xl border border-gray-200"
+          className="dark:border-polar-700 rounded-4xl border border-gray-200"
           srcSet={`/assets/landing/post.png`}
           alt="Post in Polar"
         />

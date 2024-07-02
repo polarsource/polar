@@ -82,7 +82,7 @@ export default function ClientPage({
   if (!organization.donations_enabled) {
     return (
       <EmptyLayout>
-        <div className="dark:text-polar-200 flex flex-col items-center justify-center space-y-10 py-96 text-gray-600">
+        <div className="dark:text-polar-200 flex flex-col items-center justify-center space-y-10 py-32 text-gray-600">
           <span className="text-6xl text-blue-400">
             <VolunteerActivismOutlined fontSize="inherit" />
           </span>
@@ -122,7 +122,7 @@ export default function ClientPage({
             />
           </>
         ) : (
-          <div className="dark:text-polar-200 flex flex-col items-center justify-center space-y-10 py-96 text-gray-600">
+          <div className="dark:text-polar-200 flex flex-col items-center justify-center space-y-10 py-32 text-gray-600">
             <span className="text-6xl text-blue-400">
               <VolunteerActivismOutlined fontSize="inherit" />
             </span>
@@ -160,7 +160,7 @@ const DonationsEarnings = ({
   return (
     <>
       {statistics.data && (
-        <Card className="flex w-full flex-col gap-y-4 rounded-3xl p-4">
+        <Card className="rounded-4xl flex w-full flex-col gap-y-4 p-4">
           <div className="flex w-full flex-grow flex-row items-center justify-between p-2">
             <h3 className="text-sm font-medium">Earnings</h3>
             <div className="flex flex-col">

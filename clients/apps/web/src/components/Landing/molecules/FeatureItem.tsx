@@ -36,7 +36,7 @@ const FeatureItem = ({
       className={twMerge('group flex h-full flex-col', className)}
       href={link}
     >
-      <Card className="dark:border-polar-800 dark:from-polar-950 dark:to-polar-900 flex h-full flex-col bg-gradient-to-tr from-white to-blue-50/50 p-1 transition-colors">
+      <Card className="dark:border-polar-800 dark:from-polar-950 dark:to-polar-900 from-gray-75 flex h-full flex-col bg-gradient-to-tr to-blue-50/50 p-1 transition-colors">
         <CardHeader className="flex flex-row items-center gap-x-3 space-y-0 pb-4">
           {icon ? (
             <span className="dark:bg-polar-700 dark flex h-10 w-10 flex-col items-center justify-center rounded-full bg-white text-xl shadow-sm transition-colors">

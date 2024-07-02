@@ -12,6 +12,7 @@ import {
   KeyboardArrowUp,
   ShortTextOutlined,
   SpaceDashboardOutlined,
+  SupportOutlined,
 } from '@mui/icons-material'
 import { AnimatePresence, motion } from 'framer-motion'
 import { usePathname } from 'next/navigation'
@@ -46,7 +47,6 @@ const OverviewSections = () => {
         <NavigationItem href="/docs/overview/payments-taxes">
           Payments & Taxes
         </NavigationItem>
-        <NavigationItem href="/docs/overview/support">Support</NavigationItem>
       </div>
 
       <div className="flex flex-col gap-y-4">
@@ -309,7 +309,7 @@ export const DocumentationPageSidebar = ({
   activeSection,
 }: {
   children: React.ReactNode
-  activeSection: 'overview' | 'api' | 'guides'
+  activeSection: 'overview' | 'api' | 'guides' | 'support'
 }) => {
   const { isShown, show, hide, toggle } = useModal()
 
@@ -346,6 +346,15 @@ export const DocumentationPageSidebar = ({
             Guides
           </NavigationItem>
         </li>
+        <li>
+          <NavigationItem
+            icon={<SupportOutlined fontSize="inherit" />}
+            href="/docs/support"
+            active={() => activeSection === 'support'}
+          >
+            Support
+          </NavigationItem>
+        </li>
       </ul>
       <Separator />
 
@@ -361,7 +370,7 @@ export const MobileNav = ({
   activeSection,
 }: {
   children: React.ReactNode
-  activeSection: 'overview' | 'api' | 'guides'
+  activeSection: 'overview' | 'api' | 'guides' | 'support'
 }) => {
   const [mobileNavOpen, setMobileNavOpen] = useState(false)
   const pathname = usePathname()

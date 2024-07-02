@@ -439,7 +439,7 @@ export const MobileNav = ({
 
   return mobileNavOpen ? (
     <div className="flex h-full flex-col px-8 py-4">
-      <div className="dark:bg-polar-900 bg-gray-75 relative flex flex-row items-center justify-between">
+      <div className="dark:bg-polar-900bg-white relative flex flex-row items-center justify-between">
         {header}
       </div>
       <div className="z-10 flex h-full flex-col pt-8">

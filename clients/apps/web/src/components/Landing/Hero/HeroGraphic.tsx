@@ -2,32 +2,48 @@
 
 import IssueBadge from '@/components/Embed/IssueBadge'
 import SubscriptionTierCard from '@/components/Subscriptions/SubscriptionTierCard'
+import { Product } from '@polar-sh/sdk'
+import { twMerge } from 'tailwind-merge'
 import { MOCKED_SUBSCRIPTIONS } from '../utils'
+
+const SubCard = ({
+  className,
+  subscriptionTier,
+}: {
+  className?: string
+  subscriptionTier: Partial<Product>
+}) => {
+  return (
+    <SubscriptionTierCard
+      className={twMerge('dark:bg-polar-950', className)}
+      subscriptionTier={{ ...subscriptionTier, description: ' ' }}
+      variant="small"
+    />
+  )
+}
 
 export const HeroGraphic = () => {
   return (
     <div className="flex w-full flex-col items-center gap-y-12">
       <div className="relative flex h-full w-full flex-row items-center justify-center gap-6">
-        <SubscriptionTierCard
-          className="dark:bg-polar-950 absolute left-0 scale-90"
-          subscriptionTier={{ ...MOCKED_SUBSCRIPTIONS[1], description: ' ' }}
-          variant="small"
+        <SubCard
+          className="absolute left-0 scale-75"
+          subscriptionTier={MOCKED_SUBSCRIPTIONS[2]}
         />
-        <SubscriptionTierCard
-          className="dark:bg-polar-950 shadow-3xl z-20"
-          subscriptionTier={{ ...MOCKED_SUBSCRIPTIONS[0], description: ' ' }}
-          variant="small"
+        <SubCard
+          className="shadow-3xl scale-90"
+          subscriptionTier={MOCKED_SUBSCRIPTIONS[1]}
         />
-        <SubscriptionTierCard
-          className="dark:bg-polar-950 absolute right-0 scale-90"
-          subscriptionTier={{ ...MOCKED_SUBSCRIPTIONS[2], description: ' ' }}
-          variant="small"
+        <SubCard
+          className="shadow-3xl absolute -right-6 z-20"
+          subscriptionTier={MOCKED_SUBSCRIPTIONS[0]}
         />
       </div>
       <div className="flex h-fit w-full flex-col items-center gap-y-4">
         <div className="flex-center flex flex-col">
           <span className="hidden dark:inline-block">
             <IssueBadge
+              maxWidth="720px"
               darkmode={true}
               funding={{
                 funding_goal: {
@@ -52,6 +68,7 @@ export const HeroGraphic = () => {
           </span>
           <span className="dark:hidden">
             <IssueBadge
+              maxWidth="720px"
               darkmode={false}
               funding={{
                 funding_goal: {

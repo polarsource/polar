@@ -7,11 +7,11 @@ import {
   TabsTrigger,
 } from 'polarkit/components/ui/atoms/tabs'
 import AnchoredElement from './AnchoredElement'
-import { MDXContentWrapper } from './MDXContentWrapper'
 import OptionalBadge from './OptionalBadge'
 import { ParameterItem } from './ParameterItem'
 import PropertyDefault from './PropertyDefault'
 import PropertyType from './PropertyType'
+import ProseWrapper from './ProseWrapper'
 import RequiredBadge from './RequiredBadge'
 import { getUnionSchemas, isDereferenced } from './openapi'
 
@@ -45,9 +45,9 @@ const UnionSchema = ({
         <TabsContent key={index} value={schemaValues[index]}>
           <div className="flex flex-col gap-y-4">
             {schema.description && (
-              <MDXContentWrapper className="text-sm">
+              <ProseWrapper className="text-sm">
                 <Markdown>{schema.description}</Markdown>
-              </MDXContentWrapper>
+              </ProseWrapper>
             )}
             <Schema
               schema={schema}
@@ -107,9 +107,9 @@ const SchemaProperties = ({
               {property.title}
             </span>
             {property.description && (
-              <MDXContentWrapper className="text-sm">
+              <ProseWrapper className="text-sm">
                 <Markdown>{property.description}</Markdown>
-              </MDXContentWrapper>
+              </ProseWrapper>
             )}
             {property.type == 'object' && (
               <div className="rounded-md border border-gray-200 p-4 dark:border-gray-800">

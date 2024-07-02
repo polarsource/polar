@@ -1,7 +1,6 @@
 import Markdown from 'markdown-to-jsx'
 import { OpenAPIV3_1 } from 'openapi-types'
-import { HeadingObserver } from './HeadingObserver'
-import { MDXContentWrapper } from './MDXContentWrapper'
+import ProseWrapper from './ProseWrapper'
 import {
   generateSchemaExample,
   getRequestBodySchema,
@@ -18,12 +17,10 @@ const Webhook = ({
   const bodySchema = getRequestBodySchema(webhook)
   return (
     <>
-      <HeadingObserver type="h2" id={event}>
-        {webhook.summary}
-      </HeadingObserver>
-      <MDXContentWrapper>
+      <h2 id={event}>{webhook.summary}</h2>
+      <ProseWrapper>
         <Markdown>{webhook.description ?? ''}</Markdown>
-      </MDXContentWrapper>
+      </ProseWrapper>
       {bodySchema && (
         <pre className="select-text overflow-auto p-4 font-mono text-xs leading-normal text-gray-900 dark:text-white">
           {JSON.stringify(generateSchemaExample(bodySchema), null, 2)}

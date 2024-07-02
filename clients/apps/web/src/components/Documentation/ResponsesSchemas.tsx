@@ -7,7 +7,7 @@ import {
   TabsTrigger,
 } from 'polarkit/components/ui/atoms/tabs'
 import AnchoredElement from './AnchoredElement'
-import { MDXContentWrapper } from './MDXContentWrapper'
+import ProseWrapper from './ProseWrapper'
 import { Schema } from './Schema'
 import { isDereferenced } from './openapi'
 
@@ -55,11 +55,11 @@ export const ResponsesSchemas = ({
           >
             <div className="flex flex-col gap-y-4">
               {responses[statusCode].description && (
-                <MDXContentWrapper className="text-sm">
+                <ProseWrapper className="text-sm">
                   <Markdown>
                     {responses[statusCode].description as string}
                   </Markdown>
-                </MDXContentWrapper>
+                </ProseWrapper>
               )}
               <Schema schema={schema} idPrefix={['responses', statusCode]} />
             </div>

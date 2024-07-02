@@ -1,14 +1,20 @@
+import ProseWrapper from '@/components/Documentation/ProseWrapper'
+import { TableOfContents } from '@/components/Documentation/TableOfContents'
 import type { MDXComponents } from 'mdx/types'
-import { HeadingObserver } from './components/Documentation/HeadingObserver'
 
 export function useMDXComponents(components: MDXComponents): MDXComponents {
   return {
     ...components,
-    h1: (props) => <HeadingObserver type="h1" {...props} />,
-    h2: (props) => <HeadingObserver type="h2" {...props} />,
-    h3: (props) => <HeadingObserver type="h3" {...props} />,
-    h4: (props) => <HeadingObserver type="h4" {...props} />,
-    h5: (props) => <HeadingObserver type="h5" {...props} />,
-    h6: (props) => <HeadingObserver type="h6" {...props} />,
+    BodyWrapper(props) {
+      return (
+        <article className="flex w-full max-w-3xl flex-shrink flex-col">
+          <ProseWrapper>{props.children}</ProseWrapper>
+        </article>
+      )
+    },
+    TOCGenerator: ({ items }: { items: string }) => {
+      const parsedItems = JSON.parse(items)
+      return <TableOfContents items={parsedItems} />
+    },
   }
 }

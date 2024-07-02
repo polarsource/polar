@@ -325,7 +325,7 @@ export const DocumentationPageSidebar = ({
             href="/docs"
             active={() => activeSection === 'overview'}
           >
-            Overview
+            Product Guides
           </NavigationItem>
         </li>
         <li>

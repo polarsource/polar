@@ -1,4 +1,3 @@
-import { DocumentationProvider } from '@/components/Documentation/DocumentationProvider'
 import { BrandingMenu } from '@/components/Layout/Public/BrandingMenu'
 import Footer from '@/components/Organization/Footer'
 import { getServerSideAPI } from '@/utils/api/serverside'
@@ -8,21 +7,22 @@ import { PropsWithChildren } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { PolarMenu } from '../[organization]/(sidebar)/LayoutPolarMenu'
 
+export const dynamic = 'force-static'
+export const dynamicParams = false
+
 export default async function Layout({ children }: PropsWithChildren) {
   return (
-    <DocumentationProvider>
-      <div className="dark:bg-polar-950 flex w-full flex-col items-center gap-y-12 bg-white">
-        <div className="flex h-fit w-full max-w-[100vw] flex-row justify-stretch">
-          <div className="flex w-full flex-grow flex-col gap-y-12 pt-12 md:pt-0">
-            <DocumentationPageTopbar />
-            <div className="flex flex-col gap-x-16 gap-y-16 px-4 pb-24 pt-16 md:flex-row md:items-start md:justify-between md:px-12 md:pt-0">
-              {children}
-            </div>
+    <div className="dark:bg-polar-950 flex w-full flex-col items-center gap-y-12 bg-white">
+      <div className="flex h-fit w-full max-w-[100vw] flex-row justify-stretch">
+        <div className="flex w-full flex-grow flex-col gap-y-12 pt-12 md:pt-0">
+          <DocumentationPageTopbar />
+          <div className="flex flex-col gap-x-16 gap-y-16 px-4 pb-24 pt-16 md:flex-row md:items-start md:justify-between md:px-12 md:pt-0">
+            {children}
           </div>
         </div>
-        <Footer showUpsellFooter={false} wide />
       </div>
-    </DocumentationProvider>
+      <Footer showUpsellFooter={false} wide />
+    </div>
   )
 }
 

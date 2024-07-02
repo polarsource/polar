@@ -95,7 +95,7 @@ const DashboardSidebar = () => {
         </div>
 
         <div
-          className="flex w-full flex-grow flex-col gap-y-2 md:h-full md:justify-between md:overflow-y-auto"
+          className="flex w-full flex-grow flex-col gap-y-8 md:h-full md:justify-between md:overflow-y-auto"
           onScroll={handleScroll}
         >
           <div>

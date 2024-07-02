@@ -27,7 +27,7 @@ export const ProductCard = ({
     showOrganization,
   )
   return (
-    <div className="dark:hover:bg-polar-800 dark:bg-polar-900 rounded-4xl bg-gray-75 flex h-full w-full flex-col gap-6 overflow-hidden p-6 transition-colors hover:bg-gray-50">
+    <div className="dark:hover:bg-polar-800 dark:bg-polar-900 dark:border-polar-700 rounded-4xl bg-gray-75 flex h-full w-full flex-col gap-6 overflow-hidden p-6 transition-colors hover:bg-gray-50">
       {product.medias.length > 0 ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img

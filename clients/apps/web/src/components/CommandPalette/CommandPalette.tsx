@@ -46,7 +46,7 @@ export const CommandPalette = ({ organization, hide }: CommandPaletteProps) => {
       hideCommandPalette={hide}
     >
       <SyntaxHighlighterProvider>
-        <div className="dark:bg-polar-950 bg-gray-75 dark:porder-polar-700 rounded-4xl flex w-full flex-grow flex-col overflow-hidden dark:border">
+        <div className="dark:bg-polar-950bg-white dark:porder-polar-700 rounded-4xl flex w-full flex-grow flex-col overflow-hidden dark:border">
           <CommandPaletteInput />
           <CommandPaletteContainer />
         </div>

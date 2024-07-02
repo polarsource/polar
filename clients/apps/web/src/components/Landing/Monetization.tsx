@@ -147,7 +147,7 @@ export const Monetization = () => {
             link="/products"
           >
             <SubscriptionTierCard
-              className="dark:bg-polar-900 dark:border-polar-800 border-transparent from-white to-white shadow-sm"
+              className="dark:bg-polar-900 dark:border-polar-800 border-transparent bg-white"
               subscriptionTier={MOCKED_PRODUCTS[1]}
             />
           </FeatureItem>

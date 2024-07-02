@@ -9,6 +9,8 @@ import { usePathname, useSearchParams } from 'next/navigation'
 import posthog from 'posthog-js'
 import { PostHogProvider } from 'posthog-js/react'
 import { useEffect } from 'react'
+import { AppProgressBar as ProgressBar } from 'next-nprogress-bar'
+
 
 if (CONFIG.POSTHOG_TOKEN && typeof window !== 'undefined') {
   posthog.init(CONFIG.POSTHOG_TOKEN, {
@@ -68,5 +70,21 @@ export function PolarQueryClientProvider({
     <QueryClientProvider client={queryClient}>
       <ReactQueryStreamedHydration>{children}</ReactQueryStreamedHydration>
     </QueryClientProvider>
+  )
+}
+
+export function PolarToploaderProvider({ children }: { children: React.ReactNode }) {
+  return (
+    <>
+      {children}
+      <ProgressBar
+        height="2px"
+        color="#2960F6"
+        startPosition={0.08}
+        options={{ showSpinner: false }}
+        delay={500}
+        shallowRouting
+      />
+    </>
   )
 }

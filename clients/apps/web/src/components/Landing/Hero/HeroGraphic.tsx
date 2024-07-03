@@ -15,7 +15,7 @@ const SubCard = ({
 }) => {
   return (
     <SubscriptionTierCard
-      className={twMerge(className, 'dark:border-polar-700 dark:border')}
+      className={twMerge(className, 'dark:ring-polar-700 dark:ring-1')}
       subscriptionTier={{ ...subscriptionTier, description: ' ' }}
       variant="small"
     />

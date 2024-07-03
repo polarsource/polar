@@ -81,7 +81,7 @@ const DashboardSidebar = () => {
   return (
     <aside
       className={twMerge(
-        'dark:bg-polar-900 rounded-4xl bg-gray-75 flex h-full w-full flex-shrink-0 flex-col justify-between gap-y-4 overflow-y-auto md:w-[320px] md:overflow-y-visible',
+        'dark:bg-polar-900 rounded-4xl flex h-full w-full flex-shrink-0 flex-col justify-between gap-y-4 overflow-y-auto bg-white md:w-[320px] md:overflow-y-visible',
       )}
     >
       <div className="flex h-full flex-col">

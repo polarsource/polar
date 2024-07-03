@@ -16,7 +16,9 @@ import {
 } from '@polar-sh/sdk'
 import { useRouter } from 'next/navigation'
 import Button from 'polarkit/components/ui/atoms/button'
-import ShadowBox from 'polarkit/components/ui/atoms/shadowbox'
+import ShadowBox, {
+  ShadowBoxOnMd,
+} from 'polarkit/components/ui/atoms/shadowbox'
 import { Form } from 'polarkit/components/ui/form'
 import { useCallback, useMemo, useState } from 'react'
 import { useForm } from 'react-hook-form'
@@ -167,7 +169,7 @@ export const EditProductPage = ({
     <>
       <DashboardTopbar title="Edit Product" useOrgFromURL hideSubNav />
       <DashboardBody className="flex flex-col">
-        <div className="flex w-full max-w-xl flex-col gap-y-12">
+        <ShadowBoxOnMd className="flex w-full max-w-xl flex-col gap-y-12">
           <div className="flex flex-col gap-y-8">
             <Form {...form}>
               <form
@@ -252,7 +254,7 @@ export const EditProductPage = ({
           <div className="flex flex-row items-center gap-2">
             <Button onClick={handleSubmit(onSubmit)}>Save Product</Button>
           </div>
-        </div>
+        </ShadowBoxOnMd>
       </DashboardBody>
     </>
   )

@@ -20,7 +20,7 @@ export const PledgeTabsList = React.forwardRef<
   <TabsListPrimitive
     ref={ref}
     className={twMerge(
-      'dark:bg-polar-900 bg-gray-75 dark:ring-polar-900 relative flex h-fit w-fit flex-col items-start gap-2 rounded-xl ring-1 ring-gray-100 md:flex-row',
+      'dark:bg-polar-900 dark:ring-polar-900 relative flex h-fit w-fit flex-col items-start gap-2 rounded-xl bg-gray-100 ring-1 ring-gray-100 md:flex-row',
       vertical
         ? 'flex-col md:flex-col'
         : 'md:flex-row md:items-center md:justify-start',

@@ -29,7 +29,7 @@ Before being able to make authentication requests, you'll need an **OAuth2 Clien
 
 You can create a client from your [user settings](/settings#oauth).
 
-![OAuth2 Client Creation](/assets/docs/api/authentication/oauth2_client_create.png)
+![OAuth2 Client Creation](./oauth2_client_create.png)
 
 Here are the required fields:
 
@@ -43,7 +43,7 @@ Optionally, you can also add a **logo**, **terms of service** and **privacy poli
 
 Once your client is created, you'll get a **Client ID** and a **Client Secret**. You'll need those values to make authentication requests.
 
-![OAuth2 Client ID and Secret](/assets/docs/api/authentication/oauth2_client_id_secret.png)
+![OAuth2 Client ID and Secret](./oauth2_client_id_secret.png)
 
 <BrowserCallout type="CAUTION">
 Those values are super sensitive and should be kept secret: they allow to make authentication requests on Polar!
@@ -66,7 +66,7 @@ The parameters are the one described in the [OpenID Connect specification](https
 
 If you redirect the user to this URL, they'll see a page asking them to grant access to their data, corresponding to the scopes you asked for.
 
-![OAuth2 Authorize Page](/assets/docs/api/authentication/oauth2_authorize.png)
+![OAuth2 Authorize Page](./oauth2_authorize.png)
 
 If they allow it, they'll be redirected to your `redirect_uri` with a `code` parameter in the query string. This code is a one-time code that you can exchange for an access token.
 
@@ -109,8 +109,8 @@ https://polar.sh/oauth2/authorize?response_type=code&client_id=polar_ci_j3X95_Mg
 
 At this point, the user will be prompted to select one of their organization before allowing access to their data.
 
-![OAuth2 Organization Selection](/assets/docs/api/authentication/oauth2_organization_selection.png)
-![OAuth2 Organization Authorize Page](/assets/docs/api/authentication/oauth2_organization_authorize.png)
+![OAuth2 Organization Selection](./oauth2_organization_selection.png)
+![OAuth2 Organization Authorize Page](./oauth2_organization_authorize.png)
 
 The rest of the flow remains unchanged. The access token you'll get will be tied to the selected organization.
 

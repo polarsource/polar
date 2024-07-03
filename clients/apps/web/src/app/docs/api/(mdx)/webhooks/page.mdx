@@ -8,18 +8,18 @@ Our implementation follow the [Standard Webhooks](https://www.standardwebhooks.c
 
 Head over to your organization's settings page and click on the "Add Endpoint" button to create a new webhook.
 
-![Add Webhook Endpoint](/assets/docs/webhooks/add_endpoint.png#only-light)
-![Add Webhook Endpoint](/assets/docs/webhooks/add_endpoint_dark.png#only-dark)
+![Add Webhook Endpoint](./add_endpoint.light.png)
+![Add Webhook Endpoint](./add_endpoint.dark.png)
 
 In the dialog that appears, enter the URL to which the webhook events should be sent.
 
-![Add URL](/assets/docs/webhooks/url.png#only-light)
-![Add URL](/assets/docs/webhooks/url_dark.png#only-dark)
+![Add URL](./url.light.png)
+![Add URL](./url.dark.png)
 
 In order to verify that requests are legitimate webhook payload coming from Polar, we cryptographically sign the requests using a secret key. You can set your own or generate a random one.
 
-![Add Secret](/assets/docs/webhooks/secret.png#only-light)
-![Add Secret](/assets/docs/webhooks/secret_dark.png#only-dark)
+![Add Secret](./secret.light.png)
+![Add Secret](./secret.dark.png)
 
 Finally, select the events you want to be notified about. You can read more about the available events in the [Events](/docs/api/webhooks/events) section.
 
@@ -27,8 +27,8 @@ Finally, select the events you want to be notified about. You can read more abou
 
 Once a webhook is configured, you will have access to a delivery overview page. This page shows you all the webhook events that have been sent to the configured URL. You can easily see the status of each delivery and the data which was sent.
 
-![Delivery](/assets/docs/webhooks/delivery.png#only-light)
-![Delivery](/assets/docs/webhooks/delivery_dark.png#only-dark)
+![Delivery](./delivery.light.png)
+![Delivery](./delivery.dark.png)
 
 ## Verify signature
 

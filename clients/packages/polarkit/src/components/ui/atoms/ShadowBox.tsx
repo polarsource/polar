@@ -7,7 +7,7 @@ const ShadowBox = (props: {
 }) => (
   <div
     className={twMerge(
-      'dark:bg-polar-900 lg:rounded-4xl w-full rounded-xl border border-gray-100 bg-transparent p-8 dark:border-transparent',
+      'dark:bg-polar-900 lg:rounded-4xl w-full rounded-xl bg-white p-8',
       props.className,
     )}
   >

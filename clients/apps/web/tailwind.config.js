@@ -89,9 +89,9 @@ module.exports = {
           950: '#00245E',
         },
         gray: {
-          50: '#FCFCFF',
-          75: '#f8faff',
-          100: '#F3F4FA',
+          50: '#FCFCFE',
+          75: '#F9FAFE',
+          100: '#F3F4F8',
           200: '#E3E7EE',
           300: '#D0D7E1',
           400: '#A2AEC3',

@@ -27,7 +27,7 @@ export const HeroGraphic = () => {
     <div className="flex w-full flex-col items-center gap-y-12">
       <div className="relative flex h-full w-full flex-row items-center justify-center gap-6">
         <SubCard
-          className="absolute left-0 scale-75"
+          className="shadow-3xl absolute left-0 scale-75"
           subscriptionTier={MOCKED_SUBSCRIPTIONS[0]}
         />
         <SubCard

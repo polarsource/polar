@@ -18,7 +18,7 @@ export default function Layout({ children }: PropsWithChildren) {
   }, [pathname])
 
   return (
-    <div className="flex w-full flex-col items-center">
+    <div className="flex w-full flex-col items-center bg-white">
       <Section
         wrapperClassName="sticky top-0 z-30 dark:bg-polar-950 bg-white"
         className="py-4 md:py-8"

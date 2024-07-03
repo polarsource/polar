@@ -16,7 +16,6 @@ import {
 } from '@polar-sh/sdk'
 import { useRouter } from 'next/navigation'
 import Button from 'polarkit/components/ui/atoms/button'
-import { ShadowBoxOnMd } from 'polarkit/components/ui/atoms/shadowbox'
 import { Form } from 'polarkit/components/ui/form'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useForm } from 'react-hook-form'
@@ -151,7 +150,7 @@ export const CreateProductPage = ({ organization }: CreateProductPageProps) => {
     <>
       <DashboardTopbar title="Create Product" useOrgFromURL hideSubNav />
       <DashboardBody className="flex flex-col pb-24">
-        <ShadowBoxOnMd className="flex w-full max-w-xl flex-col gap-y-16">
+        <div className="flex w-full max-w-xl flex-col gap-y-16">
           <div className="flex flex-col gap-y-4">
             <p className="dark:text-polar-500 leading-relaxed text-gray-500">
               Products are packaged benefits which can be purchased at a fixed
@@ -162,7 +161,7 @@ export const CreateProductPage = ({ organization }: CreateProductPageProps) => {
             <Form {...form}>
               <form
                 onSubmit={handleSubmit(onSubmit)}
-                className="flex flex-col gap-y-8"
+                className="flex flex-col gap-y-6"
               >
                 <ProductForm organization={organization} update={false} />
               </form>
@@ -184,7 +183,7 @@ export const CreateProductPage = ({ organization }: CreateProductPageProps) => {
           <div className="flex flex-row items-center gap-2">
             <Button onClick={handleSubmit(onSubmit)}>Create Product</Button>
           </div>
-        </ShadowBoxOnMd>
+        </div>
       </DashboardBody>
     </>
   )

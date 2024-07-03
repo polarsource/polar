@@ -22,6 +22,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from 'polarkit/components/ui/atoms/select'
+import ShadowBox from 'polarkit/components/ui/atoms/shadowbox'
 import TextArea from 'polarkit/components/ui/atoms/textarea'
 import { Checkbox } from 'polarkit/components/ui/checkbox'
 import {
@@ -218,53 +219,55 @@ const ProductForm: React.FC<ProductFormProps> = ({
 
   return (
     <>
-      <FormField
-        control={control}
-        name="name"
-        rules={{
-          required: 'This field is required',
-          minLength: 3,
-          maxLength: 24,
-        }}
-        defaultValue=""
-        render={({ field }) => (
-          <FormItem>
-            <div className="flex flex-row items-center justify-between">
-              <FormLabel>Name</FormLabel>
-              <span className="dark:text-polar-400 text-sm text-gray-400">
-                {field.value?.length ?? 0} / 24
-              </span>
-            </div>
-            <FormControl>
-              <Input {...field} />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-      <FormField
-        control={control}
-        name="description"
-        rules={{
-          required: 'This field is required',
-        }}
-        render={({ field }) => (
-          <FormItem className="flex flex-col gap-2">
-            <div className="flex flex-row items-center justify-between">
-              <FormLabel>Description</FormLabel>
-            </div>
-            <FormControl>
-              <TextArea
-                className="min-h-44 resize-none rounded-2xl"
-                {...field}
-              />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-      {!isFreeTier && (
-        <>
+      <ShadowBox className="flex flex-col gap-y-6">
+        <FormField
+          control={control}
+          name="name"
+          rules={{
+            required: 'This field is required',
+            minLength: 3,
+            maxLength: 24,
+          }}
+          defaultValue=""
+          render={({ field }) => (
+            <FormItem>
+              <div className="flex flex-row items-center justify-between">
+                <FormLabel>Name</FormLabel>
+                <span className="dark:text-polar-400 text-sm text-gray-400">
+                  {field.value?.length ?? 0} / 24
+                </span>
+              </div>
+              <FormControl>
+                <Input {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={control}
+          name="description"
+          rules={{
+            required: 'This field is required',
+          }}
+          render={({ field }) => (
+            <FormItem className="flex flex-col gap-2">
+              <div className="flex flex-row items-center justify-between">
+                <FormLabel>Description</FormLabel>
+              </div>
+              <FormControl>
+                <TextArea
+                  className="min-h-44 resize-none rounded-2xl"
+                  {...field}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+      </ShadowBox>
+      {!isFreeTier ? (
+        <ShadowBox>
           <div className="flex flex-col gap-6">
             <FormLabel>Pricing</FormLabel>
             {!update && (
@@ -362,88 +365,105 @@ const ProductForm: React.FC<ProductFormProps> = ({
               )}
             />
           </div>
-        </>
+        </ShadowBox>
+      ) : (
+        <></>
       )}
-      <FormField
-        control={control}
-        name="full_medias"
-        render={({ field }) => (
-          <FormItem className="flex flex-col gap-2">
-            <div className="flex flex-row items-center justify-between">
-              <FormLabel>Media</FormLabel>
-            </div>
-            <FormControl>
-              <ProductMediasField
-                organization={organization}
-                value={field.value}
-                onChange={field.onChange}
-              />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-      {!update && pricingType === ProductPriceType.RECURRING && (
+
+      {pricingType === ProductPriceType.RECURRING && !isFreeTier && (
+        <ShadowBox className="flex flex-col gap-y-6">
+          {!update && pricingType === ProductPriceType.RECURRING ? (
+            <FormField
+              control={control}
+              name="type"
+              rules={{ required: 'This field is required' }}
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Type</FormLabel>
+                  <Select
+                    onValueChange={field.onChange}
+                    defaultValue={field.value}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a tier type" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {Object.entries(subscriptionTierTypes).map(
+                        ([type, pretty]) => (
+                          <SelectItem key={type} value={type}>
+                            <div className="flex items-center gap-2">
+                              <SubscriptionGroupIcon
+                                type={type as SubscriptionTierType}
+                              />
+                              {pretty}
+                            </div>
+                          </SelectItem>
+                        ),
+                      )}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          ) : (
+            <></>
+          )}
+          {!isFreeTier && pricingType === ProductPriceType.RECURRING ? (
+            <FormField
+              control={control}
+              name="is_highlighted"
+              render={({ field }) => {
+                return (
+                  <div className="flex flex-col gap-y-4">
+                    <FormItem className="flex flex-row items-center space-x-3 space-y-0">
+                      <FormControl>
+                        <Checkbox
+                          defaultChecked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
+                      <FormLabel className="text-sm leading-none">
+                        Highlight this tier
+                      </FormLabel>
+                    </FormItem>
+                    <p className="dark:text-polar-500 text-sm text-gray-500">
+                      Highlighted tiers are shown on the public overview page.
+                      Only one tier can be highlighted per tier type.
+                    </p>
+                  </div>
+                )
+              }}
+            />
+          ) : (
+            <></>
+          )}
+        </ShadowBox>
+      )}
+
+      <ShadowBox>
         <FormField
           control={control}
-          name="type"
-          rules={{ required: 'This field is required' }}
+          name="full_medias"
           render={({ field }) => (
-            <FormItem>
-              <FormLabel>Type</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select a tier type" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {Object.entries(subscriptionTierTypes).map(
-                    ([type, pretty]) => (
-                      <SelectItem key={type} value={type}>
-                        <div className="flex items-center gap-2">
-                          <SubscriptionGroupIcon
-                            type={type as SubscriptionTierType}
-                          />
-                          {pretty}
-                        </div>
-                      </SelectItem>
-                    ),
-                  )}
-                </SelectContent>
-              </Select>
+            <FormItem className="flex flex-col gap-2">
+              <div className="flex flex-row items-center justify-between">
+                <FormLabel>Media</FormLabel>
+              </div>
+              <FormControl>
+                <ProductMediasField
+                  organization={organization}
+                  value={field.value}
+                  onChange={field.onChange}
+                />
+              </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
-      )}
-      {!isFreeTier && pricingType === ProductPriceType.RECURRING && (
-        <FormField
-          control={control}
-          name="is_highlighted"
-          render={({ field }) => {
-            return (
-              <div className="flex flex-col gap-y-4">
-                <FormItem className="flex flex-row items-center space-x-3 space-y-0">
-                  <FormControl>
-                    <Checkbox
-                      defaultChecked={field.value}
-                      onCheckedChange={field.onChange}
-                    />
-                  </FormControl>
-                  <FormLabel className="text-sm leading-none">
-                    Highlight this tier
-                  </FormLabel>
-                </FormItem>
-                <p className="dark:text-polar-500 text-sm text-gray-500">
-                  Highlighted tiers are shown on the public overview page. Only
-                  one tier can be highlighted per tier type.
-                </p>
-              </div>
-            )
-          }}
-        />
-      )}
+      </ShadowBox>
     </>
   )
 }

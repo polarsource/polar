@@ -31,7 +31,13 @@ export async function generateStaticParams(): Promise<
     (paths, { endpoints }) => [
       ...paths,
       ...endpoints.map(({ path, method }) => ({
-        endpoint: [...path.split('/').filter((part) => !!part), method],
+        endpoint: [
+          ...path
+            .split('/')
+            .filter((part) => !!part)
+            .map(encodeURIComponent),
+          method,
+        ],
       })),
     ],
     [],
@@ -50,6 +56,7 @@ export default async function Page({
   try {
     metadata = resolveEndpointMetadata(endpoint, schema)
   } catch (e) {
+    console.log('ERROR', e)
     if (e instanceof EndpointError) {
       return notFound()
     }

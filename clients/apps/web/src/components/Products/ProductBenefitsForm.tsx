@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation'
 import { Switch } from 'polarkit/components/ui/atoms'
 import Button from 'polarkit/components/ui/atoms/button'
 import { List, ListItem } from 'polarkit/components/ui/atoms/list'
+import ShadowBox from 'polarkit/components/ui/atoms/shadowbox'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -144,7 +145,7 @@ const ProductBenefitsForm = ({
   )
 
   return (
-    <>
+    <ShadowBox>
       <div className={twMerge('flex w-full flex-col gap-y-6', className)}>
         <div className="flex flex-row items-center justify-between">
           <h2 className="text-gray-950 dark:text-white">Benefits</h2>
@@ -198,7 +199,7 @@ const ProductBenefitsForm = ({
           />
         }
       />
-    </>
+    </ShadowBox>
   )
 }
 

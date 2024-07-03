@@ -31,19 +31,16 @@ import {
 } from './openapi'
 
 const NavigationSection = ({
-  key,
   title,
   children,
   defaultOpened = false,
 }: {
-  key: string
   title: string
   children: React.ReactNode
   defaultOpened: boolean
 }) => {
   return (
     <CollapsibleSection
-      key={key}
       title={title}
       defaultOpened={defaultOpened}
       isSubMenu={false}
@@ -75,7 +72,7 @@ const OverviewSections = () => {
         </NavigationItem>
       </div>
 
-      <NavigationSection key="nav-issue-funding" title="Issue Funding" defaultOpened={true}>
+      <NavigationSection title="Issue Funding" defaultOpened={true}>
         <NavigationItem
           href="/docs/overview/issue-funding/overview"
           icon={<ArrowForward fontSize="inherit" />}
@@ -113,7 +110,7 @@ const OverviewSections = () => {
 
 const FAQSections = () => {
   return (
-    <NavigationSection key="nav-faq" title="FAQ" defaultOpened={true}>
+    <NavigationSection title="FAQ" defaultOpened={true}>
       <div className="flex flex-col">
         <NavigationItem
           href="/docs/overview/faq/overview"

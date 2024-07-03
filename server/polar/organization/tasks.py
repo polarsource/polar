@@ -1,13 +1,16 @@
 import uuid
+from typing import cast
 
 from polar.account.service import account as account_service
 from polar.benefit.service.benefit import benefit as benefit_service
 from polar.exceptions import PolarTaskError
 from polar.held_balance.service import held_balance as held_balance_service
+from polar.locker import Locker
 from polar.postgres import AsyncSession
 from polar.product.service.product import (
     product as product_service,
 )
+from polar.redis import Redis
 from polar.worker import AsyncSessionMaker, JobContext, PolarWorkerContext, task
 
 from .service import organization as organization_service
@@ -42,23 +45,34 @@ class AccountDoesNotExist(OrganizationTaskError):
 
 async def organization_post_creation_actions(
     session: AsyncSession,
+    redis: Redis,
     organization_id: uuid.UUID,
 ) -> None:
-    organization = await organization_service.get(session, organization_id)
-    if organization is None:
-        raise OrganizationDoesNotExist(organization_id)
+    # We experienced in prod `organization.post_install` triggered twice
+    # Adding a lock here to prevent a race condition
+    async with Locker(redis).lock(
+        f"organization_post_creation_actions:{organization_id}",
+        timeout=10,
+        blocking_timeout=10,
+    ):
+        organization = await organization_service.get(session, organization_id)
+        if organization is None:
+            raise OrganizationDoesNotExist(organization_id)
 
-    (
-        public_articles,
-        _,
-    ) = await benefit_service.get_or_create_articles_benefits(
-        session, organization=organization
-    )
-    await product_service.create_free_tier(
-        session, benefits=[public_articles], organization=organization
-    )
+        (
+            public_articles,
+            _,
+        ) = await benefit_service.get_or_create_articles_benefits(
+            session, organization=organization
+        )
 
-    await organization_service.set_personal_account(session, organization=organization)
+        await product_service.create_free_tier(
+            session, benefits=[public_articles], organization=organization
+        )
+
+        await organization_service.set_personal_account(
+            session, organization=organization
+        )
 
 
 @task("organization.account_set")
@@ -84,8 +98,9 @@ async def organization_account_set(
 async def organization_post_install(
     ctx: JobContext, organization_id: uuid.UUID, polar_context: PolarWorkerContext
 ) -> None:
+    redis = cast(Redis, ctx["redis"])
     async with AsyncSessionMaker(ctx) as session:
-        await organization_post_creation_actions(session, organization_id)
+        await organization_post_creation_actions(session, redis, organization_id)
 
 
 @task("organization.post_user_upgrade")
@@ -101,6 +116,6 @@ async def organization_post_user_upgrade(
     terms of intent and initial invocation - avoiding problems in the future
     if they need to diverge.
     """
-
+    redis = cast(Redis, ctx["redis"])
     async with AsyncSessionMaker(ctx) as session:
-        await organization_post_creation_actions(session, organization_id)
+        await organization_post_creation_actions(session, redis, organization_id)

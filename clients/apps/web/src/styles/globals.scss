@@ -22,12 +22,6 @@
 }
 
 /* Dark mode */
-@media (prefers-color-scheme: dark) {
-  img[src$="#gh-light-mode-only"],
-  img[src$="#only-light"] {
-    display: none;
-}
-}
 
 #polar-bg-gradient {
   font-size: 12px;

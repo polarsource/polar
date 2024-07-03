@@ -6,6 +6,7 @@ import rehypeShikiFromHighlighter from '@shikijs/rehype/core'
 import { bundledLanguages, createHighlighter } from 'shiki';
 import { themeConfig, themesList, transformers } from './shiki.config.mjs'
 import remarkFlexibleToc from "remark-flexible-toc";
+import rehypeMdxImportMedia from 'rehype-mdx-import-media'
 
 const POLAR_AUTH_COOKIE_KEY = 'polar_session'
 const ENVIRONMENT = process.env.VERCEL_ENV ||
@@ -427,6 +428,7 @@ const createConfig = async () => {
         }),
       ],
       rehypePlugins: [
+        rehypeMdxImportMedia,
         rehypeSlug,
         [
           rehypeShikiFromHighlighter,

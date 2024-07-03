@@ -107,7 +107,7 @@ export const useUpsellSteps = () => {
         title: 'Setup paid subscriptions & membership benefits',
         description:
           'Offer built-in benefits like premium posts, Discord invites, sponsor ads & private GitHub repository access',
-        href: `/maintainer/${currentOrg?.name}/subscriptions/tiers`,
+        href: `/maintainer/${currentOrg?.name}/products/overview`,
         onboardingKey: 'subscriptionTierCreated',
         onDismiss: handleDismiss,
       })

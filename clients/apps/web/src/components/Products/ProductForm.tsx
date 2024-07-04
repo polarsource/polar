@@ -113,19 +113,17 @@ const ProductPriceItem: React.FC<ProductPriceItemProps> = ({
                   />
                 </FormControl>
                 {deletable && (
-                  <button type="button">
-                    <Button
-                      className={
-                        'border-none bg-transparent text-[16px] opacity-50 transition-opacity hover:opacity-100 dark:bg-transparent'
-                      }
-                      size="icon"
-                      variant="secondary"
-                      type="button"
-                      onClick={() => remove(index)}
-                    >
-                      <ClearOutlined fontSize="inherit" />
-                    </Button>
-                  </button>
+                  <Button
+                    className={
+                      'border-none bg-transparent text-[16px] opacity-50 transition-opacity hover:opacity-100 dark:bg-transparent'
+                    }
+                    size="icon"
+                    variant="secondary"
+                    type="button"
+                    onClick={() => remove(index)}
+                  >
+                    <ClearOutlined fontSize="inherit" />
+                  </Button>
                 )}
               </div>
               <FormMessage />

@@ -1,6 +1,7 @@
 import {
   DocumentationPageSidebar,
   MainNavigation,
+  SupportNavigation,
   MobileNav,
 } from '@/components/Documentation/Navigation'
 
@@ -14,7 +15,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         <MainNavigation />
       </MobileNav>
       <div className="hidden md:block">
-        <DocumentationPageSidebar activeSection="support" />
+        <DocumentationPageSidebar activeSection="support">
+          <SupportNavigation />
+        </DocumentationPageSidebar>
       </div>
       {children}
     </>

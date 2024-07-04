@@ -59,7 +59,7 @@ export const MRRWidget = ({ className }: MRRWidgetProps) => {
           {getCentsInDollarString(
             revenueMetrics.data?.periods[
               revenueMetrics.data?.periods.length - 1
-            ].revenue ?? 0,
+            ].monthly_recurring_revenue ?? 0,
             false,
           )}
         </h2>

@@ -51,6 +51,10 @@ const NavigationSection = ({
   )
 }
 
+const NavigationHeadline = ({ children }: { children: React.ReactNode }) => {
+  return <h2 className="mb-4 text-sm font-medium text-gray-700">{children}</h2>
+}
+
 const APISections = () => {
   return (
     <div className="flex flex-col">
@@ -215,18 +219,14 @@ export const MainNavigation = () => {
   return (
     <>
       <div>
-        <h2 className="mb-4 text-sm font-medium uppercase text-gray-700">
-          Introduction
-        </h2>
+        <NavigationHeadline>Introduction</NavigationHeadline>
         <NavigationItem href="/docs">Welcome</NavigationItem>
         <NavigationItem href="/docs/start">Quick Start</NavigationItem>
         <NavigationItem href="/docs/start">GitHub Promotion</NavigationItem>
       </div>
 
       <div>
-        <h2 className="mb-4 text-sm font-medium uppercase text-gray-700">
-          Get Funding
-        </h2>
+        <NavigationHeadline>Get Funding</NavigationHeadline>
         <NavigationItem href="/docs/donations">Donations</NavigationItem>
         <NavigationSection
           title="Issue Funding & Rewards"
@@ -266,9 +266,7 @@ export const MainNavigation = () => {
       </div>
 
       <div>
-        <h2 className="mb-4 text-sm font-medium uppercase text-gray-700">
-          Offer products & subscriptions
-        </h2>
+        <NavigationHeadline>Offer products & subscriptions</NavigationHeadline>
         <div className="flex flex-col">
           <NavigationItem href="/docs/subscriptions">
             Create Products & Tiers
@@ -318,9 +316,7 @@ export const MainNavigation = () => {
       </div>
 
       <div>
-        <h2 className="mb-4 text-sm font-medium uppercase text-gray-700">
-          Online & Email Newsletters
-        </h2>
+        <NavigationHeadline>Online & Email Newsletters</NavigationHeadline>
         <NavigationItem href="/docs/newsletters">
           Write Posts (GitHub Markdown)
         </NavigationItem>
@@ -331,16 +327,18 @@ export const MainNavigation = () => {
       </div>
 
       <div>
-        <h2 className="mb-4 text-sm font-medium uppercase text-gray-700">
-          Finance & Payouts
-        </h2>
+        <NavigationHeadline>Finance & Payouts</NavigationHeadline>
+        <NavigationItem href="/docs/payments-taxes">
+          Your Balance
+        </NavigationItem>
+        <NavigationItem href="/docs/payments-taxes">
+          Connect Payout Account
+        </NavigationItem>
         <NavigationItem href="/docs/payments-taxes">Payouts</NavigationItem>
       </div>
 
       <div>
-        <h2 className="mb-4 text-sm font-medium uppercase text-gray-700">
-          Merchant of Record
-        </h2>
+        <NavigationHeadline>Merchant of Record</NavigationHeadline>
         <NavigationItem href="/docs/merchant-of-record">
           Sales tax & EU VAT
         </NavigationItem>
@@ -353,7 +351,7 @@ export const MainNavigation = () => {
 export const SupportNavigation = () => {
   return (
     <div>
-      <h2 className="mb-4 text-sm font-medium uppercase text-gray-700">FAQ</h2>
+      <NavigationHeadline>FAQ</NavigationHeadline>
       <NavigationItem href="/docs/support/faq#pricing">
         Payments & Fees
       </NavigationItem>

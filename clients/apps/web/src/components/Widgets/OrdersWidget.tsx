@@ -68,7 +68,7 @@ export interface OrdersWidgetProps {
 export const OrdersWidget = ({ className }: OrdersWidgetProps) => {
   const { org } = useCurrentOrgAndRepoFromURL()
 
-  const orders = useOrders(org?.id, { limit: 3, sorting: ['created_at'] })
+  const orders = useOrders(org?.id, { limit: 3, sorting: ['-created_at'] })
 
   const stackingClassNames = [
     'scale-90',

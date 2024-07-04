@@ -56,7 +56,7 @@ export const ActivityWidget = ({ className }: ActivityWidgetProps) => {
           <div className="grid grid-flow-col grid-cols-[repeat(52,minmax(0,1fr))] grid-rows-[repeat(7,minmax(0,1fr))] gap-1 xl:gap-2">
             {orderMetrics.data?.periods.map((period, i) => {
               const activeClass =
-                period.orders > 5
+                period.orders > 2
                   ? 'bg-blue-400 dark:bg-blue-400'
                   : period.orders > 0
                     ? 'bg-blue-200 dark:bg-blue-800'

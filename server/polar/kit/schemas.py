@@ -1,6 +1,7 @@
 import dataclasses
+import json
 from datetime import datetime
-from typing import Annotated, Literal
+from typing import Annotated, Any, Literal
 
 from pydantic import (
     AfterValidator,
@@ -72,3 +73,28 @@ class MergeJSONSchema:
 
     def __hash__(self) -> int:
         return hash(type(self.mode))
+
+
+@dataclasses.dataclass(slots=True)
+class SelectorWidget:
+    resource_root: str
+    resource_name: str
+    display_property: str
+
+    def __get_pydantic_json_schema__(
+        self, core_schema: core_schema.CoreSchema, handler: GetJsonSchemaHandler
+    ) -> JsonSchemaValue:
+        json_schema = handler(core_schema)
+        return {**json_schema, **self._get_extra_attributes()}
+
+    def _get_extra_attributes(self) -> dict[str, Any]:
+        return {
+            "x-polar-selector-widget": {
+                "resourceRoot": self.resource_root,
+                "resourceName": self.resource_name,
+                "displayProperty": self.display_property,
+            }
+        }
+
+    def __hash__(self) -> int:
+        return hash(json.dumps(self._get_extra_attributes()))

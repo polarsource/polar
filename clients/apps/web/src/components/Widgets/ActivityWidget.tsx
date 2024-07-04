@@ -65,7 +65,7 @@ export const ActivityWidget = ({ className }: ActivityWidgetProps) => {
               const tooltipContent = `${period.orders} ${period.orders === 1 ? 'order' : 'orders'} ${period.timestamp.toLocaleDateString(
                 'en-US',
                 {
-                  month: 'short',
+                  month: 'long',
                   day: 'numeric',
                 },
               )}`
@@ -74,7 +74,7 @@ export const ActivityWidget = ({ className }: ActivityWidgetProps) => {
                 <Tooltip key={i} delayDuration={0}>
                   <TooltipTrigger
                     className={twMerge(
-                      'dark:bg-polar-700 h-1 w-1 rounded-full bg-gray-100 xl:h-2 xl:w-2',
+                      'dark:bg-polar-800 h-1 w-1 rounded-full bg-gray-100 xl:h-2 xl:w-2',
                       activeClass,
                     )}
                   />

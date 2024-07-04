@@ -58,7 +58,7 @@ export const ResponseContainer = ({
           <TabsContent
             key={statusCode}
             value={statusCode}
-            className="p-4 text-xs"
+            className="max-h-80 overflow-y-auto p-4 text-xs"
           >
             <SyntaxHighlighterServer
               lang="json"

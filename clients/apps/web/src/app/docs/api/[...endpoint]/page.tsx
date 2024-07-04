@@ -3,6 +3,7 @@ import APILayout from '@/components/Documentation/APILayout'
 import { AuthenticationSchema } from '@/components/Documentation/AuthenticationSchema'
 import { BodySchema } from '@/components/Documentation/BodySchema'
 import ProseWrapper from '@/components/Documentation/ProseWrapper'
+import { ResponseContainer } from '@/components/Documentation/ResponseContainer'
 import { ResponsesSchemas } from '@/components/Documentation/ResponsesSchemas'
 import {
   EndpointError,
@@ -16,10 +17,8 @@ import Markdown from 'markdown-to-jsx'
 import { notFound } from 'next/navigation'
 import { OpenAPIV3_1 } from 'openapi-types'
 import { Parameters } from '../../../../components/Documentation/Parameters'
-import { ResponseContainer } from '../../../../components/Documentation/ResponseContainer'
 import { resolveEndpointMetadata } from '../../../../components/Documentation/openapi'
 
-export const dynamic = 'force-static'
 export const dynamicParams = false
 
 export async function generateStaticParams(): Promise<
@@ -46,8 +45,10 @@ export async function generateStaticParams(): Promise<
 
 export default async function Page({
   params: { endpoint },
+  searchParams,
 }: {
   params: { endpoint: string[] }
+  searchParams: { [key: string]: string | string[] | undefined }
 }) {
   const schema = await fetchSchema()
   const highlighter = await getHighlighter()
@@ -56,7 +57,6 @@ export default async function Page({
   try {
     metadata = resolveEndpointMetadata(endpoint, schema)
   } catch (e) {
-    console.log('ERROR', e)
     if (e instanceof EndpointError) {
       return notFound()
     }
@@ -109,13 +109,14 @@ export default async function Page({
           )}
         </div>
       </div>
-      <div className="flex w-full flex-shrink-0 flex-col gap-y-8 md:w-96">
+      <div className="sticky top-12 flex w-full flex-shrink-0 flex-col gap-y-8 md:w-96">
         <APIContainer
           className="bg-gray-50"
           operation={operation}
           method={method}
           path={apiEndpointPath}
           highlighter={highlighter}
+          params={searchParams}
         />
         {operation.responses && (
           <ResponseContainer

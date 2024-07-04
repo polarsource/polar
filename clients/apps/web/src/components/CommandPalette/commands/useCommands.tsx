@@ -138,7 +138,6 @@ export const CommandPaletteContextProvider = ({
       // @ts-ignore
       (result) => {
         const isAPIEntry = result.ref.includes('/v1/')
-        console.log(result)
 
         if (!apiSchema) {
           throw new Error('API Schema not loaded')

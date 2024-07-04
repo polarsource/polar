@@ -270,28 +270,81 @@ export const MainNavigation = () => {
           Offer products & subscriptions
         </h2>
         <div className="flex flex-col">
-          <NavigationItem href="/docs/benefits">Benefits</NavigationItem>
           <NavigationItem href="/docs/subscriptions">
-            Subscriptions
+            Create Products & Tiers
           </NavigationItem>
-          <NavigationItem href="/docs/ads">Ads</NavigationItem>
+          <NavigationSection title="Offer Benefits" defaultOpened={true}>
+            <NavigationItem
+              href="/docs/benefits/file-downloads"
+              icon={<ArrowForward fontSize="inherit" />}
+            >
+              File Downloads
+            </NavigationItem>
+            <NavigationItem
+              href="/docs/benefits/github-repositories"
+              icon={<ArrowForward fontSize="inherit" />}
+            >
+              GitHub Repo(s) Access
+            </NavigationItem>
+            <NavigationItem
+              href="/docs/benefits/discord"
+              icon={<ArrowForward fontSize="inherit" />}
+            >
+              Discord Invites
+            </NavigationItem>
+            <NavigationItem
+              href="/docs/benefits/discord"
+              icon={<ArrowForward fontSize="inherit" />}
+            >
+              Premium Newsletter
+            </NavigationItem>
+            <NavigationItem
+              href="/docs/benefits/ads"
+              icon={<ArrowForward fontSize="inherit" />}
+            >
+              Newsletter Sponsorship
+            </NavigationItem>
+            <NavigationItem
+              href="/docs/benefits/custom"
+              icon={<ArrowForward fontSize="inherit" />}
+            >
+              Custom
+            </NavigationItem>
+          </NavigationSection>
+          <NavigationItem href="/docs/subscriptions">
+            Review Sales
+          </NavigationItem>
         </div>
       </div>
 
       <div>
         <h2 className="mb-4 text-sm font-medium uppercase text-gray-700">
-          Write Newsletters
+          Online & Email Newsletters
         </h2>
-        <NavigationItem href="/docs/newsletters">Newsletters</NavigationItem>
+        <NavigationItem href="/docs/newsletters">
+          Write Posts (GitHub Markdown)
+        </NavigationItem>
+        <NavigationItem href="/docs/newsletters">
+          Publish & Access
+        </NavigationItem>
+        <NavigationItem href="/docs/newsletters">Review Traffic</NavigationItem>
       </div>
 
       <div>
         <h2 className="mb-4 text-sm font-medium uppercase text-gray-700">
           Finance & Payouts
         </h2>
-        <NavigationItem href="/docs/payments-taxes">
-          Payments & Taxes
+        <NavigationItem href="/docs/payments-taxes">Payouts</NavigationItem>
+      </div>
+
+      <div>
+        <h2 className="mb-4 text-sm font-medium uppercase text-gray-700">
+          Merchant of Record
+        </h2>
+        <NavigationItem href="/docs/merchant-of-record">
+          Sales tax & EU VAT
         </NavigationItem>
+        <NavigationItem href="/docs/1099k">1099-K Form (US)</NavigationItem>
       </div>
     </>
   )

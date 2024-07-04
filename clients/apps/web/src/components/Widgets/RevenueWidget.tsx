@@ -64,11 +64,9 @@ export const RevenueWidget = ({ className }: RevenueWidgetProps) => {
         <CardFooter className="flex h-full flex-row items-end justify-between">
           {revenueMetrics.data?.periods.map((period, i) => {
             const activeClass =
-              period.orders > 2
+              i === revenueMetrics.data.periods.length - 1
                 ? 'bg-blue-400 dark:bg-blue-400'
-                : period.orders > 0
-                  ? 'bg-blue-200 dark:bg-blue-800'
-                  : 'hover:bg-blue-100 dark:hover:bg-blue-900'
+                : 'hover:bg-blue-100 dark:hover:bg-blue-900'
 
             const tooltipContent = `$${getCentsInDollarString(period.revenue, false)} in ${period.timestamp.toLocaleDateString(
               'en-US',

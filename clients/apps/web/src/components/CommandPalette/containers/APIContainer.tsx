@@ -9,8 +9,8 @@ import {
 import { twMerge } from 'tailwind-merge'
 
 import {
-  buildCurlCommand,
-  buildNodeJSCommand,
+  CURLCommandBuilder,
+  NodeJSCommandBuilder,
 } from '@/components/Documentation/openapi'
 import { SyntaxHighlighterClient } from '@/components/SyntaxHighlighterShiki/SyntaxHighlighterClient'
 
@@ -26,12 +26,16 @@ export const APIContainer = ({
   method: string
 }) => {
   const triggerClassName = 'py-1'
-  const curlCommand = buildCurlCommand(
+  const curlCommand = new CURLCommandBuilder(
     method,
     `${CONFIG.BASE_URL}${path}`,
     operation,
-  )
-  const nodeJSCommand = buildNodeJSCommand(operation)
+  ).buildCommand()
+  const nodeJSCommand = new NodeJSCommandBuilder(
+    method,
+    `${CONFIG.BASE_URL}${path}`,
+    operation,
+  ).buildCommand()
 
   return (
     <div

@@ -1,0 +1,310 @@
+'use client'
+
+import { getServerURL } from '@/utils/api'
+import { ClearOutlined } from '@mui/icons-material'
+import { useQuery } from '@tanstack/react-query'
+import debounce from 'lodash.debounce'
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
+import { OpenAPIV3_1 } from 'openapi-types'
+import Button from 'polarkit/components/ui/atoms/button'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from 'polarkit/components/ui/atoms/select'
+import { Input } from 'polarkit/components/ui/input'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import {
+  SchemaObjectWithSelectorWidget,
+  SelectorWidgetSchema,
+  getParameterName,
+  getUnionSchemas,
+  hasSelectorWidget,
+  isDereferenced,
+  resolveSchemaMinMax,
+} from './openapi'
+
+const useSelectorWidgetQuery = (widgetSchema: SelectorWidgetSchema) =>
+  useQuery({
+    queryKey: ['docs_selector_widget', { ...widgetSchema }],
+    queryFn: () =>
+      fetch(getServerURL(widgetSchema.resourceRoot), {
+        method: 'GET',
+      }).then(async (response) => {
+        if (!response.ok) {
+          throw new Error(`Unexpected ${response.status} status code`)
+        }
+        const json = await response.json()
+        return json['items'] as any[]
+      }),
+  })
+
+const SelectorWidget = ({
+  schema,
+  parameterName,
+  parameterIn,
+}: {
+  schema: SchemaObjectWithSelectorWidget
+  parameterName: string
+  parameterIn: 'query' | 'path' | 'body'
+}) => {
+  const router = useRouter()
+  const pathname = usePathname()
+  const params = useSearchParams()
+  const widgetSchema = schema['x-polar-selector-widget']
+  const { data: items } = useSelectorWidgetQuery(widgetSchema)
+  const parameterKey = getParameterName(parameterName, parameterIn)
+
+  const parameterValue = useMemo(
+    () => params.get(parameterKey) || '',
+    [params, parameterKey],
+  )
+  const onChange = useCallback(
+    (value: string) => {
+      const updatedParams = new URLSearchParams(params)
+      updatedParams.set(parameterKey, value)
+      router.replace(`${pathname}?${updatedParams}`, { scroll: false })
+    },
+    [params, parameterKey, pathname, router],
+  )
+
+  return (
+    <Select onValueChange={onChange} value={parameterValue}>
+      <SelectTrigger>
+        <SelectValue placeholder={`Select a ${widgetSchema.resourceName}`} />
+      </SelectTrigger>
+      <SelectContent>
+        {items &&
+          items.map((item) => (
+            <SelectItem key={item.id} value={item.id}>
+              {item[widgetSchema.displayProperty]}
+              <span className="ml-2 font-mono text-gray-500">{item.id}</span>
+            </SelectItem>
+          ))}
+      </SelectContent>
+    </Select>
+  )
+}
+
+const GenericWidget = ({
+  schema,
+  parameterName,
+  parameterIn,
+}: {
+  schema: OpenAPIV3_1.SchemaObject
+  parameterName: string
+  parameterIn: 'query' | 'path' | 'body'
+}) => {
+  const parameterKey = getParameterName(parameterName, parameterIn)
+  const router = useRouter()
+  const pathname = usePathname()
+  const params = useSearchParams()
+
+  const [value, setValue] = useState<string>('')
+
+  useEffect(() => {
+    setValue(
+      params.get(parameterKey) ||
+        (schema.default !== undefined ? `${schema.default}` : ''),
+    )
+  }, [params, parameterKey, schema.default])
+
+  const updateURL = useCallback(
+    (value: string) => {
+      const updatedParams = new URLSearchParams(params)
+      updatedParams.set(parameterKey, value)
+      router.replace(`${pathname}?${updatedParams}`, { scroll: false })
+    },
+    [params, router, pathname, parameterKey],
+  )
+  const debouncedUpdateURL = debounce(updateURL, 500)
+
+  const onChange = useCallback(
+    (value: string) => {
+      setValue(value)
+      updateURL(value)
+    },
+    [updateURL],
+  )
+  const debouncedOnChange = useCallback(
+    (value: string) => {
+      setValue(value)
+      debouncedUpdateURL(value)
+    },
+    [debouncedUpdateURL],
+  )
+
+  if (schema.type === 'number' || schema.type === 'integer') {
+    const [min, max] = resolveSchemaMinMax(schema)
+    return (
+      <Input
+        type="number"
+        value={value}
+        onChange={(e) => debouncedOnChange(e.target.value)}
+        min={min}
+        max={max}
+      />
+    )
+  }
+
+  if (schema.type === 'boolean') {
+    return (
+      <Select onValueChange={onChange} value={value}>
+        <SelectTrigger>
+          <SelectValue placeholder="Select an option" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="true">
+            <span className="font-mono">true</span>
+          </SelectItem>
+          <SelectItem value="false" className="font-mono">
+            <span className="font-mono">false</span>
+          </SelectItem>
+        </SelectContent>
+      </Select>
+    )
+  }
+
+  if (schema.enum) {
+    return (
+      <Select onValueChange={onChange} value={value}>
+        <SelectTrigger>
+          <SelectValue placeholder="Select an option" />
+        </SelectTrigger>
+        <SelectContent>
+          {schema.enum.map((value, index) => (
+            <SelectItem key={index} value={value}>
+              {value}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    )
+  }
+
+  if (schema.type === 'string') {
+    return (
+      <Input
+        type="text"
+        value={value}
+        onChange={(e) => debouncedOnChange(e.target.value)}
+      />
+    )
+  }
+
+  // TODO?: handle more types
+  return null
+}
+
+const ClearParameterButton = ({
+  parameterName,
+  parameterIn,
+}: {
+  parameterName: string
+  parameterIn: 'query' | 'path' | 'body'
+}) => {
+  const router = useRouter()
+  const pathname = usePathname()
+  const params = useSearchParams()
+  const parameterKey = getParameterName(parameterName, parameterIn)
+
+  const onClick = useCallback(() => {
+    const updatedParams = new URLSearchParams(params)
+    updatedParams.delete(parameterKey)
+    router.replace(`${pathname}?${updatedParams}`, { scroll: false })
+  }, [params, parameterKey, pathname, router])
+
+  if (!params.has(parameterKey)) {
+    return null
+  }
+
+  return (
+    <Button
+      className={
+        'border-none bg-transparent text-[16px] opacity-50 transition-opacity hover:opacity-100 dark:bg-transparent'
+      }
+      size="icon"
+      variant="secondary"
+      type="button"
+      onClick={onClick}
+    >
+      <ClearOutlined fontSize="inherit" />
+    </Button>
+  )
+}
+
+const UnionParameterWidget = ({
+  schemas: _schemas,
+  parameterName,
+  parameterIn,
+}: {
+  schemas: OpenAPIV3_1.SchemaObject[]
+  parameterName: string
+  parameterIn: 'query' | 'path' | 'body'
+}) => {
+  const schemas = _schemas.filter(isDereferenced)
+  const nullSchema = schemas.find((schema) => schema.type === 'null')
+  const nonNullSchemas = schemas.filter((schema) => schema.type !== 'null')
+
+  return (
+    <div className="flex flex-row items-center gap-2">
+      {nonNullSchemas.map((schema, index) => (
+        <ParameterWidget
+          key={index}
+          schema={schema}
+          parameterName={parameterName}
+          parameterIn={parameterIn}
+        />
+      ))}
+      {nullSchema && (
+        <ClearParameterButton
+          parameterName={parameterName}
+          parameterIn={parameterIn}
+        />
+      )}
+    </div>
+  )
+}
+
+const ParameterWidget = ({
+  schema,
+  parameterName,
+  parameterIn,
+}: {
+  schema: OpenAPIV3_1.SchemaObject
+  parameterName: string
+  parameterIn: 'query' | 'path' | 'body'
+}) => {
+  const unionSchemas = getUnionSchemas(schema)
+  if (unionSchemas) {
+    return (
+      <UnionParameterWidget
+        schemas={unionSchemas}
+        parameterName={parameterName}
+        parameterIn={parameterIn}
+      />
+    )
+  }
+
+  if (hasSelectorWidget(schema)) {
+    return (
+      <SelectorWidget
+        schema={schema}
+        parameterName={parameterName}
+        parameterIn={parameterIn}
+      />
+    )
+  }
+
+  return (
+    <GenericWidget
+      schema={schema}
+      parameterName={parameterName}
+      parameterIn={parameterIn}
+    />
+  )
+}
+
+export default ParameterWidget

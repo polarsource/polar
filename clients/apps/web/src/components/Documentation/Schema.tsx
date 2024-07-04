@@ -9,6 +9,7 @@ import {
 import AnchoredElement from './AnchoredElement'
 import OptionalBadge from './OptionalBadge'
 import { ParameterItem } from './ParameterItem'
+import ParameterWidget from './ParameterWidget'
 import PropertyDefault from './PropertyDefault'
 import PropertyType from './PropertyType'
 import ProseWrapper from './ProseWrapper'
@@ -18,11 +19,13 @@ import { getUnionSchemas, isDereferenced } from './openapi'
 const UnionSchema = ({
   schemas: _schemas,
   idPrefix,
+  parentsProperties,
   showRequired,
   showDefault,
 }: {
   schemas: OpenAPIV3_1.SchemaObject[]
   idPrefix: string[]
+  parentsProperties: string[]
   showRequired?: boolean
   showDefault?: boolean
 }) => {
@@ -52,6 +55,7 @@ const UnionSchema = ({
             <Schema
               schema={schema}
               idPrefix={[...idPrefix, schema.title || `schema_${index}`]}
+              parentsProperties={parentsProperties}
               showRequired={showRequired}
               showDefault={showDefault}
             />
@@ -66,6 +70,7 @@ const SchemaProperties = ({
   properties,
   required,
   idPrefix,
+  parentsProperties,
   showRequired,
   showDefault,
 }: {
@@ -74,6 +79,7 @@ const SchemaProperties = ({
   }
   required: string[]
   idPrefix: string[]
+  parentsProperties: string[]
   showRequired?: boolean
   showDefault?: boolean
 }) => {
@@ -108,11 +114,19 @@ const SchemaProperties = ({
                 <Markdown>{property.description}</Markdown>
               </ProseWrapper>
             )}
+            {property.type != 'object' && property.type != 'array' && (
+              <ParameterWidget
+                schema={property}
+                parameterName={[...parentsProperties, key].join('.')}
+                parameterIn="body"
+              />
+            )}
             {property.type == 'object' && (
               <div className="rounded-md border border-gray-200 p-4 dark:border-gray-800">
                 <Schema
                   schema={property}
                   idPrefix={[...idPrefix, key]}
+                  parentsProperties={[...parentsProperties, key]}
                   showRequired={showRequired}
                   showDefault={showDefault}
                 />
@@ -123,6 +137,7 @@ const SchemaProperties = ({
                 <Schema
                   schema={property.items}
                   idPrefix={[...idPrefix, key]}
+                  parentsProperties={[...parentsProperties, key]}
                   showRequired={showRequired}
                   showDefault={showDefault}
                 />
@@ -140,11 +155,13 @@ export const Schema = ({
   idPrefix,
   showRequired,
   showDefault,
+  parentsProperties,
 }: {
   schema: OpenAPIV3_1.SchemaObject
   idPrefix: string[]
   showRequired?: boolean
   showDefault?: boolean
+  parentsProperties?: string[]
 }) => {
   const unionSchemas = getUnionSchemas(schema)
   if (unionSchemas) {
@@ -154,6 +171,7 @@ export const Schema = ({
         idPrefix={idPrefix}
         showRequired={showRequired}
         showDefault={showDefault}
+        parentsProperties={parentsProperties ?? []}
       />
     )
   }
@@ -166,6 +184,7 @@ export const Schema = ({
         idPrefix={idPrefix}
         showRequired={showRequired}
         showDefault={showDefault}
+        parentsProperties={parentsProperties ?? []}
       />
     )
   }

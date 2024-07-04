@@ -124,7 +124,57 @@ export const getUnionSchemas = (schema: OpenAPIV3_1.SchemaObject) => {
   return null
 }
 
-const generateScalarSchemaExample = (schema: OpenAPIV3_1.SchemaObject) => {
+export const resolveSchemaMinMax = (
+  schema: OpenAPIV3_1.SchemaObject,
+): [number | undefined, number | undefined] => {
+  let minimum: number | undefined = undefined
+  let maximum: number | undefined = undefined
+  if (schema.minimum !== undefined) {
+    if (schema.exclusiveMinimum === true) {
+      minimum = schema.minimum + 1
+    }
+  }
+  if (schema.maximum !== undefined) {
+    if (schema.exclusiveMaximum === true) {
+      maximum = schema.maximum - 1
+    }
+  }
+  if (
+    schema.exclusiveMinimum !== undefined &&
+    Number.isInteger(schema.exclusiveMinimum)
+  ) {
+    minimum = (schema.exclusiveMinimum as number) + 1
+  }
+  if (
+    schema.exclusiveMaximum !== undefined &&
+    Number.isInteger(schema.exclusiveMaximum)
+  ) {
+    maximum = (schema.exclusiveMaximum as number) - 1
+  }
+  return [minimum, maximum]
+}
+
+const generateScalarSchemaExample = (
+  schema: OpenAPIV3_1.SchemaObject,
+  defaults: Record<string, any> | string,
+) => {
+  if (schema.type === 'object') {
+    if (schema.additionalProperties) {
+      return {}
+    }
+    return generateSchemaExample(schema, defaults)
+  }
+
+  if (schema.type === 'array') {
+    return [
+      generateSchemaExample(schema.items as OpenAPIV3_1.SchemaObject, defaults),
+    ]
+  }
+
+  if (typeof defaults === 'string') {
+    return parseDefaultParameterValue(schema, defaults)
+  }
+
   if (schema.example) {
     return schema.example
   }
@@ -154,9 +204,8 @@ const generateScalarSchemaExample = (schema: OpenAPIV3_1.SchemaObject) => {
   }
 
   if (schema.type === 'number' || schema.type === 'integer') {
-    return schema.minimum !== undefined
-      ? schema.minimum + (schema.exclusiveMinimum === true ? 1 : 0)
-      : 0
+    const [minimum] = resolveSchemaMinMax(schema)
+    return minimum !== undefined ? minimum : 0
   }
 
   if (schema.type === 'boolean') {
@@ -165,17 +214,6 @@ const generateScalarSchemaExample = (schema: OpenAPIV3_1.SchemaObject) => {
 
   if (schema.type === 'null') {
     return null
-  }
-
-  if (schema.type === 'object') {
-    if (schema.additionalProperties) {
-      return {}
-    }
-    return generateSchemaExample(schema)
-  }
-
-  if (schema.type === 'array') {
-    return [generateSchemaExample(schema.items as OpenAPIV3_1.SchemaObject)]
   }
 
   // Completely empty schema information
@@ -188,47 +226,88 @@ const generateScalarSchemaExample = (schema: OpenAPIV3_1.SchemaObject) => {
   )
 }
 
+const parseDefaultParameterValue = (
+  schema: OpenAPIV3_1.SchemaObject | OpenAPIV3_1.ReferenceObject | undefined,
+  value: string,
+) => {
+  if (!schema || !isDereferenced(schema)) {
+    return value
+  }
+
+  if (schema.type === 'number') {
+    return Number.parseFloat(value)
+  }
+  if (schema.type === 'integer') {
+    return Number.parseInt(value)
+  }
+  if (schema.type === 'boolean') {
+    return value === 'true'
+  }
+
+  // TODO: Handle more types
+
+  return value
+}
+
 export const generateSchemaExample = (
   schema: OpenAPIV3_1.SchemaObject,
+  defaults: Record<string, any> | string = {},
 ): Record<string, any> | string => {
   const unionSchemas = getUnionSchemas(schema)
 
   // TODO?: Handle more than one union schema
   if (unionSchemas) {
-    return generateSchemaExample(unionSchemas.filter(isDereferenced)[0])
+    return generateSchemaExample(
+      unionSchemas.filter(isDereferenced)[0],
+      defaults,
+    )
   }
 
   if (schema.properties) {
     return Object.entries(schema.properties).reduce((acc, [key, value]) => {
+      const childDefaults =
+        defaults && typeof defaults === 'object' ? defaults[key] : {}
       return {
         ...acc,
-        [key]: generateSchemaExample(value),
+        [key]: generateSchemaExample(value, childDefaults),
       }
     }, {})
   }
 
-  return generateScalarSchemaExample(schema)
+  return generateScalarSchemaExample(schema, defaults)
+}
+
+const getParameters = (
+  endpoint: OpenAPIV3_1.OperationObject,
+  include: ('path' | 'query')[],
+): OpenAPIV3_1.ParameterObject[] => {
+  if (!endpoint.parameters) {
+    return []
+  }
+  return endpoint.parameters.filter(
+    (parameter) =>
+      isDereferenced(parameter) && include.some((i) => i === parameter.in),
+  ) as OpenAPIV3_1.ParameterObject[]
 }
 
 const getParametersExample = (
   endpoint: OpenAPIV3_1.OperationObject,
   include: ('path' | 'query')[],
+  defaults: Record<string, any> = {},
 ) => {
-  if (!endpoint.parameters) {
-    return undefined
-  }
-  return endpoint.parameters.reduce(
+  return getParameters(endpoint, include).reduce(
     (acc, parameter) => {
       if (
-        isDereferenced(parameter) &&
-        parameter.required &&
-        include.some((i) => i === parameter.in) &&
         parameter.schema &&
-        isDereferenced<OpenAPIV3_1.SchemaObject>(parameter.schema)
+        isDereferenced<OpenAPIV3_1.SchemaObject>(parameter.schema) &&
+        (parameter.required || defaults[parameter.name] !== undefined)
       ) {
         return {
           ...acc,
-          [parameter.name]: generateSchemaExample(parameter.schema),
+          [parameter.name]: generateSchemaExample(
+            parameter.schema,
+            defaults[parameter.name],
+          ),
         }
       }
       return acc
@@ -237,124 +316,250 @@ const getParametersExample = (
   )
 }
 
-export const buildCurlCommand = (
-  method: string = 'GET',
-  url: string,
-  endpoint: OpenAPIV3_1.OperationObject,
+export const PATH_PARAMETER_PREFIX = 'p_'
+export const QUERY_PARAMETER_PREFIX = 'q_'
+export const BODY_PARAMETER_PREFIX = 'b_'
+const parameterPattern = new RegExp(
+  `(${PATH_PARAMETER_PREFIX}|${QUERY_PARAMETER_PREFIX}|${BODY_PARAMETER_PREFIX})(.*)`,
+)
+
+export const getParameterName = (
+  name: string,
+  location: 'path' | 'query' | 'body',
 ): string => {
-  const parametersExample = getParametersExample(endpoint, ['query'])
-  const queryParametersString = new URLSearchParams(
-    parametersExample,
-  ).toString()
-
-  const bodySchema = getRequestBodySchema(endpoint)
-  const bodyExample = bodySchema ? generateSchemaExample(bodySchema) : undefined
-  const bodyString = bodyExample
-    ? `-d '${JSON.stringify(bodyExample, null, 2)}'`
-    : ''
-
-  return `curl -X ${method.toUpperCase()} \\
-${url}${queryParametersString ? '?' + queryParametersString : ''} \\
--H "Content-type: application/json" \\
--H "Accept: application/json" \\
--H "Authorization: Bearer <token>" \\
-${bodyString}`
+  switch (location) {
+    case 'path':
+      return `${PATH_PARAMETER_PREFIX}${name}`
+    case 'query':
+      return `${QUERY_PARAMETER_PREFIX}${name}`
+    case 'body':
+      return `${BODY_PARAMETER_PREFIX}${name}`
+  }
 }
 
-const snakeToCamel = (str: string) =>
-  str
-    .toLowerCase()
-    .replace(/([-_][a-z])/g, (group: string) =>
-      group.toUpperCase().replace('-', '').replace('_', ''),
+const getLocationFromPrefix = (prefix: string): 'path' | 'query' | 'body' => {
+  switch (prefix) {
+    case PATH_PARAMETER_PREFIX:
+      return 'path'
+    case QUERY_PARAMETER_PREFIX:
+      return 'query'
+    case BODY_PARAMETER_PREFIX:
+      return 'body'
+    default:
+      throw new Error(`Invalid parameter prefix: ${prefix}`)
+  }
+}
+
+abstract class CommandBuilder {
+  protected method: HttpMethods
+  protected url: string
+  protected endpoint: OpenAPIV3_1.OperationObject
+  protected params: Record<string, string>
+
+  public constructor(
+    method: string | HttpMethods,
+    url: string,
+    endpoint: OpenAPIV3_1.OperationObject,
+    params: Record<string, string> = {},
+  ) {
+    if (!isMethod(method)) {
+      throw new Error(`Invalid method: ${method}`)
+    }
+    this.method = method
+    this.url = url
+    this.endpoint = endpoint
+    this.params = params
+  }
+
+  public abstract buildCommand(): string
+
+  protected getPathParameters(): Record<string, string> {
+    const explodedParams = this.explodeParams(this.params, ['path'])
+    return getParametersExample(this.endpoint, ['path'], explodedParams)
+  }
+
+  protected getQueryParameters(): Record<string, string> {
+    const explodedParams = this.explodeParams(this.params, ['query'])
+    return getParametersExample(this.endpoint, ['query'], explodedParams)
+  }
+
+  protected getBody(): Record<string, any> | undefined {
+    const bodySchema = getRequestBodySchema(this.endpoint)
+    if (!bodySchema) {
+      return undefined
+    }
+    const explodedParams = this.explodeParams(this.params, ['body'])
+    return generateSchemaExample(bodySchema, explodedParams) as Record<
+      string,
+      any
+    >
+  }
+
+  private explodeParams(
+    params: Record<string, string>,
+    include: ('path' | 'query' | 'body')[],
+  ): Record<string, any> {
+    return Object.entries(params).reduce(
+      (acc, [key, value]) => {
+        const match = key.match(parameterPattern)
+        if (!match) {
+          return acc
+        }
+        const prefix = match[1]
+        if (!include.some((i) => i === getLocationFromPrefix(prefix))) {
+          return acc
+        }
+        const propertyName = match[2]
+        const [property, ...rest] = propertyName.split('.')
+        return {
+          ...acc,
+          [property]: this.explodeParam(rest, value, acc[property] || {}),
+        }
+      },
+      {} as Record<string, any>,
     )
+  }
 
-const objectToString = (obj: any, indent: number = 0): string => {
-  const indentBase = '  '
-  let result = '{\n'
-  const entries = Object.entries(obj)
+  private explodeParam(
+    keys: string[],
+    value: string,
+    existingValue: Record<string, any>,
+  ): Record<string, any> | string {
+    if (keys.length === 0) {
+      return value
+    }
+    const [key, ...rest] = keys
+    return {
+      ...existingValue,
+      [key]: this.explodeParam(rest, value, existingValue[key] || {}),
+    }
+  }
+}
 
-  entries.forEach(([key, value], index) => {
-    const isLast = index === entries.length - 1
-    const lineIndent = indentBase.repeat(indent + 1)
-    const nextIndent = indent + 1
-    let valueString
+export class CURLCommandBuilder extends CommandBuilder {
+  public buildCommand(): string {
+    const queryParameters = new URLSearchParams(
+      this.getQueryParameters(),
+    ).toString()
+    const body = this.getBody()
+    const bodyString = body ? `-d '${JSON.stringify(body, null, 2)}'` : ''
 
-    if (typeof value === 'object' && !Array.isArray(value) && value !== null) {
-      valueString = objectToString(value, nextIndent)
-    } else if (Array.isArray(value)) {
-      valueString = `[${value
-        .map((v) => {
-          if (typeof v === 'object' && !Array.isArray(v) && v !== null) {
-            return objectToString(v, nextIndent)
-          } else if (typeof v === 'string') {
-            return `'${v}'`
-          } else {
-            return v
-          }
-        })
-        .join(', ')}]`
-    } else if (typeof value === 'string') {
-      valueString = `'${value}'`
-    } else {
-      valueString = value
+    return `curl -X ${this.method.toUpperCase()} \\
+    ${this.getURL()}${queryParameters ? '?' + queryParameters : ''} \\
+    -H "Content-type: application/json" \\
+    -H "Accept: application/json" \\
+    -H "Authorization: Bearer <token>" \\
+    ${bodyString}`
+  }
+
+  private getURL(): string {
+    let resultURL = this.url
+    const pathParameters = this.getPathParameters()
+    Object.entries(pathParameters).forEach(([key, value]) => {
+      resultURL = resultURL.replace(`{${key}}`, value)
+    })
+    return resultURL
+  }
+}
+
+export class NodeJSCommandBuilder extends CommandBuilder {
+  public buildCommand(): string {
+    const pathParameters = this.getPathParameters()
+    const queryParameters = this.getQueryParameters()
+    const body = this.getBody()
+
+    const requestParameters = {
+      ...(pathParameters ? this.convertToCamelCase(pathParameters) : {}),
+      ...(queryParameters ? this.convertToCamelCase(queryParameters) : {}),
+      ...(body ? { body } : {}),
     }
 
-    result += `${lineIndent}${key}: ${valueString}${isLast ? '' : ','}\n`
-  })
+    let [namespace, endpointName] = this.endpoint.operationId?.split(':') ?? [
+      '',
+      '',
+    ]
+    endpointName = this.snakeToCamel(endpointName)
 
-  result += `${indentBase.repeat(indent)}}`
-  return result
-}
-
-const convertToCamelCase = (obj: Record<string, any>): Record<string, any> =>
-  Object.keys(obj).reduce(
-    (acc, key) => {
-      const newKey = snakeToCamel(key)
-      return {
-        ...acc,
-        [newKey]: obj[key],
-      }
-    },
-    {} as Record<string, any>,
-  )
-
-export const buildNodeJSCommand = (
-  endpoint: OpenAPIV3_1.OperationObject,
-): string => {
-  const RESERVED_KEYWORDS = ['import', 'export']
-  let [namespace, endpointName] = endpoint.operationId?.split(':') ?? ['', '']
-  endpointName = snakeToCamel(endpointName)
-  if (RESERVED_KEYWORDS.includes(endpointName)) {
-    endpointName = `_${endpointName}`
-  }
-
-  const parametersExamples = getParametersExample(endpoint, ['path', 'query'])
-  const bodySchema = getRequestBodySchema(endpoint)
-  const bodyExample = bodySchema ? generateSchemaExample(bodySchema) : undefined
-
-  const requestParameters = {
-    ...(parametersExamples ? convertToCamelCase(parametersExamples) : {}),
-    ...(bodySchema && isDereferenced(bodySchema) && bodyExample
-      ? {
-          body: bodyExample,
-        }
-      : {}),
-  }
-
-  return `import { PolarAPI, Configuration } from '@polar-sh/sdk';
+    return `
+import { PolarAPI, Configuration } from '@polar-sh/sdk'
 
 const polar = new PolarAPI(
-    new Configuration({
-        headers: {
-            'Authorization': \`Bearer \${process.env.POLAR_ACCESS_TOKEN}\`
-        }
-    })
-);
+  new Configuration({
+    headers: {
+      Authorization: \`Bearer \${process.env.POLAR_ACCESS_TOKEN}\`,
+    },
+  }),
+)
 
-polar.${namespace}.${endpointName}(${objectToString(requestParameters)})
+polar.${namespace}
+  .${endpointName}(${this.objectToString(requestParameters, 1)})
   .then(console.log)
   .catch(console.error);
-`
+`.trim()
+  }
+
+  private snakeToCamel(str: string): string {
+    return str
+      .toLowerCase()
+      .replace(/([-_][a-z])/g, (group: string) =>
+        group.toUpperCase().replace('-', '').replace('_', ''),
+      )
+  }
+
+  private convertToCamelCase(obj: Record<string, any>): Record<string, any> {
+    return Object.keys(obj).reduce(
+      (acc, key) => {
+        const newKey = this.snakeToCamel(key)
+        return {
+          ...acc,
+          [newKey]: obj[key],
+        }
+      },
+      {} as Record<string, any>,
+    )
+  }
+
+  private objectToString(obj: any, indent: number = 0): string {
+    const indentBase = '  '
+    let result = '{\n'
+    const entries = Object.entries(obj)
+
+    entries.forEach(([key, value], index) => {
+      const isLast = index === entries.length - 1
+      const lineIndent = indentBase.repeat(indent + 1)
+      const nextIndent = indent + 1
+      let valueString
+
+      if (
+        typeof value === 'object' &&
+        !Array.isArray(value) &&
+        value !== null
+      ) {
+        valueString = this.objectToString(value, nextIndent)
+      } else if (Array.isArray(value)) {
+        valueString = `[${value
+          .map((v) => {
+            if (typeof v === 'object' && !Array.isArray(v) && v !== null) {
+              return this.objectToString(v, nextIndent)
+            } else if (typeof v === 'string') {
+              return `'${v}'`
+            } else {
+              return v
+            }
+          })
+          .join(', ')}]`
+      } else if (typeof value === 'string') {
+        valueString = `'${value}'`
+      } else {
+        valueString = value
+      }
+
+      result += `${lineIndent}${key}: ${valueString}${isLast ? '' : ','}\n`
+    })
+
+    result += `${indentBase.repeat(indent)}}`
+    return result
+  }
 }
 
 enum APITags {
@@ -462,3 +667,18 @@ export const getAPISections = (
     .filter((section) => section.endpoints.length > 0)
     .sort((a, b) => a.name.localeCompare(b.name, 'en-US'))
 }
+
+export interface SelectorWidgetSchema {
+  resourceRoot: string
+  resourceName: string
+  displayProperty: string
+}
+
+export type SchemaObjectWithSelectorWidget = OpenAPIV3_1.SchemaObject & {
+  'x-polar-selector-widget': SelectorWidgetSchema
+}
+
+export const hasSelectorWidget = (
+  schema: OpenAPIV3_1.SchemaObject,
+): schema is SchemaObjectWithSelectorWidget =>
+  'x-polar-selector-widget' in schema

@@ -5,7 +5,7 @@ const getDefaultDisplay = (
 ): string | null => {
   const { type, default: value } = property
 
-  if (!value) {
+  if (value === undefined) {
     return null
   }
 
@@ -25,7 +25,7 @@ const PropertyDefault = ({
 }: {
   property: OpenAPIV3_1.SchemaObject
 }) => {
-  if (!property.default) {
+  if (property.default === undefined) {
     return null
   }
 

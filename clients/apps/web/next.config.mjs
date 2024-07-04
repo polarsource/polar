@@ -149,7 +149,6 @@ const nextConfig = {
         :
         [],
 
-      // Logged-out user redirection
       {
         source:
           '/:rootPath(feed|for-you|posts|purchases|funding|rewards|settings|backoffice|maintainer|finance):subPath(/?.*)',

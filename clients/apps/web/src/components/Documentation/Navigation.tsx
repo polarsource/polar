@@ -50,25 +50,6 @@ const NavigationSection = ({
   )
 }
 
-const FAQSections = () => {
-  return (
-    <NavigationSection title="FAQ" defaultOpened={true}>
-      <div className="flex flex-col">
-        <NavigationItem href="/docs/faq/overview">Overview</NavigationItem>
-        <NavigationItem href="/docs/faq/for-maintainers">
-          For Maintainers
-        </NavigationItem>
-        <NavigationItem href="/docs/faq/for-backers">
-          For Backers
-        </NavigationItem>
-        <NavigationItem href="/docs/faq/for-contributors">
-          For Contributors
-        </NavigationItem>
-      </div>
-    </NavigationSection>
-  )
-}
-
 const APISections = () => {
   return (
     <div className="flex flex-col">
@@ -293,9 +274,28 @@ export const MainNavigation = () => {
           Payments & Taxes
         </NavigationItem>
       </div>
-
-      <NavigationItem href="/docs/faq/for-maintainers">FAQ</NavigationItem>
     </>
+  )
+}
+
+export const SupportNavigation = () => {
+  return (
+    <div>
+      <h2 className="mb-4 text-sm font-medium uppercase text-gray-700">FAQ</h2>
+      <NavigationItem href="/docs/support/faq#pricing">
+        Payments & Fees
+      </NavigationItem>
+      <NavigationItem href="/docs/support/faq#issue-funding">
+        Issue funding
+      </NavigationItem>
+      <NavigationItem href="/docs/support/faq#reward-contributors">
+        Reward contributors
+      </NavigationItem>
+      <NavigationItem href="/docs/support/faq#payouts">Payouts</NavigationItem>
+      <NavigationItem href="/docs/support/faq#supported-platforms-countries--currencies">
+        Supported Countries & Currencies
+      </NavigationItem>
+    </div>
   )
 }
 
@@ -383,7 +383,7 @@ export const DocumentationPageSidebar = ({
             href="/docs/support"
             active={() => activeSection === 'support'}
           >
-            Support
+            Help
           </NavigationItem>
         </li>
       </ul>

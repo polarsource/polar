@@ -145,7 +145,7 @@ const DocumentationPopover = () => {
           togglePopover(false)
         }}
       >
-        Documentation
+        Docs
         <PopoverContent
           className="rounded-4xl flex w-[920px] flex-row divide-x p-6 dark:text-white"
           sideOffset={20}

@@ -1,6 +1,4 @@
-from typing import Annotated
-
-from fastapi import Depends, Path, Query
+from fastapi import Depends, Query
 from pydantic import UUID4
 
 from polar.authz.service import Authz
@@ -14,14 +12,13 @@ from polar.routing import APIRouter
 
 from . import auth
 from .schemas import Product as ProductSchema
-from .schemas import ProductBenefitsUpdate, ProductCreate, ProductUpdate
+from .schemas import ProductBenefitsUpdate, ProductCreate, ProductID, ProductUpdate
 from .service.product import product as product_service
 
 router = APIRouter(
     prefix="/products", tags=["products", APITag.documented, APITag.featured]
 )
 
-ProductID = Annotated[UUID4, Path(description="The product ID.")]
 ProductNotFound = {
     "description": "Product not found.",
     "model": ResourceNotFound.schema(),

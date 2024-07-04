@@ -7,9 +7,6 @@ import { PropsWithChildren } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { PolarMenu } from '../[organization]/(sidebar)/LayoutPolarMenu'
 
-export const dynamic = 'force-static'
-export const dynamicParams = false
-
 export default async function Layout({ children }: PropsWithChildren) {
   return (
     <div className="dark:bg-polar-950 flex w-full flex-col items-center gap-y-12 bg-white">

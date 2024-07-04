@@ -7,6 +7,7 @@ import { PostWizard } from '@/components/Onboarding/Creator/PostWizard'
 import { SetupSubscriptions } from '@/components/Onboarding/Creator/SetupSubscriptions'
 import { AccountWidget } from '@/components/Widgets/AccountWidget'
 import { ActivityWidget } from '@/components/Widgets/ActivityWidget'
+import { MRRWidget } from '@/components/Widgets/MRRWidget'
 import { OrdersWidget } from '@/components/Widgets/OrdersWidget'
 import { RevenueWidget } from '@/components/Widgets/RevenueWidget'
 import { Organization } from '@polar-sh/sdk'
@@ -25,6 +26,7 @@ const OverviewPage: React.FC<OverviewPageProps> = ({}) => {
         <ActivityWidget className="col-span-2" />
         <OrdersWidget />
         <RevenueWidget />
+        <MRRWidget />
         <AccountWidget />
       </div>
 

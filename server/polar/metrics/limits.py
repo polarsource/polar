@@ -6,7 +6,7 @@ MIN_DATE = date(2023, 1, 1)  # Before that, Polar didn't even exist! 🚀
 
 MAX_INTERVAL_DAYS: dict[Interval, int] = {
     Interval.hour: 7,
-    Interval.day: 90,
+    Interval.day: 366,
     Interval.week: 365,
     Interval.month: 365 * 4,
     Interval.year: 365 * 10,

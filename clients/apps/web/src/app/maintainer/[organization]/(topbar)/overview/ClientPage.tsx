@@ -5,6 +5,8 @@ import { CreatorUpsell } from '@/components/Onboarding/Creator/CreatorUpsell'
 import { NewsFromPolar } from '@/components/Onboarding/Creator/NewsFromPolar'
 import { PostWizard } from '@/components/Onboarding/Creator/PostWizard'
 import { SetupSubscriptions } from '@/components/Onboarding/Creator/SetupSubscriptions'
+import { ActivityWidget } from '@/components/Widgets/ActivityWidget'
+import { OrdersWidget } from '@/components/Widgets/OrdersWidget'
 import { Organization } from '@polar-sh/sdk'
 import React from 'react'
 
@@ -17,6 +19,11 @@ interface OverviewPageProps {
 const OverviewPage: React.FC<OverviewPageProps> = ({}) => {
   return (
     <DashboardBody className="flex flex-col gap-y-8 pb-24 md:gap-y-20">
+      <div className="hidden grid-cols-1 gap-12 md:grid md:grid-cols-3">
+        <ActivityWidget className="col-span-2" />
+        <OrdersWidget />
+      </div>
+
       <CreatorUpsell />
       <PostWizard />
       <SetupSubscriptions />

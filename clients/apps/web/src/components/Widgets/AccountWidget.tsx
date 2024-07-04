@@ -23,7 +23,10 @@ export const AccountWidget = ({ className }: AccountWidgetProps) => {
   const { data: personalAccount } = useAccount(currentUser.data?.account_id)
 
   const account = useMemo(
-    () => organizationAccount || personalAccount,
+    () =>
+      personalOrganization?.id === org?.id
+        ? personalAccount
+        : organizationAccount,
     [organizationAccount, personalAccount],
   )
 
@@ -33,6 +36,10 @@ export const AccountWidget = ({ className }: AccountWidgetProps) => {
     account?.status === Status.ACTIVE &&
     summary?.balance?.amount &&
     summary.balance.amount > 0
+
+  if (!account) {
+    return null
+  }
 
   return (
     <Card

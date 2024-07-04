@@ -1,11 +1,10 @@
-import { useCurrentOrgAndRepoFromURL, usePersonalOrganization } from '@/hooks'
-import { useAccount, useTransactionsSummary, useUser } from '@/hooks/queries'
+import { useCurrentOrgAndRepoFromURL } from '@/hooks'
+import { useAccount, useTransactionsSummary } from '@/hooks/queries'
 import { Status } from '@polar-sh/sdk'
 import { getCentsInDollarString } from '@polarkit/lib/money'
 import Link from 'next/link'
 import Button from 'polarkit/components/ui/atoms/button'
 import { Card, CardFooter, CardHeader } from 'polarkit/components/ui/atoms/card'
-import { useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 export interface AccountWidgetProps {
@@ -13,33 +12,15 @@ export interface AccountWidgetProps {
 }
 
 export const AccountWidget = ({ className }: AccountWidgetProps) => {
-  const personalOrganization = usePersonalOrganization()
   const { org } = useCurrentOrgAndRepoFromURL()
-  const currentUser = useUser()
 
-  const { data: organizationAccount } = useAccount(
-    personalOrganization?.account_id,
-  )
-  const { data: personalAccount } = useAccount(currentUser.data?.account_id)
-
-  const account = useMemo(
-    () =>
-      personalOrganization?.id === org?.id
-        ? personalAccount
-        : organizationAccount,
-    [organizationAccount, personalAccount],
-  )
-
+  const { data: account } = useAccount(org?.account_id)
   const { data: summary } = useTransactionsSummary(account?.id ?? '')
 
   const canWithdraw =
     account?.status === Status.ACTIVE &&
     summary?.balance?.amount &&
     summary.balance.amount > 0
-
-  if (!account) {
-    return null
-  }
 
   return (
     <Card

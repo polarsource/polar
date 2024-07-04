@@ -4,6 +4,7 @@ import LogoIcon from '@/components/Brand/LogoIcon'
 import { CommandPaletteTrigger } from '@/components/CommandPalette/CommandPaletteTrigger'
 import { useModal } from '@/components/Modal/useModal'
 import {
+  ArrowForward,
   ArticleOutlined,
   CloseOutlined,
   ConstructionOutlined,
@@ -227,20 +228,38 @@ export const MainNavigation = () => {
           Get Funding
         </h2>
         <NavigationItem href="/docs/donations">Donations</NavigationItem>
-        <NavigationSection title="Issue Funding" defaultOpened={true}>
-          <NavigationItem href="/docs/issue-funding/overview">
+        <NavigationSection
+          title="Issue Funding & Rewards"
+          defaultOpened={false}
+        >
+          <NavigationItem
+            href="/docs/issue-funding/overview"
+            icon={<ArrowForward fontSize="inherit" />}
+          >
             Overview
           </NavigationItem>
-          <NavigationItem href="/docs/issue-funding/getting-started">
+          <NavigationItem
+            href="/docs/issue-funding/getting-started"
+            icon={<ArrowForward fontSize="inherit" />}
+          >
             Getting Started
           </NavigationItem>
-          <NavigationItem href="/docs/issue-funding/workflow">
+          <NavigationItem
+            href="/docs/issue-funding/workflow"
+            icon={<ArrowForward fontSize="inherit" />}
+          >
             Workflow
           </NavigationItem>
-          <NavigationItem href="/docs/issue-funding/promote">
+          <NavigationItem
+            href="/docs/issue-funding/promote"
+            icon={<ArrowForward fontSize="inherit" />}
+          >
             Promote
           </NavigationItem>
-          <NavigationItem href="/docs/issue-funding/reward-contributors">
+          <NavigationItem
+            href="/docs/issue-funding/reward-contributors"
+            icon={<ArrowForward fontSize="inherit" />}
+          >
             Reward Contributors
           </NavigationItem>
         </NavigationSection>

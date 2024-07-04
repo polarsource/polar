@@ -4,16 +4,15 @@ import LogoIcon from '@/components/Brand/LogoIcon'
 import { CommandPaletteTrigger } from '@/components/CommandPalette/CommandPaletteTrigger'
 import { useModal } from '@/components/Modal/useModal'
 import {
-  TerminalOutlined,
-  ArrowForward,
+  ArticleOutlined,
   CloseOutlined,
-  DescriptionOutlined,
   ConstructionOutlined,
+  DescriptionOutlined,
   KeyboardArrowDown,
   KeyboardArrowUp,
   ShortTextOutlined,
-  ArticleOutlined,
   SupportOutlined,
+  TerminalOutlined,
 } from '@mui/icons-material'
 import { AnimatePresence, motion } from 'framer-motion'
 import { usePathname } from 'next/navigation'
@@ -46,62 +45,8 @@ const NavigationSection = ({
       defaultOpened={defaultOpened}
       isSubMenu={false}
     >
-      <div className="flex flex-col gap-y-4">
-        <div className="flex flex-col">{children}</div>
-      </div>
+      <div className="flex flex-col">{children}</div>
     </CollapsibleSection>
-  )
-}
-
-const OverviewSections = () => {
-  return (
-    <>
-      <div className="flex flex-col">
-        <NavigationItem href="/docs/donations">Donations</NavigationItem>
-        <NavigationItem href="/docs/benefits">Benefits</NavigationItem>
-        <NavigationItem href="/docs/subscriptions">
-          Subscriptions
-        </NavigationItem>
-        <NavigationItem href="/docs/newsletters">Newsletters</NavigationItem>
-        <NavigationItem href="/docs/ads">Ads</NavigationItem>
-        <NavigationItem href="/docs/payments-taxes">
-          Payments & Taxes
-        </NavigationItem>
-      </div>
-
-      <NavigationSection title="Issue Funding" defaultOpened={true}>
-        <NavigationItem
-          href="/docs/issue-funding/overview"
-          icon={<ArrowForward fontSize="inherit" />}
-        >
-          Overview
-        </NavigationItem>
-        <NavigationItem
-          href="/docs/issue-funding/getting-started"
-          icon={<ArrowForward fontSize="inherit" />}
-        >
-          Getting Started
-        </NavigationItem>
-        <NavigationItem
-          href="/docs/issue-funding/workflow"
-          icon={<ArrowForward fontSize="inherit" />}
-        >
-          Workflow
-        </NavigationItem>
-        <NavigationItem
-          href="/docs/issue-funding/promote"
-          icon={<ArrowForward fontSize="inherit" />}
-        >
-          Promote
-        </NavigationItem>
-        <NavigationItem
-          href="/docs/issue-funding/reward-contributors"
-          icon={<ArrowForward fontSize="inherit" />}
-        >
-          Reward Contributors
-        </NavigationItem>
-      </NavigationSection>
-    </>
   )
 }
 
@@ -109,28 +54,14 @@ const FAQSections = () => {
   return (
     <NavigationSection title="FAQ" defaultOpened={true}>
       <div className="flex flex-col">
-        <NavigationItem
-          href="/docs/faq/overview"
-          icon={<ArrowForward fontSize="inherit" />}
-        >
-          Overview
-        </NavigationItem>
-        <NavigationItem
-          href="/docs/faq/for-maintainers"
-          icon={<ArrowForward fontSize="inherit" />}
-        >
+        <NavigationItem href="/docs/faq/overview">Overview</NavigationItem>
+        <NavigationItem href="/docs/faq/for-maintainers">
           For Maintainers
         </NavigationItem>
-        <NavigationItem
-          href="/docs/faq/for-backers"
-          icon={<ArrowForward fontSize="inherit" />}
-        >
+        <NavigationItem href="/docs/faq/for-backers">
           For Backers
         </NavigationItem>
-        <NavigationItem
-          href="/docs/faq/for-contributors"
-          icon={<ArrowForward fontSize="inherit" />}
-        >
+        <NavigationItem href="/docs/faq/for-contributors">
           For Contributors
         </NavigationItem>
       </div>
@@ -243,7 +174,8 @@ const CollapsibleSection = ({
 }>) => {
   const [isOpen, setIsOpen] = useState(defaultOpened || false)
 
-  let containerClasses = ''
+  let containerClasses =
+    '-mx-3 px-3 py-2 text-sm transition-colors hover:text-blue-500 dark:hover:text-white'
   if (isSubMenu) {
     containerClasses = twMerge(
       '-mx-4 -my-2 flex flex-col gap-y-2  px-4 py-2 hover:bg-gray-75 group rounded-xl transition-colors duration-100 dark:border dark:border-transparent',
@@ -259,15 +191,15 @@ const CollapsibleSection = ({
         className="flex cursor-pointer flex-row items-center justify-between"
         onClick={() => setIsOpen((open) => !open)}
       >
-        <h2
+        <h3
           className={twMerge(
-            isSubMenu &&
-              'dark:text-polar-500 dark:group-hover:text-polar-50 text-sm capitalize text-gray-500 transition-colors group-hover:text-black',
-            isOpen && 'text-black dark:text-white',
+            'dark:text-polar-500 dark:group-hover:text-polar-50 text-sm capitalize text-gray-500 transition-colors group-hover:text-black',
+            !isSubMenu && 'hover:text-blue-500 dark:hover:text-white',
+            isSubMenu && isOpen && 'text-black dark:text-white',
           )}
         >
           {title}
-        </h2>
+        </h3>
         <span className="dark:text-polar-500 text-gray-500">
           <AnimatePresence mode="popLayout">
             {isOpen ? (
@@ -300,8 +232,69 @@ const CollapsibleSection = ({
 export const MainNavigation = () => {
   return (
     <>
-      <OverviewSections />
-      <FAQSections />
+      <div>
+        <h2 className="mb-4 text-sm font-medium uppercase text-gray-700">
+          Introduction
+        </h2>
+        <NavigationItem href="/docs">Welcome</NavigationItem>
+        <NavigationItem href="/docs/start">Quick Start</NavigationItem>
+        <NavigationItem href="/docs/start">GitHub Promotion</NavigationItem>
+      </div>
+
+      <div>
+        <h2 className="mb-4 text-sm font-medium uppercase text-gray-700">
+          Get Funding
+        </h2>
+        <NavigationItem href="/docs/donations">Donations</NavigationItem>
+        <NavigationSection title="Issue Funding" defaultOpened={true}>
+          <NavigationItem href="/docs/issue-funding/overview">
+            Overview
+          </NavigationItem>
+          <NavigationItem href="/docs/issue-funding/getting-started">
+            Getting Started
+          </NavigationItem>
+          <NavigationItem href="/docs/issue-funding/workflow">
+            Workflow
+          </NavigationItem>
+          <NavigationItem href="/docs/issue-funding/promote">
+            Promote
+          </NavigationItem>
+          <NavigationItem href="/docs/issue-funding/reward-contributors">
+            Reward Contributors
+          </NavigationItem>
+        </NavigationSection>
+      </div>
+
+      <div>
+        <h2 className="mb-4 text-sm font-medium uppercase text-gray-700">
+          Offer products & subscriptions
+        </h2>
+        <div className="flex flex-col">
+          <NavigationItem href="/docs/benefits">Benefits</NavigationItem>
+          <NavigationItem href="/docs/subscriptions">
+            Subscriptions
+          </NavigationItem>
+          <NavigationItem href="/docs/ads">Ads</NavigationItem>
+        </div>
+      </div>
+
+      <div>
+        <h2 className="mb-4 text-sm font-medium uppercase text-gray-700">
+          Write Newsletters
+        </h2>
+        <NavigationItem href="/docs/newsletters">Newsletters</NavigationItem>
+      </div>
+
+      <div>
+        <h2 className="mb-4 text-sm font-medium uppercase text-gray-700">
+          Finance & Payouts
+        </h2>
+        <NavigationItem href="/docs/payments-taxes">
+          Payments & Taxes
+        </NavigationItem>
+      </div>
+
+      <NavigationItem href="/docs/faq/for-maintainers">FAQ</NavigationItem>
     </>
   )
 }

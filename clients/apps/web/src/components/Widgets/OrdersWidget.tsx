@@ -76,12 +76,6 @@ export const OrdersWidget = ({ className }: OrdersWidgetProps) => {
     'bottom-0',
   ]
 
-  const classNames = [
-    'dark:bg-polar-900',
-    'dark:bg-polar-800',
-    'dark:bg-polar-700',
-  ]
-
   return (
     <Link
       className={twMerge('h-80', className)}
@@ -94,10 +88,10 @@ export const OrdersWidget = ({ className }: OrdersWidgetProps) => {
               key={order.id}
               className={twMerge(
                 stackingClassNames[index],
-                'rounded-4xl dark:bg-polar-900 peer absolute w-full border border-gray-100 bg-white transition-all duration-300 hover:z-10 hover:scale-100 hover:shadow-2xl peer-hover:opacity-0 dark:border-transparent',
+                'rounded-4xl dark:bg-polar-900 dark:border-polar-800 peer absolute w-full border border-gray-100 bg-white transition-all duration-300 hover:z-10 hover:scale-100 hover:shadow-2xl peer-hover:opacity-0',
               )}
             >
-              <OrderCard className={twMerge(classNames[index])} order={order} />
+              <OrderCard order={order} />
             </div>
           ))}
         </div>

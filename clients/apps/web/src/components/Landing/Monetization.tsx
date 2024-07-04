@@ -122,14 +122,14 @@ export const Monetization = () => {
           <picture>
             <source
               media="(prefers-color-scheme: dark)"
-              srcSet={`/assets/landing/public_page_dark.png`}
+              srcSet={`/assets/landing/overview_dark.png`}
             />
             <img
               className="dark:border-polar-700 rounded-4xl border border-gray-200"
-              srcSet={`/assets/landing/public_page.png`}
+              srcSet={`/assets/landing/overview.png`}
             />
           </picture>
-          <div className="dark:from-polar-950 absolute inset-0 flex flex-col items-center justify-end gap-y-2 bg-gradient-to-t from-white from-30% to-transparent p-6 text-center md:gap-y-8 md:p-12 dark:to-transparent">
+          <div className="dark:from-polar-950 absolute inset-0 flex flex-col items-center justify-end gap-y-2 bg-gradient-to-t from-white from-25% to-transparent to-80% p-6 text-center md:gap-y-8 md:p-12 dark:to-transparent">
             <h2 className="text-2xl leading-snug md:text-5xl">
               From first donation to IPO
             </h2>

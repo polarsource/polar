@@ -21,6 +21,7 @@ from polar.models.product import SubscriptionTierType
 from polar.openapi import APITag
 from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession, get_db_session
+from polar.product.schemas import ProductID
 from polar.routing import APIRouter
 from polar.user.service.user import user as user_service
 
@@ -52,7 +53,7 @@ async def list(
     organization_id: UUID4 | None = Query(
         None, description="Filter by organization ID."
     ),
-    product_id: UUID4 | None = Query(None, description="Filter by product ID."),
+    product_id: ProductID | None = Query(None, description="Filter by product ID."),
     type: SubscriptionTierType | None = Query(
         None, description="Filter by tier type.", deprecated=True
     ),

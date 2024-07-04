@@ -10,6 +10,7 @@ from polar.kit.sorting import Sorting, SortingGetter
 from polar.models import Subscription
 from polar.openapi import APITag
 from polar.postgres import get_db_session
+from polar.product.schemas import ProductID
 from polar.routing import APIRouter
 from polar.subscription.service import AlreadySubscribed
 
@@ -48,7 +49,7 @@ async def list_subscriptions(
     organization_id: UUID4 | None = Query(
         None, description="Filter by organization ID."
     ),
-    product_id: UUID4 | None = Query(None, description="Filter by product ID."),
+    product_id: ProductID | None = Query(None, description="Filter by product ID."),
     active: bool | None = Query(
         None,
         description=("Filter by active or cancelled subscription."),

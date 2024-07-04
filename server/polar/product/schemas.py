@@ -1,5 +1,6 @@
 from typing import Annotated, Literal
 
+from fastapi import Path
 from pydantic import UUID4, AfterValidator, Discriminator, Field
 
 from polar.benefit.schemas import BenefitPublic
@@ -8,6 +9,7 @@ from polar.kit.schemas import (
     EmptyStrToNoneValidator,
     MergeJSONSchema,
     Schema,
+    SelectorWidget,
     TimestampedSchema,
 )
 from polar.models.product import SubscriptionTierType
@@ -17,6 +19,12 @@ PRODUCT_NAME_MIN_LENGTH = 3
 PRODUCT_NAME_MAX_LENGTH = 24
 
 # Product
+
+ProductID = Annotated[
+    UUID4,
+    Path(description="The product ID."),
+    SelectorWidget("/v1/products", "Product", "name"),
+]
 
 # Ref: https://stripe.com/docs/api/payment_intents/object#payment_intent_object-amount
 MAXIMUM_PRICE_AMOUNT = 99999999

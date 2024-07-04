@@ -9,6 +9,7 @@ from polar.models import Order
 from polar.models.product_price import ProductPriceType
 from polar.openapi import APITag
 from polar.postgres import AsyncSession, get_db_session
+from polar.product.schemas import ProductID
 from polar.routing import APIRouter
 
 from . import auth, sorting
@@ -31,7 +32,7 @@ async def list(
     organization_id: UUID4 | None = Query(
         None, description="Filter by organization ID."
     ),
-    product_id: UUID4 | None = Query(None, description="Filter by product ID."),
+    product_id: ProductID | None = Query(None, description="Filter by product ID."),
     product_price_type: ProductPriceType | None = Query(
         None,
         description=(

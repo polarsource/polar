@@ -4,15 +4,15 @@ import LogoIcon from '@/components/Brand/LogoIcon'
 import { CommandPaletteTrigger } from '@/components/CommandPalette/CommandPaletteTrigger'
 import { useModal } from '@/components/Modal/useModal'
 import {
-  ApiOutlined,
+  TerminalOutlined,
   ArrowForward,
   CloseOutlined,
   DescriptionOutlined,
-  FavoriteBorderOutlined,
+  ConstructionOutlined,
   KeyboardArrowDown,
   KeyboardArrowUp,
   ShortTextOutlined,
-  SpaceDashboardOutlined,
+  ArticleOutlined,
   SupportOutlined,
 } from '@mui/icons-material'
 import { AnimatePresence, motion } from 'framer-motion'
@@ -350,16 +350,16 @@ export const DocumentationPageSidebar = ({
       <ul className="flex flex-col">
         <li>
           <NavigationItem
-            icon={<SpaceDashboardOutlined fontSize="inherit" />}
+            icon={<ArticleOutlined fontSize="inherit" />}
             href="/docs"
             active={() => activeSection === 'overview'}
           >
-            Product Guides
+            Documentation
           </NavigationItem>
         </li>
         <li>
           <NavigationItem
-            icon={<ApiOutlined fontSize="inherit" />}
+            icon={<TerminalOutlined fontSize="inherit" />}
             href="/docs/api"
             active={() => activeSection === 'api'}
           >
@@ -377,11 +377,11 @@ export const DocumentationPageSidebar = ({
         </li>
         <li>
           <NavigationItem
-            icon={<FavoriteBorderOutlined fontSize="inherit" />}
+            icon={<ConstructionOutlined fontSize="inherit" />}
             href="/docs/contribute"
             active={() => activeSection === 'contribute'}
           >
-            Contribute (Open Source)
+            Contribute
           </NavigationItem>
         </li>
         <li>

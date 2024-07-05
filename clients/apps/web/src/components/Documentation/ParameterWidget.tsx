@@ -1,5 +1,7 @@
 'use client'
 
+import { useAuth } from '@/hooks'
+import { useListAdminOrganizations } from '@/hooks/queries'
 import { getServerURL } from '@/utils/api'
 import { ClearOutlined } from '@mui/icons-material'
 import { useQuery } from '@tanstack/react-query'
@@ -10,7 +12,9 @@ import Button from 'polarkit/components/ui/atoms/button'
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from 'polarkit/components/ui/atoms/select'
@@ -26,11 +30,16 @@ import {
   resolveSchemaMinMax,
 } from './openapi'
 
-const useSelectorWidgetQuery = (widgetSchema: SelectorWidgetSchema) =>
+const useSelectorWidgetQuery = (
+  widgetSchema: SelectorWidgetSchema,
+  organization_id: string[],
+) =>
   useQuery({
-    queryKey: ['docs_selector_widget', { ...widgetSchema }],
-    queryFn: () =>
-      fetch(getServerURL(widgetSchema.resourceRoot), {
+    queryKey: ['docs_selector_widget', { ...widgetSchema, organization_id }],
+    queryFn: () => {
+      const params = new URLSearchParams()
+      organization_id.forEach((id) => params.append('organization_id', id))
+      return fetch(getServerURL(`${widgetSchema.resourceRoot}/?${params}`), {
         method: 'GET',
       }).then(async (response) => {
         if (!response.ok) {
@@ -38,8 +47,25 @@ const useSelectorWidgetQuery = (widgetSchema: SelectorWidgetSchema) =>
         }
         const json = await response.json()
         return json['items'] as any[]
-      }),
+      })
+    },
+    enabled: organization_id.length > 0,
   })
+
+const SelectorWidgetItem = ({
+  widgetSchema,
+  item,
+}: {
+  widgetSchema: SelectorWidgetSchema
+  item: any
+}) => {
+  return (
+    <>
+      {item[widgetSchema.displayProperty]}
+      <span className="ml-2 font-mono text-gray-500">{item.id}</span>
+    </>
+  )
+}
 
 const SelectorWidget = ({
   schema,
@@ -54,13 +80,22 @@ const SelectorWidget = ({
   const pathname = usePathname()
   const params = useSearchParams()
   const widgetSchema = schema['x-polar-selector-widget']
-  const { data: items } = useSelectorWidgetQuery(widgetSchema)
   const parameterKey = getParameterName(parameterName, parameterIn)
+
+  // Always limit results to organizations the user is an admin of
+  const { data: organizations } = useListAdminOrganizations()
+  const organization_ids = organizations?.items?.map((org) => org.id) || []
+  const {
+    data: items,
+    isLoading,
+    isPending,
+  } = useSelectorWidgetQuery(widgetSchema, organization_ids)
 
   const parameterValue = useMemo(
     () => params.get(parameterKey) || '',
     [params, parameterKey],
   )
+
   const onChange = useCallback(
     (value: string) => {
       const updatedParams = new URLSearchParams(params)
@@ -73,16 +108,23 @@ const SelectorWidget = ({
   return (
     <Select onValueChange={onChange} value={parameterValue}>
       <SelectTrigger>
-        <SelectValue placeholder={`Select a ${widgetSchema.resourceName}`} />
+        <SelectValue placeholder="Select an option" />
       </SelectTrigger>
       <SelectContent>
-        {items &&
-          items.map((item) => (
-            <SelectItem key={item.id} value={item.id}>
-              {item[widgetSchema.displayProperty]}
-              <span className="ml-2 font-mono text-gray-500">{item.id}</span>
-            </SelectItem>
-          ))}
+        <SelectGroup>
+          {isLoading && (
+            <SelectLabel>Loading {widgetSchema.resourceName}...</SelectLabel>
+          )}
+          {(isPending || (items && items.length === 0)) && (
+            <SelectLabel>No {widgetSchema.resourceName} found</SelectLabel>
+          )}
+          {items &&
+            items.map((item) => (
+              <SelectItem key={item.id} value={item.id}>
+                <SelectorWidgetItem widgetSchema={widgetSchema} item={item} />
+              </SelectItem>
+            ))}
+        </SelectGroup>
       </SelectContent>
     </Select>
   )
@@ -277,6 +319,11 @@ const ParameterWidget = ({
   parameterName: string
   parameterIn: 'query' | 'path' | 'body'
 }) => {
+  const { currentUser } = useAuth()
+  if (!currentUser) {
+    return null
+  }
+
   const unionSchemas = getUnionSchemas(schema)
   if (unionSchemas) {
     return (

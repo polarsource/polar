@@ -230,7 +230,7 @@ class TestList:
         results, count = await product_service.list(
             session,
             auth_subject,
-            organization_id=organization.id,
+            organization_id=[organization.id],
             pagination=PaginationParams(1, 10),
         )
 
@@ -350,7 +350,7 @@ class TestList:
         results, count = await product_service.list(
             session,
             auth_subject,
-            organization_id=organization.id,
+            organization_id=[organization.id],
             benefit_id=benefit_organization.id,
             pagination=PaginationParams(1, 10),
         )
@@ -522,7 +522,7 @@ class TestList:
             session,
             get_auth_subject(Anonymous()),
             pagination=PaginationParams(1, 8),
-            organization_id=organization.id,
+            organization_id=[organization.id],
         )
         assert 3 == count
         assert 3 == len(results)
@@ -534,7 +534,7 @@ class TestList:
             auth_subject,
             pagination=PaginationParams(1, 8),  # page 1, limit 8
             include_archived=True,
-            organization_id=organization.id,
+            organization_id=[organization.id],
         )
 
         assert 7 == count

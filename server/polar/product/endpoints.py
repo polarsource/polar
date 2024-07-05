@@ -1,3 +1,5 @@
+from collections.abc import Sequence
+
 from fastapi import Depends, Query
 from pydantic import UUID4
 
@@ -29,7 +31,7 @@ ProductNotFound = {
 async def list(
     pagination: PaginationParamsQuery,
     auth_subject: auth.CreatorProductsReadOrAnonymous,
-    organization_id: UUID4 | None = Query(
+    organization_id: Sequence[UUID4] | None = Query(
         None, description="Filter by organization ID."
     ),
     include_archived: bool = Query(

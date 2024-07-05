@@ -100,7 +100,7 @@ export default async function Page({
     )
     products = await api.products.list(
       {
-        organizationId: organization.id,
+        organizationId: [organization.id],
         isRecurring: true,
         limit: 100,
       },

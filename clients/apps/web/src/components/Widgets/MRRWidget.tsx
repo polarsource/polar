@@ -84,7 +84,10 @@ export const MRRWidget = ({ className }: MRRWidgetProps) => {
               <Tooltip key={i} delayDuration={0}>
                 <TooltipTrigger
                   style={{
-                    height: `${Math.max((period.monthly_recurring_revenue / maxPeriod) * 100, 8)}%`,
+                    height: `${Math.max(
+                      (period.monthly_recurring_revenue / maxPeriod) * 100 || 0,
+                      8,
+                    )}%`,
                   }}
                   className={twMerge(
                     'dark:bg-polar-700 w-3 rounded-full bg-gray-100',

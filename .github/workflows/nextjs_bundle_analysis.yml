@@ -30,14 +30,14 @@ jobs:
       VERCEL_ENV: 'testing'
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
-      - uses: pnpm/action-setup@v4.0.0
+      - uses: pnpm/action-setup@v4
         with:
           version: 9.2.0
 
       - name: Setup Node.js environment
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version-file: clients/.node-version
           cache: "pnpm"
@@ -47,7 +47,7 @@ jobs:
         working-directory: ./clients
         run: pnpm install
 
-      - uses: actions/cache@v3
+      - uses: actions/cache@v4
         with:
           path: |
             ./clients/apps/web/.next
@@ -66,13 +66,13 @@ jobs:
         run: node report-bundle-size.js
 
       - name: Upload bundle
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: bundle
           path: ./clients/apps/web/.next/analyze/__bundle_analysis.json
 
       - name: Download base branch bundle stats
-        uses: dawidd6/action-download-artifact@v2
+        uses: dawidd6/action-download-artifact@v6
         if: success() && github.event.number
         with:
           workflow: nextjs_bundle_analysis.yml
@@ -106,7 +106,7 @@ jobs:
           echo EOF >> $GITHUB_OUTPUT
 
       - name: Find Comment
-        uses: peter-evans/find-comment@v2
+        uses: peter-evans/find-comment@v3
         if: success() && github.event.number
         id: fc
         with:
@@ -114,14 +114,14 @@ jobs:
           body-includes: "<!-- __NEXTJS_BUNDLE"
 
       - name: Create Comment
-        uses: peter-evans/create-or-update-comment@v2
+        uses: peter-evans/create-or-update-comment@v3
         if: success() && github.event.number && steps.fc.outputs.comment-id == 0
         with:
           issue-number: ${{ github.event.number }}
           body: ${{ steps.get-comment-body.outputs.body }}
 
       - name: Update Comment
-        uses: peter-evans/create-or-update-comment@v2
+        uses: peter-evans/create-or-update-comment@v3
         if: success() && github.event.number && steps.fc.outputs.comment-id != 0
         with:
           issue-number: ${{ github.event.number }}

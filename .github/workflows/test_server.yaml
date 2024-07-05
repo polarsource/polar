@@ -18,10 +18,10 @@ jobs:
         os: [ubuntu-22.04]
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Install poetry
         run: pipx install poetry
-      - uses: actions/setup-python@v4
+      - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
           cache: "poetry"
@@ -30,7 +30,7 @@ jobs:
         working-directory: ./server
         run: poetry install --no-root
 
-      - uses: actions/cache@v3
+      - uses: actions/cache@v4
         with:
           path: |
             server/.mypy_cache
@@ -101,7 +101,7 @@ jobs:
           --health-retries 5
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: 💿 MinIO Setup
         working-directory: ./server/.minio
@@ -118,7 +118,7 @@ jobs:
 
       - name: Install poetry
         run: pipx install poetry
-      - uses: actions/setup-python@v4
+      - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
           cache: "poetry"
@@ -128,7 +128,7 @@ jobs:
           poetry install --no-root
           poetry run task generate_dev_jwks
 
-      - uses: actions/cache@v3
+      - uses: actions/cache@v4
         with:
           path: |
             server/.pytest_cache

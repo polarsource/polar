@@ -289,7 +289,7 @@ export class OrganizationsApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/v1/organizations`,
+            path: `/v1/organizations/`,
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,

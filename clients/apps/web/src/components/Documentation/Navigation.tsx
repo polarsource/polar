@@ -222,9 +222,6 @@ export const MainNavigation = () => {
         <NavigationHeadline>Introduction</NavigationHeadline>
         <NavigationItem href="/docs">Welcome</NavigationItem>
         <NavigationItem href="/docs/onboarding">Quick Start</NavigationItem>
-        <NavigationItem href="/docs/github-promotion">
-          GitHub Promotion
-        </NavigationItem>
       </div>
 
       <div>

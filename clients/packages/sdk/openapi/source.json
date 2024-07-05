@@ -575,7 +575,13 @@
                             "anyOf": [
                                 {
                                     "type": "string",
-                                    "format": "uuid4"
+                                    "format": "uuid4",
+                                    "description": "The product ID.",
+                                    "x-polar-selector-widget": {
+                                        "resourceRoot": "/v1/products",
+                                        "resourceName": "Product",
+                                        "displayProperty": "name"
+                                    }
                                 },
                                 {
                                     "type": "null"
@@ -922,7 +928,13 @@
                             "anyOf": [
                                 {
                                     "type": "string",
-                                    "format": "uuid4"
+                                    "format": "uuid4",
+                                    "description": "The product ID.",
+                                    "x-polar-selector-widget": {
+                                        "resourceRoot": "/v1/products",
+                                        "resourceName": "Product",
+                                        "displayProperty": "name"
+                                    }
                                 },
                                 {
                                     "type": "null"
@@ -1131,8 +1143,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Anonymous"
+                    "Anonymous",
+                    "User"
                 ]
             }
         },
@@ -4103,8 +4115,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Anonymous"
+                    "Anonymous",
+                    "User"
                 ]
             }
         },
@@ -4158,8 +4170,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Anonymous"
+                    "Anonymous",
+                    "User"
                 ]
             }
         },
@@ -4265,8 +4277,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Anonymous"
+                    "Anonymous",
+                    "User"
                 ]
             }
         },
@@ -4462,8 +4474,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Anonymous"
+                    "Anonymous",
+                    "User"
                 ]
             }
         },
@@ -4537,8 +4549,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Anonymous"
+                    "Anonymous",
+                    "User"
                 ]
             }
         },
@@ -4596,8 +4608,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Anonymous"
+                    "Anonymous",
+                    "User"
                 ]
             },
             "patch": {
@@ -4820,8 +4832,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Anonymous"
+                    "Anonymous",
+                    "User"
                 ]
             }
         },
@@ -5141,8 +5153,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Anonymous"
+                    "Anonymous",
+                    "User"
                 ]
             }
         },
@@ -5586,8 +5598,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Anonymous"
+                    "Anonymous",
+                    "User"
                 ]
             }
         },
@@ -5652,8 +5664,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Anonymous"
+                    "Anonymous",
+                    "User"
                 ]
             }
         },
@@ -5705,8 +5717,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Anonymous"
+                    "Anonymous",
+                    "User"
                 ]
             }
         },
@@ -5793,8 +5805,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Anonymous"
+                    "Anonymous",
+                    "User"
                 ]
             },
             "post": {
@@ -6320,8 +6332,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Anonymous"
+                    "Anonymous",
+                    "User"
                 ]
             }
         },
@@ -6376,8 +6388,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Anonymous"
+                    "Anonymous",
+                    "User"
                 ]
             }
         },
@@ -6542,8 +6554,8 @@
                     }
                 ],
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Anonymous"
+                    "Anonymous",
+                    "User"
                 ]
             }
         },
@@ -6715,8 +6727,8 @@
                     }
                 ],
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Anonymous"
+                    "Anonymous",
+                    "User"
                 ]
             }
         },
@@ -6779,8 +6791,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Anonymous"
+                    "Anonymous",
+                    "User"
                 ]
             }
         },
@@ -6847,7 +6859,7 @@
                 ]
             }
         },
-        "/v1/organizations": {
+        "/v1/organizations/": {
             "get": {
                 "tags": [
                     "organizations"
@@ -6858,8 +6870,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "organizations:write",
-                            "organizations:read"
+                            "organizations:read",
+                            "organizations:write"
                         ]
                     },
                     {
@@ -6937,8 +6949,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "organizations:write",
-                            "organizations:read"
+                            "organizations:read",
+                            "organizations:write"
                         ]
                     },
                     {
@@ -7018,8 +7030,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "organizations:write",
-                            "organizations:read"
+                            "organizations:read",
+                            "organizations:write"
                         ]
                     },
                     {
@@ -7102,8 +7114,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "organizations:write",
-                            "organizations:read"
+                            "organizations:read",
+                            "organizations:write"
                         ]
                     },
                     {
@@ -7233,8 +7245,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "organizations:write",
-                            "organizations:read"
+                            "organizations:read",
+                            "organizations:write"
                         ]
                     },
                     {
@@ -7250,6 +7262,11 @@
                             "type": "string",
                             "format": "uuid4",
                             "description": "The organization ID.",
+                            "x-polar-selector-widget": {
+                                "resourceRoot": "/v1/organizations",
+                                "resourceName": "Organization",
+                                "displayProperty": "name"
+                            },
                             "title": "Id"
                         },
                         "description": "The organization ID."
@@ -7266,9 +7283,9 @@
                             },
                             "description": "Filter by the type of purchase the customer made.",
                             "default": [
-                                "subscription",
+                                "donation",
                                 "order",
-                                "donation"
+                                "subscription"
                             ],
                             "title": "Customer Types"
                         },
@@ -7725,8 +7742,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "subscriptions:read",
-                            "subscriptions:write"
+                            "subscriptions:write",
+                            "subscriptions:read"
                         ]
                     },
                     {
@@ -7742,7 +7759,13 @@
                             "anyOf": [
                                 {
                                     "type": "string",
-                                    "format": "uuid4"
+                                    "format": "uuid4",
+                                    "description": "The organization ID.",
+                                    "x-polar-selector-widget": {
+                                        "resourceRoot": "/v1/organizations",
+                                        "resourceName": "Organization",
+                                        "displayProperty": "name"
+                                    }
                                 },
                                 {
                                     "type": "null"
@@ -7761,7 +7784,13 @@
                             "anyOf": [
                                 {
                                     "type": "string",
-                                    "format": "uuid4"
+                                    "format": "uuid4",
+                                    "description": "The product ID.",
+                                    "x-polar-selector-widget": {
+                                        "resourceRoot": "/v1/products",
+                                        "resourceName": "Product",
+                                        "displayProperty": "name"
+                                    }
                                 },
                                 {
                                     "type": "null"
@@ -8029,8 +8058,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "subscriptions:read",
-                            "subscriptions:write"
+                            "subscriptions:write",
+                            "subscriptions:read"
                         ]
                     },
                     {
@@ -8046,7 +8075,13 @@
                             "anyOf": [
                                 {
                                     "type": "string",
-                                    "format": "uuid4"
+                                    "format": "uuid4",
+                                    "description": "The organization ID.",
+                                    "x-polar-selector-widget": {
+                                        "resourceRoot": "/v1/organizations",
+                                        "resourceName": "Organization",
+                                        "displayProperty": "name"
+                                    }
                                 },
                                 {
                                     "type": "null"
@@ -8113,7 +8148,13 @@
                             "anyOf": [
                                 {
                                     "type": "string",
-                                    "format": "uuid4"
+                                    "format": "uuid4",
+                                    "description": "The organization ID.",
+                                    "x-polar-selector-widget": {
+                                        "resourceRoot": "/v1/organizations",
+                                        "resourceName": "Organization",
+                                        "displayProperty": "name"
+                                    }
                                 },
                                 {
                                     "type": "null"
@@ -8246,9 +8287,9 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
+                    "Anonymous",
                     "Organization",
-                    "User",
-                    "Anonymous"
+                    "User"
                 ]
             },
             "post": {
@@ -8375,9 +8416,9 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
+                    "Anonymous",
                     "Organization",
-                    "User",
-                    "Anonymous"
+                    "User"
                 ]
             },
             "patch": {
@@ -10225,8 +10266,8 @@
                     }
                 ],
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Anonymous"
+                    "Anonymous",
+                    "User"
                 ]
             }
         },
@@ -10289,8 +10330,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Anonymous"
+                    "Anonymous",
+                    "User"
                 ]
             }
         },
@@ -10681,8 +10722,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Anonymous"
+                    "Anonymous",
+                    "User"
                 ]
             },
             "put": {
@@ -10744,8 +10785,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Anonymous"
+                    "Anonymous",
+                    "User"
                 ]
             },
             "delete": {
@@ -10797,8 +10838,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Anonymous"
+                    "Anonymous",
+                    "User"
                 ]
             }
         },
@@ -10847,8 +10888,8 @@
                     }
                 ],
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Anonymous"
+                    "Anonymous",
+                    "User"
                 ]
             }
         },
@@ -11034,8 +11075,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "benefits:write",
-                            "benefits:read"
+                            "benefits:read",
+                            "benefits:write"
                         ]
                     },
                     {
@@ -11051,7 +11092,13 @@
                             "anyOf": [
                                 {
                                     "type": "string",
-                                    "format": "uuid4"
+                                    "format": "uuid4",
+                                    "description": "The organization ID.",
+                                    "x-polar-selector-widget": {
+                                        "resourceRoot": "/v1/organizations",
+                                        "resourceName": "Organization",
+                                        "displayProperty": "name"
+                                    }
                                 },
                                 {
                                     "type": "null"
@@ -11252,8 +11299,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "benefits:write",
-                            "benefits:read"
+                            "benefits:read",
+                            "benefits:write"
                         ]
                     },
                     {
@@ -11545,8 +11592,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "benefits:write",
-                            "benefits:read"
+                            "benefits:read",
+                            "benefits:write"
                         ]
                     },
                     {
@@ -11697,8 +11744,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "webhooks:read",
-                            "webhooks:write"
+                            "webhooks:write",
+                            "webhooks:read"
                         ]
                     },
                     {
@@ -11714,7 +11761,13 @@
                             "anyOf": [
                                 {
                                     "type": "string",
-                                    "format": "uuid4"
+                                    "format": "uuid4",
+                                    "description": "The organization ID.",
+                                    "x-polar-selector-widget": {
+                                        "resourceRoot": "/v1/organizations",
+                                        "resourceName": "Organization",
+                                        "displayProperty": "name"
+                                    }
                                 },
                                 {
                                     "type": "null"
@@ -11864,8 +11917,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "webhooks:read",
-                            "webhooks:write"
+                            "webhooks:write",
+                            "webhooks:read"
                         ]
                     },
                     {
@@ -12094,8 +12147,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "webhooks:read",
-                            "webhooks:write"
+                            "webhooks:write",
+                            "webhooks:read"
                         ]
                     },
                     {
@@ -12274,8 +12327,17 @@
                         "schema": {
                             "anyOf": [
                                 {
-                                    "type": "string",
-                                    "format": "uuid4"
+                                    "type": "array",
+                                    "items": {
+                                        "type": "string",
+                                        "format": "uuid4",
+                                        "description": "The organization ID.",
+                                        "x-polar-selector-widget": {
+                                            "resourceRoot": "/v1/organizations",
+                                            "resourceName": "Organization",
+                                            "displayProperty": "name"
+                                        }
+                                    }
                                 },
                                 {
                                     "type": "null"
@@ -12401,9 +12463,9 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
+                    "Anonymous",
                     "Organization",
-                    "User",
-                    "Anonymous"
+                    "User"
                 ]
             },
             "post": {
@@ -12501,6 +12563,11 @@
                             "type": "string",
                             "format": "uuid4",
                             "description": "The product ID.",
+                            "x-polar-selector-widget": {
+                                "resourceRoot": "/v1/products",
+                                "resourceName": "Product",
+                                "displayProperty": "name"
+                            },
                             "title": "Id"
                         },
                         "description": "The product ID."
@@ -12539,9 +12606,9 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
+                    "Anonymous",
                     "Organization",
-                    "User",
-                    "Anonymous"
+                    "User"
                 ]
             },
             "patch": {
@@ -12572,6 +12639,11 @@
                             "type": "string",
                             "format": "uuid4",
                             "description": "The product ID.",
+                            "x-polar-selector-widget": {
+                                "resourceRoot": "/v1/products",
+                                "resourceName": "Product",
+                                "displayProperty": "name"
+                            },
                             "title": "Id"
                         },
                         "description": "The product ID."
@@ -12664,6 +12736,11 @@
                             "type": "string",
                             "format": "uuid4",
                             "description": "The product ID.",
+                            "x-polar-selector-widget": {
+                                "resourceRoot": "/v1/products",
+                                "resourceName": "Product",
+                                "displayProperty": "name"
+                            },
                             "title": "Id"
                         },
                         "description": "The product ID."
@@ -12755,7 +12832,13 @@
                             "anyOf": [
                                 {
                                     "type": "string",
-                                    "format": "uuid4"
+                                    "format": "uuid4",
+                                    "description": "The organization ID.",
+                                    "x-polar-selector-widget": {
+                                        "resourceRoot": "/v1/organizations",
+                                        "resourceName": "Organization",
+                                        "displayProperty": "name"
+                                    }
                                 },
                                 {
                                     "type": "null"
@@ -12774,7 +12857,13 @@
                             "anyOf": [
                                 {
                                     "type": "string",
-                                    "format": "uuid4"
+                                    "format": "uuid4",
+                                    "description": "The product ID.",
+                                    "x-polar-selector-widget": {
+                                        "resourceRoot": "/v1/products",
+                                        "resourceName": "Product",
+                                        "displayProperty": "name"
+                                    }
                                 },
                                 {
                                     "type": "null"
@@ -13107,8 +13196,8 @@
                     }
                 ],
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Anonymous"
+                    "Anonymous",
+                    "User"
                 ]
             }
         },
@@ -13185,7 +13274,13 @@
                             "anyOf": [
                                 {
                                     "type": "string",
-                                    "format": "uuid4"
+                                    "format": "uuid4",
+                                    "description": "The organization ID.",
+                                    "x-polar-selector-widget": {
+                                        "resourceRoot": "/v1/organizations",
+                                        "resourceName": "Organization",
+                                        "displayProperty": "name"
+                                    }
                                 },
                                 {
                                     "type": "null"
@@ -13651,7 +13746,13 @@
                             "anyOf": [
                                 {
                                     "type": "string",
-                                    "format": "uuid4"
+                                    "format": "uuid4",
+                                    "description": "The organization ID.",
+                                    "x-polar-selector-widget": {
+                                        "resourceRoot": "/v1/organizations",
+                                        "resourceName": "Organization",
+                                        "displayProperty": "name"
+                                    }
                                 },
                                 {
                                     "type": "null"
@@ -13670,7 +13771,13 @@
                             "anyOf": [
                                 {
                                     "type": "string",
-                                    "format": "uuid4"
+                                    "format": "uuid4",
+                                    "description": "The product ID.",
+                                    "x-polar-selector-widget": {
+                                        "resourceRoot": "/v1/products",
+                                        "resourceName": "Product",
+                                        "displayProperty": "name"
+                                    }
                                 },
                                 {
                                     "type": "null"

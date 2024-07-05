@@ -35,7 +35,7 @@ export interface ProductsApiGetRequest {
 }
 
 export interface ProductsApiListRequest {
-    organizationId?: string;
+    organizationId?: Array<string>;
     includeArchived?: boolean;
     isRecurring?: boolean;
     benefitId?: string;

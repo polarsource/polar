@@ -3,6 +3,7 @@
 import { useGitHubAccount, useLogout } from '@/hooks'
 import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
 import { useOutsideClick } from '@/utils/useOutsideClick'
+import { CONFIG } from '@/utils/config'
 import {
   AddOutlined,
   KeyboardArrowDownOutlined,
@@ -137,7 +138,7 @@ const DashboardProfileDropdown = ({ className = '' }) => {
 
             {showAddOrganization ? (
               <LinkItem
-                href="/maintainer/new"
+                href={CONFIG.GITHUB_INSTALLATION_URL}
                 icon={
                   <AddOutlined
                     fontSize="small"
@@ -146,7 +147,7 @@ const DashboardProfileDropdown = ({ className = '' }) => {
                 }
               >
                 <span className="mx-2 text-blue-500 dark:text-blue-400">
-                  Add organization
+                  Add GitHub Organization
                 </span>
               </LinkItem>
             ) : null}

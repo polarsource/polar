@@ -19,6 +19,7 @@ from polar.kit.sorting import Sorting, SortingGetter
 from polar.models import Subscription
 from polar.models.product import SubscriptionTierType
 from polar.openapi import APITag
+from polar.organization.schemas import OrganizationID
 from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession, get_db_session
 from polar.product.schemas import ProductID
@@ -50,7 +51,7 @@ async def list(
     auth_subject: auth.SubscriptionsRead,
     pagination: PaginationParamsQuery,
     sorting: SearchSorting,
-    organization_id: UUID4 | None = Query(
+    organization_id: OrganizationID | None = Query(
         None, description="Filter by organization ID."
     ),
     product_id: ProductID | None = Query(None, description="Filter by product ID."),
@@ -214,7 +215,7 @@ async def subscriptions_import(
 @router.get("/export", summary="Export Subscriptions")
 async def export(
     auth_subject: auth.SubscriptionsRead,
-    organization_id: UUID4 | None = Query(
+    organization_id: OrganizationID | None = Query(
         None, description="Filter by organization ID."
     ),
     session: AsyncSession = Depends(get_db_session),

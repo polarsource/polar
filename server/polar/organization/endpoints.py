@@ -1,9 +1,7 @@
-from typing import Annotated
 from uuid import UUID
 
 import structlog
-from fastapi import Depends, HTTPException, Path, Query
-from pydantic import UUID4
+from fastapi import Depends, HTTPException, Query
 
 from polar.auth.models import Subject
 from polar.authz.service import AccessType, Authz
@@ -31,6 +29,7 @@ from .schemas import (
     OrganizationBadgeSettingsUpdate,
     OrganizationCustomer,
     OrganizationCustomerType,
+    OrganizationID,
     OrganizationSetAccount,
     OrganizationStripePortalSession,
     OrganizationUpdate,
@@ -45,7 +44,6 @@ log = structlog.get_logger()
 
 router = APIRouter(tags=["organizations"])
 
-OrganizationID = Annotated[UUID4, Path(description="The organization ID.")]
 OrganizationNotFound = {
     "description": "Organization not found.",
     "model": ResourceNotFound.schema(),
@@ -75,7 +73,7 @@ async def to_schema(
 
 
 @router.get(
-    "/organizations",
+    "/organizations/",
     response_model=ListResource[OrganizationSchema],
     description="List organizations that the authenticated user is a member of. Requires authentication.",  # noqa: E501
     summary="List organizations",

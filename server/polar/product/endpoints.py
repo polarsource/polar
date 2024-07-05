@@ -9,6 +9,7 @@ from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.models import Product
 from polar.models.product import SubscriptionTierType
 from polar.openapi import APITag
+from polar.organization.schemas import OrganizationID
 from polar.postgres import AsyncSession, get_db_session
 from polar.routing import APIRouter
 
@@ -31,7 +32,7 @@ ProductNotFound = {
 async def list(
     pagination: PaginationParamsQuery,
     auth_subject: auth.CreatorProductsReadOrAnonymous,
-    organization_id: Sequence[UUID4] | None = Query(
+    organization_id: Sequence[OrganizationID] | None = Query(
         None, description="Filter by organization ID."
     ),
     include_archived: bool = Query(

@@ -8,6 +8,7 @@ from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.models import Order
 from polar.models.product_price import ProductPriceType
 from polar.openapi import APITag
+from polar.organization.schemas import OrganizationID
 from polar.postgres import AsyncSession, get_db_session
 from polar.product.schemas import ProductID
 from polar.routing import APIRouter
@@ -29,7 +30,7 @@ async def list(
     auth_subject: auth.OrdersRead,
     pagination: PaginationParamsQuery,
     sorting: sorting.ListSorting,
-    organization_id: UUID4 | None = Query(
+    organization_id: OrganizationID | None = Query(
         None, description="Filter by organization ID."
     ),
     product_id: ProductID | None = Query(None, description="Filter by product ID."),

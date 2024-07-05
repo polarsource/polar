@@ -1,11 +1,11 @@
 from datetime import date
 
 from fastapi import Depends, Query
-from pydantic import UUID4
 
 from polar.exceptions import PolarRequestValidationError
 from polar.models.product_price import ProductPriceType
 from polar.openapi import APITag
+from polar.organization.schemas import OrganizationID
 from polar.postgres import AsyncSession, get_db_session
 from polar.product.schemas import ProductID
 from polar.routing import APIRouter
@@ -29,7 +29,7 @@ async def get(
     ),
     end_date: date = Query(..., description="End date."),
     interval: Interval = Query(..., description="Interval between two timestamps."),
-    organization_id: UUID4 | None = Query(
+    organization_id: OrganizationID | None = Query(
         None, description="Filter by organization ID."
     ),
     product_id: ProductID | None = Query(None, description="Filter by product ID."),

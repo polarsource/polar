@@ -1,0 +1,72 @@
+import BrowserCallout from '@/components/Feed/Markdown/Callout/BrowserCallout'
+import GithubLoginButton from '@/components/Auth/GithubLoginButton'
+import { UserSignupType } from '@polar-sh/sdk'
+
+# Quick Start
+
+Let's get you up and running with Polar in only a few minutes.
+
+## Create an account
+Signup & login on Polar is made super easy with GitHub Login (OAuth).
+
+<GithubLoginButton
+  className="text-white mb-8"
+  size="small"
+  text="Continue with GitHub"
+  userSignupType={UserSignupType.MAINTAINER}
+  returnTo="/maintainer"
+/>
+
+- By continuing you agree to our [Terms of Service](/legal/terms) and [Privacy Policy](/legal/privacy)
+- You'll be redirected to login with GitHub (next step)
+
+<BrowserCallout type="NOTE">
+  In the future, we'll support standalone accounts without GitHub too - discussed in [#3608](https://github.com/orgs/polarsource/discussions/3608)
+</BrowserCallout>
+
+### Grant GitHub Permissions
+
+Polar uses your GitHub Login to:
+
+- Create a matching, public, profile for you on Polar (avatar, username, bio etc)
+- Setup your Polar page: `https://polar.sh/<username>`
+- Request read-only access to your primary GitHub email addresses so we can communicate with you, e.g send funding, subscription and order notifications and product updates.
+
+![Screenshot of GitHub OAuth with Polar](./gh-auth.light.jpg)
+![Screenshot of GitHub OAuth with Polar](./gh-auth.dark.jpg)
+
+<BrowserCallout type="IMPORTANT">
+#### What does 'Act on my behalf' mean?
+
+It's a default notice from GitHub for all OAuth requests [#37117](https://github.com/orgs/community/discussions/37117).
+
+Rest assured, we do not do anything on your behalf without a delibrate action
+performed by you via Polar for an explicit, clear & desired outcome by you.
+
+</BrowserCallout>
+
+## Onboarding
+
+Once you've signed up, you'll be taken through a quick onboarding page intended to focus the Polar experience for your use case.
+
+![Screenshot of Polar Onboarding](./onboarding.light.jpg)
+![Screenshot of Polar Onboarding](./onboarding.dark.jpg)
+
+**You can change this later too.** So no pressure or identity crisis needed :^)
+
+## Done 🎉
+
+Welcome to the Polar community - we're thrilled to have you onboard!
+
+**Next Steps:**
+- Explore the dashboard
+- [Connect GitHub organizations (Optional)](/docs/github/install)
+- Add official Polar funding link on GitHub
+- Enable issue funding
+- Enable donations
+- Create products and/or subscription tiers
+- Start a newsletter
+
+**Shaping the future, together.**
+- Join our Discord
+- Give our GitHub repo a star

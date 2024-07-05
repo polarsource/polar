@@ -221,8 +221,10 @@ export const MainNavigation = () => {
       <div>
         <NavigationHeadline>Introduction</NavigationHeadline>
         <NavigationItem href="/docs">Welcome</NavigationItem>
-        <NavigationItem href="/docs/start">Quick Start</NavigationItem>
-        <NavigationItem href="/docs/start">GitHub Promotion</NavigationItem>
+        <NavigationItem href="/docs/onboarding">Quick Start</NavigationItem>
+        <NavigationItem href="/docs/github-promotion">
+          GitHub Promotion
+        </NavigationItem>
       </div>
 
       <div>
@@ -266,7 +268,7 @@ export const MainNavigation = () => {
       </div>
 
       <div>
-        <NavigationHeadline>Offer products & subscriptions</NavigationHeadline>
+        <NavigationHeadline>Offer Products & Subscriptions</NavigationHeadline>
         <div className="flex flex-col">
           <NavigationItem href="/docs/subscriptions">
             Create Products & Tiers
@@ -324,6 +326,19 @@ export const MainNavigation = () => {
           Publish & Access
         </NavigationItem>
         <NavigationItem href="/docs/newsletters">Review Traffic</NavigationItem>
+      </div>
+
+      <div>
+        <NavigationHeadline>GitHub Extension</NavigationHeadline>
+        <NavigationItem href="/docs/github/install">
+          Connect Organization(s)
+        </NavigationItem>
+        <NavigationItem href="/docs/github/funding-yaml">
+          Official FUNDING.yaml link
+        </NavigationItem>
+        <NavigationItem href="/docs/github/embeds">
+          README Embeds
+        </NavigationItem>
       </div>
 
       <div>

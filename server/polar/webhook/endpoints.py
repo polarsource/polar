@@ -8,6 +8,7 @@ from polar.authz.service import AccessType, Authz
 from polar.exceptions import NotPermitted, ResourceNotFound, Unauthorized
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.models import WebhookEndpoint
+from polar.organization.schemas import OrganizationID
 from polar.postgres import AsyncSession, get_db_session
 from polar.routing import APIRouter
 
@@ -32,7 +33,7 @@ WebhookEndpointNotFound = {
 async def list_webhook_endpoints(
     pagination: PaginationParamsQuery,
     auth_subject: WebhooksRead,
-    organization_id: UUID4 | None = Query(
+    organization_id: OrganizationID | None = Query(
         None, description="Filter by organization ID."
     ),
     user_id: UUID4 | None = Query(None, description="Filter by user ID."),

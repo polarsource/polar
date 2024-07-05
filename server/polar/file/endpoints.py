@@ -10,6 +10,7 @@ from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.models import File, Organization
 from polar.openapi import APITag
 from polar.organization.resolver import get_payload_organization
+from polar.organization.schemas import OrganizationID
 from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession, get_db_session
 from polar.routing import APIRouter
@@ -48,7 +49,7 @@ ListOfFileIDs: TypeAlias = list[UUID4]
 async def list(
     auth_subject: auth.CreatorFilesWrite,
     pagination: PaginationParamsQuery,
-    organization_id: UUID4 | None = None,
+    organization_id: OrganizationID | None = None,
     ids: ListOfFileIDs | None = Query(
         None,
         description=("List of file IDs to get. "),

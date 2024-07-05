@@ -9,6 +9,7 @@ from polar.exceptions import NotPermitted, ResourceNotFound
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.models.article import ArticleVisibility
 from polar.openapi import IN_DEVELOPMENT_ONLY, APITag
+from polar.organization.schemas import OrganizationID
 from polar.postgres import AsyncSession, get_db_session
 from polar.routing import APIRouter
 
@@ -33,7 +34,7 @@ ArticleNotFound = {
 async def list(
     auth_subject: auth.ArticlesReadOrAnonymous,
     pagination: PaginationParamsQuery,
-    organization_id: UUID4 | None = Query(
+    organization_id: OrganizationID | None = Query(
         None, description="Filter by organization ID."
     ),
     slug: str | None = Query(None, description="Filter by slug."),

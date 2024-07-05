@@ -134,7 +134,7 @@ async def test_list_organization_member(
     user_organization: UserOrganization,  # makes User a member of Organization
     client: AsyncClient,
 ) -> None:
-    response = await client.get("/v1/organizations")
+    response = await client.get("/v1/organizations/")
 
     assert response.status_code == 200
     assert len(response.json()["items"]) == 0
@@ -148,7 +148,7 @@ async def test_list_blocked_organization_member(
     user_organization_blocked: UserOrganization,  # makes User a member of Organization
     client: AsyncClient,
 ) -> None:
-    response = await client.get("/v1/organizations")
+    response = await client.get("/v1/organizations/")
 
     assert response.status_code == 200
 
@@ -165,7 +165,7 @@ async def test_list_organization_member_allow_non_admin(
     user_organization: UserOrganization,  # makes User a member of Organization
     client: AsyncClient,
 ) -> None:
-    response = await client.get("/v1/organizations?is_admin_only=false")
+    response = await client.get("/v1/organizations/?is_admin_only=false")
 
     assert response.status_code == 200
     assert response.json()["items"][0]["id"] == str(organization.id)
@@ -184,7 +184,7 @@ async def test_list_organization_member_admin(
     user_organization.is_admin = True
     await save_fixture(user_organization)
 
-    response = await client.get("/v1/organizations")
+    response = await client.get("/v1/organizations/")
 
     assert response.status_code == 200
     assert response.json()["items"][0]["id"] == str(organization.id)
@@ -198,7 +198,7 @@ async def test_organization_lookup_not_found_v2(
     user_organization: UserOrganization,  # makes User a member of Organization
     client: AsyncClient,
 ) -> None:
-    response = await client.get("/v1/organizations?name=foobar")
+    response = await client.get("/v1/organizations/?name=foobar")
 
     assert response.status_code == 200
     items = response.json()["items"]
@@ -221,12 +221,12 @@ async def test_organization_lookup_v2(
         is_admin=True,
     )
     await save_fixture(user_organization_second_admin)
-    unfiltered = await client.get("/v1/organizations")
+    unfiltered = await client.get("/v1/organizations/")
     assert unfiltered.status_code == 200
     items = unfiltered.json()["items"]
     assert len(items) == 2
 
-    filtered = await client.get(f"/v1/organizations?name={organization.name}")
+    filtered = await client.get(f"/v1/organizations/?name={organization.name}")
     assert filtered.status_code == 200
     items = filtered.json()["items"]
     assert len(items) == 1

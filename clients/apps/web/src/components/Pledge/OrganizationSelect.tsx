@@ -112,7 +112,7 @@ const OrganizationSelect = ({
                 </SelectItem>
               ))}
               {allowSelfSelect ? (
-                <SelectItem value="">
+                <SelectItem value="self">
                   <div className="flex items-center space-x-2">
                     <Avatar
                       avatar_url={currentUser?.avatar_url}

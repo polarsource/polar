@@ -41,6 +41,7 @@ const useSelectorWidgetQuery = (
       organization_id.forEach((id) => params.append('organization_id', id))
       return fetch(getServerURL(`${widgetSchema.resourceRoot}/?${params}`), {
         method: 'GET',
+        credentials: 'include',
       }).then(async (response) => {
         if (!response.ok) {
           throw new Error(`Unexpected ${response.status} status code`)
@@ -232,6 +233,17 @@ const GenericWidget = ({
         type="text"
         value={value}
         onChange={(e) => debouncedOnChange(e.target.value)}
+      />
+    )
+  }
+
+  if (schema.type === 'array' && isDereferenced(schema.items)) {
+    console.log(schema, schema.items)
+    return (
+      <ParameterWidget
+        schema={schema.items}
+        parameterName={parameterName}
+        parameterIn={parameterIn}
       />
     )
   }

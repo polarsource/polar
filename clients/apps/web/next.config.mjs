@@ -120,17 +120,34 @@ const nextConfig = {
         permanent: true,
       },
 
-      // FAQ to docs
-      {
-        source: '/faq',
-        destination: '/docs/faq/overview',
-        permanent: false,
-      },
-      {
-        source: '/faq/:path*',
-        destination: '/docs/faq/:path*',
-        permanent: false,
-      },
+      // Redirect old FAQ to docs.polar.sh
+      ...ENVIRONMENT === 'production' ?
+        [
+          {
+            source: '/faq',
+            destination: 'https://docs.polar.sh/faq/overview',
+            has: [
+              {
+                type: 'host',
+                value: 'polar.sh',
+              }
+            ],
+            permanent: true,
+          },
+          {
+            source: '/faq/:path*',
+            destination: 'https://docs.polar.sh/faq/:path*',
+            has: [
+              {
+                type: 'host',
+                value: 'polar.sh',
+              }
+            ],
+            permanent: true,
+          },
+        ]
+        :
+        [],
 
       // Logged-out user redirection
       {

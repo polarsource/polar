@@ -14,7 +14,7 @@ const meta: Meta<typeof CheckoutSuccess> = {
   },
   render: (args) => {
     return (
-      <UserContextProvider user={{}}>
+      <UserContextProvider user={undefined}>
         <PolarQueryClientProvider>
           <CheckoutSuccess {...args} />
         </PolarQueryClientProvider>

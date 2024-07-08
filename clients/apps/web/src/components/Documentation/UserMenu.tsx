@@ -1,31 +1,15 @@
 'use client'
 
 import { PolarMenu } from '@/app/[organization]/(sidebar)/LayoutPolarMenu'
+import { useClientSideLoadedUser } from '@/hooks/docs'
 import { useListAdminOrganizations } from '@/hooks/queries'
-import { api } from '@/utils/api'
-import { UserRead } from '@polar-sh/sdk'
 import { Skeleton } from 'polarkit/components/ui/skeleton'
-import { useCallback, useEffect, useState } from 'react'
 
 const UserMenu = () => {
-  const [loaded, setLoaded] = useState(false)
-  const [currentUser, setCurrentUser] = useState<UserRead | undefined>()
-  const { data: organizations, refetch } = useListAdminOrganizations(false)
-
-  const reload = useCallback(async (): Promise<undefined> => {
-    try {
-      const user = await api.users.getAuthenticated()
-      setCurrentUser(user)
-      await refetch()
-    } catch {
-    } finally {
-      setLoaded(true)
-    }
-  }, [refetch])
-
-  useEffect(() => {
-    reload()
-  }, [reload])
+  const { user, loaded } = useClientSideLoadedUser()
+  const { data: organizations } = useListAdminOrganizations(
+    loaded && user !== undefined,
+  )
 
   if (!loaded) {
     return (
@@ -40,7 +24,7 @@ const UserMenu = () => {
 
   return (
     <PolarMenu
-      authenticatedUser={currentUser}
+      authenticatedUser={user}
       userAdminOrganizations={organizations?.items ?? []}
     />
   )

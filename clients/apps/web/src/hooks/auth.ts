@@ -13,10 +13,6 @@ export const useAuth = (): {
 } => {
   const authCtx = useContext(AuthContext)
 
-  if (!authCtx) {
-    throw new Error('can not use useAuth outside of AuthContext')
-  }
-
   const [currentUser, setCurrentUser] = useState(authCtx.user)
 
   const reloadUser = async (): Promise<undefined> => {

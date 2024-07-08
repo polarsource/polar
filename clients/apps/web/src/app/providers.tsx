@@ -4,18 +4,17 @@ import { queryClient } from '@/utils/api'
 import { CONFIG } from '@/utils/config'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { ReactQueryStreamedHydration } from '@tanstack/react-query-next-experimental'
+import { AppProgressBar as ProgressBar } from 'next-nprogress-bar'
 import { ThemeProvider } from 'next-themes'
 import { usePathname, useSearchParams } from 'next/navigation'
 import posthog from 'posthog-js'
 import { PostHogProvider } from 'posthog-js/react'
 import { useEffect } from 'react'
-import { AppProgressBar as ProgressBar } from 'next-nprogress-bar'
-
 
 if (CONFIG.POSTHOG_TOKEN && typeof window !== 'undefined') {
   posthog.init(CONFIG.POSTHOG_TOKEN, {
-    api_host: CONFIG.POSTHOG_HOST ?? 'https://app.posthog.com',
-    ui_host: 'https://app.posthog.com',
+    api_host: '/ingest',
+    ui_host: 'https://us.posthog.com',
   })
 }
 
@@ -73,7 +72,11 @@ export function PolarQueryClientProvider({
   )
 }
 
-export function PolarToploaderProvider({ children }: { children: React.ReactNode }) {
+export function PolarToploaderProvider({
+  children,
+}: {
+  children: React.ReactNode
+}) {
   return (
     <>
       {children}

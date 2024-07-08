@@ -23,7 +23,7 @@ export const Default: Story = {
     chromatic: { viewports: [390, 1200] },
   },
   render: (args) => (
-    <UserContextProvider user={{}}>
+    <UserContextProvider user={undefined}>
       <PolarQueryClientProvider>
         <Topbar {...args} />
       </PolarQueryClientProvider>

@@ -76,7 +76,7 @@ export default async function RootLayout({
           inter.className,
         )}
       >
-        <UserContextProvider user={{ user: authenticatedUser }}>
+        <UserContextProvider user={authenticatedUser}>
           <PolarPostHogProvider>
             <PolarThemeProvider>
               <PolarToploaderProvider>

@@ -335,6 +335,8 @@ const ParameterWidget = ({
     return null
   }
 
+  console.log('ParameterWidget', schema)
+
   const unionSchemas = getUnionSchemas(schema)
   if (unionSchemas) {
     return (

@@ -14,16 +14,16 @@ import {
 } from '@tanstack/react-query'
 import { defaultRetry, serverErrorRetry } from './retry'
 
-export const useListAdminOrganizations: () => UseQueryResult<ListResourceOrganization> =
-  () =>
-    useQuery({
-      queryKey: ['user', 'adminOrganizations'],
-      queryFn: () =>
-        api.organizations.list({
-          isAdminOnly: true,
-        }),
-      retry: defaultRetry,
-    })
+export const useListAdminOrganizations = (enabled: boolean = true) =>
+  useQuery({
+    queryKey: ['user', 'adminOrganizations'],
+    queryFn: () =>
+      api.organizations.list({
+        isAdminOnly: true,
+      }),
+    retry: defaultRetry,
+    enabled,
+  })
 
 export const useOrganizationLookup: (
   name: string,

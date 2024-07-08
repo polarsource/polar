@@ -38,28 +38,26 @@ export const PolarMenu = ({
   const loginLink = `${CONFIG.FRONTEND_BASE_URL}/login?return_to=${loginReturnTo}`
 
   return (
-    <div className="flex flex-row items-center gap-x-6">
+    <div className="flex h-9 flex-row items-center gap-x-6">
       {authenticatedUser ? (
-        <div>
-          <div className="relative flex w-max flex-shrink-0 flex-row items-center justify-between gap-x-6">
-            {hasAdminOrgs && (
-              <Link href={creatorPath}>
-                <Button>
-                  <div className="flex flex-row items-center gap-x-2">
-                    <span className="whitespace-nowrap text-xs">
-                      Creator Dashboard
-                    </span>
-                    <ArrowForwardOutlined fontSize="inherit" />
-                  </div>
-                </Button>
-              </Link>
-            )}
-            <PublicProfileDropdown
-              authenticatedUser={authenticatedUser}
-              className="flex-shrink-0"
-              showAllBackerRoutes
-            />
-          </div>
+        <div className="relative flex w-max flex-shrink-0 flex-row items-center justify-between gap-x-6">
+          {hasAdminOrgs && (
+            <Link href={creatorPath}>
+              <Button>
+                <div className="flex flex-row items-center gap-x-2">
+                  <span className="whitespace-nowrap text-xs">
+                    Creator Dashboard
+                  </span>
+                  <ArrowForwardOutlined fontSize="inherit" />
+                </div>
+              </Button>
+            </Link>
+          )}
+          <PublicProfileDropdown
+            authenticatedUser={authenticatedUser}
+            className="flex-shrink-0"
+            showAllBackerRoutes
+          />
         </div>
       ) : (
         <>

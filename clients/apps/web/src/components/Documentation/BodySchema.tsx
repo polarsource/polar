@@ -16,7 +16,13 @@ export const BodySchema = ({
       </AnchoredElement>
 
       <div className="flex flex-col gap-y-4">
-        <Schema schema={schema} idPrefix={['body']} showRequired showDefault />
+        <Schema
+          schema={schema}
+          idPrefix={['body']}
+          showRequired
+          showDefault
+          showWidgets
+        />
       </div>
     </div>
   )

@@ -124,6 +124,16 @@ export const getUnionSchemas = (schema: OpenAPIV3_1.SchemaObject) => {
   return null
 }
 
+export const isArraySchema = (
+  s: OpenAPIV3_1.SchemaObject,
+): s is OpenAPIV3_1.ArraySchemaObject => s.type === 'array'
+
+export const isScalarArraySchema = (
+  schema: OpenAPIV3_1.ArraySchemaObject,
+): boolean => {
+  return isDereferenced(schema.items) && schema.items.type !== 'object'
+}
+
 export const resolveSchemaMinMax = (
   schema: OpenAPIV3_1.SchemaObject,
 ): [number | undefined, number | undefined] => {

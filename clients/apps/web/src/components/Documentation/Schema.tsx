@@ -14,7 +14,12 @@ import PropertyDefault from './PropertyDefault'
 import PropertyType from './PropertyType'
 import ProseWrapper from './ProseWrapper'
 import RequiredBadge from './RequiredBadge'
-import { getUnionSchemas, isDereferenced } from './openapi'
+import {
+  getUnionSchemas,
+  isArraySchema,
+  isDereferenced,
+  isScalarArraySchema,
+} from './openapi'
 
 const UnionSchema = ({
   schemas: _schemas,
@@ -69,6 +74,83 @@ const UnionSchema = ({
   )
 }
 
+const SchemaProperty = ({
+  name,
+  property,
+  required,
+  idPrefix,
+  parentsProperties,
+  showRequired,
+  showDefault,
+  showWidgets,
+}: {
+  name: string
+  property: OpenAPIV3_1.SchemaObject
+  required: boolean
+  idPrefix: string[]
+  parentsProperties: string[]
+  showRequired?: boolean
+  showDefault?: boolean
+  showWidgets?: boolean
+}) => {
+  return (
+    <ParameterItem>
+      <AnchoredElement id={[...idPrefix, name]}>
+        <div className="flex flex-row items-center gap-x-3">
+          <span className="font-mono font-medium text-black dark:text-white">
+            {name}
+          </span>
+          <PropertyType property={property} />
+          {showRequired && (
+            <>{required ? <RequiredBadge /> : <OptionalBadge />}</>
+          )}
+          {showDefault && <PropertyDefault property={property} />}
+        </div>
+      </AnchoredElement>
+      {property.description && (
+        <ProseWrapper className="text-sm">
+          <Markdown>{property.description}</Markdown>
+        </ProseWrapper>
+      )}
+      {showWidgets &&
+        property.type != 'object' &&
+        (!isArraySchema(property) || isScalarArraySchema(property)) && (
+          <ParameterWidget
+            schema={property}
+            parameterName={[...parentsProperties, name].join('.')}
+            parameterIn="body"
+          />
+        )}
+      {property.type == 'object' && (
+        <div className="rounded-md border border-gray-200 p-4 dark:border-gray-800">
+          <Schema
+            schema={property}
+            idPrefix={[...idPrefix, name]}
+            parentsProperties={[...parentsProperties, name]}
+            showRequired={showRequired}
+            showDefault={showDefault}
+            showWidgets={showWidgets}
+          />
+        </div>
+      )}
+      {isArraySchema(property) &&
+        !isScalarArraySchema(property) &&
+        isDereferenced(property.items) && (
+          <div className="rounded-md border border-gray-200 p-4 dark:border-gray-800">
+            <Schema
+              schema={property.items}
+              idPrefix={[...idPrefix, name]}
+              parentsProperties={[...parentsProperties, name]}
+              showRequired={showRequired}
+              showDefault={showDefault}
+              showWidgets={showWidgets}
+            />
+          </div>
+        )}
+    </ParameterItem>
+  )
+}
+
 const SchemaProperties = ({
   properties,
   required,
@@ -95,64 +177,17 @@ const SchemaProperties = ({
           key: string,
           property: OpenAPIV3_1.SchemaObject,
         ]) => (
-          <ParameterItem key={key}>
-            <AnchoredElement id={[...idPrefix, key]}>
-              <div className="flex flex-row items-center gap-x-3">
-                <span className="font-mono font-medium text-black dark:text-white">
-                  {key}
-                </span>
-                <PropertyType property={property} />
-                {showRequired && (
-                  <>
-                    {required.includes(key) ? (
-                      <RequiredBadge />
-                    ) : (
-                      <OptionalBadge />
-                    )}
-                  </>
-                )}
-                {showDefault && <PropertyDefault property={property} />}
-              </div>
-            </AnchoredElement>
-            {property.description && (
-              <ProseWrapper className="text-sm">
-                <Markdown>{property.description}</Markdown>
-              </ProseWrapper>
-            )}
-            {showWidgets &&
-              property.type != 'object' &&
-              property.type != 'array' && (
-                <ParameterWidget
-                  schema={property}
-                  parameterName={[...parentsProperties, key].join('.')}
-                  parameterIn="body"
-                />
-              )}
-            {property.type == 'object' && (
-              <div className="rounded-md border border-gray-200 p-4 dark:border-gray-800">
-                <Schema
-                  schema={property}
-                  idPrefix={[...idPrefix, key]}
-                  parentsProperties={[...parentsProperties, key]}
-                  showRequired={showRequired}
-                  showDefault={showDefault}
-                  showWidgets={showWidgets}
-                />
-              </div>
-            )}
-            {property.type == 'array' && (
-              <div className="rounded-md border border-gray-200 p-4 dark:border-gray-800">
-                <Schema
-                  schema={property.items}
-                  idPrefix={[...idPrefix, key]}
-                  parentsProperties={[...parentsProperties, key]}
-                  showRequired={showRequired}
-                  showDefault={showDefault}
-                  showWidgets={showWidgets}
-                />
-              </div>
-            )}
-          </ParameterItem>
+          <SchemaProperty
+            key={key}
+            name={key}
+            property={property}
+            required={required.includes(key)}
+            idPrefix={idPrefix}
+            parentsProperties={parentsProperties}
+            showRequired={showRequired}
+            showDefault={showDefault}
+            showWidgets={showWidgets}
+          />
         ),
       )}
     </div>

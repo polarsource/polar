@@ -22,12 +22,14 @@ const UnionSchema = ({
   parentsProperties,
   showRequired,
   showDefault,
+  showWidgets,
 }: {
   schemas: OpenAPIV3_1.SchemaObject[]
   idPrefix: string[]
   parentsProperties: string[]
   showRequired?: boolean
   showDefault?: boolean
+  showWidgets?: boolean
 }) => {
   const schemas = _schemas.filter(isDereferenced)
   const schemaValues = schemas.map((schema, index) =>
@@ -58,6 +60,7 @@ const UnionSchema = ({
               parentsProperties={parentsProperties}
               showRequired={showRequired}
               showDefault={showDefault}
+              showWidgets={showWidgets}
             />
           </div>
         </TabsContent>
@@ -73,6 +76,7 @@ const SchemaProperties = ({
   parentsProperties,
   showRequired,
   showDefault,
+  showWidgets,
 }: {
   properties: {
     [name: string]: OpenAPIV3_1.ReferenceObject | OpenAPIV3_1.SchemaObject
@@ -82,6 +86,7 @@ const SchemaProperties = ({
   parentsProperties: string[]
   showRequired?: boolean
   showDefault?: boolean
+  showWidgets?: boolean
 }) => {
   return (
     <div className="flex flex-col gap-y-4">
@@ -114,13 +119,15 @@ const SchemaProperties = ({
                 <Markdown>{property.description}</Markdown>
               </ProseWrapper>
             )}
-            {property.type != 'object' && property.type != 'array' && (
-              <ParameterWidget
-                schema={property}
-                parameterName={[...parentsProperties, key].join('.')}
-                parameterIn="body"
-              />
-            )}
+            {showWidgets &&
+              property.type != 'object' &&
+              property.type != 'array' && (
+                <ParameterWidget
+                  schema={property}
+                  parameterName={[...parentsProperties, key].join('.')}
+                  parameterIn="body"
+                />
+              )}
             {property.type == 'object' && (
               <div className="rounded-md border border-gray-200 p-4 dark:border-gray-800">
                 <Schema
@@ -129,6 +136,7 @@ const SchemaProperties = ({
                   parentsProperties={[...parentsProperties, key]}
                   showRequired={showRequired}
                   showDefault={showDefault}
+                  showWidgets={showWidgets}
                 />
               </div>
             )}
@@ -140,6 +148,7 @@ const SchemaProperties = ({
                   parentsProperties={[...parentsProperties, key]}
                   showRequired={showRequired}
                   showDefault={showDefault}
+                  showWidgets={showWidgets}
                 />
               </div>
             )}
@@ -155,12 +164,14 @@ export const Schema = ({
   idPrefix,
   showRequired,
   showDefault,
+  showWidgets,
   parentsProperties,
 }: {
   schema: OpenAPIV3_1.SchemaObject
   idPrefix: string[]
   showRequired?: boolean
   showDefault?: boolean
+  showWidgets?: boolean
   parentsProperties?: string[]
 }) => {
   const unionSchemas = getUnionSchemas(schema)
@@ -171,6 +182,7 @@ export const Schema = ({
         idPrefix={idPrefix}
         showRequired={showRequired}
         showDefault={showDefault}
+        showWidgets={showWidgets}
         parentsProperties={parentsProperties ?? []}
       />
     )
@@ -184,6 +196,7 @@ export const Schema = ({
         idPrefix={idPrefix}
         showRequired={showRequired}
         showDefault={showDefault}
+        showWidgets={showWidgets}
         parentsProperties={parentsProperties ?? []}
       />
     )

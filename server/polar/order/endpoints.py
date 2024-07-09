@@ -5,6 +5,7 @@ from pydantic import UUID4
 
 from polar.exceptions import ResourceNotFound
 from polar.kit.pagination import ListResource, PaginationParamsQuery
+from polar.kit.schemas import MultipleQueryFilter
 from polar.models import Order
 from polar.models.product_price import ProductPriceType
 from polar.openapi import APITag
@@ -30,7 +31,7 @@ async def list(
     auth_subject: auth.OrdersRead,
     pagination: PaginationParamsQuery,
     sorting: sorting.ListSorting,
-    organization_id: OrganizationID | None = Query(
+    organization_id: MultipleQueryFilter[OrganizationID] | None = Query(
         None, description="Filter by organization ID."
     ),
     product_id: ProductID | None = Query(None, description="Filter by product ID."),

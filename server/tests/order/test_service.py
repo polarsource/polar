@@ -180,7 +180,7 @@ class TestList:
             session,
             auth_subject,
             pagination=PaginationParams(1, 10),
-            organization_id=organization_second.id,
+            organization_id=[organization_second.id],
         )
 
         assert count == 1

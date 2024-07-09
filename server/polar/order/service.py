@@ -114,7 +114,7 @@ class OrderService(ResourceServiceReader[Order]):
         session: AsyncSession,
         auth_subject: AuthSubject[User | Organization],
         *,
-        organization_id: uuid.UUID | None = None,
+        organization_id: Sequence[uuid.UUID] | None = None,
         product_id: uuid.UUID | None = None,
         product_price_type: ProductPriceType | None = None,
         user_id: uuid.UUID | None = None,
@@ -138,7 +138,7 @@ class OrderService(ResourceServiceReader[Order]):
         ).options(contains_eager(Order.user.of_type(OrderUser)))
 
         if organization_id is not None:
-            statement = statement.where(Product.organization_id == organization_id)
+            statement = statement.where(Product.organization_id.in_(organization_id))
 
         if product_id is not None:
             statement = statement.where(Order.product_id == product_id)

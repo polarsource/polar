@@ -1,4 +1,5 @@
 import uuid
+from collections.abc import Sequence
 from datetime import UTC, date, datetime
 
 from sqlalchemy import ColumnElement, FromClause, select
@@ -22,7 +23,7 @@ class MetricsService:
         start_date: date,
         end_date: date,
         interval: Interval,
-        organization_id: uuid.UUID | None = None,
+        organization_id: Sequence[uuid.UUID] | None = None,
         product_id: uuid.UUID | None = None,
         product_price_type: ProductPriceType | None = None,
     ) -> MetricsResponse:

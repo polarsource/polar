@@ -1,12 +1,11 @@
-from typing import Annotated
 from uuid import UUID
 
-from fastapi import Depends, Path, Query
-from pydantic import UUID4
+from fastapi import Depends, Query
 
 from polar.authz.service import AccessType, Authz
 from polar.exceptions import NotPermitted, ResourceNotFound
 from polar.kit.pagination import ListResource, PaginationParamsQuery
+from polar.kit.schemas import MultipleQueryFilter
 from polar.models.article import ArticleVisibility
 from polar.openapi import IN_DEVELOPMENT_ONLY, APITag
 from polar.organization.schemas import OrganizationID
@@ -15,7 +14,13 @@ from polar.routing import APIRouter
 
 from . import auth
 from .schemas import Article as ArticleSchema
-from .schemas import ArticleCreate, ArticlePreview, ArticleReceivers, ArticleUpdate
+from .schemas import (
+    ArticleCreate,
+    ArticleID,
+    ArticlePreview,
+    ArticleReceivers,
+    ArticleUpdate,
+)
 from .service import article_service
 
 router = APIRouter(
@@ -23,7 +28,6 @@ router = APIRouter(
 )
 
 
-ArticleID = Annotated[UUID4, Path(description="The article ID.")]
 ArticleNotFound = {
     "description": "Article not found.",
     "model": ResourceNotFound.schema(),
@@ -34,7 +38,7 @@ ArticleNotFound = {
 async def list(
     auth_subject: auth.ArticlesReadOrAnonymous,
     pagination: PaginationParamsQuery,
-    organization_id: OrganizationID | None = Query(
+    organization_id: MultipleQueryFilter[OrganizationID] | None = Query(
         None, description="Filter by organization ID."
     ),
     slug: str | None = Query(None, description="Filter by slug."),

@@ -1,6 +1,7 @@
 from datetime import datetime
 from typing import Annotated, Any, Literal
 
+from fastapi import Path
 from pydantic import (
     UUID4,
     Discriminator,
@@ -13,11 +14,18 @@ from pydantic import (
 
 from polar.config import settings
 from polar.kit import jwt
-from polar.kit.schemas import Schema, TimestampedSchema
+from polar.kit.schemas import Schema, SelectorWidget, TimestampedSchema
 from polar.models.benefit import BenefitType
+from polar.organization.schemas import OrganizationID
 
 BENEFIT_DESCRIPTION_MIN_LENGTH = 3
 BENEFIT_DESCRIPTION_MAX_LENGTH = 42
+
+BenefitID = Annotated[
+    UUID4,
+    Path(description="The benefit ID."),
+    SelectorWidget("/v1/benefits", "Benefit", "description"),
+]
 
 # BenefitProperties
 
@@ -254,7 +262,7 @@ class BenefitCreateBase(Schema):
             "Will be displayed on products having this benefit."
         ),
     )
-    organization_id: UUID4 | None = Field(
+    organization_id: OrganizationID | None = Field(
         None,
         description=(
             "The ID of the organization owning the benefit. "

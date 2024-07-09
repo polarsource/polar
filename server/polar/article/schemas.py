@@ -1,16 +1,23 @@
 import base64
 import datetime
 import re
-from typing import Self
+from typing import Annotated, Self
 
+from fastapi import Path
 from pydantic import UUID4, Field, FutureDatetime, HttpUrl, model_validator
 
-from polar.kit.schemas import EmailStrDNS, Schema
+from polar.kit.schemas import EmailStrDNS, Schema, SelectorWidget
 from polar.models import Article as ArticleModel
 from polar.models.article import ArticleByline, ArticleVisibility
-from polar.organization.schemas import Organization
+from polar.organization.schemas import Organization, OrganizationID
 
 paywall_regex = r"<Paywall>((.|\n)*?)<\/Paywall>"
+
+ArticleID = Annotated[
+    UUID4,
+    Path(description="The article ID."),
+    SelectorWidget("/v1/articles", "Article", "title"),
+]
 
 
 class BylineProfile(Schema):
@@ -165,7 +172,7 @@ class ArticleCreate(Schema):
         description="Body in base64-encoded format. Can be helpful to bypass Web Application Firewalls (WAF). Either one of body or body_base64 is required.",
     )
 
-    organization_id: UUID4 | None = Field(
+    organization_id: OrganizationID | None = Field(
         default=None,
         description=(
             "The ID of the organization owning the article. "

@@ -37,7 +37,7 @@ class UserBenefitService(ResourceServiceReader[Benefit]):
         auth_subject: AuthSubject[User],
         *,
         type: BenefitType | None = None,
-        organization_id: uuid.UUID | None = None,
+        organization_id: Sequence[uuid.UUID] | None = None,
         order_id: uuid.UUID | None = None,
         subscription_id: uuid.UUID | None = None,
         pagination: PaginationParams,
@@ -49,7 +49,7 @@ class UserBenefitService(ResourceServiceReader[Benefit]):
             statement = statement.where(Benefit.type == type)
 
         if organization_id is not None:
-            statement = statement.where(Benefit.organization_id == organization_id)
+            statement = statement.where(Benefit.organization_id.in_(organization_id))
 
         if order_id is not None:
             statement = statement.where(

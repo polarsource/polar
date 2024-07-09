@@ -7,6 +7,7 @@ from pydantic import UUID4, computed_field
 
 from polar.kit.schemas import Schema
 from polar.kit.utils import human_readable_size
+from polar.organization.schemas import OrganizationID
 
 
 def get_downloadable_content_disposition(filename: str) -> str:
@@ -36,7 +37,7 @@ class S3FileCreateMultipart(Schema):
 
 
 class S3FileCreate(Schema):
-    organization_id: UUID4 | None = None
+    organization_id: OrganizationID | None = None
     name: str
     mime_type: str
     size: int

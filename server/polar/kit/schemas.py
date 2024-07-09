@@ -1,7 +1,8 @@
 import dataclasses
 import json
+from collections.abc import Sequence
 from datetime import datetime
-from typing import Annotated, Any, Literal
+from typing import Annotated, Any, Literal, TypeVar, cast, get_args, overload
 
 from pydantic import (
     AfterValidator,
@@ -9,6 +10,7 @@ from pydantic import (
     ConfigDict,
     EmailStr,
     Field,
+    GetCoreSchemaHandler,
     GetJsonSchemaHandler,
 )
 from pydantic.json_schema import JsonSchemaValue
@@ -98,3 +100,56 @@ class SelectorWidget:
 
     def __hash__(self) -> int:
         return hash(json.dumps(self._get_extra_attributes()))
+
+
+Q = TypeVar("Q")
+
+
+class MultipleQueryFilter(Sequence[Q]):
+    """
+    Custom type to handle query filters that can be either
+    a single value or a list of values.
+
+    By customizing the schema generation, we can make it accept
+    either a scalar or a list of values for the query parameter.
+
+    At runtime, we make sure that the value is always a list.
+    """
+
+    def __init__(self, v: Sequence[Q]):
+        self.v = v
+
+    @overload
+    def __getitem__(self, s: int) -> Q: ...
+
+    @overload
+    def __getitem__(self, s: slice) -> Sequence[Q]: ...
+
+    def __getitem__(self, s: int | slice) -> Q | Sequence[Q]:
+        return self.v[s]
+
+    def __len__(self) -> int:
+        return len(self.v)
+
+    @classmethod
+    def __get_pydantic_core_schema__(
+        cls, source: Any, handler: GetCoreSchemaHandler
+    ) -> core_schema.CoreSchema:
+        args = get_args(source)
+        if len(args) == 0:
+            raise TypeError("QueryFilter requires at least one type argument")
+
+        generic_type = args[0]
+        sequence_schema = handler.generate_schema(Sequence[generic_type])  # type: ignore
+        scalar_schema = handler.generate_schema(generic_type)
+        union_schema = core_schema.union_schema([scalar_schema, sequence_schema])
+
+        return core_schema.no_info_after_validator_function(
+            cls._scalar_to_sequence, handler(union_schema)
+        )
+
+    @classmethod
+    def _scalar_to_sequence(cls, v: Q | Sequence[Q]) -> Sequence[Q]:
+        if isinstance(v, Sequence) and not isinstance(v, str):
+            return v
+        return [cast(Q, v)]

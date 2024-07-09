@@ -2,6 +2,7 @@ from typing import Annotated
 
 from pydantic import UUID4, HttpUrl, PlainSerializer
 
+from polar.benefit.schemas import BenefitID
 from polar.kit.schemas import Schema, TimestampedSchema
 
 HttpUrlToStr = Annotated[HttpUrl, PlainSerializer(lambda v: str(v), return_type=str)]
@@ -34,4 +35,4 @@ class UserAdvertisementCampaignUpdate(Schema):
 
 
 class UserAdvertisementCampaignEnable(Schema):
-    benefit_id: UUID4
+    benefit_id: BenefitID

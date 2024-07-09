@@ -118,7 +118,7 @@ class TestSearch:
         results, count = await benefit_service.list(
             session,
             auth_subject,
-            organization_id=organization.id,
+            organization_id=[organization.id],
             pagination=PaginationParams(1, 10),
         )
 

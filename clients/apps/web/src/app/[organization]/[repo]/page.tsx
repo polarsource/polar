@@ -160,7 +160,7 @@ export default async function Page({
         }),
       api.products.list(
         {
-          organizationId: [repository.organization.id],
+          organizationId: repository.organization.id,
           isRecurring: true,
         },
         cacheConfig,

@@ -109,7 +109,7 @@ export default async function Page({
   }
 
   const products = await api.products.list(
-    { organizationId: [organization.id], isRecurring: false },
+    { organizationId: organization.id, isRecurring: false },
     {
       ...cacheConfig,
       next: {

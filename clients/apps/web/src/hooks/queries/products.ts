@@ -18,7 +18,7 @@ export const useProducts = (
     queryKey: ['products', { organizationId, ...(parameters || {}) }],
     queryFn: () =>
       api.products.list({
-        organizationId: organizationId ? [organizationId] : [],
+        organizationId: organizationId ?? '',
         limit,
         ...(parameters || {}),
       }),
@@ -35,7 +35,7 @@ export const useBenefitProducts = (
     queryKey: ['products', { organizationId, benefitId }],
     queryFn: () =>
       api.products.list({
-        organizationId: organizationId ? [organizationId] : [],
+        organizationId: organizationId ?? '',
         benefitId: benefitId ?? '',
         limit,
       }),
@@ -61,7 +61,7 @@ export const useFreeTier = (organizationId?: string) =>
     queryFn: () =>
       api.products
         .list({
-          organizationId: organizationId ? [organizationId] : [],
+          organizationId: organizationId ?? '',
           type: SubscriptionTierType.FREE,
         })
         .then((res) => res.items?.[0]),

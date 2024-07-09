@@ -18,6 +18,10 @@ export const AuthenticationSchema = ({
       'OpenIdConnect'
     ] || []
 
+  if (!hasOpenIdConnect && !hasPAT && scopes.length === 0) {
+    return null
+  }
+
   return (
     <div className="flex flex-col gap-y-6">
       <AnchoredElement id="scopes">

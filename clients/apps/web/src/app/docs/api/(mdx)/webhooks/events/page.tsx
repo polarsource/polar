@@ -34,7 +34,7 @@ const Webhook = ({
         <SyntaxHighlighterServer
           highlighter={highlighter}
           lang="json"
-          code={JSON.stringify(generateSchemaExample(bodySchema), null, 2)}
+          code={JSON.stringify(generateSchemaExample(bodySchema[0]), null, 2)}
         />
       )}
     </>

@@ -83,32 +83,37 @@ export const resolveEndpointMetadata = (
   }
 }
 
-export const getRequestBodySchema = (
-  operation: OpenAPIV3_1.OperationObject,
-) => {
-  if (
-    operation &&
-    operation.requestBody &&
-    !('content' in operation.requestBody)
-  ) {
-    return undefined
-  }
-
-  const schema =
-    operation &&
-    operation.requestBody &&
-    'content' in operation.requestBody &&
-    operation.requestBody.content['application/json'] &&
-    'schema' in operation.requestBody.content['application/json'] &&
-    operation.requestBody.content['application/json'].schema
-
-  return schema
-}
-
 export const isDereferenced = <T extends object>(
   s: OpenAPIV3_1.ReferenceObject | T,
 ): s is T => {
   return !('$ref' in s)
+}
+
+export enum MediaType {
+  JSON = 'application/json',
+  FORM = 'application/x-www-form-urlencoded',
+}
+
+export const getRequestBodySchema = (
+  operation: OpenAPIV3_1.OperationObject,
+): [OpenAPIV3_1.SchemaObject, MediaType] | undefined => {
+  const requestBody = operation.requestBody
+  if (!requestBody || !isDereferenced(requestBody)) {
+    return undefined
+  }
+  const content = requestBody.content
+  for (const mediaType of Object.values(MediaType)) {
+    const mediaTypeObject = content[mediaType]
+    if (
+      mediaTypeObject &&
+      isDereferenced(mediaTypeObject) &&
+      mediaTypeObject.schema &&
+      isDereferenced(mediaTypeObject.schema)
+    ) {
+      return [mediaTypeObject.schema, mediaType]
+    }
+  }
+  return undefined
 }
 
 export const getUnionSchemas = (schema: OpenAPIV3_1.SchemaObject) => {
@@ -399,10 +404,15 @@ abstract class CommandBuilder {
       return undefined
     }
     const explodedParams = this.explodeParams(this.params, ['body'])
-    return generateSchemaExample(bodySchema, explodedParams) as Record<
+    return generateSchemaExample(bodySchema[0], explodedParams) as Record<
       string,
       any
     >
+  }
+
+  protected getMediaType(): MediaType | undefined {
+    const bodySchema = getRequestBodySchema(this.endpoint)
+    return bodySchema ? bodySchema[1] : undefined
   }
 
   private explodeParams(
@@ -452,13 +462,22 @@ export class CURLCommandBuilder extends CommandBuilder {
       this.getQueryParameters(),
     ).toString()
     const body = this.getBody()
-    const bodyString = body ? `-d '${JSON.stringify(body, null, 2)}'` : ''
+    const mediaType = this.getMediaType()
+    const bodyString =
+      body && mediaType ? `-d '${this.encodeBody(body, mediaType)}'` : ''
+
+    const hasSecurityScheme =
+      this.endpoint.security && this.endpoint.security.length > 0
+
+    const headers = [
+      `-H "Content-Type: ${mediaType}"`,
+      '-H "Accept: application/json"',
+      ...(hasSecurityScheme ? ['-H "Authorization: Bearer <token>"'] : []),
+    ]
 
     return `curl -X ${this.method.toUpperCase()} \\
     ${this.getURL()}${queryParameters ? '?' + queryParameters : ''} \\
-    -H "Content-type: application/json" \\
-    -H "Accept: application/json" \\
-    -H "Authorization: Bearer <token>" \\
+    ${headers.join(' \\\n    ')} \\
     ${bodyString}`
   }
 
@@ -470,6 +489,16 @@ export class CURLCommandBuilder extends CommandBuilder {
     })
     return resultURL
   }
+
+  private encodeBody(body: Record<string, any>, mediaType: MediaType): string {
+    if (mediaType === MediaType.JSON) {
+      return JSON.stringify(body, null, 2)
+    }
+    if (mediaType === MediaType.FORM) {
+      return new URLSearchParams(body as Record<string, string>).toString()
+    }
+    throw new Error(`Unsupported media type: ${mediaType}`)
+  }
 }
 
 export class NodeJSCommandBuilder extends CommandBuilder {
@@ -477,11 +506,12 @@ export class NodeJSCommandBuilder extends CommandBuilder {
     const pathParameters = this.getPathParameters()
     const queryParameters = this.getQueryParameters()
     const body = this.getBody()
+    const mediaType = this.getMediaType()
 
     const requestParameters = {
       ...(pathParameters ? this.convertToCamelCase(pathParameters) : {}),
       ...(queryParameters ? this.convertToCamelCase(queryParameters) : {}),
-      ...(body ? { body } : {}),
+      ...(body && mediaType ? this.getBodyObject(body, mediaType) : {}),
     }
 
     let [namespace, endpointName] = this.endpoint.operationId?.split(':') ?? [
@@ -506,6 +536,19 @@ polar.${namespace}
   .then(console.log)
   .catch(console.error);
 `.trim()
+  }
+
+  private getBodyObject(
+    body: Record<string, any>,
+    mediaType: MediaType,
+  ): Record<string, any> {
+    if (mediaType === MediaType.JSON) {
+      return { body }
+    }
+    if (mediaType === MediaType.FORM) {
+      return this.convertToCamelCase(body)
+    }
+    throw new Error(`Unsupported media type: ${mediaType}`)
   }
 
   private snakeToCamel(str: string): string {

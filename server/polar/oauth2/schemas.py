@@ -117,3 +117,41 @@ AuthorizeResponse = Annotated[
 authorize_response_adapter: TypeAdapter[AuthorizeResponse] = TypeAdapter(
     AuthorizeResponse
 )
+
+
+class TokenRequestBase(Schema):
+    grant_type: Literal["authorization_code", "refresh_token"]
+    client_id: str
+    client_secret: str
+
+
+class AuthorizationCodeTokenRequest(TokenRequestBase):
+    grant_type: Literal["authorization_code"]
+    code: str
+    redirect_uri: HttpUrl
+
+
+class RefreshTokenRequest(TokenRequestBase):
+    grant_type: Literal["refresh_token"]
+
+    refresh_token: str
+
+
+TokenRequest = Annotated[
+    AuthorizationCodeTokenRequest | RefreshTokenRequest, Discriminator("grant_type")
+]
+TokenRequestAdapter: TypeAdapter[TokenRequest] = TypeAdapter(TokenRequest)
+
+
+class RevokeTokenRequest(Schema):
+    token: str
+    token_type_hint: Literal["access_token", "refresh_token"] | None = None
+    client_id: str
+    client_secret: str
+
+
+class IntrospectTokenRequest(Schema):
+    token: str
+    token_type_hint: Literal["access_token", "refresh_token"] | None = None
+    client_id: str
+    client_secret: str

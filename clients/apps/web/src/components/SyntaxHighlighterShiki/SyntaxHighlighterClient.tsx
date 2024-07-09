@@ -6,7 +6,7 @@ import {
   Highlighter,
   ShikiError,
   createHighlighter,
-} from 'shiki/bundle/web'
+} from 'shiki/bundle/full'
 import { themeConfig, themesList, transformers } from '../../../shiki.config'
 
 const getHighlighter = async (): Promise<Highlighter> => {

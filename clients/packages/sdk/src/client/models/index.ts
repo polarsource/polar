@@ -5257,6 +5257,84 @@ export type Interval = typeof Interval[keyof typeof Interval];
 /**
  * 
  * @export
+ * @interface IntrospectTokenResponse
+ */
+export interface IntrospectTokenResponse {
+    /**
+     * 
+     * @type {boolean}
+     * @memberof IntrospectTokenResponse
+     */
+    active: boolean;
+    /**
+     * 
+     * @type {string}
+     * @memberof IntrospectTokenResponse
+     */
+    client_id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof IntrospectTokenResponse
+     */
+    token_type: IntrospectTokenResponseTokenTypeEnum;
+    /**
+     * 
+     * @type {string}
+     * @memberof IntrospectTokenResponse
+     */
+    scope: string;
+    /**
+     * 
+     * @type {SubType}
+     * @memberof IntrospectTokenResponse
+     */
+    sub_type: SubType;
+    /**
+     * 
+     * @type {string}
+     * @memberof IntrospectTokenResponse
+     */
+    sub: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof IntrospectTokenResponse
+     */
+    aud: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof IntrospectTokenResponse
+     */
+    iss: string;
+    /**
+     * 
+     * @type {number}
+     * @memberof IntrospectTokenResponse
+     */
+    exp: number;
+    /**
+     * 
+     * @type {number}
+     * @memberof IntrospectTokenResponse
+     */
+    iat: number;
+}
+
+
+/**
+ * @export
+ */
+export const IntrospectTokenResponseTokenTypeEnum = {
+    ACCESS_TOKEN: 'access_token',
+    REFRESH_TOKEN: 'refresh_token'
+} as const;
+export type IntrospectTokenResponseTokenTypeEnum = typeof IntrospectTokenResponseTokenTypeEnum[keyof typeof IntrospectTokenResponseTokenTypeEnum];
+
+/**
+ * 
+ * @export
  * @interface Issue
  */
 export interface Issue {
@@ -10692,6 +10770,12 @@ export type ResponseFilesUploaded = { service: 'downloadable' } & DownloadableFi
  */
 export type ResponseOauth2Authorize = { sub_type: 'organization' } & AuthorizeResponseOrganization | { sub_type: 'user' } & AuthorizeResponseUser;
 /**
+ * @type ResponseOauth2Userinfo
+ * @export
+ */
+export type ResponseOauth2Userinfo = UserInfoOrganization | UserInfoUser;
+
+/**
  * @type ResponseUsersGetBenefit
  * 
  * @export
@@ -11098,6 +11182,17 @@ export const Status = {
 } as const;
 export type Status = typeof Status[keyof typeof Status];
 
+
+/**
+ * 
+ * @export
+ */
+export const SubType = {
+    USER: 'user',
+    ORGANIZATION: 'organization'
+} as const;
+export type SubType = typeof SubType[keyof typeof SubType];
+
 /**
  * 
  * @export
@@ -11420,6 +11515,59 @@ export interface TeamAdminMemberPledgedNotificationPayload {
      */
     pledge_id: string;
 }
+/**
+ * 
+ * @export
+ * @interface TokenResponse
+ */
+export interface TokenResponse {
+    /**
+     * 
+     * @type {string}
+     * @memberof TokenResponse
+     */
+    access_token: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof TokenResponse
+     */
+    token_type: TokenResponseTokenTypeEnum;
+    /**
+     * 
+     * @type {number}
+     * @memberof TokenResponse
+     */
+    expires_in: number;
+    /**
+     * 
+     * @type {string}
+     * @memberof TokenResponse
+     */
+    refresh_token?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof TokenResponse
+     */
+    scope: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof TokenResponse
+     */
+    id_token: string;
+}
+
+
+/**
+ * @export
+ */
+export const TokenResponseTokenTypeEnum = {
+    BEARER: 'Bearer'
+} as const;
+export type TokenResponseTokenTypeEnum = typeof TokenResponseTokenTypeEnum[keyof typeof TokenResponseTokenTypeEnum];
+
 /**
  * 
  * @export
@@ -12607,6 +12755,56 @@ export interface UserFreeSubscriptionCreate {
      * @memberof UserFreeSubscriptionCreate
      */
     customer_email?: string;
+}
+/**
+ * 
+ * @export
+ * @interface UserInfoOrganization
+ */
+export interface UserInfoOrganization {
+    /**
+     * 
+     * @type {string}
+     * @memberof UserInfoOrganization
+     */
+    sub: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof UserInfoOrganization
+     */
+    name?: string;
+}
+/**
+ * 
+ * @export
+ * @interface UserInfoUser
+ */
+export interface UserInfoUser {
+    /**
+     * 
+     * @type {string}
+     * @memberof UserInfoUser
+     */
+    sub: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof UserInfoUser
+     */
+    name?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof UserInfoUser
+     */
+    email?: string;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof UserInfoUser
+     */
+    email_verified?: boolean;
 }
 /**
  * 

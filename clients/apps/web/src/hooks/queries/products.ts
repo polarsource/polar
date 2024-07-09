@@ -20,6 +20,7 @@ export const useProducts = (
       api.products.list({
         organizationId: organizationId ?? '',
         limit,
+        isArchived: false,
         ...(parameters || {}),
       }),
     retry: defaultRetry,
@@ -37,6 +38,7 @@ export const useBenefitProducts = (
       api.products.list({
         organizationId: organizationId ?? '',
         benefitId: benefitId ?? '',
+        isArchived: false,
         limit,
       }),
     retry: defaultRetry,

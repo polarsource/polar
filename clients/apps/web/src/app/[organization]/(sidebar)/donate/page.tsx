@@ -116,6 +116,7 @@ export default async function Page({
         api.products.list(
           {
             organizationId: organization.id,
+            isArchived: false,
             isRecurring: true,
           },
           {

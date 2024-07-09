@@ -115,7 +115,7 @@ export default async function Page({
 
         api.products.list(
           {
-            organizationId: [organization.id],
+            organizationId: organization.id,
             isRecurring: true,
           },
           {

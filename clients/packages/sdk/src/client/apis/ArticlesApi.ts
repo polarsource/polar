@@ -24,6 +24,7 @@ import type {
   HTTPValidationError,
   ListResourceArticle,
   NotPermitted,
+  OrganizationId,
   ResourceNotFound,
 } from '../models/index';
 
@@ -48,7 +49,7 @@ export interface ArticlesApiGetReceiversRequest {
 }
 
 export interface ArticlesApiListRequest {
-    organizationId?: string;
+    organizationId?: OrganizationId;
     slug?: string;
     visibility?: ArticleVisibility;
     isPublished?: boolean;

@@ -24,12 +24,18 @@ from ..grants import AuthorizationCodeGrant
 from ..schemas import (
     AuthorizeResponse,
     IntrospectTokenRequest,
+    IntrospectTokenResponse,
     OAuth2Client,
     OAuth2ClientConfiguration,
     OAuth2ClientConfigurationUpdate,
     RevokeTokenRequest,
+    RevokeTokenResponse,
     TokenRequestAdapter,
+    TokenResponse,
     authorize_response_adapter,
+)
+from ..schemas import (
+    UserInfo as UserInfoSchema,
 )
 from ..service.oauth2_client import oauth2_client as oauth2_client_service
 from ..sub_type import SubType
@@ -189,6 +195,7 @@ _request_token_schema_defs = _request_token_schema.pop("$defs")
             },
         },
     },
+    response_model=TokenResponse,
 )
 async def request_token(
     request: Request,
@@ -215,6 +222,7 @@ async def request_token(
             },
         }
     },
+    response_model=RevokeTokenResponse,
 )
 async def revoke_token(
     request: Request,
@@ -243,6 +251,7 @@ async def revoke_token(
             },
         }
     },
+    response_model=IntrospectTokenResponse,
 )
 async def introspect_token(
     request: Request,
@@ -261,7 +270,7 @@ async def introspect_token(
     methods=["GET", "POST"],
     name="oauth2:userinfo",
     operation_id="oauth2:userinfo",
-    response_model=None,
+    response_model=UserInfoSchema,
     tags=[APITag.featured],
 )
 async def userinfo(token: OAuth2Token = Depends(get_token)) -> UserInfo:

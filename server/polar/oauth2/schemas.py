@@ -143,6 +143,15 @@ TokenRequest = Annotated[
 TokenRequestAdapter: TypeAdapter[TokenRequest] = TypeAdapter(TokenRequest)
 
 
+class TokenResponse(Schema):
+    access_token: str
+    token_type: Literal["Bearer"]
+    expires_in: int
+    refresh_token: str | None = None
+    scope: str
+    id_token: str
+
+
 class RevokeTokenRequest(Schema):
     token: str
     token_type_hint: Literal["access_token", "refresh_token"] | None = None
@@ -150,8 +159,39 @@ class RevokeTokenRequest(Schema):
     client_secret: str
 
 
+class RevokeTokenResponse(Schema): ...
+
+
 class IntrospectTokenRequest(Schema):
     token: str
     token_type_hint: Literal["access_token", "refresh_token"] | None = None
     client_id: str
     client_secret: str
+
+
+class IntrospectTokenResponse(Schema):
+    active: bool
+    client_id: str
+    token_type: Literal["access_token", "refresh_token"]
+    scope: str
+    sub_type: SubType
+    sub: str
+    aud: str
+    iss: str
+    exp: int
+    iat: int
+
+
+class UserInfoUser(Schema):
+    sub: str
+    name: str | None = None
+    email: str | None = None
+    email_verified: bool | None = None
+
+
+class UserInfoOrganization(Schema):
+    sub: str
+    name: str | None = None
+
+
+UserInfo = UserInfoUser | UserInfoOrganization

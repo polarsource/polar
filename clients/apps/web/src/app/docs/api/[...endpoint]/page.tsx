@@ -103,7 +103,12 @@ export default async function Page({
             />
           )}
 
-          {requestBodySchema && <BodySchema schema={requestBodySchema} />}
+          {requestBodySchema && (
+            <BodySchema
+              schema={requestBodySchema[0]}
+              mediaType={requestBodySchema[1]}
+            />
+          )}
           {operation.responses && (
             <ResponsesSchemas responses={operation.responses} />
           )}

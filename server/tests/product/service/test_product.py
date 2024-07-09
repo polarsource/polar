@@ -240,7 +240,7 @@ class TestList:
         assert results[1].id == product.id
         assert results[2].id == product_second.id
 
-    async def test_filter_include_archived(
+    async def test_filter_is_archived(
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
@@ -259,7 +259,7 @@ class TestList:
         results, count = await product_service.list(
             session,
             get_auth_subject(Anonymous()),
-            include_archived=False,
+            is_archived=False,
             pagination=PaginationParams(1, 10),
         )
         assert count == 0
@@ -267,7 +267,6 @@ class TestList:
         results, count = await product_service.list(
             session,
             get_auth_subject(Anonymous()),
-            include_archived=True,
             pagination=PaginationParams(1, 10),
         )
         assert count == 0
@@ -278,7 +277,7 @@ class TestList:
         results, count = await product_service.list(
             session,
             auth_subject,
-            include_archived=False,
+            is_archived=False,
             pagination=PaginationParams(1, 10),
         )
         assert count == 0
@@ -286,7 +285,6 @@ class TestList:
         results, count = await product_service.list(
             session,
             auth_subject,
-            include_archived=True,
             pagination=PaginationParams(1, 10),
         )
         assert count == 1
@@ -312,7 +310,7 @@ class TestList:
         results, count = await product_service.list(
             session,
             auth_subject,
-            include_archived=False,
+            is_archived=False,
             pagination=PaginationParams(1, 10),
         )
         assert count == 0
@@ -320,7 +318,6 @@ class TestList:
         results, count = await product_service.list(
             session,
             auth_subject,
-            include_archived=True,
             pagination=PaginationParams(1, 10),
         )
         assert count == 0
@@ -427,7 +424,6 @@ class TestList:
             session,
             auth_subject,
             pagination=PaginationParams(1, 8),  # page 1, limit 8
-            include_archived=True,
         )
         assert 20 == count
         assert 8 == len(results)
@@ -435,7 +431,6 @@ class TestList:
             session,
             auth_subject,
             pagination=PaginationParams(2, 8),  # page 2, limit 8
-            include_archived=True,
         )
         assert 20 == count
         assert 8 == len(results)
@@ -443,7 +438,6 @@ class TestList:
             session,
             auth_subject,
             pagination=PaginationParams(3, 8),  # page 3, limit 8
-            include_archived=True,
         )
         assert 20 == count
         assert 4 == len(results)
@@ -533,7 +527,6 @@ class TestList:
             session,
             auth_subject,
             pagination=PaginationParams(1, 8),  # page 1, limit 8
-            include_archived=True,
             organization_id=[organization.id],
         )
 

@@ -36,7 +36,7 @@ BenefitNotFound = {
 }
 
 
-@router.get("/", response_model=ListResource[BenefitSchema])
+@router.get("/", summary="List Benefits", response_model=ListResource[BenefitSchema])
 async def list(
     auth_subject: auth.BenefitsRead,
     pagination: PaginationParamsQuery,
@@ -68,6 +68,7 @@ async def list(
 
 @router.get(
     "/{id}",
+    summary="Get Benefit",
     response_model=BenefitSchema,
     responses={404: BenefitNotFound},
 )
@@ -87,6 +88,7 @@ async def get(
 
 @router.get(
     "/{id}/grants",
+    summary="List Benefit Grants",
     response_model=ListResource[BenefitGrant],
     responses={404: BenefitNotFound},
 )
@@ -143,6 +145,7 @@ async def list_grants(
 
 @router.post(
     "/",
+    summary="Create Benefit",
     response_model=BenefitSchema,
     status_code=201,
     responses={201: {"description": "Benefit created."}},
@@ -173,6 +176,7 @@ async def create(
 
 @router.patch(
     "/{id}",
+    summary="Update Benefit",
     response_model=BenefitSchema,
     responses={
         200: {"description": "Benefit updated."},
@@ -216,6 +220,7 @@ async def update(
 
 @router.delete(
     "/{id}",
+    summary="Delete Benefit",
     status_code=204,
     responses={
         204: {"description": "Benefit deleted."},

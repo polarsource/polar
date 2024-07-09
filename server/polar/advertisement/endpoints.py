@@ -4,6 +4,7 @@ import structlog
 from fastapi import Depends, Path, Query
 from pydantic import UUID4
 
+from polar.benefit.schemas import BenefitID
 from polar.benefit.service.benefit import benefit as benefit_service
 from polar.exceptions import PolarRequestValidationError, ResourceNotFound
 from polar.kit.pagination import ListResource, PaginationParamsQuery
@@ -43,9 +44,7 @@ ListSorting = Annotated[
 async def list(
     pagination: PaginationParamsQuery,
     sorting: ListSorting,
-    benefit_id: UUID4 = Query(
-        description="The benefit ID to look up advertisements for."
-    ),
+    benefit_id: Annotated[BenefitID, Query(...)],
     session: AsyncSession = Depends(get_db_session),
 ) -> AdvertisementCampaignListResource:
     """List active advertisement campaigns for a benefit."""

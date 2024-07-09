@@ -2,6 +2,7 @@ from datetime import datetime
 
 from pydantic import UUID4
 
+from polar.benefit.schemas import BenefitID
 from polar.file.schemas import FileDownload
 from polar.kit.schemas import Schema
 from polar.models.downloadable import DownloadableStatus
@@ -22,12 +23,12 @@ class DownloadableRead(Schema):
 class DownloadableCreate(Schema):
     file_id: UUID4
     user_id: UUID4
-    benefit_id: UUID4
+    benefit_id: BenefitID
     status: DownloadableStatus
 
 
 class DownloadableUpdate(Schema):
     file_id: UUID4
     user_id: UUID4
-    benefit_id: UUID4
+    benefit_id: BenefitID
     status: DownloadableStatus

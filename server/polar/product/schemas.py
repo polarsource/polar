@@ -3,7 +3,7 @@ from typing import Annotated, Literal
 from fastapi import Path
 from pydantic import UUID4, AfterValidator, Discriminator, Field
 
-from polar.benefit.schemas import BenefitPublic
+from polar.benefit.schemas import BenefitID, BenefitPublic
 from polar.file.schemas import ProductMediaFileRead
 from polar.kit.schemas import (
     EmptyStrToNoneValidator,
@@ -14,6 +14,7 @@ from polar.kit.schemas import (
 )
 from polar.models.product import SubscriptionTierType
 from polar.models.product_price import ProductPriceRecurringInterval, ProductPriceType
+from polar.organization.schemas import OrganizationID
 
 PRODUCT_NAME_MIN_LENGTH = 3
 PRODUCT_NAME_MAX_LENGTH = 24
@@ -133,7 +134,7 @@ class ProductCreateBase(Schema):
             "of type `product_media` and correctly uploaded."
         ),
     )
-    organization_id: UUID4 | None = Field(
+    organization_id: OrganizationID | None = Field(
         default=None,
         description=(
             "The ID of the organization owning the product. "
@@ -229,7 +230,7 @@ class ProductBenefitsUpdate(Schema):
     Schema to update the benefits granted by a product.
     """
 
-    benefits: list[UUID4] = Field(
+    benefits: list[BenefitID] = Field(
         description=(
             "List of benefit IDs. "
             "Each one must be on the same organization as the product."

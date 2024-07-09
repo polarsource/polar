@@ -1,5 +1,5 @@
 import uuid
-from collections.abc import Generator
+from collections.abc import Generator, Sequence
 from datetime import datetime
 from enum import StrEnum
 from typing import TYPE_CHECKING, Protocol, cast
@@ -90,7 +90,7 @@ class QueryCallable(Protocol):
         auth_subject: AuthSubject[User | Organization],
         metrics: list["type[Metric]"],
         *,
-        organization_id: uuid.UUID | None = None,
+        organization_id: Sequence[uuid.UUID] | None = None,
         product_id: uuid.UUID | None = None,
         product_price_type: ProductPriceType | None = None,
     ) -> CTE: ...
@@ -102,7 +102,7 @@ def get_orders_cte(
     auth_subject: AuthSubject[User | Organization],
     metrics: list["type[Metric]"],
     *,
-    organization_id: uuid.UUID | None = None,
+    organization_id: Sequence[uuid.UUID] | None = None,
     product_id: uuid.UUID | None = None,
     product_price_type: ProductPriceType | None = None,
 ) -> CTE:
@@ -128,7 +128,7 @@ def get_orders_cte(
 
     if organization_id is not None:
         readable_orders_statement = readable_orders_statement.where(
-            Product.organization_id == organization_id
+            Product.organization_id.in_(organization_id)
         )
 
     if product_id is not None:
@@ -175,7 +175,7 @@ def get_active_subscriptions_cte(
     auth_subject: AuthSubject[User | Organization],
     metrics: list["type[Metric]"],
     *,
-    organization_id: uuid.UUID | None = None,
+    organization_id: Sequence[uuid.UUID] | None = None,
     product_id: uuid.UUID | None = None,
     product_price_type: ProductPriceType | None = None,
 ) -> CTE:
@@ -201,7 +201,7 @@ def get_active_subscriptions_cte(
 
     if organization_id is not None:
         readable_subscriptions_statement = readable_subscriptions_statement.where(
-            Product.organization_id == organization_id
+            Product.organization_id.in_(organization_id)
         )
 
     if product_id is not None:

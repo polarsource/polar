@@ -4,6 +4,7 @@ from pydantic import UUID4, AnyUrl, Field, PlainSerializer, UrlConstraints
 
 from polar.kit.schemas import Schema, TimestampedSchema
 from polar.models.webhook_endpoint import WebhookEventType
+from polar.organization.schemas import OrganizationID
 
 HttpsUrl = Annotated[
     AnyUrl,
@@ -59,7 +60,7 @@ class WebhookEndpointCreate(Schema):
     url: EndpointURL
     secret: EndpointSecret
     events: EndpointEvents
-    organization_id: UUID4 | None = Field(
+    organization_id: OrganizationID | None = Field(
         None,
         description=(
             "The organization ID associated with the webhook endpoint. "

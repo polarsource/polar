@@ -3,6 +3,7 @@ from datetime import date
 from fastapi import Depends, Query
 
 from polar.exceptions import PolarRequestValidationError
+from polar.kit.schemas import MultipleQueryFilter
 from polar.models.product_price import ProductPriceType
 from polar.openapi import APITag
 from polar.organization.schemas import OrganizationID
@@ -29,7 +30,7 @@ async def get(
     ),
     end_date: date = Query(..., description="End date."),
     interval: Interval = Query(..., description="Interval between two timestamps."),
-    organization_id: OrganizationID | None = Query(
+    organization_id: MultipleQueryFilter[OrganizationID] | None = Query(
         None, description="Filter by organization ID."
     ),
     product_id: ProductID | None = Query(None, description="Filter by product ID."),

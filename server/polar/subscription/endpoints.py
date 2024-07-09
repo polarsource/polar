@@ -15,6 +15,7 @@ from polar.kit.csv import (
     get_iterable_from_binary_io,
 )
 from polar.kit.pagination import ListResource, PaginationParams, PaginationParamsQuery
+from polar.kit.schemas import MultipleQueryFilter
 from polar.kit.sorting import Sorting, SortingGetter
 from polar.models import Subscription
 from polar.models.product import SubscriptionTierType
@@ -51,7 +52,7 @@ async def list(
     auth_subject: auth.SubscriptionsRead,
     pagination: PaginationParamsQuery,
     sorting: SearchSorting,
-    organization_id: OrganizationID | None = Query(
+    organization_id: MultipleQueryFilter[OrganizationID] | None = Query(
         None, description="Filter by organization ID."
     ),
     product_id: ProductID | None = Query(None, description="Filter by product ID."),
@@ -215,7 +216,7 @@ async def subscriptions_import(
 @router.get("/export", summary="Export Subscriptions")
 async def export(
     auth_subject: auth.SubscriptionsRead,
-    organization_id: OrganizationID | None = Query(
+    organization_id: MultipleQueryFilter[OrganizationID] | None = Query(
         None, description="Filter by organization ID."
     ),
     session: AsyncSession = Depends(get_db_session),

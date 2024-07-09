@@ -54,7 +54,7 @@ class ArticleService(ResourceServiceReader[Article]):
         session: AsyncSession,
         auth_subject: AuthSubject[Subject],
         *,
-        organization_id: UUID | None = None,
+        organization_id: Sequence[UUID] | None = None,
         slug: str | None = None,
         visibility: ArticleVisibility | None = None,
         is_published: bool | None = None,
@@ -68,7 +68,7 @@ class ArticleService(ResourceServiceReader[Article]):
         )
 
         if organization_id is not None:
-            statement = statement.where(Article.organization_id == organization_id)
+            statement = statement.where(Article.organization_id.in_(organization_id))
 
         if slug is not None:
             statement = statement.where(Article.slug == slug)

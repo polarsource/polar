@@ -6,10 +6,12 @@ from pydantic import UUID4
 from polar.exceptions import ResourceNotFound
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.pagination import ListResource, PaginationParamsQuery
+from polar.kit.schemas import MultipleQueryFilter
 from polar.kit.sorting import Sorting, SortingGetter
 from polar.models import Order
 from polar.models.product_price import ProductPriceType
 from polar.openapi import APITag
+from polar.organization.schemas import OrganizationID
 from polar.postgres import get_db_session
 from polar.product.schemas import ProductID
 from polar.routing import APIRouter
@@ -35,7 +37,7 @@ async def list_orders(
     auth_subject: auth.UserOrdersRead,
     pagination: PaginationParamsQuery,
     sorting: ListSorting,
-    organization_id: UUID4 | None = Query(
+    organization_id: MultipleQueryFilter[OrganizationID] | None = Query(
         None, description="Filter by organization ID."
     ),
     product_id: ProductID | None = Query(None, description="Filter by product ID."),

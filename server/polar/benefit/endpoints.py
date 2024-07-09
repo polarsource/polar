@@ -1,12 +1,11 @@
-from typing import Annotated
-
 import structlog
-from fastapi import Body, Depends, Path, Query
+from fastapi import Body, Depends, Query
 from pydantic import UUID4
 
 from polar.authz.service import Authz
 from polar.exceptions import BadRequest, NotPermitted, ResourceNotFound
 from polar.kit.pagination import ListResource, PaginationParamsQuery
+from polar.kit.schemas import MultipleQueryFilter
 from polar.models import Benefit
 from polar.models.benefit import BenefitType
 from polar.openapi import APITag
@@ -17,7 +16,13 @@ from polar.routing import APIRouter
 
 from . import auth
 from .schemas import Benefit as BenefitSchema
-from .schemas import BenefitCreate, BenefitGrant, BenefitUpdate, benefit_schema_map
+from .schemas import (
+    BenefitCreate,
+    BenefitGrant,
+    BenefitID,
+    BenefitUpdate,
+    benefit_schema_map,
+)
 from .service.benefit import benefit as benefit_service
 from .service.benefit_grant import benefit_grant as benefit_grant_service
 
@@ -25,18 +30,17 @@ log = structlog.get_logger()
 
 router = APIRouter(prefix="/benefits", tags=["benefits", APITag.documented])
 
-BenefitID = Annotated[UUID4, Path(description="The benefit ID.")]
 BenefitNotFound = {
     "description": "Benefit not found.",
     "model": ResourceNotFound.schema(),
 }
 
 
-@router.get("/", summary="List Benefits", response_model=ListResource[BenefitSchema])
+@router.get("/", response_model=ListResource[BenefitSchema])
 async def list(
     auth_subject: auth.BenefitsRead,
     pagination: PaginationParamsQuery,
-    organization_id: OrganizationID | None = Query(
+    organization_id: MultipleQueryFilter[OrganizationID] | None = Query(
         None, description="Filter by organization ID."
     ),
     type: BenefitType | None = Query(
@@ -64,7 +68,6 @@ async def list(
 
 @router.get(
     "/{id}",
-    summary="Get Benefit",
     response_model=BenefitSchema,
     responses={404: BenefitNotFound},
 )
@@ -84,7 +87,6 @@ async def get(
 
 @router.get(
     "/{id}/grants",
-    summary="List Benefit Grants",
     response_model=ListResource[BenefitGrant],
     responses={404: BenefitNotFound},
 )
@@ -141,7 +143,6 @@ async def list_grants(
 
 @router.post(
     "/",
-    summary="Create Benefit",
     response_model=BenefitSchema,
     status_code=201,
     responses={201: {"description": "Benefit created."}},
@@ -172,7 +173,6 @@ async def create(
 
 @router.patch(
     "/{id}",
-    summary="Update Benefit",
     response_model=BenefitSchema,
     responses={
         200: {"description": "Benefit updated."},
@@ -216,7 +216,6 @@ async def update(
 
 @router.delete(
     "/{id}",
-    summary="Delete Benefit",
     status_code=204,
     responses={
         204: {"description": "Benefit deleted."},

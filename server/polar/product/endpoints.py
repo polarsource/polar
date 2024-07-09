@@ -1,11 +1,10 @@
-from collections.abc import Sequence
-
 from fastapi import Depends, Query
-from pydantic import UUID4
 
 from polar.authz.service import Authz
+from polar.benefit.schemas import BenefitID
 from polar.exceptions import NotPermitted, ResourceNotFound
 from polar.kit.pagination import ListResource, PaginationParamsQuery
+from polar.kit.schemas import MultipleQueryFilter
 from polar.models import Product
 from polar.models.product import SubscriptionTierType
 from polar.openapi import APITag
@@ -32,7 +31,7 @@ ProductNotFound = {
 async def list(
     pagination: PaginationParamsQuery,
     auth_subject: auth.CreatorProductsReadOrAnonymous,
-    organization_id: Sequence[OrganizationID] | None = Query(
+    organization_id: MultipleQueryFilter[OrganizationID] | None = Query(
         None, description="Filter by organization ID."
     ),
     include_archived: bool = Query(
@@ -46,7 +45,7 @@ async def list(
             "If `false`, only one-time purchase products are returned. "
         ),
     ),
-    benefit_id: UUID4 | None = Query(
+    benefit_id: BenefitID | None = Query(
         None, description="Filter products granting specific benefit."
     ),
     type: SubscriptionTierType | None = Query(None),

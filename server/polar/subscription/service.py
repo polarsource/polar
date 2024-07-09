@@ -163,7 +163,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         session: AsyncSession,
         auth_subject: AuthSubject[User | Organization],
         *,
-        organization_id: uuid.UUID | None = None,
+        organization_id: Sequence[uuid.UUID] | None = None,
         type: SubscriptionTierType | None = None,
         product_id: uuid.UUID | None = None,
         active: bool | None = None,
@@ -181,7 +181,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         )
 
         if organization_id is not None:
-            statement = statement.where(Product.organization_id == organization_id)
+            statement = statement.where(Product.organization_id.in_(organization_id))
 
         if type is not None:
             statement = statement.where(Product.type == type)

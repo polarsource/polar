@@ -45,13 +45,13 @@ class DownloadableService(
         *,
         user: User,
         pagination: PaginationParams,
-        organization_id: UUID | None = None,
+        organization_id: Sequence[UUID] | None = None,
         benefit_id: UUID | None = None,
     ) -> tuple[Sequence[Downloadable], int]:
         statement = self._get_base_query(user)
 
         if organization_id:
-            statement = statement.where(File.organization_id == organization_id)
+            statement = statement.where(File.organization_id.in_(organization_id))
 
         if benefit_id:
             statement = statement.where(Downloadable.benefit_id == benefit_id)

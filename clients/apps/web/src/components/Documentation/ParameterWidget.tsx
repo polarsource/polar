@@ -26,6 +26,7 @@ import {
   getParameterName,
   getUnionSchemas,
   hasSelectorWidget,
+  isArraySchema,
   isDereferenced,
   resolveSchemaMinMax,
 } from './openapi'
@@ -301,9 +302,19 @@ const UnionParameterWidget = ({
   const nullSchema = schemas.find((schema) => schema.type === 'null')
   const nonNullSchemas = schemas.filter((schema) => schema.type !== 'null')
 
+  // For schemas that are like `uuid | uuid[]`, we don't want the widget twice
+  // So we remove the array schema if there is a non-array schema with the same type
+  const deduplicatedArraySchemas = nonNullSchemas.filter(
+    (schema) =>
+      !isArraySchema(schema) ||
+      !nonNullSchemas.some(
+        (s) => isDereferenced(schema.items) && s.type === schema.items.type,
+      ),
+  )
+
   return (
     <div className="flex flex-row items-center gap-2">
-      {nonNullSchemas.map((schema, index) => (
+      {deduplicatedArraySchemas.map((schema, index) => (
         <ParameterWidget
           key={index}
           schema={schema}
@@ -334,8 +345,6 @@ const ParameterWidget = ({
   if (!currentUser) {
     return null
   }
-
-  console.log('ParameterWidget', schema)
 
   const unionSchemas = getUnionSchemas(schema)
   if (unionSchemas) {

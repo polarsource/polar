@@ -63,7 +63,7 @@ class ProductService(ResourceService[Product, ProductCreate, ProductUpdate]):
         auth_subject: AuthSubject[Subject],
         *,
         organization_id: Sequence[uuid.UUID] | None = None,
-        include_archived: bool = False,
+        is_archived: bool | None = None,
         is_recurring: bool | None = None,
         benefit_id: uuid.UUID | None = None,
         type: SubscriptionTierType | None = None,
@@ -91,8 +91,8 @@ class ProductService(ResourceService[Product, ProductCreate, ProductUpdate]):
         if organization_id is not None:
             statement = statement.where(Product.organization_id.in_(organization_id))
 
-        if not include_archived:
-            statement = statement.where(Product.is_archived.is_(False))
+        if is_archived is not None:
+            statement = statement.where(Product.is_archived.is_(is_archived))
 
         if is_recurring is not None:
             statement = statement.where(Product.is_recurring.is_(is_recurring))

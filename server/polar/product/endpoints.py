@@ -34,9 +34,7 @@ async def list(
     organization_id: MultipleQueryFilter[OrganizationID] | None = Query(
         None, description="Filter by organization ID."
     ),
-    include_archived: bool = Query(
-        False, description="Whether to include archived products."
-    ),
+    is_archived: bool | None = Query(None, description="Filter on archived products."),
     is_recurring: bool | None = Query(
         None,
         description=(
@@ -56,7 +54,7 @@ async def list(
         session,
         auth_subject,
         organization_id=organization_id,
-        include_archived=include_archived,
+        is_archived=is_archived,
         is_recurring=is_recurring,
         benefit_id=benefit_id,
         type=type,

@@ -7,3 +7,7 @@ updates:
   directory: "/" # Location of package manifests
   schedule:
     interval: "weekly"
+- package-ecosystem: "pip"
+  directory: "/server"
+  schedule:
+    interval: "weekly"

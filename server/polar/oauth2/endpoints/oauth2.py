@@ -23,18 +23,19 @@ from ..dependencies import get_authorization_server, get_token
 from ..grants import AuthorizationCodeGrant
 from ..schemas import (
     AuthorizeResponse,
+    IntrospectTokenRequest,
     OAuth2Client,
     OAuth2ClientConfiguration,
     OAuth2ClientConfigurationUpdate,
+    RevokeTokenRequest,
+    TokenRequestAdapter,
     authorize_response_adapter,
 )
 from ..service.oauth2_client import oauth2_client as oauth2_client_service
 from ..sub_type import SubType
 from ..userinfo import UserInfo, generate_user_info
 
-router = APIRouter(
-    prefix="/oauth2", tags=["oauth2", APITag.documented, APITag.featured]
-)
+router = APIRouter(prefix="/oauth2", tags=["oauth2", APITag.documented])
 
 
 @router.get("/", summary="List Clients", response_model=ListResource[OAuth2Client])
@@ -167,7 +168,28 @@ async def consent(
     )
 
 
-@router.post("/token", summary="Request Token", name="oauth2:request_token")
+_request_token_schema = TokenRequestAdapter.json_schema(
+    ref_template="#/paths/~1v1~1oauth2~1token/post/x-components/{model}"
+)
+_request_token_schema_defs = _request_token_schema.pop("$defs")
+
+
+@router.post(
+    "/token",
+    summary="Request Token",
+    name="oauth2:request_token",
+    operation_id="oauth2:request_token",
+    tags=[APITag.featured],
+    openapi_extra={
+        "x-components": _request_token_schema_defs,
+        "requestBody": {
+            "required": True,
+            "content": {
+                "application/x-www-form-urlencoded": {"schema": _request_token_schema}
+            },
+        },
+    },
+)
 async def request_token(
     request: Request,
     authorization_server: AuthorizationServer = Depends(get_authorization_server),
@@ -177,7 +199,23 @@ async def request_token(
     return authorization_server.create_token_response(request)
 
 
-@router.post("/revoke", summary="Revoke Token", name="oauth2:revoke_token")
+@router.post(
+    "/revoke",
+    summary="Revoke Token",
+    name="oauth2:revoke_token",
+    operation_id="oauth2:revoke_token",
+    tags=[APITag.featured],
+    openapi_extra={
+        "requestBody": {
+            "required": True,
+            "content": {
+                "application/x-www-form-urlencoded": {
+                    "schema": RevokeTokenRequest.model_json_schema()
+                }
+            },
+        }
+    },
+)
 async def revoke_token(
     request: Request,
     authorization_server: AuthorizationServer = Depends(get_authorization_server),
@@ -189,7 +227,23 @@ async def revoke_token(
     )
 
 
-@router.post("/introspect", summary="Introspect Token", name="oauth2:introspect_token")
+@router.post(
+    "/introspect",
+    summary="Introspect Token",
+    name="oauth2:introspect_token",
+    operation_id="oauth2:introspect_token",
+    tags=[APITag.featured],
+    openapi_extra={
+        "requestBody": {
+            "required": True,
+            "content": {
+                "application/x-www-form-urlencoded": {
+                    "schema": IntrospectTokenRequest.model_json_schema()
+                }
+            },
+        }
+    },
+)
 async def introspect_token(
     request: Request,
     authorization_server: AuthorizationServer = Depends(get_authorization_server),
@@ -206,7 +260,9 @@ async def introspect_token(
     summary="Get User Info",
     methods=["GET", "POST"],
     name="oauth2:userinfo",
+    operation_id="oauth2:userinfo",
     response_model=None,
+    tags=[APITag.featured],
 )
 async def userinfo(token: OAuth2Token = Depends(get_token)) -> UserInfo:
     """Get information about the authenticated user."""

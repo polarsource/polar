@@ -289,7 +289,26 @@
                             "anyOf": [
                                 {
                                     "type": "string",
-                                    "format": "uuid4"
+                                    "format": "uuid4",
+                                    "description": "The organization ID.",
+                                    "x-polar-selector-widget": {
+                                        "resourceRoot": "/v1/organizations",
+                                        "resourceName": "Organization",
+                                        "displayProperty": "name"
+                                    }
+                                },
+                                {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "string",
+                                        "format": "uuid4",
+                                        "description": "The organization ID.",
+                                        "x-polar-selector-widget": {
+                                            "resourceRoot": "/v1/organizations",
+                                            "resourceName": "Organization",
+                                            "displayProperty": "name"
+                                        }
+                                    }
                                 },
                                 {
                                     "type": "null"
@@ -556,7 +575,26 @@
                             "anyOf": [
                                 {
                                     "type": "string",
-                                    "format": "uuid4"
+                                    "format": "uuid4",
+                                    "description": "The organization ID.",
+                                    "x-polar-selector-widget": {
+                                        "resourceRoot": "/v1/organizations",
+                                        "resourceName": "Organization",
+                                        "displayProperty": "name"
+                                    }
+                                },
+                                {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "string",
+                                        "format": "uuid4",
+                                        "description": "The organization ID.",
+                                        "x-polar-selector-widget": {
+                                            "resourceRoot": "/v1/organizations",
+                                            "resourceName": "Organization",
+                                            "displayProperty": "name"
+                                        }
+                                    }
                                 },
                                 {
                                     "type": "null"
@@ -909,7 +947,26 @@
                             "anyOf": [
                                 {
                                     "type": "string",
-                                    "format": "uuid4"
+                                    "format": "uuid4",
+                                    "description": "The organization ID.",
+                                    "x-polar-selector-widget": {
+                                        "resourceRoot": "/v1/organizations",
+                                        "resourceName": "Organization",
+                                        "displayProperty": "name"
+                                    }
+                                },
+                                {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "string",
+                                        "format": "uuid4",
+                                        "description": "The organization ID.",
+                                        "x-polar-selector-widget": {
+                                            "resourceRoot": "/v1/organizations",
+                                            "resourceName": "Organization",
+                                            "displayProperty": "name"
+                                        }
+                                    }
                                 },
                                 {
                                     "type": "null"
@@ -1866,16 +1923,35 @@
                             "anyOf": [
                                 {
                                     "type": "string",
-                                    "format": "uuid4"
+                                    "format": "uuid4",
+                                    "description": "The organization ID.",
+                                    "x-polar-selector-widget": {
+                                        "resourceRoot": "/v1/organizations",
+                                        "resourceName": "Organization",
+                                        "displayProperty": "name"
+                                    }
+                                },
+                                {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "string",
+                                        "format": "uuid4",
+                                        "description": "The organization ID.",
+                                        "x-polar-selector-widget": {
+                                            "resourceRoot": "/v1/organizations",
+                                            "resourceName": "Organization",
+                                            "displayProperty": "name"
+                                        }
+                                    }
                                 },
                                 {
                                     "type": "null"
                                 }
                             ],
-                            "description": "Filter by organization behind downloadables. ",
+                            "description": "Filter by organization ID.",
                             "title": "Organization Id"
                         },
-                        "description": "Filter by organization behind downloadables. "
+                        "description": "Filter by organization ID."
                     },
                     {
                         "name": "benefit_id",
@@ -1885,7 +1961,13 @@
                             "anyOf": [
                                 {
                                     "type": "string",
-                                    "format": "uuid4"
+                                    "format": "uuid4",
+                                    "description": "The benefit ID.",
+                                    "x-polar-selector-widget": {
+                                        "resourceRoot": "/v1/benefits",
+                                        "resourceName": "Benefit",
+                                        "displayProperty": "description"
+                                    }
                                 },
                                 {
                                     "type": "null"
@@ -7284,8 +7366,8 @@
                             "description": "Filter by the type of purchase the customer made.",
                             "default": [
                                 "donation",
-                                "order",
-                                "subscription"
+                                "subscription",
+                                "order"
                             ],
                             "title": "Customer Types"
                         },
@@ -7768,6 +7850,19 @@
                                     }
                                 },
                                 {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "string",
+                                        "format": "uuid4",
+                                        "description": "The organization ID.",
+                                        "x-polar-selector-widget": {
+                                            "resourceRoot": "/v1/organizations",
+                                            "resourceName": "Organization",
+                                            "displayProperty": "name"
+                                        }
+                                    }
+                                },
+                                {
                                     "type": "null"
                                 }
                             ],
@@ -8084,6 +8179,19 @@
                                     }
                                 },
                                 {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "string",
+                                        "format": "uuid4",
+                                        "description": "The organization ID.",
+                                        "x-polar-selector-widget": {
+                                            "resourceRoot": "/v1/organizations",
+                                            "resourceName": "Organization",
+                                            "displayProperty": "name"
+                                        }
+                                    }
+                                },
+                                {
                                     "type": "null"
                                 }
                             ],
@@ -8154,6 +8262,19 @@
                                         "resourceRoot": "/v1/organizations",
                                         "resourceName": "Organization",
                                         "displayProperty": "name"
+                                    }
+                                },
+                                {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "string",
+                                        "format": "uuid4",
+                                        "description": "The organization ID.",
+                                        "x-polar-selector-widget": {
+                                            "resourceRoot": "/v1/organizations",
+                                            "resourceName": "Organization",
+                                            "displayProperty": "name"
+                                        }
                                     }
                                 },
                                 {
@@ -8287,8 +8408,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Anonymous",
                     "Organization",
+                    "Anonymous",
                     "User"
                 ]
             },
@@ -8378,6 +8499,11 @@
                             "type": "string",
                             "format": "uuid4",
                             "description": "The article ID.",
+                            "x-polar-selector-widget": {
+                                "resourceRoot": "/v1/articles",
+                                "resourceName": "Article",
+                                "displayProperty": "title"
+                            },
                             "title": "Id"
                         },
                         "description": "The article ID."
@@ -8416,8 +8542,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Anonymous",
                     "Organization",
+                    "Anonymous",
                     "User"
                 ]
             },
@@ -8449,6 +8575,11 @@
                             "type": "string",
                             "format": "uuid4",
                             "description": "The article ID.",
+                            "x-polar-selector-widget": {
+                                "resourceRoot": "/v1/articles",
+                                "resourceName": "Article",
+                                "displayProperty": "title"
+                            },
                             "title": "Id"
                         },
                         "description": "The article ID."
@@ -8539,6 +8670,11 @@
                             "type": "string",
                             "format": "uuid4",
                             "description": "The article ID.",
+                            "x-polar-selector-widget": {
+                                "resourceRoot": "/v1/articles",
+                                "resourceName": "Article",
+                                "displayProperty": "title"
+                            },
                             "title": "Id"
                         },
                         "description": "The article ID."
@@ -8614,6 +8750,11 @@
                             "type": "string",
                             "format": "uuid4",
                             "description": "The article ID.",
+                            "x-polar-selector-widget": {
+                                "resourceRoot": "/v1/articles",
+                                "resourceName": "Article",
+                                "displayProperty": "title"
+                            },
                             "title": "Id"
                         },
                         "description": "The article ID."
@@ -8676,6 +8817,11 @@
                             "type": "string",
                             "format": "uuid4",
                             "description": "The article ID.",
+                            "x-polar-selector-widget": {
+                                "resourceRoot": "/v1/articles",
+                                "resourceName": "Article",
+                                "displayProperty": "title"
+                            },
                             "title": "Id"
                         },
                         "description": "The article ID."
@@ -8766,6 +8912,11 @@
                             "type": "string",
                             "format": "uuid4",
                             "description": "The article ID.",
+                            "x-polar-selector-widget": {
+                                "resourceRoot": "/v1/articles",
+                                "resourceName": "Article",
+                                "displayProperty": "title"
+                            },
                             "title": "Id"
                         },
                         "description": "The article ID."
@@ -9577,11 +9728,14 @@
                         "required": true,
                         "schema": {
                             "type": "string",
-                            "format": "uuid",
-                            "description": "The benefit ID to look up advertisements for.",
+                            "format": "uuid4",
+                            "x-polar-selector-widget": {
+                                "resourceRoot": "/v1/benefits",
+                                "resourceName": "Benefit",
+                                "displayProperty": "description"
+                            },
                             "title": "Benefit Id"
-                        },
-                        "description": "The benefit ID to look up advertisements for."
+                        }
                     },
                     {
                         "name": "page",
@@ -11069,14 +11223,14 @@
                     "benefits",
                     "documented"
                 ],
-                "summary": "List Benefits",
+                "summary": "List",
                 "description": "List benefits.",
                 "operationId": "list",
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "benefits:read",
-                            "benefits:write"
+                            "benefits:write",
+                            "benefits:read"
                         ]
                     },
                     {
@@ -11098,6 +11252,19 @@
                                         "resourceRoot": "/v1/organizations",
                                         "resourceName": "Organization",
                                         "displayProperty": "name"
+                                    }
+                                },
+                                {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "string",
+                                        "format": "uuid4",
+                                        "description": "The organization ID.",
+                                        "x-polar-selector-widget": {
+                                            "resourceRoot": "/v1/organizations",
+                                            "resourceName": "Organization",
+                                            "displayProperty": "name"
+                                        }
                                     }
                                 },
                                 {
@@ -11189,7 +11356,7 @@
                     "benefits",
                     "documented"
                 ],
-                "summary": "Create Benefit",
+                "summary": "Create",
                 "description": "Create a benefit.",
                 "operationId": "create",
                 "security": [
@@ -11293,14 +11460,14 @@
                     "benefits",
                     "documented"
                 ],
-                "summary": "Get Benefit",
+                "summary": "Get",
                 "description": "Get a benefit by ID.",
                 "operationId": "get",
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "benefits:read",
-                            "benefits:write"
+                            "benefits:write",
+                            "benefits:read"
                         ]
                     },
                     {
@@ -11316,6 +11483,11 @@
                             "type": "string",
                             "format": "uuid4",
                             "description": "The benefit ID.",
+                            "x-polar-selector-widget": {
+                                "resourceRoot": "/v1/benefits",
+                                "resourceName": "Benefit",
+                                "displayProperty": "description"
+                            },
                             "title": "Id"
                         },
                         "description": "The benefit ID."
@@ -11383,7 +11555,7 @@
                     "benefits",
                     "documented"
                 ],
-                "summary": "Update Benefit",
+                "summary": "Update",
                 "description": "Update a benefit.",
                 "operationId": "update",
                 "security": [
@@ -11405,6 +11577,11 @@
                             "type": "string",
                             "format": "uuid4",
                             "description": "The benefit ID.",
+                            "x-polar-selector-widget": {
+                                "resourceRoot": "/v1/benefits",
+                                "resourceName": "Benefit",
+                                "displayProperty": "description"
+                            },
                             "title": "Id"
                         },
                         "description": "The benefit ID."
@@ -11512,7 +11689,7 @@
                     "benefits",
                     "documented"
                 ],
-                "summary": "Delete Benefit",
+                "summary": "Delete",
                 "description": "Delete a benefit.\n\n> [!WARNING]\n> Every grants associated with the benefit will be revoked.\n> Users will lose access to the benefit.",
                 "operationId": "delete",
                 "security": [
@@ -11534,6 +11711,11 @@
                             "type": "string",
                             "format": "uuid4",
                             "description": "The benefit ID.",
+                            "x-polar-selector-widget": {
+                                "resourceRoot": "/v1/benefits",
+                                "resourceName": "Benefit",
+                                "displayProperty": "description"
+                            },
                             "title": "Id"
                         },
                         "description": "The benefit ID."
@@ -11586,14 +11768,14 @@
                     "benefits",
                     "documented"
                 ],
-                "summary": "List Benefit Grants",
+                "summary": "List Grants",
                 "description": "List the individual grants for a benefit.\n\nIt's especially useful to check if a user has been granted a benefit.",
                 "operationId": "list_grants",
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "benefits:read",
-                            "benefits:write"
+                            "benefits:write",
+                            "benefits:read"
                         ]
                     },
                     {
@@ -11609,6 +11791,11 @@
                             "type": "string",
                             "format": "uuid4",
                             "description": "The benefit ID.",
+                            "x-polar-selector-widget": {
+                                "resourceRoot": "/v1/benefits",
+                                "resourceName": "Benefit",
+                                "displayProperty": "description"
+                            },
                             "title": "Id"
                         },
                         "description": "The benefit ID."
@@ -12327,6 +12514,16 @@
                         "schema": {
                             "anyOf": [
                                 {
+                                    "type": "string",
+                                    "format": "uuid4",
+                                    "description": "The organization ID.",
+                                    "x-polar-selector-widget": {
+                                        "resourceRoot": "/v1/organizations",
+                                        "resourceName": "Organization",
+                                        "displayProperty": "name"
+                                    }
+                                },
+                                {
                                     "type": "array",
                                     "items": {
                                         "type": "string",
@@ -12386,7 +12583,13 @@
                             "anyOf": [
                                 {
                                     "type": "string",
-                                    "format": "uuid4"
+                                    "format": "uuid4",
+                                    "description": "The benefit ID.",
+                                    "x-polar-selector-widget": {
+                                        "resourceRoot": "/v1/benefits",
+                                        "resourceName": "Benefit",
+                                        "displayProperty": "description"
+                                    }
                                 },
                                 {
                                     "type": "null"
@@ -12463,8 +12666,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Anonymous",
                     "Organization",
+                    "Anonymous",
                     "User"
                 ]
             },
@@ -12606,8 +12809,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Anonymous",
                     "Organization",
+                    "Anonymous",
                     "User"
                 ]
             },
@@ -12838,6 +13041,19 @@
                                         "resourceRoot": "/v1/organizations",
                                         "resourceName": "Organization",
                                         "displayProperty": "name"
+                                    }
+                                },
+                                {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "string",
+                                        "format": "uuid4",
+                                        "description": "The organization ID.",
+                                        "x-polar-selector-widget": {
+                                            "resourceRoot": "/v1/organizations",
+                                            "resourceName": "Organization",
+                                            "displayProperty": "name"
+                                        }
                                     }
                                 },
                                 {
@@ -13752,6 +13968,19 @@
                                         "resourceRoot": "/v1/organizations",
                                         "resourceName": "Organization",
                                         "displayProperty": "name"
+                                    }
+                                },
+                                {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "string",
+                                        "format": "uuid4",
+                                        "description": "The organization ID.",
+                                        "x-polar-selector-widget": {
+                                            "resourceRoot": "/v1/organizations",
+                                            "resourceName": "Organization",
+                                            "displayProperty": "name"
+                                        }
                                     }
                                 },
                                 {
@@ -14772,7 +15001,13 @@
                         "anyOf": [
                             {
                                 "type": "string",
-                                "format": "uuid4"
+                                "format": "uuid4",
+                                "description": "The organization ID.",
+                                "x-polar-selector-widget": {
+                                    "displayProperty": "name",
+                                    "resourceName": "Organization",
+                                    "resourceRoot": "/v1/organizations"
+                                }
                             },
                             {
                                 "type": "null"
@@ -15803,7 +16038,13 @@
                         "anyOf": [
                             {
                                 "type": "string",
-                                "format": "uuid4"
+                                "format": "uuid4",
+                                "description": "The organization ID.",
+                                "x-polar-selector-widget": {
+                                    "displayProperty": "name",
+                                    "resourceName": "Organization",
+                                    "resourceRoot": "/v1/organizations"
+                                }
                             },
                             {
                                 "type": "null"
@@ -16343,7 +16584,13 @@
                         "anyOf": [
                             {
                                 "type": "string",
-                                "format": "uuid4"
+                                "format": "uuid4",
+                                "description": "The organization ID.",
+                                "x-polar-selector-widget": {
+                                    "displayProperty": "name",
+                                    "resourceName": "Organization",
+                                    "resourceRoot": "/v1/organizations"
+                                }
                             },
                             {
                                 "type": "null"
@@ -16552,7 +16799,13 @@
                         "anyOf": [
                             {
                                 "type": "string",
-                                "format": "uuid4"
+                                "format": "uuid4",
+                                "description": "The organization ID.",
+                                "x-polar-selector-widget": {
+                                    "displayProperty": "name",
+                                    "resourceName": "Organization",
+                                    "resourceRoot": "/v1/organizations"
+                                }
                             },
                             {
                                 "type": "null"
@@ -16816,7 +17069,13 @@
                         "anyOf": [
                             {
                                 "type": "string",
-                                "format": "uuid4"
+                                "format": "uuid4",
+                                "description": "The organization ID.",
+                                "x-polar-selector-widget": {
+                                    "displayProperty": "name",
+                                    "resourceName": "Organization",
+                                    "resourceRoot": "/v1/organizations"
+                                }
                             },
                             {
                                 "type": "null"
@@ -17113,7 +17372,13 @@
                         "anyOf": [
                             {
                                 "type": "string",
-                                "format": "uuid4"
+                                "format": "uuid4",
+                                "description": "The organization ID.",
+                                "x-polar-selector-widget": {
+                                    "displayProperty": "name",
+                                    "resourceName": "Organization",
+                                    "resourceRoot": "/v1/organizations"
+                                }
                             },
                             {
                                 "type": "null"
@@ -18437,7 +18702,13 @@
                         "anyOf": [
                             {
                                 "type": "string",
-                                "format": "uuid4"
+                                "format": "uuid4",
+                                "description": "The organization ID.",
+                                "x-polar-selector-widget": {
+                                    "displayProperty": "name",
+                                    "resourceName": "Organization",
+                                    "resourceRoot": "/v1/organizations"
+                                }
                             },
                             {
                                 "type": "null"
@@ -23803,7 +24074,13 @@
                     "benefits": {
                         "items": {
                             "type": "string",
-                            "format": "uuid4"
+                            "format": "uuid4",
+                            "description": "The benefit ID.",
+                            "x-polar-selector-widget": {
+                                "displayProperty": "description",
+                                "resourceName": "Benefit",
+                                "resourceRoot": "/v1/benefits"
+                            }
                         },
                         "type": "array",
                         "title": "Benefits",
@@ -23823,7 +24100,13 @@
                         "anyOf": [
                             {
                                 "type": "string",
-                                "format": "uuid4"
+                                "format": "uuid4",
+                                "description": "The organization ID.",
+                                "x-polar-selector-widget": {
+                                    "displayProperty": "name",
+                                    "resourceName": "Organization",
+                                    "resourceRoot": "/v1/organizations"
+                                }
                             },
                             {
                                 "type": "null"
@@ -23943,7 +24226,13 @@
                         "anyOf": [
                             {
                                 "type": "string",
-                                "format": "uuid4"
+                                "format": "uuid4",
+                                "description": "The organization ID.",
+                                "x-polar-selector-widget": {
+                                    "displayProperty": "name",
+                                    "resourceName": "Organization",
+                                    "resourceRoot": "/v1/organizations"
+                                }
                             },
                             {
                                 "type": "null"
@@ -24242,7 +24531,13 @@
                         "anyOf": [
                             {
                                 "type": "string",
-                                "format": "uuid4"
+                                "format": "uuid4",
+                                "description": "The organization ID.",
+                                "x-polar-selector-widget": {
+                                    "displayProperty": "name",
+                                    "resourceName": "Organization",
+                                    "resourceRoot": "/v1/organizations"
+                                }
                             },
                             {
                                 "type": "null"
@@ -27024,7 +27319,13 @@
                     "benefit_id": {
                         "type": "string",
                         "format": "uuid4",
-                        "title": "Benefit Id"
+                        "title": "Benefit Id",
+                        "description": "The benefit ID.",
+                        "x-polar-selector-widget": {
+                            "displayProperty": "description",
+                            "resourceName": "Benefit",
+                            "resourceRoot": "/v1/benefits"
+                        }
                     }
                 },
                 "type": "object",
@@ -28351,7 +28652,13 @@
                         "anyOf": [
                             {
                                 "type": "string",
-                                "format": "uuid4"
+                                "format": "uuid4",
+                                "description": "The organization ID.",
+                                "x-polar-selector-widget": {
+                                    "displayProperty": "name",
+                                    "resourceName": "Organization",
+                                    "resourceRoot": "/v1/organizations"
+                                }
                             },
                             {
                                 "type": "null"

@@ -19,6 +19,7 @@ import type {
   ListResourceOrder,
   Order,
   OrderInvoice,
+  OrganizationId,
   ProductPriceType,
   ResourceNotFound,
 } from '../models/index';
@@ -32,7 +33,7 @@ export interface OrdersApiGetInvoiceRequest {
 }
 
 export interface OrdersApiListRequest {
-    organizationId?: string;
+    organizationId?: OrganizationId;
     productId?: string;
     productPriceType?: ProductPriceType;
     userId?: string;

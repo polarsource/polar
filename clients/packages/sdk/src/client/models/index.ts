@@ -1150,7 +1150,7 @@ export interface ArticleCreate {
      */
     body_base64?: string;
     /**
-     * 
+     * The organization ID.
      * @type {string}
      * @memberof ArticleCreate
      */
@@ -1963,7 +1963,7 @@ export interface BenefitAdsCreate {
      */
     description: string;
     /**
-     * 
+     * The organization ID.
      * @type {string}
      * @memberof BenefitAdsCreate
      */
@@ -2474,7 +2474,7 @@ export interface BenefitCustomCreate {
      */
     description: string;
     /**
-     * 
+     * The organization ID.
      * @type {string}
      * @memberof BenefitCustomCreate
      */
@@ -2732,7 +2732,7 @@ export interface BenefitDiscordCreate {
      */
     description: string;
     /**
-     * 
+     * The organization ID.
      * @type {string}
      * @memberof BenefitDiscordCreate
      */
@@ -3007,7 +3007,7 @@ export interface BenefitDownloadablesCreate {
      */
     description: string;
     /**
-     * 
+     * The organization ID.
      * @type {string}
      * @memberof BenefitDownloadablesCreate
      */
@@ -3278,7 +3278,7 @@ export interface BenefitGitHubRepositoryCreate {
      */
     description: string;
     /**
-     * 
+     * The organization ID.
      * @type {string}
      * @memberof BenefitGitHubRepositoryCreate
      */
@@ -4396,7 +4396,7 @@ export type Donor = DonationOrganization | DonationUser;
  */
 export interface DownloadableFileCreate {
     /**
-     * 
+     * The organization ID.
      * @type {string}
      * @memberof DownloadableFileCreate
      */
@@ -8536,6 +8536,13 @@ export interface OrganizationFeatureSettings {
     issue_funding_enabled?: boolean;
 }
 /**
+ * @type OrganizationId
+ * Filter by organization ID.
+ * @export
+ */
+export type OrganizationId = Array<string> | string;
+
+/**
  * 
  * @export
  * @interface OrganizationMember
@@ -9564,7 +9571,7 @@ export type ProductCreate = ProductOneTimeCreate | ProductRecurringCreate;
  */
 export interface ProductMediaFileCreate {
     /**
-     * 
+     * The organization ID.
      * @type {string}
      * @memberof ProductMediaFileCreate
      */
@@ -9772,7 +9779,7 @@ export interface ProductOneTimeCreate {
      */
     medias?: Array<string>;
     /**
-     * 
+     * The organization ID.
      * @type {string}
      * @memberof ProductOneTimeCreate
      */
@@ -10037,7 +10044,7 @@ export interface ProductRecurringCreate {
      */
     medias?: Array<string>;
     /**
-     * 
+     * The organization ID.
      * @type {string}
      * @memberof ProductRecurringCreate
      */
@@ -12502,7 +12509,7 @@ export interface UserAdvertisementCampaignCreate {
  */
 export interface UserAdvertisementCampaignEnable {
     /**
-     * 
+     * The benefit ID.
      * @type {string}
      * @memberof UserAdvertisementCampaignEnable
      */
@@ -13453,7 +13460,7 @@ export interface WebhookEndpointCreate {
      */
     events: Array<WebhookEventType>;
     /**
-     * 
+     * The organization ID.
      * @type {string}
      * @memberof WebhookEndpointCreate
      */

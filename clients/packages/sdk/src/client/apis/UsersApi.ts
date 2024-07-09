@@ -26,6 +26,7 @@ import type {
   ListResourceUserOrder,
   ListResourceUserSubscription,
   Organization,
+  OrganizationId,
   ProductPriceType,
   ResourceNotFound,
   ResponseUsersGetBenefit,
@@ -98,7 +99,7 @@ export interface UsersApiListAdvertisementCampaignsRequest {
 
 export interface UsersApiListBenefitsRequest {
     type?: BenefitType;
-    organizationId?: string;
+    organizationId?: OrganizationId;
     orderId?: string;
     subscriptionId?: string;
     page?: number;
@@ -107,14 +108,14 @@ export interface UsersApiListBenefitsRequest {
 }
 
 export interface UsersApiListDownloadablesRequest {
-    organizationId?: string;
+    organizationId?: OrganizationId;
     benefitId?: string;
     page?: number;
     limit?: number;
 }
 
 export interface UsersApiListOrdersRequest {
-    organizationId?: string;
+    organizationId?: OrganizationId;
     productId?: string;
     productPriceType?: ProductPriceType;
     subscriptionId?: string;
@@ -125,7 +126,7 @@ export interface UsersApiListOrdersRequest {
 }
 
 export interface UsersApiListSubscriptionsRequest {
-    organizationId?: string;
+    organizationId?: OrganizationId;
     productId?: string;
     active?: boolean;
     query?: string;

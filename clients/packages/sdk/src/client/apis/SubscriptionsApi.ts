@@ -17,6 +17,7 @@ import * as runtime from '../runtime';
 import type {
   HTTPValidationError,
   ListResourceSubscription,
+  OrganizationId,
   Subscription,
   SubscriptionCreateEmail,
   SubscriptionTierType,
@@ -28,7 +29,7 @@ export interface SubscriptionsApiCreateRequest {
 }
 
 export interface SubscriptionsApiExportRequest {
-    organizationId?: string;
+    organizationId?: OrganizationId;
 }
 
 export interface SubscriptionsApiImportRequest {
@@ -37,7 +38,7 @@ export interface SubscriptionsApiImportRequest {
 }
 
 export interface SubscriptionsApiListRequest {
-    organizationId?: string;
+    organizationId?: OrganizationId;
     productId?: string;
     type?: SubscriptionTierType;
     active?: boolean;

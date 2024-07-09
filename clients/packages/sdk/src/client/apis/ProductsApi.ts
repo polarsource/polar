@@ -18,6 +18,7 @@ import type {
   HTTPValidationError,
   ListResourceProduct,
   NotPermitted,
+  OrganizationId,
   Product,
   ProductBenefitsUpdate,
   ProductCreate,
@@ -35,7 +36,7 @@ export interface ProductsApiGetRequest {
 }
 
 export interface ProductsApiListRequest {
-    organizationId?: Array<string>;
+    organizationId?: OrganizationId;
     includeArchived?: boolean;
     isRecurring?: boolean;
     benefitId?: string;

@@ -16,10 +16,13 @@
 import * as runtime from '../runtime';
 import type {
   HTTPValidationError,
+  IntrospectTokenResponse,
   ListResourceOAuth2Client,
   OAuth2ClientConfiguration,
   OAuth2ClientConfigurationUpdate,
   ResponseOauth2Authorize,
+  ResponseOauth2Userinfo,
+  TokenResponse,
 } from '../models/index';
 
 export interface Oauth2ApiConsentRequest {
@@ -38,9 +41,23 @@ export interface Oauth2ApiGetClientRequest {
     clientId: string;
 }
 
+export interface Oauth2ApiIntrospectTokenRequest {
+    token: string;
+    clientId: string;
+    clientSecret: string;
+    tokenTypeHint?: IntrospectTokenTokenTypeHintEnum;
+}
+
 export interface Oauth2ApiListClientsRequest {
     page?: number;
     limit?: number;
+}
+
+export interface Oauth2ApiRevokeTokenRequest {
+    token: string;
+    clientId: string;
+    clientSecret: string;
+    tokenTypeHint?: RevokeTokenTokenTypeHintEnum;
 }
 
 export interface Oauth2ApiUpdateClientRequest {
@@ -299,31 +316,79 @@ export class Oauth2Api extends runtime.BaseAPI {
      * Get information about an access token.
      * Introspect Token
      */
-    async introspectTokenRaw(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<any>> {
+    async introspectTokenRaw(requestParameters: Oauth2ApiIntrospectTokenRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<IntrospectTokenResponse>> {
+        if (requestParameters['token'] == null) {
+            throw new runtime.RequiredError(
+                'token',
+                'Required parameter "token" was null or undefined when calling introspectToken().'
+            );
+        }
+
+        if (requestParameters['clientId'] == null) {
+            throw new runtime.RequiredError(
+                'clientId',
+                'Required parameter "clientId" was null or undefined when calling introspectToken().'
+            );
+        }
+
+        if (requestParameters['clientSecret'] == null) {
+            throw new runtime.RequiredError(
+                'clientSecret',
+                'Required parameter "clientSecret" was null or undefined when calling introspectToken().'
+            );
+        }
+
         const queryParameters: any = {};
 
         const headerParameters: runtime.HTTPHeaders = {};
+
+        const consumes: runtime.Consume[] = [
+            { contentType: 'application/x-www-form-urlencoded' },
+        ];
+        // @ts-ignore: canConsumeForm may be unused
+        const canConsumeForm = runtime.canConsumeForm(consumes);
+
+        let formParams: { append(param: string, value: any): any };
+        let useForm = false;
+        if (useForm) {
+            formParams = new FormData();
+        } else {
+            formParams = new URLSearchParams();
+        }
+
+        if (requestParameters['token'] != null) {
+            formParams.append('token', requestParameters['token'] as any);
+        }
+
+        if (requestParameters['tokenTypeHint'] != null) {
+            formParams.append('token_type_hint', requestParameters['tokenTypeHint'] as any);
+        }
+
+        if (requestParameters['clientId'] != null) {
+            formParams.append('client_id', requestParameters['clientId'] as any);
+        }
+
+        if (requestParameters['clientSecret'] != null) {
+            formParams.append('client_secret', requestParameters['clientSecret'] as any);
+        }
 
         const response = await this.request({
             path: `/v1/oauth2/introspect`,
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
+            body: formParams,
         }, initOverrides);
 
-        if (this.isJsonMime(response.headers.get('content-type'))) {
-            return new runtime.JSONApiResponse<any>(response);
-        } else {
-            return new runtime.TextApiResponse(response) as any;
-        }
+        return new runtime.JSONApiResponse(response);
     }
 
     /**
      * Get information about an access token.
      * Introspect Token
      */
-    async introspectToken(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<any> {
-        const response = await this.introspectTokenRaw(initOverrides);
+    async introspectToken(requestParameters: Oauth2ApiIntrospectTokenRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<IntrospectTokenResponse> {
+        const response = await this.introspectTokenRaw(requestParameters, initOverrides);
         return await response.value();
     }
 
@@ -375,7 +440,7 @@ export class Oauth2Api extends runtime.BaseAPI {
      * Request an access token using a valid grant.
      * Request Token
      */
-    async requestTokenRaw(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<any>> {
+    async requestTokenRaw(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<TokenResponse>> {
         const queryParameters: any = {};
 
         const headerParameters: runtime.HTTPHeaders = {};
@@ -387,18 +452,14 @@ export class Oauth2Api extends runtime.BaseAPI {
             query: queryParameters,
         }, initOverrides);
 
-        if (this.isJsonMime(response.headers.get('content-type'))) {
-            return new runtime.JSONApiResponse<any>(response);
-        } else {
-            return new runtime.TextApiResponse(response) as any;
-        }
+        return new runtime.JSONApiResponse(response);
     }
 
     /**
      * Request an access token using a valid grant.
      * Request Token
      */
-    async requestToken(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<any> {
+    async requestToken(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<TokenResponse> {
         const response = await this.requestTokenRaw(initOverrides);
         return await response.value();
     }
@@ -407,31 +468,79 @@ export class Oauth2Api extends runtime.BaseAPI {
      * Revoke an access token or a refresh token.
      * Revoke Token
      */
-    async revokeTokenRaw(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<any>> {
+    async revokeTokenRaw(requestParameters: Oauth2ApiRevokeTokenRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<object>> {
+        if (requestParameters['token'] == null) {
+            throw new runtime.RequiredError(
+                'token',
+                'Required parameter "token" was null or undefined when calling revokeToken().'
+            );
+        }
+
+        if (requestParameters['clientId'] == null) {
+            throw new runtime.RequiredError(
+                'clientId',
+                'Required parameter "clientId" was null or undefined when calling revokeToken().'
+            );
+        }
+
+        if (requestParameters['clientSecret'] == null) {
+            throw new runtime.RequiredError(
+                'clientSecret',
+                'Required parameter "clientSecret" was null or undefined when calling revokeToken().'
+            );
+        }
+
         const queryParameters: any = {};
 
         const headerParameters: runtime.HTTPHeaders = {};
+
+        const consumes: runtime.Consume[] = [
+            { contentType: 'application/x-www-form-urlencoded' },
+        ];
+        // @ts-ignore: canConsumeForm may be unused
+        const canConsumeForm = runtime.canConsumeForm(consumes);
+
+        let formParams: { append(param: string, value: any): any };
+        let useForm = false;
+        if (useForm) {
+            formParams = new FormData();
+        } else {
+            formParams = new URLSearchParams();
+        }
+
+        if (requestParameters['token'] != null) {
+            formParams.append('token', requestParameters['token'] as any);
+        }
+
+        if (requestParameters['tokenTypeHint'] != null) {
+            formParams.append('token_type_hint', requestParameters['tokenTypeHint'] as any);
+        }
+
+        if (requestParameters['clientId'] != null) {
+            formParams.append('client_id', requestParameters['clientId'] as any);
+        }
+
+        if (requestParameters['clientSecret'] != null) {
+            formParams.append('client_secret', requestParameters['clientSecret'] as any);
+        }
 
         const response = await this.request({
             path: `/v1/oauth2/revoke`,
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
+            body: formParams,
         }, initOverrides);
 
-        if (this.isJsonMime(response.headers.get('content-type'))) {
-            return new runtime.JSONApiResponse<any>(response);
-        } else {
-            return new runtime.TextApiResponse(response) as any;
-        }
+        return new runtime.JSONApiResponse<any>(response);
     }
 
     /**
      * Revoke an access token or a refresh token.
      * Revoke Token
      */
-    async revokeToken(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<any> {
-        const response = await this.revokeTokenRaw(initOverrides);
+    async revokeToken(requestParameters: Oauth2ApiRevokeTokenRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<object> {
+        const response = await this.revokeTokenRaw(requestParameters, initOverrides);
         return await response.value();
     }
 
@@ -496,7 +605,7 @@ export class Oauth2Api extends runtime.BaseAPI {
      * Get information about the authenticated user.
      * Get User Info
      */
-    async userinfoRaw(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<any>> {
+    async userinfoRaw(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ResponseOauth2Userinfo>> {
         const queryParameters: any = {};
 
         const headerParameters: runtime.HTTPHeaders = {};
@@ -508,18 +617,14 @@ export class Oauth2Api extends runtime.BaseAPI {
             query: queryParameters,
         }, initOverrides);
 
-        if (this.isJsonMime(response.headers.get('content-type'))) {
-            return new runtime.JSONApiResponse<any>(response);
-        } else {
-            return new runtime.TextApiResponse(response) as any;
-        }
+        return new runtime.JSONApiResponse(response);
     }
 
     /**
      * Get information about the authenticated user.
      * Get User Info
      */
-    async userinfo(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<any> {
+    async userinfo(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ResponseOauth2Userinfo> {
         const response = await this.userinfoRaw(initOverrides);
         return await response.value();
     }
@@ -528,7 +633,7 @@ export class Oauth2Api extends runtime.BaseAPI {
      * Get information about the authenticated user.
      * Get User Info
      */
-    async userinfo_1Raw(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<any>> {
+    async userinfo_1Raw(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ResponseOauth2Userinfo>> {
         const queryParameters: any = {};
 
         const headerParameters: runtime.HTTPHeaders = {};
@@ -540,18 +645,14 @@ export class Oauth2Api extends runtime.BaseAPI {
             query: queryParameters,
         }, initOverrides);
 
-        if (this.isJsonMime(response.headers.get('content-type'))) {
-            return new runtime.JSONApiResponse<any>(response);
-        } else {
-            return new runtime.TextApiResponse(response) as any;
-        }
+        return new runtime.JSONApiResponse(response);
     }
 
     /**
      * Get information about the authenticated user.
      * Get User Info
      */
-    async userinfo_1(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<any> {
+    async userinfo_1(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ResponseOauth2Userinfo> {
         const response = await this.userinfo_1Raw(initOverrides);
         return await response.value();
     }
@@ -566,3 +667,19 @@ export const ConsentActionEnum = {
     DENY: 'deny'
 } as const;
 export type ConsentActionEnum = typeof ConsentActionEnum[keyof typeof ConsentActionEnum];
+/**
+ * @export
+ */
+export const IntrospectTokenTokenTypeHintEnum = {
+    ACCESS_TOKEN: 'access_token',
+    REFRESH_TOKEN: 'refresh_token'
+} as const;
+export type IntrospectTokenTokenTypeHintEnum = typeof IntrospectTokenTokenTypeHintEnum[keyof typeof IntrospectTokenTokenTypeHintEnum];
+/**
+ * @export
+ */
+export const RevokeTokenTokenTypeHintEnum = {
+    ACCESS_TOKEN: 'access_token',
+    REFRESH_TOKEN: 'refresh_token'
+} as const;
+export type RevokeTokenTokenTypeHintEnum = typeof RevokeTokenTokenTypeHintEnum[keyof typeof RevokeTokenTokenTypeHintEnum];

@@ -470,7 +470,7 @@ export class CURLCommandBuilder extends CommandBuilder {
       this.endpoint.security && this.endpoint.security.length > 0
 
     const headers = [
-      `-H "Content-Type: ${mediaType}"`,
+      ...(mediaType ? [`-H "Content-Type: ${mediaType}"`] : []),
       '-H "Accept: application/json"',
       ...(hasSecurityScheme ? ['-H "Authorization: Bearer <token>"'] : []),
     ]

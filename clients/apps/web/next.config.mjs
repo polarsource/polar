@@ -1,17 +1,16 @@
-import createMDX from '@next/mdx'
-import rehypeSlug from 'rehype-slug';
 import bundleAnalyzer from '@next/bundle-analyzer'
+import createMDX from '@next/mdx'
 import { withSentryConfig } from '@sentry/nextjs'
 import rehypeShikiFromHighlighter from '@shikijs/rehype/core'
-import { bundledLanguages, createHighlighter } from 'shiki';
-import { themeConfig, themesList, transformers } from './shiki.config.mjs'
-import remarkFlexibleToc from "remark-flexible-toc";
 import rehypeMdxImportMedia from 'rehype-mdx-import-media'
+import rehypeSlug from 'rehype-slug'
+import remarkFlexibleToc from 'remark-flexible-toc'
+import { bundledLanguages, createHighlighter } from 'shiki'
+import { themeConfig, themesList, transformers } from './shiki.config.mjs'
 
 const POLAR_AUTH_COOKIE_KEY = 'polar_session'
-const ENVIRONMENT = process.env.VERCEL_ENV ||
-  process.env.NEXT_PUBLIC_VERCEL_ENV ||
-  'development'
+const ENVIRONMENT =
+  process.env.VERCEL_ENV || process.env.NEXT_PUBLIC_VERCEL_ENV || 'development'
 
 const defaultFrontendHostname = process.env.NEXT_PUBLIC_FRONTEND_BASE_URL
   ? new URL(process.env.NEXT_PUBLIC_FRONTEND_BASE_URL).hostname
@@ -49,12 +48,12 @@ const nextConfig = {
       beforeFiles: [
         // PostHog Rewrite
         {
-          source: "/ingest/static/:path*",
-          destination: "https://us-assets.i.posthog.com/static/:path*",
+          source: '/ingest/static/:path*',
+          destination: 'https://us-assets.i.posthog.com/static/:path*',
         },
         {
-          source: "/ingest/:path*",
-          destination: "https://us.i.posthog.com/:path*",
+          source: '/ingest/:path*',
+          destination: 'https://us.i.posthog.com/:path*',
         },
 
         {
@@ -91,7 +90,7 @@ const nextConfig = {
             },
           ],
         },
-      ]
+      ],
     }
   },
   async redirects() {
@@ -120,34 +119,46 @@ const nextConfig = {
         permanent: false,
       },
 
+      // Redirect /docs/overview/:path to /docs/:path
+      {
+        source: '/docs/overview/:path*',
+        destination: '/docs/:path*',
+        permanent: true,
+      },
+
+      {
+        source: '/docs/subscriptions',
+        destination: '/docs/products',
+        permanent: true,
+      },
+
       // Redirect old FAQ to docs.polar.sh
-      ...ENVIRONMENT === 'production' ?
-        [
-          {
-            source: '/faq',
-            destination: 'https://docs.polar.sh/faq/overview',
-            has: [
-              {
-                type: 'host',
-                value: 'polar.sh',
-              }
-            ],
-            permanent: true,
-          },
-          {
-            source: '/faq/:path*',
-            destination: 'https://docs.polar.sh/faq/:path*',
-            has: [
-              {
-                type: 'host',
-                value: 'polar.sh',
-              }
-            ],
-            permanent: true,
-          },
-        ]
-        :
-        [],
+      ...(ENVIRONMENT === 'production'
+        ? [
+            {
+              source: '/faq',
+              destination: 'https://docs.polar.sh/faq/overview',
+              has: [
+                {
+                  type: 'host',
+                  value: 'polar.sh',
+                },
+              ],
+              permanent: true,
+            },
+            {
+              source: '/faq/:path*',
+              destination: 'https://docs.polar.sh/faq/:path*',
+              has: [
+                {
+                  type: 'host',
+                  value: 'polar.sh',
+                },
+              ],
+              permanent: true,
+            },
+          ]
+        : []),
 
       {
         source:
@@ -227,14 +238,15 @@ const nextConfig = {
       },
 
       // Redirect /docs to docs.polar.sh
-      ...ENVIRONMENT === 'production' ?
-        [{
-          source: '/docs/:path*',
-          destination: 'https://docs.polar.sh/:path*',
-          permanent: false,
-        }]
-        :
-        [],
+      ...(ENVIRONMENT === 'production'
+        ? [
+            {
+              source: '/docs/:path*',
+              destination: 'https://docs.polar.sh/:path*',
+              permanent: false,
+            },
+          ]
+        : []),
 
       {
         source: '/dashboard',
@@ -437,10 +449,16 @@ const createConfig = async () => {
             {
               type: 'mdxJsxFlowElement',
               name: 'TOCGenerator',
-              attributes: [{ type: 'mdxJsxAttribute', name: 'items', value: JSON.stringify(file.data.toc) }],
-              children: []
-            }
-          ]
+              attributes: [
+                {
+                  type: 'mdxJsxAttribute',
+                  name: 'items',
+                  value: JSON.stringify(file.data.toc),
+                },
+              ],
+              children: [],
+            },
+          ],
         }),
       ],
       rehypePlugins: [
@@ -448,13 +466,14 @@ const createConfig = async () => {
         rehypeSlug,
         [
           rehypeShikiFromHighlighter,
-          highlighter, {
+          highlighter,
+          {
             themes: themeConfig,
             transformers,
           },
         ],
-      ]
-    }
+      ],
+    },
   })
 
   let conf = withMDX(nextConfig)
@@ -503,6 +522,5 @@ const createConfig = async () => {
 
   return conf
 }
-
 
 export default createConfig

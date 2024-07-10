@@ -261,7 +261,8 @@ export const MainNavigation = () => {
       <div>
         <NavigationHeadline>Offer Products & Subscriptions</NavigationHeadline>
         <div className="flex flex-col">
-          <NavigationItem href="/docs/subscriptions">
+          <NavigationItem href="/docs/products">Overview</NavigationItem>
+          <NavigationItem href="/docs/products/create">
             Create Products & Tiers
           </NavigationItem>
           <NavigationSection title="Offer Benefits" defaultOpened={true}>

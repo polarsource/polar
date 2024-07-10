@@ -19,7 +19,9 @@ export const NavigationItem = ({
   }
 >) => {
   const pathname = decodeURIComponent(usePathname())
-  const fallbackActive = active?.(pathname) ?? pathname == props.href
+  const fallbackActive =
+    active?.(pathname) ??
+    (pathname === props.href || `/docs${pathname}` === props.href)
 
   return (
     <Link

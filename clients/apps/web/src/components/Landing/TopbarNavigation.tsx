@@ -156,7 +156,7 @@ const DocumentationPopover = () => {
               <PopoverLinkItem
                 title="Getting Started"
                 description="Start your journey with Polar"
-                link="/docs/overview"
+                link="/docs"
               />
               <PopoverLinkItem
                 title="Guides"
@@ -166,12 +166,12 @@ const DocumentationPopover = () => {
               <PopoverLinkItem
                 title="FAQ"
                 description="Frequently Asked Questions"
-                link="/docs/overview/faq/for-maintainers"
+                link="/docs/faq/for-maintainers"
               />
               <PopoverLinkItem
                 title="Support"
                 description="Get help from the Polar team"
-                link="/docs/overview/support"
+                link="/docs/support"
               />
             </div>
           </div>

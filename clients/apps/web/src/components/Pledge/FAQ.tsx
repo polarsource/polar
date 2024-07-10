@@ -29,11 +29,7 @@ const FAQ_BACKERS: FAQItems = [
     question: 'What happens if the issue is never completed?',
     answer: (
       <>
-        <Link
-          href="/docs/overview/support"
-          target="_blank"
-          className="text-blue-400"
-        >
+        <Link href="/docs/support" target="_blank" className="text-blue-400">
           Contact our support
         </Link>{' '}
         if nothing has happened within 6 months - we can help direct the pledge
@@ -77,7 +73,7 @@ const FAQ_MAINTAINER: FAQItems = [
         </a>{' '}
         and we&apos;ll get you setup in no time. Questions? Checkout our{' '}
         <a
-          href="/docs/overview/faq/for-maintainers"
+          href="/docs/faq/for-maintainers"
           target="_blank"
           className="text-blue-400"
         >

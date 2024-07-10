@@ -50,13 +50,13 @@ export const MerchantOfRecord = () => {
           title="Merchant of Record"
           description="No more VAT headache - we handle the necessary taxes for you."
           className="md:col-span-1"
-          link="/docs/overview/payments-taxes#taxes"
+          link="/docs/payments-taxes#taxes"
         />
         <FeatureItem
           icon={<AccountBalanceOutlined />}
           title="Payouts"
           description="Withdraw your earnings with ease. Supporting Stripe & Open Collective."
-          link="/docs/overview/payments-taxes"
+          link="/docs/payments-taxes"
         />
       </div>
     </div>

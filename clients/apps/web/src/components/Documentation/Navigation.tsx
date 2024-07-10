@@ -25,6 +25,7 @@ import { NavigationItem } from './NavigationItem'
 import { SearchPalette } from './SearchPalette'
 import {
   APISection,
+  HttpMethod,
   getAPISections,
   isFeaturedEndpoint,
   isNotFeaturedEndpoint,
@@ -56,49 +57,45 @@ const OverviewSections = () => {
   return (
     <>
       <div className="flex flex-col">
-        <NavigationItem href="/docs/overview/donations">
-          Donations
-        </NavigationItem>
-        <NavigationItem href="/docs/overview/benefits">Benefits</NavigationItem>
-        <NavigationItem href="/docs/overview/subscriptions">
+        <NavigationItem href="/docs/donations">Donations</NavigationItem>
+        <NavigationItem href="/docs/benefits">Benefits</NavigationItem>
+        <NavigationItem href="/docs/subscriptions">
           Subscriptions
         </NavigationItem>
-        <NavigationItem href="/docs/overview/newsletters">
-          Newsletters
-        </NavigationItem>
-        <NavigationItem href="/docs/overview/ads">Ads</NavigationItem>
-        <NavigationItem href="/docs/overview/payments-taxes">
+        <NavigationItem href="/docs/newsletters">Newsletters</NavigationItem>
+        <NavigationItem href="/docs/ads">Ads</NavigationItem>
+        <NavigationItem href="/docs/payments-taxes">
           Payments & Taxes
         </NavigationItem>
       </div>
 
       <NavigationSection title="Issue Funding" defaultOpened={true}>
         <NavigationItem
-          href="/docs/overview/issue-funding/overview"
+          href="/docs/issue-funding/overview"
           icon={<ArrowForward fontSize="inherit" />}
         >
           Overview
         </NavigationItem>
         <NavigationItem
-          href="/docs/overview/issue-funding/getting-started"
+          href="/docs/issue-funding/getting-started"
           icon={<ArrowForward fontSize="inherit" />}
         >
           Getting Started
         </NavigationItem>
         <NavigationItem
-          href="/docs/overview/issue-funding/workflow"
+          href="/docs/issue-funding/workflow"
           icon={<ArrowForward fontSize="inherit" />}
         >
           Workflow
         </NavigationItem>
         <NavigationItem
-          href="/docs/overview/issue-funding/promote"
+          href="/docs/issue-funding/promote"
           icon={<ArrowForward fontSize="inherit" />}
         >
           Promote
         </NavigationItem>
         <NavigationItem
-          href="/docs/overview/issue-funding/reward-contributors"
+          href="/docs/issue-funding/reward-contributors"
           icon={<ArrowForward fontSize="inherit" />}
         >
           Reward Contributors
@@ -113,25 +110,25 @@ const FAQSections = () => {
     <NavigationSection title="FAQ" defaultOpened={true}>
       <div className="flex flex-col">
         <NavigationItem
-          href="/docs/overview/faq/overview"
+          href="/docs/faq/overview"
           icon={<ArrowForward fontSize="inherit" />}
         >
           Overview
         </NavigationItem>
         <NavigationItem
-          href="/docs/overview/faq/for-maintainers"
+          href="/docs/faq/for-maintainers"
           icon={<ArrowForward fontSize="inherit" />}
         >
           For Maintainers
         </NavigationItem>
         <NavigationItem
-          href="/docs/overview/faq/for-backers"
+          href="/docs/faq/for-backers"
           icon={<ArrowForward fontSize="inherit" />}
         >
           For Backers
         </NavigationItem>
         <NavigationItem
-          href="/docs/overview/faq/for-contributors"
+          href="/docs/faq/for-contributors"
           icon={<ArrowForward fontSize="inherit" />}
         >
           For Contributors
@@ -168,16 +165,20 @@ const WebhooksReferenceSections = () => {
   )
 }
 
-const APIMethodPill = ({ method }: { method: string }) => {
+const APIMethodPill = ({ method }: { method: HttpMethod }) => {
   const mc = method.toUpperCase()
   return (
     <span
       className={twMerge(
         'dark:bg-polar-800 rounded-sm bg-gray-200/50 px-1.5 py-0 font-mono text-[10px] font-normal',
-        mc === 'GET' && 'bg-green-100 text-green-500 dark:bg-green-950/50',
-        mc === 'POST' && 'bg-blue-100 text-blue-500 dark:bg-blue-950/50',
-        mc === 'DELETE' && 'bg-red-100 text-red-500 dark:bg-red-950/50',
-        mc === 'PATCH' && 'bg-orange-100 text-orange-500 dark:bg-orange-950/50',
+        mc === HttpMethod.GET &&
+          'bg-green-100 text-green-500 dark:bg-green-950/50',
+        mc === HttpMethod.POST &&
+          'bg-blue-100 text-blue-500 dark:bg-blue-950/50',
+        mc === HttpMethod.DELETE &&
+          'bg-red-100 text-red-500 dark:bg-red-950/50',
+        (mc === HttpMethod.PATCH || mc === HttpMethod.PUT) &&
+          'bg-orange-100 text-orange-500 dark:bg-orange-950/50',
       )}
     >
       {mc}

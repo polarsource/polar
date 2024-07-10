@@ -166,22 +166,21 @@ const WebhooksReferenceSections = () => {
 }
 
 const APIMethodPill = ({ method }: { method: HttpMethod }) => {
-  const mc = method.toUpperCase()
   return (
     <span
       className={twMerge(
         'dark:bg-polar-800 rounded-sm bg-gray-200/50 px-1.5 py-0 font-mono text-[10px] font-normal',
-        mc === HttpMethod.GET &&
+        method === HttpMethod.GET &&
           'bg-green-100 text-green-500 dark:bg-green-950/50',
-        mc === HttpMethod.POST &&
+        method === HttpMethod.POST &&
           'bg-blue-100 text-blue-500 dark:bg-blue-950/50',
-        mc === HttpMethod.DELETE &&
+        method === HttpMethod.DELETE &&
           'bg-red-100 text-red-500 dark:bg-red-950/50',
-        (mc === HttpMethod.PATCH || mc === HttpMethod.PUT) &&
+        (method === HttpMethod.PATCH || method === HttpMethod.PUT) &&
           'bg-orange-100 text-orange-500 dark:bg-orange-950/50',
       )}
     >
-      {mc}
+      {method.toUpperCase()}
     </span>
   )
 }

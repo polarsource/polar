@@ -311,10 +311,10 @@ export const MainNavigation = () => {
       <div>
         <NavigationHeadline>Online & Email Newsletters</NavigationHeadline>
         <NavigationItem href="/docs/newsletters">
-          Write Posts (GitHub Markdown)
+          Writing (GitHub Markdown)
         </NavigationItem>
         <NavigationItem href="/docs/newsletters/publish">
-          Publish & Access
+          Publishing
         </NavigationItem>
         <NavigationItem href="/docs/newsletters/analytics">
           Analytics

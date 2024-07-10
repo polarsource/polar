@@ -10,7 +10,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import Button from 'polarkit/components/ui/atoms/button'
 
-export const PolarMenu = ({
+const PolarMenu = ({
   authenticatedUser,
   userAdminOrganizations,
 }: {
@@ -18,8 +18,12 @@ export const PolarMenu = ({
   userAdminOrganizations: Organization[]
 }) => {
   const pathname = usePathname()
-  const loginReturnTo = pathname ?? '/feed'
-  const createWithPolarReturnTo = '/me'
+  const host = window.location.protocol + '//' + window.location.host
+  const returnToPrefix = host !== CONFIG.FRONTEND_BASE_URL ? host : ''
+  const loginReturnTo = pathname
+    ? `${returnToPrefix}${pathname}`
+    : `${returnToPrefix}/feed`
+  const createWithPolarReturnTo = `${returnToPrefix}/me`
 
   // Fallback to client side user loading (needed as we're loading data in the layout, and it isn't refreshed on navigation)
   const { currentUser: clientCurrentUser } = useAuth()
@@ -83,3 +87,5 @@ const CreateWithPolar = ({ returnTo }: { returnTo: string }) => {
     />
   )
 }
+
+export default PolarMenu

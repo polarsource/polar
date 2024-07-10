@@ -248,25 +248,19 @@ export const MainNavigation = () => {
             href="/docs/issue-funding/overview"
             icon={<ArrowForward fontSize="inherit" />}
           >
-            Overview
+            Introduction
           </NavigationItem>
           <NavigationItem
             href="/docs/issue-funding/getting-started"
             icon={<ArrowForward fontSize="inherit" />}
           >
-            Getting Started
+            Setup
           </NavigationItem>
           <NavigationItem
             href="/docs/issue-funding/workflow"
             icon={<ArrowForward fontSize="inherit" />}
           >
             Workflow
-          </NavigationItem>
-          <NavigationItem
-            href="/docs/issue-funding/promote"
-            icon={<ArrowForward fontSize="inherit" />}
-          >
-            Promote
           </NavigationItem>
           <NavigationItem
             href="/docs/issue-funding/reward-contributors"
@@ -340,13 +334,13 @@ export const MainNavigation = () => {
 
       <div>
         <NavigationHeadline>Finance & Payouts</NavigationHeadline>
-        <NavigationItem href="/docs/payments-taxes">
+        <NavigationItem href="/docs/finance/balance">
           Your Balance
         </NavigationItem>
-        <NavigationItem href="/docs/payments-taxes">
+        <NavigationItem href="/docs/finance/accounts">
           Connect Payout Account
         </NavigationItem>
-        <NavigationItem href="/docs/payments-taxes">Payouts</NavigationItem>
+        <NavigationItem href="/docs/finance/payouts">Payouts</NavigationItem>
       </div>
 
       <div>

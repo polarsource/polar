@@ -20,11 +20,11 @@ import type {
   ArticlePreview,
   ArticleReceivers,
   ArticleUpdate,
-  ArticleVisibility,
+  ArticleVisibilityFilter,
   HTTPValidationError,
   ListResourceArticle,
   NotPermitted,
-  OrganizationId,
+  OrganizationIDFilter,
   ResourceNotFound,
 } from '../models/index';
 
@@ -49,9 +49,9 @@ export interface ArticlesApiGetReceiversRequest {
 }
 
 export interface ArticlesApiListRequest {
-    organizationId?: OrganizationId;
+    organizationId?: OrganizationIDFilter;
     slug?: string;
-    visibility?: ArticleVisibility;
+    visibility?: ArticleVisibilityFilter;
     isPublished?: boolean;
     isPinned?: boolean;
     page?: number;

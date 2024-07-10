@@ -15,16 +15,17 @@
 
 import * as runtime from '../runtime';
 import type {
+  BenefitIDFilter1,
   HTTPValidationError,
   ListResourceProduct,
   NotPermitted,
-  OrganizationId,
+  OrganizationIDFilter,
   Product,
   ProductBenefitsUpdate,
   ProductCreate,
   ProductUpdate,
   ResourceNotFound,
-  SubscriptionTierType,
+  SubscriptionTierTypeFilter,
 } from '../models/index';
 
 export interface ProductsApiCreateRequest {
@@ -36,11 +37,11 @@ export interface ProductsApiGetRequest {
 }
 
 export interface ProductsApiListRequest {
-    organizationId?: OrganizationId;
+    organizationId?: OrganizationIDFilter;
     isArchived?: boolean;
     isRecurring?: boolean;
-    benefitId?: string;
-    type?: SubscriptionTierType;
+    benefitId?: BenefitIDFilter1;
+    type?: SubscriptionTierTypeFilter;
     page?: number;
     limit?: number;
 }

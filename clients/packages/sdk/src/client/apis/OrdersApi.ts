@@ -19,9 +19,11 @@ import type {
   ListResourceOrder,
   Order,
   OrderInvoice,
-  OrganizationId,
-  ProductPriceType,
+  OrganizationIDFilter,
+  ProductIDFilter,
+  ProductPriceTypeFilter,
   ResourceNotFound,
+  UserIDFilter,
 } from '../models/index';
 
 export interface OrdersApiGetRequest {
@@ -33,10 +35,10 @@ export interface OrdersApiGetInvoiceRequest {
 }
 
 export interface OrdersApiListRequest {
-    organizationId?: OrganizationId;
-    productId?: string;
-    productPriceType?: ProductPriceType;
-    userId?: string;
+    organizationId?: OrganizationIDFilter;
+    productId?: ProductIDFilter;
+    productPriceType?: ProductPriceTypeFilter;
+    userId?: UserIDFilter;
     page?: number;
     limit?: number;
     sorting?: Array<string>;

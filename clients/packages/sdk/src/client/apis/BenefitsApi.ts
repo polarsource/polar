@@ -16,13 +16,13 @@
 import * as runtime from '../runtime';
 import type {
   BenefitCreate,
-  BenefitType,
+  BenefitTypeFilter,
   BenefitUpdate,
   HTTPValidationError,
   ListResourceBenefitGrant,
   ListResourceUnionBenefitArticlesBenefitAdsBenefitCustomBenefitDiscordBenefitGitHubRepositoryBenefitDownloadables,
   NotPermitted,
-  OrganizationId,
+  OrganizationIDFilter,
   ResourceNotFound,
   ResponseBenefitsCreate,
   ResponseBenefitsGet,
@@ -42,8 +42,8 @@ export interface BenefitsApiGetRequest {
 }
 
 export interface BenefitsApiListRequest {
-    organizationId?: OrganizationId;
-    type?: BenefitType;
+    organizationId?: OrganizationIDFilter;
+    type?: BenefitTypeFilter;
     page?: number;
     limit?: number;
 }

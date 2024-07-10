@@ -1,4 +1,5 @@
 import LogoIcon from '@/components/Brand/LogoIcon'
+import PolarMenu from '@/components/Layout/PolarMenu'
 import { BrandingMenu } from '@/components/Layout/Public/BrandingMenu'
 import { OrganizationPublicPageNav } from '@/components/Organization/OrganizationPublicPageNav'
 import { OrganizationPublicSidebar } from '@/components/Organization/OrganizationPublicSidebar'
@@ -13,7 +14,6 @@ import {
 } from '@polar-sh/sdk'
 import { notFound } from 'next/navigation'
 import React from 'react'
-import { PolarMenu } from './LayoutPolarMenu'
 
 const cacheConfig = {
   next: {

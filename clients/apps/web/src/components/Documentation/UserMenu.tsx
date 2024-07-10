@@ -1,9 +1,9 @@
 'use client'
 
-import { PolarMenu } from '@/app/[organization]/(sidebar)/LayoutPolarMenu'
 import { useClientSideLoadedUser } from '@/hooks/docs'
 import { useListAdminOrganizations } from '@/hooks/queries'
 import { Skeleton } from 'polarkit/components/ui/skeleton'
+import PolarMenu from '../Layout/PolarMenu'
 
 const UserMenu = () => {
   const { user, loaded } = useClientSideLoadedUser()

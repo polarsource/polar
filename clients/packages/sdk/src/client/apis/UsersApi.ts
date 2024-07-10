@@ -17,7 +17,8 @@ import * as runtime from '../runtime';
 import type {
   AlreadyCanceledSubscription,
   AlreadySubscribed,
-  BenefitType,
+  BenefitIDFilter,
+  BenefitTypeFilter,
   FreeSubscriptionUpgrade,
   HTTPValidationError,
   ListResourceAnnotatedUnionBenefitArticlesSubscriberBenefitAdsSubscriberBenefitDiscordSubscriberBenefitCustomSubscriberBenefitGitHubRepositorySubscriberBenefitDownloadablesSubscriberDiscriminatorMergeJSONSchema,
@@ -25,11 +26,14 @@ import type {
   ListResourceUserAdvertisementCampaign,
   ListResourceUserOrder,
   ListResourceUserSubscription,
+  OrderIDFilter,
   Organization,
-  OrganizationId,
-  ProductPriceType,
+  OrganizationIDFilter,
+  ProductIDFilter,
+  ProductPriceTypeFilter,
   ResourceNotFound,
   ResponseUsersGetBenefit,
+  SubscriptionIDFilter,
   UserAdvertisementCampaign,
   UserAdvertisementCampaignCreate,
   UserAdvertisementCampaignEnable,
@@ -98,27 +102,27 @@ export interface UsersApiListAdvertisementCampaignsRequest {
 }
 
 export interface UsersApiListBenefitsRequest {
-    type?: BenefitType;
-    organizationId?: OrganizationId;
-    orderId?: string;
-    subscriptionId?: string;
+    type?: BenefitTypeFilter;
+    organizationId?: OrganizationIDFilter;
+    orderId?: OrderIDFilter;
+    subscriptionId?: SubscriptionIDFilter;
     page?: number;
     limit?: number;
     sorting?: Array<string>;
 }
 
 export interface UsersApiListDownloadablesRequest {
-    organizationId?: OrganizationId;
-    benefitId?: string;
+    organizationId?: OrganizationIDFilter;
+    benefitId?: BenefitIDFilter;
     page?: number;
     limit?: number;
 }
 
 export interface UsersApiListOrdersRequest {
-    organizationId?: OrganizationId;
-    productId?: string;
-    productPriceType?: ProductPriceType;
-    subscriptionId?: string;
+    organizationId?: OrganizationIDFilter;
+    productId?: ProductIDFilter;
+    productPriceType?: ProductPriceTypeFilter;
+    subscriptionId?: SubscriptionIDFilter;
     query?: string;
     page?: number;
     limit?: number;
@@ -126,8 +130,8 @@ export interface UsersApiListOrdersRequest {
 }
 
 export interface UsersApiListSubscriptionsRequest {
-    organizationId?: OrganizationId;
-    productId?: string;
+    organizationId?: OrganizationIDFilter;
+    productId?: ProductIDFilter;
     active?: boolean;
     query?: string;
     page?: number;

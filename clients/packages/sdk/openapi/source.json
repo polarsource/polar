@@ -273,11 +273,17 @@
                                     "$ref": "#/components/schemas/BenefitType"
                                 },
                                 {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/BenefitType"
+                                    }
+                                },
+                                {
                                     "type": "null"
                                 }
                             ],
-                            "description": "Filter by benefit type.",
-                            "title": "Type"
+                            "title": "BenefitType Filter",
+                            "description": "Filter by benefit type."
                         },
                         "description": "Filter by benefit type."
                     },
@@ -314,8 +320,8 @@
                                     "type": "null"
                                 }
                             ],
-                            "description": "Filter by organization ID.",
-                            "title": "Organization Id"
+                            "title": "OrganizationID Filter",
+                            "description": "Filter by organization ID."
                         },
                         "description": "Filter by organization ID."
                     },
@@ -330,11 +336,18 @@
                                     "format": "uuid4"
                                 },
                                 {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "string",
+                                        "format": "uuid4"
+                                    }
+                                },
+                                {
                                     "type": "null"
                                 }
                             ],
-                            "description": "Filter by order ID.",
-                            "title": "Order Id"
+                            "title": "OrderID Filter",
+                            "description": "Filter by order ID."
                         },
                         "description": "Filter by order ID."
                     },
@@ -349,11 +362,18 @@
                                     "format": "uuid4"
                                 },
                                 {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "string",
+                                        "format": "uuid4"
+                                    }
+                                },
+                                {
                                     "type": "null"
                                 }
                             ],
-                            "description": "Filter by subscription ID.",
-                            "title": "Subscription Id"
+                            "title": "SubscriptionID Filter",
+                            "description": "Filter by subscription ID."
                         },
                         "description": "Filter by subscription ID."
                     },
@@ -600,8 +620,8 @@
                                     "type": "null"
                                 }
                             ],
-                            "description": "Filter by organization ID.",
-                            "title": "Organization Id"
+                            "title": "OrganizationID Filter",
+                            "description": "Filter by organization ID."
                         },
                         "description": "Filter by organization ID."
                     },
@@ -622,11 +642,24 @@
                                     }
                                 },
                                 {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "string",
+                                        "format": "uuid4",
+                                        "description": "The product ID.",
+                                        "x-polar-selector-widget": {
+                                            "resourceRoot": "/v1/products",
+                                            "resourceName": "Product",
+                                            "displayProperty": "name"
+                                        }
+                                    }
+                                },
+                                {
                                     "type": "null"
                                 }
                             ],
-                            "description": "Filter by product ID.",
-                            "title": "Product Id"
+                            "title": "ProductID Filter",
+                            "description": "Filter by product ID."
                         },
                         "description": "Filter by product ID."
                     },
@@ -640,11 +673,17 @@
                                     "$ref": "#/components/schemas/ProductPriceType"
                                 },
                                 {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/ProductPriceType"
+                                    }
+                                },
+                                {
                                     "type": "null"
                                 }
                             ],
-                            "description": "Filter by product price type. `recurring` will return orders corresponding to subscriptions creations or renewals. `one_time` will return orders corresponding to one-time purchases.",
-                            "title": "Product Price Type"
+                            "title": "ProductPriceType Filter",
+                            "description": "Filter by product price type. `recurring` will return orders corresponding to subscriptions creations or renewals. `one_time` will return orders corresponding to one-time purchases."
                         },
                         "description": "Filter by product price type. `recurring` will return orders corresponding to subscriptions creations or renewals. `one_time` will return orders corresponding to one-time purchases."
                     },
@@ -659,11 +698,18 @@
                                     "format": "uuid4"
                                 },
                                 {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "string",
+                                        "format": "uuid4"
+                                    }
+                                },
+                                {
                                     "type": "null"
                                 }
                             ],
-                            "description": "Filter by subscription ID.",
-                            "title": "Subscription Id"
+                            "title": "SubscriptionID Filter",
+                            "description": "Filter by subscription ID."
                         },
                         "description": "Filter by subscription ID."
                     },
@@ -972,8 +1018,8 @@
                                     "type": "null"
                                 }
                             ],
-                            "description": "Filter by organization ID.",
-                            "title": "Organization Id"
+                            "title": "OrganizationID Filter",
+                            "description": "Filter by organization ID."
                         },
                         "description": "Filter by organization ID."
                     },
@@ -994,11 +1040,24 @@
                                     }
                                 },
                                 {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "string",
+                                        "format": "uuid4",
+                                        "description": "The product ID.",
+                                        "x-polar-selector-widget": {
+                                            "resourceRoot": "/v1/products",
+                                            "resourceName": "Product",
+                                            "displayProperty": "name"
+                                        }
+                                    }
+                                },
+                                {
                                     "type": "null"
                                 }
                             ],
-                            "description": "Filter by product ID.",
-                            "title": "Product Id"
+                            "title": "ProductID Filter",
+                            "description": "Filter by product ID."
                         },
                         "description": "Filter by product ID."
                     },
@@ -1200,8 +1259,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Anonymous"
+                    "Anonymous",
+                    "User"
                 ]
             }
         },
@@ -1948,8 +2007,8 @@
                                     "type": "null"
                                 }
                             ],
-                            "description": "Filter by organization ID.",
-                            "title": "Organization Id"
+                            "title": "OrganizationID Filter",
+                            "description": "Filter by organization ID."
                         },
                         "description": "Filter by organization ID."
                     },
@@ -1970,11 +2029,24 @@
                                     }
                                 },
                                 {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "string",
+                                        "format": "uuid4",
+                                        "description": "The benefit ID.",
+                                        "x-polar-selector-widget": {
+                                            "resourceRoot": "/v1/benefits",
+                                            "resourceName": "Benefit",
+                                            "displayProperty": "description"
+                                        }
+                                    }
+                                },
+                                {
                                     "type": "null"
                                 }
                             ],
-                            "description": "Filter by given benefit ID. ",
-                            "title": "Benefit Id"
+                            "title": "BenefitID Filter",
+                            "description": "Filter by given benefit ID. "
                         },
                         "description": "Filter by given benefit ID. "
                     },
@@ -4197,8 +4269,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Anonymous"
+                    "Anonymous",
+                    "User"
                 ]
             }
         },
@@ -4252,8 +4324,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Anonymous"
+                    "Anonymous",
+                    "User"
                 ]
             }
         },
@@ -4359,8 +4431,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Anonymous"
+                    "Anonymous",
+                    "User"
                 ]
             }
         },
@@ -4556,8 +4628,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Anonymous"
+                    "Anonymous",
+                    "User"
                 ]
             }
         },
@@ -4631,8 +4703,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Anonymous"
+                    "Anonymous",
+                    "User"
                 ]
             }
         },
@@ -4690,8 +4762,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Anonymous"
+                    "Anonymous",
+                    "User"
                 ]
             },
             "patch": {
@@ -4914,8 +4986,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Anonymous"
+                    "Anonymous",
+                    "User"
                 ]
             }
         },
@@ -5235,8 +5307,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Anonymous"
+                    "Anonymous",
+                    "User"
                 ]
             }
         },
@@ -5680,8 +5752,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Anonymous"
+                    "Anonymous",
+                    "User"
                 ]
             }
         },
@@ -5746,8 +5818,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Anonymous"
+                    "Anonymous",
+                    "User"
                 ]
             }
         },
@@ -5799,8 +5871,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Anonymous"
+                    "Anonymous",
+                    "User"
                 ]
             }
         },
@@ -5887,8 +5959,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Anonymous"
+                    "Anonymous",
+                    "User"
                 ]
             },
             "post": {
@@ -6414,8 +6486,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Anonymous"
+                    "Anonymous",
+                    "User"
                 ]
             }
         },
@@ -6470,8 +6542,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Anonymous"
+                    "Anonymous",
+                    "User"
                 ]
             }
         },
@@ -6636,8 +6708,8 @@
                     }
                 ],
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Anonymous"
+                    "Anonymous",
+                    "User"
                 ]
             }
         },
@@ -6809,8 +6881,8 @@
                     }
                 ],
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Anonymous"
+                    "Anonymous",
+                    "User"
                 ]
             }
         },
@@ -6873,8 +6945,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Anonymous"
+                    "Anonymous",
+                    "User"
                 ]
             }
         },
@@ -7015,8 +7087,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -7096,8 +7168,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -7180,8 +7252,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -7242,8 +7314,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             },
             "patch": {
@@ -7311,8 +7383,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -7350,8 +7422,7 @@
                                 "displayProperty": "name"
                             },
                             "title": "Id"
-                        },
-                        "description": "The organization ID."
+                        }
                     },
                     {
                         "name": "customer_types",
@@ -7433,8 +7504,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -7504,8 +7575,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -7569,8 +7640,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -7627,8 +7698,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -7685,8 +7756,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -7742,8 +7813,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             },
             "post": {
@@ -7807,8 +7878,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -7824,8 +7895,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "subscriptions:write",
-                            "subscriptions:read"
+                            "subscriptions:read",
+                            "subscriptions:write"
                         ]
                     },
                     {
@@ -7866,8 +7937,8 @@
                                     "type": "null"
                                 }
                             ],
-                            "description": "Filter by organization ID.",
-                            "title": "Organization Id"
+                            "title": "OrganizationID Filter",
+                            "description": "Filter by organization ID."
                         },
                         "description": "Filter by organization ID."
                     },
@@ -7888,11 +7959,24 @@
                                     }
                                 },
                                 {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "string",
+                                        "format": "uuid4",
+                                        "description": "The product ID.",
+                                        "x-polar-selector-widget": {
+                                            "resourceRoot": "/v1/products",
+                                            "resourceName": "Product",
+                                            "displayProperty": "name"
+                                        }
+                                    }
+                                },
+                                {
                                     "type": "null"
                                 }
                             ],
-                            "description": "Filter by product ID.",
-                            "title": "Product Id"
+                            "title": "ProductID Filter",
+                            "description": "Filter by product ID."
                         },
                         "description": "Filter by product ID."
                     },
@@ -7906,13 +7990,19 @@
                                     "$ref": "#/components/schemas/SubscriptionTierType"
                                 },
                                 {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/SubscriptionTierType"
+                                    }
+                                },
+                                {
                                     "type": "null"
                                 }
                             ],
-                            "description": "Filter by tier type.",
-                            "title": "Type"
+                            "title": "SubscriptionTierType Filter",
+                            "description": "Filter by subscription tier type."
                         },
-                        "description": "Filter by tier type.",
+                        "description": "Filter by subscription tier type.",
                         "deprecated": true
                     },
                     {
@@ -8024,8 +8114,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             },
             "post": {
@@ -8079,8 +8169,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -8136,8 +8226,8 @@
                     }
                 ],
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -8153,8 +8243,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "subscriptions:write",
-                            "subscriptions:read"
+                            "subscriptions:read",
+                            "subscriptions:write"
                         ]
                     },
                     {
@@ -8222,8 +8312,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -8281,8 +8371,8 @@
                                     "type": "null"
                                 }
                             ],
-                            "description": "Filter by organization ID.",
-                            "title": "Organization Id"
+                            "title": "OrganizationID Filter",
+                            "description": "Filter by organization ID."
                         },
                         "description": "Filter by organization ID."
                     },
@@ -8314,11 +8404,17 @@
                                     "$ref": "#/components/schemas/ArticleVisibility"
                                 },
                                 {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/ArticleVisibility"
+                                    }
+                                },
+                                {
                                     "type": "null"
                                 }
                             ],
-                            "description": "Filter by visibility.",
-                            "title": "Visibility"
+                            "title": "ArticleVisibility Filter",
+                            "description": "Filter by visibility."
                         },
                         "description": "Filter by visibility."
                     },
@@ -8408,9 +8504,9 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
                     "Anonymous",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             },
             "post": {
@@ -8465,8 +8561,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -8505,8 +8601,7 @@
                                 "displayProperty": "title"
                             },
                             "title": "Id"
-                        },
-                        "description": "The article ID."
+                        }
                     }
                 ],
                 "responses": {
@@ -8542,9 +8637,9 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
                     "Anonymous",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             },
             "patch": {
@@ -8581,8 +8676,7 @@
                                 "displayProperty": "title"
                             },
                             "title": "Id"
-                        },
-                        "description": "The article ID."
+                        }
                     }
                 ],
                 "requestBody": {
@@ -8638,8 +8732,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             },
             "delete": {
@@ -8676,8 +8770,7 @@
                                 "displayProperty": "title"
                             },
                             "title": "Id"
-                        },
-                        "description": "The article ID."
+                        }
                     }
                 ],
                 "responses": {
@@ -8716,8 +8809,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -8756,8 +8849,7 @@
                                 "displayProperty": "title"
                             },
                             "title": "Id"
-                        },
-                        "description": "The article ID."
+                        }
                     }
                 ],
                 "responses": {
@@ -8783,8 +8875,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -8823,8 +8915,7 @@
                                 "displayProperty": "title"
                             },
                             "title": "Id"
-                        },
-                        "description": "The article ID."
+                        }
                     }
                 ],
                 "requestBody": {
@@ -8878,8 +8969,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -8918,8 +9009,7 @@
                                 "displayProperty": "title"
                             },
                             "title": "Id"
-                        },
-                        "description": "The article ID."
+                        }
                     }
                 ],
                 "responses": {
@@ -8966,8 +9056,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -9729,6 +9819,7 @@
                         "schema": {
                             "type": "string",
                             "format": "uuid4",
+                            "description": "The benefit ID.",
                             "x-polar-selector-widget": {
                                 "resourceRoot": "/v1/benefits",
                                 "resourceName": "Benefit",
@@ -10420,8 +10511,8 @@
                     }
                 ],
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Anonymous"
+                    "Anonymous",
+                    "User"
                 ]
             }
         },
@@ -10484,8 +10575,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Anonymous"
+                    "Anonymous",
+                    "User"
                 ]
             }
         },
@@ -10873,8 +10964,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Anonymous"
+                    "Anonymous",
+                    "User"
                 ]
             },
             "put": {
@@ -10935,8 +11026,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Anonymous"
+                    "Anonymous",
+                    "User"
                 ]
             },
             "delete": {
@@ -10987,8 +11078,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Anonymous"
+                    "Anonymous",
+                    "User"
                 ]
             }
         },
@@ -11036,8 +11127,8 @@
                     }
                 ],
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Anonymous"
+                    "Anonymous",
+                    "User"
                 ]
             }
         },
@@ -11478,8 +11569,8 @@
                                     "type": "null"
                                 }
                             ],
-                            "description": "Filter by organization ID.",
-                            "title": "Organization Id"
+                            "title": "OrganizationID Filter",
+                            "description": "Filter by organization ID."
                         },
                         "description": "Filter by organization ID."
                     },
@@ -11493,14 +11584,17 @@
                                     "$ref": "#/components/schemas/BenefitType"
                                 },
                                 {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/BenefitType"
+                                    }
+                                },
+                                {
                                     "type": "null"
                                 }
                             ],
-                            "description": "Filter by benefit type.",
-                            "examples": [
-                                "github_repository"
-                            ],
-                            "title": "Type"
+                            "title": "BenefitType Filter",
+                            "description": "Filter by benefit type."
                         },
                         "description": "Filter by benefit type."
                     },
@@ -11554,8 +11648,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             },
             "post": {
@@ -11656,8 +11750,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -11696,8 +11790,7 @@
                                 "displayProperty": "description"
                             },
                             "title": "Id"
-                        },
-                        "description": "The benefit ID."
+                        }
                     }
                 ],
                 "responses": {
@@ -11753,8 +11846,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             },
             "patch": {
@@ -11790,8 +11883,7 @@
                                 "displayProperty": "description"
                             },
                             "title": "Id"
-                        },
-                        "description": "The benefit ID."
+                        }
                     }
                 ],
                 "requestBody": {
@@ -11887,8 +11979,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             },
             "delete": {
@@ -11924,8 +12016,7 @@
                                 "displayProperty": "description"
                             },
                             "title": "Id"
-                        },
-                        "description": "The benefit ID."
+                        }
                     }
                 ],
                 "responses": {
@@ -11964,8 +12055,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -12004,8 +12095,7 @@
                                 "displayProperty": "description"
                             },
                             "title": "Id"
-                        },
-                        "description": "The benefit ID."
+                        }
                     },
                     {
                         "name": "is_granted",
@@ -12122,8 +12212,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -12138,8 +12228,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "webhooks:write",
-                            "webhooks:read"
+                            "webhooks:read",
+                            "webhooks:write"
                         ]
                     },
                     {
@@ -12241,8 +12331,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             },
             "post": {
@@ -12295,8 +12385,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -12311,8 +12401,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "webhooks:write",
-                            "webhooks:read"
+                            "webhooks:read",
+                            "webhooks:write"
                         ]
                     },
                     {
@@ -12366,8 +12456,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             },
             "patch": {
@@ -12454,8 +12544,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             },
             "delete": {
@@ -12525,8 +12615,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -12541,8 +12631,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "webhooks:write",
-                            "webhooks:read"
+                            "webhooks:read",
+                            "webhooks:write"
                         ]
                     },
                     {
@@ -12619,8 +12709,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -12687,8 +12777,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -12705,8 +12795,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "products:read",
-                            "products:write"
+                            "products:write",
+                            "products:read"
                         ]
                     },
                     {
@@ -12747,8 +12837,8 @@
                                     "type": "null"
                                 }
                             ],
-                            "description": "Filter by organization ID.",
-                            "title": "Organization Id"
+                            "title": "OrganizationID Filter",
+                            "description": "Filter by organization ID."
                         },
                         "description": "Filter by organization ID."
                     },
@@ -12805,11 +12895,24 @@
                                     }
                                 },
                                 {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "string",
+                                        "format": "uuid4",
+                                        "description": "The benefit ID.",
+                                        "x-polar-selector-widget": {
+                                            "resourceRoot": "/v1/benefits",
+                                            "resourceName": "Benefit",
+                                            "displayProperty": "description"
+                                        }
+                                    }
+                                },
+                                {
                                     "type": "null"
                                 }
                             ],
-                            "description": "Filter products granting specific benefit.",
-                            "title": "Benefit Id"
+                            "title": "BenefitID Filter",
+                            "description": "Filter products granting specific benefit."
                         },
                         "description": "Filter products granting specific benefit."
                     },
@@ -12823,11 +12926,19 @@
                                     "$ref": "#/components/schemas/SubscriptionTierType"
                                 },
                                 {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/SubscriptionTierType"
+                                    }
+                                },
+                                {
                                     "type": "null"
                                 }
                             ],
-                            "title": "Type"
-                        }
+                            "title": "SubscriptionTierType Filter",
+                            "description": "Filter by subscription tier type."
+                        },
+                        "description": "Filter by subscription tier type."
                     },
                     {
                         "name": "page",
@@ -12879,9 +12990,9 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
                     "Anonymous",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             },
             "post": {
@@ -12944,8 +13055,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -12962,8 +13073,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "products:read",
-                            "products:write"
+                            "products:write",
+                            "products:read"
                         ]
                     },
                     {
@@ -12985,8 +13096,7 @@
                                 "displayProperty": "name"
                             },
                             "title": "Id"
-                        },
-                        "description": "The product ID."
+                        }
                     }
                 ],
                 "responses": {
@@ -13022,9 +13132,9 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
                     "Anonymous",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             },
             "patch": {
@@ -13061,8 +13171,7 @@
                                 "displayProperty": "name"
                             },
                             "title": "Id"
-                        },
-                        "description": "The product ID."
+                        }
                     }
                 ],
                 "requestBody": {
@@ -13118,8 +13227,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -13158,8 +13267,7 @@
                                 "displayProperty": "name"
                             },
                             "title": "Id"
-                        },
-                        "description": "The product ID."
+                        }
                     }
                 ],
                 "requestBody": {
@@ -13215,8 +13323,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -13273,8 +13381,8 @@
                                     "type": "null"
                                 }
                             ],
-                            "description": "Filter by organization ID.",
-                            "title": "Organization Id"
+                            "title": "OrganizationID Filter",
+                            "description": "Filter by organization ID."
                         },
                         "description": "Filter by organization ID."
                     },
@@ -13295,11 +13403,24 @@
                                     }
                                 },
                                 {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "string",
+                                        "format": "uuid4",
+                                        "description": "The product ID.",
+                                        "x-polar-selector-widget": {
+                                            "resourceRoot": "/v1/products",
+                                            "resourceName": "Product",
+                                            "displayProperty": "name"
+                                        }
+                                    }
+                                },
+                                {
                                     "type": "null"
                                 }
                             ],
-                            "description": "Filter by product ID.",
-                            "title": "Product Id"
+                            "title": "ProductID Filter",
+                            "description": "Filter by product ID."
                         },
                         "description": "Filter by product ID."
                     },
@@ -13313,11 +13434,17 @@
                                     "$ref": "#/components/schemas/ProductPriceType"
                                 },
                                 {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/ProductPriceType"
+                                    }
+                                },
+                                {
                                     "type": "null"
                                 }
                             ],
-                            "description": "Filter by product price type. `recurring` will return orders corresponding to subscriptions creations or renewals. `one_time` will return orders corresponding to one-time purchases.",
-                            "title": "Product Price Type"
+                            "title": "ProductPriceType Filter",
+                            "description": "Filter by product price type. `recurring` will return orders corresponding to subscriptions creations or renewals. `one_time` will return orders corresponding to one-time purchases."
                         },
                         "description": "Filter by product price type. `recurring` will return orders corresponding to subscriptions creations or renewals. `one_time` will return orders corresponding to one-time purchases."
                     },
@@ -13332,11 +13459,18 @@
                                     "format": "uuid4"
                                 },
                                 {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "string",
+                                        "format": "uuid4"
+                                    }
+                                },
+                                {
                                     "type": "null"
                                 }
                             ],
-                            "description": "Filter by customer's user ID.",
-                            "title": "User Id"
+                            "title": "UserID Filter",
+                            "description": "Filter by customer's user ID."
                         },
                         "description": "Filter by customer's user ID."
                     },
@@ -13427,8 +13561,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -13498,8 +13632,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -13569,8 +13703,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -13625,8 +13759,8 @@
                     }
                 ],
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Anonymous"
+                    "Anonymous",
+                    "User"
                 ]
             }
         },
@@ -13790,8 +13924,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             },
             "post": {
@@ -13860,8 +13994,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -13946,8 +14080,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -14032,8 +14166,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             },
             "delete": {
@@ -14102,8 +14236,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -14200,8 +14334,8 @@
                                     "type": "null"
                                 }
                             ],
-                            "description": "Filter by organization ID.",
-                            "title": "Organization Id"
+                            "title": "OrganizationID Filter",
+                            "description": "Filter by organization ID."
                         },
                         "description": "Filter by organization ID."
                     },
@@ -14222,11 +14356,24 @@
                                     }
                                 },
                                 {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "string",
+                                        "format": "uuid4",
+                                        "description": "The product ID.",
+                                        "x-polar-selector-widget": {
+                                            "resourceRoot": "/v1/products",
+                                            "resourceName": "Product",
+                                            "displayProperty": "name"
+                                        }
+                                    }
+                                },
+                                {
                                     "type": "null"
                                 }
                             ],
-                            "description": "Filter by product ID.",
-                            "title": "Product Id"
+                            "title": "ProductID Filter",
+                            "description": "Filter by product ID."
                         },
                         "description": "Filter by product ID."
                     },
@@ -14240,11 +14387,17 @@
                                     "$ref": "#/components/schemas/ProductPriceType"
                                 },
                                 {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/ProductPriceType"
+                                    }
+                                },
+                                {
                                     "type": "null"
                                 }
                             ],
-                            "description": "Filter by product price type. `recurring` will filter data corresponding to subscriptions creations or renewals. `one_time` will filter data corresponding to one-time purchases.",
-                            "title": "Product Price Type"
+                            "title": "ProductPriceType Filter",
+                            "description": "Filter by product price type. `recurring` will filter data corresponding to subscriptions creations or renewals. `one_time` will filter data corresponding to one-time purchases."
                         },
                         "description": "Filter by product price type. `recurring` will filter data corresponding to subscriptions creations or renewals. `one_time` will filter data corresponding to one-time purchases."
                     }
@@ -14272,8 +14425,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -14309,8 +14462,8 @@
                     }
                 ],
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         }

@@ -17,10 +17,12 @@ import * as runtime from '../runtime';
 import type {
   HTTPValidationError,
   ListResourceSubscription,
+  OrganizationIDFilter,
   OrganizationId,
+  ProductIDFilter,
   Subscription,
   SubscriptionCreateEmail,
-  SubscriptionTierType,
+  SubscriptionTierTypeFilter,
   SubscriptionsImported,
 } from '../models/index';
 
@@ -38,9 +40,9 @@ export interface SubscriptionsApiImportRequest {
 }
 
 export interface SubscriptionsApiListRequest {
-    organizationId?: OrganizationId;
-    productId?: string;
-    type?: SubscriptionTierType;
+    organizationId?: OrganizationIDFilter;
+    productId?: ProductIDFilter;
+    type?: SubscriptionTierTypeFilter;
     active?: boolean;
     page?: number;
     limit?: number;

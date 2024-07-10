@@ -1346,6 +1346,13 @@ export const ArticleVisibility = {
 export type ArticleVisibility = typeof ArticleVisibility[keyof typeof ArticleVisibility];
 
 /**
+ * @type ArticleVisibilityFilter
+ * Filter by visibility.
+ * @export
+ */
+export type ArticleVisibilityFilter = Array<ArticleVisibility> | ArticleVisibility;
+
+/**
  * 
  * @export
  * @interface Assignee
@@ -3687,6 +3694,20 @@ export interface BenefitGrantAdsProperties {
     advertisement_campaign_id?: string;
 }
 /**
+ * @type BenefitIDFilter
+ * Filter by given benefit ID. 
+ * @export
+ */
+export type BenefitIDFilter = Array<string> | string;
+
+/**
+ * @type BenefitIDFilter1
+ * Filter products granting specific benefit.
+ * @export
+ */
+export type BenefitIDFilter1 = Array<string> | string;
+
+/**
  * 
  * @export
  * @interface BenefitPreconditionErrorNotification
@@ -3796,6 +3817,13 @@ export const BenefitType = {
     DOWNLOADABLES: 'downloadables'
 } as const;
 export type BenefitType = typeof BenefitType[keyof typeof BenefitType];
+
+/**
+ * @type BenefitTypeFilter
+ * Filter by benefit type.
+ * @export
+ */
+export type BenefitTypeFilter = Array<BenefitType> | BenefitType;
 
 /**
  * @type BenefitUpdate
@@ -8093,6 +8121,13 @@ export interface Order {
     subscription?: OrderSubscription;
 }
 /**
+ * @type OrderIDFilter
+ * Filter by order ID.
+ * @export
+ */
+export type OrderIDFilter = Array<string> | string;
+
+/**
  * Order's invoice data.
  * @export
  * @interface OrderInvoice
@@ -8613,6 +8648,13 @@ export interface OrganizationFeatureSettings {
      */
     issue_funding_enabled?: boolean;
 }
+/**
+ * @type OrganizationIDFilter
+ * Filter by organization ID.
+ * @export
+ */
+export type OrganizationIDFilter = Array<string> | string;
+
 /**
  * @type OrganizationId
  * Filter by organization ID.
@@ -9643,6 +9685,13 @@ export interface ProductBenefitsUpdate {
 export type ProductCreate = ProductOneTimeCreate | ProductRecurringCreate;
 
 /**
+ * @type ProductIDFilter
+ * Filter by product ID.
+ * @export
+ */
+export type ProductIDFilter = Array<string> | string;
+
+/**
  * Schema to create a file to be used as a product media file.
  * @export
  * @interface ProductMediaFileCreate
@@ -10090,6 +10139,20 @@ export const ProductPriceType = {
     RECURRING: 'recurring'
 } as const;
 export type ProductPriceType = typeof ProductPriceType[keyof typeof ProductPriceType];
+
+/**
+ * @type ProductPriceTypeFilter
+ * Filter by product price type. `recurring` will return orders corresponding to subscriptions creations or renewals. `one_time` will return orders corresponding to one-time purchases.
+ * @export
+ */
+export type ProductPriceTypeFilter = Array<ProductPriceType> | ProductPriceType;
+
+/**
+ * @type ProductPriceTypeFilter1
+ * Filter by product price type. `recurring` will filter data corresponding to subscriptions creations or renewals. `one_time` will filter data corresponding to one-time purchases.
+ * @export
+ */
+export type ProductPriceTypeFilter1 = Array<ProductPriceType> | ProductPriceType;
 
 /**
  * Schema to create a recurring product, i.e. a subscription.
@@ -11309,6 +11372,13 @@ export interface SubscriptionCreateEmail {
      */
     product_id: string;
 }
+/**
+ * @type SubscriptionIDFilter
+ * Filter by subscription ID.
+ * @export
+ */
+export type SubscriptionIDFilter = Array<string> | string;
+
 
 /**
  * 
@@ -11336,6 +11406,13 @@ export const SubscriptionTierType = {
     BUSINESS: 'business'
 } as const;
 export type SubscriptionTierType = typeof SubscriptionTierType[keyof typeof SubscriptionTierType];
+
+/**
+ * @type SubscriptionTierTypeFilter
+ * Filter by subscription tier type.
+ * @export
+ */
+export type SubscriptionTierTypeFilter = Array<SubscriptionTierType> | SubscriptionTierType;
 
 /**
  * 
@@ -12756,6 +12833,13 @@ export interface UserFreeSubscriptionCreate {
      */
     customer_email?: string;
 }
+/**
+ * @type UserIDFilter
+ * Filter by customer\'s user ID.
+ * @export
+ */
+export type UserIDFilter = Array<string> | string;
+
 /**
  * 
  * @export

@@ -24,12 +24,12 @@ export interface EnhancedOAuth2ClientConfiguration
 
 interface NewOAuthClientModalProps {
   onSuccess: (client: OAuth2Client) => void
-  hideModal: () => void
+  onHide: () => void
 }
 
 export const NewOAuthClientModal = ({
   onSuccess,
-  hideModal,
+  onHide,
 }: NewOAuthClientModalProps) => {
   const form = useForm<EnhancedOAuth2ClientConfiguration>({
     defaultValues: {
@@ -57,15 +57,14 @@ export const NewOAuthClientModal = ({
         })
         .finally(() => setIsCreating(false))
       setCreated(res)
-      hideModal()
       onSuccess(res)
     },
-    [hideModal, createOAuth2Client, setCreated, setIsCreating, onSuccess],
+    [createOAuth2Client, setCreated, setIsCreating, onSuccess],
   )
 
   return (
     <div className="flex flex-col overflow-y-auto">
-      <InlineModalHeader hide={hideModal}>
+      <InlineModalHeader hide={onHide}>
         <div className="flex items-center justify-between gap-2">
           <h2 className="text-xl">New OAuth App</h2>
         </div>

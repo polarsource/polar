@@ -6,7 +6,6 @@ import {
   useUpdateOAuth2Client,
 } from '@/hooks/queries/oauth'
 import { OAuth2Client, OAuth2ClientConfigurationUpdate } from '@polar-sh/sdk'
-import { useRouter } from 'next/navigation'
 import Button from 'polarkit/components/ui/atoms/button'
 import { ShadowBoxOnMd } from 'polarkit/components/ui/atoms/shadowbox'
 import { Form } from 'polarkit/components/ui/form'
@@ -33,15 +32,17 @@ export interface EnhancedOAuth2ClientConfigurationUpdate
 
 interface EditOAuthClientModalProps {
   client: OAuth2Client
-  hideModal: () => void
+  onSuccess: (client: OAuth2Client) => void
+  onDelete: (client: OAuth2Client) => void
+  onHide: () => void
 }
 
 export const EditOAuthClientModal = ({
   client,
-  hideModal,
+  onSuccess,
+  onDelete,
+  onHide,
 }: EditOAuthClientModalProps) => {
-  const router = useRouter()
-
   const {
     hide: hideDeleteModal,
     isShown: isArchiveModalShown,
@@ -61,12 +62,12 @@ export const EditOAuthClientModal = ({
   const [updated, setUpdated] = useState<OAuth2ClientConfigurationUpdate>()
   const [isUpdating, setIsUpdating] = useState(false)
 
-  const createOAuth2Client = useUpdateOAuth2Client()
+  const updateOAuth2Client = useUpdateOAuth2Client()
 
   const onSubmit = useCallback(
     async (form: EnhancedOAuth2ClientConfigurationUpdate) => {
       setIsUpdating(true)
-      const res = await createOAuth2Client
+      const res = await updateOAuth2Client
         .mutateAsync({
           clientId: client.client_id,
           body: {
@@ -77,9 +78,9 @@ export const EditOAuthClientModal = ({
         })
         .finally(() => setIsUpdating(false))
       setUpdated(res)
-      hideModal()
+      onSuccess(res)
     },
-    [hideModal, createOAuth2Client, setUpdated, setIsUpdating, client],
+    [onSuccess, updateOAuth2Client, setUpdated, setIsUpdating, client],
   )
 
   const deleteOAuthClient = useDeleteOAuthClient()
@@ -87,13 +88,12 @@ export const EditOAuthClientModal = ({
   const handleDeleteOAuthClient = useCallback(async () => {
     await deleteOAuthClient.mutateAsync(client.client_id)
     hideDeleteModal()
-    hideModal()
-    router.push(`/settings`)
-  }, [hideDeleteModal, router, hideModal, client, deleteOAuthClient])
+    onDelete(client)
+  }, [hideDeleteModal, onDelete, client, deleteOAuthClient])
 
   return (
     <div className="flex flex-col overflow-y-auto">
-      <InlineModalHeader hide={hideModal}>
+      <InlineModalHeader hide={onHide}>
         <div className="flex items-center justify-between gap-2">
           <h2 className="text-xl">Edit OAuth App</h2>
         </div>

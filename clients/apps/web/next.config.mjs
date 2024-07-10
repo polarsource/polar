@@ -120,13 +120,6 @@ const nextConfig = {
         permanent: false,
       },
 
-      // Redirect /docs/overview to /docs/product
-      {
-        source: '/docs/overview/:path*',
-        destination: '/docs/:path*',
-        permanent: true,
-      },
-
       // Redirect old FAQ to docs.polar.sh
       ...ENVIRONMENT === 'production' ?
         [

@@ -27,11 +27,11 @@ Enabling your entire audience to subscribe with email-only at first and for you 
 
 **Paid tiers & managed value-add taxes**
 
-Of course, you can offer paid tiers too that backers can upgrade to seamlessly over time. 
+Of course, you can offer paid tiers too that backers can upgrade to seamlessly over time.
 
 Many developers shy away from offering paid services & benefits due to the value-add tax implications. Calculating, capturing & remitting value-add taxes internationally is a crushing overhead for individual developers.
 
-That's why we're incredibly proud to be the merchant of record and handle value-add taxes so you don't have to. Read more about the details [here](https://polar.sh/docs/overview/payments-taxes).
+That's why we're incredibly proud to be the merchant of record and handle value-add taxes so you don't have to. Read more about the details [here](https://polar.sh/docs/payments-taxes).
 
 **Unparalleled business offerings**
 
@@ -41,7 +41,7 @@ Polar has the concept of subscription audiences: Individual vs. Business. Separa
 
 Offering unparalleled opportunities and value to subscriptions offered via Polar to businesses.
 
-**Powerful, built-in, benefits** 
+**Powerful, built-in, benefits**
 
 You can setup custom benefits with Polar (free text) for maximum flexibility. However, we're going to invest heavily in automating typical benefits offered within our ecosystem. Making it seamless for you to manage & delightful for your backers to use.
 
@@ -69,7 +69,7 @@ if __name__ == "__main__":
     hello_world()
 \`\`\`
 
-I can embed Youtube videos, images, links or even GitHub issues you can fund using Polar issue funding & rewards. 
+I can embed Youtube videos, images, links or even GitHub issues you can fund using Polar issue funding & rewards.
 
 <embed src="https://github.com/polarsource/polar/issues/897"></embed>
 
@@ -83,7 +83,7 @@ We're working on polls and other embeddables too. We can't wait to hear what you
 
 ### API & SDK
 
-You get a personal page on Polar that you can easily promote Posts, Subscriptions & Issue Funding from Day 1: e.g \`polar.sh/polarsource\`. 
+You get a personal page on Polar that you can easily promote Posts, Subscriptions & Issue Funding from Day 1: e.g \`polar.sh/polarsource\`.
 
 We don't think it makes any sense to offer customization abilities to our audience; setting up custom color hex codes, templates etc like other creator platforms. Instead, we're building everything on our public API & offering SDKs (JS first - beta). Since we believe you'd rather integrate it directly on your site, docs and/or services.
 
@@ -115,9 +115,9 @@ How is this funded?
 2. Polar supports businesses to setup open source allowances for team members (invite-only for now). Polar has an employee benefit of each engineer getting $200/month. We're 4 people so that's $800/month or $9,600/year. *We're rounding up the rest :-)*
 
 <hr />
-Phew. That's all. This is our biggest update since launching Polar and a big step towards our long-term vision of building a platform for developers to get more funding to even building independent businesses around their initiatives. 
+Phew. That's all. This is our biggest update since launching Polar and a big step towards our long-term vision of building a platform for developers to get more funding to even building independent businesses around their initiatives.
 
 As always, don't hesitate to share your feedback, thoughts or requests on [GitHub](https://github.com/polarsource/polar) or chat with us directly on [Discord](https://discord.gg/AVgbMhTtBq). We're here to serve fellow developers!
 
-All our best,  
+All our best,
 Birk, Gustav, Francois & Emil @ Polar`

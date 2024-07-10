@@ -48,9 +48,7 @@ const Footer = ({
               <FooterLink href="/issue-funding">Issue Funding</FooterLink>
               <FooterLink href="/products">Products & Subscriptions</FooterLink>
               <FooterLink href="/donations">Donations</FooterLink>
-              <FooterLink href="/docs/overview/newsletters">
-                Newsletters
-              </FooterLink>
+              <FooterLink href="/docs/newsletters">Newsletters</FooterLink>
             </div>
           </div>
           <div className="flex flex-col gap-y-4">
@@ -85,9 +83,7 @@ const Footer = ({
             <h3 className="text-base dark:text-white">Support</h3>
             <div className="flex flex-col gap-y-2">
               <FooterLink href="/docs">Docs</FooterLink>
-              <FooterLink href="/docs/overview/faq/for-maintainers">
-                FAQ
-              </FooterLink>
+              <FooterLink href="/docs/faq/for-maintainers">FAQ</FooterLink>
               <FooterLink href="mailto:support@polar.sh">Contact</FooterLink>
             </div>
           </div>

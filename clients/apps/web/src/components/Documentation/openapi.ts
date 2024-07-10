@@ -5,7 +5,7 @@ import { OpenAPIV3_1 } from 'openapi-types'
 
 const swaggerParser = new SwaggerParser()
 
-enum HttpMethods {
+export enum HttpMethod {
   GET = 'get',
   PUT = 'put',
   POST = 'post',
@@ -32,8 +32,8 @@ export const fetchSchema = async (): Promise<OpenAPIV3_1.Document> => {
   )
 }
 
-const isMethod = (method: string): method is HttpMethods =>
-  Object.values(HttpMethods).includes(method as HttpMethods)
+const isMethod = (method: string): method is HttpMethod =>
+  Object.values(HttpMethod).includes(method as HttpMethod)
 
 export class EndpointError extends Error {
   constructor(endpoint: string[]) {
@@ -43,7 +43,7 @@ export class EndpointError extends Error {
 
 export interface EndpointMetadata {
   operation: OpenAPIV3_1.OperationObject
-  method: HttpMethods
+  method: HttpMethod
   apiEndpointPath: string
 }
 
@@ -366,13 +366,13 @@ const getLocationFromPrefix = (prefix: string): 'path' | 'query' | 'body' => {
 }
 
 abstract class CommandBuilder {
-  protected method: HttpMethods
+  protected method: HttpMethod
   protected url: string
   protected endpoint: OpenAPIV3_1.OperationObject
   protected params: Record<string, string>
 
   public constructor(
-    method: string | HttpMethods,
+    method: string | HttpMethod,
     url: string,
     endpoint: OpenAPIV3_1.OperationObject,
     params: Record<string, string> = {},
@@ -626,7 +626,7 @@ export interface APISection {
     id: string
     name: string
     path: string
-    method: HttpMethods
+    method: HttpMethod
     documented: boolean
     featured: boolean
   }[]
@@ -662,7 +662,7 @@ export const getAPISections = (
       continue
     }
     // Iterate over all methods in this path
-    for (const method of Object.values(HttpMethods)) {
+    for (const method of Object.values(HttpMethod)) {
       const endpoint = endpoints[method]
       // No endpoint for this method
       if (!endpoint) {

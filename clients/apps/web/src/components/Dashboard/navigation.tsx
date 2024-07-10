@@ -458,7 +458,7 @@ export const unauthenticatedRoutes: Route[] = [
   {
     id: 'faq',
     title: 'FAQ',
-    link: '/docs/overview/faq/for-maintainers',
+    link: '/docs/faq/for-maintainers',
     icon: undefined,
     postIcon: <ArrowUpRightIcon className="h-4 w-4" />,
     if: true,

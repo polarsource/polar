@@ -345,10 +345,19 @@ export const MainNavigation = () => {
 
       <div>
         <NavigationHeadline>Merchant of Record</NavigationHeadline>
-        <NavigationItem href="/docs/merchant-of-record">
+        <NavigationItem href="/docs/merchant-of-record/tax">
           Sales tax & EU VAT
         </NavigationItem>
-        <NavigationItem href="/docs/1099k">1099-K Form (US)</NavigationItem>
+        <NavigationItem href="/docs/merchant-of-record/compliance">
+          Invoices & Tax Forms
+        </NavigationItem>
+      </div>
+
+      <div>
+        <NavigationHeadline>For Customers</NavigationHeadline>
+        <NavigationItem href="/docs/customers/purchases">
+          Buying via Polar
+        </NavigationItem>
       </div>
     </>
   )

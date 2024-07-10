@@ -42,9 +42,9 @@ class UserOrderService(ResourceServiceReader[Order]):
         auth_subject: AuthSubject[User],
         *,
         organization_id: Sequence[uuid.UUID] | None = None,
-        product_id: uuid.UUID | None = None,
-        product_price_type: ProductPriceType | None = None,
-        subscription_id: uuid.UUID | None = None,
+        product_id: Sequence[uuid.UUID] | None = None,
+        product_price_type: Sequence[ProductPriceType] | None = None,
+        subscription_id: Sequence[uuid.UUID] | None = None,
         query: str | None = None,
         pagination: PaginationParams,
         sorting: list[Sorting[SortProperty]] = [(SortProperty.created_at, True)],
@@ -65,13 +65,13 @@ class UserOrderService(ResourceServiceReader[Order]):
             statement = statement.where(Product.organization_id.in_(organization_id))
 
         if product_id is not None:
-            statement = statement.where(Order.product_id == product_id)
+            statement = statement.where(Order.product_id.in_(product_id))
 
         if product_price_type is not None:
-            statement = statement.where(OrderProductPrice.type == product_price_type)
+            statement = statement.where(OrderProductPrice.type.in_(product_price_type))
 
         if subscription_id is not None:
-            statement = statement.where(Order.subscription_id == subscription_id)
+            statement = statement.where(Order.subscription_id.in_(subscription_id))
 
         if query is not None:
             statement = statement.where(

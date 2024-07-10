@@ -36,17 +36,17 @@ class UserBenefitService(ResourceServiceReader[Benefit]):
         session: AsyncSession,
         auth_subject: AuthSubject[User],
         *,
-        type: BenefitType | None = None,
+        type: Sequence[BenefitType] | None = None,
         organization_id: Sequence[uuid.UUID] | None = None,
-        order_id: uuid.UUID | None = None,
-        subscription_id: uuid.UUID | None = None,
+        order_id: Sequence[uuid.UUID] | None = None,
+        subscription_id: Sequence[uuid.UUID] | None = None,
         pagination: PaginationParams,
         sorting: list[Sorting[SortProperty]] = [(SortProperty.granted_at, True)],
     ) -> tuple[Sequence[Benefit], int]:
         statement = self._get_readable_benefit_statement(auth_subject)
 
         if type is not None:
-            statement = statement.where(Benefit.type == type)
+            statement = statement.where(Benefit.type.in_(type))
 
         if organization_id is not None:
             statement = statement.where(Benefit.organization_id.in_(organization_id))
@@ -55,7 +55,7 @@ class UserBenefitService(ResourceServiceReader[Benefit]):
             statement = statement.where(
                 Benefit.id.in_(
                     select(BenefitGrant.benefit_id).where(
-                        BenefitGrant.order_id == order_id
+                        BenefitGrant.order_id.in_(order_id)
                     )
                 )
             )
@@ -64,7 +64,7 @@ class UserBenefitService(ResourceServiceReader[Benefit]):
             statement = statement.where(
                 Benefit.id.in_(
                     select(BenefitGrant.benefit_id).where(
-                        BenefitGrant.subscription_id == subscription_id
+                        BenefitGrant.subscription_id.in_(subscription_id)
                     )
                 )
             )

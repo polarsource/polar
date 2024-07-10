@@ -164,8 +164,8 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         auth_subject: AuthSubject[User | Organization],
         *,
         organization_id: Sequence[uuid.UUID] | None = None,
-        type: SubscriptionTierType | None = None,
-        product_id: uuid.UUID | None = None,
+        type: Sequence[SubscriptionTierType] | None = None,
+        product_id: Sequence[uuid.UUID] | None = None,
         active: bool | None = None,
         pagination: PaginationParams,
         sorting: list[Sorting[SearchSortProperty]] = [
@@ -184,10 +184,10 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
             statement = statement.where(Product.organization_id.in_(organization_id))
 
         if type is not None:
-            statement = statement.where(Product.type == type)
+            statement = statement.where(Product.type.in_(type))
 
         if product_id is not None:
-            statement = statement.where(Product.id == product_id)
+            statement = statement.where(Product.id.in_(product_id))
 
         if active is not None:
             if active:

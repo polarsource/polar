@@ -46,7 +46,7 @@ class DownloadableService(
         user: User,
         pagination: PaginationParams,
         organization_id: Sequence[UUID] | None = None,
-        benefit_id: UUID | None = None,
+        benefit_id: Sequence[UUID] | None = None,
     ) -> tuple[Sequence[Downloadable], int]:
         statement = self._get_base_query(user)
 
@@ -54,7 +54,7 @@ class DownloadableService(
             statement = statement.where(File.organization_id.in_(organization_id))
 
         if benefit_id:
-            statement = statement.where(Downloadable.benefit_id == benefit_id)
+            statement = statement.where(Downloadable.benefit_id.in_(benefit_id))
 
         return await paginate(session, statement, pagination=pagination)
 

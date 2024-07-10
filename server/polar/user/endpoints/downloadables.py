@@ -27,10 +27,11 @@ async def list_downloadables(
     auth_subject: auth.UserDownloadablesRead,
     pagination: PaginationParamsQuery,
     organization_id: MultipleQueryFilter[OrganizationID] | None = Query(
-        None, description="Filter by organization ID."
+        None, title="OrganizationID Filter", description="Filter by organization ID."
     ),
-    benefit_id: BenefitID | None = Query(
+    benefit_id: MultipleQueryFilter[BenefitID] | None = Query(
         None,
+        title="BenefitID Filter",
         description=("Filter by given benefit ID. "),
     ),
     session: AsyncSession = Depends(get_db_session),

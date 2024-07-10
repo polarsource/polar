@@ -65,8 +65,8 @@ class ProductService(ResourceService[Product, ProductCreate, ProductUpdate]):
         organization_id: Sequence[uuid.UUID] | None = None,
         is_archived: bool | None = None,
         is_recurring: bool | None = None,
-        benefit_id: uuid.UUID | None = None,
-        type: SubscriptionTierType | None = None,
+        benefit_id: Sequence[uuid.UUID] | None = None,
+        type: Sequence[SubscriptionTierType] | None = None,
         pagination: PaginationParams,
     ) -> tuple[Sequence[Product], int]:
         statement = self._get_readable_product_statement(auth_subject).join(
@@ -98,12 +98,12 @@ class ProductService(ResourceService[Product, ProductCreate, ProductUpdate]):
             statement = statement.where(Product.is_recurring.is_(is_recurring))
 
         if type is not None:
-            statement = statement.where(Product.type == type)
+            statement = statement.where(Product.type.in_(type))
 
         if benefit_id is not None:
             statement = (
                 statement.join(Product.product_benefits)
-                .where(ProductBenefit.benefit_id == benefit_id)
+                .where(ProductBenefit.benefit_id.in_(benefit_id))
                 .options(contains_eager(Product.product_benefits))
             )
 

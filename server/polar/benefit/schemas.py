@@ -1,7 +1,6 @@
 from datetime import datetime
 from typing import Annotated, Any, Literal
 
-from fastapi import Path
 from pydantic import (
     UUID4,
     Discriminator,
@@ -14,7 +13,7 @@ from pydantic import (
 
 from polar.config import settings
 from polar.kit import jwt
-from polar.kit.schemas import Schema, SelectorWidget, TimestampedSchema
+from polar.kit.schemas import MergeJSONSchema, Schema, SelectorWidget, TimestampedSchema
 from polar.models.benefit import BenefitType
 from polar.organization.schemas import OrganizationID
 
@@ -23,7 +22,7 @@ BENEFIT_DESCRIPTION_MAX_LENGTH = 42
 
 BenefitID = Annotated[
     UUID4,
-    Path(description="The benefit ID."),
+    MergeJSONSchema({"description": "The benefit ID."}),
     SelectorWidget("/v1/benefits", "Benefit", "description"),
 ]
 

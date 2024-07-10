@@ -32,11 +32,14 @@ async def list(
     pagination: PaginationParamsQuery,
     sorting: sorting.ListSorting,
     organization_id: MultipleQueryFilter[OrganizationID] | None = Query(
-        None, description="Filter by organization ID."
+        None, title="OrganizationID Filter", description="Filter by organization ID."
     ),
-    product_id: ProductID | None = Query(None, description="Filter by product ID."),
-    product_price_type: ProductPriceType | None = Query(
+    product_id: MultipleQueryFilter[ProductID] | None = Query(
+        None, title="ProductID Filter", description="Filter by product ID."
+    ),
+    product_price_type: MultipleQueryFilter[ProductPriceType] | None = Query(
         None,
+        title="ProductPriceType Filter",
         description=(
             "Filter by product price type. "
             "`recurring` will return orders corresponding "
@@ -44,7 +47,9 @@ async def list(
             "`one_time` will return orders corresponding to one-time purchases."
         ),
     ),
-    user_id: UUID4 | None = Query(None, description="Filter by customer's user ID."),
+    user_id: MultipleQueryFilter[UUID4] | None = Query(
+        None, title="UserID Filter", description="Filter by customer's user ID."
+    ),
     session: AsyncSession = Depends(get_db_session),
 ) -> ListResource[OrderSchema]:
     """List orders."""

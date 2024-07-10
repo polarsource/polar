@@ -24,8 +24,8 @@ class MetricsService:
         end_date: date,
         interval: Interval,
         organization_id: Sequence[uuid.UUID] | None = None,
-        product_id: uuid.UUID | None = None,
-        product_price_type: ProductPriceType | None = None,
+        product_id: Sequence[uuid.UUID] | None = None,
+        product_price_type: Sequence[ProductPriceType] | None = None,
     ) -> MetricsResponse:
         start_timestamp = datetime(
             start_date.year, start_date.month, start_date.day, 0, 0, 0, 0, UTC

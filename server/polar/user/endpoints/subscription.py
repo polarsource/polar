@@ -49,9 +49,11 @@ async def list_subscriptions(
     pagination: PaginationParamsQuery,
     sorting: ListSorting,
     organization_id: MultipleQueryFilter[OrganizationID] | None = Query(
-        None, description="Filter by organization ID."
+        None, title="OrganizationID Filter", description="Filter by organization ID."
     ),
-    product_id: ProductID | None = Query(None, description="Filter by product ID."),
+    product_id: MultipleQueryFilter[ProductID] | None = Query(
+        None, title="ProductID Filter", description="Filter by product ID."
+    ),
     active: bool | None = Query(
         None,
         description=("Filter by active or cancelled subscription."),

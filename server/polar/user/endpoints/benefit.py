@@ -39,13 +39,17 @@ async def list_benefits(
     auth_subject: auth.UserBenefitsRead,
     pagination: PaginationParamsQuery,
     sorting: ListSorting,
-    type: BenefitType | None = Query(None, description="Filter by benefit type."),
-    organization_id: MultipleQueryFilter[OrganizationID] | None = Query(
-        None, description="Filter by organization ID."
+    type: MultipleQueryFilter[BenefitType] | None = Query(
+        None, title="BenefitType Filter", description="Filter by benefit type."
     ),
-    order_id: UUID4 | None = Query(None, description="Filter by order ID."),
-    subscription_id: UUID4 | None = Query(
-        None, description="Filter by subscription ID."
+    organization_id: MultipleQueryFilter[OrganizationID] | None = Query(
+        None, title="OrganizationID Filter", description="Filter by organization ID."
+    ),
+    order_id: MultipleQueryFilter[UUID4] | None = Query(
+        None, title="OrderID Filter", description="Filter by order ID."
+    ),
+    subscription_id: MultipleQueryFilter[UUID4] | None = Query(
+        None, title="SubscriptionID Filter", description="Filter by subscription ID."
     ),
     session: AsyncSession = Depends(get_db_session),
 ) -> ListResource[UserBenefit]:

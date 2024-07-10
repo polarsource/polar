@@ -93,14 +93,14 @@ class BenefitService(ResourceService[Benefit, BenefitCreate, BenefitUpdate]):
         session: AsyncSession,
         auth_subject: AuthSubject[User | Organization],
         *,
-        type: BenefitType | None = None,
+        type: Sequence[BenefitType] | None = None,
         organization_id: Sequence[uuid.UUID] | None = None,
         pagination: PaginationParams,
     ) -> tuple[Sequence[Benefit], int]:
         statement = self._get_readable_benefit_statement(auth_subject)
 
         if type is not None:
-            statement = statement.where(Benefit.type == type)
+            statement = statement.where(Benefit.type.in_(type))
 
         if organization_id is not None:
             statement = statement.where(Benefit.organization_id.in_(organization_id))

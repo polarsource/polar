@@ -303,7 +303,7 @@ class TestGetMetrics:
             start_date=date(2024, 1, 1),
             end_date=date(2024, 12, 31),
             interval=Interval.day,
-            product_id=fixtures[0]["one_time_product"].id,
+            product_id=[fixtures[0]["one_time_product"].id],
         )
 
         jan_1 = metrics.periods[0]
@@ -374,7 +374,7 @@ class TestGetMetrics:
             start_date=date(2024, 1, 1),
             end_date=date(2024, 12, 31),
             interval=Interval.day,
-            product_price_type=ProductPriceType.one_time,
+            product_price_type=[ProductPriceType.one_time],
         )
 
         jan_1 = metrics.periods[0]

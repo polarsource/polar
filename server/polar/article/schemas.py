@@ -3,10 +3,9 @@ import datetime
 import re
 from typing import Annotated, Self
 
-from fastapi import Path
 from pydantic import UUID4, Field, FutureDatetime, HttpUrl, model_validator
 
-from polar.kit.schemas import EmailStrDNS, Schema, SelectorWidget
+from polar.kit.schemas import EmailStrDNS, MergeJSONSchema, Schema, SelectorWidget
 from polar.models import Article as ArticleModel
 from polar.models.article import ArticleByline, ArticleVisibility
 from polar.organization.schemas import Organization, OrganizationID
@@ -15,7 +14,7 @@ paywall_regex = r"<Paywall>((.|\n)*?)<\/Paywall>"
 
 ArticleID = Annotated[
     UUID4,
-    Path(description="The article ID."),
+    MergeJSONSchema({"description": "The article ID."}),
     SelectorWidget("/v1/articles", "Article", "title"),
 ]
 

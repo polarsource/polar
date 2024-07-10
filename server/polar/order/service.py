@@ -115,9 +115,9 @@ class OrderService(ResourceServiceReader[Order]):
         auth_subject: AuthSubject[User | Organization],
         *,
         organization_id: Sequence[uuid.UUID] | None = None,
-        product_id: uuid.UUID | None = None,
-        product_price_type: ProductPriceType | None = None,
-        user_id: uuid.UUID | None = None,
+        product_id: Sequence[uuid.UUID] | None = None,
+        product_price_type: Sequence[ProductPriceType] | None = None,
+        user_id: Sequence[uuid.UUID] | None = None,
         pagination: PaginationParams,
         sorting: list[Sorting[SortProperty]] = [(SortProperty.created_at, True)],
     ) -> tuple[Sequence[Order], int]:
@@ -141,13 +141,13 @@ class OrderService(ResourceServiceReader[Order]):
             statement = statement.where(Product.organization_id.in_(organization_id))
 
         if product_id is not None:
-            statement = statement.where(Order.product_id == product_id)
+            statement = statement.where(Order.product_id.in_(product_id))
 
         if product_price_type is not None:
-            statement = statement.where(OrderProductPrice.type == product_price_type)
+            statement = statement.where(OrderProductPrice.type.in_(product_price_type))
 
         if user_id is not None:
-            statement = statement.where(Order.user_id == user_id)
+            statement = statement.where(Order.user_id.in_(user_id))
 
         order_by_clauses: list[UnaryExpression[Any]] = []
         for criterion, is_desc in sorting:

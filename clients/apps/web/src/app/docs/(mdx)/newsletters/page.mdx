@@ -1,24 +1,104 @@
+import BrowserCallout from '@/components/Feed/Markdown/Callout/BrowserCallout'
+
 # Newsletters
 
-Polar has a powerful blog and newsletter engine called "Newsletters".
+![Newsletters](./overview.dark.png)
+![Newsletters](./overview.light.png)
 
-Newsletters can be published on your site on Polar (`polar.sh/USERNAME`) and sent via emails to all of your subscribers. As an example, checkout [Polars page on Polar](https://polar.sh/polarsource).
+Polar offers a powerful blog and email newsletter engine built-in.
+- Write in GitHub flavoured markdown
+- First-class code highlighting support
+- Write Free, Premium or Early Access posts
+- **No extra costs.** We currently offer it for free.
 
-![Newsletters](./newsletters-maintainer-list.dark.png)
-![Newsletters](./newsletters-maintainer-list.light.png)
+[Our own blog & newsletter](https://polar.sh/polarsource) is powered by it.
 
-## Editor
+## Writing posts
 
-The editor is fully built on [Markdown](https://www.markdownguide.org/basic-syntax/) with some custom extensions.
+You can easily write posts in [GitHub
+Markdown](https://docs.github.com/en/get-started/writing-on-github/getting-started-with-writing-and-formatting-on-github/basic-writing-and-formatting-syntax).
 
-![Newsletters](./newsletters-editor.dark.png)
-![Newsletters](./newsletters-editor.light.png)
+![Editor](./editor.dark.png)
+![Editor](./editor.light.png)
 
-### Custom extensions
+... and preview them with ease. You can even share a private link for feedback.
+
+![Preview Post](./preview.dark.png)
+![Preview Post](./preview.light.png)
+
+
+### Basic formatting
+
+Full markdown support with GitHub flavours. See [GitHub Markdown
+Documentation](https://docs.github.com/en/get-started/writing-on-github/getting-started-with-writing-and-formatting-on-github/basic-writing-and-formatting-syntax)
+for a complete guide.
+
+### Code highlighting
+
+Using [Shiki](https://github.com/shikijs/shiki), we support syntax highlighting for most languages out of the
+box - online and over email. Combined with offering easy clipboard copying for online
+readers.
+
+```python
+def add(a: int, b: int) -> int:
+      return a + b
+```
+
+- Just wrap code in three backticks, e.g \`\`\`python [CODE] \`\`\`
+
+### Admonitions
+
+We support admonitions too.
+
+<BrowserCallout type="NOTE">
+Friendly notice
+</BrowserCallout>
+
+```
+> [!NOTE]
+> Friendly notice
+```
+
+<BrowserCallout type="TIP">
+Tips and tricks are the foundation of engineering.
+</BrowserCallout>
+
+```
+> [!TIP]
+> Tips and tricks are the foundation of engineering.
+```
+
+<BrowserCallout type="IMPORTANT">
+Don't miss this information!
+</BrowserCallout>
+
+```
+> [!IMPORTANT]
+> Don't miss this information!
+```
+
+<BrowserCallout type="WARNING">
+Keep away. There be dragons here.
+</BrowserCallout>
+
+```
+> [!WARNING]
+> Keep away. There be dragons here.
+```
+
+<BrowserCallout type="CAUTION">
+Nope, nope and absolutely nope!
+</BrowserCallout>
+
+```
+> [!CAUTION]
+> Nope, nope and absolutely nope!
+```
 
 #### `<Paywall>`
 
-Use the Paywall element to make content available only to your paid subscribers. Non-subscribers and free subscribers will instead see a placeholder notifying them about that the content is only avaialble to paid subscribers.
+Write content within this tag that you want to make exclusive for paid
+subscribers. Free subscribers will see an option to upgrade instead.
 
 ```
 <Paywall>
@@ -36,19 +116,7 @@ The SubscribeNow element inserts a button in the content to non-subscribers remi
 <SubscribeNow />
 ```
 
-## Publishing & Settings
+## Publish
 
-![Newsletters](./newsletters-settings.dark.png)
-![Newsletters](./newsletters-settings.light.png)
-
-Newsletters have multiple settings available:
-
-### Audience
-
-* All Subscribers – The post will be public on the internet for everyone to see
-* Paid Subscrivers - The post will only be visible for your paid subscribers
-
-### Email
-
-Check "Send post as email to subscribers" to also send the post as a newsletter via email to your subscribers. If used together with the _Audience_ setting, the post can be restricted to be only sent to your paid subscribers.
-
+You're done writing and the preview looks great. [It's time to
+publish](/docs/newsletters/publish).

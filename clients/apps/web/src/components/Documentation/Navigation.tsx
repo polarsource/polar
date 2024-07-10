@@ -313,10 +313,12 @@ export const MainNavigation = () => {
         <NavigationItem href="/docs/newsletters">
           Write Posts (GitHub Markdown)
         </NavigationItem>
-        <NavigationItem href="/docs/newsletters">
+        <NavigationItem href="/docs/newsletters/publish">
           Publish & Access
         </NavigationItem>
-        <NavigationItem href="/docs/newsletters">Review Traffic</NavigationItem>
+        <NavigationItem href="/docs/newsletters/analytics">
+          Analytics
+        </NavigationItem>
       </div>
 
       <div>

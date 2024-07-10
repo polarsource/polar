@@ -1,25 +1,23 @@
+'use client'
+
 import { AnimatedIconButton } from '@/components/Feed/Posts/Post'
 import { InlineModal } from '@/components/Modal/InlineModal'
 import { useModal } from '@/components/Modal/useModal'
 import { useOAuth2Clients } from '@/hooks/queries/oauth'
 import { ArrowForward } from '@mui/icons-material'
 import { OAuth2Client } from '@polar-sh/sdk'
-import Link from 'next/link'
-import { useRouter, useSearchParams } from 'next/navigation'
 import {
   FormattedDateTime,
   ShadowListGroup,
 } from 'polarkit/components/ui/atoms'
 import Avatar from 'polarkit/components/ui/atoms/avatar'
 import Button from 'polarkit/components/ui/atoms/button'
-import { useEffect, useMemo, useRef } from 'react'
+import { useRef, useState } from 'react'
 import { useHoverDirty } from 'react-use'
 import { EditOAuthClientModal } from './EditOAuthClientModal'
 import { NewOAuthClientModal } from './NewOAuthClientModal'
 
-export const OAuthSettings = () => {
-  const router = useRouter()
-  const searchParams = useSearchParams()
+const OAuthSettings = () => {
   const oauthClients = useOAuth2Clients()
 
   const {
@@ -34,21 +32,26 @@ export const OAuthSettings = () => {
     show: showEditOAuthClientModal,
   } = useModal()
 
-  useEffect(() => {
-    if (searchParams.has('oauthClient')) {
-      showEditOAuthClientModal()
-    } else {
-      hideEditOAuthClientModal()
-    }
-  }, [searchParams, showEditOAuthClientModal, hideEditOAuthClientModal])
+  const [client, setClient] = useState<OAuth2Client | undefined>()
 
-  const oauthClient = useMemo(
-    () =>
-      oauthClients.data?.items?.find(
-        (client) => client.client_id === searchParams.get('oauthClient'),
-      ),
-    [oauthClients, searchParams],
-  )
+  const onCreate = (client: OAuth2Client) => {
+    hideNewOAuthClientModal()
+    setClient(client)
+    showEditOAuthClientModal()
+  }
+
+  const onOpen = (client: OAuth2Client) => {
+    setClient(client)
+    showEditOAuthClientModal()
+  }
+
+  const onUpdate = () => {
+    hideEditOAuthClientModal()
+  }
+
+  const onDelete = () => {
+    hideEditOAuthClientModal()
+  }
 
   return (
     <ShadowListGroup>
@@ -56,7 +59,7 @@ export const OAuthSettings = () => {
         oauthClients.data?.items?.map((client) => {
           return (
             <ShadowListGroup.Item key={client.client_id}>
-              <OAuthClientDetails client={client} />
+              <OAuthClientDetails client={client} onClick={onOpen} />
             </ShadowListGroup.Item>
           )
         })
@@ -79,25 +82,21 @@ export const OAuthSettings = () => {
         hide={hideNewOAuthClientModal}
         modalContent={
           <NewOAuthClientModal
-            onSuccess={(client) => {
-              router.replace(`/settings?oauthClient=${client.client_id}`)
-            }}
-            hideModal={hideNewOAuthClientModal}
+            onSuccess={onCreate}
+            onHide={hideNewOAuthClientModal}
           />
         }
       />
       <InlineModal
         isShown={isEditOAuthClientModalShown}
-        hide={() => {
-          router.replace(`/settings`)
-        }}
+        hide={hideEditOAuthClientModal}
         modalContent={
-          oauthClient ? (
+          client ? (
             <EditOAuthClientModal
-              client={oauthClient}
-              hideModal={() => {
-                router.replace(`/settings`)
-              }}
+              client={client}
+              onSuccess={onUpdate}
+              onDelete={onDelete}
+              onHide={hideEditOAuthClientModal}
             />
           ) : (
             <></>
@@ -110,17 +109,18 @@ export const OAuthSettings = () => {
 
 interface OAuthClientDetailsProps {
   client: OAuth2Client
+  onClick: (client: OAuth2Client) => void
 }
 
-const OAuthClientDetails = ({ client }: OAuthClientDetailsProps) => {
-  const ref = useRef<HTMLAnchorElement>(null)
+const OAuthClientDetails = ({ client, onClick }: OAuthClientDetailsProps) => {
+  const ref = useRef<HTMLDivElement>(null)
   const isHovered = useHoverDirty(ref)
 
   return (
-    <Link
+    <div
       ref={ref}
-      className="flex w-full flex-col gap-y-4"
-      href={`/settings?oauthClient=${client.client_id}`}
+      className="flex w-full cursor-pointer flex-col gap-y-4"
+      onClick={() => onClick(client)}
     >
       <div className="flex flex-row items-center justify-between ">
         <div className="flex flex-row items-center gap-x-4">
@@ -145,6 +145,8 @@ const OAuthClientDetails = ({ client }: OAuthClientDetailsProps) => {
           <ArrowForward fontSize="inherit" />
         </AnimatedIconButton>
       </div>
-    </Link>
+    </div>
   )
 }
+
+export default OAuthSettings

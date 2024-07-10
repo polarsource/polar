@@ -1,10 +1,11 @@
 import BrowserCallout from '@/components/Feed/Markdown/Callout/BrowserCallout';
+import OAuthSettings from '@/components/Documentation/OAuthSettings';
 
 # Authentication
 
 To authenticate requests, Polar API has two mechanisms:
 
-1. Personal Access Tokens: those are long-lived tokens generated from your [user settings](/settings#pat).
+1. Personal Access Tokens: those are long-lived tokens generated from your [user settings](https://polar.sh/settings#pat).
 2. [OpenID Connect](#openid-connect): a standardized OAuth2 specification.
 
 ## Which one should I use?
@@ -27,23 +28,27 @@ In particular, it comes with a **discovery endpoint** allowing compatible client
 
 Before being able to make authentication requests, you'll need an **OAuth2 Client**. It's the entity that'll identify you, as a third-party developer, between Polar and the final user.
 
-You can create a client from your [user settings](/settings#oauth).
+You can create and manage your clients below.
 
-![OAuth2 Client Creation](./oauth2_client_create.png)
+<div className="not-prose mb-6">
+  <OAuthSettings />
+</div>
+
+<BrowserCallout type="TIP">
+You can also manage them from your [user settings](https://polar.sh/settings#oauth).
+</BrowserCallout>
 
 Here are the required fields:
 
-* Application Name: the name of the application that'll be shown to the final users.
-* Client Type: the type of client you are creating. [Read more](#public-clients).
-* Redirect URIs: for security reasons, you need to declare your application URL where the users will be redirected after granting access to their data. **HTTPS URL are required unless the hostname is `localhost`**.
-* Scopes: the list of scopes your app will be able to ask for. To improve privacy and security, select only the scopes you really need for your application.
-* Homepage URL: the URL of your application. It'll be shown to the final users on the authorization page.
+* *Application Name*: the name of the application that'll be shown to the final users.
+* *Client Type*: the type of client you are creating. [Read more](#public-clients).
+* *Redirect URIs*: for security reasons, you need to declare your application URL where the users will be redirected after granting access to their data. **HTTPS URL are required unless the hostname is `localhost`**.
+* *Scopes*: the list of scopes your app will be able to ask for. To improve privacy and security, select only the scopes you really need for your application.
+* *Homepage URL*: the URL of your application. It'll be shown to the final users on the authorization page.
 
 Optionally, you can also add a **logo**, **terms of service** and **privacy policy** URL. They'll all be shown to the final users on the authorization page.
 
 Once your client is created, you'll get a **Client ID** and a **Client Secret**. You'll need those values to make authentication requests.
-
-![OAuth2 Client ID and Secret](./oauth2_client_id_secret.png)
 
 <BrowserCallout type="CAUTION">
 Those values are super sensitive and should be kept secret: they allow to make authentication requests on Polar!

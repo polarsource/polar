@@ -3,11 +3,11 @@
 import GithubLoginButton from '@/components/Auth/GithubLoginButton'
 import PublicProfileDropdown from '@/components/Navigation/PublicProfileDropdown'
 import { useAuth } from '@/hooks'
+import { useLoginLink } from '@/hooks/login'
 import { CONFIG } from '@/utils/config'
 import { ArrowForwardOutlined } from '@mui/icons-material'
 import { Organization, UserRead, UserSignupType } from '@polar-sh/sdk'
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
 import Button from 'polarkit/components/ui/atoms/button'
 
 const PolarMenu = ({
@@ -17,13 +17,7 @@ const PolarMenu = ({
   authenticatedUser?: UserRead
   userAdminOrganizations: Organization[]
 }) => {
-  const pathname = usePathname()
-  const host = window.location.protocol + '//' + window.location.host
-  const returnToPrefix = host !== CONFIG.FRONTEND_BASE_URL ? host : ''
-  const loginReturnTo = pathname
-    ? `${returnToPrefix}${pathname}`
-    : `${returnToPrefix}/feed`
-  const createWithPolarReturnTo = `${returnToPrefix}/me`
+  const loginLink = useLoginLink()
 
   // Fallback to client side user loading (needed as we're loading data in the layout, and it isn't refreshed on navigation)
   const { currentUser: clientCurrentUser } = useAuth()
@@ -38,8 +32,6 @@ const PolarMenu = ({
   const creatorPath = personalOrg
     ? `${CONFIG.FRONTEND_BASE_URL}/maintainer/${currentUser?.username}/overview`
     : `${CONFIG.FRONTEND_BASE_URL}/maintainer/${userAdminOrganizations?.[0]?.name}/overview`
-
-  const loginLink = `${CONFIG.FRONTEND_BASE_URL}/login?return_to=${loginReturnTo}`
 
   return (
     <div className="flex h-9 flex-row items-center gap-x-6">
@@ -65,7 +57,7 @@ const PolarMenu = ({
         </div>
       ) : (
         <>
-          <CreateWithPolar returnTo={createWithPolarReturnTo} />
+          <CreateWithPolar returnTo={'/me'} />
           <Link
             href={loginLink}
             className="text-sm text-blue-500 hover:text-blue-400 dark:text-blue-400 dark:hover:text-blue-300"

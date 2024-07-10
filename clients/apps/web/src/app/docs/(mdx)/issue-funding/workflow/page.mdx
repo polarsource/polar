@@ -1,6 +1,6 @@
 import BrowserCallout from '@/components/Feed/Markdown/Callout/BrowserCallout'
 
-# Funding Workflow
+# Issue Funding Workflow
 
 ## Review Backlog
 
@@ -8,7 +8,7 @@ import BrowserCallout from '@/components/Feed/Markdown/Callout/BrowserCallout'
 ![Polar Issue Progress Overview](../polar-issue-progress.dark.jpg)
 
 Polar synchronizes all of your issues during
-[onboarding](/docs/issue-funding/getting-started#install-the-polar-github-app) & keeps them up-to-date
+[onboarding](/docs/github/install) & keeps them up-to-date
 in near real-time (thanks to GitHub webhooks).
 
 Combined with offering some powerful additions such as...
@@ -45,11 +45,11 @@ you can easily do so manually. You can either:
 1. Label the issue on GitHub directly using the label `Fund` (case insensitive)
 2. Click `Add badge` for the desired issue in your Polar dashboard
 
-   _This will automatically open the [customiztion modal](#customize-badge) below._
+    *This will automatically open the [customiztion modal](#customize) below.*
 
 Almost instantly the Polar Badge is embedded at the end of
 the GitHub issue description by the Polar GitHub App you've
-[installed](/docs/issue-funding/getting-started#install-the-polar-github-app) 🎉
+[installed](/docs/github/install) 🎉
 
 ![Polar Badged Issue in Dashboard](../polar-issue-badged.light.jpg)
 ![Polar Badged Issue in Dashboard](../polar-issue-badged.dark.jpg)
@@ -59,7 +59,7 @@ The issue will be marked as badged within your Polar dashboard too.
 
 You can customize funding & badge settings for individual issues to override
 your [default
-settings](/docs/issue-funding/getting-started#badge-settings). Just click the
+settings](/docs/overview/issue-funding/getting-started). Just click the
 `Badged` button next to the desired issue on the `Issues` page within Polar.
 
 This opens up the customization modal. Let's go through each tab below.
@@ -89,9 +89,10 @@ within the badge.
 2. Click `Update` to save your changes
 
 "GitHub caches the badge for ~30-90 seconds"
-We set `no-cache` headers and GitHub does support this. However, their proxy CDN
-seems to have a minimal Cache TTL nonetheless, but it's very short-lived
-(with no headers it's cached for much longer).
+    We set `no-cache` headers and GitHub does support this. However, their proxy CDN
+    seems to have a minimal Cache TTL nonetheless, but it's very short-lived
+    (with no headers it's cached for much longer).
+
 
 #### Rewards
 
@@ -224,7 +225,5 @@ either:
 Polar then reviews and approves transfers from our platform account to your
 balance on Polar. In case of disputes, we review it to make a fair decision.
 
-Once completed, the funds will be available on your Polar balance and you can
-manually withdraw it at anytime.
-
-Read more about how to see & manage your [Balance & Payouts](/payment/#payouts).
+Once completed, the funds will be available on your [Polar balance](/docs/finance/balance) and you can
+manually [withdraw](/docs/finance/payouts) it at anytime.

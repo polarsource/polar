@@ -32,7 +32,7 @@ async def list(
     pagination: PaginationParamsQuery,
     auth_subject: auth.CreatorProductsReadOrAnonymous,
     organization_id: MultipleQueryFilter[OrganizationID] | None = Query(
-        None, description="Filter by organization ID."
+        None, title="OrganizationID Filter", description="Filter by organization ID."
     ),
     is_archived: bool | None = Query(None, description="Filter on archived products."),
     is_recurring: bool | None = Query(
@@ -43,10 +43,16 @@ async def list(
             "If `false`, only one-time purchase products are returned. "
         ),
     ),
-    benefit_id: BenefitID | None = Query(
-        None, description="Filter products granting specific benefit."
+    benefit_id: MultipleQueryFilter[BenefitID] | None = Query(
+        None,
+        title="BenefitID Filter",
+        description="Filter products granting specific benefit.",
     ),
-    type: SubscriptionTierType | None = Query(None),
+    type: MultipleQueryFilter[SubscriptionTierType] | None = Query(
+        None,
+        title="SubscriptionTierType Filter",
+        description="Filter by subscription tier type.",
+    ),
     session: AsyncSession = Depends(get_db_session),
 ) -> ListResource[ProductSchema]:
     """List products."""

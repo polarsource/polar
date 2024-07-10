@@ -56,7 +56,7 @@ class ArticleService(ResourceServiceReader[Article]):
         *,
         organization_id: Sequence[UUID] | None = None,
         slug: str | None = None,
-        visibility: ArticleVisibility | None = None,
+        visibility: Sequence[ArticleVisibility] | None = None,
         is_published: bool | None = None,
         is_pinned: bool | None = None,
         pagination: PaginationParams,
@@ -74,7 +74,7 @@ class ArticleService(ResourceServiceReader[Article]):
             statement = statement.where(Article.slug == slug)
 
         if visibility is not None:
-            statement = statement.where(Article.visibility == visibility)
+            statement = statement.where(Article.visibility.in_(visibility))
 
         if is_published is not None:
             if is_published:

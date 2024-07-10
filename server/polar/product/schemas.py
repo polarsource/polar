@@ -1,6 +1,5 @@
 from typing import Annotated, Literal
 
-from fastapi import Path
 from pydantic import UUID4, AfterValidator, Discriminator, Field
 
 from polar.benefit.schemas import BenefitID, BenefitPublic
@@ -23,7 +22,7 @@ PRODUCT_NAME_MAX_LENGTH = 24
 
 ProductID = Annotated[
     UUID4,
-    Path(description="The product ID."),
+    MergeJSONSchema({"description": "The product ID."}),
     SelectorWidget("/v1/products", "Product", "name"),
 ]
 

@@ -91,8 +91,8 @@ class QueryCallable(Protocol):
         metrics: list["type[Metric]"],
         *,
         organization_id: Sequence[uuid.UUID] | None = None,
-        product_id: uuid.UUID | None = None,
-        product_price_type: ProductPriceType | None = None,
+        product_id: Sequence[uuid.UUID] | None = None,
+        product_price_type: Sequence[ProductPriceType] | None = None,
     ) -> CTE: ...
 
 
@@ -103,8 +103,8 @@ def get_orders_cte(
     metrics: list["type[Metric]"],
     *,
     organization_id: Sequence[uuid.UUID] | None = None,
-    product_id: uuid.UUID | None = None,
-    product_price_type: ProductPriceType | None = None,
+    product_id: Sequence[uuid.UUID] | None = None,
+    product_price_type: Sequence[ProductPriceType] | None = None,
 ) -> CTE:
     timestamp_column: ColumnElement[datetime] = timestamp_series.c.timestamp
 
@@ -133,14 +133,14 @@ def get_orders_cte(
 
     if product_id is not None:
         readable_orders_statement = readable_orders_statement.where(
-            Order.product_id == product_id
+            Order.product_id.in_(product_id)
         )
 
     if product_price_type is not None:
         readable_orders_statement = readable_orders_statement.join(
             ProductPrice,
             onclause=Order.product_price_id == ProductPrice.id,
-        ).where(ProductPrice.type == product_price_type)
+        ).where(ProductPrice.type.in_(product_price_type))
 
     return cte(
         select(
@@ -176,8 +176,8 @@ def get_active_subscriptions_cte(
     metrics: list["type[Metric]"],
     *,
     organization_id: Sequence[uuid.UUID] | None = None,
-    product_id: uuid.UUID | None = None,
-    product_price_type: ProductPriceType | None = None,
+    product_id: Sequence[uuid.UUID] | None = None,
+    product_price_type: Sequence[ProductPriceType] | None = None,
 ) -> CTE:
     timestamp_column: ColumnElement[datetime] = timestamp_series.c.timestamp
 
@@ -206,14 +206,14 @@ def get_active_subscriptions_cte(
 
     if product_id is not None:
         readable_subscriptions_statement = readable_subscriptions_statement.where(
-            Subscription.product_id == product_id
+            Subscription.product_id.in_(product_id)
         )
 
     if product_price_type is not None:
         readable_subscriptions_statement = readable_subscriptions_statement.join(
             ProductPrice,
             onclause=Subscription.price_id == ProductPrice.id,
-        ).where(ProductPrice.type == product_price_type)
+        ).where(ProductPrice.type.in_(product_price_type))
 
     return cte(
         select(

@@ -39,11 +39,11 @@ async def list(
     auth_subject: auth.ArticlesReadOrAnonymous,
     pagination: PaginationParamsQuery,
     organization_id: MultipleQueryFilter[OrganizationID] | None = Query(
-        None, description="Filter by organization ID."
+        None, title="OrganizationID Filter", description="Filter by organization ID."
     ),
     slug: str | None = Query(None, description="Filter by slug."),
-    visibility: ArticleVisibility | None = Query(
-        None, description="Filter by visibility."
+    visibility: MultipleQueryFilter[ArticleVisibility] | None = Query(
+        None, title="ArticleVisibility Filter", description="Filter by visibility."
     ),
     is_published: bool | None = Query(None, description="Filter by published status."),
     is_pinned: bool | None = Query(None, description="Filter by pinned status."),

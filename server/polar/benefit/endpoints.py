@@ -41,12 +41,10 @@ async def list(
     auth_subject: auth.BenefitsRead,
     pagination: PaginationParamsQuery,
     organization_id: MultipleQueryFilter[OrganizationID] | None = Query(
-        None, description="Filter by organization ID."
+        None, title="OrganizationID Filter", description="Filter by organization ID."
     ),
-    type: BenefitType | None = Query(
-        None,
-        description="Filter by benefit type.",
-        examples=[BenefitType.github_repository],
+    type: MultipleQueryFilter[BenefitType] | None = Query(
+        None, title="BenefitType Filter", description="Filter by benefit type."
     ),
     session: AsyncSession = Depends(get_db_session),
 ) -> ListResource[BenefitSchema]:

@@ -53,11 +53,16 @@ async def list(
     pagination: PaginationParamsQuery,
     sorting: SearchSorting,
     organization_id: MultipleQueryFilter[OrganizationID] | None = Query(
-        None, description="Filter by organization ID."
+        None, title="OrganizationID Filter", description="Filter by organization ID."
     ),
-    product_id: ProductID | None = Query(None, description="Filter by product ID."),
-    type: SubscriptionTierType | None = Query(
-        None, description="Filter by tier type.", deprecated=True
+    product_id: MultipleQueryFilter[ProductID] | None = Query(
+        None, title="ProductID Filter", description="Filter by product ID."
+    ),
+    type: MultipleQueryFilter[SubscriptionTierType] | None = Query(
+        None,
+        title="SubscriptionTierType Filter",
+        description="Filter by subscription tier type.",
+        deprecated=True,
     ),
     active: bool | None = Query(
         None, description="Filter by active or inactive subscription."

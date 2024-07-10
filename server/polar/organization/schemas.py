@@ -4,19 +4,23 @@ from enum import StrEnum
 from typing import Annotated, Self
 from uuid import UUID
 
-from fastapi import Path
 from pydantic import UUID4, Field, HttpUrl
 
 from polar.config import settings
 from polar.currency.schemas import CurrencyAmount
 from polar.enums import Platforms
 from polar.integrations.github import types
-from polar.kit.schemas import EmptyStrToNoneValidator, Schema, SelectorWidget
+from polar.kit.schemas import (
+    EmptyStrToNoneValidator,
+    MergeJSONSchema,
+    Schema,
+    SelectorWidget,
+)
 from polar.models.organization import Organization as OrganizationModel
 
 OrganizationID = Annotated[
     UUID4,
-    Path(description="The organization ID."),
+    MergeJSONSchema({"description": "The organization ID."}),
     SelectorWidget("/v1/organizations", "Organization", "name"),
 ]
 

@@ -64,7 +64,7 @@ class UserSubscriptionService(ResourceServiceReader[Subscription]):
         auth_subject: AuthSubject[User],
         *,
         organization_id: Sequence[uuid.UUID] | None = None,
-        product_id: uuid.UUID | None = None,
+        product_id: Sequence[uuid.UUID] | None = None,
         active: bool | None = None,
         query: str | None = None,
         pagination: PaginationParams,
@@ -95,7 +95,7 @@ class UserSubscriptionService(ResourceServiceReader[Subscription]):
             statement = statement.where(Product.organization_id.in_(organization_id))
 
         if product_id is not None:
-            statement = statement.where(Subscription.product_id == product_id)
+            statement = statement.where(Subscription.product_id.in_(product_id))
 
         if active is not None:
             if active:

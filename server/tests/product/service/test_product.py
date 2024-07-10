@@ -205,7 +205,7 @@ class TestList:
         results, count = await product_service.list(
             session,
             auth_subject,
-            type=SubscriptionTierType.individual,
+            type=[SubscriptionTierType.individual],
             pagination=PaginationParams(1, 10),
         )
 
@@ -348,7 +348,7 @@ class TestList:
             session,
             auth_subject,
             organization_id=[organization.id],
-            benefit_id=benefit_organization.id,
+            benefit_id=[benefit_organization.id],
             pagination=PaginationParams(1, 10),
         )
 

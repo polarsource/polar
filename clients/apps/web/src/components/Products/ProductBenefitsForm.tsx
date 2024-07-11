@@ -66,7 +66,7 @@ const BenefitRow = ({
           disabled={!benefit.selectable}
         />
         <DropdownMenu>
-          <DropdownMenuTrigger className="focus:outline-none">
+          <DropdownMenuTrigger className="focus:outline-none" asChild>
             <Button
               className={
                 'border-none bg-transparent text-[16px] opacity-50 transition-opacity hover:opacity-100 dark:bg-transparent'

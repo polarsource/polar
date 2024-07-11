@@ -284,7 +284,7 @@ export const IssuesFilter = ({
 
       <div className="flex w-full flex-row items-center gap-x-4 md:w-auto">
         <DropdownMenu>
-          <DropdownMenuTrigger className="outline-none">
+          <DropdownMenuTrigger className="outline-none" asChild>
             <Button className="text-xs" variant="secondary" asChild>
               <FilterList
                 fontSize="small"

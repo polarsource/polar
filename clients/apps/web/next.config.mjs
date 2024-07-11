@@ -119,6 +119,12 @@ const nextConfig = {
         permanent: false,
       },
 
+      {
+        source: '/docs/overview/ads',
+        destination: '/docs/benefits/ads',
+        permanent: true,
+      },
+
       // Redirect /docs/overview/:path to /docs/:path
       {
         source: '/docs/overview/:path*',

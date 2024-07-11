@@ -47,6 +47,25 @@ const nextConfig = {
   async rewrites() {
     return {
       beforeFiles: [
+        // PostHog Rewrite
+        {
+          source: "/ingest/static/:path*",
+          destination: "https://us-assets.i.posthog.com/static/:path*",
+        },
+        {
+          source: "/ingest/:path*",
+          destination: "https://us.i.posthog.com/:path*",
+        },
+
+        {
+          source: '/legal/privacy',
+          destination: 'https://polarsource.github.io/legal/privacy-policy.pdf',
+        },
+        {
+          source: '/legal/terms',
+          destination: 'https://polarsource.github.io/legal/terms.pdf',
+        },
+
         // docs.polar.sh rewrite
         {
           // The rewrite happens before everything else, so we need to make sure
@@ -61,15 +80,6 @@ const nextConfig = {
           destination: '/docs/:path',
         },
 
-        {
-          source: '/legal/privacy',
-          destination: 'https://polarsource.github.io/legal/privacy-policy.pdf',
-        },
-        {
-          source: '/legal/terms',
-          destination: 'https://polarsource.github.io/legal/terms.pdf',
-        },
-
         // polar.new rewrite
         {
           source: '/',
@@ -80,16 +90,6 @@ const nextConfig = {
               value: 'polar.new',
             },
           ],
-        },
-
-        // PostHog Rewrite
-        {
-          source: "/ingest/static/:path*",
-          destination: "https://us-assets.i.posthog.com/static/:path*",
-        },
-        {
-          source: "/ingest/:path*",
-          destination: "https://us.i.posthog.com/:path*",
         },
       ]
     }

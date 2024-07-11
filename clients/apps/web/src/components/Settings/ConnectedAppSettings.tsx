@@ -1,19 +1,20 @@
 import { useAuth, useDiscordAccount } from '@/hooks'
 import { getUserDiscordAuthorizeURL } from '@/utils/auth'
 import { OAuthAccountRead } from '@polar-sh/sdk'
-import { usePathname } from 'next/navigation'
+import { usePathname, useSearchParams } from 'next/navigation'
 import {
   FormattedDateTime,
   ShadowListGroup,
 } from 'polarkit/components/ui/atoms'
 import Button from 'polarkit/components/ui/atoms/button'
-import { useEffect } from 'react'
+import { useEffect, useMemo } from 'react'
 
 interface ConnectedAppProps {
   icon: React.ReactNode
   title: React.ReactNode
   subtitle: React.ReactNode
   action: React.ReactNode
+  error?: string
 }
 
 const ConnectedApp: React.FC<ConnectedAppProps> = ({
@@ -21,6 +22,7 @@ const ConnectedApp: React.FC<ConnectedAppProps> = ({
   title,
   subtitle,
   action,
+  error,
 }) => {
   return (
     <div className="flex flex-row items-center justify-center gap-5">
@@ -30,6 +32,7 @@ const ConnectedApp: React.FC<ConnectedAppProps> = ({
         <div className="dark:text-polar-400 text-sm text-gray-500">
           {subtitle}
         </div>
+        {error && <div className='text-sm text-destructive-foreground'>{error}</div>}
       </div>
       <div>{action}</div>
     </div>
@@ -46,6 +49,10 @@ const DiscordConnectedApp: React.FC<DiscordConnectedAppProps> = ({
   returnTo,
 }) => {
   const authorizeURL = getUserDiscordAuthorizeURL({ returnTo })
+  const searchParams = useSearchParams()
+
+  const callback = useMemo(() => searchParams.get('callback'), [searchParams])
+  const error = useMemo(() => searchParams.get('error'), [searchParams])
 
   return (
     <ConnectedApp
@@ -99,6 +106,7 @@ const DiscordConnectedApp: React.FC<DiscordConnectedAppProps> = ({
           )}
         </>
       }
+      error={callback === 'discord' && error !== null ? error : undefined}
     />
   )
 }

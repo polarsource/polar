@@ -10,7 +10,7 @@ import {
 import { useSearchParams } from 'next/navigation'
 import Button from 'polarkit/components/ui/atoms/button'
 import { Form } from 'polarkit/components/ui/form'
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { NewBenefitForm } from '../Benefit/BenefitForm'
 import { CreatableBenefit } from '../Benefit/utils'
@@ -18,6 +18,7 @@ import { CreatableBenefit } from '../Benefit/utils'
 export type CreateBenefitModalParams = {
   type?: CreatableBenefit
   description?: string
+  error?: string
   guild_token?: string
 }
 
@@ -36,7 +37,7 @@ const CreateBenefitModalContent = ({
 }: CreateBenefitModalContentProps) => {
   const [isLoading, setIsLoading] = useState(false)
   const searchParams = useSearchParams()
-  const { type, description, ...properties } =
+  const { type, description, error, ...properties } =
     useMemo<CreateBenefitModalParams>(() => {
       if (defaultValues) {
         return defaultValues
@@ -62,7 +63,7 @@ const CreateBenefitModalContent = ({
     },
   })
 
-  const { handleSubmit, setError } = form
+  const { handleSubmit, setError, formState: { errors } } = form
 
   const handleCreateNewBenefit = useCallback(
     async (subscriptionBenefitCreate: BenefitCreate) => {
@@ -91,6 +92,12 @@ const CreateBenefitModalContent = ({
     [hideModal, onSelectBenefit, createSubscriptionBenefit, setError],
   )
 
+  useEffect(() => {
+    if (error) {
+      setError('root', { message: error })
+    }
+  }, [error, setError])
+
   return (
     <div className="flex flex-col gap-y-6 px-8 py-10">
       <div>
@@ -107,6 +114,7 @@ const CreateBenefitModalContent = ({
             onSubmit={handleSubmit(handleCreateNewBenefit)}
           >
             <NewBenefitForm organization={organization} />
+            {errors.root && <p className="text-sm text-destructive-foreground">{errors.root.message}</p>}
             <div className="mt-4 flex flex-row items-center gap-x-4">
               <Button
                 className="self-start"

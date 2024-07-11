@@ -308,14 +308,12 @@ export const MainNavigation = () => {
 
       <div>
         <NavigationHeadline>Orders & Subscribers</NavigationHeadline>
-        <NavigationItem href="/docs/subscriptions">
-          Sales Dashboard
+        <NavigationItem href="/docs/sales">Sales Dashboard</NavigationItem>
+        <NavigationItem href="/docs/sales/orders">
+          Transaction History
         </NavigationItem>
-        <NavigationItem href="/docs/subscriptions">
-          Order & Subscription History
-        </NavigationItem>
-        <NavigationItem href="/docs/subscriptions">
-          Import Subscribers
+        <NavigationItem href="/docs/sales/subscriptions">
+          Subscriptions
         </NavigationItem>
       </div>
 

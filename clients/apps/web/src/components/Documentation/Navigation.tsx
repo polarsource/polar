@@ -267,6 +267,12 @@ export const MainNavigation = () => {
           </NavigationItem>
           <NavigationSection title="Offer Benefits" defaultOpened={true}>
             <NavigationItem
+              href="/docs/benefits"
+              icon={<ArrowForward fontSize="inherit" />}
+            >
+              Introduction
+            </NavigationItem>
+            <NavigationItem
               href="/docs/benefits/file-downloads"
               icon={<ArrowForward fontSize="inherit" />}
             >
@@ -285,7 +291,7 @@ export const MainNavigation = () => {
               Discord Invites
             </NavigationItem>
             <NavigationItem
-              href="/docs/benefits/discord"
+              href="/docs/benefits/newsletter"
               icon={<ArrowForward fontSize="inherit" />}
             >
               Premium Newsletter
@@ -295,12 +301,6 @@ export const MainNavigation = () => {
               icon={<ArrowForward fontSize="inherit" />}
             >
               Newsletter Sponsorship
-            </NavigationItem>
-            <NavigationItem
-              href="/docs/benefits/custom"
-              icon={<ArrowForward fontSize="inherit" />}
-            >
-              Custom
             </NavigationItem>
           </NavigationSection>
         </div>

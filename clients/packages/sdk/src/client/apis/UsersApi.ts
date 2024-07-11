@@ -47,7 +47,6 @@ import type {
   UserStripePortalSession,
   UserSubscription,
   UserSubscriptionUpdate,
-  UserUpdateSettings,
 } from '../models/index';
 
 export interface UsersApiCancelSubscriptionRequest {
@@ -146,10 +145,6 @@ export interface UsersApiSetAccountRequest {
 export interface UsersApiUpdateAdvertisementCampaignRequest {
     id: string;
     body: UserAdvertisementCampaignUpdate;
-}
-
-export interface UsersApiUpdatePreferencesRequest {
-    body: UserUpdateSettings;
 }
 
 export interface UsersApiUpdateSubscriptionRequest {
@@ -1187,50 +1182,6 @@ export class UsersApi extends runtime.BaseAPI {
      */
     async updateAdvertisementCampaign(requestParameters: UsersApiUpdateAdvertisementCampaignRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<UserAdvertisementCampaign> {
         const response = await this.updateAdvertisementCampaignRaw(requestParameters, initOverrides);
-        return await response.value();
-    }
-
-    /**
-     * Update Preferences
-     */
-    async updatePreferencesRaw(requestParameters: UsersApiUpdatePreferencesRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<UserRead>> {
-        if (requestParameters['body'] == null) {
-            throw new runtime.RequiredError(
-                'body',
-                'Required parameter "body" was null or undefined when calling updatePreferences().'
-            );
-        }
-
-        const queryParameters: any = {};
-
-        const headerParameters: runtime.HTTPHeaders = {};
-
-        headerParameters['Content-Type'] = 'application/json';
-
-        if (this.configuration && this.configuration.accessToken) {
-            const token = this.configuration.accessToken;
-            const tokenString = await token("HTTPBearer", []);
-
-            if (tokenString) {
-                headerParameters["Authorization"] = `Bearer ${tokenString}`;
-            }
-        }
-        const response = await this.request({
-            path: `/v1/users/me`,
-            method: 'PUT',
-            headers: headerParameters,
-            query: queryParameters,
-            body: requestParameters['body'],
-        }, initOverrides);
-
-        return new runtime.JSONApiResponse(response);
-    }
-
-    /**
-     * Update Preferences
-     */
-    async updatePreferences(requestParameters: UsersApiUpdatePreferencesRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<UserRead> {
-        const response = await this.updatePreferencesRaw(requestParameters, initOverrides);
         return await response.value();
     }
 

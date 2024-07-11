@@ -12797,12 +12797,6 @@ export interface UserBase {
     avatar_url?: string;
     /**
      * 
-     * @type {object}
-     * @memberof UserBase
-     */
-    profile: object;
-    /**
-     * 
      * @type {string}
      * @memberof UserBase
      */
@@ -13190,12 +13184,6 @@ export interface UserRead {
     avatar_url?: string;
     /**
      * 
-     * @type {object}
-     * @memberof UserRead
-     */
-    profile: object;
-    /**
-     * 
      * @type {string}
      * @memberof UserRead
      */
@@ -13212,18 +13200,6 @@ export interface UserRead {
      * @memberof UserRead
      */
     accepted_terms_of_service: boolean;
-    /**
-     * 
-     * @type {boolean}
-     * @memberof UserRead
-     */
-    email_newsletters_and_changelogs: boolean;
-    /**
-     * 
-     * @type {boolean}
-     * @memberof UserRead
-     */
-    email_promotions_and_events: boolean;
     /**
      * 
      * @type {Array<OAuthAccountRead>}
@@ -13482,25 +13458,6 @@ export interface UserSubscriptionUpdate {
      * @memberof UserSubscriptionUpdate
      */
     product_price_id: string;
-}
-/**
- * 
- * @export
- * @interface UserUpdateSettings
- */
-export interface UserUpdateSettings {
-    /**
-     * 
-     * @type {boolean}
-     * @memberof UserUpdateSettings
-     */
-    email_newsletters_and_changelogs?: boolean;
-    /**
-     * 
-     * @type {boolean}
-     * @memberof UserUpdateSettings
-     */
-    email_promotions_and_events?: boolean;
 }
 /**
  * 

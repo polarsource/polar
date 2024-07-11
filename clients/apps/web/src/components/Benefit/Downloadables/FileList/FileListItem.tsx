@@ -289,7 +289,7 @@ export const FileListItem = ({
         <div className="flex w-fit flex-row items-center gap-x-2">
           <Switch checked={isEnabled} onCheckedChange={onToggleEnabled} />
           <DropdownMenu>
-            <DropdownMenuTrigger className="focus:outline-none">
+            <DropdownMenuTrigger className="focus:outline-none" asChild>
               <Button
                 className={
                   'border-none bg-transparent text-[16px] opacity-50 transition-opacity hover:opacity-100 dark:bg-transparent'

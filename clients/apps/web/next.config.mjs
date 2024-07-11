@@ -124,6 +124,11 @@ const nextConfig = {
         destination: '/docs/benefits/ads',
         permanent: true,
       },
+      {
+        source: '/docs/issue-funding/overview',
+        destination: '/docs/issue-funding',
+        permanent: true,
+      },
 
       // Redirect /docs/overview/:path to /docs/:path
       {

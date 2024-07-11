@@ -232,7 +232,7 @@ export const MainNavigation = () => {
           defaultOpened={false}
         >
           <NavigationItem
-            href="/docs/issue-funding/overview"
+            href="/docs/issue-funding"
             icon={<ArrowForward fontSize="inherit" />}
           >
             Introduction

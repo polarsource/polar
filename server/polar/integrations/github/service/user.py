@@ -121,14 +121,12 @@ class GithubUserService(UserService):
         github_email: GithubEmail,
         tokens: OAuthAccessToken,
     ) -> User:
-        profile = self.generate_profile_json(github_user=github_user)
         email, email_verified = github_email
         new_user = User(
             username=github_user.login,
             email=email,
             email_verified=email_verified,
             avatar_url=github_user.avatar_url,
-            profile=profile,
             oauth_accounts=[
                 OAuthAccount(
                     platform=OAuthPlatform.github,

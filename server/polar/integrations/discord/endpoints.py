@@ -5,7 +5,7 @@ import structlog
 from fastapi import Depends, Request
 from fastapi.responses import RedirectResponse
 from httpx_oauth.integrations.fastapi import OAuth2AuthorizeCallback
-from httpx_oauth.oauth2 import OAuth2Token
+from httpx_oauth.oauth2 import GetAccessTokenError
 
 from polar.auth.dependencies import WebUser
 from polar.config import settings
@@ -35,13 +35,7 @@ router = APIRouter(
 ###############################################################################
 
 
-def get_decoded_token_state(
-    access_token_state: tuple[OAuth2Token, str | None],
-) -> tuple[OAuth2Token, dict[str, Any]]:
-    token_data, state = access_token_state
-    if not state:
-        raise Unauthorized("No state")
-
+def get_decoded_token_state(state: str) -> dict[str, Any]:
     try:
         state_data = jwt.decode(
             token=state,
@@ -51,7 +45,7 @@ def get_decoded_token_state(
     except jwt.DecodeError as e:
         raise Unauthorized("Invalid state") from e
 
-    return (token_data, state_data)
+    return state_data
 
 
 # -------------------------------------------------------------------------------
@@ -91,17 +85,33 @@ async def discord_bot_authorize(
 @router.get("/bot/callback", name="integrations.discord.bot_callback")
 async def discord_bot_callback(
     auth_subject: WebUser,
-    access_token_state: tuple[OAuth2Token, str | None] = Depends(
-        oauth2_bot_authorize_callback
-    ),
+    request: Request,
+    state: str,
+    code: str | None = None,
+    code_verifier: str | None = None,
+    error: str | None = None,
 ) -> RedirectResponse:
-    data, state = get_decoded_token_state(access_token_state)
+    decoded_state = get_decoded_token_state(state)
+    return_to = decoded_state["return_to"]
 
-    user_id = UUID(state["user_id"])
-    if user_id != auth_subject.subject.id or state["auth_type"] != "bot":
+    try:
+        access_token, _ = await oauth2_bot_authorize_callback(
+            request, code, code_verifier, state, error
+        )
+    except GetAccessTokenError as e:
+        redirect_url = get_safe_return_url(
+            add_query_parameters(
+                return_to, error="Failed to get access token. Please try again later."
+            )
+        )
+        log.error("Failed to get Discord bot access token", error=str(e))
+        return RedirectResponse(redirect_url, 303)
+
+    user_id = UUID(decoded_state["user_id"])
+    if user_id != auth_subject.subject.id or decoded_state["auth_type"] != "bot":
         raise Unauthorized()
 
-    guild_id = data["guild"]["id"]
+    guild_id = access_token["guild"]["id"]
 
     # We need to set this ID on a subsequent API call (e.g. create Discord benefit).
     # To make sure a malicious user won't arbitrarily set guild IDs, we pass it as
@@ -112,7 +122,6 @@ async def discord_bot_callback(
         type="discord_guild_token",
     )
 
-    return_to = state["return_to"]
     redirect_url = get_safe_return_url(
         add_query_parameters(return_to, guild_token=guild_token, guild_id=guild_id)
     )
@@ -154,20 +163,38 @@ async def discord_user_authorize(
 @router.get("/user/callback", name="integrations.discord.user_callback")
 async def discord_user_callback(
     auth_subject: WebUser,
+    request: Request,
+    state: str,
+    code: str | None = None,
+    code_verifier: str | None = None,
+    error: str | None = None,
     session: AsyncSession = Depends(get_db_session),
-    access_token_state: tuple[OAuth2Token, str | None] = Depends(
-        oauth2_user_authorize_callback
-    ),
 ) -> RedirectResponse:
-    data, state = get_decoded_token_state(access_token_state)
+    decoded_state = get_decoded_token_state(state)
+    return_to = decoded_state["return_to"]
 
-    user_id = UUID(state["user_id"])
-    if user_id != auth_subject.subject.id or state["auth_type"] != "user":
+    try:
+        access_token, _ = await oauth2_user_authorize_callback(
+            request, code, code_verifier, state, error
+        )
+    except GetAccessTokenError as e:
+        redirect_url = get_safe_return_url(
+            add_query_parameters(
+                return_to,
+                error="Failed to get access token. Please try again later.",
+                callback="discord",
+            )
+        )
+        log.error("Failed to get Discord user access token", error=str(e))
+        return RedirectResponse(redirect_url, 303)
+
+    user_id = UUID(decoded_state["user_id"])
+    if user_id != auth_subject.subject.id or decoded_state["auth_type"] != "user":
         raise Unauthorized()
 
     try:
         await discord_user_service.create_oauth_account(
-            session, auth_subject.subject, data
+            session, auth_subject.subject, access_token
         )
     except ResourceAlreadyExists:
         existing = await discord_user_service.get_oauth_account(
@@ -175,7 +202,9 @@ async def discord_user_callback(
         )
         await discord_user_service.update_user_info(session, existing)
 
-    redirect_to = get_safe_return_url(state["return_to"])
+    redirect_to = get_safe_return_url(
+        add_query_parameters(return_to, callback="discord")
+    )
     return RedirectResponse(redirect_to, 303)
 
 

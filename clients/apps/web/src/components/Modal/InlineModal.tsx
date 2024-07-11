@@ -106,6 +106,7 @@ export const CloseButton = (props: {
 }) => {
   return (
     <button
+      type="button"
       className={twMerge(
         'dark:text-polar-100 dark:hover:text-polar-300 text-black hover:text-gray-800',
         props.className,

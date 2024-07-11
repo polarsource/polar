@@ -42,56 +42,6 @@
                 "x-polar-allowed-subjects": [
                     "User"
                 ]
-            },
-            "put": {
-                "tags": [
-                    "users"
-                ],
-                "summary": "Update Preferences",
-                "operationId": "users:update_preferences",
-                "requestBody": {
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "#/components/schemas/UserUpdateSettings"
-                            }
-                        }
-                    },
-                    "required": true
-                },
-                "responses": {
-                    "200": {
-                        "description": "Successful Response",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/UserRead"
-                                }
-                            }
-                        }
-                    },
-                    "422": {
-                        "description": "Validation Error",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/HTTPValidationError"
-                                }
-                            }
-                        }
-                    }
-                },
-                "security": [
-                    {
-                        "OpenIdConnect": []
-                    },
-                    {
-                        "HTTPBearer": []
-                    }
-                ],
-                "x-polar-allowed-subjects": [
-                    "User"
-                ]
             }
         },
         "/v1/users/me/scopes": {
@@ -7024,8 +6974,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "organizations:read",
-                            "organizations:write"
+                            "organizations:write",
+                            "organizations:read"
                         ]
                     },
                     {
@@ -7103,8 +7053,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "organizations:read",
-                            "organizations:write"
+                            "organizations:write",
+                            "organizations:read"
                         ]
                     },
                     {
@@ -7184,8 +7134,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "organizations:read",
-                            "organizations:write"
+                            "organizations:write",
+                            "organizations:read"
                         ]
                     },
                     {
@@ -7268,8 +7218,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "organizations:read",
-                            "organizations:write"
+                            "organizations:write",
+                            "organizations:read"
                         ]
                     },
                     {
@@ -7399,8 +7349,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "organizations:read",
-                            "organizations:write"
+                            "organizations:write",
+                            "organizations:read"
                         ]
                     },
                     {
@@ -7436,8 +7386,8 @@
                             },
                             "description": "Filter by the type of purchase the customer made.",
                             "default": [
-                                "subscription",
                                 "order",
+                                "subscription",
                                 "donation"
                             ],
                             "title": "Customer Types"
@@ -8504,8 +8454,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Anonymous",
                     "Organization",
+                    "Anonymous",
                     "User"
                 ]
             },
@@ -8637,8 +8587,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Anonymous",
                     "Organization",
+                    "Anonymous",
                     "User"
                 ]
             },
@@ -11527,8 +11477,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "benefits:write",
-                            "benefits:read"
+                            "benefits:read",
+                            "benefits:write"
                         ]
                     },
                     {
@@ -11767,8 +11717,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "benefits:write",
-                            "benefits:read"
+                            "benefits:read",
+                            "benefits:write"
                         ]
                     },
                     {
@@ -12072,8 +12022,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "benefits:write",
-                            "benefits:read"
+                            "benefits:read",
+                            "benefits:write"
                         ]
                     },
                     {
@@ -12795,8 +12745,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "products:write",
-                            "products:read"
+                            "products:read",
+                            "products:write"
                         ]
                     },
                     {
@@ -12990,8 +12940,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Anonymous",
                     "Organization",
+                    "Anonymous",
                     "User"
                 ]
             },
@@ -13073,8 +13023,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "products:write",
-                            "products:read"
+                            "products:read",
+                            "products:write"
                         ]
                     },
                     {
@@ -13132,8 +13082,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Anonymous",
                     "Organization",
+                    "Anonymous",
                     "User"
                 ]
             },
@@ -30302,10 +30252,6 @@
                         ],
                         "title": "Avatar Url"
                     },
-                    "profile": {
-                        "type": "object",
-                        "title": "Profile"
-                    },
                     "account_id": {
                         "anyOf": [
                             {
@@ -30322,8 +30268,7 @@
                 "type": "object",
                 "required": [
                     "username",
-                    "email",
-                    "profile"
+                    "email"
                 ],
                 "title": "UserBase"
             },
@@ -30846,10 +30791,6 @@
                         ],
                         "title": "Avatar Url"
                     },
-                    "profile": {
-                        "type": "object",
-                        "title": "Profile"
-                    },
                     "account_id": {
                         "anyOf": [
                             {
@@ -30871,14 +30812,6 @@
                         "type": "boolean",
                         "title": "Accepted Terms Of Service"
                     },
-                    "email_newsletters_and_changelogs": {
-                        "type": "boolean",
-                        "title": "Email Newsletters And Changelogs"
-                    },
-                    "email_promotions_and_events": {
-                        "type": "boolean",
-                        "title": "Email Promotions And Events"
-                    },
                     "oauth_accounts": {
                         "items": {
                             "$ref": "#/components/schemas/OAuthAccountRead"
@@ -30892,11 +30825,8 @@
                     "created_at",
                     "username",
                     "email",
-                    "profile",
                     "id",
                     "accepted_terms_of_service",
-                    "email_newsletters_and_changelogs",
-                    "email_promotions_and_events",
                     "oauth_accounts"
                 ],
                 "title": "UserRead"
@@ -31259,34 +31189,6 @@
                     "product_price_id"
                 ],
                 "title": "UserSubscriptionUpdate"
-            },
-            "UserUpdateSettings": {
-                "properties": {
-                    "email_newsletters_and_changelogs": {
-                        "anyOf": [
-                            {
-                                "type": "boolean"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Email Newsletters And Changelogs"
-                    },
-                    "email_promotions_and_events": {
-                        "anyOf": [
-                            {
-                                "type": "boolean"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Email Promotions And Events"
-                    }
-                },
-                "type": "object",
-                "title": "UserUpdateSettings"
             },
             "ValidationError": {
                 "properties": {

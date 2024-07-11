@@ -70,7 +70,6 @@ export const user: UserRead = {
   avatar_url: 'https://avatars.githubusercontent.com/u/47952?v=4',
   accepted_terms_of_service: true,
   id: 'xxxabc-123',
-  profile: {},
   email_newsletters_and_changelogs: false,
   email_promotions_and_events: false,
   oauth_accounts: [],

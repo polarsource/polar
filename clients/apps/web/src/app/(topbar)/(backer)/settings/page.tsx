@@ -4,7 +4,6 @@ import AccessTokensSettings from '@/components/Settings/AccessTokensSettings'
 import AuthenticationSettings from '@/components/Settings/AuthenticationSettings'
 import ConnectedAppSettings from '@/components/Settings/ConnectedAppSettings'
 import GeneralSettings from '@/components/Settings/GeneralSettings'
-import NotificationSettings from '@/components/Settings/NotificationSettings'
 import OAuthSettings from '@/components/Settings/OAuth/OAuthSettings'
 import PaymentMethodSettings from '@/components/Settings/PaymentMethodSettings'
 import { Section, SectionDescription } from '@/components/Settings/Section'
@@ -47,14 +46,6 @@ export default function Page() {
               description="Connect external accounts for authenticating to Polar."
             />
             <AuthenticationSettings />
-          </Section>
-
-          <Section>
-            <SectionDescription
-              title="Email notifications"
-              description="Polar will send emails for the notifications enabled below."
-            />
-            <NotificationSettings />
           </Section>
         </div>
 

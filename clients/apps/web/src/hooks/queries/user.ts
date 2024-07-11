@@ -5,19 +5,13 @@ import {
   UserAdvertisementCampaignUpdate,
   UserFreeSubscriptionCreate,
   UserRead,
-  UserUpdateSettings,
   UsersApiEnableAdvertisementCampaignRequest,
   UsersApiListAdvertisementCampaignsRequest,
   UsersApiListBenefitsRequest,
   UsersApiListOrdersRequest,
   UsersApiListSubscriptionsRequest,
 } from '@polar-sh/sdk'
-import {
-  UseMutationResult,
-  UseQueryResult,
-  useMutation,
-  useQuery,
-} from '@tanstack/react-query'
+import { UseQueryResult, useMutation, useQuery } from '@tanstack/react-query'
 import { defaultRetry } from './retry'
 
 export const useUser: () => UseQueryResult<UserRead> = () =>
@@ -25,25 +19,6 @@ export const useUser: () => UseQueryResult<UserRead> = () =>
     queryKey: ['user'],
     queryFn: () => api.users.getAuthenticated(),
     retry: defaultRetry,
-  })
-
-export const useUserPreferencesMutation: () => UseMutationResult<
-  UserRead,
-  Error,
-  {
-    userUpdateSettings: UserUpdateSettings
-  },
-  unknown
-> = () =>
-  useMutation({
-    mutationFn: (variables: { userUpdateSettings: UserUpdateSettings }) => {
-      return api.users.updatePreferences({
-        body: variables.userUpdateSettings,
-      })
-    },
-    onSuccess: (_result, _variables, _ctx) => {
-      queryClient.invalidateQueries({ queryKey: ['user'] })
-    },
   })
 
 export const usePersonalAccessTokens = () =>

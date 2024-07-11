@@ -26,7 +26,7 @@ const steps = [
 export default function Page() {
   return (
     <>
-      <Section className="relative flex flex-col gap-16 md:gap-32 md:py-24">
+      <Section id="hero" className="relative flex flex-col gap-16 md:gap-32 md:py-24">
         <div className="relative flex flex-col items-center gap-y-8 text-center">
           <h1 className="text-4xl md:text-5xl md:leading-snug">{PAGE_TITLE}</h1>
           <p className="text-lg md:text-xl md:leading-normal">
@@ -54,6 +54,7 @@ export default function Page() {
       </Section>
 
       <FeatureSection
+        id="discord"
         wrapperClassName="bg-gray-50 dark:bg-polar-900"
         title="Automated Discord Invites"
         description="Offer exclusive access to Support channels"
@@ -70,6 +71,7 @@ export default function Page() {
       />
 
       <FeatureSection
+        id="github-repository"
         title="Access to private repositories"
         description="Invite supporters to your private repositories"
         media={{
@@ -86,6 +88,7 @@ export default function Page() {
       />
 
       <FeatureSection
+        id="file-downloads"
         wrapperClassName="bg-gray-50 dark:bg-polar-900"
         title="File Downloads"
         description="Sell any digital product with ease"
@@ -104,7 +107,8 @@ export default function Page() {
       />
 
       <FeatureSection
-        title="Sponsor Advertiesements"
+        id="advertisements"
+        title="Sponsor Advertisements"
         description="Sell ad-spots on your GitHub README"
         media={{
           dark: 'https://7vk6rcnylug0u6hg.public.blob.vercel-storage.com/image-mMJ567skrMbikmkRmQvogyO16TsgCt.png',
@@ -119,6 +123,7 @@ export default function Page() {
       />
 
       <FeatureSection
+        id="newsletter"
         wrapperClassName="bg-gray-50 dark:bg-polar-900"
         title="Premium & Early Newsletter"
         description='Exclusive access to "Supporter-only" newsletters'
@@ -135,6 +140,7 @@ export default function Page() {
       />
 
       <FeatureSection
+        id="custom"
         title="Custom Benefits"
         description="Want to offer something special? Build your own custom benefits."
         media={{

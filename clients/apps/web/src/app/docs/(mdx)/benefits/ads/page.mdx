@@ -1,0 +1,111 @@
+import BrowserCallout from '@/components/Feed/Markdown/Callout/BrowserCallout'
+
+# Sponsorship Placement (Ads)
+
+Want to offer sponsors a logotype placement in your newsletter, README or anywhere else? You can easily with Polar.
+- Set custom image dimensions per benefit
+- Customers can self-manage uploading their logotypes in your dimensions
+- Offering light & dark mode options
+
+<BrowserCallout type="NOTE">
+**No review/approval process of uploaded images.**
+
+Sponsors with this benefit can upload any image. In our newsletter, you see the image before publishing, but automated elsewhere there is always the risk of bad images being uploaded.
+</BrowserCallout>
+
+## Create Ads Benefit
+
+1. Goto `Products` > `Benefits`
+2. Click `+` to create a new benefit
+3. Choose `Ad` as the `Type`
+
+![Create an ad benefit](./create-benefit.dark.png)
+![Create an ad benefit](./create-benefit.light.png)
+
+You can customize the benefit description, and the image width and height of your ad space.
+
+When you've created the benefit, go to your subscription tiers and add the benefit to the relevant tiers.
+
+![Configure ad](./configure-ad.dark.png)
+![Configure ad](./configure-ad.light.png)
+
+Subscribers to your ads tier can manage their own ad content from the Benefits page.
+
+From there, the subscriber can upload their images (in light and dark mode! 😎), and configure the text and link.
+
+## Automate README.md Placements
+
+You can easily automate logotype placements in your GitHub README.md.
+
+### Using Polar
+
+You can use the [Polar GitHub Action](https://github.com/polarsource/actions) to automate this in connection with the Ads benefit.
+
+The action will replace the HTML comment with HTML/markdown and keep it up to date. The example below runs every hour, and automatically commits and pushes the results to the main branch. You can customize the GitHub Action to send you a Pull Request with updated content if you prefer.
+
+The action works with both markdown content such as READMEs and other HTML content for statically generated blogs and websites.
+
+1. Add the following snippet to your README (or any other file) where you want the ads to be added.
+
+    You can get the `subscription_benefit_id` from the subscription benefits page.
+
+    ```
+    <!-- POLAR type=ads subscription_benefit_id=YOUR_BENEFIT_ID width=100 height=100 -->
+    ```
+
+2. Create a GitHub Action workflow with the following contents.
+
+    Feel free to modify it to your own needs.
+
+    ```yaml
+    name: Polarify
+
+    # Example action of how to use the polarsource/actions/polarify action and auto-commiting the results to the repository.
+
+    on:
+    # Run after every push
+    push:
+        branches: ["main"]
+
+    # Hourly
+    schedule:
+        - cron: "0 * * * *"
+
+    # Allow to trigger manually from the GitHub Actions Web UI
+    workflow_dispatch: {}
+
+    jobs:
+    polarify:
+        name: "Polarify"
+        timeout-minutes: 15
+        runs-on: ubuntu-22.04
+
+        permissions:
+        # Give the default GITHUB_TOKEN write permission to commit and push the changed files back to the repository.
+        contents: write
+
+        steps:
+        - name: Check out code
+            uses: actions/checkout@v3
+
+        - name: Polarify
+            uses: polarsource/actions/polarify@main
+            with:
+            path: "README.md"
+            env:
+            POLAR_API_TOKEN: {{ '${{ secrets.POLAR_API_TOKEN }}' }}
+
+        - uses: stefanzweifel/git-auto-commit-action@v4
+            with:
+            commit_message: Update polar comments
+            branch: main
+    ```
+
+### Using Sponsorkit
+
+Polar is officially supported in [Sponsorkit](https://github.com/antfu-collective/sponsorkit) by Anthony Fu along with GitHub, Patreon and others. Making it easy to aggregate sponsorships across platforms into an automated README.md.
+
+## Sponsorship Placement Anywhere
+
+You can also easily get active campaigns and their associated logotypes via our [API](/docs/api/v1/advertisements/get) to integrate anywhere.
+

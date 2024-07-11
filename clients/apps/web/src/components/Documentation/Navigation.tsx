@@ -300,7 +300,7 @@ export const MainNavigation = () => {
               href="/docs/benefits/ads"
               icon={<ArrowForward fontSize="inherit" />}
             >
-              Newsletter Sponsorship
+              Sponsorship Placement
             </NavigationItem>
           </NavigationSection>
         </div>

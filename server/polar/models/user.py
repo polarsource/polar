@@ -1,11 +1,9 @@
 import time
 from datetime import datetime
 from enum import StrEnum
-from typing import Any
 from uuid import UUID
 
 from sqlalchemy import TIMESTAMP, Boolean, Column, ForeignKey, Integer, String, func
-from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 from sqlalchemy.schema import Index, UniqueConstraint
 
@@ -86,12 +84,6 @@ class User(RecordModel):
         String(1024), nullable=True, default=None
     )
 
-    # GitHub profile data.
-    # Should not be read.
-    profile: Mapped[dict[str, Any] | None] = mapped_column(
-        JSONB, default=None, nullable=True, insert_default={}
-    )
-
     account_id: Mapped[UUID | None] = mapped_column(
         PostgresUUID,
         ForeignKey("accounts.id", ondelete="set null"),
@@ -111,33 +103,10 @@ class User(RecordModel):
     def oauth_accounts(cls) -> Mapped[list[OAuthAccount]]:
         return relationship(OAuthAccount, lazy="joined", back_populates="user")
 
-    invite_only_approved: Mapped[bool] = mapped_column(
-        Boolean, nullable=False, default=False
-    )
-
     accepted_terms_of_service: Mapped[bool] = mapped_column(
         Boolean,
         nullable=False,
         default=False,
-    )
-
-    last_seen_at_extension: Mapped[datetime | None] = mapped_column(
-        TIMESTAMP(timezone=True),
-        nullable=True,
-        default=None,
-    )
-    last_version_extension: Mapped[str | None] = mapped_column(
-        String(50),
-        nullable=True,
-        default=None,
-    )
-
-    email_newsletters_and_changelogs: Mapped[bool] = mapped_column(
-        Boolean, nullable=False, default=True
-    )
-
-    email_promotions_and_events: Mapped[bool] = mapped_column(
-        Boolean, nullable=False, default=True
     )
 
     stripe_customer_id: Mapped[str | None] = mapped_column(

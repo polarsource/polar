@@ -15,7 +15,7 @@ from polar.postgres import AsyncSession, sql
 from polar.posthog import posthog
 from polar.worker import enqueue_job
 
-from ..schemas.user import UserCreate, UserUpdate, UserUpdateSettings
+from ..schemas.user import UserCreate, UserUpdate
 
 log: Logger = structlog.get_logger()
 
@@ -94,26 +94,6 @@ class UserService(ResourceService[User, UserCreate, UserUpdate]):
         log.info("user signed up by email", user_id=user.id, email=email)
 
         enqueue_job("user.on_after_signup", user_id=user.id)
-
-        return user
-
-    async def update_preferences(
-        self, session: AsyncSession, user: User, settings: UserUpdateSettings
-    ) -> User:
-        changed = False
-
-        if settings.email_newsletters_and_changelogs is not None:
-            user.email_newsletters_and_changelogs = (
-                settings.email_newsletters_and_changelogs
-            )
-            changed = True
-
-        if settings.email_promotions_and_events is not None:
-            user.email_promotions_and_events = settings.email_promotions_and_events
-            changed = True
-
-        if changed:
-            session.add(user)
 
         return user
 

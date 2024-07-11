@@ -18,13 +18,7 @@ from polar.posthog import posthog
 from polar.routing import APIRouter
 from polar.user.service.user import user as user_service
 
-from ..schemas.user import (
-    UserRead,
-    UserScopes,
-    UserSetAccount,
-    UserStripePortalSession,
-    UserUpdateSettings,
-)
+from ..schemas.user import UserRead, UserScopes, UserSetAccount, UserStripePortalSession
 
 log = structlog.get_logger()
 
@@ -41,17 +35,6 @@ async def scopes(
     auth_subject: AuthSubject[User] = Depends(Authenticator(allowed_subjects={User})),
 ) -> UserScopes:
     return UserScopes(scopes=list(auth_subject.scopes))
-
-
-@router.put("/me", response_model=UserRead)
-async def update_preferences(
-    settings: UserUpdateSettings,
-    auth_subject: WebUser,
-    session: AsyncSession = Depends(get_db_session),
-) -> User:
-    return await user_service.update_preferences(
-        session, auth_subject.subject, settings
-    )
 
 
 @router.post("/me/upgrade", response_model=Organization)

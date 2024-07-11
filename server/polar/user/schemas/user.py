@@ -1,5 +1,5 @@
 import uuid
-from typing import Any, Self
+from typing import Self
 
 from pydantic import UUID4, EmailStr, Field
 
@@ -28,7 +28,6 @@ class UserBase(Schema):
     username: str = Field(..., max_length=50)
     email: EmailStr
     avatar_url: str | None = None
-    profile: dict[str, Any]
     account_id: UUID4 | None = None
 
 
@@ -42,8 +41,6 @@ class OAuthAccountRead(TimestampedSchema):
 class UserRead(UserBase, TimestampedSchema):
     id: uuid.UUID
     accepted_terms_of_service: bool
-    email_newsletters_and_changelogs: bool
-    email_promotions_and_events: bool
     oauth_accounts: list[OAuthAccountRead]
 
 
@@ -53,11 +50,6 @@ class UserCreate(UserBase): ...
 
 # TODO: remove
 class UserUpdate(UserBase): ...
-
-
-class UserUpdateSettings(Schema):
-    email_newsletters_and_changelogs: bool | None = None
-    email_promotions_and_events: bool | None = None
 
 
 class UserSetAccount(Schema):

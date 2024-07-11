@@ -160,8 +160,6 @@ class GithubUserService(UserService):
         tokens: OAuthAccessToken,
         client: GitHub[TokenAuthStrategy],
     ) -> User:
-        profile = self.generate_profile_json(github_user=github_user)
-
         # Fetch primary email from github
         # Required to succeed for new users signups. For existing users we'll let it fail.
         github_email: GithubEmail | None = None
@@ -174,7 +172,6 @@ class GithubUserService(UserService):
 
         user.username = github_user.login
         user.avatar_url = github_user.avatar_url
-        user.profile = profile
         session.add(user)
 
         oauth_account = await oauth_account_service.get_by_platform_and_user_id(
@@ -366,10 +363,8 @@ class GithubUserService(UserService):
         session.add(oauth_account)
 
         # Update User profile
-        profile = self.generate_profile_json(github_user=github_user)
         user.username = github_user.login
         user.avatar_url = github_user.avatar_url
-        user.profile = profile
         session.add(user)
 
         posthog.user_event(user, "user", "github_oauth_link_existing_user", "done")

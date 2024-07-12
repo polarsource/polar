@@ -4,7 +4,6 @@ from uuid import UUID
 import structlog
 from fastapi import Depends, Request
 from fastapi.responses import RedirectResponse
-from httpx_oauth.integrations.fastapi import OAuth2AuthorizeCallback
 from httpx_oauth.oauth2 import GetAccessTokenError
 
 from polar.auth.dependencies import WebUser
@@ -52,10 +51,6 @@ def get_decoded_token_state(state: str) -> dict[str, Any]:
 # BOT
 # -------------------------------------------------------------------------------
 
-oauth2_bot_authorize_callback = OAuth2AuthorizeCallback(
-    oauth.bot_client, route_name="integrations.discord.bot_callback"
-)
-
 
 @router.get(
     "/bot/authorize",
@@ -93,10 +88,17 @@ async def discord_bot_callback(
 ) -> RedirectResponse:
     decoded_state = get_decoded_token_state(state)
     return_to = decoded_state["return_to"]
+    if code is None or error is not None:
+        redirect_url = get_safe_return_url(
+            add_query_parameters(
+                return_to, error=error or "Failed to authorize Discord bot."
+            )
+        )
+        return RedirectResponse(redirect_url, 303)
 
     try:
-        access_token, _ = await oauth2_bot_authorize_callback(
-            request, code, code_verifier, state, error
+        access_token = await oauth.bot_client.get_access_token(
+            code, str(request.url_for("integrations.discord.bot_callback"))
         )
     except GetAccessTokenError as e:
         redirect_url = get_safe_return_url(
@@ -133,10 +135,6 @@ async def discord_bot_callback(
 # USER AUTHORIZATION
 # -------------------------------------------------------------------------------
 
-oauth2_user_authorize_callback = OAuth2AuthorizeCallback(
-    oauth.user_client, route_name="integrations.discord.user_callback"
-)
-
 
 @router.get("/user/authorize", name="integrations.discord.user_authorize")
 async def discord_user_authorize(
@@ -172,10 +170,19 @@ async def discord_user_callback(
 ) -> RedirectResponse:
     decoded_state = get_decoded_token_state(state)
     return_to = decoded_state["return_to"]
+    if code is None or error is not None:
+        redirect_url = get_safe_return_url(
+            add_query_parameters(
+                return_to,
+                error=error or "Failed to authorize Discord user.",
+                callback="discord",
+            )
+        )
+        return RedirectResponse(redirect_url, 303)
 
     try:
-        access_token, _ = await oauth2_user_authorize_callback(
-            request, code, code_verifier, state, error
+        access_token = await oauth.user_client.get_access_token(
+            code, str(request.url_for("integrations.discord.user_callback"))
         )
     except GetAccessTokenError as e:
         redirect_url = get_safe_return_url(

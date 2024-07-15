@@ -488,6 +488,11 @@ async def test_update_organization_profile_settings(
         "featured_organizations": None,
         "description": None,
         "links": None,
+        "subscribe": {
+            "promote": True,
+            "show_count": True,
+            "count_free": True,
+        },
     }
 
     # set featured_projects

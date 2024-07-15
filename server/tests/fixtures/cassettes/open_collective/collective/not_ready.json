@@ -1,0 +1,12 @@
+{
+  "data": {
+    "collective": {
+      "slug": "notready",
+      "host": null,
+      "isActive": false,
+      "isApproved": false,
+      "isArchived": false,
+      "isFrozen": false
+    }
+  }
+}

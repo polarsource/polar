@@ -1,6 +1,7 @@
 import contextlib
 import dataclasses
 from collections.abc import AsyncGenerator
+from typing import Any
 
 import httpx
 
@@ -11,11 +12,11 @@ from polar.exceptions import PolarError
 @dataclasses.dataclass
 class OpenCollectiveCollective:
     slug: str
-    host_slug: str
     isActive: bool
     isApproved: bool
     isArchived: bool
     isFrozen: bool
+    host_slug: str | None = None
 
     @property
     def is_eligible(self) -> bool:
@@ -84,9 +85,10 @@ class OpenCollectiveService:
             if "errors" in json:
                 raise CollectiveNotFoundError(slug)
 
-            collective = json["data"]["collective"]
+            collective: dict[str, Any] = json["data"]["collective"]
             host = collective.pop("host")
-            return OpenCollectiveCollective(**collective, host_slug=host["slug"])
+            host_slug = host["slug"] if host is not None else None
+            return OpenCollectiveCollective(**collective, host_slug=host_slug)
 
     @contextlib.asynccontextmanager
     async def _get_graphql_client(self) -> AsyncGenerator[httpx.AsyncClient, None]:

@@ -92,8 +92,23 @@ async def test_create_open_collective_get_collective_error(
 @pytest.mark.parametrize(
     "collective",
     [
-        OpenCollectiveCollective("polar", "custom", True, True, False, False),
-        OpenCollectiveCollective("polar", "opensource", False, True, False, False),
+        OpenCollectiveCollective("polar", True, True, False, False, "custom"),
+        OpenCollectiveCollective(
+            "polar",
+            False,
+            True,
+            False,
+            False,
+            "opensource",
+        ),
+        OpenCollectiveCollective(
+            "polar",
+            False,
+            True,
+            False,
+            False,
+            None,
+        ),
     ],
 )
 @pytest.mark.auth
@@ -129,7 +144,7 @@ async def test_create_open_collective(
 ) -> None:
     open_collective_mock = mocker.patch.object(open_collective, "get_collective")
     open_collective_mock.return_value = OpenCollectiveCollective(
-        "polar", "opensource", True, True, False, False
+        "polar", True, True, False, False, "opensource"
     )
 
     response = await client.post(

@@ -34,10 +34,10 @@ from polar.kit.extensions.sqlalchemy import PostgresUUID, StringEnum
 from polar.types import JSONAny
 
 if TYPE_CHECKING:  # pragma: no cover
-    from polar.models.issue_reference import IssueReference
-    from polar.models.organization import Organization
-    from polar.models.pledge import Pledge
-    from polar.models.repository import Repository
+    from .external_organization import ExternalOrganization
+    from .issue_reference import IssueReference
+    from .pledge import Pledge
+    from .repository import Repository
 
 
 class IssueFields:
@@ -52,14 +52,14 @@ class IssueFields:
     def organization_id(cls) -> MappedColumn[UUID]:
         return mapped_column(
             PostgresUUID,
-            ForeignKey("organizations.id"),
+            ForeignKey("external_organizations.id"),
             nullable=False,
             index=True,
         )
 
     @declared_attr
-    def organization(cls) -> "Mapped[Organization]":
-        return relationship("Organization", lazy="raise")
+    def organization(cls) -> "Mapped[ExternalOrganization]":
+        return relationship("ExternalOrganization", lazy="raise")
 
     @declared_attr
     def repository_id(cls) -> "MappedColumn[UUID]":

@@ -32,6 +32,7 @@ const ClientPage: React.FC<OrganizationSubscriptionsPublicPageProps> = ({
     () => !orgs.data?.items?.map((o) => o.id).includes(organization.id),
     [organization, orgs],
   )
+  const showFreeTier = organization.profile_settings?.subscribe?.promote ?? true
 
   if (!organization.feature_settings?.subscriptions_enabled) {
     return redirect(organizationPageLink(organization))
@@ -56,7 +57,7 @@ const ClientPage: React.FC<OrganizationSubscriptionsPublicPageProps> = ({
       )}
       <div className="flex flex-row flex-wrap gap-8">
         {products
-          .filter(hasRecurringInterval(recurringInterval))
+          .filter(hasRecurringInterval(recurringInterval, !showFreeTier))
           .map((tier) => (
             <SubscriptionTierCard
               className="w-full self-stretch md:max-w-[290px]"

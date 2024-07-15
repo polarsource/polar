@@ -8,7 +8,7 @@
   outputs = { self, nixpkgs, ... }@inputs:
     let
       system = "aarch64-darwin";
-      pkgs = nixpkgs.legacyPackages.${system};
+      pkgs = import nixpkgs { inherit system; config.allowUnfree = true; };
     in {
       devShells.${system}.default = pkgs.mkShell {
         nativeBuildInputs = with pkgs; [
@@ -16,6 +16,10 @@
           corepack
 
           python312
+
+          # Webhooks
+          stripe-cli
+          ngrok
         ];
       };
     };

@@ -187,15 +187,15 @@ const SubscribeSettingsModal = ({
             settings={settings}
             setSettings={setSettings}
             settingKey="promote"
-            title='Show "Subscribe with Email"'
-            description="Increasing conversion of visitors to subscribers" />
+            title='Promote Free Email Subscription'
+            description="Increase conversion of visitors to subscribers" />
 
           <SettingsRow
             settings={settings}
             setSettings={setSettings}
             settingKey="show_count"
             title='Show subscriber count'
-            description="Increasing social proof for others to follow"
+            description="Add social proof for others to follow"
             />
 
           <SettingsRow

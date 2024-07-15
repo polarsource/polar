@@ -12,7 +12,6 @@ import {
   Organization,
   OrganizationProfileSettings,
   Product,
-  SubscriptionTierType,
 } from '@polar-sh/sdk'
 import Link from 'next/link'
 import { useSelectedLayoutSegment } from 'next/navigation'
@@ -28,11 +27,11 @@ import { Modal, ModalHeader } from '../Modal'
 import { useModal } from '../Modal/useModal'
 import { DescriptionEditor } from '../Profile/DescriptionEditor/DescriptionEditor'
 import Spinner from '../Shared/Spinner'
-import { FreeTierSubscribe } from './FreeTierSubscribe'
+import { SubscribeEditor } from '../Profile/SubscribeEditor/SubscribeEditor'
 
 interface OrganizationPublicSidebarProps {
   organization: Organization
-  organizationCustomers: ListResourceOrganizationCustomer
+  organizationCustomers: ListResourceOrganizationCustomer | undefined
   userAdminOrganizations: Organization[]
   products: Product[]
 }
@@ -51,14 +50,7 @@ export const OrganizationPublicSidebar = ({
     show: showRssModal,
   } = useModal()
 
-  const freeSubscriptionTier = products.find(
-    (tier) => tier.type === SubscriptionTierType.FREE,
-  )
-
   const isAdmin = userAdminOrganizations.some((o) => o.id === organization.id)
-
-  const shouldRenderSubscriberCount =
-    (organizationCustomers.items?.length ?? 0) > 0
 
   const updateOrganizationMutation = useUpdateOrganization()
 
@@ -166,48 +158,7 @@ export const OrganizationPublicSidebar = ({
             </Button>
           </div>
         </div>
-        {(organization.feature_settings?.subscriptions_enabled ||
-          organization.feature_settings?.articles_enabled) && (
-          <div className="flex w-full flex-col gap-y-6">
-            {freeSubscriptionTier && !isAdmin ? (
-              <>
-                <FreeTierSubscribe
-                  product={freeSubscriptionTier}
-                  organization={organization}
-                  upsellSubscriptions
-                />
-              </>
-            ) : null}
-            {shouldRenderSubscriberCount && (
-              <div className="flex flex-row items-center gap-x-4">
-                <div className="flex w-fit flex-shrink-0 flex-row items-center md:hidden lg:flex">
-                  {organizationCustomers.items?.map((user, i, array) => (
-                    <Avatar
-                      className={twMerge(
-                        'h-10 w-10',
-                        i !== array.length - 1 && '-mr-3',
-                      )}
-                      key={i}
-                      name={user.public_name ?? ''}
-                      avatar_url={user.avatar_url}
-                      height={40}
-                      width={40}
-                    />
-                  ))}
-                </div>
-                <span className="text-sm">
-                  {Intl.NumberFormat('en-US', {
-                    notation: 'compact',
-                    compactDisplay: 'short',
-                  }).format(organizationCustomers.pagination.total_count)}{' '}
-                  {organizationCustomers.pagination.total_count === 1
-                    ? 'Subscriber'
-                    : 'Subscribers'}
-                </span>
-              </div>
-            )}
-          </div>
-        )}
+        <SubscribeEditor organization={organization} customerList={organizationCustomers} products={products} isAdmin={isAdmin} />
 
         {organization.donations_enabled && !isDonatePage ? (
           <DonateWidget organization={organization} />

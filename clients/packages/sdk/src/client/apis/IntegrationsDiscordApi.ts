@@ -28,9 +28,9 @@ export interface IntegrationsDiscordApiIntegrationsDiscordBotAuthorizeRequest {
 }
 
 export interface IntegrationsDiscordApiIntegrationsDiscordBotCallbackRequest {
+    state: string;
     code?: string;
     codeVerifier?: string;
-    state?: string;
     error?: string;
 }
 
@@ -39,9 +39,9 @@ export interface IntegrationsDiscordApiIntegrationsDiscordUserAuthorizeRequest {
 }
 
 export interface IntegrationsDiscordApiIntegrationsDiscordUserCallbackRequest {
+    state: string;
     code?: string;
     codeVerifier?: string;
-    state?: string;
     error?: string;
 }
 
@@ -141,7 +141,18 @@ export class IntegrationsDiscordApi extends runtime.BaseAPI {
      * Integrations.Discord.Bot Callback
      */
     async integrationsDiscordBotCallbackRaw(requestParameters: IntegrationsDiscordApiIntegrationsDiscordBotCallbackRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<any>> {
+        if (requestParameters['state'] == null) {
+            throw new runtime.RequiredError(
+                'state',
+                'Required parameter "state" was null or undefined when calling integrationsDiscordBotCallback().'
+            );
+        }
+
         const queryParameters: any = {};
+
+        if (requestParameters['state'] != null) {
+            queryParameters['state'] = requestParameters['state'];
+        }
 
         if (requestParameters['code'] != null) {
             queryParameters['code'] = requestParameters['code'];
@@ -149,10 +160,6 @@ export class IntegrationsDiscordApi extends runtime.BaseAPI {
 
         if (requestParameters['codeVerifier'] != null) {
             queryParameters['code_verifier'] = requestParameters['codeVerifier'];
-        }
-
-        if (requestParameters['state'] != null) {
-            queryParameters['state'] = requestParameters['state'];
         }
 
         if (requestParameters['error'] != null) {
@@ -186,7 +193,7 @@ export class IntegrationsDiscordApi extends runtime.BaseAPI {
     /**
      * Integrations.Discord.Bot Callback
      */
-    async integrationsDiscordBotCallback(requestParameters: IntegrationsDiscordApiIntegrationsDiscordBotCallbackRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<any> {
+    async integrationsDiscordBotCallback(requestParameters: IntegrationsDiscordApiIntegrationsDiscordBotCallbackRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<any> {
         const response = await this.integrationsDiscordBotCallbackRaw(requestParameters, initOverrides);
         return await response.value();
     }
@@ -237,7 +244,18 @@ export class IntegrationsDiscordApi extends runtime.BaseAPI {
      * Integrations.Discord.User Callback
      */
     async integrationsDiscordUserCallbackRaw(requestParameters: IntegrationsDiscordApiIntegrationsDiscordUserCallbackRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<any>> {
+        if (requestParameters['state'] == null) {
+            throw new runtime.RequiredError(
+                'state',
+                'Required parameter "state" was null or undefined when calling integrationsDiscordUserCallback().'
+            );
+        }
+
         const queryParameters: any = {};
+
+        if (requestParameters['state'] != null) {
+            queryParameters['state'] = requestParameters['state'];
+        }
 
         if (requestParameters['code'] != null) {
             queryParameters['code'] = requestParameters['code'];
@@ -245,10 +263,6 @@ export class IntegrationsDiscordApi extends runtime.BaseAPI {
 
         if (requestParameters['codeVerifier'] != null) {
             queryParameters['code_verifier'] = requestParameters['codeVerifier'];
-        }
-
-        if (requestParameters['state'] != null) {
-            queryParameters['state'] = requestParameters['state'];
         }
 
         if (requestParameters['error'] != null) {
@@ -282,7 +296,7 @@ export class IntegrationsDiscordApi extends runtime.BaseAPI {
     /**
      * Integrations.Discord.User Callback
      */
-    async integrationsDiscordUserCallback(requestParameters: IntegrationsDiscordApiIntegrationsDiscordUserCallbackRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<any> {
+    async integrationsDiscordUserCallback(requestParameters: IntegrationsDiscordApiIntegrationsDiscordUserCallbackRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<any> {
         const response = await this.integrationsDiscordUserCallbackRaw(requestParameters, initOverrides);
         return await response.value();
     }

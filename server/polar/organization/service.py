@@ -359,14 +359,26 @@ class OrganizationService(ResourceServiceReader[Organization]):
         *,
         pagination: PaginationParams,
         customer_types: set[OrganizationCustomerType] = {
-            OrganizationCustomerType.subscription,
+            OrganizationCustomerType.free_subscription,
+            OrganizationCustomerType.paid_subscription,
             OrganizationCustomerType.order,
             OrganizationCustomerType.donation,
         },
     ) -> tuple[Sequence[User], int]:
         clauses = []
-        if OrganizationCustomerType.subscription in customer_types:
+
+        def append_subscription_clause(is_free: bool | None = None) -> None:
             SubscriptionProduct = aliased(Product)
+            where = [
+                Subscription.deleted_at.is_(None),
+                SubscriptionProduct.organization_id == organization.id,
+                Subscription.active.is_(True),
+            ]
+            if is_free is True:
+                where.append(Subscription.price_id.is_(None))
+            elif is_free is False:
+                where.append(Subscription.price_id.is_not(None))
+
             clauses.append(
                 User.id.in_(
                     select(Subscription)
@@ -375,13 +387,19 @@ class OrganizationService(ResourceServiceReader[Organization]):
                         SubscriptionProduct,
                         onclause=SubscriptionProduct.id == Subscription.product_id,
                     )
-                    .where(
-                        Subscription.deleted_at.is_(None),
-                        SubscriptionProduct.organization_id == organization.id,
-                        Subscription.active.is_(True),
-                    )
+                    .where(*where)
                 ),
             )
+
+        if (
+            OrganizationCustomerType.free_subscription in customer_types
+            and OrganizationCustomerType.paid_subscription in customer_types
+        ):
+            append_subscription_clause()
+        elif OrganizationCustomerType.free_subscription in customer_types:
+            append_subscription_clause(is_free=True)
+        elif OrganizationCustomerType.paid_subscription in customer_types:
+            append_subscription_clause(is_free=False)
 
         if OrganizationCustomerType.order in customer_types:
             OrderProduct = aliased(Product)

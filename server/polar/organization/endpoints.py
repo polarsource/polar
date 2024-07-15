@@ -196,7 +196,8 @@ async def list_organization_customers(
     pagination: PaginationParamsQuery,
     customer_types: set[OrganizationCustomerType] = Query(
         {
-            OrganizationCustomerType.subscription,
+            OrganizationCustomerType.free_subscription,
+            OrganizationCustomerType.paid_subscription,
             OrganizationCustomerType.order,
             OrganizationCustomerType.donation,
         },

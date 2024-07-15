@@ -89,7 +89,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/Organization"
+                                    "$ref": "#/components/schemas/Organization-Output"
                                 }
                             }
                         }
@@ -1209,8 +1209,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Anonymous",
-                    "User"
+                    "User",
+                    "Anonymous"
                 ]
             }
         },
@@ -2604,7 +2604,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/Organization"
+                                    "$ref": "#/components/schemas/Organization-Output"
                                 }
                             }
                         }
@@ -2983,6 +2983,15 @@
                 ],
                 "parameters": [
                     {
+                        "name": "state",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "title": "State"
+                        }
+                    },
+                    {
                         "name": "code",
                         "in": "query",
                         "required": false,
@@ -3012,22 +3021,6 @@
                                 }
                             ],
                             "title": "Code Verifier"
-                        }
-                    },
-                    {
-                        "name": "state",
-                        "in": "query",
-                        "required": false,
-                        "schema": {
-                            "anyOf": [
-                                {
-                                    "type": "string"
-                                },
-                                {
-                                    "type": "null"
-                                }
-                            ],
-                            "title": "State"
                         }
                     },
                     {
@@ -3147,6 +3140,15 @@
                 ],
                 "parameters": [
                     {
+                        "name": "state",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "title": "State"
+                        }
+                    },
+                    {
                         "name": "code",
                         "in": "query",
                         "required": false,
@@ -3176,22 +3178,6 @@
                                 }
                             ],
                             "title": "Code Verifier"
-                        }
-                    },
-                    {
-                        "name": "state",
-                        "in": "query",
-                        "required": false,
-                        "schema": {
-                            "anyOf": [
-                                {
-                                    "type": "string"
-                                },
-                                {
-                                    "type": "null"
-                                }
-                            ],
-                            "title": "State"
                         }
                     },
                     {
@@ -4219,8 +4205,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Anonymous",
-                    "User"
+                    "User",
+                    "Anonymous"
                 ]
             }
         },
@@ -4274,8 +4260,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Anonymous",
-                    "User"
+                    "User",
+                    "Anonymous"
                 ]
             }
         },
@@ -4381,8 +4367,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Anonymous",
-                    "User"
+                    "User",
+                    "Anonymous"
                 ]
             }
         },
@@ -4578,8 +4564,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Anonymous",
-                    "User"
+                    "User",
+                    "Anonymous"
                 ]
             }
         },
@@ -4653,8 +4639,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Anonymous",
-                    "User"
+                    "User",
+                    "Anonymous"
                 ]
             }
         },
@@ -4712,8 +4698,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Anonymous",
-                    "User"
+                    "User",
+                    "Anonymous"
                 ]
             },
             "patch": {
@@ -4936,8 +4922,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Anonymous",
-                    "User"
+                    "User",
+                    "Anonymous"
                 ]
             }
         },
@@ -5257,8 +5243,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Anonymous",
-                    "User"
+                    "User",
+                    "Anonymous"
                 ]
             }
         },
@@ -5702,8 +5688,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Anonymous",
-                    "User"
+                    "User",
+                    "Anonymous"
                 ]
             }
         },
@@ -5768,8 +5754,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Anonymous",
-                    "User"
+                    "User",
+                    "Anonymous"
                 ]
             }
         },
@@ -5821,8 +5807,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Anonymous",
-                    "User"
+                    "User",
+                    "Anonymous"
                 ]
             }
         },
@@ -5909,8 +5895,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Anonymous",
-                    "User"
+                    "User",
+                    "Anonymous"
                 ]
             },
             "post": {
@@ -6436,8 +6422,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Anonymous",
-                    "User"
+                    "User",
+                    "Anonymous"
                 ]
             }
         },
@@ -6492,8 +6478,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Anonymous",
-                    "User"
+                    "User",
+                    "Anonymous"
                 ]
             }
         },
@@ -6658,8 +6644,8 @@
                     }
                 ],
                 "x-polar-allowed-subjects": [
-                    "Anonymous",
-                    "User"
+                    "User",
+                    "Anonymous"
                 ]
             }
         },
@@ -6831,8 +6817,8 @@
                     }
                 ],
                 "x-polar-allowed-subjects": [
-                    "Anonymous",
-                    "User"
+                    "User",
+                    "Anonymous"
                 ]
             }
         },
@@ -6895,8 +6881,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Anonymous",
-                    "User"
+                    "User",
+                    "Anonymous"
                 ]
             }
         },
@@ -7182,7 +7168,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/Organization"
+                                    "$ref": "#/components/schemas/Organization-Output"
                                 }
                             }
                         }
@@ -7244,7 +7230,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/Organization"
+                                    "$ref": "#/components/schemas/Organization-Output"
                                 }
                             }
                         }
@@ -7313,7 +7299,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/Organization"
+                                    "$ref": "#/components/schemas/Organization-Output"
                                 }
                             }
                         }
@@ -7386,9 +7372,10 @@
                             },
                             "description": "Filter by the type of purchase the customer made.",
                             "default": [
-                                "order",
-                                "subscription",
-                                "donation"
+                                "paid_subscription",
+                                "donation",
+                                "free_subscription",
+                                "order"
                             ],
                             "title": "Customer Types"
                         },
@@ -7505,7 +7492,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/Organization"
+                                    "$ref": "#/components/schemas/Organization-Output"
                                 }
                             }
                         }
@@ -7811,7 +7798,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/Organization"
+                                    "$ref": "#/components/schemas/Organization-Output"
                                 }
                             }
                         }
@@ -8455,8 +8442,8 @@
                 },
                 "x-polar-allowed-subjects": [
                     "Organization",
-                    "Anonymous",
-                    "User"
+                    "User",
+                    "Anonymous"
                 ]
             },
             "post": {
@@ -8588,8 +8575,8 @@
                 },
                 "x-polar-allowed-subjects": [
                     "Organization",
-                    "Anonymous",
-                    "User"
+                    "User",
+                    "Anonymous"
                 ]
             },
             "patch": {
@@ -10461,8 +10448,8 @@
                     }
                 ],
                 "x-polar-allowed-subjects": [
-                    "Anonymous",
-                    "User"
+                    "User",
+                    "Anonymous"
                 ]
             }
         },
@@ -10525,8 +10512,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Anonymous",
-                    "User"
+                    "User",
+                    "Anonymous"
                 ]
             }
         },
@@ -10914,8 +10901,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Anonymous",
-                    "User"
+                    "User",
+                    "Anonymous"
                 ]
             },
             "put": {
@@ -10976,8 +10963,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Anonymous",
-                    "User"
+                    "User",
+                    "Anonymous"
                 ]
             },
             "delete": {
@@ -11028,8 +11015,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Anonymous",
-                    "User"
+                    "User",
+                    "Anonymous"
                 ]
             }
         },
@@ -11077,8 +11064,8 @@
                     }
                 ],
                 "x-polar-allowed-subjects": [
-                    "Anonymous",
-                    "User"
+                    "User",
+                    "Anonymous"
                 ]
             }
         },
@@ -11477,8 +11464,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "benefits:read",
-                            "benefits:write"
+                            "benefits:write",
+                            "benefits:read"
                         ]
                     },
                     {
@@ -11717,8 +11704,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "benefits:read",
-                            "benefits:write"
+                            "benefits:write",
+                            "benefits:read"
                         ]
                     },
                     {
@@ -12022,8 +12009,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "benefits:read",
-                            "benefits:write"
+                            "benefits:write",
+                            "benefits:read"
                         ]
                     },
                     {
@@ -12178,8 +12165,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "webhooks:read",
-                            "webhooks:write"
+                            "webhooks:write",
+                            "webhooks:read"
                         ]
                     },
                     {
@@ -12351,8 +12338,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "webhooks:read",
-                            "webhooks:write"
+                            "webhooks:write",
+                            "webhooks:read"
                         ]
                     },
                     {
@@ -12581,8 +12568,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "webhooks:read",
-                            "webhooks:write"
+                            "webhooks:write",
+                            "webhooks:read"
                         ]
                     },
                     {
@@ -12745,8 +12732,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "products:read",
-                            "products:write"
+                            "products:write",
+                            "products:read"
                         ]
                     },
                     {
@@ -12941,8 +12928,8 @@
                 },
                 "x-polar-allowed-subjects": [
                     "Organization",
-                    "Anonymous",
-                    "User"
+                    "User",
+                    "Anonymous"
                 ]
             },
             "post": {
@@ -13023,8 +13010,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "products:read",
-                            "products:write"
+                            "products:write",
+                            "products:read"
                         ]
                     },
                     {
@@ -13083,8 +13070,8 @@
                 },
                 "x-polar-allowed-subjects": [
                     "Organization",
-                    "Anonymous",
-                    "User"
+                    "User",
+                    "Anonymous"
                 ]
             },
             "patch": {
@@ -13709,8 +13696,8 @@
                     }
                 ],
                 "x-polar-allowed-subjects": [
-                    "Anonymous",
-                    "User"
+                    "User",
+                    "Anonymous"
                 ]
             }
         },
@@ -14854,7 +14841,7 @@
                     },
                     "organizations": {
                         "items": {
-                            "$ref": "#/components/schemas/Organization"
+                            "$ref": "#/components/schemas/Organization-Output"
                         },
                         "type": "array",
                         "title": "Organizations"
@@ -15516,7 +15503,7 @@
                         "title": "Organization Id"
                     },
                     "organization": {
-                        "$ref": "#/components/schemas/Organization"
+                        "$ref": "#/components/schemas/Organization-Output"
                     },
                     "published_at": {
                         "anyOf": [
@@ -16556,7 +16543,7 @@
                     "organization": {
                         "anyOf": [
                             {
-                                "$ref": "#/components/schemas/Organization"
+                                "$ref": "#/components/schemas/Organization-Output"
                             },
                             {
                                 "type": "null"
@@ -21630,7 +21617,7 @@
                 "properties": {
                     "items": {
                         "items": {
-                            "$ref": "#/components/schemas/Organization"
+                            "$ref": "#/components/schemas/Organization-Output"
                         },
                         "type": "array",
                         "title": "Items",
@@ -24222,7 +24209,247 @@
                 ],
                 "title": "OrderUser"
             },
-            "Organization": {
+            "Organization-Input": {
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "title": "Id"
+                    },
+                    "platform": {
+                        "$ref": "#/components/schemas/Platforms"
+                    },
+                    "name": {
+                        "type": "string",
+                        "title": "Name"
+                    },
+                    "avatar_url": {
+                        "type": "string",
+                        "title": "Avatar Url"
+                    },
+                    "is_personal": {
+                        "type": "boolean",
+                        "title": "Is Personal"
+                    },
+                    "bio": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Bio",
+                        "description": "Public field from GitHub"
+                    },
+                    "pretty_name": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Pretty Name",
+                        "description": "Public field from GitHub"
+                    },
+                    "company": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Company",
+                        "description": "Public field from GitHub"
+                    },
+                    "blog": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Blog",
+                        "description": "Public field from GitHub"
+                    },
+                    "location": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Location",
+                        "description": "Public field from GitHub"
+                    },
+                    "email": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Email",
+                        "description": "Public field from GitHub"
+                    },
+                    "twitter_username": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Twitter Username",
+                        "description": "Public field from GitHub"
+                    },
+                    "pledge_minimum_amount": {
+                        "type": "integer",
+                        "title": "Pledge Minimum Amount"
+                    },
+                    "pledge_badge_show_amount": {
+                        "type": "boolean",
+                        "title": "Pledge Badge Show Amount"
+                    },
+                    "default_upfront_split_to_contributors": {
+                        "anyOf": [
+                            {
+                                "type": "integer"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Default Upfront Split To Contributors"
+                    },
+                    "account_id": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "uuid4"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Account Id"
+                    },
+                    "has_app_installed": {
+                        "type": "boolean",
+                        "title": "Has App Installed",
+                        "description": "Whether the organization has the Polar GitHub App installed for repositories or not."
+                    },
+                    "public_page_enabled": {
+                        "type": "boolean",
+                        "title": "Public Page Enabled",
+                        "description": "If this organization has a public Polar page"
+                    },
+                    "donations_enabled": {
+                        "type": "boolean",
+                        "title": "Donations Enabled",
+                        "description": "If this organizations accepts donations"
+                    },
+                    "public_donation_timestamps": {
+                        "type": "boolean",
+                        "title": "Public Donation Timestamps",
+                        "description": "If this organization should make donation timestamps publicly available"
+                    },
+                    "profile_settings": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/components/schemas/OrganizationProfileSettings"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "description": "Settings for the organization profile"
+                    },
+                    "feature_settings": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/components/schemas/OrganizationFeatureSettings"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "description": "Settings for the organization features"
+                    },
+                    "billing_email": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Billing Email",
+                        "description": "Where to send emails about payments for pledegs that this organization/team has made. Only visible for members of the organization"
+                    },
+                    "total_monthly_spending_limit": {
+                        "anyOf": [
+                            {
+                                "type": "integer"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Total Monthly Spending Limit",
+                        "description": "Overall team monthly spending limit, per calendar month. Only visible for members of the organization"
+                    },
+                    "per_user_monthly_spending_limit": {
+                        "anyOf": [
+                            {
+                                "type": "integer"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Per User Monthly Spending Limit",
+                        "description": "Team members monthly spending limit, per calendar month. Only visible for members of the organization"
+                    },
+                    "is_teams_enabled": {
+                        "type": "boolean",
+                        "title": "Is Teams Enabled",
+                        "description": "Feature flag for if this organization is a team."
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "id",
+                    "platform",
+                    "name",
+                    "avatar_url",
+                    "is_personal",
+                    "pledge_minimum_amount",
+                    "pledge_badge_show_amount",
+                    "has_app_installed",
+                    "public_page_enabled",
+                    "donations_enabled",
+                    "public_donation_timestamps",
+                    "profile_settings",
+                    "feature_settings",
+                    "is_teams_enabled"
+                ],
+                "title": "Organization"
+            },
+            "Organization-Output": {
                 "properties": {
                     "id": {
                         "type": "string",
@@ -24604,7 +24831,8 @@
             "OrganizationCustomerType": {
                 "type": "string",
                 "enum": [
-                    "subscription",
+                    "free_subscription",
+                    "paid_subscription",
                     "order",
                     "donation"
                 ],
@@ -24738,6 +24966,22 @@
                         ],
                         "title": "Links",
                         "description": "A list of links associated with the organization"
+                    },
+                    "subscribe": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/components/schemas/OrganizationSubscribePromoteSettings"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "description": "Subscription promotion settings",
+                        "default": {
+                            "promote": true,
+                            "show_count": true,
+                            "count_free": true
+                        }
                     }
                 },
                 "type": "object",
@@ -24769,6 +25013,30 @@
                     "url"
                 ],
                 "title": "OrganizationStripePortalSession"
+            },
+            "OrganizationSubscribePromoteSettings": {
+                "properties": {
+                    "promote": {
+                        "type": "boolean",
+                        "title": "Promote",
+                        "description": "Promote email subscription (free)",
+                        "default": true
+                    },
+                    "show_count": {
+                        "type": "boolean",
+                        "title": "Show Count",
+                        "description": "Show subscription count publicly",
+                        "default": true
+                    },
+                    "count_free": {
+                        "type": "boolean",
+                        "title": "Count Free",
+                        "description": "Include free subscribers in total count",
+                        "default": true
+                    }
+                },
+                "type": "object",
+                "title": "OrganizationSubscribePromoteSettings"
             },
             "OrganizationUpdate": {
                 "properties": {
@@ -27302,7 +27570,7 @@
                         "description": "Settings for the repository profile"
                     },
                     "organization": {
-                        "$ref": "#/components/schemas/Organization"
+                        "$ref": "#/components/schemas/Organization-Input"
                     }
                 },
                 "type": "object",
@@ -27395,7 +27663,7 @@
                         "description": "Settings for the repository profile"
                     },
                     "organization": {
-                        "$ref": "#/components/schemas/Organization"
+                        "$ref": "#/components/schemas/Organization-Output"
                     }
                 },
                 "type": "object",
@@ -27755,7 +28023,7 @@
                     "organization": {
                         "anyOf": [
                             {
-                                "$ref": "#/components/schemas/Organization"
+                                "$ref": "#/components/schemas/Organization-Output"
                             },
                             {
                                 "type": "null"
@@ -31764,7 +32032,7 @@
                         "title": "Type"
                     },
                     "data": {
-                        "$ref": "#/components/schemas/Organization"
+                        "$ref": "#/components/schemas/Organization-Input"
                     }
                 },
                 "type": "object",

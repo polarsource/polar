@@ -8,6 +8,7 @@ from .benefit import Benefit
 from .benefit_grant import BenefitGrant
 from .donation import Donation
 from .downloadable import Downloadable
+from .external_organization import ExternalOrganization
 from .file import File
 from .held_balance import HeldBalance
 from .invites import Invite
@@ -54,6 +55,7 @@ __all__ = [
     "BenefitGrant",
     "Donation",
     "Downloadable",
+    "ExternalOrganization",
     "File",
     "HeldBalance",
     "Invite",

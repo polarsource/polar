@@ -21,7 +21,8 @@ from polar.config import settings
 from polar.enums import Platforms
 from polar.kit.db.models import RecordModel
 from polar.kit.extensions.sqlalchemy import PostgresUUID, StringEnum
-from polar.models.organization import Organization
+
+from .external_organization import ExternalOrganization
 
 
 class Repository(RecordModel):
@@ -35,12 +36,12 @@ class Repository(RecordModel):
     platform: Mapped[Platforms] = mapped_column(StringEnum(Platforms), nullable=False)
     external_id: Mapped[int] = mapped_column(BigInteger, nullable=False, unique=True)
     organization_id: Mapped[UUID] = mapped_column(
-        PostgresUUID, ForeignKey("organizations.id"), nullable=False
+        PostgresUUID, ForeignKey("external_organizations.id"), nullable=False
     )
 
     @declared_attr
-    def organization(cls) -> Mapped[Organization]:
-        return relationship(Organization, lazy="raise")
+    def organization(cls) -> Mapped[ExternalOrganization]:
+        return relationship(ExternalOrganization, lazy="raise")
 
     name: Mapped[str] = mapped_column(CIText(), nullable=False)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)

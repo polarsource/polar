@@ -39,6 +39,21 @@ async def test_get_collective_collective_not_found(
 
 
 @pytest.mark.asyncio
+async def test_get_collective_collective_not_ready(
+    open_collective_graphql_mock: respx.Route,
+) -> None:
+    with open(
+        "tests/fixtures/cassettes/open_collective/collective/not_ready.json"
+    ) as f:
+        cassette = json.loads(f.read())
+    open_collective_graphql_mock.mock(return_value=httpx.Response(200, json=cassette))
+    collective = await open_collective.get_collective("notready")
+
+    assert collective.slug == "notready"
+    assert collective.host_slug is None
+
+
+@pytest.mark.asyncio
 async def test_get_collective(
     open_collective_graphql_mock: respx.Route,
 ) -> None:

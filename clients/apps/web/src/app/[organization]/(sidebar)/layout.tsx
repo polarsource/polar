@@ -7,6 +7,7 @@ import { getServerSideAPI } from '@/utils/api/serverside'
 import {
   ListResourceOrganization,
   ListResourceOrganizationCustomer,
+  OrganizationCustomerType,
   ListResourceProduct,
   Organization,
   Platforms,
@@ -44,10 +45,13 @@ export default async function Layout({
       },
       cacheConfig,
     )
+    if (!organization) {
+      notFound()
+    }
+
 
     const [
       loadAuthenticatedUser,
-      loadOrganizationCustomers,
       loadUserAdminOrganizations,
       loadSubscriptionTiers,
     ] = await Promise.all([
@@ -55,14 +59,6 @@ export default async function Layout({
         // Handle unauthenticated
         return undefined
       }),
-      api.organizations.listOrganizationCustomers(
-        {
-          id: organization.id,
-          customerTypes: new Set(['subscription']),
-          limit: 3,
-        },
-        cacheConfig,
-      ),
       // No caching, as we're expecting immediate updates to the response if the user converts to a maintainer
       api.organizations
         .list({ isAdminOnly: true }, { cache: 'no-store' })
@@ -86,16 +82,29 @@ export default async function Layout({
     ])
 
     authenticatedUser = loadAuthenticatedUser
-    organizationCustomers = loadOrganizationCustomers
     userAdminOrganizations = loadUserAdminOrganizations
     products = loadSubscriptionTiers
   } catch (e) {
     notFound()
   }
 
-  if (!organization) {
-    notFound()
+  const subscriberSettings = organization.profile_settings?.subscribe ?? {
+    show_count: true,
+    count_free: true,
   }
+  if (subscriberSettings.show_count) {
+    let customerTypes: OrganizationCustomerType[] = [OrganizationCustomerType.PAID_SUBSCRIPTION]
+    if (subscriberSettings.count_free) {
+      customerTypes.push(OrganizationCustomerType.FREE_SUBSCRIPTION)
+    }
+
+    organizationCustomers = await api.organizations.listOrganizationCustomers({
+      id: organization.id,
+      customerTypes: new Set(customerTypes),
+      limit: 3,
+    }, cacheConfig)
+  }
+
 
   return (
     <div className="flex flex-col">

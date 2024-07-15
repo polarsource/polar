@@ -37,6 +37,14 @@ class OrganizationFeatureSettings(Schema):
     )
 
 
+class OrganizationSubscribePromoteSettings(Schema):
+    promote: bool = Field(True, description="Promote email subscription (free)")
+    show_count: bool = Field(True, description="Show subscription count publicly")
+    count_free: bool = Field(
+        True, description="Include free subscribers in total count"
+    )
+
+
 class OrganizationProfileSettings(Schema):
     description: Annotated[
         str | None,
@@ -51,6 +59,14 @@ class OrganizationProfileSettings(Schema):
     )
     links: list[HttpUrl] | None = Field(
         None, description="A list of links associated with the organization"
+    )
+    subscribe: OrganizationSubscribePromoteSettings | None = Field(
+        OrganizationSubscribePromoteSettings(
+            promote=True,
+            show_count=True,
+            count_free=True,
+        ),
+        description="Subscription promotion settings",
     )
 
 
@@ -163,13 +179,13 @@ class Organization(Schema):
             #
             billing_email=o.billing_email if include_member_fields else None,
             #
-            total_monthly_spending_limit=o.total_monthly_spending_limit
-            if include_member_fields
-            else None,
+            total_monthly_spending_limit=(
+                o.total_monthly_spending_limit if include_member_fields else None
+            ),
             #
-            per_user_monthly_spending_limit=o.per_user_monthly_spending_limit
-            if include_member_fields
-            else None,
+            per_user_monthly_spending_limit=(
+                o.per_user_monthly_spending_limit if include_member_fields else None
+            ),
             is_teams_enabled=o.is_teams_enabled,
         )
 
@@ -212,7 +228,8 @@ class CreditBalance(Schema):
 
 
 class OrganizationCustomerType(StrEnum):
-    subscription = "subscription"
+    free_subscription = "free_subscription"
+    paid_subscription = "paid_subscription"
     order = "order"
     donation = "donation"
 

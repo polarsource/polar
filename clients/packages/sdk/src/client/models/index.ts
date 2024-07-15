@@ -8617,7 +8617,8 @@ export interface OrganizationCustomer {
  * @export
  */
 export const OrganizationCustomerType = {
-    SUBSCRIPTION: 'subscription',
+    FREE_SUBSCRIPTION: 'free_subscription',
+    PAID_SUBSCRIPTION: 'paid_subscription',
     ORDER: 'order',
     DONATION: 'donation'
 } as const;
@@ -8723,6 +8724,12 @@ export interface OrganizationProfileSettings {
      * @memberof OrganizationProfileSettings
      */
     links?: Array<string>;
+    /**
+     * 
+     * @type {OrganizationSubscribePromoteSettings}
+     * @memberof OrganizationProfileSettings
+     */
+    subscribe?: OrganizationSubscribePromoteSettings;
 }
 /**
  * 
@@ -8749,6 +8756,31 @@ export interface OrganizationStripePortalSession {
      * @memberof OrganizationStripePortalSession
      */
     url: string;
+}
+/**
+ * 
+ * @export
+ * @interface OrganizationSubscribePromoteSettings
+ */
+export interface OrganizationSubscribePromoteSettings {
+    /**
+     * Promote email subscription (free)
+     * @type {boolean}
+     * @memberof OrganizationSubscribePromoteSettings
+     */
+    promote?: boolean;
+    /**
+     * Show subscription count publicly
+     * @type {boolean}
+     * @memberof OrganizationSubscribePromoteSettings
+     */
+    show_count?: boolean;
+    /**
+     * Include free subscribers in total count
+     * @type {boolean}
+     * @memberof OrganizationSubscribePromoteSettings
+     */
+    count_free?: boolean;
 }
 /**
  * 

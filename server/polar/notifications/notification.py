@@ -443,6 +443,7 @@ class MaintainerNewProductSaleNotificationPayload(NotificationPayloadBase):
     customer_name: str
     product_name: str
     product_price_amount: int
+    organization_name: str
 
     def subject(self) -> str:
         return f"Congratulations! You have a new order (${get_cents_in_dollar_string(self.product_price_amount)})!"

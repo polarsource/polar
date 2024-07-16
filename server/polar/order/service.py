@@ -283,8 +283,12 @@ class OrderService(ResourceServiceReader[Order]):
                 order_id=order.id,
             )
 
-            await self.send_admin_notification(session, order)
-            await self.send_confirmation_email(session, order)
+            organization = await organization_service.get(
+                session, product.organization_id
+            )
+            assert organization is not None
+            await self.send_admin_notification(session, organization, order)
+            await self.send_confirmation_email(session, organization, order)
 
         if invoice.billing_reason in ["manual", "subscription_create"]:
             enqueue_job(
@@ -295,7 +299,7 @@ class OrderService(ResourceServiceReader[Order]):
         return order
 
     async def send_admin_notification(
-        self, session: AsyncSession, order: Order
+        self, session: AsyncSession, organization: Organization, order: Order
     ) -> None:
         product = order.product
         await notifications_service.send_to_org_admins(
@@ -307,28 +311,24 @@ class OrderService(ResourceServiceReader[Order]):
                     customer_name=order.user.email,
                     product_name=product.name,
                     product_price_amount=order.product_price.price_amount,
+                    organization_name=organization.name,
                 ),
             ),
         )
 
     async def send_confirmation_email(
-        self, session: AsyncSession, order: Order
+        self, session: AsyncSession, organization: Organization, order: Order
     ) -> None:
         email_renderer = get_email_renderer({"order": "polar.order"})
         email_sender = get_email_sender()
 
         product = order.product
-        featured_organization = await organization_service.get(
-            session, product.organization_id
-        )
-        assert featured_organization is not None
         user = order.user
-
         subject, body = email_renderer.render_from_template(
             "Your {{ product.name }} order confirmation",
             "order/confirmation.html",
             {
-                "featured_organization": featured_organization,
+                "featured_organization": organization,
                 "product": product,
                 "url": f"{settings.FRONTEND_BASE_URL}/purchases/products/{order.id}",
                 "current_year": datetime.now().year,

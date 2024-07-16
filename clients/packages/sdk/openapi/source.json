@@ -7023,8 +7023,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -7104,8 +7104,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -7188,8 +7188,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -7250,8 +7250,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             },
             "patch": {
@@ -7319,8 +7319,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -7441,8 +7441,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -7512,8 +7512,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -7577,8 +7577,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -7635,8 +7635,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -7693,8 +7693,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -7750,8 +7750,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             },
             "post": {
@@ -7815,8 +7815,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -8051,8 +8051,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             },
             "post": {
@@ -8106,8 +8106,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -8163,8 +8163,8 @@
                     }
                 ],
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -8249,8 +8249,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -8441,8 +8441,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
                     "User",
+                    "Organization",
                     "Anonymous"
                 ]
             },
@@ -8498,8 +8498,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -8574,8 +8574,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
                     "User",
+                    "Organization",
                     "Anonymous"
                 ]
             },
@@ -8669,8 +8669,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             },
             "delete": {
@@ -8746,8 +8746,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -8812,8 +8812,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -8906,8 +8906,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -8993,8 +8993,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -11585,8 +11585,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             },
             "post": {
@@ -11687,8 +11687,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -11783,8 +11783,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             },
             "patch": {
@@ -11916,8 +11916,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             },
             "delete": {
@@ -11992,8 +11992,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -12149,8 +12149,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -12268,8 +12268,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             },
             "post": {
@@ -12322,8 +12322,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -12393,8 +12393,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             },
             "patch": {
@@ -12481,8 +12481,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             },
             "delete": {
@@ -12552,8 +12552,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -12646,8 +12646,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -12714,8 +12714,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -12927,8 +12927,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
                     "User",
+                    "Organization",
                     "Anonymous"
                 ]
             },
@@ -12992,8 +12992,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -13069,8 +13069,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
                     "User",
+                    "Organization",
                     "Anonymous"
                 ]
             },
@@ -13164,8 +13164,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -13260,8 +13260,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -13498,8 +13498,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -13569,8 +13569,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -13640,8 +13640,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -13861,8 +13861,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             },
             "post": {
@@ -13931,8 +13931,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -14017,8 +14017,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -14103,8 +14103,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             },
             "delete": {
@@ -14173,8 +14173,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -14362,8 +14362,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -14399,8 +14399,8 @@
                     }
                 ],
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         }
@@ -22316,6 +22316,67 @@
                 ],
                 "title": "MaintainerNewPaidSubscriptionNotificationPayload"
             },
+            "MaintainerNewProductSaleNotification": {
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid4",
+                        "title": "Id"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "title": "Created At"
+                    },
+                    "type": {
+                        "type": "string",
+                        "enum": [
+                            "MaintainerNewProductSaleNotification"
+                        ],
+                        "const": "MaintainerNewProductSaleNotification",
+                        "title": "Type"
+                    },
+                    "payload": {
+                        "$ref": "#/components/schemas/MaintainerNewProductSaleNotificationPayload"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "id",
+                    "created_at",
+                    "type",
+                    "payload"
+                ],
+                "title": "MaintainerNewProductSaleNotification"
+            },
+            "MaintainerNewProductSaleNotificationPayload": {
+                "properties": {
+                    "customer_name": {
+                        "type": "string",
+                        "title": "Customer Name"
+                    },
+                    "product_name": {
+                        "type": "string",
+                        "title": "Product Name"
+                    },
+                    "product_price_amount": {
+                        "type": "integer",
+                        "title": "Product Price Amount"
+                    },
+                    "organization_name": {
+                        "type": "string",
+                        "title": "Organization Name"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "customer_name",
+                    "product_name",
+                    "product_price_amount",
+                    "organization_name"
+                ],
+                "title": "MaintainerNewProductSaleNotificationPayload"
+            },
             "MaintainerPledgeConfirmationPendingNotification": {
                 "properties": {
                     "id": {
@@ -23203,6 +23264,9 @@
                                     "$ref": "#/components/schemas/MaintainerNewPaidSubscriptionNotification"
                                 },
                                 {
+                                    "$ref": "#/components/schemas/MaintainerNewProductSaleNotification"
+                                },
+                                {
                                     "$ref": "#/components/schemas/BenefitPreconditionErrorNotification"
                                 },
                                 {
@@ -23221,6 +23285,7 @@
                                     "MaintainerCreateAccountNotification": "#/components/schemas/MaintainerCreateAccountNotification",
                                     "MaintainerDonationReceived": "#/components/schemas/MaintainerDonationReceivedNotification",
                                     "MaintainerNewPaidSubscriptionNotification": "#/components/schemas/MaintainerNewPaidSubscriptionNotification",
+                                    "MaintainerNewProductSaleNotification": "#/components/schemas/MaintainerNewProductSaleNotification",
                                     "MaintainerPledgeConfirmationPendingNotification": "#/components/schemas/MaintainerPledgeConfirmationPendingNotification",
                                     "MaintainerPledgeCreatedNotification": "#/components/schemas/MaintainerPledgeCreatedNotification",
                                     "MaintainerPledgePaidNotification": "#/components/schemas/MaintainerPledgePaidNotification",

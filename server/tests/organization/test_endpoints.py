@@ -61,7 +61,7 @@ class TestListOrganizations:
         organization_blocked: Organization,
     ) -> None:
         response = await client.get(
-            "/v1/organizations/", params={"slug": organization.name}
+            "/v1/organizations/", params={"slug": organization.slug}
         )
 
         assert response.status_code == 200

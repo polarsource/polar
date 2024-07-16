@@ -53,7 +53,7 @@ class Loops:
             userId=str(user.id),
             isMaintainer=True,
             organizationInstalled=True,
-            firstOrganizationName=organization_users[0].organization.name,
+            firstOrganizationName=organization_users[0].organization.slug,
         )
 
     async def repository_installed_on_organization(

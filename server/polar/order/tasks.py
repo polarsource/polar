@@ -102,7 +102,7 @@ async def order_discord_notification(
 
         embed.add_embed_field(
             name="Org",
-            value=f"[{product_org.name}](https://polar.sh/{product_org.name})",
+            value=f"[{product_org.slug}](https://polar.sh/{product_org.slug})",
         )
 
         webhook.add_embed(embed)

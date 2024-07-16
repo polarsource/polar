@@ -37,7 +37,7 @@ class TestSearch:
             "/v1/funding/search",
             params={
                 "platform": organization.platform.value,
-                "organization_name": organization.name,
+                "organization_name": organization.slug,
                 "repository_name": "not-existing",
             },
         )
@@ -59,7 +59,7 @@ class TestSearch:
             "/v1/funding/search",
             params={
                 "platform": organization.platform.value,
-                "organization_name": organization.name,
+                "organization_name": organization.slug,
             },
         )
 
@@ -83,7 +83,7 @@ class TestSearch:
             "/v1/funding/search",
             params={
                 "platform": organization.platform.value,
-                "organization_name": organization.name,
+                "organization_name": organization.slug,
                 "sorting": ["newest", "most_funded"],
             },
         )
@@ -116,7 +116,7 @@ class TestSearch:
             "/v1/funding/search",
             params={
                 "platform": organization.platform.value,
-                "organization_name": organization.name,
+                "organization_name": organization.slug,
             },
         )
 
@@ -150,7 +150,7 @@ class TestSearch:
             "/v1/funding/search",
             params={
                 "platform": organization.platform.value,
-                "organization_name": organization.name,
+                "organization_name": organization.slug,
             },
         )
 
@@ -169,7 +169,7 @@ class TestSearch:
             "/v1/funding/search",
             params={
                 "platform": organization.platform.value,
-                "organization_name": organization.name,
+                "organization_name": organization.slug,
                 "sorting": ["newest"],
                 "limit": 1,
                 "page": 3,

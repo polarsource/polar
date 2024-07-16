@@ -403,7 +403,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
                     tier_name=subscription_tier.name,
                     tier_price_amount=price.price_amount,
                     tier_price_recurring_interval=price.recurring_interval,
-                    tier_organization_name=subscription_tier_org.name,
+                    tier_organization_name=subscription_tier_org.slug,
                 ),
             ),
         )
@@ -618,7 +618,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         price_display = f"${price.price_amount / 100} / {price.recurring_interval}"
 
         description = (
-            f"New subscription has been made to {organization.name} "
+            f"New subscription has been made to {organization.slug} "
             f"on tier {subscription_tier.name}."
         )
 
@@ -655,7 +655,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
                             "accessory": {
                                 "type": "button",
                                 "text": {"type": "plain_text", "text": "Open"},
-                                "url": f"https://polar.sh/{organization.name}",
+                                "url": f"https://polar.sh/{organization.slug}",
                             },
                         },
                         {

@@ -110,7 +110,7 @@ class GitHubOIDCIDTokenGrant(BaseGrant, TokenEndpointMixin):
 
         statement = select(Organization).where(
             Organization.platform == Platforms.github,
-            Organization.name == id_token_data["repository_owner"],
+            Organization.slug == id_token_data["repository_owner"],
         )
         result = self.server.session.execute(statement)
         organization = result.unique().scalar_one_or_none()

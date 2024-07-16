@@ -147,7 +147,7 @@ class DonationService:
     ) -> stripe_lib.PaymentIntent:
         metadata = DonationPaymentIntentMetadata(
             to_organization_id=to_organization.id,
-            to_organization_name=to_organization.name,
+            to_organization_name=to_organization.slug,
         )
 
         if by_user:
@@ -176,7 +176,7 @@ class DonationService:
             amount=amount,
             metadata=metadata,
             receipt_email=receipt_email,
-            description=f"Donation to {to_organization.name}",
+            description=f"Donation to {to_organization.slug}",
             customer=customer,
         )
 
@@ -300,7 +300,7 @@ class DonationService:
                 notif=PartialNotification(
                     type=NotificationType.maintainer_create_account,
                     payload=MaintainerCreateAccountNotificationPayload(
-                        organization_name=to_organization.name,
+                        organization_name=to_organization.slug,
                         url=to_organization.account_url,
                     ),
                 ),
@@ -330,7 +330,7 @@ class DonationService:
             notif=PartialNotification(
                 type=NotificationType.maintainer_donation_received,
                 payload=MaintainerDonationReceivedNotificationPayload(
-                    organization_name=to_organization.name,
+                    organization_name=to_organization.slug,
                     donation_amount=get_cents_in_dollar_string(
                         donation.amount_received
                     ),
@@ -417,13 +417,13 @@ class DonationService:
 
         embed = DiscordEmbed(
             title="New Donation",
-            description=f"${get_cents_in_dollar_string(donation.amount_received)} to {to_org.name}\n\n> {donation.message or "No message"}",  # noqa: E501
+            description=f"${get_cents_in_dollar_string(donation.amount_received)} to {to_org.slug}\n\n> {donation.message or "No message"}",  # noqa: E501
             color="65280",
         )
 
         embed.add_embed_field(
-            name=to_org.name,
-            value=f"[{to_org.name}](https://polar.sh/{to_org.name})",
+            name=to_org.slug,
+            value=f"[{to_org.slug}](https://polar.sh/{to_org.slug})",
         )
 
         webhook.add_embed(embed)
@@ -440,7 +440,7 @@ class DonationService:
             return
 
         _donation_amount = donation.amount_received / 100
-        description = f"A ${_donation_amount} donation has been made to {to_org.name}\n\n> {donation.message or "No message"}"
+        description = f"A ${_donation_amount} donation has been made to {to_org.slug}\n\n> {donation.message or "No message"}"
 
         for wh in webhooks:
             if wh.integration == "discord":
@@ -479,7 +479,7 @@ class DonationService:
                             "accessory": {
                                 "type": "button",
                                 "text": {"type": "plain_text", "text": "Open"},
-                                "url": f"https://polar.sh/{to_org.name}",
+                                "url": f"https://polar.sh/{to_org.slug}",
                             },
                         },
                     ],

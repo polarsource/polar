@@ -41,7 +41,7 @@ class PledgeStripeService:
             currency="USD",
             metadata=metadata.model_dump(exclude_none=True),
             receipt_email=anonymous_email,
-            description=f"Pledge to {pledge_issue_org.name}/{pledge_issue_repo.name}#{pledge_issue.number}",  # noqa: E501
+            description=f"Pledge to {pledge_issue_org.slug}/{pledge_issue_repo.name}#{pledge_issue.number}",  # noqa: E501
         )
 
     async def create_user_intent(
@@ -75,7 +75,7 @@ class PledgeStripeService:
             customer=customer.id,
             metadata=metadata.model_dump(exclude_none=True),
             receipt_email=user.email,
-            description=f"Pledge to {pledge_issue_org.name}/{pledge_issue_repo.name}#{pledge_issue.number}",  # noqa: E501
+            description=f"Pledge to {pledge_issue_org.slug}/{pledge_issue_repo.name}#{pledge_issue.number}",  # noqa: E501
         )
 
     def create_organization_intent(
@@ -92,7 +92,7 @@ class PledgeStripeService:
             user_username=user.username_or_email,
             user_email=user.email,
             organization_id=organization.id,
-            organization_name=organization.name,
+            organization_name=organization.slug,
         )
 
         return stripe_lib.PaymentIntent.create(
@@ -196,7 +196,7 @@ class PledgeStripeService:
         # Create an invoice, then add line items to it
         invoice = stripe_lib.Invoice.create(
             customer=customer.id,
-            description=f"""You pledged to {pledge_issue_org.name}/{pledge_issue_repo.name}#{pledge_issue.number} on {pledge.created_at.strftime('%Y-%m-%d')}, which has now been fixed!
+            description=f"""You pledged to {pledge_issue_org.slug}/{pledge_issue_repo.name}#{pledge_issue.number} on {pledge.created_at.strftime('%Y-%m-%d')}, which has now been fixed!
 
 Thank you for your support!
 """,  # noqa: E501
@@ -217,7 +217,7 @@ Thank you for your support!
             invoice=invoice.id,
             customer=customer.id,
             amount=pledge.amount_including_fee,
-            description=f"Pledge to {pledge_issue_org.name}/{pledge_issue_repo.name}#{pledge_issue.number}",  # noqa: E501
+            description=f"Pledge to {pledge_issue_org.slug}/{pledge_issue_repo.name}#{pledge_issue.number}",  # noqa: E501
             currency="USD",
             metadata={
                 "pledge_id": str(pledge.id),

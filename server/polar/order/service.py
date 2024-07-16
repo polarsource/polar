@@ -400,7 +400,7 @@ class OrderService(ResourceServiceReader[Order]):
                 notif=PartialNotification(
                     type=NotificationType.maintainer_create_account,
                     payload=MaintainerCreateAccountNotificationPayload(
-                        organization_name=managing_organization.name,
+                        organization_name=managing_organization.slug,
                         url=managing_organization.account_url,
                     ),
                 ),

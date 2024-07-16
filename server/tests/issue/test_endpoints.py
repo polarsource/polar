@@ -121,7 +121,7 @@ async def test_issue_search_public_repo(
     await save_fixture(repository)
 
     response = await client.get(
-        f"/v1/issues/search?platform=github&organization_name={organization.name}&repository_name={repository.name}"
+        f"/v1/issues/search?platform=github&organization_name={organization.slug}&repository_name={repository.name}"
     )
 
     assert response.status_code == 200
@@ -148,7 +148,7 @@ async def test_issue_search_public_repo_without_repo_selector(
     await save_fixture(repository)
 
     response = await client.get(
-        f"/v1/issues/search?platform=github&organization_name={organization.name}"
+        f"/v1/issues/search?platform=github&organization_name={organization.slug}"
     )
 
     assert response.status_code == 200
@@ -171,7 +171,7 @@ async def test_issue_search_private_repo(
     await save_fixture(repository)
 
     response = await client.get(
-        f"/v1/issues/search?platform=github&organization_name={organization.name}&repository_name={repository.name}"
+        f"/v1/issues/search?platform=github&organization_name={organization.slug}&repository_name={repository.name}"
     )
 
     assert response.status_code == 404
@@ -193,7 +193,7 @@ async def test_issue_search_private_repo_without_repo_selector(
     await save_fixture(repository)
 
     response = await client.get(
-        f"/v1/issues/search?platform=github&organization_name={organization.name}"
+        f"/v1/issues/search?platform=github&organization_name={organization.slug}"
     )
 
     assert response.status_code == 200

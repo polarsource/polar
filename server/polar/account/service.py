@@ -173,7 +173,7 @@ class AccountService(ResourceService[Account, AccountCreate, AccountUpdate]):
         for user in account.users:
             associations.append(f"user/{user.username_or_email}")
         for organization in account.organizations:
-            associations.append(f"org/{organization.name}")
+            associations.append(f"org/{organization.slug}")
         return "·".join(associations)
 
     async def _create_stripe_account(

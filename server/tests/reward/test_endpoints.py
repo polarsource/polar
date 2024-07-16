@@ -85,7 +85,7 @@ async def test_search(
     assert json["items"][0]["organization"] is None
 
     assert json["items"][1]["user"] is None
-    assert json["items"][1]["organization"]["name"] == organization.name
+    assert json["items"][1]["organization"]["name"] == organization.slug
 
     assert json["items"][0]["state"] == "pending"
     assert json["items"][1]["state"] == "pending"

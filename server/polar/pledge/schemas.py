@@ -26,8 +26,8 @@ class Pledger(Schema):
         if p.on_behalf_of_organization:
             return cls(
                 name=p.on_behalf_of_organization.pretty_name
-                or p.on_behalf_of_organization.name,
-                github_username=p.on_behalf_of_organization.name,
+                or p.on_behalf_of_organization.slug,
+                github_username=p.on_behalf_of_organization.slug,
                 avatar_url=p.on_behalf_of_organization.avatar_url,
             )
 
@@ -40,8 +40,8 @@ class Pledger(Schema):
 
         if p.by_organization:
             return cls(
-                name=p.by_organization.pretty_name or p.by_organization.name,
-                github_username=p.by_organization.name,
+                name=p.by_organization.pretty_name or p.by_organization.slug,
+                github_username=p.by_organization.slug,
                 avatar_url=p.by_organization.avatar_url,
             )
 
@@ -58,8 +58,8 @@ class Pledger(Schema):
     @classmethod
     def from_organization(cls, organization: Organization) -> Self:
         return cls(
-            name=organization.name,
-            github_username=organization.name,
+            name=organization.slug,
+            github_username=organization.slug,
             avatar_url=organization.avatar_url,
         )
 

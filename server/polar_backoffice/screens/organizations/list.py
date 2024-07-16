@@ -59,7 +59,7 @@ class OrganizationsListScreen(Screen[None]):
             return
 
         organization = self.organizations[row_key]
-        webbrowser.open_new_tab(f"https://github.com/{organization.name}")
+        webbrowser.open_new_tab(f"https://github.com/{organization.slug}")
 
     def action_open_in_polar(self) -> None:
         table = self.query_one(DataTable)
@@ -96,18 +96,18 @@ class OrganizationsListScreen(Screen[None]):
             statement = (
                 (select(Organization))
                 .where(Organization.installation_id.is_not(None))
-                .order_by(Organization.name)
+                .order_by(Organization.slug)
             )
 
             if self.search_query:
                 statement = statement.where(
-                    Organization.name.ilike(f"%{self.search_query}%")
+                    Organization.slug.ilike(f"%{self.search_query}%")
                 )
 
             stream = await session.stream_scalars(statement)
             async for organization in stream.unique():
                 table.add_row(
-                    organization.name,
+                    organization.slug,
                     organization.platform,
                     "✅" if organization.is_personal else "❌",
                     "✅" if organization.is_teams_enabled else "❌",

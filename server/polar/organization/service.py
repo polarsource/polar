@@ -70,7 +70,7 @@ class OrganizationService(ResourceServiceReader[Organization]):
         statement = self._get_readable_organization_statement(auth_subject)
 
         if slug is not None:
-            statement = statement.where(Organization.name == slug)
+            statement = statement.where(Organization.slug == slug)
 
         if is_member is not None:
             if is_user(auth_subject):
@@ -107,7 +107,7 @@ class OrganizationService(ResourceServiceReader[Organization]):
             if criterion == SortProperty.created_at:
                 order_by_clauses.append(clause_function(Organization.created_at))
             elif criterion == SortProperty.name:
-                order_by_clauses.append(clause_function(Organization.name))
+                order_by_clauses.append(clause_function(Organization.slug))
         statement = statement.order_by(*order_by_clauses)
 
         return await paginate(session, statement, pagination=pagination)
@@ -233,7 +233,7 @@ class OrganizationService(ResourceServiceReader[Organization]):
             statement = statement.where(UserOrganization.is_admin.is_(True))
 
         if filter_by_name:
-            statement = statement.where(Organization.name == filter_by_name)
+            statement = statement.where(Organization.slug == filter_by_name)
 
         res = await session.execute(statement)
         return res.scalars().unique().all()

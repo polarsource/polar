@@ -121,7 +121,7 @@ class Article(Schema):
             )
         else:
             byline = BylineProfile(
-                name=i.organization.name,
+                name=i.organization.slug,
                 avatar_url=i.organization.avatar_url,
             )
 

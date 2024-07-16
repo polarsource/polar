@@ -95,7 +95,7 @@ class UserBenefitService(ResourceServiceReader[Benefit]):
                 statement = statement.join(
                     Organization, onclause=Benefit.organization_id == Organization.id
                 )
-                order_by_clauses.append(clause_function(Organization.name))
+                order_by_clauses.append(clause_function(Organization.slug))
         statement = statement.order_by(*order_by_clauses)
 
         return await paginate(session, statement, pagination=pagination)

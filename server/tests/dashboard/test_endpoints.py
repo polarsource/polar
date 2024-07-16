@@ -26,7 +26,7 @@ async def test_get(
     issue: Issue,
     client: AsyncClient,
 ) -> None:
-    response = await client.get(f"/v1/dashboard/github/{organization.name}")
+    response = await client.get(f"/v1/dashboard/github/{organization.slug}")
 
     assert response.status_code == 200
     res = response.json()
@@ -53,7 +53,7 @@ async def test_get_no_member(
     issue: Issue,
     client: AsyncClient,
 ) -> None:
-    response = await client.get(f"/v1/dashboard/github/{organization.name}")
+    response = await client.get(f"/v1/dashboard/github/{organization.slug}")
 
     assert response.status_code == 401
 
@@ -71,7 +71,7 @@ async def test_get_with_pledge_from_org(
     issue: Issue,
     client: AsyncClient,
 ) -> None:
-    response = await client.get(f"/v1/dashboard/github/{organization.name}")
+    response = await client.get(f"/v1/dashboard/github/{organization.slug}")
 
     assert response.status_code == 200
     res = response.json()
@@ -81,7 +81,7 @@ async def test_get_with_pledge_from_org(
     assert len(res["data"][0]["pledges"]) == 1
     rel_pledge = res["data"][0]["pledges"][0]
 
-    assert rel_pledge["pledger"]["name"] == pledging_organization.name
+    assert rel_pledge["pledger"]["name"] == pledging_organization.slug
 
     summary = res["data"][0]["pledges_summary"]
     assert summary["pay_upfront"]["total"]["amount"] == pledge.amount
@@ -106,7 +106,7 @@ async def test_get_with_pledge_from_user(
     pledging_user = await user_service.get(session, pledge_by_user.by_user_id)
     assert pledging_user
 
-    response = await client.get(f"/v1/dashboard/github/{organization.name}")
+    response = await client.get(f"/v1/dashboard/github/{organization.slug}")
 
     assert response.status_code == 200
     res = response.json()
@@ -145,7 +145,7 @@ async def test_get_with_pledge_from_user_github_oauth(
     assert pledging_user
     pledger_gh = await create_user_github_oauth(save_fixture, pledging_user)
 
-    response = await client.get(f"/v1/dashboard/github/{organization.name}")
+    response = await client.get(f"/v1/dashboard/github/{organization.slug}")
 
     assert response.status_code == 200
     res = response.json()
@@ -181,7 +181,7 @@ async def test_get_with_pledge_initiated(
     pledge.state = PledgeState.initiated
     await save_fixture(pledge)
 
-    response = await client.get(f"/v1/dashboard/github/{organization.name}")
+    response = await client.get(f"/v1/dashboard/github/{organization.slug}")
 
     assert response.status_code == 200
     res = response.json()
@@ -206,7 +206,7 @@ async def test_get_only_pledged_with_pledge(
     client: AsyncClient,
 ) -> None:
     response = await client.get(
-        f"/v1/dashboard/github/{organization.name}?only_pledged=True"
+        f"/v1/dashboard/github/{organization.slug}?only_pledged=True"
     )
 
     assert response.status_code == 200
@@ -219,7 +219,7 @@ async def test_get_only_pledged_with_pledge(
     assert len(pledges) == 1
     res_pledge = pledges[0]
 
-    assert res_pledge["pledger"]["name"] == pledging_organization.name
+    assert res_pledge["pledger"]["name"] == pledging_organization.slug
 
 
 @pytest.mark.asyncio
@@ -236,7 +236,7 @@ async def test_get_only_pledged_no_pledge(
     client: AsyncClient,
 ) -> None:
     response = await client.get(
-        f"/v1/dashboard/github/{organization.name}?only_pledged=True"
+        f"/v1/dashboard/github/{organization.slug}?only_pledged=True"
     )
 
     assert response.status_code == 200
@@ -259,7 +259,7 @@ async def test_get_only_badged_no_badge(
     client: AsyncClient,
 ) -> None:
     response = await client.get(
-        f"/v1/dashboard/github/{organization.name}?only_badged=True"
+        f"/v1/dashboard/github/{organization.slug}?only_badged=True"
     )
 
     assert response.status_code == 200
@@ -286,7 +286,7 @@ async def test_get_only_badged_is_badged(
     await save_fixture(issue)
 
     response = await client.get(
-        f"/v1/dashboard/github/{organization.name}?only_badged=True"
+        f"/v1/dashboard/github/{organization.slug}?only_badged=True"
     )
 
     assert response.status_code == 200

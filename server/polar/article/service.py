@@ -539,13 +539,13 @@ class ArticleService(ResourceServiceReader[Article]):
 
         embed = DiscordEmbed(
             title="Published Article",
-            description=f"[{article.title}](https://polar.sh/{article.organization.name}/posts/{article.slug})",  # noqa: E501
+            description=f"[{article.title}](https://polar.sh/{article.organization.slug}/posts/{article.slug})",  # noqa: E501
             color="65280",
         )
 
         embed.add_embed_field(
             name="Org",
-            value=f"[Open](https://polar.sh/{article.organization.name})",
+            value=f"[Open](https://polar.sh/{article.organization.slug})",
         )
 
         webhook.add_embed(embed)

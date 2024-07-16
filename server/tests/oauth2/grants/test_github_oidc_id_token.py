@@ -141,7 +141,7 @@ class TestValidateTokenRequest:
         id_token = _generate_id_token(
             PRIVATE_JWK,
             {
-                "repository_owner": organization.name,
+                "repository_owner": organization.slug,
                 "repository_owner_id": organization.external_id,
             },
         )
@@ -178,7 +178,7 @@ class TestValidateTokenRequest:
             PRIVATE_JWK,
             {
                 "jti": nonce,
-                "repository_owner": organization.name,
+                "repository_owner": organization.slug,
                 "repository_owner_id": organization.external_id,
             },
         )
@@ -206,7 +206,7 @@ class TestCreateTokenResponse:
             {
                 "jti": jti,
                 "exp": exp,
-                "repository_owner": organization.name,
+                "repository_owner": organization.slug,
                 "repository_owner_id": organization.external_id,
             },
         )

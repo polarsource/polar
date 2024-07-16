@@ -238,7 +238,7 @@ async def test_search_pledge(
     await save_fixture(user_organization)
 
     response = await client.get(
-        f"/v1/pledges/search?platform=github&organization_name={organization.name}"
+        f"/v1/pledges/search?platform=github&organization_name={organization.slug}"
     )
 
     assert response.status_code == 200
@@ -267,7 +267,7 @@ async def test_search_pledge_no_admin(
     await save_fixture(user_organization)
 
     response = await client.get(
-        f"/v1/pledges/search?platform=github&organization_name={organization.name}"
+        f"/v1/pledges/search?platform=github&organization_name={organization.slug}"
     )
 
     assert response.status_code == 200
@@ -284,7 +284,7 @@ async def test_search_pledge_no_member(
     client: AsyncClient,
 ) -> None:
     response = await client.get(
-        f"/v1/pledges/search?platform=github&organization_name={organization.name}"
+        f"/v1/pledges/search?platform=github&organization_name={organization.slug}"
     )
 
     assert response.status_code == 200
@@ -420,8 +420,8 @@ async def test_summary(
     repository.is_private = False
     await save_fixture(repository)
 
-    expected_github_username = pledging_organization.name
-    expected_name = pledging_organization.name
+    expected_github_username = pledging_organization.slug
+    expected_name = pledging_organization.slug
 
     # then
     session.expunge_all()

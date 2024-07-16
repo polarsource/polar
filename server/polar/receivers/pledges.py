@@ -126,9 +126,9 @@ async def pledge_created_webhook_alerts(hook: PledgeHook) -> None:
         return
 
     _pledge_amount = pledge.amount / 100
-    _issue_polar_url = f"https://polar.sh/{org.name}/{repo.name}/issues/{issue.number}"
+    _issue_polar_url = f"https://polar.sh/{org.slug}/{repo.name}/issues/{issue.number}"
     _issue_github_url = (
-        f"https://github.com/{org.name}/{repo.name}/issues/{issue.number}"
+        f"https://github.com/{org.slug}/{repo.name}/issues/{issue.number}"
     )
 
     description = (
@@ -181,7 +181,7 @@ async def pledge_created_webhook_alerts(hook: PledgeHook) -> None:
                         "accessory": {
                             "type": "button",
                             "text": {"type": "plain_text", "text": "Open"},
-                            "url": f"https://polar.sh/{org.name}/{repo.name}/issues/{issue.number}",
+                            "url": f"https://polar.sh/{org.slug}/{repo.name}/issues/{issue.number}",
                         },
                     },
                 ],
@@ -202,7 +202,7 @@ pledge_updated_hook.add(pledge_created_issue_pledge_sum)
 
 
 def issue_url(org: Organization, repo: Repository, issue: Issue) -> str:
-    return f"https://github.com/{org.name}/{repo.name}/issues/{issue.number}"
+    return f"https://github.com/{org.slug}/{repo.name}/issues/{issue.number}"
 
 
 def pledger_name(pledge: Pledge) -> str | None:
@@ -239,7 +239,7 @@ async def pledge_created_notification(pledge: Pledge, session: AsyncSession) -> 
         pledge_amount=get_cents_in_dollar_string(pledge.amount),
         issue_url=issue_url(org, repo, issue),
         issue_title=issue.title,
-        issue_org_name=org.name,
+        issue_org_name=org.slug,
         issue_repo_name=repo.name,
         issue_number=issue.number,
         maintainer_has_stripe_account=True if org_account else False,

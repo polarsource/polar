@@ -222,7 +222,7 @@ class ProductService(ResourceService[Product, ProductCreate, ProductUpdate]):
 
         metadata: dict[str, str] = {"product_id": str(product.id)}
         metadata["organization_id"] = str(organization.id)
-        metadata["organization_name"] = organization.name
+        metadata["organization_name"] = organization.slug
 
         stripe_product = stripe_service.create_product(
             product.get_stripe_name(),

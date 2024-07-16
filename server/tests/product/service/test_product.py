@@ -1114,7 +1114,7 @@ class TestUserUpdate:
 
         update_product_mock.assert_called_once_with(
             updated_product.stripe_product_id,
-            name=f"{organization.name} - Product Update",
+            name=f"{organization.slug} - Product Update",
         )
 
     @pytest.mark.auth(

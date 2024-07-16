@@ -112,7 +112,7 @@ class Product(RecordModel):
         return False
 
     def get_stripe_name(self) -> str:
-        return f"{self.organization.name} - {self.name}"
+        return f"{self.organization.slug} - {self.name}"
 
     def get_articles_benefit(self) -> BenefitArticles | None:
         for benefit in self.benefits:

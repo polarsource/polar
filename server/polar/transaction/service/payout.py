@@ -382,7 +382,7 @@ class PayoutTransactionService(BaseTransactionService):
                         description = f"Order of {product.name}"
                 elif transaction.donation is not None:
                     description = (
-                        f"Donation to {transaction.donation.to_organization.name}"
+                        f"Donation to {transaction.donation.to_organization.slug}"
                     )
 
                 transaction_id = (

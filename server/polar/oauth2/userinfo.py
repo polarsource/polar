@@ -25,7 +25,7 @@ def generate_user_info(sub: SubTypeValue, scope: str) -> UserInfo:
         _, organization = sub
         if scopes:
             if Scope.openid in scopes:
-                claims.update({"name": organization.name})
+                claims.update({"name": organization.slug})
     else:
         raise NotImplementedError()
 

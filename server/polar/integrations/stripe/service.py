@@ -260,7 +260,7 @@ class StripeService:
             raise MissingOrganizationBillingEmail(org.id)
 
         customer = stripe_lib.Customer.create(
-            name=org.name,
+            name=org.slug,
             email=org.billing_email,
             metadata={
                 "org_id": str(org.id),
@@ -325,7 +325,7 @@ class StripeService:
 
         return stripe_lib.billing_portal.Session.create(
             customer=customer.id,
-            return_url=f"{settings.FRONTEND_BASE_URL}/team/{org.name}/settings",
+            return_url=f"{settings.FRONTEND_BASE_URL}/team/{org.slug}/settings",
         )
 
     def create_product(

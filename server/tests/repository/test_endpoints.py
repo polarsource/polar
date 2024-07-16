@@ -115,7 +115,7 @@ async def test_repository_lookup_public(
     organization: Organization, public_repository: Repository, client: AsyncClient
 ) -> None:
     response = await client.get(
-        f"/v1/repositories/lookup?platform=github&organization_name={organization.name}&repository_name={public_repository.name}"
+        f"/v1/repositories/lookup?platform=github&organization_name={organization.slug}&repository_name={public_repository.name}"
     )
 
     assert response.status_code == 200
@@ -132,7 +132,7 @@ async def test_repository_lookup_private_member(
     client: AsyncClient,
 ) -> None:
     response = await client.get(
-        f"/v1/repositories/lookup?platform=github&organization_name={organization.name}&repository_name={repository.name}"
+        f"/v1/repositories/lookup?platform=github&organization_name={organization.slug}&repository_name={repository.name}"
     )
 
     assert response.status_code == 200
@@ -148,7 +148,7 @@ async def test_repository_lookup_private_non_member(
     client: AsyncClient,
 ) -> None:
     response = await client.get(
-        f"/v1/repositories/lookup?platform=github&organization_name={organization.name}&repository_name={repository.name}"
+        f"/v1/repositories/lookup?platform=github&organization_name={organization.slug}&repository_name={repository.name}"
     )
 
     assert response.status_code == 404
@@ -181,7 +181,7 @@ async def test_repository_search_org(
     client: AsyncClient,
 ) -> None:
     response = await client.get(
-        f"/v1/repositories/search?platform=github&organization_name={organization.name}"
+        f"/v1/repositories/search?platform=github&organization_name={organization.slug}"
     )
 
     assert response.status_code == 200

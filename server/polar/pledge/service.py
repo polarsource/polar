@@ -336,9 +336,9 @@ class PledgeService(ResourceServiceReader[Pledge]):
 
         n = MaintainerPledgedIssueConfirmationPendingNotificationPayload(
             pledge_amount_sum=get_cents_in_dollar_string(pledge_amount_sum),
-            issue_url=f"https://github.com/{org.name}/{repo.name}/issues/{issue.number}",
+            issue_url=f"https://github.com/{org.slug}/{repo.name}/issues/{issue.number}",
             issue_title=issue.title,
-            issue_org_name=org.name,
+            issue_org_name=org.slug,
             issue_repo_name=repo.name,
             issue_number=issue.number,
             maintainer_has_account=True if org_account else False,
@@ -436,9 +436,9 @@ class PledgeService(ResourceServiceReader[Pledge]):
         # Thanks for confirming that X is completed...
         n = MaintainerPledgedIssuePendingNotificationPayload(
             pledge_amount_sum=get_cents_in_dollar_string(pledge_amount_sum),
-            issue_url=f"https://github.com/{org.name}/{repo.name}/issues/{issue.number}",
+            issue_url=f"https://github.com/{org.slug}/{repo.name}/issues/{issue.number}",
             issue_title=issue.title,
-            issue_org_name=org.name,
+            issue_org_name=org.slug,
             issue_repo_name=repo.name,
             issue_number=issue.number,
             maintainer_has_account=True if org_account else False,
@@ -484,13 +484,13 @@ class PledgeService(ResourceServiceReader[Pledge]):
 
         n = TeamAdminMemberPledgedNotificationPayload(
             pledge_amount=get_cents_in_dollar_string(pledge.amount),
-            issue_url=f"https://github.com/{org.name}/{repo.name}/issues/{issue.number}",
+            issue_url=f"https://github.com/{org.slug}/{repo.name}/issues/{issue.number}",
             issue_title=issue.title,
-            issue_org_name=org.name,
+            issue_org_name=org.slug,
             issue_repo_name=repo.name,
             issue_number=issue.number,
             team_member_name=created_by_user.username_or_email,
-            team_name=pledging_org.name,
+            team_name=pledging_org.slug,
             pledge_id=pledge.id,
         )
 
@@ -528,9 +528,9 @@ class PledgeService(ResourceServiceReader[Pledge]):
         pledger_notif = PledgerPledgePendingNotificationPayload(
             pledge_amount=get_cents_in_dollar_string(pledge.amount),
             pledge_date=pledge.created_at.strftime("%Y-%m-%d"),
-            issue_url=f"https://github.com/{org.name}/{repo.name}/issues/{issue.number}",
+            issue_url=f"https://github.com/{org.slug}/{repo.name}/issues/{issue.number}",
             issue_title=issue.title,
-            issue_org_name=org.name,
+            issue_org_name=org.slug,
             issue_repo_name=repo.name,
             issue_number=issue.number,
             pledge_id=pledge.id,
@@ -919,9 +919,9 @@ class PledgeService(ResourceServiceReader[Pledge]):
             return
 
         n = RewardPaidNotificationPayload(
-            issue_url=f"https://github.com/{org.name}/{repo.name}/issues/{issue.number}",
+            issue_url=f"https://github.com/{org.slug}/{repo.name}/issues/{issue.number}",
             issue_title=issue.title,
-            issue_org_name=org.name,
+            issue_org_name=org.slug,
             issue_repo_name=repo.name,
             issue_number=issue.number,
             paid_out_amount=get_cents_in_dollar_string(transaction.amount),

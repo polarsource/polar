@@ -164,7 +164,7 @@ class RepositoriesListScreen(Screen[None]):
                 Repository.is_disabled.is_(False),
                 Organization.installation_id.is_not(None),
             )
-            .order_by(Organization.name, Repository.name)
+            .order_by(Organization.slug, Repository.name)
             .options(contains_eager(Repository.organization))
         )
 
@@ -174,7 +174,7 @@ class RepositoriesListScreen(Screen[None]):
             for clause in clauses:
                 if clause.startswith("org:"):
                     statement = statement.where(
-                        Organization.name.ilike(f"%{clause[len("org:"):]}%")
+                        Organization.slug.ilike(f"%{clause[len("org:"):]}%")
                     )
                 else:
                     fuzzy_clauses.append(clause)
@@ -204,7 +204,7 @@ class OrganizationRepositoriesListScreen(RepositoriesListScreen):
         super().__init__(name, id, classes)
 
     def _set_sub_title(self) -> None:
-        self.sub_title = f"Repositories of {self.organization.name}"
+        self.sub_title = f"Repositories of {self.organization.slug}"
 
     def _get_statement(self) -> Select[tuple[Repository]]:
         return (

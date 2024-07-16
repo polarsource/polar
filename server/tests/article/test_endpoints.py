@@ -339,7 +339,7 @@ async def test_byline_default(
 
     assert response.status_code == 201
     res = response.json()
-    assert res["byline"]["name"] == organization.name
+    assert res["byline"]["name"] == organization.slug
 
 
 @pytest.mark.asyncio
@@ -432,7 +432,7 @@ async def test_byline_org(
 
     assert response.status_code == 201
     res = response.json()
-    assert res["byline"]["name"] == organization.name
+    assert res["byline"]["name"] == organization.slug
 
 
 @pytest.mark.asyncio

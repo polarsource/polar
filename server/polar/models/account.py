@@ -112,7 +112,7 @@ class Account(RecordModel):
         for user in self.users:
             associations_names.append(user.username_or_email)
         for organization in self.organizations:
-            associations_names.append(organization.name)
+            associations_names.append(organization.slug)
         return associations_names
 
     @property

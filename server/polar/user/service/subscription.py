@@ -107,7 +107,7 @@ class UserSubscriptionService(ResourceServiceReader[Subscription]):
             statement = statement.where(
                 or_(
                     Product.name.ilike(f"%{query}%"),
-                    Organization.name.ilike(f"%{query}%"),
+                    Organization.slug.ilike(f"%{query}%"),
                 )
             )
 
@@ -123,7 +123,7 @@ class UserSubscriptionService(ResourceServiceReader[Subscription]):
             elif criterion == SortProperty.status:
                 order_by_clauses.append(clause_function(Subscription.status))
             elif criterion == SortProperty.organization:
-                order_by_clauses.append(clause_function(Organization.name))
+                order_by_clauses.append(clause_function(Organization.slug))
             elif criterion == SortProperty.product:
                 order_by_clauses.append(clause_function(Product.name))
         statement = statement.order_by(*order_by_clauses)

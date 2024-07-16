@@ -344,7 +344,7 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
                 session, subscription_tier.organization_id
             )
             assert managing_organization is not None
-            organization_name = managing_organization.name
+            organization_name = managing_organization.slug
 
         notification_payload = BenefitPreconditionErrorNotificationPayload(
             scope_name=scope_name,

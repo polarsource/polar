@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import TYPE_CHECKING
 from uuid import UUID
 
 from citext import CIText
@@ -6,18 +7,21 @@ from sqlalchemy import (
     TIMESTAMP,
     BigInteger,
     Boolean,
+    ForeignKey,
     Integer,
     String,
     UniqueConstraint,
 )
 from sqlalchemy.dialects.postgresql import JSONB
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.enums import Platforms
 from polar.exceptions import PolarError
 from polar.kit.db.models import RecordModel
-from polar.kit.extensions.sqlalchemy import StringEnum
-from polar.kit.extensions.sqlalchemy.types import PostgresUUID
+from polar.kit.extensions.sqlalchemy import PostgresUUID, StringEnum
+
+if TYPE_CHECKING:
+    from polar.models.organization import Organization
 
 
 class NotInstalledOrganization(PolarError):
@@ -32,6 +36,16 @@ class ExternalOrganization(RecordModel):
         UniqueConstraint("external_id"),
         UniqueConstraint("installation_id"),
     )
+
+    organization_id: Mapped[UUID | None] = mapped_column(
+        PostgresUUID,
+        ForeignKey("organizations.id", ondelete="set null"),
+        nullable=True,
+    )
+
+    @declared_attr
+    def organization(cls) -> Mapped["Organization"]:
+        return relationship("Organization", lazy="raise")
 
     platform: Mapped[Platforms] = mapped_column(StringEnum(Platforms), nullable=False)
     name: Mapped[str] = mapped_column(CIText(), nullable=False, unique=True)

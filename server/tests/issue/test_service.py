@@ -275,7 +275,7 @@ async def test_list_by_repository_type_and_status_dependencies_pledge(
 
     assert sorted_pledges[1].id == pledge_issue_3_org.id
     assert sorted_pledges[1].by_organization_id is not None
-    assert sorted_pledges[1].by_organization.name is not None
+    assert sorted_pledges[1].by_organization.slug is not None
 
 
 @pytest.mark.asyncio

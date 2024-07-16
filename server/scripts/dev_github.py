@@ -74,13 +74,13 @@ async def trigger_issue_sync(
         issue.id,
         queue_name=QueueName.github_crawl,
     )
-    typer.echo(f"Triggered issue sync for {org.name}/{repo.name}/{issue.number}")
+    typer.echo(f"Triggered issue sync for {org.slug}/{repo.name}/{issue.number}")
 
 
 async def trigger_issues_sync(session: AsyncSession, org: Organization) -> None:
     repositories = await get_repositories(session, org)
     if not repositories:
-        raise RuntimeError(f"No repositories found for {org.name}")
+        raise RuntimeError(f"No repositories found for {org.slug}")
 
     for repository in repositories:
         enqueue_job(
@@ -95,7 +95,7 @@ async def trigger_issues_sync(session: AsyncSession, org: Organization) -> None:
             repository.id,
             queue_name=QueueName.github_crawl,
         )
-        typer.echo(f"Triggered issue sync for {org.name}/{repository.name}")
+        typer.echo(f"Triggered issue sync for {org.slug}/{repository.name}")
 
 
 async def trigger_issue_references_sync(
@@ -103,7 +103,7 @@ async def trigger_issue_references_sync(
 ) -> None:
     repositories = await get_repositories(session, org)
     if not repositories:
-        raise RuntimeError(f"No repositories found for {org.name}")
+        raise RuntimeError(f"No repositories found for {org.slug}")
 
     for repository in repositories:
         enqueue_job(
@@ -112,7 +112,7 @@ async def trigger_issue_references_sync(
             repository.id,
             queue_name=QueueName.github_crawl,
         )
-        typer.echo(f"Triggered issue references sync for {org.name}/{repository.name}")
+        typer.echo(f"Triggered issue references sync for {org.slug}/{repository.name}")
 
 
 async def trigger_repositories_sync(session: AsyncSession, org: Organization) -> None:
@@ -121,7 +121,7 @@ async def trigger_repositories_sync(session: AsyncSession, org: Organization) ->
         org.id,
         queue_name=QueueName.github_crawl,
     )
-    typer.echo(f"Triggered repo sync for {org.name}")
+    typer.echo(f"Triggered repo sync for {org.slug}")
 
 
 async def trigger_issue_dependencies_sync(
@@ -129,7 +129,7 @@ async def trigger_issue_dependencies_sync(
 ) -> None:
     issues = await get_issues(session, org)
     if not issues:
-        raise RuntimeError(f"No issues found for {org.name}")
+        raise RuntimeError(f"No issues found for {org.slug}")
 
     for issue in issues:
         enqueue_job(
@@ -138,7 +138,7 @@ async def trigger_issue_dependencies_sync(
             queue_name=QueueName.github_crawl,
         )
         typer.echo(
-            f"Triggered issue dependencies sync for {org.name}/{issue.repository.name}/#{issue.number}"
+            f"Triggered issue dependencies sync for {org.slug}/{issue.repository.name}/#{issue.number}"
         )
 
 

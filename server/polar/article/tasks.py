@@ -73,7 +73,7 @@ async def articles_send_to_user(
             session, user_id, article.organization_id
         )
         if subscriber:
-            unsubscribe_link = f"https://polar.sh/unsubscribe?org={article.organization.name}&id={subscriber.id}"
+            unsubscribe_link = f"https://polar.sh/unsubscribe?org={article.organization.slug}&id={subscriber.id}"
             render_data["unsubscribe_link"] = unsubscribe_link
             email_headers["List-Unsubscribe"] = f"<{unsubscribe_link}>"
 
@@ -97,7 +97,7 @@ async def articles_send_to_user(
             if article.user.email:
                 email_headers["Reply-To"] = f"{from_name} <{article.user.email}>"
         else:
-            from_name = article.organization.pretty_name or article.organization.name
+            from_name = article.organization.pretty_name or article.organization.slug
             if article.organization.email:
                 email_headers["Reply-To"] = (
                     f"{from_name} <{article.organization.email}>"
@@ -110,7 +110,7 @@ async def articles_send_to_user(
             subject=subject,
             html_content=response.text,
             from_name=from_name,
-            from_email_addr=f"{article.organization.name}@posts.polar.sh",
+            from_email_addr=f"{article.organization.slug}@posts.polar.sh",
             email_headers=email_headers,
         )
 

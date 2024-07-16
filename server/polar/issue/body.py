@@ -10,8 +10,8 @@ from polar.integrations.github.client import (
     get_polar_client,
 )
 from polar.logging import Logger
-from polar.models import Issue, Organization, Repository
-from polar.models.organization import NotInstalledOrganization
+from polar.models import ExternalOrganization, Issue, Repository
+from polar.models.external_organization import NotInstalledOrganization
 from polar.redis import Redis
 from polar.redis import redis as redis_client
 
@@ -25,10 +25,15 @@ class IssueBodyRenderer:
         self.redis = redis
 
     async def render(
-        self, issue: Issue, repository: Repository, organization: Organization
+        self,
+        issue: Issue,
+        repository: Repository,
+        external_organization: ExternalOrganization,
     ) -> str:
         bounded_logger = log.bind(
-            issue=issue.id, repository=repository.id, organization=organization.id
+            issue=issue.id,
+            repository=repository.id,
+            external_organization=external_organization.id,
         )
         bounded_logger.debug("render body")
 
@@ -45,7 +50,7 @@ class IssueBodyRenderer:
 
         if issue.platform == Platforms.github:
             bounded_logger.debug("render from GitHub API")
-            body = await self._render_github(body, repository, organization)
+            body = await self._render_github(body, repository, external_organization)
 
         await self.redis.set(cache_key, body, ex=_CACHE_TTL_SECONDS)
 
@@ -55,17 +60,22 @@ class IssueBodyRenderer:
         return body.split(PLEDGE_BADGE_COMMENT_START)[0]
 
     async def _render_github(
-        self, body: str, repository: Repository, organization: Organization
+        self,
+        body: str,
+        repository: Repository,
+        external_organization: ExternalOrganization,
     ) -> str:
         try:
             client: GitHub[Any] = get_app_installation_client(
-                organization.safe_installation_id
+                external_organization.safe_installation_id
             )
         except NotInstalledOrganization:
             client = get_polar_client()
 
         response = await client.rest.markdown.async_render(
-            text=body, mode="gfm", context=f"{organization.name}/{repository.name}"
+            text=body,
+            mode="gfm",
+            context=f"{external_organization.name}/{repository.name}",
         )
 
         return response.content.decode()

@@ -79,14 +79,14 @@ class GithubBadge:
     def generate_svg_url(self, darkmode: bool = False) -> str:
         return "{base}/api/github/{org}/{repo}/issues/{number}/pledge.svg{maybeDarkmode}".format(  # noqa: E501
             base=settings.FRONTEND_BASE_URL,
-            org=self.organization.name,
+            org=self.organization.slug,
             repo=self.repository.name,
             number=self.issue.number,
             maybeDarkmode="?darkmode=1" if darkmode else "",
         )
 
     def generate_funding_url(self) -> str:
-        return f"{settings.FRONTEND_BASE_URL}/{self.organization.name}/{self.repository.name}/issues/{self.issue.number}"
+        return f"{settings.FRONTEND_BASE_URL}/{self.organization.slug}/{self.repository.name}/issues/{self.issue.number}"
 
     def badge_markdown(self, message: str) -> str:
         funding_url = self.generate_funding_url()
@@ -167,7 +167,7 @@ class GithubBadge:
         self, client: GitHub[AppInstallationAuthStrategy]
     ) -> str:
         latest = await client.rest.issues.async_get(
-            owner=self.organization.name,
+            owner=self.organization.slug,
             repo=self.repository.name,
             issue_number=self.issue.number,
         )
@@ -182,7 +182,7 @@ class GithubBadge:
         self, client: GitHub[AppInstallationAuthStrategy], body: str
     ) -> types.Issue:
         updated = await client.rest.issues.async_update(
-            owner=self.organization.name,
+            owner=self.organization.slug,
             repo=self.repository.name,
             issue_number=self.issue.number,
             body=body,

@@ -57,7 +57,7 @@ class PledgeReward(Widget):
         rewarded_name = "Unknown"
         rewarded = self.reward.get_rewarded()
         if isinstance(rewarded, Organization):
-            rewarded_name = rewarded.name
+            rewarded_name = rewarded.slug
         elif isinstance(rewarded, User):
             rewarded_name = rewarded.username_or_email
         self.rewarded_name = rewarded_name

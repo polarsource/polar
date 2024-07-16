@@ -79,7 +79,7 @@ async def organizations_renamed(
             if organizations:
                 installed_organizations_statement = (
                     installed_organizations_statement.where(
-                        Organization.name.in_(organizations)
+                        Organization.slug.in_(organizations)
                     )
                 )
             installed_organizations = await session.stream_scalars(
@@ -87,7 +87,7 @@ async def organizations_renamed(
             )
             async for organization in installed_organizations:
                 typer.echo("\n---\n")
-                typer.echo(f"🔄 Handling Organization {organization.name}")
+                typer.echo(f"🔄 Handling Organization {organization.slug}")
 
                 client = get_app_installation_client(organization.safe_installation_id)
 
@@ -95,7 +95,7 @@ async def organizations_renamed(
                     if organization.is_personal:
                         user_data = (
                             await client.rest.users.async_get_by_username(
-                                str(organization.name)
+                                str(organization.slug)
                             )
                         ).parsed_data
                         login = user_data.login
@@ -108,9 +108,9 @@ async def organizations_renamed(
                     typer.echo(typer.style("\tUnauthenticated app", fg="yellow"))
                     continue
 
-                if login != organization.name:
-                    typer.echo("\t Updating name: " f"{organization.name} ➡️ {login}")
-                    organization.name = login
+                if login != organization.slug:
+                    typer.echo("\t Updating name: " f"{organization.slug} ➡️ {login}")
+                    organization.slug = login
                     session.add(organization)
 
             await session.commit()
@@ -153,7 +153,7 @@ async def repositories_transferred(
             if organizations:
                 installed_organizations_statement = (
                     installed_organizations_statement.where(
-                        Organization.name.in_(organizations)
+                        Organization.slug.in_(organizations)
                     )
                 )
             installed_organizations = await session.stream_scalars(
@@ -161,7 +161,7 @@ async def repositories_transferred(
             )
             async for organization in installed_organizations:
                 typer.echo("\n---\n")
-                typer.echo(f"🔄 Handling Organization {organization.name}")
+                typer.echo(f"🔄 Handling Organization {organization.slug}")
 
                 client = get_app_installation_client(organization.safe_installation_id)
 
@@ -184,7 +184,7 @@ async def repositories_transferred(
                                 typer.echo(
                                     typer.style(
                                         f"\tRe-link {repository.name} "
-                                        f"to {organization.name}",
+                                        f"to {organization.slug}",
                                         fg="green",
                                     )
                                 )

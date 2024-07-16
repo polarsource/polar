@@ -36,7 +36,7 @@ async def pull_request_find_reverse_references(
 
     for url in urls:
         # Find deps in same repository, and trigger syncs for the issue
-        is_same_owner = url.owner is None or url.owner == org.name
+        is_same_owner = url.owner is None or url.owner == org.slug
         is_same_repo = url.repo is None or url.repo == repo.name
 
         if not is_same_owner or not is_same_repo:

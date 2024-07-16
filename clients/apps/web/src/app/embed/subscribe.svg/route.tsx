@@ -3,6 +3,8 @@ import { getServerURL } from '@/utils/api'
 import {
   ListResourceOrganizationCustomer,
   OrganizationCustomer,
+  OrganizationSubscribePromoteSettings,
+  OrganizationCustomerType
 } from '@polar-sh/sdk'
 const { default: satori } = require('satori')
 
@@ -12,14 +14,29 @@ const getCustomers = async (
   org: string,
   limit: number = 3,
 ): Promise<[OrganizationCustomer[], number]> => {
-  const { id: orgId } = await fetch(
+  const { id: orgId, profile_settings } = await fetch(
     `${getServerURL()}/v1/organizations/lookup?organization_name=${org}&platform=github`,
     { method: 'GET' },
   ).then((res) => res.json())
 
-  let url = `${getServerURL()}/v1/organizations/${orgId}/customers?customer_types=subscription&limit=${limit}`
+  const settings: OrganizationSubscribePromoteSettings = profile_settings?.subscribe ?? {
+    promote: true,
+    show_count: true,
+    count_free: true,
+  }
+  if (!settings.show_count) {
+    return [[], 0]
+  }
 
-  const response = await fetch(url, {
+  const apiBase = `${getServerURL()}/v1`
+  const requestURL = new URL(`${apiBase}/organizations/${orgId}/customers`)
+  requestURL.searchParams.append('customer_types', OrganizationCustomerType.PAID_SUBSCRIPTION)
+  if (settings.count_free) {
+    requestURL.searchParams.append('customer_types', OrganizationCustomerType.FREE_SUBSCRIPTION)
+  }
+  requestURL.searchParams.set('limit', limit.toString())
+
+  const response = await fetch(requestURL.toString(), {
     method: 'GET',
   })
   const data = (await response.json()) as ListResourceOrganizationCustomer

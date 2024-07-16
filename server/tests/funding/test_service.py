@@ -9,7 +9,14 @@ from polar.funding.service import ListFundingSortBy
 from polar.funding.service import funding as funding_service
 from polar.issue.service import issue as issue_service
 from polar.kit.pagination import PaginationParams
-from polar.models import Issue, Organization, Pledge, User, UserOrganization
+from polar.models import (
+    ExternalOrganization,
+    Issue,
+    Organization,
+    Pledge,
+    User,
+    UserOrganization,
+)
 from polar.models.pledge import PledgeState, PledgeType
 from polar.models.user import OAuthPlatform
 from polar.pledge.service import pledge as pledge_service
@@ -162,16 +169,16 @@ class TestListBy:
     async def test_private_repository(
         self,
         session: AsyncSession,
-        organization: Organization,
+        external_organization: ExternalOrganization,
         user: User,
         user_organization: UserOrganization,  # makes User a member of Organization
         save_fixture: SaveFixture,
     ) -> None:
         private_repository = await create_repository(
-            save_fixture, organization, is_private=True
+            save_fixture, external_organization, is_private=True
         )
         issues_pledges = await create_issues_pledges(
-            save_fixture, organization, private_repository
+            save_fixture, external_organization, private_repository
         )
 
         # then
@@ -203,12 +210,13 @@ class TestListBy:
         session: AsyncSession,
         save_fixture: SaveFixture,
         organization: Organization,
+        external_organization: ExternalOrganization,
         user: User,
         user_organization: UserOrganization,  # makes User a member of Organization
     ) -> None:
         repository = await create_repository(
             save_fixture,
-            organization,
+            external_organization,
             is_private=False,
         )
 
@@ -225,14 +233,14 @@ class TestListBy:
 
         # create 20 issues
         for n in range(20):
-            issue = await create_issue(save_fixture, organization, repository)
+            issue = await create_issue(save_fixture, external_organization, repository)
             issues.append(issue)
 
         # add pledges
         for n in range(3):
             await create_pledge(
                 save_fixture,
-                organization,
+                external_organization,
                 repository,
                 issues[0],
                 pledging_organization=organization,
@@ -362,12 +370,13 @@ class TestListBy:
         session: AsyncSession,
         save_fixture: SaveFixture,
         organization: Organization,
+        external_organization: ExternalOrganization,
         user: User,
         user_organization: UserOrganization,  # makes User a member of Organization
     ) -> None:
         repository = await create_repository(
             save_fixture,
-            organization,
+            external_organization,
             is_private=False,
         )
 
@@ -380,7 +389,7 @@ class TestListBy:
             save_fixture, pledging_user, OAuthPlatform.github_repository_benefit
         )
 
-        issue = await create_issue(save_fixture, organization, repository)
+        issue = await create_issue(save_fixture, external_organization, repository)
 
         await create_user_pledge(
             save_fixture,
@@ -428,22 +437,23 @@ class TestListBy:
         session: AsyncSession,
         save_fixture: SaveFixture,
         organization: Organization,
+        external_organization: ExternalOrganization,
         user: User,
         user_organization: UserOrganization,  # makes User a member of Organization
     ) -> None:
         repository = await create_repository(
             save_fixture,
-            organization,
+            external_organization,
             is_private=False,
         )
 
         pledging_user = await create_user(save_fixture)
 
-        issue = await create_issue(save_fixture, organization, repository)
+        issue = await create_issue(save_fixture, external_organization, repository)
 
         await create_user_pledge(
             save_fixture,
-            organization,
+            external_organization,
             repository,
             issue,
             pledging_user=pledging_user,
@@ -480,24 +490,24 @@ class TestListBy:
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
-        organization: Organization,
+        external_organization: ExternalOrganization,
         user: User,
         user_organization: UserOrganization,  # makes User a member of Organization
     ) -> None:
         repository = await create_repository(
             save_fixture,
-            organization,
+            external_organization,
             is_private=False,
         )
 
         pledging_user = await create_user(save_fixture)
         await create_oauth_account(save_fixture, pledging_user, OAuthPlatform.discord)
 
-        issue = await create_issue(save_fixture, organization, repository)
+        issue = await create_issue(save_fixture, external_organization, repository)
 
         await create_user_pledge(
             save_fixture,
-            organization,
+            external_organization,
             repository,
             issue,
             pledging_user=pledging_user,
@@ -559,16 +569,16 @@ class TestGetByIssueId:
     async def test_private_issue(
         self,
         session: AsyncSession,
-        organization: Organization,
+        external_organization: ExternalOrganization,
         user: User,
         user_organization: UserOrganization,  # makes User a member of Organization
         save_fixture: SaveFixture,
     ) -> None:
         private_repository = await create_repository(
-            save_fixture, organization, is_private=True
+            save_fixture, external_organization, is_private=True
         )
         issues_pledges = await create_issues_pledges(
-            save_fixture, organization, private_repository
+            save_fixture, external_organization, private_repository
         )
         issue, pledges = issues_pledges[0]
 

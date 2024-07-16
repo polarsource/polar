@@ -3,6 +3,7 @@ import uuid
 import pytest
 from httpx import AsyncClient
 
+from polar.models.external_organization import ExternalOrganization
 from polar.models.issue import Issue
 from polar.models.organization import Organization
 from polar.models.pledge import Pledge, PledgeState
@@ -294,6 +295,7 @@ async def test_search_pledge_no_member(
 @pytest.mark.auth
 async def test_search_pledge_by_issue_id(
     organization: Organization,
+    external_organization: ExternalOrganization,
     pledging_organization: Organization,
     repository: Repository,
     user_organization: UserOrganization,  # makes User a member of Organization
@@ -308,7 +310,7 @@ async def test_search_pledge_by_issue_id(
 
     # create another issue and another pledge
     other_issue = await create_issue(
-        save_fixture, organization=organization, repository=repository
+        save_fixture, external_organization=external_organization, repository=repository
     )
 
     other_pledge = Pledge(
@@ -316,7 +318,6 @@ async def test_search_pledge_by_issue_id(
         by_organization_id=pledging_organization.id,
         issue_id=other_issue.id,
         repository_id=repository.id,
-        organization_id=organization.id,
         amount=50000,
         fee=50,
         state=PledgeState.created,
@@ -328,7 +329,6 @@ async def test_search_pledge_by_issue_id(
         by_organization_id=pledging_organization.id,
         issue_id=other_issue.id,
         repository_id=repository.id,
-        organization_id=organization.id,
         amount=50000,
         fee=50,
         state=PledgeState.created,

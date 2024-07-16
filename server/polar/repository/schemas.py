@@ -5,10 +5,12 @@ from uuid import UUID
 from pydantic import UUID4, Field, HttpUrl
 
 from polar.enums import Platforms
+from polar.external_organization.schemas import (
+    ExternalOrganization as ExternalOrganizationSchema,
+)
 from polar.integrations.github import types
 from polar.kit.schemas import Schema
 from polar.models import Repository as RepositoryModel
-from polar.organization.schemas import Organization as OrganizationSchema
 from polar.visibility import Visibility
 
 REPOSITORY_PROFILE_DESCRIPTION_MAX_LENGTH = 240
@@ -46,7 +48,7 @@ class Repository(Schema):
         description="Settings for the repository profile"
     )
 
-    organization: OrganizationSchema
+    organization: ExternalOrganizationSchema
 
     @classmethod
     def from_db(cls, r: RepositoryModel) -> Self:
@@ -71,7 +73,7 @@ class Repository(Schema):
             stars=r.stars,
             license=r.license,
             homepage=r.homepage,
-            organization=OrganizationSchema.from_db(r.organization),
+            organization=ExternalOrganizationSchema.model_validate(r.organization),
             profile_settings=profile_settings,
         )
 

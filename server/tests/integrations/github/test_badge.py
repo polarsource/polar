@@ -6,6 +6,7 @@ import pytest
 from polar.integrations.github.badge import GithubBadge
 from polar.integrations.github.service.issue import github_issue
 from polar.kit.utils import utc_now
+from polar.models.external_organization import ExternalOrganization
 from polar.models.issue import Issue
 from polar.models.organization import Organization
 from polar.models.repository import Repository
@@ -35,12 +36,12 @@ BADGED_BODY = """Hello my issue
 @pytest.mark.asyncio
 @pytest.mark.skip_db_asserts
 async def test_add_badge(
-    predictable_organization: Organization,
+    organization: Organization,
     predictable_repository: Repository,
     predictable_issue: Issue,
 ) -> None:
     res = GithubBadge(
-        organization=predictable_organization,
+        organization=organization,
         repository=predictable_repository,
         issue=predictable_issue,
     ).generate_body_with_badge("""Hello my issue""")
@@ -50,7 +51,7 @@ async def test_add_badge(
 
 @pytest.mark.asyncio
 async def test_add_badge_custom_content(
-    predictable_organization: Organization,
+    organization: Organization,
     predictable_repository: Repository,
     predictable_issue: Issue,
     session: AsyncSession,
@@ -59,14 +60,14 @@ async def test_add_badge_custom_content(
     predictable_issue.badge_custom_content = "Hello, please sponsor me."
     await save_fixture(predictable_issue)
 
-    predictable_organization.default_badge_custom_content = None
-    await save_fixture(predictable_organization)
+    organization.default_badge_custom_content = None
+    await save_fixture(organization)
 
     # then
     session.expunge_all()
 
     res = GithubBadge(
-        organization=predictable_organization,
+        organization=organization,
         repository=predictable_repository,
         issue=predictable_issue,
     ).generate_body_with_badge("""Hello my issue""")
@@ -91,7 +92,7 @@ Hello, please sponsor me.
 
 @pytest.mark.asyncio
 async def test_add_badge_custom_organization_content(
-    predictable_organization: Organization,
+    organization: Organization,
     predictable_repository: Repository,
     predictable_issue: Issue,
     session: AsyncSession,
@@ -100,16 +101,14 @@ async def test_add_badge_custom_organization_content(
     predictable_issue.badge_custom_content = None
     await save_fixture(predictable_issue)
 
-    predictable_organization.default_badge_custom_content = (
-        "Default message from organization."
-    )
-    await save_fixture(predictable_organization)
+    organization.default_badge_custom_content = "Default message from organization."
+    await save_fixture(organization)
 
     # then
     session.expunge_all()
 
     res = GithubBadge(
-        organization=predictable_organization,
+        organization=organization,
         repository=predictable_repository,
         issue=predictable_issue,
     ).generate_body_with_badge("""Hello my issue""")
@@ -135,12 +134,12 @@ Default message from organization.
 @pytest.mark.asyncio
 @pytest.mark.skip_db_asserts
 async def test_remove_badge(
-    predictable_organization: Organization,
+    organization: Organization,
     predictable_repository: Repository,
     predictable_issue: Issue,
 ) -> None:
     res = GithubBadge(
-        organization=predictable_organization,
+        organization=organization,
         repository=predictable_repository,
         issue=predictable_issue,
     ).generate_body_without_badge(BADGED_BODY)
@@ -151,12 +150,12 @@ async def test_remove_badge(
 @pytest.mark.asyncio
 @pytest.mark.skip_db_asserts
 async def test_remove_badge_custom_content(
-    predictable_organization: Organization,
+    organization: Organization,
     predictable_repository: Repository,
     predictable_issue: Issue,
 ) -> None:
     res = GithubBadge(
-        organization=predictable_organization,
+        organization=organization,
         repository=predictable_repository,
         issue=predictable_issue,
     ).generate_body_without_badge(
@@ -182,12 +181,12 @@ Anything can go here!
 @pytest.mark.asyncio
 @pytest.mark.skip_db_asserts
 async def test_remove_badge_pre_2023_05_08(
-    predictable_organization: Organization,
+    organization: Organization,
     predictable_repository: Repository,
     predictable_issue: Issue,
 ) -> None:
     res = GithubBadge(
-        organization=predictable_organization,
+        organization=organization,
         repository=predictable_repository,
         issue=predictable_issue,
     ).generate_body_without_badge(
@@ -359,12 +358,13 @@ async def test_list_issues_to_add_badge_to_auto(
     session: AsyncSession,
     save_fixture: SaveFixture,
     organization: Organization,
+    external_organization: ExternalOrganization,
     repository: Repository,
 ) -> None:
-    i1 = await create_issue(save_fixture, organization, repository)
-    i2 = await create_issue(save_fixture, organization, repository)
-    i3 = await create_issue(save_fixture, organization, repository)
-    i4 = await create_issue(save_fixture, organization, repository)
+    i1 = await create_issue(save_fixture, external_organization, repository)
+    i2 = await create_issue(save_fixture, external_organization, repository)
+    i3 = await create_issue(save_fixture, external_organization, repository)
+    i4 = await create_issue(save_fixture, external_organization, repository)
 
     repository.pledge_badge_auto_embed = True
     organization.onboarded_at = utc_now()
@@ -383,7 +383,7 @@ async def test_list_issues_to_add_badge_to_auto(
     session.expunge_all()
 
     issues = await github_issue.list_issues_to_add_badge_to_auto(
-        session, organization, repository
+        session, external_organization, repository
     )
 
     assert [i.id for i in issues] == [i1.id, i4.id]
@@ -395,17 +395,17 @@ async def test_list_issues_to_remove_badge_from_auto(
     session: AsyncSession,
     save_fixture: SaveFixture,
     organization: Organization,
+    external_organization: ExternalOrganization,
     repository: Repository,
 ) -> None:
-    i1 = await create_issue(save_fixture, organization, repository)
-    i2 = await create_issue(save_fixture, organization, repository)
-    i3 = await create_issue(save_fixture, organization, repository)
-    i4 = await create_issue(save_fixture, organization, repository)
+    i1 = await create_issue(save_fixture, external_organization, repository)
+    i2 = await create_issue(save_fixture, external_organization, repository)
+    i3 = await create_issue(save_fixture, external_organization, repository)
+    i4 = await create_issue(save_fixture, external_organization, repository)
 
     repository.pledge_badge_auto_embed = False
     organization.onboarded_at = utc_now()
     await save_fixture(organization)
-
     i2.pledge_badge_ever_embedded = True
     await save_fixture(i2)
 
@@ -419,7 +419,7 @@ async def test_list_issues_to_remove_badge_from_auto(
     session.expunge_all()
 
     issues = await github_issue.list_issues_to_remove_badge_from_auto(
-        session, organization, repository
+        session, external_organization, repository
     )
 
     assert [i.id for i in issues] == [i1.id, i2.id, i4.id]

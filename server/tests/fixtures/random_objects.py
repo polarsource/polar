@@ -14,6 +14,7 @@ from polar.models import (
     AdvertisementCampaign,
     Article,
     Benefit,
+    ExternalOrganization,
     Order,
     Organization,
     Product,
@@ -110,27 +111,54 @@ async def pledging_organization(save_fixture: SaveFixture) -> Organization:
     return organization
 
 
+async def create_external_organization(
+    save_fixture: SaveFixture,
+) -> ExternalOrganization:
+    external_organization = ExternalOrganization(
+        platform=Platforms.github,
+        name=rstr("testorg"),
+        external_id=secrets.randbelow(100000),
+        avatar_url="https://avatars.githubusercontent.com/u/105373340?s=200&v=4",
+        is_personal=False,
+        installation_id=secrets.randbelow(100000),
+        installation_created_at=datetime.now(),
+        installation_updated_at=datetime.now(),
+        installation_suspended_at=None,
+    )
+    await save_fixture(external_organization)
+    return external_organization
+
+
+@pytest_asyncio.fixture
+async def external_organization(save_fixture: SaveFixture) -> ExternalOrganization:
+    return await create_external_organization(save_fixture)
+
+
 @pytest_asyncio.fixture(scope="function")
 async def repository(
-    save_fixture: SaveFixture, organization: Organization
+    save_fixture: SaveFixture, external_organization: ExternalOrganization
 ) -> Repository:
-    return await create_repository(save_fixture, organization, is_private=True)
+    return await create_repository(save_fixture, external_organization, is_private=True)
 
 
 @pytest_asyncio.fixture(scope="function")
 async def public_repository(
-    save_fixture: SaveFixture, organization: Organization
+    save_fixture: SaveFixture, external_organization: ExternalOrganization
 ) -> Repository:
-    return await create_repository(save_fixture, organization, is_private=False)
+    return await create_repository(
+        save_fixture, external_organization, is_private=False
+    )
 
 
 async def create_repository(
-    save_fixture: SaveFixture, organization: Organization, is_private: bool = True
+    save_fixture: SaveFixture,
+    external_organization: ExternalOrganization,
+    is_private: bool = True,
 ) -> Repository:
     repository = Repository(
         platform=Platforms.github,
         name=rstr("testrepo"),
-        organization_id=organization.id,
+        organization_id=external_organization.id,
         external_id=secrets.randbelow(100000),
         is_private=is_private,
     )
@@ -140,17 +168,21 @@ async def create_repository(
 
 @pytest_asyncio.fixture(scope="function")
 async def issue(
-    save_fixture: SaveFixture, organization: Organization, repository: Repository
+    save_fixture: SaveFixture,
+    external_organization: ExternalOrganization,
+    repository: Repository,
 ) -> Issue:
-    return await create_issue(save_fixture, organization, repository)
+    return await create_issue(save_fixture, external_organization, repository)
 
 
 async def create_issue(
-    save_fixture: SaveFixture, organization: Organization, repository: Repository
+    save_fixture: SaveFixture,
+    external_organization: ExternalOrganization,
+    repository: Repository,
 ) -> Issue:
     issue = Issue(
         id=uuid.uuid4(),
-        organization_id=organization.id,
+        organization_id=external_organization.id,
         repository_id=repository.id,
         title="issue title",
         number=secrets.randbelow(100000),

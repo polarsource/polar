@@ -7,7 +7,7 @@ import structlog
 from githubkit import Paginator
 
 from polar.kit.hook import Hook
-from polar.models import Issue, Organization, Repository
+from polar.models import ExternalOrganization, Issue, Repository
 from polar.models.pull_request import PullRequest
 from polar.postgres import AsyncSession
 from polar.repository.hooks import SyncCompletedHook, SyncedHook
@@ -30,7 +30,7 @@ class GitHubPaginatedService:
         store_resource_method: Callable[
             ..., Coroutine[Any, Any, Issue | PullRequest | None]
         ],
-        organization: Organization,
+        organization: ExternalOrganization,
         repository: Repository,
         resource_type: Literal["issue", "pull_request"],
         skip_condition: Callable[[types.Issue | types.PullRequestSimple], bool]

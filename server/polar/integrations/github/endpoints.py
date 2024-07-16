@@ -27,7 +27,6 @@ from polar.exceptions import (
     NotPermitted,
     PolarRedirectionError,
     ResourceNotFound,
-    Unauthorized,
 )
 from polar.integrations.github import client as github
 from polar.kit import jwt
@@ -48,7 +47,6 @@ from .schemas import (
     OrganizationBillingPlan,
     OrganizationCheckPermissionsInput,
 )
-from .service.members import github_members_service
 from .service.organization import github_organization
 from .service.user import GithubUserServiceError, github_user
 
@@ -191,29 +189,6 @@ async def github_callback(
 ###############################################################################
 # User lookup
 ###############################################################################
-
-
-class SynchronizeMembersResponse(BaseModel):
-    status: bool
-
-
-@router.post("/synchronize_members", response_model=SynchronizeMembersResponse)
-async def synchronize_members(
-    organization_id: UUID,
-    auth_subject: WebUser,
-    session: AsyncSession = Depends(get_db_session),
-    authz: Authz = Depends(Authz.authz),
-) -> SynchronizeMembersResponse:
-    org = await github_organization.get(session, organization_id)
-    if not org:
-        raise ResourceNotFound()
-
-    if not await authz.can(auth_subject.subject, AccessType.write, org):
-        raise Unauthorized()
-
-    await github_members_service.synchronize_members(session, org)
-
-    return SynchronizeMembersResponse(status=True)
 
 
 class LookupUserRequest(BaseModel):

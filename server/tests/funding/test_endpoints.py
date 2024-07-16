@@ -1,9 +1,12 @@
 import pytest
 from httpx import AsyncClient
 
-from polar.models import Organization
-from polar.models.repository import Repository
-from polar.models.user_organization import UserOrganization
+from polar.models import (
+    ExternalOrganization,
+    Organization,
+    Repository,
+    UserOrganization,
+)
 from polar.postgres import AsyncSession
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_repository
@@ -93,16 +96,17 @@ class TestSearch:
     async def test_anonymous_private_repository(
         self,
         client: AsyncClient,
+        external_organization: ExternalOrganization,
         organization: Organization,
         user_organization: UserOrganization,  # makes User a member of Organization
         save_fixture: SaveFixture,
         session: AsyncSession,
     ) -> None:
         private_repository = await create_repository(
-            save_fixture, organization, is_private=True
+            save_fixture, external_organization, is_private=True
         )
         issues_pledges = await create_issues_pledges(
-            save_fixture, organization, private_repository
+            save_fixture, external_organization, organization, private_repository
         )
 
         # then
@@ -126,16 +130,17 @@ class TestSearch:
     async def test_user_private_repository(
         self,
         client: AsyncClient,
+        external_organization: ExternalOrganization,
         organization: Organization,
         user_organization: UserOrganization,  # makes User a member of Organization
         save_fixture: SaveFixture,
         session: AsyncSession,
     ) -> None:
         private_repository = await create_repository(
-            save_fixture, organization, is_private=True
+            save_fixture, external_organization, is_private=True
         )
         issues_pledges = await create_issues_pledges(
-            save_fixture, organization, private_repository
+            save_fixture, external_organization, organization, private_repository
         )
 
         # then

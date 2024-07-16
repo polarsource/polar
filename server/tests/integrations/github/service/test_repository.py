@@ -3,7 +3,7 @@ import pytest
 from polar.integrations.github.service.repository import github_repository
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.utils import utc_now
-from polar.models.organization import Organization
+from polar.models import ExternalOrganization
 from tests.fixtures.database import SaveFixture
 
 from ..conftest import create_github_repository
@@ -12,20 +12,20 @@ from ..conftest import create_github_repository
 @pytest.mark.asyncio
 async def test_create_or_update_from_github(
     session: AsyncSession,
-    organization: Organization,
+    external_organization: ExternalOrganization,
 ) -> None:
     # then
     session.expunge_all()
 
     created_repo = await github_repository.create_or_update_from_github(
         session,
-        organization,
+        external_organization,
         data=create_github_repository(id=123, name="testrepo", private=False),
     )
 
     again_repo = await github_repository.create_or_update_from_github(
         session,
-        organization,
+        external_organization,
         data=create_github_repository(id=123, name="testrepo", private=False),
     )
 
@@ -37,14 +37,14 @@ async def test_create_or_update_from_github(
 async def test_create_or_update_from_github_deleted_repo(
     session: AsyncSession,
     save_fixture: SaveFixture,
-    organization: Organization,
+    external_organization: ExternalOrganization,
 ) -> None:
     # then
     session.expunge_all()
 
     first_repo = await github_repository.create_or_update_from_github(
         session,
-        organization,
+        external_organization,
         data=create_github_repository(id=123, name="testrepo", private=False),
     )
 
@@ -56,7 +56,7 @@ async def test_create_or_update_from_github_deleted_repo(
 
     second_repo = await github_repository.create_or_update_from_github(
         session,
-        organization,
+        external_organization,
         data=create_github_repository(id=5555, name="testrepo", private=False),
     )
 

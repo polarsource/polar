@@ -8,7 +8,7 @@ from arq import Retry
 from githubkit.exception import RateLimitExceeded
 
 from polar.integrations.github import service
-from polar.models import Organization, Repository
+from polar.models import ExternalOrganization, Repository
 from polar.postgres import AsyncSession
 
 log = structlog.get_logger()
@@ -18,7 +18,7 @@ async def get_organization_and_repo(
     session: AsyncSession,
     organization_id: UUID,
     repository_id: UUID,
-) -> tuple[Organization, Repository]:
+) -> tuple[ExternalOrganization, Repository]:
     organization = await service.github_organization.get(session, organization_id)
     if not organization:
         log.warning("no organization found", organization_id=organization_id)

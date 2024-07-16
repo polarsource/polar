@@ -15,6 +15,7 @@ from polar.models.user_organization import UserOrganization
 from polar.postgres import AsyncSession
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
+    create_external_organization,
     create_issue,
     create_organization,
     create_repository,
@@ -480,8 +481,9 @@ async def test_can_read_issue_reward(
             id=idx,
         ):
             org = await create_organization(save_fixture)
-            repo = await create_repository(save_fixture, org)
-            issue = await create_issue(save_fixture, org, repo)
+            external_org = await create_external_organization(save_fixture)
+            repo = await create_repository(save_fixture, external_org)
+            issue = await create_issue(save_fixture, external_org, repo)
 
             reward = IssueReward(
                 issue_id=issue.id,
@@ -576,8 +578,9 @@ async def test_can_read_pledge(
             id=idx,
         ):
             org = await create_organization(save_fixture)
-            repo = await create_repository(save_fixture, org)
-            issue = await create_issue(save_fixture, org, repo)
+            external_org = await create_external_organization(save_fixture)
+            repo = await create_repository(save_fixture, external_org)
+            issue = await create_issue(save_fixture, external_org, repo)
 
             pledge = Pledge(
                 issue_id=issue.id,
@@ -689,8 +692,9 @@ async def test_can_write_pledge(
             id=idx,
         ):
             org = await create_organization(save_fixture)
-            repo = await create_repository(save_fixture, org)
-            issue = await create_issue(save_fixture, org, repo)
+            external_org = await create_external_organization(save_fixture)
+            repo = await create_repository(save_fixture, external_org)
+            issue = await create_issue(save_fixture, external_org, repo)
 
             pledge = Pledge(
                 issue_id=issue.id,

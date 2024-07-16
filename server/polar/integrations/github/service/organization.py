@@ -1,34 +1,24 @@
+from collections.abc import Sequence
 from datetime import datetime
 from uuid import UUID
 
 import structlog
-from githubkit import (
-    AppInstallationAuthStrategy,
-    GitHub,
-    TokenAuthStrategy,
-)
+from githubkit import AppInstallationAuthStrategy, GitHub, TokenAuthStrategy
 from githubkit.exception import RequestFailed
 from pydantic import BaseModel
 
 from polar.enums import Platforms
-from polar.exceptions import (
-    InternalServerError,
-    ResourceAlreadyExists,
-    ResourceNotFound,
+from polar.external_organization.schemas import (
+    ExternalOrganizationCreateFromGitHubInstallation,
+    ExternalOrganizationCreateFromGitHubUser,
 )
+from polar.external_organization.service import ExternalOrganizationService
+from polar.kit.extensions.sqlalchemy import sql
 from polar.kit.utils import utc_now
 from polar.locker import Locker
 from polar.logging import Logger
-from polar.models import Organization, User
-from polar.models.user import OAuthPlatform
-from polar.organization.schemas import OrganizationCreateFromGitHubInstallation
-from polar.organization.service import OrganizationService
-from polar.organization.service import organization as organization_service
+from polar.models import ExternalOrganization, User
 from polar.postgres import AsyncSession
-from polar.user.oauth_service import oauth_account_service
-from polar.user_organization.service import (
-    user_organization as user_organization_service,
-)
 from polar.worker import enqueue_job
 
 from .. import client as github
@@ -45,10 +35,20 @@ class Member(BaseModel):
     avatar_url: str
 
 
-class GithubOrganizationService(OrganizationService):
+class GithubOrganizationService(ExternalOrganizationService):
+    async def list_installed(
+        self, session: AsyncSession
+    ) -> Sequence[ExternalOrganization]:
+        stmt = sql.select(ExternalOrganization).where(
+            ExternalOrganization.deleted_at.is_(None),
+            ExternalOrganization.installation_id.is_not(None),
+        )
+        res = await session.execute(stmt)
+        return res.scalars().all()
+
     async def get_by_external_id(
         self, session: AsyncSession, external_id: int
-    ) -> Organization | None:
+    ) -> ExternalOrganization | None:
         return await self.get_by_platform(session, Platforms.github, external_id)
 
     async def fetch_installations(
@@ -72,7 +72,7 @@ class GithubOrganizationService(OrganizationService):
 
     async def install_from_user_browser(
         self, session: AsyncSession, locker: Locker, user: User, installation_id: int
-    ) -> Organization | None:
+    ) -> ExternalOrganization | None:
         installations = await self.fetch_installations(session, locker, user)
         if not installations:
             raise Exception(f"no user installations found. id={installation_id}")
@@ -91,20 +91,16 @@ class GithubOrganizationService(OrganizationService):
 
         organization = await self._install(session, org_installation)
 
-        # TODO: Better error handling?
-        # TODO: this is not true! user might not be admin!
-        await self.add_user(session, organization, user, is_admin=True)
-
         return organization
 
     async def install_from_webhook(
         self, session: AsyncSession, installation: types.Installation
-    ) -> Organization:
+    ) -> ExternalOrganization:
         return await self._install(session, installation)
 
     async def _install(
         self, session: AsyncSession, installation: types.Installation
-    ) -> Organization:
+    ) -> ExternalOrganization:
         account = installation.account
         if account is None:
             raise Exception(
@@ -117,7 +113,7 @@ class GithubOrganizationService(OrganizationService):
 
         organization = await self.create_or_update(
             session,
-            OrganizationCreateFromGitHubInstallation.from_github(
+            ExternalOrganizationCreateFromGitHubInstallation.from_github(
                 user=account,
                 installation=installation,
             ),
@@ -143,70 +139,6 @@ class GithubOrganizationService(OrganizationService):
         )
 
         return organization
-
-    async def create_for_user(
-        self,
-        session: AsyncSession,
-        locker: Locker,
-        user: User,
-    ) -> Organization:
-        current_user_org = await user_organization_service.get_personal_org(
-            session,
-            platform=Platforms.github,
-            user_id=user.id,
-        )
-        if current_user_org:
-            log.info("user.create_github_org", found_existing=True)
-            raise ResourceAlreadyExists("User already has a personal org")
-
-        oauth = await oauth_account_service.get_by_platform_and_user_id(
-            session, OAuthPlatform.github, user.id
-        )
-        if not oauth:
-            log.error(
-                "user.create_github_org",
-                error="No GitHub OAuth account found",
-                user_id=user.id,
-            )
-            raise ResourceNotFound()
-
-        if not oauth.account_username:
-            log.error(
-                "user.create_github_org",
-                error="oauth account has no username",
-                user_id=user.id,
-            )
-            raise InternalServerError()
-
-        if not user.avatar_url:
-            raise InternalServerError("user has no avatar_url")
-
-        # The organization may already exist
-        # if it was synced from GitHub through issue funding
-        org = await self.get_by_name(session, Platforms.github, oauth.account_username)
-        if org is None:
-            org = Organization(
-                platform=Platforms.github,
-                name=oauth.account_username,
-                avatar_url=user.avatar_url,
-                external_id=int(oauth.account_id),
-                is_personal=True,
-            )
-
-        org.created_from_user_maintainer_upgrade = True
-        session.add(org)
-        await session.flush()
-
-        await organization_service.add_user(
-            session, organization=org, user=user, is_admin=True
-        )
-
-        # Invoked from authenticated user
-        client = await github.get_refreshed_oauth_client(session, locker, oauth)
-        await self._populate_github_user_metadata(session, client, org)
-
-        enqueue_job("organization.post_user_upgrade", organization_id=org.id)
-        return org
 
     async def suspend(
         self,
@@ -261,7 +193,7 @@ class GithubOrganizationService(OrganizationService):
             await session.commit()
 
     async def populate_org_metadata(
-        self, session: AsyncSession, org: Organization
+        self, session: AsyncSession, org: ExternalOrganization
     ) -> None:
         if not org.installation_id:
             return None
@@ -276,7 +208,7 @@ class GithubOrganizationService(OrganizationService):
         self,
         session: AsyncSession,
         client: GitHub[AppInstallationAuthStrategy],
-        org: Organization,
+        org: ExternalOrganization,
     ) -> None:
         try:
             github_org = await client.rest.orgs.async_get(org.name)
@@ -303,7 +235,7 @@ class GithubOrganizationService(OrganizationService):
         self,
         session: AsyncSession,
         client: GitHub[AppInstallationAuthStrategy] | GitHub[TokenAuthStrategy],
-        org: Organization,
+        org: ExternalOrganization,
     ) -> None:
         try:
             github_org = await client.rest.users.async_get_by_username(org.name)
@@ -326,5 +258,30 @@ class GithubOrganizationService(OrganizationService):
 
         session.add(org)
 
+    async def create_or_update(
+        self,
+        session: AsyncSession,
+        r: ExternalOrganizationCreateFromGitHubInstallation
+        | ExternalOrganizationCreateFromGitHubUser,
+    ) -> ExternalOrganization:
+        update_keys = r.__annotations__.keys()
 
-github_organization = GithubOrganizationService(Organization)
+        insert_stmt = sql.insert(ExternalOrganization).values(**r.model_dump())
+
+        stmt = (
+            insert_stmt.on_conflict_do_update(
+                index_elements=[ExternalOrganization.external_id],
+                set_={k: getattr(insert_stmt.excluded, k) for k in update_keys},
+            )
+            .returning(ExternalOrganization)
+            .execution_options(populate_existing=True)
+        )
+
+        res = await session.execute(stmt)
+        await session.commit()
+        org = res.scalars().one()
+
+        return org
+
+
+github_organization = GithubOrganizationService(ExternalOrganization)

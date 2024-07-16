@@ -95,7 +95,7 @@ def to_resource(
 
     organization = None
     if reward.organization:
-        organization = OrganizationSchema.from_db(reward.organization)
+        organization = OrganizationSchema.model_validate(reward.organization)
 
     amount = CurrencyAmount(currency="USD", amount=0)
     if transaction and transaction.amount:

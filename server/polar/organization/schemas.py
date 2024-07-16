@@ -1,6 +1,6 @@
 from collections.abc import Sequence
 from enum import StrEnum
-from typing import Annotated, Self
+from typing import Annotated
 from uuid import UUID
 
 from pydantic import UUID4, Field, HttpUrl
@@ -14,12 +14,11 @@ from polar.kit.schemas import (
     Schema,
     SelectorWidget,
 )
-from polar.models.organization import Organization as OrganizationModel
 
 OrganizationID = Annotated[
     UUID4,
     MergeJSONSchema({"description": "The organization ID."}),
-    SelectorWidget("/v1/organizations", "Organization", "name"),
+    SelectorWidget("/v1/organizations/", "Organization", "name"),
 ]
 
 
@@ -76,28 +75,18 @@ class Organization(Schema):
     avatar_url: str
     is_personal: bool
 
-    bio: str | None = Field(None, description="Public field from GitHub")
-    pretty_name: str | None = Field(None, description="Public field from GitHub")
-    company: str | None = Field(None, description="Public field from GitHub")
-    blog: str | None = Field(None, description="Public field from GitHub")
-    location: str | None = Field(None, description="Public field from GitHub")
-    email: str | None = Field(None, description="Public field from GitHub")
-    twitter_username: str | None = Field(None, description="Public field from GitHub")
+    bio: str | None = None
+    pretty_name: str | None = None
+    company: str | None = None
+    blog: str | None = None
+    location: str | None = None
+    email: str | None = None
+    twitter_username: str | None = None
 
     pledge_minimum_amount: int
     pledge_badge_show_amount: bool
 
     default_upfront_split_to_contributors: int | None = None
-
-    account_id: UUID4 | None = None
-
-    has_app_installed: bool = Field(
-        description="Whether the organization has the Polar GitHub App installed for repositories or not."
-    )
-
-    public_page_enabled: bool = Field(
-        description="If this organization has a public Polar page"
-    )
 
     donations_enabled: bool = Field(
         description="If this organizations accepts donations"
@@ -114,78 +103,6 @@ class Organization(Schema):
     feature_settings: OrganizationFeatureSettings | None = Field(
         description="Settings for the organization features"
     )
-
-    # Team fields
-    billing_email: str | None = Field(
-        None,
-        description="Where to send emails about payments for pledegs that this organization/team has made. Only visible for members of the organization",
-    )
-    total_monthly_spending_limit: int | None = Field(
-        None,
-        description="Overall team monthly spending limit, per calendar month. Only visible for members of the organization",
-    )
-    per_user_monthly_spending_limit: int | None = Field(
-        None,
-        description="Team members monthly spending limit, per calendar month. Only visible for members of the organization",
-    )
-    is_teams_enabled: bool = Field(
-        description="Feature flag for if this organization is a team."
-    )
-
-    @classmethod
-    def from_db(
-        cls,
-        o: OrganizationModel,
-        include_member_fields: bool = False,
-    ) -> Self:
-        profile_settings = OrganizationProfileSettings.model_validate(
-            o.profile_settings
-        )
-        feature_settings = OrganizationFeatureSettings.model_validate(
-            o.feature_settings
-        )
-
-        public_page_enabled = bool(
-            o.installation_id or o.created_from_user_maintainer_upgrade
-        )
-        if o.blocked_at is not None:
-            public_page_enabled = False
-
-        return cls(
-            id=o.id,
-            platform=o.platform,
-            name=o.name,
-            avatar_url=o.avatar_url,
-            is_personal=o.is_personal,
-            bio=o.bio,
-            pretty_name=o.pretty_name,
-            company=o.company,
-            blog=o.blog,
-            location=o.location,
-            email=o.email,
-            twitter_username=o.twitter_username,
-            pledge_minimum_amount=o.pledge_minimum_amount,
-            pledge_badge_show_amount=o.pledge_badge_show_amount,
-            default_upfront_split_to_contributors=o.default_upfront_split_to_contributors,
-            account_id=o.account_id,
-            has_app_installed=o.installation_id is not None,
-            public_page_enabled=public_page_enabled,
-            donations_enabled=o.donations_enabled,
-            public_donation_timestamps=o.public_donation_timestamps,
-            profile_settings=profile_settings,
-            feature_settings=feature_settings,
-            #
-            billing_email=o.billing_email if include_member_fields else None,
-            #
-            total_monthly_spending_limit=(
-                o.total_monthly_spending_limit if include_member_fields else None
-            ),
-            #
-            per_user_monthly_spending_limit=(
-                o.per_user_monthly_spending_limit if include_member_fields else None
-            ),
-            is_teams_enabled=o.is_teams_enabled,
-        )
 
 
 class OrganizationUpdate(Schema):

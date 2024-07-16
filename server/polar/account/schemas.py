@@ -63,7 +63,8 @@ class Account(Schema):
             country=o.country,
             users=[UserBase.model_validate(user) for user in o.users],
             organizations=[
-                Organization.from_db(organization) for organization in o.organizations
+                Organization.model_validate(organization)
+                for organization in o.organizations
             ],
         )
 

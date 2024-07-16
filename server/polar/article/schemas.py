@@ -136,7 +136,7 @@ class Article(Schema):
             visibility=i.visibility,
             user_id=i.user_id,
             organization_id=i.organization_id,
-            organization=Organization.from_db(i.organization),
+            organization=Organization.model_validate(i.organization),
             published_at=i.published_at,
             paid_subscribers_only=i.paid_subscribers_only,
             paid_subscribers_only_ends_at=i.paid_subscribers_only_ends_at,

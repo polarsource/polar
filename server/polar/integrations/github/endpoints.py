@@ -364,7 +364,7 @@ async def install(
             {"organization_id": organization.id},
         )
 
-        return OrganizationSchema.from_db(organization)
+        return OrganizationSchema.model_validate(organization)
 
 
 ###############################################################################

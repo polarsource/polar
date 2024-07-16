@@ -425,7 +425,7 @@ class MaintainerNewPaidSubscriptionNotificationPayload(NotificationPayloadBase):
     tier_organization_name: str
 
     def subject(self) -> str:
-        return f"Congratulations! You have a new subscriber to {self.tier_name} (${get_cents_in_dollar_string(self.tier_price_amount)})"
+        return f"Congrats! You have a new subscriber (${get_cents_in_dollar_string(self.tier_price_amount)}/{self.tier_price_recurring_interval})!"
 
     def body(self) -> str:
         return f"""Congratulations!<br><br>
@@ -446,7 +446,7 @@ class MaintainerNewProductSaleNotificationPayload(NotificationPayloadBase):
     organization_name: str
 
     def subject(self) -> str:
-        return f"Congratulations! You have a new order (${get_cents_in_dollar_string(self.product_price_amount)})!"
+        return f"Congrats! You've made a new sale (${get_cents_in_dollar_string(self.product_price_amount)})!"
 
     def body(self) -> str:
         return f"""Congratulations!<br><br>

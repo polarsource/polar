@@ -1,19 +1,21 @@
 from uuid import UUID
 
 import structlog
-from fastapi import Depends, HTTPException, Query
+from fastapi import Depends, Query
 
-from polar.auth.models import Subject
 from polar.authz.service import AccessType, Authz
 from polar.currency.schemas import CurrencyAmount
-from polar.enums import Platforms
-from polar.exceptions import InternalServerError, ResourceNotFound, Unauthorized
+from polar.exceptions import (
+    InternalServerError,
+    NotPermitted,
+    ResourceNotFound,
+    Unauthorized,
+)
 from polar.integrations.github.badge import GithubBadge
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.kit.pagination import ListResource, Pagination, PaginationParamsQuery
-from polar.models.organization import Organization
-from polar.models.user import User
-from polar.openapi import IN_DEVELOPMENT_ONLY
+from polar.models import Organization
+from polar.openapi import IN_DEVELOPMENT_ONLY, APITag
 from polar.postgres import AsyncSession, get_db_session
 from polar.repository.service import repository as repository_service
 from polar.routing import APIRouter
@@ -22,7 +24,7 @@ from polar.user_organization.service import (
     user_organization as user_organization_service,
 )
 
-from .auth import AnonymousOrganizationsRead, OrganizationsRead, OrganizationsWrite
+from . import auth
 from .schemas import (
     CreditBalance,
     OrganizationBadgeSettingsRead,
@@ -42,7 +44,7 @@ from .service import organization as organization_service
 
 log = structlog.get_logger()
 
-router = APIRouter(tags=["organizations"])
+router = APIRouter(prefix="/organizations", tags=["organizations", APITag.documented])
 
 OrganizationNotFound = {
     "description": "Organization not found.",
@@ -50,149 +52,68 @@ OrganizationNotFound = {
 }
 
 
-async def to_schema(
-    session: AsyncSession,
-    subject: Subject,
-    o: Organization,
-) -> OrganizationSchema:
-    is_member = False
-
-    if isinstance(
-        subject, User
-    ) and await user_organization_service.get_by_user_and_org(
-        session,
-        subject.id,
-        o.id,
-    ):
-        is_member = True
-
-    return OrganizationSchema.from_db(
-        o,
-        include_member_fields=is_member,
-    )
-
-
 @router.get(
-    "/organizations/",
-    response_model=ListResource[OrganizationSchema],
-    description="List organizations that the authenticated user is a member of. Requires authentication.",  # noqa: E501
-    summary="List organizations",
-    status_code=200,
+    "/", summary="List Organizations", response_model=ListResource[OrganizationSchema]
 )
 async def list(
-    auth_subject: OrganizationsRead,
-    name: str | None = Query(
-        default=None,
-        description="Filter organizations by name (one item in case of match)",
-    ),
-    is_admin_only: bool = Query(
-        default=True,
-        description="Filter organizations to include only the ones the user is an admin of.",
+    auth_subject: auth.AnonymousOrganizationsRead,
+    pagination: PaginationParamsQuery,
+    slug: str | None = Query(None, description="Filter by slug."),
+    is_member: bool | None = Query(
+        None,
+        description=(
+            "Filter by membership."
+            "If `true`, only organizations the user is a member of are returned."
+            "If `false`, only organizations the user is not a member of are returned."
+        ),
     ),
     session: AsyncSession = Depends(get_db_session),
 ) -> ListResource[OrganizationSchema]:
-    orgs = await organization_service.list_all_orgs_by_user_id(
-        session, auth_subject.subject.id, is_admin_only, filter_by_name=name
+    """List organizations."""
+    results, count = await organization_service.list(
+        session,
+        auth_subject,
+        slug=slug,
+        is_member=is_member,
+        pagination=pagination,
     )
 
-    return ListResource(
-        items=[await to_schema(session, auth_subject.subject, o) for o in orgs],
-        pagination=Pagination(total_count=len(orgs), max_page=1),
-    )
-
-
-@router.get(
-    "/organizations/search",
-    response_model=ListResource[OrganizationSchema],
-    description="Search organizations.",
-    summary="Search organizations",
-    status_code=200,
-)
-async def search(
-    auth_subject: AnonymousOrganizationsRead,
-    platform: Platforms | None = None,
-    organization_name: str | None = None,
-    session: AsyncSession = Depends(get_db_session),
-) -> ListResource[OrganizationSchema]:
-    # Search by platform and organization name.
-    # Currently the only way to search
-    if platform and organization_name:
-        org = await organization_service.get_by_name(
-            session, platform, organization_name
-        )
-        if org:
-            return ListResource(
-                items=[await to_schema(session, auth_subject.subject, org)],
-                pagination=Pagination(total_count=0, max_page=1),
-            )
-
-    # no org found
-    return ListResource(
-        items=[],
-        pagination=Pagination(total_count=0, max_page=1),
+    return ListResource.from_paginated_results(
+        [OrganizationSchema.model_validate(result) for result in results],
+        count,
+        pagination,
     )
 
 
 @router.get(
-    "/organizations/lookup",
+    "/{id}",
+    summary="Get Organization",
     response_model=OrganizationSchema,
-    description="Lookup a single organization.",  # noqa: E501
-    summary="Lookup organization",
-    status_code=200,
-    responses={404: {}},
-)
-async def lookup(
-    auth_subject: AnonymousOrganizationsRead,
-    platform: Platforms | None = None,
-    organization_name: str | None = None,
-    session: AsyncSession = Depends(get_db_session),
-) -> OrganizationSchema:
-    # Search by platform and organization name.
-    if platform and organization_name:
-        org = await organization_service.get_by_name(
-            session, platform, organization_name
-        )
-        if org:
-            return await to_schema(session, auth_subject.subject, org)
-
-    raise HTTPException(
-        status_code=404,
-        detail="Organization not found ",
-    )
-
-
-@router.get(
-    "/organizations/{id}",
-    response_model=OrganizationSchema,
-    description="Get a organization by ID",
-    status_code=200,
-    summary="Get organization",
-    responses={404: {}},
+    responses={404: OrganizationNotFound},
 )
 async def get(
-    id: UUID,
-    auth_subject: AnonymousOrganizationsRead,
+    id: OrganizationID,
+    auth_subject: auth.AnonymousOrganizationsRead,
     session: AsyncSession = Depends(get_db_session),
-) -> OrganizationSchema:
-    org = await organization_service.get(session, id=id)
+) -> Organization:
+    """Get an organization by ID."""
+    organization = await organization_service.get_by_id(session, auth_subject, id)
 
-    if not org:
-        raise HTTPException(
-            status_code=404,
-            detail="Organization not found",
-        )
+    if organization is None:
+        raise ResourceNotFound()
 
-    return await to_schema(session, auth_subject.subject, org)
+    return organization
 
 
 @router.get(
-    "/organizations/{id}/customers",
+    "/{id}/customers",
+    summary="List Organization Customers",
     response_model=ListResource[OrganizationCustomer],
     responses={404: OrganizationNotFound},
 )
 async def list_organization_customers(
     id: OrganizationID,
-    auth_subject: AnonymousOrganizationsRead,
+    auth_subject: auth.AnonymousOrganizationsRead,
     pagination: PaginationParamsQuery,
     customer_types: set[OrganizationCustomerType] = Query(
         {
@@ -206,7 +127,7 @@ async def list_organization_customers(
     session: AsyncSession = Depends(get_db_session),
 ) -> ListResource[OrganizationCustomer]:
     """List organization customers."""
-    organization = await organization_service.get(session, id=id)
+    organization = await organization_service.get_by_id(session, auth_subject, id)
 
     if organization is None:
         raise ResourceNotFound()
@@ -223,45 +144,52 @@ async def list_organization_customers(
 
 
 @router.patch(
-    "/organizations/{id}",
+    "/{id}",
     response_model=OrganizationSchema,
-    description="Update organization",
-    status_code=200,
-    summary="Update an organization",
-    responses={404: {}},
+    summary="Update Organization",
+    responses={
+        200: {"description": "Organization updated."},
+        403: {
+            "description": "You don't have the permission to update this organization.",
+            "model": NotPermitted.schema(),
+        },
+        404: OrganizationNotFound,
+    },
 )
 async def update(
-    id: UUID,
-    update: OrganizationUpdate,
-    auth_subject: OrganizationsWrite,
+    id: OrganizationID,
+    organization_update: OrganizationUpdate,
+    auth_subject: auth.OrganizationsWrite,
     authz: Authz = Depends(Authz.authz),
     session: AsyncSession = Depends(get_db_session),
-) -> OrganizationSchema:
-    org = await organization_service.get(session, id=id)
-    if not org:
+) -> Organization:
+    organization = await organization_service.get_by_id(session, auth_subject, id)
+
+    if organization is None:
         raise ResourceNotFound()
 
-    if not await authz.can(auth_subject.subject, AccessType.write, org):
-        raise Unauthorized()
+    if not await authz.can(auth_subject.subject, AccessType.write, organization):
+        raise NotPermitted()
 
     # validate featured organizations and featured projects
-    if update.profile_settings is not None:
-        if update.profile_settings.featured_organizations is not None:
-            for org_id in update.profile_settings.featured_organizations:
+    # TODO: put this in the service method
+    if organization_update.profile_settings is not None:
+        if organization_update.profile_settings.featured_organizations is not None:
+            for org_id in organization_update.profile_settings.featured_organizations:
                 if not await organization_service.get(session, id=org_id):
                     raise ResourceNotFound()
-        if update.profile_settings.featured_projects is not None:
-            for repo_id in update.profile_settings.featured_projects:
+        if organization_update.profile_settings.featured_projects is not None:
+            for repo_id in organization_update.profile_settings.featured_projects:
                 if not await repository_service.get(session, id=repo_id):
                     raise ResourceNotFound()
 
-    org = await organization_service.update_settings(session, org, update)
-
-    return await to_schema(session, auth_subject.subject, org)
+    return await organization_service.update(
+        session, authz, organization, organization_update, auth_subject
+    )
 
 
 @router.patch(
-    "/organizations/{id}/account",
+    "/{id}/account",
     response_model=OrganizationSchema,
     description="Set organization account",
     status_code=200,
@@ -271,10 +199,10 @@ async def update(
 async def set_account(
     id: UUID,
     set_account: OrganizationSetAccount,
-    auth_subject: OrganizationsWrite,
+    auth_subject: auth.OrganizationsWrite,
     authz: Authz = Depends(Authz.authz),
     session: AsyncSession = Depends(get_db_session),
-) -> OrganizationSchema:
+) -> Organization:
     org = await organization_service.get(session, id=id)
     if not org:
         raise ResourceNotFound()
@@ -282,7 +210,7 @@ async def set_account(
     if not await authz.can(auth_subject.subject, AccessType.write, org):
         raise Unauthorized()
 
-    org = await organization_service.set_account(
+    return await organization_service.set_account(
         session,
         authz=authz,
         auth_subject=auth_subject,
@@ -290,18 +218,16 @@ async def set_account(
         account_id=set_account.account_id,
     )
 
-    return await to_schema(session, auth_subject.subject, org)
-
 
 @router.get(
-    "/organizations/{id}/members",
+    "/{id}/members",
     response_model=ListResource[OrganizationMember],
     description="List members of an organization. Requires authentication.",  # noqa: E501
     summary="List members in an organization",
     status_code=200,
 )
 async def list_members(
-    auth_subject: OrganizationsWrite,
+    auth_subject: auth.OrganizationsWrite,
     id: UUID | None = None,
     session: AsyncSession = Depends(get_db_session),
     authz: Authz = Depends(Authz.authz),
@@ -329,14 +255,14 @@ async def list_members(
 
 
 @router.post(
-    "/organizations/{id}/stripe_customer_portal",
+    "/{id}/stripe_customer_portal",
     response_model=OrganizationStripePortalSession,
     description="Start a new Stripe Customer session for a organization.",
     status_code=200,
 )
 async def create_stripe_customer_portal(
     id: UUID,
-    auth_subject: OrganizationsWrite,
+    auth_subject: auth.OrganizationsWrite,
     session: AsyncSession = Depends(get_db_session),
     authz: Authz = Depends(Authz.authz),
 ) -> OrganizationStripePortalSession:
@@ -355,14 +281,14 @@ async def create_stripe_customer_portal(
 
 
 @router.get(
-    "/organizations/{id}/credit",
+    "/{id}/credit",
     response_model=CreditBalance,
     description="Get credits for a organization",  # noqa: E501
     status_code=200,
 )
 async def get_credits(
     id: UUID,
-    auth_subject: OrganizationsWrite,
+    auth_subject: auth.OrganizationsWrite,
     session: AsyncSession = Depends(get_db_session),
     authz: Authz = Depends(Authz.authz),
 ) -> CreditBalance:
@@ -391,13 +317,13 @@ async def get_credits(
 
 
 @router.get(
-    "/organizations/{id}/badge_settings",
+    "/{id}/badge_settings",
     response_model=OrganizationBadgeSettingsRead,
     summary="Get badge settings (Internal API)",
 )
 async def get_badge_settings(
     id: UUID,
-    auth_subject: OrganizationsWrite,
+    auth_subject: auth.OrganizationsWrite,
     authz: Authz = Depends(Authz.authz),
     session: AsyncSession = Depends(get_db_session),
 ) -> OrganizationBadgeSettingsRead:
@@ -461,7 +387,7 @@ async def get_badge_settings(
 
 
 @router.post(
-    "/organizations/{id}/badge_settings",
+    "/{id}/badge_settings",
     response_model=OrganizationSchema,
     include_in_schema=IN_DEVELOPMENT_ONLY,
     summary="Update badge settings (Internal API)",
@@ -469,10 +395,10 @@ async def get_badge_settings(
 async def update_badge_settings(
     id: UUID,
     settings: OrganizationBadgeSettingsUpdate,
-    auth_subject: OrganizationsWrite,
+    auth_subject: auth.OrganizationsWrite,
     authz: Authz = Depends(Authz.authz),
     session: AsyncSession = Depends(get_db_session),
-) -> OrganizationSchema:
+) -> Organization:
     org = await organization_service.get(session, id)
     if not org:
         raise ResourceNotFound()
@@ -490,8 +416,9 @@ async def update_badge_settings(
     if settings.message:
         org_update.default_badge_custom_content = settings.message
 
-    await organization_service.update_settings(session, org, org_update)
-
+    org = await organization_service.update(
+        session, authz, org, org_update, auth_subject
+    )
     # save repositories settings
     repositories = await repository_service.list_by_ids_and_organization(
         session, [r.id for r in settings.repositories], org.id
@@ -515,4 +442,4 @@ async def update_badge_settings(
     if not org:
         raise ResourceNotFound()
 
-    return await to_schema(session, auth_subject.subject, org)
+    return org

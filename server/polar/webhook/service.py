@@ -302,7 +302,7 @@ class WebhookService:
                 if isinstance(we[1], Organization):
                     payload = WebhookOrganizationUpdatedPayload(
                         type=we[0],
-                        data=OrganizationSchema.from_db(we[1]),
+                        data=OrganizationSchema.model_validate(we[1]),
                     )
             case WebhookEventType.benefit_created:
                 # mypy is not able to deduce this by itself

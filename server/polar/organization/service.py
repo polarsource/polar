@@ -1,18 +1,22 @@
+import uuid
 from collections.abc import Sequence
 from datetime import UTC, datetime
+from typing import Any
 from uuid import UUID
 
 import structlog
-from sqlalchemy import and_, or_, select
+from sqlalchemy import Select, UnaryExpression, and_, asc, desc, false, or_, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import aliased, contains_eager
 
 from polar.account.service import account as account_service
+from polar.auth.models import Anonymous, AuthSubject, is_organization, is_user
 from polar.authz.service import AccessType, Authz
-from polar.exceptions import BadRequest, PolarError
+from polar.exceptions import BadRequest, NotPermitted, PolarError
 from polar.integrations.loops.service import loops as loops_service
 from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.services import ResourceServiceReader
+from polar.kit.sorting import Sorting
 from polar.models import (
     Donation,
     OAuthAccount,
@@ -34,6 +38,7 @@ from polar.worker import enqueue_job
 
 from .auth import OrganizationsWrite
 from .schemas import OrganizationCustomerType, OrganizationUpdate
+from .sorting import SortProperty
 
 log = structlog.get_logger()
 
@@ -52,6 +57,138 @@ class InvalidAccount(OrganizationError):
 
 
 class OrganizationService(ResourceServiceReader[Organization]):
+    async def list(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Anonymous | User | Organization],
+        *,
+        slug: str | None = None,
+        is_member: bool | None = None,
+        pagination: PaginationParams,
+        sorting: list[Sorting[SortProperty]] = [(SortProperty.created_at, True)],
+    ) -> tuple[Sequence[Organization], int]:
+        statement = self._get_readable_organization_statement(auth_subject)
+
+        if slug is not None:
+            statement = statement.where(Organization.name == slug)
+
+        if is_member is not None:
+            if is_user(auth_subject):
+                user_organization_statement = select(
+                    UserOrganization.organization_id
+                ).where(
+                    UserOrganization.user_id == auth_subject.subject.id,
+                    UserOrganization.deleted_at.is_(None),
+                )
+                if is_member:
+                    statement = statement.where(
+                        Organization.id.in_(user_organization_statement)
+                    )
+                else:
+                    statement = statement.where(
+                        Organization.id.not_in(user_organization_statement)
+                    )
+            elif is_organization(auth_subject):
+                if is_member:
+                    statement = statement.where(
+                        Organization.id == auth_subject.subject.id
+                    )
+                else:
+                    statement = statement.where(
+                        Organization.id != auth_subject.subject.id
+                    )
+            else:
+                if is_member:
+                    statement = statement.where(false())
+
+        order_by_clauses: list[UnaryExpression[Any]] = []
+        for criterion, is_desc in sorting:
+            clause_function = desc if is_desc else asc
+            if criterion == SortProperty.created_at:
+                order_by_clauses.append(clause_function(Organization.created_at))
+            elif criterion == SortProperty.name:
+                order_by_clauses.append(clause_function(Organization.name))
+        statement = statement.order_by(*order_by_clauses)
+
+        return await paginate(session, statement, pagination=pagination)
+
+    async def get_by_id(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        id: uuid.UUID,
+    ) -> Organization | None:
+        statement = self._get_readable_organization_statement(auth_subject).where(
+            Organization.id == id
+        )
+
+        result = await session.execute(statement)
+        return result.scalar_one_or_none()
+
+    async def update(
+        self,
+        session: AsyncSession,
+        authz: Authz,
+        organization: Organization,
+        update_schema: OrganizationUpdate,
+        auth_subject: AuthSubject[User | Organization],
+    ) -> Organization:
+        subject = auth_subject.subject
+
+        if not await authz.can(subject, AccessType.write, organization):
+            raise NotPermitted()
+
+        if (
+            update_schema.per_user_monthly_spending_limit
+            and not organization.total_monthly_spending_limit
+        ):
+            raise BadRequest(
+                "per_user_monthly_spending_limit requires total_monthly_spending_limit to be set"
+            )
+
+        if (
+            update_schema.per_user_monthly_spending_limit is not None
+            and organization.total_monthly_spending_limit is not None
+            and update_schema.per_user_monthly_spending_limit
+            > organization.total_monthly_spending_limit
+        ):
+            raise BadRequest(
+                "per_user_monthly_spending_limit can not be higher than total_monthly_spending_limit"
+            )
+
+        if organization.onboarded_at is None:
+            organization.onboarded_at = datetime.now(UTC)
+
+        if update_schema.profile_settings is not None:
+            organization.profile_settings = {
+                **organization.profile_settings,
+                **update_schema.profile_settings.model_dump(
+                    mode="json", exclude_unset=True
+                ),
+            }
+
+        if update_schema.feature_settings is not None:
+            organization.feature_settings = {
+                **organization.feature_settings,
+                **update_schema.feature_settings.model_dump(
+                    mode="json", exclude_unset=True, exclude_none=True
+                ),
+            }
+
+        update_dict = update_schema.model_dump(
+            by_alias=True,
+            exclude_unset=True,
+            exclude={"profile_settings", "feature_settings"},
+        )
+        for key, value in update_dict.items():
+            setattr(organization, key, value)
+
+        session.add(organization)
+
+        await self._after_update(session, organization)
+
+        return organization
+
     # Override get method to include `blocked_at` filter
     async def get(
         self,
@@ -151,69 +288,6 @@ class OrganizationService(ResourceServiceReader[Organization]):
             await session.commit()
         finally:
             await loops_service.organization_installed(session, user=user)
-
-    async def update_settings(
-        self,
-        session: AsyncSession,
-        organization: Organization,
-        organization_update: OrganizationUpdate,
-    ) -> Organization:
-        if (
-            organization_update.per_user_monthly_spending_limit
-            and not organization.total_monthly_spending_limit
-        ):
-            raise BadRequest(
-                "per_user_monthly_spending_limit requires total_monthly_spending_limit to be set"
-            )
-
-        if (
-            organization_update.per_user_monthly_spending_limit is not None
-            and organization.total_monthly_spending_limit is not None
-            and organization_update.per_user_monthly_spending_limit
-            > organization.total_monthly_spending_limit
-        ):
-            raise BadRequest(
-                "per_user_monthly_spending_limit can not be higher than total_monthly_spending_limit"
-            )
-
-        if organization.onboarded_at is None:
-            organization.onboarded_at = datetime.now(UTC)
-
-        if organization_update.profile_settings is not None:
-            organization.profile_settings = {
-                **organization.profile_settings,
-                **organization_update.profile_settings.model_dump(
-                    mode="json", exclude_unset=True
-                ),
-            }
-
-        if organization_update.feature_settings is not None:
-            organization.feature_settings = {
-                **organization.feature_settings,
-                **organization_update.feature_settings.model_dump(
-                    mode="json", exclude_unset=True, exclude_none=True
-                ),
-            }
-
-        update_dict = organization_update.model_dump(
-            by_alias=True,
-            exclude_unset=True,
-            exclude={"profile_settings", "feature_settings"},
-        )
-        for key, value in update_dict.items():
-            setattr(organization, key, value)
-
-        session.add(organization)
-
-        log.info(
-            "organization.update_settings",
-            organization_id=organization.id,
-            settings=organization_update.model_dump(mode="json"),
-        )
-
-        await self._after_update(session, organization)
-
-        return organization
 
     async def set_account(
         self,
@@ -387,6 +461,18 @@ class OrganizationService(ResourceServiceReader[Organization]):
             target=organization,
             we=(WebhookEventType.organization_updated, organization),
         )
+
+    def _get_readable_organization_statement(
+        self, auth_subject: AuthSubject[Anonymous | User | Organization]
+    ) -> Select[tuple[Organization]]:
+        statement = select(Organization).where(
+            Organization.deleted_at.is_(None), Organization.blocked_at.is_(None)
+        )
+
+        if is_organization(auth_subject):
+            statement = statement.where(Organization.id == auth_subject.subject.id)
+
+        return statement
 
 
 organization = OrganizationService(Organization)

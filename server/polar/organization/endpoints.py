@@ -163,6 +163,7 @@ async def update(
     authz: Authz = Depends(Authz.authz),
     session: AsyncSession = Depends(get_db_session),
 ) -> Organization:
+    """Update an organization."""
     organization = await organization_service.get_by_id(session, auth_subject, id)
 
     if organization is None:

@@ -3,13 +3,18 @@ from typing import Self
 from uuid import UUID
 
 from fastapi import Depends
+from sqlalchemy.orm import joinedload
 
 from polar.auth.models import Anonymous, Subject
+from polar.external_organization.service import (
+    external_organization as external_organization_service,
+)
 from polar.issue.service import issue as issue_service
 from polar.models.account import Account
 from polar.models.article import Article
 from polar.models.benefit import Benefit
 from polar.models.downloadable import Downloadable, DownloadableStatus
+from polar.models.external_organization import ExternalOrganization
 from polar.models.issue import Issue
 from polar.models.issue_reward import IssueReward
 from polar.models.organization import Organization
@@ -305,18 +310,59 @@ class Authz:
             self._cache_can_user_read_repository_id[key] = False
             return False
 
-        res = await self._can_user_read_repository(subject, repo)
+        res = await self._can_user_read_external_organization_id(
+            subject, repo.organization_id
+        )
         self._cache_can_user_read_repository_id[key] = res
         return res
 
     async def _can_user_write_repository(
         self, subject: User, object: Repository
     ) -> bool:
-        if object.organization_id and await self._is_member_and_admin(
-            subject.id, object.organization_id
-        ):
-            return True
-        return False
+        return await self._can_user_write_external_organization_id(
+            subject, object.organization_id
+        )
+
+    #
+    # ExternalOrganization
+    #
+    async def _get_linked_organization_from_external_organization(
+        self, external_organization_id: UUID
+    ) -> Organization | None:
+        external_organization = await external_organization_service.get(
+            self.session,
+            external_organization_id,
+            options=(joinedload(ExternalOrganization.organization),),
+        )
+
+        if external_organization is None:
+            return None
+
+        return external_organization.organization
+
+    async def _can_user_read_external_organization_id(
+        self, subject: User, external_organization_id: UUID
+    ) -> bool:
+        organization = await self._get_linked_organization_from_external_organization(
+            external_organization_id
+        )
+
+        if organization is None:
+            return False
+
+        return await self._is_member(subject.id, organization.id)
+
+    async def _can_user_write_external_organization_id(
+        self, subject: User, external_organization_id: UUID
+    ) -> bool:
+        organization = await self._get_linked_organization_from_external_organization(
+            external_organization_id
+        )
+
+        if organization is None:
+            return False
+
+        return await self._can_user_write_organization(subject, organization)
 
     #
     # Organization

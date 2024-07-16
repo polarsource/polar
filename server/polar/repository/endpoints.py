@@ -1,13 +1,16 @@
 from uuid import UUID
 
 import structlog
-from fastapi import Depends, HTTPException
+from fastapi import Depends, Query
 
-from polar.auth.dependencies import WebUser, WebUserOrAnonymous
 from polar.authz.service import AccessType, Authz
 from polar.enums import Platforms
-from polar.exceptions import ResourceNotFound, Unauthorized
-from polar.kit.pagination import ListResource, Pagination
+from polar.exceptions import NotPermitted, ResourceNotFound
+from polar.kit.pagination import ListResource, PaginationParamsQuery
+from polar.kit.schemas import MultipleQueryFilter
+from polar.models import Repository
+from polar.openapi import APITag
+from polar.organization.schemas import OrganizationID
 from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession, get_db_session
 from polar.product.service.product import (
@@ -15,206 +18,132 @@ from polar.product.service.product import (
 )
 from polar.routing import APIRouter
 
+from . import auth, sorting
+from .schemas import Repository as RepositorySchema
 from .schemas import (
-    Repository as RepositorySchema,
-)
-from .schemas import (
+    RepositoryID,
     RepositoryUpdate,
 )
-from .service import repository
+from .service import repository as repository_service
 
 log = structlog.get_logger()
 
-router = APIRouter(tags=["repositories"])
+router = APIRouter(prefix="/repositories", tags=["repositories", APITag.documented])
+
+RepositoryNotFound = {
+    "description": "Repository not found.",
+    "model": ResourceNotFound.schema(),
+}
 
 
 @router.get(
-    "/repositories",
-    response_model=ListResource[RepositorySchema],
-    description="List repositories in organizations that the authenticated user is a admin of. Requires authentication.",  # noqa: E501
-    summary="List repositories",
-    status_code=200,
+    "/", summary="List Repositories", response_model=ListResource[RepositorySchema]
 )
 async def list(
-    auth_subject: WebUser,
+    auth_subject: auth.RepositoriesReadOrAnonymous,
+    pagination: PaginationParamsQuery,
+    sorting: sorting.ListSorting,
+    name: str | None = Query(None, description="Filter by name."),
+    platform: Platforms | None = Query(None, description="Filter by platform."),
+    is_private: bool | None = Query(None, description="Filter by private status."),
+    external_organization_id: MultipleQueryFilter[UUID] | None = Query(
+        None,
+        title="ExternalOrganizationID Filter",
+        description="Filter by external organization ID.",
+    ),
+    organization_id: MultipleQueryFilter[OrganizationID] | None = Query(
+        None, title="OrganizationID Filter", description="Filter by organization ID."
+    ),
     session: AsyncSession = Depends(get_db_session),
 ) -> ListResource[RepositorySchema]:
-    orgs = await organization_service.list_all_orgs_by_user_id(
-        session, auth_subject.subject.id, is_admin_only=True
-    )
-
-    repos = await repository.list_by(
-        session, org_ids=[o.id for o in orgs], load_organization=True
-    )
-    return ListResource(
-        items=[RepositorySchema.from_db(r) for r in repos],
-        pagination=Pagination(total_count=len(repos), max_page=1),
-    )
-
-
-@router.get(
-    "/repositories/search",
-    response_model=ListResource[RepositorySchema],
-    description="Search repositories.",
-    summary="Search repositories",
-    status_code=200,
-    responses={404: {}},
-)
-async def search(
-    auth_subject: WebUserOrAnonymous,
-    platform: Platforms,
-    organization_name: str,
-    repository_name: str | None = None,
-    session: AsyncSession = Depends(get_db_session),
-    authz: Authz = Depends(Authz.authz),
-) -> ListResource[RepositorySchema]:
-    org = await organization_service.get_by_name(
+    """List repositories."""
+    results, count = await repository_service.list(
         session,
+        auth_subject,
+        name=name,
         platform=platform,
-        name=organization_name,
-    )
-    if not org:
-        return ListResource(
-            items=[], pagination=Pagination(total_count=0, max_page=1)
-        )  # search endpoints returns empty lists in case of no matches
-
-    repos = await repository.list_by(
-        session,
-        org_ids=[org.id],
-        load_organization=True,
-        repository_name=repository_name,
+        is_private=is_private,
+        external_organization_id=external_organization_id,
+        organization_id=organization_id,
+        pagination=pagination,
+        sorting=sorting,
     )
 
-    # Anonymous requests can only see public repositories,
-    # authed users can also see private repositories in orgs that they are a
-    # member of
-    repos = [
-        r for r in repos if await authz.can(auth_subject.subject, AccessType.read, r)
-    ]
-
-    return ListResource(
-        items=[RepositorySchema.from_db(r) for r in repos],
-        pagination=Pagination(total_count=len(repos), max_page=1),
+    return ListResource.from_paginated_results(
+        [RepositorySchema.model_validate(result) for result in results],
+        count,
+        pagination,
     )
 
 
 @router.get(
-    "/repositories/lookup",
+    "/{id}",
+    summary="Get Repository",
     response_model=RepositorySchema,
-    description="Lookup repositories. Like search but returns at only one repository.",  # noqa: E501
-    summary="Lookup repositories",
-    status_code=200,
-    responses={404: {}},
-)
-async def lookup(
-    auth_subject: WebUserOrAnonymous,
-    platform: Platforms,
-    organization_name: str,
-    repository_name: str,
-    session: AsyncSession = Depends(get_db_session),
-    authz: Authz = Depends(Authz.authz),
-) -> RepositorySchema:
-    org = await organization_service.get_by_name(
-        session,
-        platform=platform,
-        name=organization_name,
-    )
-    if not org:
-        raise HTTPException(
-            status_code=404,
-            detail="Organization not found",
-        )
-
-    repo = await repository.get_by_org_and_name(
-        session,
-        organization_id=org.id,
-        name=repository_name,
-        load_organization=True,
-    )
-
-    if not repo or not await authz.can(auth_subject.subject, AccessType.read, repo):
-        raise HTTPException(
-            status_code=404,
-            detail="Repository not found",
-        )
-
-    return RepositorySchema.from_db(repo)
-
-
-@router.get(
-    "/repositories/{id}",
-    response_model=RepositorySchema,
-    description="Get a repository",
-    status_code=200,
-    summary="Get a repository",
-    responses={404: {}},
+    responses={404: RepositoryNotFound},
 )
 async def get(
-    id: UUID,
-    auth_subject: WebUserOrAnonymous,
+    id: RepositoryID,
+    auth_subject: auth.RepositoriesReadOrAnonymous,
     session: AsyncSession = Depends(get_db_session),
-    authz: Authz = Depends(Authz.authz),
-) -> RepositorySchema:
-    repo = await repository.get(session, id=id, load_organization=True)
+) -> Repository:
+    """Get a repository by ID."""
+    repository = await repository_service.get_by_id(session, auth_subject, id)
+    repo = await repository_service.get(session, id=id, load_organization=True)
 
-    if not repo:
-        raise HTTPException(
-            status_code=404,
-            detail="Repository not found",
-        )
+    if repository is None:
+        raise ResourceNotFound()
 
-    if not await authz.can(auth_subject.subject, AccessType.read, repo):
-        raise HTTPException(
-            status_code=404,
-            detail="Repository not found",
-        )
-
-    if repo:
-        return RepositorySchema.from_db(repo)
-
-    raise HTTPException(
-        status_code=404,
-        detail="Repository not found",
-    )
+    return repository
 
 
 @router.patch(
-    "/repositories/{id}",
+    "/{id}",
     response_model=RepositorySchema,
-    description="Update repository",
-    status_code=200,
-    summary="Update a repository",
-    responses={404: {}},
+    summary="Update Repository",
+    responses={
+        200: {"description": "Repository updated."},
+        403: {
+            "description": "You don't have the permission to update this repository.",
+            "model": NotPermitted.schema(),
+        },
+        404: RepositoryNotFound,
+    },
 )
 async def update(
-    id: UUID,
-    update: RepositoryUpdate,
-    auth_subject: WebUser,
+    id: RepositoryID,
+    repository_update: RepositoryUpdate,
+    auth_subject: auth.RepositoriesWrite,
     authz: Authz = Depends(Authz.authz),
     session: AsyncSession = Depends(get_db_session),
-) -> RepositorySchema:
-    repo = await repository.get(session, id=id, load_organization=True)
+) -> Repository:
+    """Update a repository."""
+    repository = await repository_service.get_by_id(session, auth_subject, id)
 
-    if not repo:
+    if repository is None:
         raise ResourceNotFound()
 
-    if not await authz.can(auth_subject.subject, AccessType.write, repo):
-        raise Unauthorized()
+    if not await authz.can(auth_subject.subject, AccessType.write, repository):
+        raise NotPermitted()
 
-    if update.profile_settings is not None:
+    if repository_update.profile_settings is not None:
         # validate featured organizations
-        if update.profile_settings.featured_organizations is not None:
-            for org_id in update.profile_settings.featured_organizations:
+        if repository_update.profile_settings.featured_organizations is not None:
+            for org_id in repository_update.profile_settings.featured_organizations:
                 if not await organization_service.get(session, id=org_id):
                     raise ResourceNotFound()
 
         # validate highlighted subscriptions
-        if update.profile_settings.highlighted_subscription_tiers is not None:
-            for tier_id in update.profile_settings.highlighted_subscription_tiers:
+        if (
+            repository_update.profile_settings.highlighted_subscription_tiers
+            is not None
+        ):
+            for (
+                tier_id
+            ) in repository_update.profile_settings.highlighted_subscription_tiers:
                 tier = await product_service.get_by_id(session, auth_subject, tier_id)
-                if not tier or tier.organization_id != repo.organization_id:
-                    raise ResourceNotFound()
+                raise NotImplementedError("TODO")
 
-    repo = await repository.update_settings(session, repo, update)
-
-    return RepositorySchema.from_db(repo)
+    return await repository_service.update_settings(
+        session, repository, repository_update
+    )

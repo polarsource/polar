@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Self
+from typing import Annotated, Self
 from uuid import UUID
 
 from pydantic import UUID4, Field, HttpUrl
@@ -9,11 +9,16 @@ from polar.external_organization.schemas import (
     ExternalOrganization as ExternalOrganizationSchema,
 )
 from polar.integrations.github import types
-from polar.kit.schemas import Schema
-from polar.models import Repository as RepositoryModel
+from polar.kit.schemas import MergeJSONSchema, Schema, SelectorWidget
 from polar.visibility import Visibility
 
 REPOSITORY_PROFILE_DESCRIPTION_MAX_LENGTH = 240
+
+RepositoryID = Annotated[
+    UUID4,
+    MergeJSONSchema({"description": "The repository ID."}),
+    SelectorWidget("/v1/repositories", "Repository", "name"),
+]
 
 
 class RepositoryProfileSettings(Schema):
@@ -37,7 +42,7 @@ class RepositoryProfileSettings(Schema):
 class Repository(Schema):
     id: UUID
     platform: Platforms
-    visibility: Visibility
+    is_private: bool
     name: str = Field(examples=["MyOrg"])
     description: str | None = None
     stars: int | None = Field(default=None, examples=[1337])
@@ -49,33 +54,6 @@ class Repository(Schema):
     )
 
     organization: ExternalOrganizationSchema
-
-    @classmethod
-    def from_db(cls, r: RepositoryModel) -> Self:
-        profile_settings = RepositoryProfileSettings(
-            description=r.profile_settings.get("description", None),
-            cover_image_url=r.profile_settings.get("cover_image_url", None),
-            featured_organizations=r.profile_settings.get(
-                "featured_organizations", None
-            ),
-            highlighted_subscription_tiers=r.profile_settings.get(
-                "highlighted_subscription_tiers", None
-            ),
-            links=r.profile_settings.get("links", None),
-        )
-
-        return cls(
-            id=r.id,
-            platform=r.platform,
-            visibility=Visibility.PRIVATE if r.is_private else Visibility.PUBLIC,
-            name=r.name,
-            description=r.description,
-            stars=r.stars,
-            license=r.license,
-            homepage=r.homepage,
-            organization=ExternalOrganizationSchema.model_validate(r.organization),
-            profile_settings=profile_settings,
-        )
 
 
 class RepositoryProfileSettingsUpdate(Schema):

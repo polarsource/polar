@@ -62,16 +62,8 @@ async def second_organization(save_fixture: SaveFixture) -> Organization:
 @pytest_asyncio.fixture()
 async def organization_blocked(save_fixture: SaveFixture) -> Organization:
     organization = Organization(
-        platform=Platforms.github,
-        name=rstr("testorg"),
-        external_id=secrets.randbelow(100000),
+        slug=rstr("testorg"),
         avatar_url="https://avatars.githubusercontent.com/u/105373340?s=200&v=4",
-        is_personal=True,
-        installation_id=secrets.randbelow(100000),
-        installation_created_at=datetime.now(),
-        installation_updated_at=datetime.now(),
-        installation_suspended_at=None,
-        created_from_user_maintainer_upgrade=True,
         blocked_at=utc_now(),
     )
     await save_fixture(organization)
@@ -80,15 +72,8 @@ async def organization_blocked(save_fixture: SaveFixture) -> Organization:
 
 async def create_organization(save_fixture: SaveFixture) -> Organization:
     organization = Organization(
-        platform=Platforms.github,
-        name=rstr("testorg"),
-        external_id=secrets.randbelow(100000),
+        slug=rstr("testorg"),
         avatar_url="https://avatars.githubusercontent.com/u/105373340?s=200&v=4",
-        is_personal=False,
-        installation_id=secrets.randbelow(100000),
-        installation_created_at=datetime.now(),
-        installation_updated_at=datetime.now(),
-        installation_suspended_at=None,
     )
     await save_fixture(organization)
     return organization
@@ -97,22 +82,15 @@ async def create_organization(save_fixture: SaveFixture) -> Organization:
 @pytest_asyncio.fixture(scope="function")
 async def pledging_organization(save_fixture: SaveFixture) -> Organization:
     organization = Organization(
-        platform=Platforms.github,
-        name=rstr("pledging_org"),
-        external_id=secrets.randbelow(100000),
+        slug=rstr("pledging_org"),
         avatar_url="https://avatars.githubusercontent.com/u/105373340?s=200&v=4",
-        is_personal=False,
-        installation_id=secrets.randbelow(100000),
-        installation_created_at=datetime.now(),
-        installation_updated_at=datetime.now(),
-        installation_suspended_at=None,
     )
     await save_fixture(organization)
     return organization
 
 
 async def create_external_organization(
-    save_fixture: SaveFixture,
+    save_fixture: SaveFixture, *, organization: Organization | None = None
 ) -> ExternalOrganization:
     external_organization = ExternalOrganization(
         platform=Platforms.github,
@@ -124,6 +102,7 @@ async def create_external_organization(
         installation_created_at=datetime.now(),
         installation_updated_at=datetime.now(),
         installation_suspended_at=None,
+        organization=organization,
     )
     await save_fixture(external_organization)
     return external_organization
@@ -134,14 +113,30 @@ async def external_organization(save_fixture: SaveFixture) -> ExternalOrganizati
     return await create_external_organization(save_fixture)
 
 
-@pytest_asyncio.fixture(scope="function")
+@pytest_asyncio.fixture
+async def external_organization_linked(
+    save_fixture: SaveFixture, organization: Organization
+) -> ExternalOrganization:
+    return await create_external_organization(save_fixture, organization=organization)
+
+
+@pytest_asyncio.fixture
 async def repository(
     save_fixture: SaveFixture, external_organization: ExternalOrganization
 ) -> Repository:
     return await create_repository(save_fixture, external_organization, is_private=True)
 
 
-@pytest_asyncio.fixture(scope="function")
+@pytest_asyncio.fixture
+async def repository_linked(
+    save_fixture: SaveFixture, external_organization_linked: ExternalOrganization
+) -> Repository:
+    return await create_repository(
+        save_fixture, external_organization_linked, is_private=False
+    )
+
+
+@pytest_asyncio.fixture
 async def public_repository(
     save_fixture: SaveFixture, external_organization: ExternalOrganization
 ) -> Repository:

@@ -70,10 +70,8 @@ class OrganizationProfileSettings(Schema):
 # Public API
 class Organization(Schema):
     id: UUID
-    platform: Platforms
-    name: str
+    slug: str
     avatar_url: str
-    is_personal: bool
 
     bio: str | None = None
     pretty_name: str | None = None

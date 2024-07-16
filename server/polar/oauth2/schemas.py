@@ -13,7 +13,6 @@ from pydantic import (
 )
 
 from polar.auth.scope import SCOPES_SUPPORTED, Scope, scope_to_list
-from polar.enums import Platforms
 from polar.kit.schemas import Schema, TimestampedSchema
 
 from .sub_type import SubType
@@ -85,10 +84,8 @@ class AuthorizeUser(Schema):
 
 class AuthorizeOrganization(Schema):
     id: UUID4
-    platform: Platforms
-    name: str
+    slug: str
     avatar_url: str
-    is_personal: bool
 
 
 class AuthorizeResponseBase(Schema):

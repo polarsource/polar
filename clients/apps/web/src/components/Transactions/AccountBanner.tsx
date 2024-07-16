@@ -1,4 +1,4 @@
-import { useAccount } from '@/hooks/queries'
+import { useAccount, useOrganizationAccount } from '@/hooks/queries'
 import { ACCOUNT_TYPE_DISPLAY_NAMES, ACCOUNT_TYPE_ICON } from '@/utils/account'
 import { ExclamationCircleIcon } from '@heroicons/react/20/solid'
 import { AccountType, Organization, Status, UserRead } from '@polar-sh/sdk'
@@ -19,7 +19,7 @@ const AccountBanner: React.FC<AccountBannerProps> = ({
   isPersonal,
 }) => {
   const { data: organizationAccount, isLoading: organizationAccountIsLoading } =
-    useAccount(organization.account_id)
+    useOrganizationAccount(organization.id)
   const { data: personalAccount, isLoading: personalAccountIsLoading } =
     useAccount(user?.account_id)
 

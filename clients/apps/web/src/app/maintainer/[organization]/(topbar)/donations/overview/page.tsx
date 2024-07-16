@@ -1,6 +1,7 @@
 import { getServerSideAPI } from '@/utils/api/serverside'
 import { DataTableSearchParams, parseSearchParams } from '@/utils/datatable'
-import { Platforms } from '@polar-sh/sdk'
+import { getOrganizationBySlug } from '@/utils/organization'
+import { notFound } from 'next/navigation'
 import ClientPage from './ClientPage'
 
 export default async function Page({
@@ -11,10 +12,11 @@ export default async function Page({
   searchParams: DataTableSearchParams
 }) {
   const api = getServerSideAPI()
-  const organization = await api.organizations.lookup({
-    organizationName: params.organization,
-    platform: Platforms.GITHUB,
-  })
+  const organization = await getOrganizationBySlug(api, params.organization)
+
+  if (!organization) {
+    notFound()
+  }
 
   const donations = await api.donations.searchDonations({
     toOrganizationId: organization.id,

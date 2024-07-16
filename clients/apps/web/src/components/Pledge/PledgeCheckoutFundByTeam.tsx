@@ -1,5 +1,4 @@
 import { useAuth } from '@/hooks/auth'
-import { useSpending } from '@/hooks/queries'
 import { api } from '@/utils/api'
 import { toDetailError } from '@/utils/api/errors'
 import { ClockIcon } from '@heroicons/react/24/outline'
@@ -14,14 +13,18 @@ import { twMerge } from 'tailwind-merge'
 import CircledNumber from './CircledNumber'
 import OrganizationSelect from './OrganizationSelect'
 
-const PledgeCheckoutFundByTeam = ({ issue }: { issue: Issue }) => {
-  const organization = issue.repository.organization
-
+const PledgeCheckoutFundByTeam = ({
+  organization,
+  issue,
+}: {
+  organization: Organization
+  issue: Issue
+}) => {
   const [formState, setFormState] = useState<{
     amount: number
     by_organization_id: string | undefined
   }>({
-    amount: issue.repository.organization.pledge_minimum_amount,
+    amount: organization.pledge_minimum_amount,
     by_organization_id: undefined,
   })
 
@@ -40,7 +43,7 @@ const PledgeCheckoutFundByTeam = ({ issue }: { issue: Issue }) => {
   )
 
   const hasValidDetails =
-    formState.amount >= issue.repository.organization.pledge_minimum_amount &&
+    formState.amount >= organization.pledge_minimum_amount &&
     !!currentUser &&
     paymentPromise &&
     formState.by_organization_id &&
@@ -133,10 +136,7 @@ const PledgeCheckoutFundByTeam = ({ issue }: { issue: Issue }) => {
         allowSelfSelect={false}
         title="Team"
         defaultToFirstOrganization={true}
-        organizationFilter={(o) => o.is_teams_enabled}
       />
-
-      {selectedOrg ? <SpendingLimit org={selectedOrg} /> : null}
 
       <NextSteps />
 
@@ -214,24 +214,3 @@ const NextSteps = () => (
     </div>
   </div>
 )
-
-const SpendingLimit = ({ org }: { org: Organization }) => {
-  const spending = useSpending(org.id)
-
-  if (!org.per_user_monthly_spending_limit) {
-    return <></>
-  }
-
-  if (!spending.data) {
-    return <></>
-  }
-
-  return (
-    <div className="dark:text-polar-400 text-xs font-medium text-gray-500">
-      You&apos;ve pledged ${getCentsInDollarString(spending.data.amount.amount)}{' '}
-      of max $
-      {getCentsInDollarString(org.per_user_monthly_spending_limit, false, true)}{' '}
-      this month.
-    </div>
-  )
-}

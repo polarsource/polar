@@ -3,6 +3,7 @@ import PolarMenu from '@/components/Layout/PolarMenu'
 import { BrandingMenu } from '@/components/Layout/Public/BrandingMenu'
 import { getServerSideAPI } from '@/utils/api/serverside'
 import { organizationPageLink } from '@/utils/nav'
+import { getOrganizationBySlug } from '@/utils/organization'
 import { Organization, Platforms, Repository, UserRead } from '@polar-sh/sdk'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
@@ -23,56 +24,48 @@ export default async function Layout({
   children: React.ReactNode
 }) {
   const api = getServerSideAPI()
+  const organization = await getOrganizationBySlug(
+    api,
+    params.organization,
+    cacheConfig,
+  )
+
+  if (!organization) {
+    notFound()
+  }
 
   let authenticatedUser: UserRead | undefined
-  let organization: Organization | undefined
   let repository: Repository | undefined
   let userAdminOrganizations: Organization[] | undefined
 
   try {
-    const [
-      loadAuthenticatedUser,
-      loadOrganization,
-      loadRepository,
-      loadUserAdminOrganizations,
-    ] = await Promise.all([
-      api.users.getAuthenticated({ cache: 'no-store' }).catch(() => {
-        // Handle unauthenticated
-        return undefined
-      }),
-      api.organizations.lookup(
-        {
-          platform: Platforms.GITHUB,
-          organizationName: params.organization,
-        },
-        cacheConfig,
-      ),
-      api.repositories.lookup(
-        {
-          platform: Platforms.GITHUB,
-          organizationName: params.organization,
-          repositoryName: params.repo,
-        },
-        cacheConfig,
-      ),
-      // No caching, as we're expecting immediate updates to the response if the user converts to a maintainer
-      api.organizations
-        .list({ isAdminOnly: true }, { cache: 'no-store' })
-        .catch(() => {
+    const [loadAuthenticatedUser, loadRepository, loadUserAdminOrganizations] =
+      await Promise.all([
+        api.users.getAuthenticated({ cache: 'no-store' }).catch(() => {
           // Handle unauthenticated
           return undefined
         }),
-    ])
+        api.repositories.lookup(
+          {
+            platform: Platforms.GITHUB,
+            organizationName: params.organization,
+            repositoryName: params.repo,
+          },
+          cacheConfig,
+        ),
+        // No caching, as we're expecting immediate updates to the response if the user converts to a maintainer
+        api.organizations
+          .list({ isMember: true }, { cache: 'no-store' })
+          .catch(() => {
+            // Handle unauthenticated
+            return undefined
+          }),
+      ])
 
     authenticatedUser = loadAuthenticatedUser
-    organization = loadOrganization
     repository = loadRepository
     userAdminOrganizations = loadUserAdminOrganizations?.items ?? []
   } catch (e) {
-    notFound()
-  }
-
-  if (!organization) {
     notFound()
   }
 

@@ -1,7 +1,7 @@
 'use client'
 
 import { useAuth } from '@/hooks'
-import { useListAdminOrganizations } from '@/hooks/queries'
+import { useListMemberOrganizations } from '@/hooks/queries'
 import { getServerURL } from '@/utils/api'
 import { ClearOutlined } from '@mui/icons-material'
 import { useQuery } from '@tanstack/react-query'
@@ -85,7 +85,7 @@ const SelectorWidget = ({
   const parameterKey = getParameterName(parameterName, parameterIn)
 
   // Always limit results to organizations the user is an admin of
-  const { data: organizations } = useListAdminOrganizations()
+  const { data: organizations } = useListMemberOrganizations()
   const organization_ids = organizations?.items?.map((org) => org.id) || []
   const {
     data: items,

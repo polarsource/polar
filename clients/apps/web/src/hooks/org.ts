@@ -1,8 +1,7 @@
 'use client'
 
 import {
-  useListAdminOrganizations,
-  useListAllOrganizations,
+  useListMemberOrganizations,
   useListRepositories,
 } from '@/hooks/queries'
 import type { Organization, Repository } from '@polar-sh/sdk'
@@ -25,7 +24,7 @@ export const useCurrentOrgAndRepoFromURL = (): {
   const search = useSearchParams()
   const searchRepo = search?.get('repo')
 
-  const listOrganizationsQuery = useListAllOrganizations()
+  const listOrganizationsQuery = useListMemberOrganizations()
   const listRepositoriesQuery = useListRepositories()
 
   const [org, setOrg] = useState<Organization | undefined>(undefined)
@@ -106,7 +105,7 @@ export const useCurrentOrgAndRepoFromURL = (): {
 
 export const usePersonalOrganization = () => {
   const { currentUser } = useAuth()
-  const listOrganizationsQuery = useListAdminOrganizations()
+  const listOrganizationsQuery = useListMemberOrganizations()
 
   return listOrganizationsQuery.data?.items?.find(
     (o) => o.name === currentUser?.username && o.is_personal,
@@ -114,6 +113,6 @@ export const usePersonalOrganization = () => {
 }
 
 export const useIsOrganizationAdmin = (org?: Organization) => {
-  const listOrganizationsQuery = useListAdminOrganizations()
+  const listOrganizationsQuery = useListMemberOrganizations()
   return listOrganizationsQuery.data?.items?.some((o) => o.id === org?.id)
 }

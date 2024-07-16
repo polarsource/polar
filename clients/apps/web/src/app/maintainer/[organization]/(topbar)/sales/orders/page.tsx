@@ -1,7 +1,9 @@
 import { getServerSideAPI } from '@/utils/api/serverside'
 import { DataTableSearchParams, parseSearchParams } from '@/utils/datatable'
-import { Platforms, ProductPriceType } from '@polar-sh/sdk'
+import { getOrganizationBySlug } from '@/utils/organization'
+import { ProductPriceType } from '@polar-sh/sdk'
 import { Metadata } from 'next'
+import { notFound } from 'next/navigation'
 import ClientPage from './ClientPage'
 
 export async function generateMetadata({
@@ -25,10 +27,11 @@ export default async function Page({
   }
 }) {
   const api = getServerSideAPI()
-  const organization = await api.organizations.lookup({
-    organizationName: params.organization,
-    platform: Platforms.GITHUB,
-  })
+  const organization = await getOrganizationBySlug(api, params.organization)
+
+  if (!organization) {
+    notFound()
+  }
 
   const { pagination, sorting } = parseSearchParams(searchParams, [
     { id: 'created_at', desc: true },

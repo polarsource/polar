@@ -4,7 +4,8 @@ import {
   urlSearchFromObj,
 } from '@/components/Organization/filters'
 import { getServerSideAPI } from '@/utils/api/serverside'
-import { Organization, Platforms, ResponseError } from '@polar-sh/sdk'
+import { getOrganizationBySlug } from '@/utils/organization'
+import { Platforms } from '@polar-sh/sdk'
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import ClientPage from './ClientPage'
@@ -20,24 +21,12 @@ export async function generateMetadata({
 }: {
   params: { organization: string }
 }): Promise<Metadata> {
-  let organization: Organization | undefined
-
   const api = getServerSideAPI()
-
-  try {
-    organization = await api.organizations.lookup(
-      {
-        platform: Platforms.GITHUB,
-        organizationName: params.organization,
-      },
-      cacheConfig,
-    )
-  } catch (e) {
-    if (e instanceof ResponseError && e.response.status === 404) {
-      notFound()
-    }
-    throw e
-  }
+  const organization = await getOrganizationBySlug(
+    api,
+    params.organization,
+    cacheConfig,
+  )
 
   if (!organization) {
     notFound()
@@ -82,37 +71,31 @@ export default async function Page({
   searchParams: FilterSearchParams
 }) {
   const api = getServerSideAPI()
-  const filters = buildFundingFilters(urlSearchFromObj(searchParams))
-
-  const [organization, issues] = await Promise.all([
-    api.organizations.lookup(
-      {
-        platform: Platforms.GITHUB,
-        organizationName: params.organization,
-      },
-      cacheConfig,
-    ),
-    api.funding.search(
-      {
-        platform: Platforms.GITHUB,
-        organizationName: params.organization,
-        query: filters.q,
-        sorting: filters.sort,
-        badged: filters.badged,
-        limit: 20,
-        closed: filters.closed,
-        page: searchParams.page ? parseInt(searchParams.page) : 1,
-      },
-      cacheConfig,
-    ),
-  ])
+  const organization = await getOrganizationBySlug(
+    api,
+    params.organization,
+    cacheConfig,
+  )
 
   if (!organization) {
     notFound()
   }
-  if (!organization.public_page_enabled) {
-    notFound()
-  }
+
+  const filters = buildFundingFilters(urlSearchFromObj(searchParams))
+
+  const issues = await api.funding.search(
+    {
+      platform: Platforms.GITHUB,
+      organizationName: params.organization,
+      query: filters.q,
+      sorting: filters.sort,
+      badged: filters.badged,
+      limit: 20,
+      closed: filters.closed,
+      page: searchParams.page ? parseInt(searchParams.page) : 1,
+    },
+    cacheConfig,
+  )
 
   return <ClientPage organization={organization} issues={issues} />
 }

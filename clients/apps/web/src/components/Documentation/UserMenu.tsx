@@ -1,13 +1,13 @@
 'use client'
 
 import { useClientSideLoadedUser } from '@/hooks/docs'
-import { useListAdminOrganizations } from '@/hooks/queries'
+import { useListMemberOrganizations } from '@/hooks/queries'
 import { Skeleton } from 'polarkit/components/ui/skeleton'
 import PolarMenu from '../Layout/PolarMenu'
 
 const UserMenu = () => {
   const { user, loaded } = useClientSideLoadedUser()
-  const { data: organizations } = useListAdminOrganizations(
+  const { data: organizations } = useListMemberOrganizations(
     loaded && user !== undefined,
   )
 

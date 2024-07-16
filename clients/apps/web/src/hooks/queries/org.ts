@@ -4,56 +4,19 @@ import {
   Organization,
   OrganizationBadgeSettingsUpdate,
   OrganizationUpdate,
-  Platforms,
 } from '@polar-sh/sdk'
-import {
-  UseMutationResult,
-  UseQueryResult,
-  useMutation,
-  useQuery,
-} from '@tanstack/react-query'
-import { defaultRetry, serverErrorRetry } from './retry'
+import { UseMutationResult, useMutation, useQuery } from '@tanstack/react-query'
+import { defaultRetry } from './retry'
 
-export const useListAdminOrganizations = (enabled: boolean = true) =>
+export const useListMemberOrganizations = (enabled: boolean = true) =>
   useQuery({
     queryKey: ['user', 'adminOrganizations'],
     queryFn: () =>
       api.organizations.list({
-        isAdminOnly: true,
+        isMember: true,
       }),
     retry: defaultRetry,
     enabled,
-  })
-
-export const useOrganizationLookup: (
-  name: string,
-  platform?: Platforms,
-) => UseQueryResult<Organization> = (name, platform = Platforms.GITHUB) =>
-  useQuery({
-    queryKey: ['organizations', name],
-    queryFn: () =>
-      api.organizations.lookup({ organizationName: name, platform }),
-    retry: defaultRetry,
-  })
-
-export const useGetOrganization: (
-  id: string,
-) => UseQueryResult<Organization> = (id) =>
-  useQuery({
-    queryKey: ['organizations', id],
-    queryFn: () => api.organizations.get({ id }),
-    retry: defaultRetry,
-    enabled: !!id,
-  })
-
-export const useListAllOrganizations = (isAdminOnly = false) =>
-  useQuery({
-    queryKey: ['user', 'allOrganizations', isAdminOnly],
-    queryFn: () =>
-      api.organizations.list({
-        isAdminOnly,
-      }),
-    retry: defaultRetry,
   })
 
 export const useListOrganizationMembers = (id?: string) =>
@@ -65,26 +28,6 @@ export const useListOrganizationMembers = (id?: string) =>
       }),
     retry: defaultRetry,
     enabled: !!id,
-  })
-
-export const useSyncOrganizationMembers = () =>
-  useMutation({
-    mutationFn: (variables: { id: string }) =>
-      api.integrationsGitHub.synchronizeMembers({
-        organizationId: variables.id,
-      }),
-    retry: defaultRetry,
-    onSuccess: (_result, variables, _ctx) => {
-      queryClient.invalidateQueries({
-        queryKey: ['organizationMembers', variables.id],
-      })
-      queryClient.invalidateQueries({
-        queryKey: ['user', 'adminOrganizations'],
-      })
-      queryClient.invalidateQueries({
-        queryKey: ['user', 'allOrganizations'],
-      })
-    },
   })
 
 export const useOrganizationBadgeSettings = (id: string) =>
@@ -195,18 +138,18 @@ export const useUpdateOrganization = () =>
     },
   })
 
-export const useOrganizationCredits = (id?: string) =>
-  useQuery({
-    queryKey: ['organizationCredits', id],
-    queryFn: () => api.organizations.getCredits({ id: id || '' }),
-    retry: serverErrorRetry,
-    enabled: !!id,
-  })
-
 export const useOrganization = (id: string, enabled: boolean = true) =>
   useQuery({
     queryKey: ['organization', id],
     queryFn: () => api.organizations.get({ id }),
     retry: defaultRetry,
     enabled,
+  })
+
+export const useOrganizationAccount = (id?: string) =>
+  useQuery({
+    queryKey: ['organization', 'account', id],
+    queryFn: () => api.organizations.getAccount({ id: id as string }),
+    retry: defaultRetry,
+    enabled: !!id,
   })

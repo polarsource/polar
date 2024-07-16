@@ -1,5 +1,5 @@
 import { useAuth } from '@/hooks'
-import { useListAllOrganizations } from '@/hooks/queries'
+import { useListMemberOrganizations } from '@/hooks/queries'
 import { Organization } from '@polar-sh/sdk'
 import Avatar from 'polarkit/components/ui/atoms/avatar'
 import {
@@ -30,7 +30,7 @@ const OrganizationSelect = ({
     Organization | undefined
   >(undefined)
 
-  const organizations = useListAllOrganizations()
+  const organizations = useListMemberOrganizations()
 
   const canSelectOrganizations = (organizations.data?.items || [])
     .filter((o) => o.name !== currentUser?.username)

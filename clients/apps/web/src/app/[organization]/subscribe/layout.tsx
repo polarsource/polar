@@ -1,5 +1,5 @@
 import { getServerSideAPI } from '@/utils/api/serverside'
-import { Organization, Platforms } from '@polar-sh/sdk'
+import { getOrganizationBySlug } from '@/utils/organization'
 import { notFound } from 'next/navigation'
 import React from 'react'
 
@@ -17,24 +17,11 @@ export default async function Layout({
   children: React.ReactNode
 }) {
   const api = getServerSideAPI()
-
-  let organization: Organization | undefined
-
-  try {
-    const [loadOrganization] = await Promise.all([
-      api.organizations.lookup(
-        {
-          platform: Platforms.GITHUB,
-          organizationName: params.organization,
-        },
-        cacheConfig,
-      ),
-    ])
-
-    organization = loadOrganization
-  } catch (e) {
-    notFound()
-  }
+  const organization = await getOrganizationBySlug(
+    api,
+    params.organization,
+    cacheConfig,
+  )
 
   if (!organization) {
     notFound()

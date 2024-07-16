@@ -1,6 +1,7 @@
 import { getServerSideAPI } from '@/utils/api/serverside'
-import { Platforms } from '@polar-sh/sdk'
+import { getOrganizationBySlug } from '@/utils/organization'
 import { Metadata } from 'next'
+import { notFound } from 'next/navigation'
 import ClientPage from './ClientPage'
 
 export async function generateMetadata({
@@ -19,10 +20,11 @@ export default async function Page({
   params: { organization: string }
 }) {
   const api = getServerSideAPI()
-  const organization = await api.organizations.lookup({
-    organizationName: params.organization,
-    platform: Platforms.GITHUB,
-  })
+  const organization = await getOrganizationBySlug(api, params.organization)
+
+  if (!organization) {
+    notFound()
+  }
 
   const startOfMonth = new Date()
   startOfMonth.setUTCHours(0, 0, 0, 0)

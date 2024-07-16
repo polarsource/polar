@@ -1,8 +1,8 @@
 import { getServerSideAPI } from '@/utils/api/serverside'
 import { DataTableSearchParams, parseSearchParams } from '@/utils/datatable'
-import { Platforms } from '@polar-sh/sdk'
+import { getOrganizationBySlug } from '@/utils/organization'
 import { Metadata } from 'next'
-import { RedirectType, redirect } from 'next/navigation'
+import { RedirectType, notFound, redirect } from 'next/navigation'
 import ClientPage from './ClientPage'
 
 const cacheConfig = {
@@ -25,13 +25,16 @@ export default async function Page({
   params: { organization: string }
 }) {
   const api = getServerSideAPI()
-  const organization = await api.organizations.lookup(
-    {
-      platform: Platforms.GITHUB,
-      organizationName: params.organization,
-    },
+  const organization = await getOrganizationBySlug(
+    api,
+    params.organization,
     cacheConfig,
   )
+
+  if (!organization) {
+    notFound()
+  }
+
   if (organization.is_personal) {
     redirect('/finance/incoming', RedirectType.replace)
   }

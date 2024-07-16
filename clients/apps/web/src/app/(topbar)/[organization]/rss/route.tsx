@@ -2,7 +2,8 @@ import EmailRender from '@/components/Feed/Markdown/Render/EmailRender'
 import { getHighlighter } from '@/components/SyntaxHighlighterShiki/SyntaxHighlighterServer'
 import { getServerSideAPI } from '@/utils/api/serverside'
 import { organizationPageLink } from '@/utils/nav'
-import { ArticleVisibility, Platforms } from '@polar-sh/sdk'
+import { getOrganizationBySlug } from '@/utils/organization'
+import { ArticleVisibility } from '@polar-sh/sdk'
 import { NextRequest, NextResponse } from 'next/server'
 
 const cacheConfig = {
@@ -25,13 +26,15 @@ export async function GET(
     req.nextUrl.searchParams.get('auth') || undefined,
   )
 
-  const organization = await api.organizations.lookup(
-    {
-      platform: Platforms.GITHUB,
-      organizationName: params.organization,
-    },
+  const organization = await getOrganizationBySlug(
+    api,
+    params.organization,
     cacheConfig,
   )
+
+  if (!organization) {
+    return new NextResponse(null, { status: 404 })
+  }
 
   const articles = await api.articles.list(
     {

@@ -6,7 +6,6 @@ import {
   AllInclusiveOutlined,
   AttachMoneyOutlined,
   DiamondOutlined,
-  Face,
   FavoriteBorderOutlined,
   HowToVoteOutlined,
   ShoppingCartOutlined,
@@ -262,15 +261,6 @@ const maintainerRoutesList = (org: Organization): Route[] => [
     icon: <FavoriteBorderOutlined className="h-5 w-5" fontSize="inherit" />,
     postIcon: undefined,
     if: true,
-    subs: undefined,
-  },
-  {
-    id: 'members',
-    title: 'Members',
-    link: `/maintainer/${org.name}/members`,
-    icon: <Face fontSize="inherit" />,
-    postIcon: undefined,
-    if: org.is_teams_enabled,
     subs: undefined,
   },
   {

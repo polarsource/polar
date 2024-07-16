@@ -1,10 +1,9 @@
 import { getServerSideAPI } from '@/utils/api/serverside'
+import { getOrganizationBySlug } from '@/utils/organization'
 import {
   Issue,
   ListResourceOrganization,
   ListResourceProduct,
-  Organization,
-  Platforms,
 } from '@polar-sh/sdk'
 import { Metadata } from 'next'
 import { notFound } from 'next/navigation'
@@ -22,24 +21,13 @@ export async function generateMetadata({
   params: { organization: string }
 }): Promise<Metadata> {
   const api = getServerSideAPI()
+  const organization = await getOrganizationBySlug(
+    api,
+    params.organization,
+    cacheConfig,
+  )
 
-  let organization: Organization | undefined
-
-  try {
-    const [loadOrganization] = await Promise.all([
-      api.organizations.lookup(
-        {
-          platform: Platforms.GITHUB,
-          organizationName: params.organization,
-        },
-        {
-          ...cacheConfig,
-        },
-      ),
-    ])
-
-    organization = loadOrganization
-  } catch (e) {
+  if (!organization) {
     notFound()
   }
 
@@ -83,28 +71,27 @@ export default async function Page({
   searchParams: { amount?: string; issue_id?: string }
 }) {
   const api = getServerSideAPI()
+  const organization = await getOrganizationBySlug(
+    api,
+    params.organization,
+    cacheConfig,
+  )
 
-  let organization: Organization | undefined
+  if (!organization) {
+    notFound()
+  }
+
   let listAdminOrganizations: ListResourceOrganization | undefined
   let products: ListResourceProduct | undefined
   let issue: Issue | undefined
 
   try {
-    organization = await api.organizations.lookup(
-      {
-        platform: Platforms.GITHUB,
-        organizationName: params.organization,
-      },
-      {
-        cache: 'no-store',
-      },
-    )
     const [loadListAdminOrganizations, loadSubscriptionTiers, loadIssue] =
       await Promise.all([
         api.organizations
           .list(
             {
-              isAdminOnly: true,
+              isMember: true,
             },
             cacheConfig,
           )
@@ -138,10 +125,6 @@ export default async function Page({
     products = loadSubscriptionTiers
     issue = loadIssue
   } catch (e) {
-    notFound()
-  }
-
-  if (!organization.public_page_enabled) {
     notFound()
   }
 

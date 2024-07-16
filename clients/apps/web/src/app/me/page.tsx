@@ -6,7 +6,7 @@ export default async function Route() {
   const api = getServerSideAPI()
 
   const userAdminOrganizations = await api.organizations
-    .list({ isAdminOnly: true }, { cache: 'no-store' })
+    .list({ isMember: true }, { cache: 'no-store' })
     .catch(() => {
       // Handle unauthenticated
       return undefined

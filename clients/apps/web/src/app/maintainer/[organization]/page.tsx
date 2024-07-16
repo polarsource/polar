@@ -1,6 +1,6 @@
 import { getServerSideAPI } from '@/utils/api/serverside'
-import { Platforms } from '@polar-sh/sdk'
-import { redirect } from 'next/navigation'
+import { getOrganizationBySlug } from '@/utils/organization'
+import { notFound, redirect } from 'next/navigation'
 
 export default async function Page({
   params,
@@ -8,10 +8,11 @@ export default async function Page({
   params: { organization: string }
 }) {
   const api = getServerSideAPI()
-  const organization = await api.organizations.lookup({
-    organizationName: params.organization,
-    platform: Platforms.GITHUB,
-  })
+  const organization = await getOrganizationBySlug(api, params.organization)
+
+  if (!organization) {
+    notFound()
+  }
 
   return redirect(`/maintainer/${organization.name}/overview`)
 }

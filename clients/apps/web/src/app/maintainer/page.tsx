@@ -6,7 +6,7 @@ import DashboardLayout from '@/components/Layout/DashboardLayout'
 import FakePullRequest from '@/components/Settings/FakePullRequest'
 import { useAuth, usePersonalOrganization } from '@/hooks'
 import { shouldBeOnboarded } from '@/hooks/onboarding'
-import { useListAdminOrganizations } from '@/hooks/queries'
+import { useListMemberOrganizations } from '@/hooks/queries'
 import { CONFIG } from '@/utils/config'
 import Link from 'next/link'
 import { redirect, useRouter } from 'next/navigation'
@@ -15,7 +15,7 @@ import { useCallback, useEffect } from 'react'
 
 export default function Page() {
   const { authenticated, currentUser, reloadUser } = useAuth()
-  const listOrganizationsQuery = useListAdminOrganizations()
+  const listOrganizationsQuery = useListMemberOrganizations()
   const personalOrg = usePersonalOrganization()
 
   const router = useRouter()

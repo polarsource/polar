@@ -1,5 +1,5 @@
 import { getServerSideAPI } from '@/utils/api/serverside'
-import { Organization, Platforms, ResponseError } from '@polar-sh/sdk'
+import { getOrganizationBySlug } from '@/utils/organization'
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import ClientPage from './ClientPage'
@@ -15,29 +15,14 @@ export async function generateMetadata({
 }: {
   params: { organization: string }
 }): Promise<Metadata> {
-  let organization: Organization | undefined
   const api = getServerSideAPI()
-
-  try {
-    organization = await api.organizations.lookup(
-      {
-        platform: Platforms.GITHUB,
-        organizationName: params.organization,
-      },
-      cacheConfig,
-    )
-  } catch (e) {
-    if (e instanceof ResponseError && e.response.status === 404) {
-      notFound()
-    } else {
-      throw e
-    }
-  }
+  const organization = await getOrganizationBySlug(
+    api,
+    params.organization,
+    cacheConfig,
+  )
 
   if (!organization) {
-    notFound()
-  }
-  if (!organization.public_page_enabled) {
     notFound()
   }
 
@@ -89,22 +74,13 @@ export default async function Page({
   params: { organization: string }
 }) {
   const api = getServerSideAPI()
+  const organization = await getOrganizationBySlug(
+    api,
+    params.organization,
+    cacheConfig,
+  )
 
-  let organization: Organization | undefined
-
-  try {
-    const [loadOrganization] = await Promise.all([
-      api.organizations.lookup(
-        {
-          platform: Platforms.GITHUB,
-          organizationName: params.organization,
-        },
-        cacheConfig,
-      ),
-    ])
-
-    organization = loadOrganization
-  } catch (e) {
+  if (!organization) {
     notFound()
   }
 

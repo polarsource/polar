@@ -395,7 +395,7 @@ class TestSyncStripeFees:
                     "id": "STRIPE_BALANCE_TRANSACTION_ID_5",
                     "net": -500,
                     "currency": "usd",
-                    "description": "Billing (2024-01-03): Subscriptions",
+                    "description": "Billing - Usage Fee (2024-07-11)",
                 },
                 None,
             ),

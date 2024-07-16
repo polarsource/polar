@@ -6655,6 +6655,78 @@ export interface MaintainerNewPaidSubscriptionNotificationPayload {
 /**
  * 
  * @export
+ * @interface MaintainerNewProductSaleNotification
+ */
+export interface MaintainerNewProductSaleNotification {
+    /**
+     * 
+     * @type {string}
+     * @memberof MaintainerNewProductSaleNotification
+     */
+    id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof MaintainerNewProductSaleNotification
+     */
+    created_at: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof MaintainerNewProductSaleNotification
+     */
+    type: MaintainerNewProductSaleNotificationTypeEnum;
+    /**
+     * 
+     * @type {MaintainerNewProductSaleNotificationPayload}
+     * @memberof MaintainerNewProductSaleNotification
+     */
+    payload: MaintainerNewProductSaleNotificationPayload;
+}
+
+
+/**
+ * @export
+ */
+export const MaintainerNewProductSaleNotificationTypeEnum = {
+    MAINTAINER_NEW_PRODUCT_SALE_NOTIFICATION: 'MaintainerNewProductSaleNotification'
+} as const;
+export type MaintainerNewProductSaleNotificationTypeEnum = typeof MaintainerNewProductSaleNotificationTypeEnum[keyof typeof MaintainerNewProductSaleNotificationTypeEnum];
+
+/**
+ * 
+ * @export
+ * @interface MaintainerNewProductSaleNotificationPayload
+ */
+export interface MaintainerNewProductSaleNotificationPayload {
+    /**
+     * 
+     * @type {string}
+     * @memberof MaintainerNewProductSaleNotificationPayload
+     */
+    customer_name: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof MaintainerNewProductSaleNotificationPayload
+     */
+    product_name: string;
+    /**
+     * 
+     * @type {number}
+     * @memberof MaintainerNewProductSaleNotificationPayload
+     */
+    product_price_amount: number;
+    /**
+     * 
+     * @type {string}
+     * @memberof MaintainerNewProductSaleNotificationPayload
+     */
+    organization_name: string;
+}
+/**
+ * 
+ * @export
  * @interface MaintainerPledgeConfirmationPendingNotification
  */
 export interface MaintainerPledgeConfirmationPendingNotification {
@@ -7556,7 +7628,7 @@ export type NotPermittedTypeEnum = typeof NotPermittedTypeEnum[keyof typeof NotP
  * 
  * @export
  */
-export type NotificationsInner = { type: 'BenefitPreconditionErrorNotification' } & BenefitPreconditionErrorNotification | { type: 'MaintainerAccountReviewedNotification' } & MaintainerAccountReviewedNotification | { type: 'MaintainerAccountUnderReviewNotification' } & MaintainerAccountUnderReviewNotification | { type: 'MaintainerCreateAccountNotification' } & MaintainerCreateAccountNotification | { type: 'MaintainerDonationReceived' } & MaintainerDonationReceivedNotification | { type: 'MaintainerNewPaidSubscriptionNotification' } & MaintainerNewPaidSubscriptionNotification | { type: 'MaintainerPledgeConfirmationPendingNotification' } & MaintainerPledgeConfirmationPendingNotification | { type: 'MaintainerPledgeCreatedNotification' } & MaintainerPledgeCreatedNotification | { type: 'MaintainerPledgePaidNotification' } & MaintainerPledgePaidNotification | { type: 'MaintainerPledgePendingNotification' } & MaintainerPledgePendingNotification | { type: 'MaintainerPledgedIssueConfirmationPendingNotification' } & MaintainerPledgedIssueConfirmationPendingNotification | { type: 'MaintainerPledgedIssuePendingNotification' } & MaintainerPledgedIssuePendingNotification | { type: 'PledgerPledgePendingNotification' } & PledgerPledgePendingNotification | { type: 'RewardPaidNotification' } & RewardPaidNotification | { type: 'TeamAdminMemberPledgedNotification' } & TeamAdminMemberPledgedNotification;
+export type NotificationsInner = { type: 'BenefitPreconditionErrorNotification' } & BenefitPreconditionErrorNotification | { type: 'MaintainerAccountReviewedNotification' } & MaintainerAccountReviewedNotification | { type: 'MaintainerAccountUnderReviewNotification' } & MaintainerAccountUnderReviewNotification | { type: 'MaintainerCreateAccountNotification' } & MaintainerCreateAccountNotification | { type: 'MaintainerDonationReceived' } & MaintainerDonationReceivedNotification | { type: 'MaintainerNewPaidSubscriptionNotification' } & MaintainerNewPaidSubscriptionNotification | { type: 'MaintainerNewProductSaleNotification' } & MaintainerNewProductSaleNotification | { type: 'MaintainerPledgeConfirmationPendingNotification' } & MaintainerPledgeConfirmationPendingNotification | { type: 'MaintainerPledgeCreatedNotification' } & MaintainerPledgeCreatedNotification | { type: 'MaintainerPledgePaidNotification' } & MaintainerPledgePaidNotification | { type: 'MaintainerPledgePendingNotification' } & MaintainerPledgePendingNotification | { type: 'MaintainerPledgedIssueConfirmationPendingNotification' } & MaintainerPledgedIssueConfirmationPendingNotification | { type: 'MaintainerPledgedIssuePendingNotification' } & MaintainerPledgedIssuePendingNotification | { type: 'PledgerPledgePendingNotification' } & PledgerPledgePendingNotification | { type: 'RewardPaidNotification' } & RewardPaidNotification | { type: 'TeamAdminMemberPledgedNotification' } & TeamAdminMemberPledgedNotification;
 /**
  * 
  * @export

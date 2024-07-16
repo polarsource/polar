@@ -638,7 +638,7 @@ const MaintainerNewPaidSubscription = ({
           <>
             {payload.subscriber_name} is now subscribing to{' '}
             <InternalLink
-              href={`/maintainer/${payload.tier_organization_name}/products/overview`}
+              href={`/maintainer/${payload.tier_organization_name}/sales/subscriptions`}
             >
               <>{payload.tier_name}</>
             </InternalLink>{' '}

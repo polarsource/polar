@@ -2,6 +2,8 @@ import {
   Article,
   Issue,
   ListResourceIssue,
+  ListResourceOrganization,
+  ListResourceRepository,
   Organization,
   Repository,
 } from '@polar-sh/sdk'
@@ -148,31 +150,38 @@ const listIssues = async (
 }
 
 const getOrg = async (org: string): Promise<Organization> => {
-  return await fetch(
-    `${getServerURL()}/v1/organizations/lookup?platform=github&organization_name=${org}`,
-    {
-      method: 'GET',
-    },
-  ).then((response) => {
-    if (!response.ok) {
-      throw new Error(`Unexpected ${response.status} status code`)
-    }
-    return response.json()
+  let url = `${getServerURL()}/v1/organizations/?slug=${org}&limit=1`
+
+  const response = await fetch(url, {
+    method: 'GET',
   })
+  const data = (await response.json()) as ListResourceOrganization
+
+  const organization = data.items?.[0]
+
+  if (!organization) {
+    notFound()
+  }
+
+  return organization
 }
 
-const getRepo = async (org: string, repo: string): Promise<Repository> => {
-  return await fetch(
-    `${getServerURL()}/v1/repositories/lookup?platform=github&organization_name=${org}&repository_name=${repo}`,
+const getRepo = async (orgId: string, repo: string): Promise<Repository> => {
+  const response = await fetch(
+    `${getServerURL()}/v1/repositories/?organization_id=${orgId}&name=${repo}`,
     {
       method: 'GET',
     },
-  ).then((response) => {
-    if (!response.ok) {
-      throw new Error(`Unexpected ${response.status} status code`)
-    }
-    return response.json()
-  })
+  )
+  const data = (await response.json()) as ListResourceRepository
+
+  const repository = data.items?.[0]
+
+  if (!repository) {
+    notFound()
+  }
+
+  return repository
 }
 
 const getIssue = async (externalUrl: string): Promise<Issue> => {

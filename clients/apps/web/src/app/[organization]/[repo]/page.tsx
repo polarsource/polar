@@ -7,6 +7,7 @@ import { Link } from '@/components/Profile/LinksEditor/LinksEditor'
 import { getServerSideAPI } from '@/utils/api/serverside'
 import { CONFIG } from '@/utils/config'
 import { getOrganizationBySlug } from '@/utils/organization'
+import { getRepositoryByName } from '@/utils/repository'
 import {
   ArticleVisibility,
   ListResourceArticle,
@@ -15,8 +16,6 @@ import {
   ListResourceProduct,
   Organization,
   Platforms,
-  Repository,
-  ResponseError,
 } from '@polar-sh/sdk'
 import { Metadata } from 'next'
 import { notFound } from 'next/navigation'
@@ -34,8 +33,6 @@ export async function generateMetadata({
 }: {
   params: { organization: string; repo: string }
 }): Promise<Metadata> {
-  let repository: Repository | undefined
-
   const api = getServerSideAPI()
   const organization = await getOrganizationBySlug(
     api,
@@ -47,20 +44,12 @@ export async function generateMetadata({
     notFound()
   }
 
-  try {
-    repository = await api.repositories.lookup(
-      {
-        platform: Platforms.GITHUB,
-        organizationName: params.organization,
-        repositoryName: params.repo,
-      },
-      cacheConfig,
-    )
-  } catch (e) {
-    if (e instanceof ResponseError && e.response.status === 404) {
-      notFound()
-    }
-  }
+  const repository = await getRepositoryByName(
+    api,
+    organization.id,
+    params.repo,
+    cacheConfig,
+  )
 
   if (!repository) {
     notFound()
@@ -116,30 +105,32 @@ export default async function Page({
     notFound()
   }
 
+  const repository = await getRepositoryByName(
+    api,
+    organization.id,
+    params.repo,
+    {
+      ...cacheConfig,
+      next: {
+        ...cacheConfig.next,
+        // Make it possible to revalidate the page when the repository is updated from client
+        tags: [`repository:${organization.id}/${params.repo}`],
+      },
+    },
+  )
+
+  if (!repository) {
+    notFound()
+  }
+
   const filters = buildFundingFilters(urlSearchFromObj(searchParams))
 
-  let repository: Repository | undefined
   let issuesFunding: ListResourceIssueFunding | undefined
   let adminOrganizations: ListResourceOrganization | undefined
   let products: ListResourceProduct | undefined
   let posts: ListResourceArticle | undefined
 
   try {
-    repository = await api.repositories.lookup(
-      {
-        platform: Platforms.GITHUB,
-        organizationName: params.organization,
-        repositoryName: params.repo,
-      },
-      {
-        ...cacheConfig,
-        next: {
-          ...cacheConfig.next,
-          // Make it possible to revalidate the page when the repository is updated from client
-          tags: [`repository:${params.organization}/${params.repo}`],
-        },
-      },
-    )
     ;[issuesFunding, adminOrganizations, products, posts] = await Promise.all([
       api.funding.search(
         {

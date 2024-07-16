@@ -138,6 +138,18 @@ export const useUpdateOrganization = () =>
     },
   })
 
+export const useOrganizationBySlug = (
+  slug: string | undefined,
+  enabled: boolean = true,
+) =>
+  useQuery({
+    queryKey: ['organization', slug],
+    queryFn: () =>
+      api.organizations.list({ slug, limit: 1 }).then((r) => r.items?.[0]),
+    retry: defaultRetry,
+    enabled,
+  })
+
 export const useOrganization = (id: string, enabled: boolean = true) =>
   useQuery({
     queryKey: ['organization', id],

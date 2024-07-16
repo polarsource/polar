@@ -4,7 +4,8 @@ import { BrandingMenu } from '@/components/Layout/Public/BrandingMenu'
 import { getServerSideAPI } from '@/utils/api/serverside'
 import { organizationPageLink } from '@/utils/nav'
 import { getOrganizationBySlug } from '@/utils/organization'
-import { Organization, Platforms, Repository, UserRead } from '@polar-sh/sdk'
+import { getRepositoryByName } from '@/utils/repository'
+import { Organization, UserRead } from '@polar-sh/sdk'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import Avatar from 'polarkit/components/ui/atoms/avatar'
@@ -34,25 +35,28 @@ export default async function Layout({
     notFound()
   }
 
+  const repository = await getRepositoryByName(
+    api,
+    organization.id,
+    params.repo,
+    cacheConfig,
+  )
+
+  if (!repository) {
+    notFound()
+  }
+
   let authenticatedUser: UserRead | undefined
-  let repository: Repository | undefined
   let userAdminOrganizations: Organization[] | undefined
 
   try {
-    const [loadAuthenticatedUser, loadRepository, loadUserAdminOrganizations] =
+    const [loadAuthenticatedUser, loadUserAdminOrganizations] =
       await Promise.all([
         api.users.getAuthenticated({ cache: 'no-store' }).catch(() => {
           // Handle unauthenticated
           return undefined
         }),
-        api.repositories.lookup(
-          {
-            platform: Platforms.GITHUB,
-            organizationName: params.organization,
-            repositoryName: params.repo,
-          },
-          cacheConfig,
-        ),
+        getRepositoryByName(api, organization.id, params.repo, cacheConfig),
         // No caching, as we're expecting immediate updates to the response if the user converts to a maintainer
         api.organizations
           .list({ isMember: true }, { cache: 'no-store' })
@@ -63,7 +67,6 @@ export default async function Layout({
       ])
 
     authenticatedUser = loadAuthenticatedUser
-    repository = loadRepository
     userAdminOrganizations = loadUserAdminOrganizations?.items ?? []
   } catch (e) {
     notFound()

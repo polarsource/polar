@@ -1,18 +1,31 @@
 import { Posts } from '@/components/Embed/Posts'
 import { getServerURL } from '@/utils/api'
-import { Article, ListResourceArticle, Organization } from '@polar-sh/sdk'
+import {
+  Article,
+  ListResourceArticle,
+  ListResourceOrganization,
+  Organization,
+} from '@polar-sh/sdk'
+import { notFound } from 'next/navigation'
 const { default: satori } = require('satori')
 
 export const runtime = 'edge'
 
 const getOrg = async (org: string): Promise<Organization> => {
-  let url = `${getServerURL()}/v1/organizations/lookup?platform=github&organization_name=${org}`
+  let url = `${getServerURL()}/v1/organizations/?slug=${org}&limit=1`
 
   const response = await fetch(url, {
     method: 'GET',
   })
-  const data = (await response.json()) as Organization
-  return data
+  const data = (await response.json()) as ListResourceOrganization
+
+  const organization = data.items?.[0]
+
+  if (!organization) {
+    notFound()
+  }
+
+  return organization
 }
 
 const getPosts = async (

@@ -200,27 +200,21 @@ const OrganizationIssues = ({
       anyIssueHasPledgeOrBadge === false &&
       isDefaultFilters
     )
-  }, [
-    filters,
-    dashboardQuery,
-    anyIssueHasPledgeOrBadge,
-    haveIssues,
-    isDefaultFilters,
-  ])
+  }, [dashboardQuery, anyIssueHasPledgeOrBadge, haveIssues, isDefaultFilters])
 
   // Get current org & repo from URL
   const { org: currentOrg, repo: currentRepo } = useCurrentOrgAndRepoFromURL()
 
   // Get all repositories
-  const listRepositoriesQuery = useListRepositories()
-  const allRepositories = listRepositoriesQuery?.data?.items
-
-  // Filter repos by current org & normalize for our select
-  const allOrgRepositories = allRepositories?.filter(
-    (r) => r?.organization?.id === currentOrg?.id,
+  const listRepositoriesQuery = useListRepositories(
+    {
+      organizationId: currentOrg?.id,
+    },
+    !!currentOrg,
   )
+  const allOrgRepositories = listRepositoriesQuery?.data?.items
 
-  if (!currentOrg || (!allRepositories && hasAppInstalled)) {
+  if (!currentOrg || (!allOrgRepositories && hasAppInstalled)) {
     return <></>
   }
 

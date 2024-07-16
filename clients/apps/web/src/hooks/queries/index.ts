@@ -1,5 +1,9 @@
 import { api, queryClient } from '@/utils/api'
-import { ListResourceRepository, Platforms, ResponseError } from '@polar-sh/sdk'
+import {
+  ListResourceRepository,
+  RepositoriesApiListRequest,
+  ResponseError,
+} from '@polar-sh/sdk'
 import {
   UseMutationResult,
   UseQueryResult,
@@ -35,29 +39,18 @@ export * from './user'
 export * from './webhookNotifications'
 export * from './webhooks'
 
-export const useListRepositories: () => UseQueryResult<
-  ListResourceRepository,
-  ResponseError
-> = () =>
-  useQuery({
-    queryKey: ['user', 'repositories'],
-    queryFn: () => api.repositories.list(),
-    retry: defaultRetry,
-  })
-
-export const useSearchRepositories = (
-  platform: Platforms,
-  organizationName: string,
+export const useListRepositories: (
+  params?: RepositoriesApiListRequest,
+  enabled?: boolean,
+) => UseQueryResult<ListResourceRepository, ResponseError> = (
+  params = {},
+  enabled = true,
 ) =>
   useQuery({
-    queryKey: ['user', 'repositories', platform, organizationName],
-    queryFn: () =>
-      api.repositories.search({
-        platform: platform,
-        organizationName: organizationName,
-      }),
-
+    queryKey: ['repositories', { ...params }],
+    queryFn: () => api.repositories.list({ ...params }),
     retry: defaultRetry,
+    enabled,
   })
 
 export const useAccount = (id?: string) =>

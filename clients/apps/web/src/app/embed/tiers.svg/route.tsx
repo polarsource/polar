@@ -1,24 +1,39 @@
 import { HighlightedTiers } from '@/components/Embed/HighlightedTiers'
 import { getServerURL } from '@/utils/api'
 import {
+  ListResourceOrganization,
   ListResourceProduct,
+  Organization,
   Product,
   ProductPriceRecurringInterval,
 } from '@polar-sh/sdk'
+import { notFound } from 'next/navigation'
 const { default: satori } = require('satori')
 
 export const runtime = 'edge'
+
+const getOrg = async (org: string): Promise<Organization> => {
+  let url = `${getServerURL()}/v1/organizations/?slug=${org}&limit=1`
+
+  const response = await fetch(url, {
+    method: 'GET',
+  })
+  const data = (await response.json()) as ListResourceOrganization
+
+  const organization = data.items?.[0]
+
+  if (!organization) {
+    notFound()
+  }
+
+  return organization
+}
 
 const getHighlightedSubscriptions = async (
   org: string,
   limit: number = 100,
 ): Promise<Product[]> => {
-  const { id: orgId } = await fetch(
-    getServerURL(
-      `/v1/organizations/lookup?organization_name=${org}&platform=github`,
-    ),
-    { method: 'GET' },
-  ).then((res) => res.json())
+  const { id: orgId } = await getOrg(org)
 
   let url = getServerURL(
     `/v1/products/?organization_id=${orgId}&is_recurring=true&is_archived=false&limit=${limit}`,

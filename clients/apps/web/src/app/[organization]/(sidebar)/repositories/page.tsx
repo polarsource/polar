@@ -1,6 +1,5 @@
 import { getServerSideAPI } from '@/utils/api/serverside'
 import { getOrganizationBySlug } from '@/utils/organization'
-import { Platforms } from '@polar-sh/sdk'
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { ClientPage } from './ClientPage'
@@ -84,10 +83,9 @@ export default async function Page({
     notFound()
   }
 
-  const repositories = await api.repositories.search(
+  const repositories = await api.repositories.list(
     {
-      platform: Platforms.GITHUB,
-      organizationName: params.organization,
+      organizationId: organization.id,
     },
     cacheConfig,
   )

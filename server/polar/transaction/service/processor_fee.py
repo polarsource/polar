@@ -28,7 +28,7 @@ def _get_stripe_processor_fee_type(description: str) -> ProcessorFeeType:
         return ProcessorFeeType.cross_border_transfer
     if "active account" in description:
         return ProcessorFeeType.account
-    if "subscriptions" in description:
+    if "billing" in description:
         return ProcessorFeeType.subscription
     if "automatic tax" in description:
         return ProcessorFeeType.tax

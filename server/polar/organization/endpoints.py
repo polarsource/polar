@@ -3,6 +3,8 @@ from uuid import UUID
 import structlog
 from fastapi import Depends, Query
 
+from polar.account.schemas import Account as AccountSchema
+from polar.account.service import account as account_service
 from polar.authz.service import AccessType, Authz
 from polar.currency.schemas import CurrencyAmount
 from polar.exceptions import (
@@ -14,7 +16,7 @@ from polar.exceptions import (
 from polar.integrations.github.badge import GithubBadge
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.kit.pagination import ListResource, Pagination, PaginationParamsQuery
-from polar.models import Organization
+from polar.models import Account, Organization
 from polar.openapi import IN_DEVELOPMENT_ONLY, APITag
 from polar.postgres import AsyncSession, get_db_session
 from polar.repository.service import repository as repository_service
@@ -188,33 +190,81 @@ async def update(
     )
 
 
+@router.get(
+    "/{id}/account",
+    response_model=AccountSchema,
+    summary="Get Organization Account",
+    responses={
+        403: {
+            "description": "You don't have the permission to update this organization.",
+            "model": NotPermitted.schema(),
+        },
+        404: {
+            "description": "Organization not found or account not set.",
+            "model": ResourceNotFound.schema(),
+        },
+    },
+)
+async def get_account(
+    id: OrganizationID,
+    auth_subject: auth.OrganizationsWrite,
+    authz: Authz = Depends(Authz.authz),
+    session: AsyncSession = Depends(get_db_session),
+) -> Account:
+    """Get the account for an organization."""
+    organization = await organization_service.get_by_id(session, auth_subject, id)
+
+    if organization is None:
+        raise ResourceNotFound()
+
+    if not await authz.can(auth_subject.subject, AccessType.write, organization):
+        raise NotPermitted()
+
+    if organization.account_id is None:
+        raise ResourceNotFound()
+
+    account = await account_service.get_by_id(session, organization.account_id)
+
+    if account is None:
+        raise ResourceNotFound()
+
+    return account
+
+
 @router.patch(
     "/{id}/account",
     response_model=OrganizationSchema,
-    description="Set organization account",
-    status_code=200,
-    summary="Set organization organization",
-    responses={404: {}},
+    summary="Set Organization Account",
+    responses={
+        200: {"description": "Organization account set."},
+        403: {
+            "description": "You don't have the permission to update this organization.",
+            "model": NotPermitted.schema(),
+        },
+        404: OrganizationNotFound,
+    },
 )
 async def set_account(
-    id: UUID,
+    id: OrganizationID,
     set_account: OrganizationSetAccount,
     auth_subject: auth.OrganizationsWrite,
     authz: Authz = Depends(Authz.authz),
     session: AsyncSession = Depends(get_db_session),
 ) -> Organization:
-    org = await organization_service.get(session, id=id)
-    if not org:
+    """Set the account for an organization."""
+    organization = await organization_service.get_by_id(session, auth_subject, id)
+
+    if organization is None:
         raise ResourceNotFound()
 
-    if not await authz.can(auth_subject.subject, AccessType.write, org):
-        raise Unauthorized()
+    if not await authz.can(auth_subject.subject, AccessType.write, organization):
+        raise NotPermitted()
 
     return await organization_service.set_account(
         session,
         authz=authz,
         auth_subject=auth_subject,
-        organization=org,
+        organization=organization,
         account_id=set_account.account_id,
     )
 

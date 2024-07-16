@@ -15,14 +15,13 @@
 
 import * as runtime from '../runtime';
 import type {
+  ExternalOrganization,
   GithubUser,
   HTTPValidationError,
   InstallationCreate,
   LookupUserRequest,
-  Organization,
   OrganizationBillingPlan,
   OrganizationCheckPermissionsInput,
-  SynchronizeMembersResponse,
   UserSignupType,
   WebhookResponse,
 } from '../models/index';
@@ -60,10 +59,6 @@ export interface IntegrationsGithubApiLookupUserOperationRequest {
 export interface IntegrationsGithubApiRedirectToOrganizationInstallationRequest {
     id: string;
     returnTo?: string;
-}
-
-export interface IntegrationsGithubApiSynchronizeMembersRequest {
-    organizationId: string;
 }
 
 /**
@@ -165,7 +160,7 @@ export class IntegrationsGithubApi extends runtime.BaseAPI {
     /**
      * Install
      */
-    async installRaw(requestParameters: IntegrationsGithubApiInstallRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Organization>> {
+    async installRaw(requestParameters: IntegrationsGithubApiInstallRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ExternalOrganization>> {
         if (requestParameters['body'] == null) {
             throw new runtime.RequiredError(
                 'body',
@@ -201,7 +196,7 @@ export class IntegrationsGithubApi extends runtime.BaseAPI {
     /**
      * Install
      */
-    async install(requestParameters: IntegrationsGithubApiInstallRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Organization> {
+    async install(requestParameters: IntegrationsGithubApiInstallRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ExternalOrganization> {
         const response = await this.installRaw(requestParameters, initOverrides);
         return await response.value();
     }
@@ -400,51 +395,6 @@ export class IntegrationsGithubApi extends runtime.BaseAPI {
      */
     async redirectToOrganizationInstallation(requestParameters: IntegrationsGithubApiRedirectToOrganizationInstallationRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<any> {
         const response = await this.redirectToOrganizationInstallationRaw(requestParameters, initOverrides);
-        return await response.value();
-    }
-
-    /**
-     * Synchronize Members
-     */
-    async synchronizeMembersRaw(requestParameters: IntegrationsGithubApiSynchronizeMembersRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<SynchronizeMembersResponse>> {
-        if (requestParameters['organizationId'] == null) {
-            throw new runtime.RequiredError(
-                'organizationId',
-                'Required parameter "organizationId" was null or undefined when calling synchronizeMembers().'
-            );
-        }
-
-        const queryParameters: any = {};
-
-        if (requestParameters['organizationId'] != null) {
-            queryParameters['organization_id'] = requestParameters['organizationId'];
-        }
-
-        const headerParameters: runtime.HTTPHeaders = {};
-
-        if (this.configuration && this.configuration.accessToken) {
-            const token = this.configuration.accessToken;
-            const tokenString = await token("HTTPBearer", []);
-
-            if (tokenString) {
-                headerParameters["Authorization"] = `Bearer ${tokenString}`;
-            }
-        }
-        const response = await this.request({
-            path: `/v1/integrations/github/synchronize_members`,
-            method: 'POST',
-            headers: headerParameters,
-            query: queryParameters,
-        }, initOverrides);
-
-        return new runtime.JSONApiResponse(response);
-    }
-
-    /**
-     * Synchronize Members
-     */
-    async synchronizeMembers(requestParameters: IntegrationsGithubApiSynchronizeMembersRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<SynchronizeMembersResponse> {
-        const response = await this.synchronizeMembersRaw(requestParameters, initOverrides);
         return await response.value();
     }
 

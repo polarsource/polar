@@ -15,21 +15,26 @@
 
 import * as runtime from '../runtime';
 import type {
-  CreditBalance,
+  Account,
   HTTPValidationError,
   ListResourceOrganization,
   ListResourceOrganizationCustomer,
   ListResourceOrganizationMember,
+  NotPermitted,
   Organization,
   OrganizationBadgeSettingsRead,
   OrganizationBadgeSettingsUpdate,
+  OrganizationCreate,
   OrganizationCustomerType,
   OrganizationSetAccount,
   OrganizationStripePortalSession,
   OrganizationUpdate,
-  Platforms,
   ResourceNotFound,
 } from '../models/index';
+
+export interface OrganizationsApiCreateRequest {
+    body: OrganizationCreate;
+}
 
 export interface OrganizationsApiCreateStripeCustomerPortalRequest {
     id: string;
@@ -39,17 +44,20 @@ export interface OrganizationsApiGetRequest {
     id: string;
 }
 
+export interface OrganizationsApiGetAccountRequest {
+    id: string;
+}
+
 export interface OrganizationsApiGetBadgeSettingsRequest {
     id: string;
 }
 
-export interface OrganizationsApiGetCreditsRequest {
-    id: string;
-}
-
 export interface OrganizationsApiListRequest {
-    name?: string;
-    isAdminOnly?: boolean;
+    slug?: string;
+    isMember?: boolean;
+    page?: number;
+    limit?: number;
+    sorting?: Array<string>;
 }
 
 export interface OrganizationsApiListMembersRequest {
@@ -61,16 +69,6 @@ export interface OrganizationsApiListOrganizationCustomersRequest {
     customerTypes?: Set<OrganizationCustomerType>;
     page?: number;
     limit?: number;
-}
-
-export interface OrganizationsApiLookupRequest {
-    platform?: Platforms;
-    organizationName?: string;
-}
-
-export interface OrganizationsApiSearchRequest {
-    platform?: Platforms;
-    organizationName?: string;
 }
 
 export interface OrganizationsApiSetAccountRequest {
@@ -92,6 +90,52 @@ export interface OrganizationsApiUpdateBadgeSettingsRequest {
  * 
  */
 export class OrganizationsApi extends runtime.BaseAPI {
+
+    /**
+     * Create an organization.
+     * Create Organization
+     */
+    async createRaw(requestParameters: OrganizationsApiCreateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Organization>> {
+        if (requestParameters['body'] == null) {
+            throw new runtime.RequiredError(
+                'body',
+                'Required parameter "body" was null or undefined when calling create().'
+            );
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        headerParameters['Content-Type'] = 'application/json';
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("HTTPBearer", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+        const response = await this.request({
+            path: `/v1/organizations/`,
+            method: 'POST',
+            headers: headerParameters,
+            query: queryParameters,
+            body: requestParameters['body'],
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse(response);
+    }
+
+    /**
+     * Create an organization.
+     * Create Organization
+     */
+    async create(requestParameters: OrganizationsApiCreateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Organization> {
+        const response = await this.createRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
 
     /**
      * Start a new Stripe Customer session for a organization.
@@ -137,8 +181,8 @@ export class OrganizationsApi extends runtime.BaseAPI {
     }
 
     /**
-     * Get a organization by ID
-     * Get organization
+     * Get an organization by ID.
+     * Get Organization
      */
     async getRaw(requestParameters: OrganizationsApiGetRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Organization>> {
         if (requestParameters['id'] == null) {
@@ -171,11 +215,54 @@ export class OrganizationsApi extends runtime.BaseAPI {
     }
 
     /**
-     * Get a organization by ID
-     * Get organization
+     * Get an organization by ID.
+     * Get Organization
      */
     async get(requestParameters: OrganizationsApiGetRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Organization> {
         const response = await this.getRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
+     * Get the account for an organization.
+     * Get Organization Account
+     */
+    async getAccountRaw(requestParameters: OrganizationsApiGetAccountRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Account>> {
+        if (requestParameters['id'] == null) {
+            throw new runtime.RequiredError(
+                'id',
+                'Required parameter "id" was null or undefined when calling getAccount().'
+            );
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("HTTPBearer", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+        const response = await this.request({
+            path: `/v1/organizations/{id}/account`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
+            method: 'GET',
+            headers: headerParameters,
+            query: queryParameters,
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse(response);
+    }
+
+    /**
+     * Get the account for an organization.
+     * Get Organization Account
+     */
+    async getAccount(requestParameters: OrganizationsApiGetAccountRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Account> {
+        const response = await this.getAccountRaw(requestParameters, initOverrides);
         return await response.value();
     }
 
@@ -221,61 +308,30 @@ export class OrganizationsApi extends runtime.BaseAPI {
     }
 
     /**
-     * Get credits for a organization
-     * Get Credits
-     */
-    async getCreditsRaw(requestParameters: OrganizationsApiGetCreditsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<CreditBalance>> {
-        if (requestParameters['id'] == null) {
-            throw new runtime.RequiredError(
-                'id',
-                'Required parameter "id" was null or undefined when calling getCredits().'
-            );
-        }
-
-        const queryParameters: any = {};
-
-        const headerParameters: runtime.HTTPHeaders = {};
-
-        if (this.configuration && this.configuration.accessToken) {
-            const token = this.configuration.accessToken;
-            const tokenString = await token("HTTPBearer", []);
-
-            if (tokenString) {
-                headerParameters["Authorization"] = `Bearer ${tokenString}`;
-            }
-        }
-        const response = await this.request({
-            path: `/v1/organizations/{id}/credit`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
-            method: 'GET',
-            headers: headerParameters,
-            query: queryParameters,
-        }, initOverrides);
-
-        return new runtime.JSONApiResponse(response);
-    }
-
-    /**
-     * Get credits for a organization
-     * Get Credits
-     */
-    async getCredits(requestParameters: OrganizationsApiGetCreditsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<CreditBalance> {
-        const response = await this.getCreditsRaw(requestParameters, initOverrides);
-        return await response.value();
-    }
-
-    /**
-     * List organizations that the authenticated user is a member of. Requires authentication.
-     * List organizations
+     * List organizations.
+     * List Organizations
      */
     async listRaw(requestParameters: OrganizationsApiListRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListResourceOrganization>> {
         const queryParameters: any = {};
 
-        if (requestParameters['name'] != null) {
-            queryParameters['name'] = requestParameters['name'];
+        if (requestParameters['slug'] != null) {
+            queryParameters['slug'] = requestParameters['slug'];
         }
 
-        if (requestParameters['isAdminOnly'] != null) {
-            queryParameters['is_admin_only'] = requestParameters['isAdminOnly'];
+        if (requestParameters['isMember'] != null) {
+            queryParameters['is_member'] = requestParameters['isMember'];
+        }
+
+        if (requestParameters['page'] != null) {
+            queryParameters['page'] = requestParameters['page'];
+        }
+
+        if (requestParameters['limit'] != null) {
+            queryParameters['limit'] = requestParameters['limit'];
+        }
+
+        if (requestParameters['sorting'] != null) {
+            queryParameters['sorting'] = requestParameters['sorting'];
         }
 
         const headerParameters: runtime.HTTPHeaders = {};
@@ -299,8 +355,8 @@ export class OrganizationsApi extends runtime.BaseAPI {
     }
 
     /**
-     * List organizations that the authenticated user is a member of. Requires authentication.
-     * List organizations
+     * List organizations.
+     * List Organizations
      */
     async list(requestParameters: OrganizationsApiListRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ListResourceOrganization> {
         const response = await this.listRaw(requestParameters, initOverrides);
@@ -406,96 +462,8 @@ export class OrganizationsApi extends runtime.BaseAPI {
     }
 
     /**
-     * Lookup a single organization.
-     * Lookup organization
-     */
-    async lookupRaw(requestParameters: OrganizationsApiLookupRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Organization>> {
-        const queryParameters: any = {};
-
-        if (requestParameters['platform'] != null) {
-            queryParameters['platform'] = requestParameters['platform'];
-        }
-
-        if (requestParameters['organizationName'] != null) {
-            queryParameters['organization_name'] = requestParameters['organizationName'];
-        }
-
-        const headerParameters: runtime.HTTPHeaders = {};
-
-        if (this.configuration && this.configuration.accessToken) {
-            const token = this.configuration.accessToken;
-            const tokenString = await token("HTTPBearer", []);
-
-            if (tokenString) {
-                headerParameters["Authorization"] = `Bearer ${tokenString}`;
-            }
-        }
-        const response = await this.request({
-            path: `/v1/organizations/lookup`,
-            method: 'GET',
-            headers: headerParameters,
-            query: queryParameters,
-        }, initOverrides);
-
-        return new runtime.JSONApiResponse(response);
-    }
-
-    /**
-     * Lookup a single organization.
-     * Lookup organization
-     */
-    async lookup(requestParameters: OrganizationsApiLookupRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Organization> {
-        const response = await this.lookupRaw(requestParameters, initOverrides);
-        return await response.value();
-    }
-
-    /**
-     * Search organizations.
-     * Search organizations
-     */
-    async searchRaw(requestParameters: OrganizationsApiSearchRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListResourceOrganization>> {
-        const queryParameters: any = {};
-
-        if (requestParameters['platform'] != null) {
-            queryParameters['platform'] = requestParameters['platform'];
-        }
-
-        if (requestParameters['organizationName'] != null) {
-            queryParameters['organization_name'] = requestParameters['organizationName'];
-        }
-
-        const headerParameters: runtime.HTTPHeaders = {};
-
-        if (this.configuration && this.configuration.accessToken) {
-            const token = this.configuration.accessToken;
-            const tokenString = await token("HTTPBearer", []);
-
-            if (tokenString) {
-                headerParameters["Authorization"] = `Bearer ${tokenString}`;
-            }
-        }
-        const response = await this.request({
-            path: `/v1/organizations/search`,
-            method: 'GET',
-            headers: headerParameters,
-            query: queryParameters,
-        }, initOverrides);
-
-        return new runtime.JSONApiResponse(response);
-    }
-
-    /**
-     * Search organizations.
-     * Search organizations
-     */
-    async search(requestParameters: OrganizationsApiSearchRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ListResourceOrganization> {
-        const response = await this.searchRaw(requestParameters, initOverrides);
-        return await response.value();
-    }
-
-    /**
-     * Set organization account
-     * Set organization organization
+     * Set the account for an organization.
+     * Set Organization Account
      */
     async setAccountRaw(requestParameters: OrganizationsApiSetAccountRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Organization>> {
         if (requestParameters['id'] == null) {
@@ -538,8 +506,8 @@ export class OrganizationsApi extends runtime.BaseAPI {
     }
 
     /**
-     * Set organization account
-     * Set organization organization
+     * Set the account for an organization.
+     * Set Organization Account
      */
     async setAccount(requestParameters: OrganizationsApiSetAccountRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Organization> {
         const response = await this.setAccountRaw(requestParameters, initOverrides);
@@ -547,8 +515,8 @@ export class OrganizationsApi extends runtime.BaseAPI {
     }
 
     /**
-     * Update organization
-     * Update an organization
+     * Update an organization.
+     * Update Organization
      */
     async updateRaw(requestParameters: OrganizationsApiUpdateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Organization>> {
         if (requestParameters['id'] == null) {
@@ -591,8 +559,8 @@ export class OrganizationsApi extends runtime.BaseAPI {
     }
 
     /**
-     * Update organization
-     * Update an organization
+     * Update an organization.
+     * Update Organization
      */
     async update(requestParameters: OrganizationsApiUpdateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Organization> {
         const response = await this.updateRaw(requestParameters, initOverrides);

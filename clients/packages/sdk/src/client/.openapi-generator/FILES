@@ -7,6 +7,7 @@ apis/BenefitsApi.ts
 apis/CheckoutsApi.ts
 apis/DashboardApi.ts
 apis/DonationsApi.ts
+apis/ExternalOrganizationsApi.ts
 apis/FilesApi.ts
 apis/FundingApi.ts
 apis/IntegrationsDiscordApi.ts

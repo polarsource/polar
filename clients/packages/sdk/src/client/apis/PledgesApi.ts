@@ -19,7 +19,6 @@ import type {
   CreatePledgePayLater,
   HTTPValidationError,
   ListResourcePledge,
-  Platforms,
   Pledge,
   PledgePledgesSummary,
   PledgeSpending,
@@ -54,8 +53,7 @@ export interface PledgesApiGetRequest {
 }
 
 export interface PledgesApiSearchRequest {
-    platform?: Platforms;
-    organizationName?: string;
+    organizationId?: string;
     repositoryName?: string;
     issueId?: string;
     byOrganizationId?: string;
@@ -361,12 +359,8 @@ export class PledgesApi extends runtime.BaseAPI {
     async searchRaw(requestParameters: PledgesApiSearchRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListResourcePledge>> {
         const queryParameters: any = {};
 
-        if (requestParameters['platform'] != null) {
-            queryParameters['platform'] = requestParameters['platform'];
-        }
-
-        if (requestParameters['organizationName'] != null) {
-            queryParameters['organization_name'] = requestParameters['organizationName'];
+        if (requestParameters['organizationId'] != null) {
+            queryParameters['organization_id'] = requestParameters['organizationId'];
         }
 
         if (requestParameters['repositoryName'] != null) {

@@ -9,6 +9,7 @@ export * from './BenefitsApi';
 export * from './CheckoutsApi';
 export * from './DashboardApi';
 export * from './DonationsApi';
+export * from './ExternalOrganizationsApi';
 export * from './FilesApi';
 export * from './FundingApi';
 export * from './IntegrationsDiscordApi';

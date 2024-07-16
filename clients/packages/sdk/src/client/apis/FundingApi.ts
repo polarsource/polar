@@ -19,7 +19,6 @@ import type {
   IssueFunding,
   ListFundingSortBy,
   ListResourceIssueFunding,
-  Platforms,
 } from '../models/index';
 
 export interface FundingApiLookupRequest {
@@ -27,8 +26,7 @@ export interface FundingApiLookupRequest {
 }
 
 export interface FundingApiSearchRequest {
-    organizationName: string;
-    platform: Platforms;
+    organizationId: string;
     repositoryName?: string;
     query?: string;
     badged?: boolean;
@@ -92,21 +90,18 @@ export class FundingApi extends runtime.BaseAPI {
      * Search
      */
     async searchRaw(requestParameters: FundingApiSearchRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListResourceIssueFunding>> {
-        if (requestParameters['organizationName'] == null) {
+        if (requestParameters['organizationId'] == null) {
             throw new runtime.RequiredError(
-                'organizationName',
-                'Required parameter "organizationName" was null or undefined when calling search().'
-            );
-        }
-
-        if (requestParameters['platform'] == null) {
-            throw new runtime.RequiredError(
-                'platform',
-                'Required parameter "platform" was null or undefined when calling search().'
+                'organizationId',
+                'Required parameter "organizationId" was null or undefined when calling search().'
             );
         }
 
         const queryParameters: any = {};
+
+        if (requestParameters['organizationId'] != null) {
+            queryParameters['organization_id'] = requestParameters['organizationId'];
+        }
 
         if (requestParameters['repositoryName'] != null) {
             queryParameters['repository_name'] = requestParameters['repositoryName'];
@@ -134,14 +129,6 @@ export class FundingApi extends runtime.BaseAPI {
 
         if (requestParameters['limit'] != null) {
             queryParameters['limit'] = requestParameters['limit'];
-        }
-
-        if (requestParameters['organizationName'] != null) {
-            queryParameters['organization_name'] = requestParameters['organizationName'];
-        }
-
-        if (requestParameters['platform'] != null) {
-            queryParameters['platform'] = requestParameters['platform'];
         }
 
         const headerParameters: runtime.HTTPHeaders = {};

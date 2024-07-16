@@ -15,27 +15,31 @@
 
 import * as runtime from '../runtime';
 import type {
+  ExternalOrganizationNameFilter,
   HTTPValidationError,
   ListResourceRepository,
-  Platforms,
+  NotPermitted,
+  OrganizationIDFilter,
+  PlatformFilter,
   Repository,
+  RepositoryNameFilter,
   RepositoryUpdate,
+  ResourceNotFound,
 } from '../models/index';
 
 export interface RepositoriesApiGetRequest {
     id: string;
 }
 
-export interface RepositoriesApiLookupRequest {
-    platform: Platforms;
-    organizationName: string;
-    repositoryName: string;
-}
-
-export interface RepositoriesApiSearchRequest {
-    platform: Platforms;
-    organizationName: string;
-    repositoryName?: string;
+export interface RepositoriesApiListRequest {
+    platform?: PlatformFilter;
+    name?: RepositoryNameFilter;
+    externalOrganizationName?: ExternalOrganizationNameFilter;
+    isPrivate?: boolean;
+    organizationId?: OrganizationIDFilter;
+    page?: number;
+    limit?: number;
+    sorting?: Array<string>;
 }
 
 export interface RepositoriesApiUpdateRequest {
@@ -49,8 +53,8 @@ export interface RepositoriesApiUpdateRequest {
 export class RepositoriesApi extends runtime.BaseAPI {
 
     /**
-     * Get a repository
-     * Get a repository
+     * Get a repository by ID.
+     * Get Repository
      */
     async getRaw(requestParameters: RepositoriesApiGetRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Repository>> {
         if (requestParameters['id'] == null) {
@@ -83,8 +87,8 @@ export class RepositoriesApi extends runtime.BaseAPI {
     }
 
     /**
-     * Get a repository
-     * Get a repository
+     * Get a repository by ID.
+     * Get Repository
      */
     async get(requestParameters: RepositoriesApiGetRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Repository> {
         const response = await this.getRaw(requestParameters, initOverrides);
@@ -92,141 +96,42 @@ export class RepositoriesApi extends runtime.BaseAPI {
     }
 
     /**
-     * List repositories in organizations that the authenticated user is a admin of. Requires authentication.
-     * List repositories
+     * List repositories.
+     * List Repositories
      */
-    async listRaw(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListResourceRepository>> {
-        const queryParameters: any = {};
-
-        const headerParameters: runtime.HTTPHeaders = {};
-
-        if (this.configuration && this.configuration.accessToken) {
-            const token = this.configuration.accessToken;
-            const tokenString = await token("HTTPBearer", []);
-
-            if (tokenString) {
-                headerParameters["Authorization"] = `Bearer ${tokenString}`;
-            }
-        }
-        const response = await this.request({
-            path: `/v1/repositories`,
-            method: 'GET',
-            headers: headerParameters,
-            query: queryParameters,
-        }, initOverrides);
-
-        return new runtime.JSONApiResponse(response);
-    }
-
-    /**
-     * List repositories in organizations that the authenticated user is a admin of. Requires authentication.
-     * List repositories
-     */
-    async list(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ListResourceRepository> {
-        const response = await this.listRaw(initOverrides);
-        return await response.value();
-    }
-
-    /**
-     * Lookup repositories. Like search but returns at only one repository.
-     * Lookup repositories
-     */
-    async lookupRaw(requestParameters: RepositoriesApiLookupRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Repository>> {
-        if (requestParameters['platform'] == null) {
-            throw new runtime.RequiredError(
-                'platform',
-                'Required parameter "platform" was null or undefined when calling lookup().'
-            );
-        }
-
-        if (requestParameters['organizationName'] == null) {
-            throw new runtime.RequiredError(
-                'organizationName',
-                'Required parameter "organizationName" was null or undefined when calling lookup().'
-            );
-        }
-
-        if (requestParameters['repositoryName'] == null) {
-            throw new runtime.RequiredError(
-                'repositoryName',
-                'Required parameter "repositoryName" was null or undefined when calling lookup().'
-            );
-        }
-
+    async listRaw(requestParameters: RepositoriesApiListRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListResourceRepository>> {
         const queryParameters: any = {};
 
         if (requestParameters['platform'] != null) {
             queryParameters['platform'] = requestParameters['platform'];
         }
 
-        if (requestParameters['organizationName'] != null) {
-            queryParameters['organization_name'] = requestParameters['organizationName'];
+        if (requestParameters['name'] != null) {
+            queryParameters['name'] = requestParameters['name'];
         }
 
-        if (requestParameters['repositoryName'] != null) {
-            queryParameters['repository_name'] = requestParameters['repositoryName'];
+        if (requestParameters['externalOrganizationName'] != null) {
+            queryParameters['external_organization_name'] = requestParameters['externalOrganizationName'];
         }
 
-        const headerParameters: runtime.HTTPHeaders = {};
-
-        if (this.configuration && this.configuration.accessToken) {
-            const token = this.configuration.accessToken;
-            const tokenString = await token("HTTPBearer", []);
-
-            if (tokenString) {
-                headerParameters["Authorization"] = `Bearer ${tokenString}`;
-            }
-        }
-        const response = await this.request({
-            path: `/v1/repositories/lookup`,
-            method: 'GET',
-            headers: headerParameters,
-            query: queryParameters,
-        }, initOverrides);
-
-        return new runtime.JSONApiResponse(response);
-    }
-
-    /**
-     * Lookup repositories. Like search but returns at only one repository.
-     * Lookup repositories
-     */
-    async lookup(requestParameters: RepositoriesApiLookupRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Repository> {
-        const response = await this.lookupRaw(requestParameters, initOverrides);
-        return await response.value();
-    }
-
-    /**
-     * Search repositories.
-     * Search repositories
-     */
-    async searchRaw(requestParameters: RepositoriesApiSearchRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListResourceRepository>> {
-        if (requestParameters['platform'] == null) {
-            throw new runtime.RequiredError(
-                'platform',
-                'Required parameter "platform" was null or undefined when calling search().'
-            );
+        if (requestParameters['isPrivate'] != null) {
+            queryParameters['is_private'] = requestParameters['isPrivate'];
         }
 
-        if (requestParameters['organizationName'] == null) {
-            throw new runtime.RequiredError(
-                'organizationName',
-                'Required parameter "organizationName" was null or undefined when calling search().'
-            );
+        if (requestParameters['organizationId'] != null) {
+            queryParameters['organization_id'] = requestParameters['organizationId'];
         }
 
-        const queryParameters: any = {};
-
-        if (requestParameters['platform'] != null) {
-            queryParameters['platform'] = requestParameters['platform'];
+        if (requestParameters['page'] != null) {
+            queryParameters['page'] = requestParameters['page'];
         }
 
-        if (requestParameters['organizationName'] != null) {
-            queryParameters['organization_name'] = requestParameters['organizationName'];
+        if (requestParameters['limit'] != null) {
+            queryParameters['limit'] = requestParameters['limit'];
         }
 
-        if (requestParameters['repositoryName'] != null) {
-            queryParameters['repository_name'] = requestParameters['repositoryName'];
+        if (requestParameters['sorting'] != null) {
+            queryParameters['sorting'] = requestParameters['sorting'];
         }
 
         const headerParameters: runtime.HTTPHeaders = {};
@@ -240,7 +145,7 @@ export class RepositoriesApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/v1/repositories/search`,
+            path: `/v1/repositories/`,
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
@@ -250,17 +155,17 @@ export class RepositoriesApi extends runtime.BaseAPI {
     }
 
     /**
-     * Search repositories.
-     * Search repositories
+     * List repositories.
+     * List Repositories
      */
-    async search(requestParameters: RepositoriesApiSearchRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ListResourceRepository> {
-        const response = await this.searchRaw(requestParameters, initOverrides);
+    async list(requestParameters: RepositoriesApiListRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ListResourceRepository> {
+        const response = await this.listRaw(requestParameters, initOverrides);
         return await response.value();
     }
 
     /**
-     * Update repository
-     * Update a repository
+     * Update a repository.
+     * Update Repository
      */
     async updateRaw(requestParameters: RepositoriesApiUpdateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Repository>> {
         if (requestParameters['id'] == null) {
@@ -303,8 +208,8 @@ export class RepositoriesApi extends runtime.BaseAPI {
     }
 
     /**
-     * Update repository
-     * Update a repository
+     * Update a repository.
+     * Update Repository
      */
     async update(requestParameters: RepositoriesApiUpdateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Repository> {
         const response = await this.updateRaw(requestParameters, initOverrides);

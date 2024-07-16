@@ -17,17 +17,15 @@ import * as runtime from '../runtime';
 import type {
   HTTPValidationError,
   ListResourceTrafficReferrer,
-  Platforms,
   TrackPageView,
   TrackPageViewResponse,
   TrafficStatistics,
 } from '../models/index';
 
 export interface TrafficApiReferrersRequest {
+    organizationId: string;
     startDate: string;
     endDate: string;
-    organizationName: string;
-    platform: Platforms;
     page?: number;
     limit?: number;
 }
@@ -36,10 +34,9 @@ export interface TrafficApiStatisticsRequest {
     startDate: string;
     endDate: string;
     trafficInterval: StatisticsTrafficIntervalEnum;
+    organizationId?: string;
     articleId?: string;
     groupByArticle?: boolean;
-    organizationName?: string;
-    platform?: Platforms;
 }
 
 export interface TrafficApiTrackPageViewRequest {
@@ -55,6 +52,13 @@ export class TrafficApi extends runtime.BaseAPI {
      * Referrers
      */
     async referrersRaw(requestParameters: TrafficApiReferrersRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListResourceTrafficReferrer>> {
+        if (requestParameters['organizationId'] == null) {
+            throw new runtime.RequiredError(
+                'organizationId',
+                'Required parameter "organizationId" was null or undefined when calling referrers().'
+            );
+        }
+
         if (requestParameters['startDate'] == null) {
             throw new runtime.RequiredError(
                 'startDate',
@@ -69,21 +73,11 @@ export class TrafficApi extends runtime.BaseAPI {
             );
         }
 
-        if (requestParameters['organizationName'] == null) {
-            throw new runtime.RequiredError(
-                'organizationName',
-                'Required parameter "organizationName" was null or undefined when calling referrers().'
-            );
-        }
-
-        if (requestParameters['platform'] == null) {
-            throw new runtime.RequiredError(
-                'platform',
-                'Required parameter "platform" was null or undefined when calling referrers().'
-            );
-        }
-
         const queryParameters: any = {};
+
+        if (requestParameters['organizationId'] != null) {
+            queryParameters['organization_id'] = requestParameters['organizationId'];
+        }
 
         if (requestParameters['startDate'] != null) {
             queryParameters['start_date'] = requestParameters['startDate'];
@@ -99,14 +93,6 @@ export class TrafficApi extends runtime.BaseAPI {
 
         if (requestParameters['limit'] != null) {
             queryParameters['limit'] = requestParameters['limit'];
-        }
-
-        if (requestParameters['organizationName'] != null) {
-            queryParameters['organization_name'] = requestParameters['organizationName'];
-        }
-
-        if (requestParameters['platform'] != null) {
-            queryParameters['platform'] = requestParameters['platform'];
         }
 
         const headerParameters: runtime.HTTPHeaders = {};
@@ -164,6 +150,10 @@ export class TrafficApi extends runtime.BaseAPI {
 
         const queryParameters: any = {};
 
+        if (requestParameters['organizationId'] != null) {
+            queryParameters['organization_id'] = requestParameters['organizationId'];
+        }
+
         if (requestParameters['articleId'] != null) {
             queryParameters['article_id'] = requestParameters['articleId'];
         }
@@ -182,14 +172,6 @@ export class TrafficApi extends runtime.BaseAPI {
 
         if (requestParameters['groupByArticle'] != null) {
             queryParameters['group_by_article'] = requestParameters['groupByArticle'];
-        }
-
-        if (requestParameters['organizationName'] != null) {
-            queryParameters['organization_name'] = requestParameters['organizationName'];
-        }
-
-        if (requestParameters['platform'] != null) {
-            queryParameters['platform'] = requestParameters['platform'];
         }
 
         const headerParameters: runtime.HTTPHeaders = {};

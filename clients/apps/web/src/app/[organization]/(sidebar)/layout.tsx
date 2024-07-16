@@ -43,7 +43,12 @@ export default async function Layout({
         platform: Platforms.GITHUB,
         organizationName: params.organization,
       },
-      cacheConfig,
+      {
+        next: {
+          revalidate: 30,
+          tags: [`organization:${params.organization}`]
+        }
+      },
     )
     if (!organization) {
       notFound()

@@ -1,9 +1,10 @@
 import { SpinnerNoMargin } from '@/components/Shared/Spinner'
 import { api } from '@/utils/api'
+import { getRepositoryByName } from '@/utils/repository'
 import { formatStarsNumber } from '@/utils/stars'
 import { StarIcon } from '@heroicons/react/20/solid'
 import { CloseOutlined, HiveOutlined } from '@mui/icons-material'
-import { Platforms, Repository } from '@polar-sh/sdk'
+import { Repository } from '@polar-sh/sdk'
 import Button from 'polarkit/components/ui/atoms/button'
 import Input from 'polarkit/components/ui/atoms/input'
 import { List, ListItem } from 'polarkit/components/ui/atoms/list'
@@ -29,21 +30,23 @@ export const ProjectsModal = ({
   const [repositoryRequestLoading, setRepositoryRequestLoading] =
     useState(false)
 
-  const handleAddRepository = () => {
+  const handleAddRepository = async () => {
     toggleOrgNotFound(false)
     setRepositoryRequestLoading(true)
 
     const [organizationName, repositoryName] = orgAndRepo.split('/')
 
-    api.repositories
-      .lookup({
-        organizationName,
-        repositoryName,
-        platform: Platforms.GITHUB,
-      })
-      .then(addRepository)
-      .catch(() => toggleOrgNotFound(true))
-      .finally(() => setRepositoryRequestLoading(false))
+    const repository = await getRepositoryByName(
+      api,
+      organizationName, // FIXME: organizationId
+      repositoryName,
+    )
+    setRepositoryRequestLoading(false)
+    if (!repository) {
+      toggleOrgNotFound(true)
+    } else {
+      addRepository(repository)
+    }
   }
 
   const addRepository = (repository: Repository) => {
@@ -100,9 +103,9 @@ export const ProjectsModal = ({
       </div>
       {extraRepositories.length > 0 && (
         <div className="flex flex-col gap-y-4">
-          <List size='small'>
+          <List size="small">
             {extraRepositories.map((repository) => (
-              <ListItem key={repository.id} size='small'>
+              <ListItem key={repository.id} size="small">
                 <SearchedProjectRow
                   repository={repository}
                   onRemove={removeRepository}
@@ -113,24 +116,26 @@ export const ProjectsModal = ({
         </div>
       )}
       <div className="flex w-full flex-col gap-y-8">
-        <List className="flex max-h-[320px] w-full flex-col overflow-y-auto" 
-              size='small'>
+        <List
+          className="flex max-h-[320px] w-full flex-col overflow-y-auto"
+          size="small"
+        >
           {repositories.map((repository) => (
-           <ListItem 
+            <ListItem
               key={repository.id}
-              size='small'
+              size="small"
               selected={featuredRepositories.some(
                 (repo) => repo.id === repository.id,
-           )}
-           >
-             <ProjectRow
-              repository={repository}
-              selected={featuredRepositories.some(
-                (repo) => repo.id === repository.id,
-           )}
-              selectRepository={addRepository}
-              deselectRepository={removeRepository}
-            />
+              )}
+            >
+              <ProjectRow
+                repository={repository}
+                selected={featuredRepositories.some(
+                  (repo) => repo.id === repository.id,
+                )}
+                selectRepository={addRepository}
+                deselectRepository={removeRepository}
+              />
             </ListItem>
           ))}
         </List>
@@ -147,7 +152,7 @@ const SearchedProjectRow = ({
   onRemove: (repository: Repository) => void
 }) => {
   return (
-    <div className="w-full text-sm flex flex-row items-center justify-between gap-x-2">
+    <div className="flex w-full flex-row items-center justify-between gap-x-2 text-sm">
       <div className="flex flex-row items-center gap-x-2">
         <HiveOutlined
           className="text-blue-500 dark:text-blue-400"
@@ -181,7 +186,7 @@ const ProjectRow = ({
   deselectRepository: (repository: Repository) => void
 }) => {
   return (
-    <div className="flex flex-row items-center justify-between gap-x-2 w-full text-sm">
+    <div className="flex w-full flex-row items-center justify-between gap-x-2 text-sm">
       <div className="flex flex-row items-center gap-x-2">
         <HiveOutlined
           className="text-blue-500 dark:text-blue-400"

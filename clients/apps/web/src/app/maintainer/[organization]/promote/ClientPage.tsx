@@ -31,13 +31,10 @@ export default function ClientPage({
   const fundingYAML = `polar: ${organization.name}`
 
   // Get all repositories
-  const listRepositoriesQuery = useListRepositories()
-  const allRepositories = listRepositoriesQuery?.data?.items
-
-  // Filter repos by current org
-  const allOrgRepositories =
-    allRepositories?.filter((r) => r?.organization?.id === organization.id) ||
-    []
+  const listRepositoriesQuery = useListRepositories({
+    organizationId: organization.id,
+  })
+  const allOrgRepositories = listRepositoriesQuery?.data?.items
 
   const [currentEmbedTab, setCurrentEmbedTab] = useState('Tiers')
 

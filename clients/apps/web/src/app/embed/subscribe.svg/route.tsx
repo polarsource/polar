@@ -1,38 +1,62 @@
 import { Subscribe } from '@/components/Embed/Subscribe'
 import { getServerURL } from '@/utils/api'
 import {
+  ListResourceOrganization,
   ListResourceOrganizationCustomer,
+  Organization,
   OrganizationCustomer,
+  OrganizationCustomerType,
   OrganizationSubscribePromoteSettings,
-  OrganizationCustomerType
 } from '@polar-sh/sdk'
+import { notFound } from 'next/navigation'
 const { default: satori } = require('satori')
 
 export const runtime = 'edge'
+
+const getOrg = async (org: string): Promise<Organization> => {
+  let url = `${getServerURL()}/v1/organizations/?slug=${org}&limit=1`
+
+  const response = await fetch(url, {
+    method: 'GET',
+  })
+  const data = (await response.json()) as ListResourceOrganization
+
+  const organization = data.items?.[0]
+
+  if (!organization) {
+    notFound()
+  }
+
+  return organization
+}
 
 const getCustomers = async (
   org: string,
   limit: number = 3,
 ): Promise<[OrganizationCustomer[], number]> => {
-  const { id: orgId, profile_settings } = await fetch(
-    `${getServerURL()}/v1/organizations/lookup?organization_name=${org}&platform=github`,
-    { method: 'GET' },
-  ).then((res) => res.json())
+  const { id: orgId, profile_settings } = await getOrg(org)
 
-  const settings: OrganizationSubscribePromoteSettings = profile_settings?.subscribe ?? {
-    promote: true,
-    show_count: true,
-    count_free: true,
-  }
+  const settings: OrganizationSubscribePromoteSettings =
+    profile_settings?.subscribe ?? {
+      promote: true,
+      show_count: true,
+      count_free: true,
+    }
   if (!settings.show_count) {
     return [[], 0]
   }
 
   const apiBase = `${getServerURL()}/v1`
   const requestURL = new URL(`${apiBase}/organizations/${orgId}/customers`)
-  requestURL.searchParams.append('customer_types', OrganizationCustomerType.PAID_SUBSCRIPTION)
+  requestURL.searchParams.append(
+    'customer_types',
+    OrganizationCustomerType.PAID_SUBSCRIPTION,
+  )
   if (settings.count_free) {
-    requestURL.searchParams.append('customer_types', OrganizationCustomerType.FREE_SUBSCRIPTION)
+    requestURL.searchParams.append(
+      'customer_types',
+      OrganizationCustomerType.FREE_SUBSCRIPTION,
+    )
   }
   requestURL.searchParams.set('limit', limit.toString())
 

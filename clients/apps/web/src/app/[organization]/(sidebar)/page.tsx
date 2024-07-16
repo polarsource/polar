@@ -170,16 +170,17 @@ export default async function Page({
           },
         },
       ),
-      api.repositories.search(
+      api.repositories.list(
         {
-          platform: Platforms.GITHUB,
-          organizationName: params.organization,
+          organizationId: organization.id,
+          isPrivate: false,
+          sorting: ['-stars'],
         },
         {
           ...cacheConfig,
           next: {
             ...cacheConfig.next,
-            tags: [`repositories:${params.organization}`],
+            tags: [`repositories:${organization.id}`],
           },
         },
       ),
@@ -243,11 +244,6 @@ export default async function Page({
     notFound()
   }
 
-  const sortedRepositories =
-    repositories.items
-      ?.filter((repo) => repo.visibility === 'public')
-      .sort((a, b) => (b.stars ?? 0) - (a.stars ?? 0)) ?? []
-
   let featuredOrganizations: Organization[] = []
   let links: Link[] = []
   let featuredProjects: Repository[] = []
@@ -277,7 +273,7 @@ export default async function Page({
                 .catch((err) => console.error(err)),
             ),
           )
-        : sortedRepositories.slice(0, 2) ?? []
+        : repositories.items?.slice(0, 2) ?? []
 
     const fallbackLinks = [
       `https://github.com/${organization.name}`,
@@ -372,7 +368,7 @@ export default async function Page({
       <ClientPage
         organization={organization}
         posts={posts}
-        repositories={sortedRepositories}
+        repositories={repositories.items ?? []}
         featuredProjects={featuredProjects}
         featuredOrganizations={featuredOrganizations}
         products={products?.items ?? []}

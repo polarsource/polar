@@ -5,7 +5,11 @@ import AccountBanner from '@/components/Transactions/AccountBanner'
 import PayoutTransactionsList from '@/components/Transactions/PayoutTransactionsList'
 import TransactionsList from '@/components/Transactions/TransactionsList'
 import { useAuth, usePersonalOrganization } from '@/hooks'
-import { useAccount, useSearchTransactions } from '@/hooks/queries'
+import {
+  useAccount,
+  useOrganizationAccount,
+  useSearchTransactions,
+} from '@/hooks/queries'
 import {
   DataTablePaginationState,
   DataTableSortingState,
@@ -72,9 +76,8 @@ export default function ClientPage({
     )
   }
 
-  const { data: organizationAccount, isLoading: accountIsLoading } = useAccount(
-    personalOrganization?.account_id,
-  )
+  const { data: organizationAccount, isLoading: accountIsLoading } =
+    useOrganizationAccount(personalOrganization?.id)
   const { data: personalAccount } = useAccount(currentUser?.account_id)
 
   const account = useMemo(

@@ -1,12 +1,8 @@
 import PreviewText, { UnescapeText } from '@/components/Feed/Markdown/preview'
 import { getServerSideAPI } from '@/utils/api/serverside'
 import { firstImageUrlFromMarkdown } from '@/utils/markdown'
-import {
-  Article,
-  ListResourceProduct,
-  Platforms,
-  ResponseError,
-} from '@polar-sh/sdk'
+import { getOrganizationBySlug } from '@/utils/organization'
+import { Article, ListResourceProduct, ResponseError } from '@polar-sh/sdk'
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import ClientPage from './ClientPage'
@@ -22,15 +18,17 @@ const getArticle = async (
   postSlug: string,
 ): Promise<Article> => {
   const api = getServerSideAPI()
+  const organization = await getOrganizationBySlug(
+    api,
+    organizationName,
+    cacheConfig,
+  )
+
+  if (!organization) {
+    notFound()
+  }
 
   try {
-    const organization = await api.organizations.lookup(
-      {
-        platform: Platforms.GITHUB,
-        organizationName,
-      },
-      cacheConfig,
-    )
     const articles = await api.articles.list(
       {
         organizationId: organization.id,

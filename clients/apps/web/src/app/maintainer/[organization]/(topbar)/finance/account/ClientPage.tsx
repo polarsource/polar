@@ -5,7 +5,7 @@ import AccountSetup from '@/components/Accounts/AccountSetup'
 import AccountsList from '@/components/Accounts/AccountsList'
 import { Modal } from '@/components/Modal'
 import { useModal } from '@/components/Modal/useModal'
-import { useAccount, useListAccounts } from '@/hooks/queries'
+import { useListAccounts, useOrganizationAccount } from '@/hooks/queries'
 import { ALL_ACCOUNT_TYPES } from '@/utils/account'
 import { api } from '@/utils/api'
 import { Organization } from '@polar-sh/sdk'
@@ -25,7 +25,7 @@ export default function ClientPage({
     hide: hideSetupModal,
   } = useModal()
 
-  const { data: organizationAccount } = useAccount(organization.account_id)
+  const { data: organizationAccount } = useOrganizationAccount(organization.id)
 
   const [linkAccountLoading, setLinkAccountLoading] = useState(false)
   const onLinkAccount = useCallback(

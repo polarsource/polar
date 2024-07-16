@@ -9,11 +9,11 @@ import PaymentMethodSettings from '@/components/Settings/PaymentMethodSettings'
 import { Section, SectionDescription } from '@/components/Settings/Section'
 import WebhookNotificationSettings from '@/components/Settings/Webhook/WebhookNotificationSettings'
 import WebhookSettings from '@/components/Settings/Webhook/WebhookSettings'
-import { useListAdminOrganizations } from '@/hooks/queries'
+import { useListMemberOrganizations } from '@/hooks/queries'
 import { Separator } from 'polarkit/components/ui/separator'
 
 export default function Page() {
-  const orgs = useListAdminOrganizations()
+  const orgs = useListMemberOrganizations()
 
   const org = orgs.data?.items?.find((o) => o.is_personal)
 

@@ -6,6 +6,7 @@ import {
 import { Link } from '@/components/Profile/LinksEditor/LinksEditor'
 import { getServerSideAPI } from '@/utils/api/serverside'
 import { CONFIG } from '@/utils/config'
+import { getOrganizationBySlug } from '@/utils/organization'
 import {
   ArticleVisibility,
   ListResourceArticle,
@@ -33,19 +34,20 @@ export async function generateMetadata({
 }: {
   params: { organization: string; repo: string }
 }): Promise<Metadata> {
-  let organization: Organization | undefined
   let repository: Repository | undefined
 
   const api = getServerSideAPI()
+  const organization = await getOrganizationBySlug(
+    api,
+    params.organization,
+    cacheConfig,
+  )
+
+  if (!organization) {
+    notFound()
+  }
 
   try {
-    organization = await api.organizations.lookup(
-      {
-        platform: Platforms.GITHUB,
-        organizationName: params.organization,
-      },
-      cacheConfig,
-    )
     repository = await api.repositories.lookup(
       {
         platform: Platforms.GITHUB,
@@ -58,10 +60,6 @@ export async function generateMetadata({
     if (e instanceof ResponseError && e.response.status === 404) {
       notFound()
     }
-  }
-
-  if (!organization) {
-    notFound()
   }
 
   if (!repository) {
@@ -108,6 +106,16 @@ export default async function Page({
   searchParams: FilterSearchParams
 }) {
   const api = getServerSideAPI()
+  const organization = await getOrganizationBySlug(
+    api,
+    params.organization,
+    cacheConfig,
+  )
+
+  if (!organization) {
+    notFound()
+  }
+
   const filters = buildFundingFilters(urlSearchFromObj(searchParams))
 
   let repository: Repository | undefined
@@ -150,7 +158,7 @@ export default async function Page({
       api.organizations
         .list(
           {
-            isAdminOnly: true,
+            isMember: true,
           },
           cacheConfig,
         )
@@ -177,10 +185,6 @@ export default async function Page({
       ),
     ])
   } catch (e) {
-    notFound()
-  }
-
-  if (!repository.organization.public_page_enabled) {
     notFound()
   }
 
@@ -217,7 +221,7 @@ export default async function Page({
 
   return (
     <ClientPage
-      organization={repository.organization}
+      organization={organization}
       repository={repository}
       issuesFunding={issuesFunding}
       featuredOrganizations={featuredOrganizations}

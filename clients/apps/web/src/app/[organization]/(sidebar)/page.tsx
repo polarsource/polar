@@ -10,7 +10,6 @@ import {
   Organization,
   Platforms,
   Repository,
-  ResponseError,
 } from '@polar-sh/sdk'
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
@@ -19,6 +18,7 @@ import ClientPage from './ClientPage'
 import { externalURL } from '@/components/Organization'
 import { Link } from '@/components/Profile/LinksEditor/LinksEditor'
 import { CONFIG } from '@/utils/config'
+import { getOrganizationBySlug } from '@/utils/organization'
 import { OgObject } from 'open-graph-scraper-lite/dist/lib/types'
 import { ProfilePage as JSONLDProfilePage, WithContext } from 'schema-dts'
 
@@ -33,24 +33,12 @@ export async function generateMetadata({
 }: {
   params: { organization: string }
 }): Promise<Metadata> {
-  let organization: Organization | undefined
   const api = getServerSideAPI()
-
-  try {
-    organization = await api.organizations.lookup(
-      {
-        platform: Platforms.GITHUB,
-        organizationName: params.organization,
-      },
-      cacheConfig,
-    )
-  } catch (e) {
-    if (e instanceof ResponseError && e.response.status === 404) {
-      notFound()
-    } else {
-      throw e
-    }
-  }
+  const organization = await getOrganizationBySlug(
+    api,
+    params.organization,
+    cacheConfig,
+  )
 
   if (!organization) {
     notFound()
@@ -108,7 +96,6 @@ export default async function Page({
 }) {
   const api = getServerSideAPI()
 
-  let organization: Organization | undefined
   let pinnedArticles: ListResourceArticle | undefined
   let articles: ListResourceArticle | undefined
   let products: ListResourceProduct | undefined
@@ -117,22 +104,17 @@ export default async function Page({
   let listIssueFunding: ListResourceIssueFunding | undefined
   let donations: ListResourcePublicDonation | undefined
 
-  try {
-    organization = await api.organizations.lookup(
-      {
-        platform: Platforms.GITHUB,
-        organizationName: params.organization,
-      },
-      {
-        ...cacheConfig,
-        next: {
-          ...cacheConfig.next,
-          // Make it possible to revalidate the page when the organization is updated from client
-          tags: [`organization:${params.organization}`],
-        },
-      },
-    )
+  const organization = await getOrganizationBySlug(
+    api,
+    params.organization,
+    cacheConfig,
+  )
 
+  if (!organization) {
+    notFound()
+  }
+
+  try {
     const [
       loadArticles,
       loadPinnedArticles,
@@ -204,7 +186,7 @@ export default async function Page({
       api.organizations
         .list(
           {
-            isAdminOnly: true,
+            isMember: true,
           },
           cacheConfig,
         )
@@ -258,10 +240,6 @@ export default async function Page({
     listIssueFunding = loadListIssueFunding
     donations = loadDonations
   } catch (e) {
-    notFound()
-  }
-
-  if (!organization.public_page_enabled) {
     notFound()
   }
 

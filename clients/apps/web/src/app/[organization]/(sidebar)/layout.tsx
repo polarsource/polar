@@ -4,13 +4,12 @@ import { BrandingMenu } from '@/components/Layout/Public/BrandingMenu'
 import { OrganizationPublicPageNav } from '@/components/Organization/OrganizationPublicPageNav'
 import { OrganizationPublicSidebar } from '@/components/Organization/OrganizationPublicSidebar'
 import { getServerSideAPI } from '@/utils/api/serverside'
+import { getOrganizationBySlug } from '@/utils/organization'
 import {
   ListResourceOrganization,
   ListResourceOrganizationCustomer,
-  OrganizationCustomerType,
   ListResourceProduct,
-  Organization,
-  Platforms,
+  OrganizationCustomerType,
   UserRead,
 } from '@polar-sh/sdk'
 import { notFound } from 'next/navigation'
@@ -32,29 +31,22 @@ export default async function Layout({
   const api = getServerSideAPI()
 
   let authenticatedUser: UserRead | undefined
-  let organization: Organization | undefined
   let organizationCustomers: ListResourceOrganizationCustomer | undefined
   let userAdminOrganizations: ListResourceOrganization | undefined
   let products: ListResourceProduct | undefined
 
+  const organization = await getOrganizationBySlug(api, params.organization, {
+    next: {
+      revalidate: 30,
+      tags: [`organization:${params.organization}`],
+    },
+  })
+
+  if (!organization) {
+    notFound()
+  }
+
   try {
-    organization = await api.organizations.lookup(
-      {
-        platform: Platforms.GITHUB,
-        organizationName: params.organization,
-      },
-      {
-        next: {
-          revalidate: 30,
-          tags: [`organization:${params.organization}`]
-        }
-      },
-    )
-    if (!organization) {
-      notFound()
-    }
-
-
     const [
       loadAuthenticatedUser,
       loadUserAdminOrganizations,
@@ -66,7 +58,7 @@ export default async function Layout({
       }),
       // No caching, as we're expecting immediate updates to the response if the user converts to a maintainer
       api.organizations
-        .list({ isAdminOnly: true }, { cache: 'no-store' })
+        .list({ isMember: true }, { cache: 'no-store' })
         .catch(() => {
           // Handle unauthenticated
           return undefined
@@ -98,18 +90,22 @@ export default async function Layout({
     count_free: true,
   }
   if (subscriberSettings.show_count) {
-    let customerTypes: OrganizationCustomerType[] = [OrganizationCustomerType.PAID_SUBSCRIPTION]
+    let customerTypes: OrganizationCustomerType[] = [
+      OrganizationCustomerType.PAID_SUBSCRIPTION,
+    ]
     if (subscriberSettings.count_free) {
       customerTypes.push(OrganizationCustomerType.FREE_SUBSCRIPTION)
     }
 
-    organizationCustomers = await api.organizations.listOrganizationCustomers({
-      id: organization.id,
-      customerTypes: new Set(customerTypes),
-      limit: 3,
-    }, cacheConfig)
+    organizationCustomers = await api.organizations.listOrganizationCustomers(
+      {
+        id: organization.id,
+        customerTypes: new Set(customerTypes),
+        limit: 3,
+      },
+      cacheConfig,
+    )
   }
-
 
   return (
     <div className="flex flex-col">

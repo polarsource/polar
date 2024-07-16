@@ -7,12 +7,12 @@ import {
 } from '@/components/Dashboard/Upsell'
 import PurchaseSidebar from '@/components/Purchases/PurchasesSidebar'
 import { useAuth, useGitHubAccount, usePersonalOrganization } from '@/hooks'
-import { useListAdminOrganizations, useProducts } from '@/hooks/queries'
+import { useListMemberOrganizations, useProducts } from '@/hooks/queries'
 import { PropsWithChildren, useEffect } from 'react'
 
 export default function Layout({ children }: PropsWithChildren) {
   const { authenticated, reloadUser } = useAuth()
-  const { isLoading: adminOrgsAreLoading } = useListAdminOrganizations()
+  const { isLoading: adminOrgsAreLoading } = useListMemberOrganizations()
   const personalOrg = usePersonalOrganization()
 
   // Reload user on page load to make sure that the github oauth data is up to date
@@ -32,7 +32,7 @@ export default function Layout({ children }: PropsWithChildren) {
   const githubAccount = useGitHubAccount()
   const shouldShowGitHubAuthUpsell = authenticated && !githubAccount
 
-  const listOrganizationQuery = useListAdminOrganizations()
+  const listOrganizationQuery = useListMemberOrganizations()
 
   const shouldShowMaintainerUpsell =
     authenticated && !listOrganizationQuery.isLoading && !personalOrg

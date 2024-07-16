@@ -22,7 +22,7 @@ export default async function Layout({
         }),
         // No caching, as we're expecting immediate updates to the response if the user converts to a maintainer
         api.organizations
-          .list({ isAdminOnly: true }, { cache: 'no-store' })
+          .list({ isMember: true }, { cache: 'no-store' })
           .catch(() => {
             // Handle unauthenticated
             return undefined

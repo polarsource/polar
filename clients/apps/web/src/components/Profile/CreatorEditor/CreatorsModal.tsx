@@ -1,12 +1,9 @@
 import ProductPill from '@/components/Products/ProductPill'
-import {
-  useGetOrganization,
-  useOrganization,
-  useUserSubscriptions,
-} from '@/hooks/queries'
+import { useOrganization, useUserSubscriptions } from '@/hooks/queries'
 import { api } from '@/utils/api'
+import { getOrganizationBySlug } from '@/utils/organization'
 import { CloseOutlined } from '@mui/icons-material'
-import { Organization, Platforms, Product } from '@polar-sh/sdk'
+import { Organization, Product } from '@polar-sh/sdk'
 import Avatar from 'polarkit/components/ui/atoms/avatar'
 import Button from 'polarkit/components/ui/atoms/button'
 import Input from 'polarkit/components/ui/atoms/input'
@@ -32,24 +29,19 @@ export const CreatorsModal = ({
 
   const subscriptions = useUserSubscriptions().data?.items || []
 
-  const addCreator = (organizationName: string) => {
+  const addCreator = async (organizationName: string) => {
     toggleOrgNotFound(false)
 
     if (creators.find((c) => c.name === organizationName)) {
       return
     }
 
-    api.organizations
-      .lookup({
-        organizationName,
-        platform: Platforms.GITHUB,
-      })
-      .then((org) => {
-        setCreators((creators) => [...creators, org])
-      })
-      .catch(() => {
-        toggleOrgNotFound(true)
-      })
+    const organization = await getOrganizationBySlug(api, organizationName)
+    if (!organization) {
+      toggleOrgNotFound(true)
+      return
+    }
+    setCreators((creators) => [...creators, organization])
   }
 
   const removeCreator = (creator: Organization) => {
@@ -96,31 +88,32 @@ export const CreatorsModal = ({
           {creators.length > 0 && (
             <div className="flex flex-col gap-y-4">
               <h3>Selected Developers</h3>
-              <List size='small'>
+              <List size="small">
                 {creators.map((creator) => (
-                  <ListItem 
-                  key={creator.id} size="small">
+                  <ListItem key={creator.id} size="small">
                     <CreatorRow
-                    organizationId={creator.id}
-                    onRemove={removeCreator}
-                  />
+                      organizationId={creator.id}
+                      onRemove={removeCreator}
+                    />
                   </ListItem>
                 ))}
               </List>
             </div>
           )}
           {subscriptions.length > 0 && (
-              <div className="flex flex-col gap-y-4">
-                <h3>Subscriptions</h3>
-                <List size='small'>
-                  {subscriptions.map((subscription) => (
-                    <ListItem 
+            <div className="flex flex-col gap-y-4">
+              <h3>Subscriptions</h3>
+              <List size="small">
+                {subscriptions.map((subscription) => (
+                  <ListItem
                     key={subscription.product.id}
                     selected={creators.some(
                       (creator) =>
                         creator.id === subscription.product.organization_id,
-                    )} size='small'>
-                      <SubscriptionOrganization
+                    )}
+                    size="small"
+                  >
+                    <SubscriptionOrganization
                       subscriptionTier={subscription.product}
                       selected={creators.some(
                         (creator) =>
@@ -129,10 +122,10 @@ export const CreatorsModal = ({
                       selectOrganization={setCreators}
                       deselectOrganization={removeCreator}
                     />
-                    </ListItem>
-                  ))}
-                </List>
-              </div>
+                  </ListItem>
+                ))}
+              </List>
+            </div>
           )}
         </div>
       </div>
@@ -147,14 +140,14 @@ const CreatorRow = ({
   organizationId: string
   onRemove: (creator: Organization) => void
 }) => {
-  const creator = useGetOrganization(organizationId).data
+  const creator = useOrganization(organizationId).data
 
   if (!creator) {
     return null
   }
 
   return (
-    <div className="flex flex-row items-center justify-between gap-x-2 w-full text-sm">
+    <div className="flex w-full flex-row items-center justify-between gap-x-2 text-sm">
       <div className="flex flex-row items-center gap-x-2">
         <Avatar
           className="h-8 w-8"
@@ -197,7 +190,7 @@ const SubscriptionOrganization = ({
   }
 
   return (
-    <div className="flex flex-row items-center justify-between gap-x-2 w-full text-sm">
+    <div className="flex w-full flex-row items-center justify-between gap-x-2 text-sm">
       <div className="flex flex-row items-center gap-x-2">
         <Avatar
           className="h-8 w-8"

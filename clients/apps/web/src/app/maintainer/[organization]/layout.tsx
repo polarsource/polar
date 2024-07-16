@@ -20,7 +20,7 @@ export default async function Layout({
   try {
     const [loadOrganizations, loadAdminOrganizations] = await Promise.all([
       api.organizations.list({}, { cache: 'no-store' }),
-      api.organizations.list({ isAdminOnly: true }, { cache: 'no-store' }),
+      api.organizations.list({ isMember: true }, { cache: 'no-store' }),
     ])
 
     organizations = loadOrganizations

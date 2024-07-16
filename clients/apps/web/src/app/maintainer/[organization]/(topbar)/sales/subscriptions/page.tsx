@@ -1,8 +1,10 @@
 import { EnableProductsView } from '@/components/Products/EnableProductsView'
 import { getServerSideAPI } from '@/utils/api/serverside'
 import { DataTableSearchParams, parseSearchParams } from '@/utils/datatable'
-import { Platforms, SubscriptionTierType } from '@polar-sh/sdk'
+import { getOrganizationBySlug } from '@/utils/organization'
+import { SubscriptionTierType } from '@polar-sh/sdk'
 import { Metadata } from 'next'
+import { notFound } from 'next/navigation'
 import ClientPage from './ClientPage'
 
 export async function generateMetadata({
@@ -27,10 +29,11 @@ export default async function Page({
   }
 }) {
   const api = getServerSideAPI()
-  const organization = await api.organizations.lookup({
-    organizationName: params.organization,
-    platform: Platforms.GITHUB,
-  })
+  const organization = await getOrganizationBySlug(api, params.organization)
+
+  if (!organization) {
+    notFound()
+  }
 
   const { pagination, sorting } = parseSearchParams(searchParams, [
     { id: 'started_at', desc: true },

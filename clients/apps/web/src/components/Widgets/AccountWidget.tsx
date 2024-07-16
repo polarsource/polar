@@ -1,5 +1,5 @@
 import { useCurrentOrgAndRepoFromURL } from '@/hooks'
-import { useAccount, useTransactionsSummary } from '@/hooks/queries'
+import { useOrganizationAccount, useTransactionsSummary } from '@/hooks/queries'
 import { Status } from '@polar-sh/sdk'
 import { getCentsInDollarString } from '@polarkit/lib/money'
 import Link from 'next/link'
@@ -14,7 +14,7 @@ export interface AccountWidgetProps {
 export const AccountWidget = ({ className }: AccountWidgetProps) => {
   const { org } = useCurrentOrgAndRepoFromURL()
 
-  const { data: account } = useAccount(org?.account_id)
+  const { data: account } = useOrganizationAccount(org?.id)
   const { data: summary } = useTransactionsSummary(account?.id ?? '')
 
   const canWithdraw =

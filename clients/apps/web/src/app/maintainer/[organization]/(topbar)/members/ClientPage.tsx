@@ -3,15 +3,10 @@
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import Spinner from '@/components/Shared/Spinner'
 import { useCurrentOrgAndRepoFromURL } from '@/hooks/org'
-import { ArrowPathIcon } from '@heroicons/react/24/outline'
 import { Pill } from 'polarkit/components/ui/atoms'
 import Avatar from 'polarkit/components/ui/atoms/avatar'
-import Button from 'polarkit/components/ui/atoms/button'
 
-import {
-  useListOrganizationMembers,
-  useSyncOrganizationMembers,
-} from '@/hooks/queries'
+import { useListOrganizationMembers } from '@/hooks/queries'
 import {
   Table,
   TableBody,
@@ -29,15 +24,6 @@ export default function ClientPage() {
   const mems = members.data?.items || []
   const sortedMembers = mems.sort((a, b) => a.name.localeCompare(b.name))
 
-  const refresh = useSyncOrganizationMembers()
-
-  const onClickRefresh = async () => {
-    if (!org) {
-      return
-    }
-    await refresh.mutateAsync({ id: org.id })
-  }
-
   if (!isLoaded || !org) {
     return (
       <DashboardBody>
@@ -54,15 +40,6 @@ export default function ClientPage() {
             Members & their roles are synced from the underlying GitHub
             organization
           </p>
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={onClickRefresh}
-            loading={refresh.isPending}
-          >
-            <ArrowPathIcon className="mr-2 h-4 w-4" />
-            <span>Refresh</span>
-          </Button>
         </div>
 
         <Table>

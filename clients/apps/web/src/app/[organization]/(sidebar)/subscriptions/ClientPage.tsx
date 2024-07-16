@@ -6,7 +6,7 @@ import SubscriptionTierCard from '@/components/Subscriptions/SubscriptionTierCar
 import SubscriptionTierRecurringIntervalSwitch from '@/components/Subscriptions/SubscriptionTierRecurringIntervalSwitch'
 import { hasRecurringInterval } from '@/components/Subscriptions/utils'
 import { useRecurringInterval } from '@/hooks/products'
-import { useListAdminOrganizations } from '@/hooks/queries'
+import { useListMemberOrganizations } from '@/hooks/queries'
 import { organizationPageLink } from '@/utils/nav'
 import { useTrafficRecordPageView } from '@/utils/traffic'
 import { Organization, Product } from '@polar-sh/sdk'
@@ -24,7 +24,7 @@ const ClientPage: React.FC<OrganizationSubscriptionsPublicPageProps> = ({
 }) => {
   useTrafficRecordPageView({ organization })
 
-  const orgs = useListAdminOrganizations()
+  const orgs = useListMemberOrganizations()
   const [recurringInterval, setRecurringInterval, hasBothIntervals] =
     useRecurringInterval(products)
 

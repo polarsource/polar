@@ -1,7 +1,7 @@
 import { api } from '@/utils/api'
 import { InformationCircleIcon, PlusIcon } from '@heroicons/react/24/outline'
 import { XMarkIcon } from '@heroicons/react/24/solid'
-import { Issue, Pledge } from '@polar-sh/sdk'
+import { Issue, Organization, Pledge } from '@polar-sh/sdk'
 import Button from 'polarkit/components/ui/atoms/button'
 import Input from 'polarkit/components/ui/atoms/input'
 import { Banner } from 'polarkit/components/ui/molecules'
@@ -32,6 +32,7 @@ export interface Contributor {
 }
 
 const Split = (props: {
+  organization: Organization
   issue: Issue
   pledges: Pledge[]
   contributors: Contributor[]
@@ -59,7 +60,7 @@ const Split = (props: {
 
   const upfrontSplit =
     props.issue.upfront_split_to_contributors ??
-    props.issue.repository.organization.default_upfront_split_to_contributors
+    props.organization.default_upfront_split_to_contributors
 
   const computedShares = useMemo(() => {
     const upfrontAdjustedShares = shares.map((s) => {

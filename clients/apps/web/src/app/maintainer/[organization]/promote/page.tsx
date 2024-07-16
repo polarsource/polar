@@ -1,5 +1,5 @@
 import { getServerSideAPI } from '@/utils/api/serverside'
-import { Organization, Platforms } from '@polar-sh/sdk'
+import { getOrganizationBySlug } from '@/utils/organization'
 import { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import ClientPage from './ClientPage'
@@ -20,21 +20,7 @@ export default async function Page({
   params: { organization: string }
 }) {
   const api = getServerSideAPI()
-
-  let organization: Organization | undefined
-
-  try {
-    const loadOrganization = await api.organizations.lookup(
-      {
-        platform: Platforms.GITHUB,
-        organizationName: params.organization,
-      },
-      { cache: 'no-cache' },
-    )
-    organization = loadOrganization
-  } catch {
-    notFound()
-  }
+  const organization = await getOrganizationBySlug(api, params.organization)
 
   if (!organization) {
     notFound()

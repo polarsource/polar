@@ -1,11 +1,11 @@
-import { useListAllOrganizations } from '@/hooks/queries'
+import { useListMemberOrganizations } from '@/hooks/queries'
 import { Organization } from '@polar-sh/sdk'
 import { useEffect, useState } from 'react'
 import { useAuth } from './auth'
 
 export const useListTeams = () => {
   const { currentUser } = useAuth()
-  const allOrganizations = useListAllOrganizations()
+  const allOrganizations = useListMemberOrganizations()
 
   const [teams, setTeams] = useState<Organization[]>([])
 
@@ -13,9 +13,9 @@ export const useListTeams = () => {
     // Kind of a hack.
     // Filter out the users own organization if it exists.
     // This organiztaion can not have extra members, and can not be a "Team".
-    const allTeams = (allOrganizations.data?.items || [])
-      .filter((o) => o.name !== currentUser?.username)
-      .filter((o) => o.is_teams_enabled)
+    const allTeams = (allOrganizations.data?.items || []).filter(
+      (o) => o.name !== currentUser?.username,
+    )
 
     setTeams(allTeams)
   }, [allOrganizations.data, currentUser])

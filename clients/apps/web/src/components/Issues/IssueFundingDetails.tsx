@@ -1,9 +1,15 @@
-import { CurrencyAmount, Issue, PledgesTypeSummaries } from '@polar-sh/sdk'
+import {
+  CurrencyAmount,
+  Issue,
+  Organization,
+  PledgesTypeSummaries,
+} from '@polar-sh/sdk'
 import FundingPill from './FundingPill'
 import PledgeSummaryPill from './PledgeSummaryPill'
 import PublicRewardPill from './PublicRewardPill'
 
 interface IssueFundingDetailsProps {
+  organization: Organization
   issue: Issue
   total: CurrencyAmount
   fundingGoal?: CurrencyAmount
@@ -14,6 +20,7 @@ interface IssueFundingDetailsProps {
 }
 
 const IssueFundingDetails: React.FC<IssueFundingDetailsProps> = ({
+  organization,
   issue,
   total,
   fundingGoal,
@@ -23,7 +30,7 @@ const IssueFundingDetails: React.FC<IssueFundingDetailsProps> = ({
 
   const upfrontSplit =
     issue.upfront_split_to_contributors ??
-    issue.repository.organization.default_upfront_split_to_contributors
+    organization.default_upfront_split_to_contributors
 
   return (
     <div className="flex flex-col items-center gap-4 md:flex-row">

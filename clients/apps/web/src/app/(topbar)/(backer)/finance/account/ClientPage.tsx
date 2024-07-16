@@ -6,7 +6,11 @@ import AccountsList from '@/components/Accounts/AccountsList'
 import { Modal } from '@/components/Modal'
 import { useModal } from '@/components/Modal/useModal'
 import { useAuth, usePersonalOrganization } from '@/hooks'
-import { useAccount, useListAccounts } from '@/hooks/queries'
+import {
+  useAccount,
+  useListAccounts,
+  useOrganizationAccount,
+} from '@/hooks/queries'
 import { ALL_ACCOUNT_TYPES } from '@/utils/account'
 import { api } from '@/utils/api'
 import { ShadowBoxOnMd } from 'polarkit/components/ui/atoms/shadowbox'
@@ -29,8 +33,8 @@ export default function ClientPage() {
     // eslint-disable-next-line
   }, [])
 
-  const { data: organizationAccount } = useAccount(
-    personalOrganization?.account_id,
+  const { data: organizationAccount } = useOrganizationAccount(
+    personalOrganization?.id,
   )
   const { data: personalAccount } = useAccount(currentUser?.account_id)
 

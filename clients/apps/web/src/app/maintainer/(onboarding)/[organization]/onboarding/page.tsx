@@ -1,8 +1,8 @@
 import { shouldBeOnboarded } from '@/hooks/onboarding'
 import { getServerSideAPI } from '@/utils/api/serverside'
-import { Platforms } from '@polar-sh/sdk'
+import { getOrganizationBySlug } from '@/utils/organization'
 import { Metadata } from 'next'
-import { redirect } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
 import ClientPage from './ClientPage'
 
 export async function generateMetadata({
@@ -21,10 +21,11 @@ export default async function Page({
   params: { organization: string }
 }) {
   const api = getServerSideAPI()
-  const organization = await api.organizations.lookup({
-    organizationName: params.organization,
-    platform: Platforms.GITHUB,
-  })
+  const organization = await getOrganizationBySlug(api, params.organization)
+
+  if (!organization) {
+    notFound()
+  }
 
   if (!shouldBeOnboarded(organization)) {
     return redirect(`/maintainer/${organization.name}`)

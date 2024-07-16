@@ -11,6 +11,7 @@ from polar.notifications.notification import (
     MaintainerCreateAccountNotificationPayload,
     MaintainerDonationReceivedNotificationPayload,
     MaintainerNewPaidSubscriptionNotificationPayload,
+    MaintainerNewProductSaleNotificationPayload,
     MaintainerPledgeConfirmationPendingNotificationPayload,
     MaintainerPledgeCreatedNotificationPayload,
     MaintainerPledgedIssueConfirmationPendingNotificationPayload,
@@ -383,6 +384,19 @@ async def test_MaintainerNewPaidSubscriptionNotification() -> None:
         tier_price_amount=500,
         tier_organization_name="myorg",
         tier_price_recurring_interval="month",
+    )
+
+    await check_diff(n.render())
+
+
+@pytest.mark.asyncio
+@pytest.mark.skip_db_asserts
+async def test_MaintainerNewProductSaleNotification() -> None:
+    n = MaintainerNewProductSaleNotificationPayload(
+        customer_name="birk@polar.sh",
+        product_name="My Awesome Digital Product",
+        product_price_amount=500,
+        organization_name="myorg",
     )
 
     await check_diff(n.render())

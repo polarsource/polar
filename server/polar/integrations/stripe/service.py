@@ -474,24 +474,6 @@ class StripeService:
 
         return 0
 
-    async def get_organization_credit_balance(
-        self,
-        session: AsyncSession,
-        org: Organization,
-    ) -> int | None:
-        customer = await self.get_or_create_org_customer(session, org)
-        if not customer:
-            return 0
-
-        transactions = stripe_lib.Customer.list_balance_transactions(
-            customer.id, limit=1
-        )
-
-        for transaction in transactions:
-            return transaction.ending_balance
-
-        return 0
-
     def get_balance_transaction(self, id: str) -> stripe_lib.BalanceTransaction:
         return stripe_lib.BalanceTransaction.retrieve(id)
 

@@ -6,7 +6,6 @@ from fastapi import Depends, Query
 from polar.account.schemas import Account as AccountSchema
 from polar.account.service import account as account_service
 from polar.authz.service import AccessType, Authz
-from polar.currency.schemas import CurrencyAmount
 from polar.exceptions import (
     InternalServerError,
     NotPermitted,
@@ -28,7 +27,9 @@ from polar.user_organization.service import (
 
 from . import auth
 from .schemas import (
-    CreditBalance,
+    Organization as OrganizationSchema,
+)
+from .schemas import (
     OrganizationBadgeSettingsRead,
     OrganizationBadgeSettingsUpdate,
     OrganizationCustomer,
@@ -38,9 +39,6 @@ from .schemas import (
     OrganizationStripePortalSession,
     OrganizationUpdate,
     RepositoryBadgeSettingsRead,
-)
-from .schemas import (
-    Organization as OrganizationSchema,
 )
 from .service import organization as organization_service
 
@@ -328,37 +326,6 @@ async def create_stripe_customer_portal(
         raise InternalServerError()
 
     return OrganizationStripePortalSession(url=portal.url)
-
-
-@router.get(
-    "/{id}/credit",
-    response_model=CreditBalance,
-    description="Get credits for a organization",  # noqa: E501
-    status_code=200,
-)
-async def get_credits(
-    id: UUID,
-    auth_subject: auth.OrganizationsWrite,
-    session: AsyncSession = Depends(get_db_session),
-    authz: Authz = Depends(Authz.authz),
-) -> CreditBalance:
-    org = await organization_service.get(session, id)
-    if not org:
-        raise ResourceNotFound()
-
-    if not await authz.can(auth_subject.subject, AccessType.write, org):
-        raise Unauthorized()
-
-    balance = await stripe_service.get_organization_credit_balance(session, org)
-    if balance is None:
-        raise ResourceNotFound()
-
-    return CreditBalance(
-        amount=CurrencyAmount(
-            currency="USD",
-            amount=balance,
-        )
-    )
 
 
 #

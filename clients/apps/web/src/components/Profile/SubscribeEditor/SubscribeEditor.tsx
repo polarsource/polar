@@ -135,7 +135,6 @@ const SubscribeAdminSettings = ({
         hide={hideModal}
         modalContent={
           <SubscribeSettingsModal
-            organization={organization}
             settings={settings}
             setSettings={setSettings}
             saveSettings={updateSettings}
@@ -148,13 +147,11 @@ const SubscribeAdminSettings = ({
 }
 
 const SubscribeSettingsModal = ({
-  organization,
   settings,
   setSettings,
   saveSettings,
   hideModal,
 }: {
-  organization: Organization
   settings: OrganizationSubscribePromoteSettings
   setSettings: (settings: OrganizationSubscribePromoteSettings) => void
   saveSettings: () => void

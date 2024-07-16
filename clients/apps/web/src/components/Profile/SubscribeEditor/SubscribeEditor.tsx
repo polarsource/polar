@@ -110,6 +110,7 @@ const SubscribeAdminSettings = ({
   const [settings, setSettings] = useState<OrganizationSubscribePromoteSettings>(
     getDefaultSettings(organization)
   )
+
   const updateSettings = (onSuccess: () => void) => {
     updateOrganizationMutation
       .mutateAsync({
@@ -120,7 +121,10 @@ const SubscribeAdminSettings = ({
           },
         },
       }, {
-        onSuccess
+        onSuccess: (updated: Organization) => {
+          setSettings(getDefaultSettings(updated))
+          onSuccess()
+        }
       })
       .then(() => revalidate(`organization:${organization.name}`))
   }

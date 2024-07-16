@@ -90,13 +90,20 @@ export default async function Page({
   let organization: Organization | undefined
   let products: ListResourceProduct | undefined
 
+  const pageCache = {
+    next: {
+      ...cacheConfig.next,
+      tags: [`organization:${params.organization}`],
+    }
+  }
+
   try {
     organization = await api.organizations.lookup(
       {
         platform: Platforms.GITHUB,
         organizationName: params.organization,
       },
-      cacheConfig,
+      pageCache,
     )
     products = await api.products.list(
       {
@@ -105,7 +112,7 @@ export default async function Page({
         isRecurring: true,
         limit: 100,
       },
-      cacheConfig,
+      pageCache,
     )
   } catch (e) {
     notFound()

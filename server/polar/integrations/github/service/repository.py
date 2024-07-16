@@ -3,9 +3,8 @@ from collections.abc import Sequence
 import structlog
 
 from polar.enums import Platforms
-from polar.integrations.loops.service import loops as loops_service
 from polar.logging import Logger
-from polar.models import Organization, Repository
+from polar.models import ExternalOrganization, Repository
 from polar.postgres import AsyncSession
 from polar.repository.schemas import RepositoryCreate, RepositoryGitHubUpdate
 from polar.repository.service import RepositoryService
@@ -49,7 +48,7 @@ class GithubRepositoryService(RepositoryService):
     async def install_for_organization(
         self,
         session: AsyncSession,
-        organization: Organization,
+        organization: ExternalOrganization,
     ) -> Sequence[Repository] | None:
         client = github.get_app_installation_client(organization.safe_installation_id)
 
@@ -68,11 +67,6 @@ class GithubRepositoryService(RepositoryService):
 
             instances.append(inst)
 
-        if len(instances) > 0:
-            await loops_service.repository_installed_on_organization(
-                session, organization=organization
-            )
-
         await session.commit()
         for installation in instances:
             await self.enqueue_sync(installation)
@@ -81,7 +75,7 @@ class GithubRepositoryService(RepositoryService):
     async def create_or_update_from_github(
         self,
         session: AsyncSession,
-        organization: Organization,
+        organization: ExternalOrganization,
         data: types.Repository
         | types.FullRepository
         | types.WebhookIssuesTransferredPropChangesPropNewRepository,
@@ -118,7 +112,7 @@ class GithubRepositoryService(RepositoryService):
     async def rename_deleted_repository_with_same_name(
         self,
         session: AsyncSession,
-        organization: Organization,
+        organization: ExternalOrganization,
         data: types.Repository
         | types.FullRepository
         | types.WebhookIssuesTransferredPropChangesPropNewRepository

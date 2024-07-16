@@ -9,6 +9,7 @@ from polar.enums import Platforms
 from polar.integrations.github import types
 from polar.issue.service import issue as issue_service
 from polar.kit.utils import utc_now
+from polar.models.external_organization import ExternalOrganization
 from polar.models.issue import Issue
 from polar.models.organization import Organization
 from polar.models.pledge import Pledge, PledgeState
@@ -172,7 +173,7 @@ async def test_list_by_repository_type_and_status_dependencies_pledge(
 ) -> None:
     # Third party issue
 
-    third_party_org = await random_objects.create_organization(save_fixture)
+    third_party_org = await random_objects.create_external_organization(save_fixture)
     third_party_repo = await random_objects.create_repository(
         save_fixture, third_party_org
     )
@@ -200,7 +201,6 @@ async def test_list_by_repository_type_and_status_dependencies_pledge(
         by_organization_id=organization.id,
         issue_id=third_party_issue.id,
         repository_id=third_party_repo.id,
-        organization_id=third_party_org.id,
         amount=2000,
         fee=200,
         state=PledgeState.created,
@@ -212,7 +212,6 @@ async def test_list_by_repository_type_and_status_dependencies_pledge(
         id=uuid.uuid4(),
         issue_id=third_party_issue.id,
         repository_id=third_party_repo.id,
-        organization_id=third_party_org.id,
         amount=2100,
         fee=200,
         state=PledgeState.created,
@@ -224,7 +223,6 @@ async def test_list_by_repository_type_and_status_dependencies_pledge(
         id=uuid.uuid4(),
         issue_id=third_party_issue_3.id,
         repository_id=third_party_repo.id,
-        organization_id=third_party_org.id,
         amount=2100,
         fee=200,
         state=PledgeState.created,
@@ -236,7 +234,6 @@ async def test_list_by_repository_type_and_status_dependencies_pledge(
         id=uuid.uuid4(),
         issue_id=third_party_issue_3.id,
         repository_id=third_party_repo.id,
-        organization_id=third_party_org.id,
         amount=2100,
         fee=200,
         state=PledgeState.created,
@@ -291,7 +288,7 @@ async def test_list_by_repository_type_and_status_dependencies_pledge_state(
 ) -> None:
     # Third party issue
 
-    third_party_org = await random_objects.create_organization(save_fixture)
+    third_party_org = await random_objects.create_external_organization(save_fixture)
     third_party_repo = await random_objects.create_repository(
         save_fixture, third_party_org
     )
@@ -314,7 +311,6 @@ async def test_list_by_repository_type_and_status_dependencies_pledge_state(
             by_organization_id=organization.id,
             issue_id=third_party_issue.id,
             repository_id=third_party_repo.id,
-            organization_id=third_party_org.id,
             amount=2000,
             fee=200,
             state=state,
@@ -342,14 +338,14 @@ async def test_list_by_github_milestone_number(
     session: AsyncSession,
     save_fixture: SaveFixture,
     repository: Repository,
-    organization: Organization,
+    external_organization: ExternalOrganization,
     # issue: Issue,
     user: User,
 ) -> None:
     async def issue_with_milestone(number: int) -> Issue:
         issue = await random_objects.create_issue(
             save_fixture,
-            organization,
+            external_organization,
             repository,
         )
 
@@ -405,28 +401,33 @@ async def test_transfer(
     session: AsyncSession,
     save_fixture: SaveFixture,
     organization: Organization,
+    external_organization: ExternalOrganization,
     pledging_organization: Organization,
 ) -> None:
     old_repository = await random_objects.create_repository(
-        save_fixture, organization, is_private=False
+        save_fixture, external_organization, is_private=False
     )
     old_issue = await random_objects.create_issue(
-        save_fixture, organization, old_repository
+        save_fixture, external_organization, old_repository
     )
     old_issue.funding_goal = 10_000
 
     pledges = [
         await random_objects.create_pledge(
-            save_fixture, organization, old_repository, old_issue, pledging_organization
+            save_fixture,
+            organization,
+            old_repository,
+            old_issue,
+            pledging_organization,
         )
         for _ in range(2)
     ]
 
     new_repository = await random_objects.create_repository(
-        save_fixture, organization, is_private=False
+        save_fixture, external_organization, is_private=False
     )
     new_issue = await random_objects.create_issue(
-        save_fixture, organization, new_repository
+        save_fixture, external_organization, new_repository
     )
 
     # then

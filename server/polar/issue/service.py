@@ -22,12 +22,12 @@ from polar.enums import Platforms
 from polar.issue.search import search_query
 from polar.kit.services import ResourceService
 from polar.kit.utils import utc_now
+from polar.models import ExternalOrganization
 from polar.models.issue import Issue
 from polar.models.issue_dependency import IssueDependency
 from polar.models.issue_reference import IssueReference
 from polar.models.issue_reward import IssueReward
 from polar.models.notification import Notification
-from polar.models.organization import Organization
 from polar.models.pledge import Pledge, PledgeState
 from polar.models.repository import Repository
 from polar.models.user import User
@@ -177,9 +177,9 @@ class IssueService(ResourceService[Issue, IssueCreate, IssueUpdate]):
         show_closed: bool = False,
         show_closed_if_needs_action: bool = False,
     ) -> tuple[Sequence[Issue], int]:  # (issues, total_issue_count)
-        pledge_by_organization = aliased(Organization)
+        pledge_by_organization = aliased(ExternalOrganization)
         issue_repository = aliased(Repository)
-        issue_organization = aliased(Organization, name="pledge_organization")
+        issue_organization = aliased(ExternalOrganization, name="pledge_organization")
 
         statement = (
             sql.select(

@@ -299,7 +299,7 @@ async def uploaded_logo_png(
     client: AsyncClient,
     auth_subject: AuthSubject[User],
     user_organization_admin: UserOrganization,
-    predictable_organization: Organization,
+    organization: Organization,
 ) -> FileRead:
     img = TestFile("logo.png")
     return await uploaded_fixture(client, user_organization_admin.organization_id, img)
@@ -315,7 +315,7 @@ async def uploaded_logo_jpg(
     client: AsyncClient,
     auth_subject: AuthSubject[User],
     user_organization_admin: UserOrganization,
-    predictable_organization: Organization,
+    organization: Organization,
 ) -> FileRead:
     img = TestFile("logo.jpg")
     return await uploaded_fixture(client, user_organization_admin.organization_id, img)

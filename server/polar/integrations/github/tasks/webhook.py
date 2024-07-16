@@ -11,9 +11,7 @@ from polar.integrations.github import client as github
 from polar.kit.extensions.sqlalchemy import sql
 from polar.kit.utils import utc_now
 from polar.locker import Locker
-from polar.models.issue import Issue
-from polar.models.organization import Organization
-from polar.organization.hooks import OrganizationHook, organization_upserted
+from polar.models import ExternalOrganization, Issue
 from polar.postgres import AsyncSession
 from polar.redis import redis
 from polar.worker import (
@@ -26,7 +24,6 @@ from polar.worker import (
 )
 
 from .. import service, types
-from ..service.members import github_members_service
 from .utils import (
     get_organization_and_repo,
     github_rate_limit_retry,
@@ -111,26 +108,6 @@ async def organization_updated(
         return dict(success=True)
 
 
-@github_rate_limit_retry
-async def organization_synchronize_members(
-    session: AsyncSession,
-    event: types.WebhookOrganizationMemberAdded
-    | types.WebhookOrganizationMemberRemoved,
-) -> dict[str, Any]:
-    with ExecutionContext(is_during_installation=True):
-        if not event.installation:
-            return dict(success=False)
-
-        organization = await service.github_organization.get_by_external_id(
-            session, event.organization.id
-        )
-        if not organization:
-            return dict(success=False)
-
-        await github_members_service.synchronize_members(session, organization)
-        return dict(success=True)
-
-
 @task(name="github.webhook.organization.renamed")
 async def organizations_renamed(
     ctx: JobContext,
@@ -146,40 +123,6 @@ async def organizations_renamed(
             raise Exception("unexpected webhook payload")
         async with AsyncSessionMaker(ctx) as session:
             await organization_updated(session, parsed)
-
-
-@task(name="github.webhook.organization.member_added")
-async def organizations_member_added(
-    ctx: JobContext,
-    scope: Literal["organization"],
-    action: str,
-    payload: dict[str, Any],
-    polar_context: PolarWorkerContext,
-) -> None:
-    with polar_context.to_execution_context():
-        parsed = github.webhooks.parse_obj(scope, payload)
-        if not isinstance(parsed, types.WebhookOrganizationMemberAdded):
-            log.error("github.webhook.unexpected_type")
-            raise Exception("unexpected webhook payload")
-        async with AsyncSessionMaker(ctx) as session:
-            await organization_synchronize_members(session, parsed)
-
-
-@task(name="github.webhook.organization.member_removed")
-async def organizations_member_removed(
-    ctx: JobContext,
-    scope: Literal["organization"],
-    action: str,
-    payload: dict[str, Any],
-    polar_context: PolarWorkerContext,
-) -> None:
-    with polar_context.to_execution_context():
-        parsed = github.webhooks.parse_obj(scope, payload)
-        if not isinstance(parsed, types.WebhookOrganizationMemberRemoved):
-            log.error("github.webhook.unexpected_type")
-            raise Exception("unexpected webhook payload")
-        async with AsyncSessionMaker(ctx) as session:
-            await organization_synchronize_members(session, parsed)
 
 
 # ------------------------------------------------------------------------------
@@ -220,9 +163,6 @@ async def repositories_changed(
         if sender:
             await service.github_user.sync_github_orgs(session, locker, user=sender)
 
-        # send after members have been added
-        await organization_upserted.call(OrganizationHook(session, org))
-
 
 @github_rate_limit_retry
 async def get_or_create_org_from_installation(
@@ -233,7 +173,7 @@ async def get_or_create_org_from_installation(
         | types.WebhookInstallationRepositoriesAddedPropRepositoriesRemovedItems
         | types.WebhookInstallationRepositoriesRemovedPropRepositoriesRemovedItems
     ],
-) -> Organization:
+) -> ExternalOrganization:
     organization = await service.github_organization.install_from_webhook(
         session, installation
     )
@@ -1082,9 +1022,10 @@ async def installation_new_permissions_accepted(
                 event.installation,
             )
 
+            raise NotImplementedError("TODO ORG DECOUPLING")
             await publish_members(
                 session=session,
-                key="organization.updated",
+                key="external_organization.updated",
                 payload={
                     "organization_id": organization.id,
                 },

@@ -19,7 +19,7 @@ from polar.issue.hooks import (
 )
 from polar.kit import utils
 from polar.logging import Logger
-from polar.models import Organization, Repository
+from polar.models import ExternalOrganization, Repository
 from polar.models.issue import Issue
 from polar.models.issue_reference import (
     ExternalGitHubCommitReference,
@@ -73,7 +73,7 @@ class GitHubIssueReferencesService:
     async def sync_repo_references(
         self,
         session: AsyncSession,
-        org: Organization,
+        org: ExternalOrganization,
         repo: Repository,
         crawl_with_installation_id: int
         | None = None,  # Override which installation to use when crawling
@@ -182,7 +182,7 @@ class GitHubIssueReferencesService:
     async def sync_issue_references(
         self,
         session: AsyncSession,
-        org: Organization,
+        org: ExternalOrganization,
         repo: Repository,
         issue: Issue,
         crawl_with_installation_id: int
@@ -278,7 +278,7 @@ class GitHubIssueReferencesService:
     async def parse_issue_timeline_event(
         self,
         session: AsyncSession,
-        org: Organization,
+        org: ExternalOrganization,
         repo: Repository,
         issue: Issue,
         event: TimelineEventType,
@@ -303,7 +303,7 @@ class GitHubIssueReferencesService:
     async def parse_issue_pull_request_reference(
         self,
         session: AsyncSession,
-        org: Organization,
+        org: ExternalOrganization,
         repo: Repository,
         event: types.TimelineCrossReferencedEvent,
         issue: Issue,
@@ -438,7 +438,7 @@ class GitHubIssueReferencesService:
     async def annotate(
         self,
         session: AsyncSession,
-        org: Organization,
+        org: ExternalOrganization,
         ref: IssueReference,
         client: GitHub[Any],
     ) -> IssueReference:
@@ -464,7 +464,7 @@ class GitHubIssueReferencesService:
 
     async def annotate_issue_commit_reference(
         self,
-        org: Organization,
+        org: ExternalOrganization,
         ref: ExternalGitHubCommitReference,
         existingRef: ExternalGitHubCommitReference | None,
         client: GitHub[Any],

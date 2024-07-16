@@ -8,16 +8,16 @@ import pytest
 from pytest_mock import MockerFixture
 
 from polar.enums import Platforms
+from polar.external_organization.schemas import (
+    ExternalOrganizationCreateFromGitHubInstallation,
+)
 from polar.integrations.github import client as github
 from polar.integrations.github import service, types
 from polar.integrations.github.tasks import webhook as webhook_tasks
 from polar.kit import utils
 from polar.kit.extensions.sqlalchemy import sql
-from polar.models.organization import Organization
+from polar.models.external_organization import ExternalOrganization
 from polar.models.repository import Repository
-from polar.organization.schemas import (
-    OrganizationCreateFromGitHubInstallation,
-)
 from polar.postgres import AsyncSession
 from polar.repository.schemas import RepositoryCreate
 from polar.worker import JobContext, PolarWorkerContext
@@ -48,7 +48,9 @@ async def assert_repository_exists(session: AsyncSession, repo: dict[str, Any]) 
     assert record.is_private == repo["private"]
 
 
-async def get_asserted_org(session: AsyncSession, **clauses: Any) -> Organization:
+async def get_asserted_org(
+    session: AsyncSession, **clauses: Any
+) -> ExternalOrganization:
     org = await service.github_organization.get_by(session, **clauses)
     assert org
     return org
@@ -57,7 +59,7 @@ async def get_asserted_org(session: AsyncSession, **clauses: Any) -> Organizatio
 async def create_org(
     session: AsyncSession,
     github_webhook: TestWebhookFactory,
-) -> Organization:
+) -> ExternalOrganization:
     hook = github_webhook.create("installation.created")
     event = github.webhooks.parse_obj("installation", hook.json)
     if not isinstance(event, types.WebhookInstallationCreated):
@@ -66,7 +68,7 @@ async def create_org(
     account = event.installation.account
     assert isinstance(account, types.SimpleUser)
     is_personal = account.type.lower() == "user"
-    create_schema = OrganizationCreateFromGitHubInstallation(
+    create_schema = ExternalOrganizationCreateFromGitHubInstallation(
         platform=Platforms.github,
         name=account.login,
         external_id=account.id,
@@ -79,13 +81,13 @@ async def create_org(
         installation_permissions={},
     )
     stmt = (
-        sql.insert(Organization)
+        sql.insert(ExternalOrganization)
         .values(**create_schema.model_dump())
         .on_conflict_do_update(
-            index_elements=[Organization.external_id],
+            index_elements=[ExternalOrganization.external_id],
             set_={**create_schema.model_dump()},
         )
-        .returning(Organization)
+        .returning(ExternalOrganization)
         .execution_options(populate_existing=True)
     )
     res = await session.execute(stmt)
@@ -96,7 +98,7 @@ async def create_org(
 
 async def create_repositories(
     session: AsyncSession, github_webhook: TestWebhookFactory
-) -> Organization:
+) -> ExternalOrganization:
     org = await create_org(session, github_webhook)
     hook = github_webhook.create("installation_repositories.added")
 
@@ -364,12 +366,12 @@ async def test_webhook_repositories_added_duplicate_name(
     mocker: MockerFixture,
     session: AsyncSession,
     save_fixture: SaveFixture,
-    organization: Organization,
+    external_organization: ExternalOrganization,
     github_webhook: TestWebhookFactory,
 ) -> None:
     hook = github_webhook.create("installation_repositories.added")
-    hook["installation"]["account"]["id"] = organization.external_id
-    hook["installation"]["account"]["name"] = organization.name
+    hook["installation"]["account"]["id"] = external_organization.external_id
+    hook["installation"]["account"]["name"] = external_organization.name
     new_repo = hook["repositories_added"][0]
 
     # A _deleted_ repository with the same name already exists in new_organization
@@ -378,7 +380,7 @@ async def test_webhook_repositories_added_duplicate_name(
         name=new_repo["name"],
         platform="github",
         is_private=True,
-        organization_id=organization.id,
+        organization_id=external_organization.id,
         deleted_at=utils.utc_now(),
     )
     await save_fixture(deleted_repo)
@@ -776,8 +778,6 @@ async def test_webhook_opened_with_label(
     )
 
     org = await create_repositories(session, github_webhook)
-    org.onboarded_at = utils.utc_now()
-    await save_fixture(org)
 
     # first create an issue
     hook = github_webhook.create("issues.opened_with_polar_label")
@@ -842,8 +842,6 @@ async def test_webhook_labeled_remove_badge_body(
     )
 
     org = await create_repositories(session, github_webhook)
-    org.onboarded_at = utils.utc_now()
-    await save_fixture(org)
 
     # first create an issue labeled with "polar" label
     hook = github_webhook.create("issues.opened_with_polar_label")
@@ -920,10 +918,10 @@ async def test_webhook_organization_renamed(
     mocker: MockerFixture,
     session: AsyncSession,
     github_webhook: TestWebhookFactory,
-    organization: Organization,
+    external_organization: ExternalOrganization,
 ) -> None:
     hook = github_webhook.create("organization.renamed")
-    hook["organization"]["id"] = organization.external_id
+    hook["organization"]["id"] = external_organization.external_id
 
     # then
     session.expunge_all()
@@ -937,7 +935,7 @@ async def test_webhook_organization_renamed(
     )
 
     updated_organization = await service.github_organization.get_by_external_id(
-        session, organization.external_id
+        session, external_organization.external_id
     )
     assert updated_organization is not None
     assert updated_organization.name == hook["organization"]["login"]
@@ -1029,30 +1027,30 @@ async def test_webhook_issue_transferred(
     session: AsyncSession,
     save_fixture: SaveFixture,
     github_webhook: TestWebhookFactory,
-    organization: Organization,
+    external_organization: ExternalOrganization,
     polar_worker_context: PolarWorkerContext,
 ) -> None:
     old_repository = await random_objects.create_repository(
-        save_fixture, organization, is_private=False
+        save_fixture, external_organization, is_private=False
     )
     old_issue = await random_objects.create_issue(
-        save_fixture, organization, old_repository
+        save_fixture, external_organization, old_repository
     )
     old_issue.funding_goal = 10_000
     await save_fixture(old_issue)
 
     new_repository = await random_objects.create_repository(
-        save_fixture, organization, is_private=False
+        save_fixture, external_organization, is_private=False
     )
     new_issue = await random_objects.create_issue(
-        save_fixture, organization, new_repository
+        save_fixture, external_organization, new_repository
     )
 
     hook = github_webhook.create("issues.transferred")
     hook["issue"]["id"] = old_issue.external_id
     hook["changes"]["new_issue"]["id"] = new_issue.external_id
     hook["changes"]["new_repository"]["id"] = new_repository.external_id
-    hook["changes"]["new_repository"]["owner"]["id"] = organization.external_id
+    hook["changes"]["new_repository"]["owner"]["id"] = external_organization.external_id
 
     # then
     session.expunge_all()

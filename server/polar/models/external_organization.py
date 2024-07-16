@@ -14,9 +14,15 @@ from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
 from polar.enums import Platforms
+from polar.exceptions import PolarError
 from polar.kit.db.models import RecordModel
 from polar.kit.extensions.sqlalchemy import StringEnum
 from polar.kit.extensions.sqlalchemy.types import PostgresUUID
+
+
+class NotInstalledOrganization(PolarError):
+    def __init__(self) -> None:
+        super().__init__("This organization is not installed.")
 
 
 class ExternalOrganization(RecordModel):
@@ -84,3 +90,9 @@ class ExternalOrganization(RecordModel):
     #
     # End: Fields synced from GitHub
     #
+
+    @property
+    def safe_installation_id(self) -> int:
+        if self.installation_id is None:
+            raise NotInstalledOrganization()
+        return self.installation_id

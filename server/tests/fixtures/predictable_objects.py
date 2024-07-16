@@ -5,6 +5,7 @@ from datetime import datetime
 import pytest_asyncio
 
 from polar.enums import Platforms
+from polar.models.external_organization import ExternalOrganization
 from polar.models.issue import Issue
 from polar.models.organization import Organization
 from polar.models.pledge import Pledge, PledgeState
@@ -12,23 +13,14 @@ from polar.models.pull_request import PullRequest
 from polar.models.repository import Repository
 from polar.models.user import User
 from tests.fixtures.database import SaveFixture
+from tests.fixtures.random_objects import create_external_organization
 
 
 @pytest_asyncio.fixture
-async def predictable_organization(save_fixture: SaveFixture) -> Organization:
-    organization = Organization(
-        platform=Platforms.github,
-        name="testorg",
-        external_id=random.randrange(5000),
-        avatar_url="http://avatar_url",
-        is_personal=False,
-        installation_id=random.randrange(5000),
-        installation_created_at=datetime.now(),
-        installation_updated_at=datetime.now(),
-        installation_suspended_at=None,
-    )
-    await save_fixture(organization)
-    return organization
+async def predictable_external_organization(
+    save_fixture: SaveFixture,
+) -> ExternalOrganization:
+    return await create_external_organization(save_fixture)
 
 
 @pytest_asyncio.fixture
@@ -50,12 +42,12 @@ async def predictable_pledging_organization(save_fixture: SaveFixture) -> Organi
 
 @pytest_asyncio.fixture
 async def predictable_repository(
-    save_fixture: SaveFixture, predictable_organization: Organization
+    save_fixture: SaveFixture, predictable_external_organization: ExternalOrganization
 ) -> Repository:
     repository = Repository(
         platform=Platforms.github,
         name="testrepo",
-        organization_id=predictable_organization.id,
+        organization_id=predictable_external_organization.id,
         external_id=random.randrange(5000),
         is_private=True,
     )
@@ -66,12 +58,12 @@ async def predictable_repository(
 @pytest_asyncio.fixture
 async def predictable_issue(
     save_fixture: SaveFixture,
-    predictable_organization: Organization,
+    predictable_external_organization: ExternalOrganization,
     predictable_repository: Repository,
 ) -> Issue:
     issue = Issue(
         id=uuid.uuid4(),
-        organization_id=predictable_organization.id,
+        organization_id=predictable_external_organization.id,
         repository_id=predictable_repository.id,
         title="issue title",
         number=123,
@@ -124,13 +116,13 @@ async def predictable_pledge(
 @pytest_asyncio.fixture
 async def predictable_pull_request(
     save_fixture: SaveFixture,
-    predictable_organization: Organization,
+    predictable_external_organization: ExternalOrganization,
     predictable_repository: Repository,
 ) -> PullRequest:
     pr = PullRequest(
         id=uuid.uuid4(),
         repository_id=predictable_repository.id,
-        organization_id=predictable_organization.id,
+        organization_id=predictable_external_organization.id,
         number=5555,
         external_id=random.randrange(5000),
         title="PR Title",

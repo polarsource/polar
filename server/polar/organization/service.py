@@ -9,7 +9,6 @@ from sqlalchemy.orm import aliased, contains_eager
 
 from polar.account.service import account as account_service
 from polar.authz.service import AccessType, Authz
-from polar.enums import Platforms
 from polar.exceptions import BadRequest, PolarError
 from polar.integrations.loops.service import loops as loops_service
 from polar.kit.pagination import PaginationParams, paginate
@@ -34,12 +33,7 @@ from polar.webhook.service import webhook as webhook_service
 from polar.worker import enqueue_job
 
 from .auth import OrganizationsWrite
-from .schemas import (
-    OrganizationCreateFromGitHubInstallation,
-    OrganizationCreateFromGitHubUser,
-    OrganizationCustomerType,
-    OrganizationUpdate,
-)
+from .schemas import OrganizationCustomerType, OrganizationUpdate
 
 log = structlog.get_logger()
 
@@ -58,15 +52,6 @@ class InvalidAccount(OrganizationError):
 
 
 class OrganizationService(ResourceServiceReader[Organization]):
-    async def list_installed(self, session: AsyncSession) -> Sequence[Organization]:
-        stmt = sql.select(Organization).where(
-            Organization.deleted_at.is_(None),
-            Organization.blocked_at.is_(None),
-            Organization.installation_id.is_not(None),
-        )
-        res = await session.execute(stmt)
-        return res.scalars().all()
-
     # Override get method to include `blocked_at` filter
     async def get(
         self,
@@ -86,38 +71,6 @@ class OrganizationService(ResourceServiceReader[Organization]):
         if options is not None:
             query = query.options(*options)
 
-        res = await session.execute(query)
-        return res.scalars().unique().one_or_none()
-
-    async def get_by_platform(
-        self, session: AsyncSession, platform: Platforms, external_id: int
-    ) -> Organization | None:
-        return await self.get_by(
-            session,
-            platform=platform,
-            external_id=external_id,
-            blocked_at=None,
-        )
-
-    async def get_by_name(
-        self, session: AsyncSession, platform: Platforms, name: str
-    ) -> Organization | None:
-        return await self.get_by(session, platform=platform, name=name, blocked_at=None)
-
-    async def get_personal(
-        self, session: AsyncSession, user_id: UUID
-    ) -> Organization | None:
-        query = (
-            sql.select(Organization)
-            .join(UserOrganization)
-            .where(
-                Organization.deleted_at.is_(None),
-                Organization.blocked_at.is_(None),
-                Organization.is_personal.is_(True),
-                UserOrganization.user_id == user_id,
-                UserOrganization.deleted_at.is_(None),
-            )
-        )
         res = await session.execute(query)
         return res.scalars().unique().one_or_none()
 
@@ -321,32 +274,6 @@ class OrganizationService(ResourceServiceReader[Organization]):
 
         # update the in memory version as well
         org.default_badge_custom_content = message
-
-        await self._after_update(session, org)
-
-        return org
-
-    async def create_or_update(
-        self,
-        session: AsyncSession,
-        r: OrganizationCreateFromGitHubInstallation | OrganizationCreateFromGitHubUser,
-    ) -> Organization:
-        update_keys = r.__annotations__.keys()
-
-        insert_stmt = sql.insert(Organization).values(**r.model_dump())
-
-        stmt = (
-            insert_stmt.on_conflict_do_update(
-                index_elements=[Organization.external_id],
-                set_={k: getattr(insert_stmt.excluded, k) for k in update_keys},
-            )
-            .returning(Organization)
-            .execution_options(populate_existing=True)
-        )
-
-        res = await session.execute(stmt)
-        await session.commit()
-        org = res.scalars().one()
 
         await self._after_update(session, org)
 

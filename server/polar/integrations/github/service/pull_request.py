@@ -5,7 +5,7 @@ import structlog
 from githubkit import GitHub, Paginator
 
 from polar.enums import Platforms
-from polar.models import Organization, PullRequest, Repository
+from polar.models import ExternalOrganization, PullRequest, Repository
 from polar.postgres import AsyncSession
 from polar.pull_request.hooks import PullRequestHook, pull_request_upserted
 from polar.pull_request.schemas import FullPullRequestCreate, MinimalPullRequestCreate
@@ -29,7 +29,7 @@ class GithubPullRequestService(PullRequestService):
         session: AsyncSession,
         *,
         data: types.PullRequestSimple,
-        organization: Organization,
+        organization: ExternalOrganization,
         repository: Repository,
     ) -> PullRequest | None:
         records = await self.store_many_simple(
@@ -47,7 +47,7 @@ class GithubPullRequestService(PullRequestService):
         session: AsyncSession,
         *,
         data: Sequence[types.PullRequestSimple],
-        organization: Organization,
+        organization: ExternalOrganization,
         repository: Repository,
     ) -> Sequence[PullRequest]:
         def parse(pr: types.PullRequestSimple) -> MinimalPullRequestCreate:
@@ -81,7 +81,7 @@ class GithubPullRequestService(PullRequestService):
         self,
         session: AsyncSession,
         data: types.PullRequest | types.PullRequestWebhook,
-        organization: Organization,
+        organization: ExternalOrganization,
         repository: Repository,
     ) -> PullRequest | None:
         records = await self.store_many_full(
@@ -102,7 +102,7 @@ class GithubPullRequestService(PullRequestService):
             | types.PullRequestWebhook
             | types.WebhookPullRequestSynchronizePropPullRequest
         ],
-        organization: Organization,
+        organization: ExternalOrganization,
         repository: Repository,
     ) -> Sequence[PullRequest]:
         def parse(
@@ -139,7 +139,7 @@ class GithubPullRequestService(PullRequestService):
     async def sync_pull_request(
         self,
         session: AsyncSession,
-        organization: Organization,
+        organization: ExternalOrganization,
         repository: Repository,
         number: int,
         client: GitHub[Any],
@@ -159,7 +159,7 @@ class GithubPullRequestService(PullRequestService):
     async def sync_pull_requests(
         self,
         session: AsyncSession,
-        organization: Organization,
+        organization: ExternalOrganization,
         repository: Repository,
         state: Literal["open", "closed", "all"] = "open",
         sort: Literal["created", "updated", "popularity", "long-running"] = "updated",

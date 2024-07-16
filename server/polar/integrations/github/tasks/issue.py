@@ -6,7 +6,6 @@ import structlog
 from polar.integrations.github import service
 from polar.integrations.github.client import get_app_installation_client
 from polar.locker import Locker
-from polar.organization.service import organization as organization_service
 from polar.redis import get_redis
 from polar.worker import (
     AsyncSessionMaker,
@@ -20,6 +19,7 @@ from polar.worker import (
 
 from ..service.api import github_api
 from ..service.issue import github_issue
+from ..service.organization import github_organization as github_organization_service
 from .utils import get_organization_and_repo, github_rate_limit_retry
 
 log = structlog.get_logger()
@@ -139,7 +139,7 @@ async def issue_sync_issue_dependencies(
 @github_rate_limit_retry
 async def cron_refresh_issues(ctx: JobContext) -> None:
     async with AsyncSessionMaker(ctx) as session:
-        orgs = await organization_service.list_installed(session)
+        orgs = await github_organization_service.list_installed(session)
         for org in orgs:
             issues = await github_issue.list_issues_to_crawl_issue(session, org)
             if len(issues) == 0:
@@ -200,7 +200,7 @@ async def cron_refresh_issues(ctx: JobContext) -> None:
 @github_rate_limit_retry
 async def cron_refresh_issue_timelines(ctx: JobContext) -> None:
     async with AsyncSessionMaker(ctx) as session:
-        orgs = await organization_service.list_installed(session)
+        orgs = await github_organization_service.list_installed(session)
         for org in orgs:
             issues = await github_issue.list_issues_to_crawl_timeline(session, org)
             if len(issues) == 0:

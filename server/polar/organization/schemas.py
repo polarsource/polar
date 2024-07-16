@@ -1,5 +1,4 @@
 from collections.abc import Sequence
-from datetime import datetime
 from enum import StrEnum
 from typing import Annotated, Self
 from uuid import UUID
@@ -9,7 +8,6 @@ from pydantic import UUID4, Field, HttpUrl
 from polar.config import settings
 from polar.currency.schemas import CurrencyAmount
 from polar.enums import Platforms
-from polar.integrations.github import types
 from polar.kit.schemas import (
     EmptyStrToNoneValidator,
     MergeJSONSchema,
@@ -238,70 +236,6 @@ class OrganizationCustomer(Schema):
     public_name: str
     github_username: str | None = None
     avatar_url: str | None = None
-
-
-#
-# Internal models below. Not to be used in "public" APIs!
-#
-
-
-# Internal model
-class OrganizationCreateFromGitHubInstallation(Schema):
-    platform: Platforms
-    name: str
-    avatar_url: str
-    external_id: int
-    is_personal: bool
-    installation_id: int
-    installation_created_at: datetime
-    installation_updated_at: datetime
-    installation_suspended_at: datetime | None = None
-    installation_permissions: types.AppPermissionsType
-
-    @classmethod
-    def from_github(
-        cls,
-        *,
-        user: types.SimpleUser,
-        installation: types.Installation,
-    ) -> Self:
-        return cls(
-            platform=Platforms.github,
-            name=user.login,
-            external_id=user.id,
-            avatar_url=user.avatar_url,
-            is_personal=user.type.lower() == "user",
-            installation_id=installation.id,
-            installation_created_at=installation.created_at,
-            installation_updated_at=installation.updated_at,
-            installation_suspended_at=installation.suspended_at,
-            installation_permissions=types.app_permissions_from_github(
-                installation.permissions
-            ),
-        )
-
-
-# Internal model
-class OrganizationCreateFromGitHubUser(Schema):
-    platform: Platforms
-    name: str
-    avatar_url: str
-    external_id: int
-    is_personal: bool
-
-    @classmethod
-    def from_github(
-        cls,
-        *,
-        user: types.SimpleUser,
-    ) -> Self:
-        return cls(
-            platform=Platforms.github,
-            name=user.login,
-            external_id=user.id,
-            avatar_url=user.avatar_url,
-            is_personal=user.type.lower() == "user",
-        )
 
 
 # Internal model

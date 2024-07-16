@@ -5,7 +5,7 @@ from polar.integrations.github import types
 from polar.integrations.github.service import (
     github_pull_request,
 )
-from polar.models.organization import Organization
+from polar.models import ExternalOrganization
 from polar.models.repository import Repository
 from polar.postgres import AsyncSession
 from tests.fixtures.vcr import read_cassette
@@ -24,7 +24,7 @@ def full_pull_request() -> types.PullRequest:
 @pytest.mark.asyncio
 async def test_create_pull_request(
     session: AsyncSession,
-    organization: Organization,
+    external_organization: ExternalOrganization,
     repository: Repository,
 ) -> None:
     # Remove from db if exists
@@ -43,7 +43,7 @@ async def test_create_pull_request(
     created = await github_pull_request.store_simple(
         session,
         data=simple,
-        organization=organization,
+        organization=external_organization,
         repository=repository,
     )
 
@@ -61,7 +61,7 @@ async def test_create_pull_request(
     stored_full = await github_pull_request.store_full(
         session,
         full,
-        organization=organization,
+        organization=external_organization,
         repository=repository,
     )
 
@@ -75,7 +75,7 @@ async def test_create_pull_request(
     stored_simple_again = await github_pull_request.store_simple(
         session,
         data=simple,
-        organization=organization,
+        organization=external_organization,
         repository=repository,
     )
 

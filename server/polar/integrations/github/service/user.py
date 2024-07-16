@@ -3,7 +3,7 @@ from typing import Any
 import structlog
 
 from polar.enums import Platforms, UserSignupType
-from polar.exceptions import PolarError, ResourceAlreadyExists
+from polar.exceptions import PolarError
 from polar.integrations.github.client import GitHub, TokenAuthStrategy
 from polar.integrations.loops.service import loops as loops_service
 from polar.kit.extensions.sqlalchemy import sql
@@ -20,7 +20,6 @@ from polar.worker import enqueue_job
 from .. import client as github
 from .. import types
 from ..schemas import OAuthAccessToken
-from .organization import github_organization as github_organization_service
 
 log = structlog.get_logger()
 
@@ -226,14 +225,6 @@ class GithubUserService(UserService):
             authenticated=authenticated,
         )
 
-        if signup and signup_type == UserSignupType.maintainer:
-            try:
-                await github_organization_service.create_for_user(
-                    session, locker, user=user
-                )
-            except ResourceAlreadyExists:
-                pass
-
         org_count = await self._run_sync_github_orgs(
             session,
             locker,
@@ -414,6 +405,7 @@ class GithubUserService(UserService):
                 log.error("sync_github_orgs.github_enterprise_not_supported")
                 continue
 
+            raise NotImplementedError("TODO ORG DECOUPLING")
             org = await organization.get_by_platform(
                 session, Platforms.github, i.account.id
             )

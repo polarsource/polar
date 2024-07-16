@@ -1,8 +1,7 @@
 import structlog
 
-from polar.eventstream.service import publish, publish_members
+from polar.eventstream.service import publish
 from polar.issue.hooks import IssueHook, issue_upserted
-from polar.organization.hooks import OrganizationHook, organization_upserted
 from polar.pull_request.hooks import PullRequestHook, pull_request_upserted
 from polar.repository.hooks import (
     SyncCompletedHook,
@@ -88,17 +87,3 @@ async def on_pull_request_updated(hook: PullRequestHook) -> None:
 
 
 pull_request_upserted.add(on_pull_request_updated)
-
-
-async def on_organization_upserted(hook: OrganizationHook) -> None:
-    await publish_members(
-        session=hook.session,
-        key="organization.updated",
-        payload={
-            "organization_id": hook.organization.id,
-        },
-        organization_id=hook.organization.id,
-    )
-
-
-organization_upserted.add(on_organization_upserted)

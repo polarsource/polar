@@ -1,8 +1,8 @@
 from dataclasses import dataclass
 
 from polar.kit.hook import Hook
+from polar.models.external_organization import ExternalOrganization
 from polar.models.issue import Issue
-from polar.models.organization import Organization
 from polar.models.pull_request import PullRequest
 from polar.models.repository import Repository
 
@@ -10,7 +10,7 @@ from polar.models.repository import Repository
 @dataclass
 class SyncedHook:
     repository: Repository
-    organization: Organization
+    organization: ExternalOrganization
     record: Issue | PullRequest
     synced: int
 
@@ -18,7 +18,7 @@ class SyncedHook:
 @dataclass
 class SyncCompletedHook:
     repository: Repository
-    organization: Organization
+    organization: ExternalOrganization
     synced: int
 
 

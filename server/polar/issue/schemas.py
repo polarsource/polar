@@ -15,6 +15,9 @@ from polar.integrations.github import client as github
 from polar.integrations.github import types
 from polar.integrations.github.badge import GithubBadge
 from polar.kit.schemas import Schema
+from polar.models.external_organization import (
+    ExternalOrganization as ExternalOrganizationModel,
+)
 from polar.models.issue import Issue as IssueModel
 from polar.models.issue_reference import (
     ExternalGitHubCommitReference as ExternalGitHubCommitReferenceModel,
@@ -26,7 +29,6 @@ from polar.models.issue_reference import (
     IssueReference,
     ReferenceType,
 )
-from polar.models.organization import Organization as OrganizationModel
 from polar.models.repository import Repository as RepositoryModel
 from polar.repository.schemas import Repository
 from polar.types import JSONAny
@@ -245,7 +247,7 @@ class IssueAndPullRequestBase(Base):
         | types.PullRequestSimple
         | types.WebhookPullRequestSynchronizePropPullRequest
         | types.PullRequestWebhook,
-        organization: OrganizationModel,
+        organization: ExternalOrganizationModel,
         repository: RepositoryModel,
     ) -> Self:
         """
@@ -345,7 +347,7 @@ class IssueCreate(IssueAndPullRequestBase):
         | types.WebhookIssuesReopenedPropIssue
         | types.WebhookIssuesDeletedPropIssue
         | types.WebhookIssuesTransferredPropChangesPropNewIssue,
-        organization: OrganizationModel,
+        organization: ExternalOrganizationModel,
         repository: RepositoryModel,
     ) -> Self:
         ret = super().get_normalized_github_issue(data, organization, repository)

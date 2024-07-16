@@ -358,7 +358,7 @@ async def test_MaintainerPledgedIssuePendingNotification_with_account(
 @pytest.mark.skip_db_asserts
 async def test_TeamAdminMemberPledgedNotification(
     predictable_user: User,
-    predictable_organization: Organization,
+    organization: Organization,
 ) -> None:
     n = TeamAdminMemberPledgedNotificationPayload(
         issue_url="https://github.com/testorg/testrepo/issues/123",
@@ -366,7 +366,7 @@ async def test_TeamAdminMemberPledgedNotification(
         issue_number=123,
         issue_org_name="testorg",
         issue_repo_name="testrepo",
-        team_name=predictable_organization.name,
+        team_name=organization.name,
         team_member_name=predictable_user.username,
         pledge_amount="500.00",
         pledge_id=uuid.uuid4(),

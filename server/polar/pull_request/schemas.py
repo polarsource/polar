@@ -7,7 +7,7 @@ import structlog
 from polar.integrations.github import types
 from polar.issue.schemas import Author, IssueAndPullRequestBase
 from polar.kit.schemas import Schema
-from polar.models import Organization, Repository
+from polar.models import ExternalOrganization, Repository
 from polar.models.pull_request import PullRequest as PullRequestModel
 from polar.types import JSONAny
 
@@ -107,7 +107,7 @@ class MinimalPullRequestCreate(IssueAndPullRequestBase):
         | types.PullRequest
         | types.PullRequestWebhook
         | types.WebhookPullRequestSynchronizePropPullRequest,
-        organization: Organization,
+        organization: ExternalOrganization,
         repository: Repository,
     ) -> Self:
         create = cls.get_normalized_github_issue(pr, organization, repository)
@@ -166,7 +166,7 @@ class FullPullRequestCreate(MinimalPullRequestCreate):
         pr: types.PullRequest
         | types.PullRequestWebhook
         | types.WebhookPullRequestSynchronizePropPullRequest,
-        organization: Organization,
+        organization: ExternalOrganization,
         repository: Repository,
     ) -> Self:
         create = cls.minimal_pull_request_from_github(pr, organization, repository)

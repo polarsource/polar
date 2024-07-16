@@ -7,11 +7,13 @@ from polar.integrations.github.service.reference import (
     TimelineEventType,
     github_reference,
 )
-from polar.models.issue import Issue
+from polar.models import (
+    ExternalOrganization,
+    Issue,
+    PullRequest,
+    Repository,
+)
 from polar.models.issue_reference import ReferenceType
-from polar.models.organization import Organization
-from polar.models.pull_request import PullRequest
-from polar.models.repository import Repository
 from polar.postgres import AsyncSession
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.vcr import read_cassette
@@ -29,7 +31,7 @@ async def test_parse_repository_issues() -> None:
 async def test_parse_issue_timeline(
     session: AsyncSession,
     save_fixture: SaveFixture,
-    organization: Organization,
+    external_organization: ExternalOrganization,
     repository: Repository,
     issue: Issue,
     pull_request: PullRequest,
@@ -38,9 +40,9 @@ async def test_parse_issue_timeline(
     payload = TypeAdapter(list[TimelineEventType]).validate_python(raw)
 
     # Create Org/Repo/Issue (setup to match names and ids in issue_timeline.json)
-    organization.name = "zegloforko"
-    organization.external_id = 456
-    await save_fixture(organization)
+    external_organization.name = "zegloforko"
+    external_organization.external_id = 456
+    await save_fixture(external_organization)
 
     repository.name = "polarforkotest"
     repository.external_id = 617059064
@@ -58,7 +60,7 @@ async def test_parse_issue_timeline(
     parsed = [
         await github_reference.parse_issue_timeline_event(
             session,
-            organization,
+            external_organization,
             repository,
             issue,
             event,
@@ -96,7 +98,7 @@ async def test_parse_issue_timeline(
 async def test_parse_issue_timeline_rclone(
     session: AsyncSession,
     save_fixture: SaveFixture,
-    organization: Organization,
+    external_organization: ExternalOrganization,
     repository: Repository,
     issue: Issue,
     pull_request: PullRequest,
@@ -104,9 +106,9 @@ async def test_parse_issue_timeline_rclone(
     raw = read_cassette("github/references/issue_timeline_rclone.json")
     payload = TypeAdapter(list[TimelineEventType]).validate_python(raw)
 
-    organization.name = "zegloforko"
-    organization.external_id = 456
-    await save_fixture(organization)
+    external_organization.name = "zegloforko"
+    external_organization.external_id = 456
+    await save_fixture(external_organization)
 
     repository.name = "polarforkotest"
     repository.external_id = 617059064
@@ -124,7 +126,7 @@ async def test_parse_issue_timeline_rclone(
     parsed = [
         await github_reference.parse_issue_timeline_event(
             session,
-            organization,
+            external_organization,
             repository,
             issue,
             event,

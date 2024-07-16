@@ -14,6 +14,7 @@ from sqlalchemy import asc, or_
 from polar.dashboard.schemas import IssueSortBy
 from polar.enums import Platforms
 from polar.exceptions import ResourceNotFound
+from polar.external_organization.schemas import ExternalOrganizationCreateFromGitHubUser
 from polar.integrations.loops.service import loops as loops_service
 from polar.issue.hooks import IssueHook, issue_upserted
 from polar.issue.schemas import IssueCreate, IssueUpdate
@@ -26,11 +27,8 @@ from polar.kit.extensions.sqlalchemy import sql
 from polar.kit.utils import utc_now
 from polar.locker import Locker
 from polar.logging import Logger
-from polar.models import Issue, Organization, Repository
+from polar.models import ExternalOrganization, Issue, Repository
 from polar.models.user import User
-from polar.organization.schemas import (
-    OrganizationCreateFromGitHubUser,
-)
 from polar.redis import redis
 from polar.repository.hooks import (
     repository_issue_synced,
@@ -63,7 +61,7 @@ class GithubIssueService(IssueService):
         | types.WebhookIssuesReopenedPropIssue
         | types.WebhookIssuesDeletedPropIssue
         | types.Issue,
-        organization: Organization,
+        organization: ExternalOrganization,
         repository: Repository,
         autocommit: bool = True,
     ) -> Issue | None:
@@ -90,7 +88,7 @@ class GithubIssueService(IssueService):
             | types.WebhookIssuesDeletedPropIssue
             | types.Issue,
         ],
-        organization: Organization,
+        organization: ExternalOrganization,
         repository: Repository,
         autocommit: bool = True,
     ) -> Sequence[Issue]:
@@ -176,7 +174,7 @@ class GithubIssueService(IssueService):
         self,
         session: AsyncSession,
         *,
-        organization: Organization,
+        organization: ExternalOrganization,
         repository: Repository,
         issue: Issue,
         triggered_from_label: bool,
@@ -220,7 +218,7 @@ class GithubIssueService(IssueService):
         self,
         session: AsyncSession,
         *,
-        organization: Organization,
+        organization: ExternalOrganization,
         repository: Repository,
         issue: Issue,
         triggered_from_label: bool,
@@ -265,7 +263,7 @@ class GithubIssueService(IssueService):
         self,
         session: AsyncSession,
         *,
-        organization: Organization,
+        organization: ExternalOrganization,
         repository: Repository,
         issue: Issue,
     ) -> bool:
@@ -298,7 +296,7 @@ class GithubIssueService(IssueService):
     async def sync_issue(
         self,
         session: AsyncSession,
-        org: Organization,
+        org: ExternalOrganization,
         repo: Repository,
         issue: Issue,
         crawl_with_installation_id: int
@@ -388,7 +386,7 @@ class GithubIssueService(IssueService):
     async def list_issues_to_crawl_issue(
         self,
         session: AsyncSession,
-        organization: Organization,
+        organization: ExternalOrganization,
     ) -> Sequence[Issue]:
         current_time = utc_now()
         cutoff_time = current_time - datetime.timedelta(hours=12)
@@ -403,10 +401,10 @@ class GithubIssueService(IssueService):
                     Issue.github_issue_fetched_at < cutoff_time,
                 ),
                 Issue.deleted_at.is_(None),
-                Organization.deleted_at.is_(None),
+                ExternalOrganization.deleted_at.is_(None),
                 Repository.deleted_at.is_(None),
-                Organization.installation_id.is_not(None),
-                Organization.id == organization.id,
+                ExternalOrganization.installation_id.is_not(None),
+                ExternalOrganization.id == organization.id,
             )
             .order_by(asc(Issue.github_issue_fetched_at))
             .limit(100)
@@ -419,7 +417,7 @@ class GithubIssueService(IssueService):
     async def list_issues_to_crawl_timeline(
         self,
         session: AsyncSession,
-        organization: Organization,
+        organization: ExternalOrganization,
     ) -> Sequence[Issue]:
         current_time = utc_now()
         cutoff_time = current_time - datetime.timedelta(hours=12)
@@ -434,10 +432,10 @@ class GithubIssueService(IssueService):
                     Issue.github_timeline_fetched_at < cutoff_time,
                 ),
                 Issue.deleted_at.is_(None),
-                Organization.deleted_at.is_(None),
+                ExternalOrganization.deleted_at.is_(None),
                 Repository.deleted_at.is_(None),
-                Organization.installation_id.is_not(None),
-                Organization.id == organization.id,
+                ExternalOrganization.installation_id.is_not(None),
+                ExternalOrganization.id == organization.id,
             )
             .order_by(asc(Issue.github_timeline_fetched_at))
             .limit(100)
@@ -450,7 +448,7 @@ class GithubIssueService(IssueService):
     async def list_issues_to_add_badge_to_auto(
         self,
         session: AsyncSession,
-        organization: Organization,
+        organization: ExternalOrganization,
         repository: Repository,
     ) -> Sequence[Issue]:
         (issues, _) = await self.list_by_repository_type_and_status(
@@ -475,7 +473,7 @@ class GithubIssueService(IssueService):
     async def list_issues_to_remove_badge_from_auto(
         self,
         session: AsyncSession,
-        organization: Organization,
+        organization: ExternalOrganization,
         repository: Repository,
     ) -> Sequence[Issue]:
         (issues, _) = await self.list_by_repository_type_and_status(
@@ -519,7 +517,7 @@ class GithubIssueService(IssueService):
     async def add_polar_label(
         self,
         session: AsyncSession,
-        organization: Organization,
+        organization: ExternalOrganization,
         repository: Repository,
         issue: Issue,
     ) -> Issue:
@@ -539,7 +537,7 @@ class GithubIssueService(IssueService):
     async def remove_polar_label(
         self,
         session: AsyncSession,
-        organization: Organization,
+        organization: ExternalOrganization,
         repository: Repository,
         issue: Issue,
     ) -> Issue:
@@ -560,7 +558,7 @@ class GithubIssueService(IssueService):
         self,
         session: AsyncSession,
         locker: Locker,
-        organization: Organization,
+        organization: ExternalOrganization,
         repository: Repository,
         issue: Issue,
         user: User,
@@ -617,7 +615,7 @@ class GithubIssueService(IssueService):
 
         organization = await github_organization.create_or_update(
             session,
-            OrganizationCreateFromGitHubUser.from_github(
+            ExternalOrganizationCreateFromGitHubUser.from_github(
                 user=github_repository_data.owner
             ),
         )
@@ -655,7 +653,7 @@ class GithubIssueService(IssueService):
         self,
         session: AsyncSession,
         *,
-        organization: Organization,
+        organization: ExternalOrganization,
         repository: Repository,
         state: Literal["open", "closed", "all"] = "open",
         sort: Literal["created", "updated", "comments"] = "updated",
@@ -767,7 +765,7 @@ class GithubIssueService(IssueService):
     async def create_or_update_from_github(
         self,
         session: AsyncSession,
-        organization: Organization,
+        organization: ExternalOrganization,
         repository: Repository,
         data: types.Issue | types.WebhookIssuesTransferredPropChangesPropNewIssue,
     ) -> Issue:
@@ -802,7 +800,7 @@ async def recommended_in_repo(
     # this job runs in it's own thread/job, making sure to create our own db session
     async with sessionmaker() as session:
         org = await github_organization.create_or_update(
-            session, OrganizationCreateFromGitHubUser.from_github(user=r.owner)
+            session, ExternalOrganizationCreateFromGitHubUser.from_github(user=r.owner)
         )
 
         repo = await github_repository.create_or_update_from_github(

@@ -33,6 +33,7 @@ from polar.pledge.service import pledge as pledge_service
 from polar.postgres import AsyncSession
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
+    create_external_organization,
     create_issue,
     create_organization,
     create_repository,
@@ -684,16 +685,12 @@ async def test_generate_pledge_testdata(
     save_fixture: SaveFixture,
     user: User,
     # pledge: Pledge,
-    # organization: Organization,
+    organization: Organization,
 ) -> None:
-    org = await create_organization(save_fixture)
-    repo = await create_repository(save_fixture, organization=org)
+    external_org = await create_external_organization(save_fixture)
+    repo = await create_repository(save_fixture, external_org)
     issues = [
-        await create_issue(
-            save_fixture,
-            organization=org,
-            repository=repo,
-        )
+        await create_issue(save_fixture, external_org, repository=repo)
         for _ in range(1, 5)
     ]
 
@@ -710,7 +707,6 @@ async def test_generate_pledge_testdata(
             # by_organization_id=pledging_organization.id,
             issue=issue,
             repository_id=issue.repository_id,
-            organization_id=issue.organization_id,
             amount=2000,
             fee=0,
             state=PledgeState.created,
@@ -721,7 +717,6 @@ async def test_generate_pledge_testdata(
             by_organization=pledging_org,
             issue=issue,
             repository_id=issue.repository_id,
-            organization_id=issue.organization_id,
             amount=2500,
             fee=500,
             state=PledgeState.created,
@@ -736,7 +731,7 @@ async def test_generate_pledge_testdata(
 
     reward1 = IssueReward(
         issue_id=pledges[0][0].issue_id,
-        organization_id=org.id,
+        organization_id=organization.id,
         share_thousands=800,
     )
     await save_fixture(reward1)
@@ -754,7 +749,7 @@ async def test_generate_pledge_testdata(
 
     reward1 = IssueReward(
         issue_id=pledges[1][0].issue_id,
-        organization_id=org.id,
+        organization_id=organization.id,
         share_thousands=800,
     )
     await save_fixture(reward1)
@@ -1162,8 +1157,9 @@ async def test_pledge_states(
             create_invoice.reset_mock()
 
             org = await create_organization(save_fixture)
-            repo = await create_repository(save_fixture, org)
-            issue = await create_issue(save_fixture, org, repo)
+            external_org = await create_external_organization(save_fixture)
+            repo = await create_repository(save_fixture, external_org)
+            issue = await create_issue(save_fixture, external_org, repo)
             pledging_user = await create_user(save_fixture)
 
             user_organization = UserOrganization(

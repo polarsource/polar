@@ -9,7 +9,7 @@ from polar.integrations.github.client import (
 )
 from polar.integrations.github.service.issue import github_issue
 from polar.locker import Locker
-from polar.models import Issue, Organization, Repository
+from polar.models import ExternalOrganization, Issue, Repository
 from polar.models.issue_dependency import IssueDependency
 from polar.postgres import AsyncSession, sql
 
@@ -23,7 +23,7 @@ class GitHubIssueDependenciesService:
         self,
         session: AsyncSession,
         locker: Locker,
-        org: Organization,
+        org: ExternalOrganization,
         repo: Repository,
         issue: Issue,
     ) -> None:

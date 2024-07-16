@@ -76,38 +76,6 @@
                 ]
             }
         },
-        "/v1/users/me/upgrade": {
-            "post": {
-                "tags": [
-                    "users"
-                ],
-                "summary": "Maintainer Upgrade",
-                "operationId": "maintainer_upgrade",
-                "responses": {
-                    "200": {
-                        "description": "Successful Response",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/Organization"
-                                }
-                            }
-                        }
-                    }
-                },
-                "security": [
-                    {
-                        "OpenIdConnect": []
-                    },
-                    {
-                        "HTTPBearer": []
-                    }
-                ],
-                "x-polar-allowed-subjects": [
-                    "User"
-                ]
-            }
-        },
         "/v1/users/me/account": {
             "patch": {
                 "tags": [
@@ -1209,8 +1177,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Anonymous"
+                    "Anonymous",
+                    "User"
                 ]
             }
         },
@@ -2311,57 +2279,6 @@
                 }
             }
         },
-        "/v1/integrations/github/synchronize_members": {
-            "post": {
-                "tags": [
-                    "integrations_github"
-                ],
-                "summary": "Synchronize Members",
-                "operationId": "synchronize_members",
-                "security": [
-                    {
-                        "OpenIdConnect": []
-                    },
-                    {
-                        "HTTPBearer": []
-                    }
-                ],
-                "parameters": [
-                    {
-                        "name": "organization_id",
-                        "in": "query",
-                        "required": true,
-                        "schema": {
-                            "type": "string",
-                            "format": "uuid",
-                            "title": "Organization Id"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Successful Response",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/SynchronizeMembersResponse"
-                                }
-                            }
-                        }
-                    },
-                    "422": {
-                        "description": "Validation Error",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/HTTPValidationError"
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        },
         "/v1/integrations/github/lookup_user": {
             "post": {
                 "tags": [
@@ -2434,6 +2351,12 @@
                         "schema": {
                             "type": "string",
                             "format": "uuid4",
+                            "description": "The external organization ID.",
+                            "x-polar-selector-widget": {
+                                "resourceRoot": "/v1/external-organizations",
+                                "resourceName": "External Organization",
+                                "displayProperty": "name"
+                            },
                             "title": "Id"
                         }
                     },
@@ -2499,6 +2422,12 @@
                         "schema": {
                             "type": "string",
                             "format": "uuid4",
+                            "description": "The external organization ID.",
+                            "x-polar-selector-widget": {
+                                "resourceRoot": "/v1/external-organizations",
+                                "resourceName": "External Organization",
+                                "displayProperty": "name"
+                            },
                             "title": "Id"
                         }
                     }
@@ -2553,6 +2482,12 @@
                         "schema": {
                             "type": "string",
                             "format": "uuid4",
+                            "description": "The external organization ID.",
+                            "x-polar-selector-widget": {
+                                "resourceRoot": "/v1/external-organizations",
+                                "resourceName": "External Organization",
+                                "displayProperty": "name"
+                            },
                             "title": "Id"
                         }
                     }
@@ -2604,7 +2539,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/Organization"
+                                    "$ref": "#/components/schemas/ExternalOrganization"
                                 }
                             }
                         }
@@ -3849,7 +3784,7 @@
                 ]
             }
         },
-        "/v1/dashboard/{platform}/{org_name}": {
+        "/v1/dashboard/organization/{id}": {
             "get": {
                 "tags": [
                     "dashboard"
@@ -3866,37 +3801,42 @@
                 ],
                 "parameters": [
                     {
-                        "name": "platform",
-                        "in": "path",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/components/schemas/Platforms"
-                        }
-                    },
-                    {
-                        "name": "org_name",
+                        "name": "id",
                         "in": "path",
                         "required": true,
                         "schema": {
                             "type": "string",
-                            "title": "Org Name"
+                            "format": "uuid4",
+                            "description": "The organization ID.",
+                            "x-polar-selector-widget": {
+                                "resourceRoot": "/v1/organizations",
+                                "resourceName": "Organization",
+                                "displayProperty": "name"
+                            },
+                            "title": "Id"
                         }
                     },
                     {
-                        "name": "repo_name",
+                        "name": "repository_name",
                         "in": "query",
                         "required": false,
                         "schema": {
                             "anyOf": [
                                 {
-                                    "type": "string"
+                                    "type": "string",
+                                    "minLength": 1
                                 },
                                 {
                                     "type": "null"
                                 }
                             ],
-                            "title": "Repo Name"
-                        }
+                            "description": "Filter by repository name.",
+                            "examples": [
+                                "my-repo"
+                            ],
+                            "title": "Repository Name"
+                        },
+                        "description": "Filter by repository name."
                     },
                     {
                         "name": "q",
@@ -4036,6 +3976,22 @@
                 ],
                 "parameters": [
                     {
+                        "name": "organization_id",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid4",
+                            "description": "The organization ID.",
+                            "x-polar-selector-widget": {
+                                "resourceRoot": "/v1/organizations",
+                                "resourceName": "Organization",
+                                "displayProperty": "name"
+                            },
+                            "title": "Organization Id"
+                        }
+                    },
+                    {
                         "name": "repository_name",
                         "in": "query",
                         "required": false,
@@ -4147,39 +4103,6 @@
                             "title": "Limit"
                         },
                         "description": "Size of a page, defaults to 10. Maximum is 100."
-                    },
-                    {
-                        "name": "organization_name",
-                        "in": "query",
-                        "required": true,
-                        "schema": {
-                            "type": "string",
-                            "minLength": 1,
-                            "description": "Filter by organization name. Required unless you are authenticated as an organization.",
-                            "examples": [
-                                "my-org"
-                            ],
-                            "title": "Organization Name"
-                        },
-                        "description": "Filter by organization name. Required unless you are authenticated as an organization."
-                    },
-                    {
-                        "name": "platform",
-                        "in": "query",
-                        "required": true,
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/components/schemas/Platforms"
-                                }
-                            ],
-                            "description": "Platform linked to `organization_name`. Required if `organization_name` is set. Currently, only `github` is supported.",
-                            "examples": [
-                                "github"
-                            ],
-                            "title": "Platform"
-                        },
-                        "description": "Platform linked to `organization_name`. Required if `organization_name` is set. Currently, only `github` is supported."
                     }
                 ],
                 "responses": {
@@ -4205,8 +4128,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Anonymous"
+                    "Anonymous",
+                    "User"
                 ]
             }
         },
@@ -4260,8 +4183,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Anonymous"
+                    "Anonymous",
+                    "User"
                 ]
             }
         },
@@ -4367,8 +4290,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Anonymous"
+                    "Anonymous",
+                    "User"
                 ]
             }
         },
@@ -4454,50 +4377,20 @@
                 ]
             }
         },
-        "/v1/repositories": {
+        "/v1/external_organizations/": {
             "get": {
                 "tags": [
-                    "repositories"
+                    "external_organizations",
+                    "documented"
                 ],
-                "summary": "List repositories",
-                "description": "List repositories in organizations that the authenticated user is a admin of. Requires authentication.",
+                "summary": "List External Organizations",
+                "description": "List external organizations.",
                 "operationId": "list",
-                "responses": {
-                    "200": {
-                        "description": "Successful Response",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/ListResource_Repository_"
-                                }
-                            }
-                        }
-                    }
-                },
                 "security": [
                     {
-                        "OpenIdConnect": []
-                    },
-                    {
-                        "HTTPBearer": []
-                    }
-                ],
-                "x-polar-allowed-subjects": [
-                    "User"
-                ]
-            }
-        },
-        "/v1/repositories/search": {
-            "get": {
-                "tags": [
-                    "repositories"
-                ],
-                "summary": "Search repositories",
-                "description": "Search repositories.",
-                "operationId": "search",
-                "security": [
-                    {
-                        "OpenIdConnect": []
+                        "OpenIdConnect": [
+                            "external_organizations:read"
+                        ]
                     },
                     {
                         "HTTPBearer": []
@@ -4505,24 +4398,7 @@
                 ],
                 "parameters": [
                     {
-                        "name": "platform",
-                        "in": "query",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/components/schemas/Platforms"
-                        }
-                    },
-                    {
-                        "name": "organization_name",
-                        "in": "query",
-                        "required": true,
-                        "schema": {
-                            "type": "string",
-                            "title": "Organization Name"
-                        }
-                    },
-                    {
-                        "name": "repository_name",
+                        "name": "name",
                         "in": "query",
                         "required": false,
                         "schema": {
@@ -4534,8 +4410,361 @@
                                     "type": "null"
                                 }
                             ],
-                            "title": "Repository Name"
+                            "description": "Filter by name.",
+                            "title": "Name"
+                        },
+                        "description": "Filter by name."
+                    },
+                    {
+                        "name": "platform",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "$ref": "#/components/schemas/Platforms"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "description": "Filter by platform.",
+                            "title": "Platform"
+                        },
+                        "description": "Filter by platform."
+                    },
+                    {
+                        "name": "organization_id",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string",
+                                    "format": "uuid4",
+                                    "description": "The organization ID.",
+                                    "x-polar-selector-widget": {
+                                        "resourceRoot": "/v1/organizations",
+                                        "resourceName": "Organization",
+                                        "displayProperty": "name"
+                                    }
+                                },
+                                {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "string",
+                                        "format": "uuid4",
+                                        "description": "The organization ID.",
+                                        "x-polar-selector-widget": {
+                                            "resourceRoot": "/v1/organizations",
+                                            "resourceName": "Organization",
+                                            "displayProperty": "name"
+                                        }
+                                    }
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "OrganizationID Filter",
+                            "description": "Filter by organization ID."
+                        },
+                        "description": "Filter by organization ID."
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "exclusiveMinimum": 0,
+                            "description": "Page number, defaults to 1.",
+                            "default": 1,
+                            "title": "Page"
+                        },
+                        "description": "Page number, defaults to 1."
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "exclusiveMinimum": 0,
+                            "description": "Size of a page, defaults to 10. Maximum is 100.",
+                            "default": 10,
+                            "title": "Limit"
+                        },
+                        "description": "Size of a page, defaults to 10. Maximum is 100."
+                    },
+                    {
+                        "name": "sorting",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "string"
+                                    }
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "description": "Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.",
+                            "type": "string",
+                            "enum": [
+                                "created_at",
+                                "-created_at",
+                                "name",
+                                "-name"
+                            ],
+                            "default": [
+                                "-created_at"
+                            ],
+                            "title": "Sorting"
+                        },
+                        "description": "Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order."
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ListResource_ExternalOrganization_"
+                                }
+                            }
                         }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                },
+                "x-polar-allowed-subjects": [
+                    "Anonymous",
+                    "User",
+                    "Organization"
+                ]
+            }
+        },
+        "/v1/repositories/": {
+            "get": {
+                "tags": [
+                    "repositories",
+                    "documented"
+                ],
+                "summary": "List Repositories",
+                "description": "List repositories.",
+                "operationId": "list",
+                "security": [
+                    {
+                        "OpenIdConnect": [
+                            "repositories:read",
+                            "repositories:write"
+                        ]
+                    },
+                    {
+                        "HTTPBearer": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "platform",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "$ref": "#/components/schemas/Platforms"
+                                },
+                                {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/Platforms"
+                                    }
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "Platform Filter",
+                            "description": "Filter by platform."
+                        },
+                        "description": "Filter by platform."
+                    },
+                    {
+                        "name": "name",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "string"
+                                    }
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "RepositoryName Filter",
+                            "description": "Filter by name."
+                        },
+                        "description": "Filter by name."
+                    },
+                    {
+                        "name": "external_organization_name",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "string"
+                                    }
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "ExternalOrganizationName Filter",
+                            "description": "Filter by external organization name."
+                        },
+                        "description": "Filter by external organization name."
+                    },
+                    {
+                        "name": "is_private",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "boolean"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "description": "Filter by private status.",
+                            "title": "Is Private"
+                        },
+                        "description": "Filter by private status."
+                    },
+                    {
+                        "name": "organization_id",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string",
+                                    "format": "uuid4",
+                                    "description": "The organization ID.",
+                                    "x-polar-selector-widget": {
+                                        "resourceRoot": "/v1/organizations",
+                                        "resourceName": "Organization",
+                                        "displayProperty": "name"
+                                    }
+                                },
+                                {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "string",
+                                        "format": "uuid4",
+                                        "description": "The organization ID.",
+                                        "x-polar-selector-widget": {
+                                            "resourceRoot": "/v1/organizations",
+                                            "resourceName": "Organization",
+                                            "displayProperty": "name"
+                                        }
+                                    }
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "OrganizationID Filter",
+                            "description": "Filter by organization ID."
+                        },
+                        "description": "Filter by organization ID."
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "exclusiveMinimum": 0,
+                            "description": "Page number, defaults to 1.",
+                            "default": 1,
+                            "title": "Page"
+                        },
+                        "description": "Page number, defaults to 1."
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "exclusiveMinimum": 0,
+                            "description": "Size of a page, defaults to 10. Maximum is 100.",
+                            "default": 10,
+                            "title": "Limit"
+                        },
+                        "description": "Size of a page, defaults to 10. Maximum is 100."
+                    },
+                    {
+                        "name": "sorting",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "string"
+                                    }
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "description": "Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.",
+                            "type": "string",
+                            "enum": [
+                                "created_at",
+                                "-created_at",
+                                "name",
+                                "-name",
+                                "stars",
+                                "-stars"
+                            ],
+                            "default": [
+                                "-created_at"
+                            ],
+                            "title": "Sorting"
+                        },
+                        "description": "Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order."
                     }
                 ],
                 "responses": {
@@ -4549,9 +4778,6 @@
                             }
                         }
                     },
-                    "404": {
-                        "description": "Not Found"
-                    },
                     "422": {
                         "description": "Validation Error",
                         "content": {
@@ -4564,97 +4790,27 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
+                    "Anonymous",
                     "User",
-                    "Anonymous"
-                ]
-            }
-        },
-        "/v1/repositories/lookup": {
-            "get": {
-                "tags": [
-                    "repositories"
-                ],
-                "summary": "Lookup repositories",
-                "description": "Lookup repositories. Like search but returns at only one repository.",
-                "operationId": "lookup",
-                "security": [
-                    {
-                        "OpenIdConnect": []
-                    },
-                    {
-                        "HTTPBearer": []
-                    }
-                ],
-                "parameters": [
-                    {
-                        "name": "platform",
-                        "in": "query",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/components/schemas/Platforms"
-                        }
-                    },
-                    {
-                        "name": "organization_name",
-                        "in": "query",
-                        "required": true,
-                        "schema": {
-                            "type": "string",
-                            "title": "Organization Name"
-                        }
-                    },
-                    {
-                        "name": "repository_name",
-                        "in": "query",
-                        "required": true,
-                        "schema": {
-                            "type": "string",
-                            "title": "Repository Name"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Successful Response",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/Repository"
-                                }
-                            }
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found"
-                    },
-                    "422": {
-                        "description": "Validation Error",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/HTTPValidationError"
-                                }
-                            }
-                        }
-                    }
-                },
-                "x-polar-allowed-subjects": [
-                    "User",
-                    "Anonymous"
+                    "Organization"
                 ]
             }
         },
         "/v1/repositories/{id}": {
             "get": {
                 "tags": [
-                    "repositories"
+                    "repositories",
+                    "documented"
                 ],
-                "summary": "Get a repository",
-                "description": "Get a repository",
+                "summary": "Get Repository",
+                "description": "Get a repository by ID.",
                 "operationId": "get",
                 "security": [
                     {
-                        "OpenIdConnect": []
+                        "OpenIdConnect": [
+                            "repositories:read",
+                            "repositories:write"
+                        ]
                     },
                     {
                         "HTTPBearer": []
@@ -4667,7 +4823,13 @@
                         "required": true,
                         "schema": {
                             "type": "string",
-                            "format": "uuid",
+                            "format": "uuid4",
+                            "description": "The repository ID.",
+                            "x-polar-selector-widget": {
+                                "resourceRoot": "/v1/repositories",
+                                "resourceName": "Repository",
+                                "displayProperty": "name"
+                            },
                             "title": "Id"
                         }
                     }
@@ -4684,7 +4846,14 @@
                         }
                     },
                     "404": {
-                        "description": "Not Found"
+                        "description": "Repository not found.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ResourceNotFound"
+                                }
+                            }
+                        }
                     },
                     "422": {
                         "description": "Validation Error",
@@ -4698,20 +4867,24 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
+                    "Anonymous",
                     "User",
-                    "Anonymous"
+                    "Organization"
                 ]
             },
             "patch": {
                 "tags": [
-                    "repositories"
+                    "repositories",
+                    "documented"
                 ],
-                "summary": "Update a repository",
-                "description": "Update repository",
+                "summary": "Update Repository",
+                "description": "Update a repository.",
                 "operationId": "update",
                 "security": [
                     {
-                        "OpenIdConnect": []
+                        "OpenIdConnect": [
+                            "repositories:write"
+                        ]
                     },
                     {
                         "HTTPBearer": []
@@ -4724,7 +4897,13 @@
                         "required": true,
                         "schema": {
                             "type": "string",
-                            "format": "uuid",
+                            "format": "uuid4",
+                            "description": "The repository ID.",
+                            "x-polar-selector-widget": {
+                                "resourceRoot": "/v1/repositories",
+                                "resourceName": "Repository",
+                                "displayProperty": "name"
+                            },
                             "title": "Id"
                         }
                     }
@@ -4741,7 +4920,7 @@
                 },
                 "responses": {
                     "200": {
-                        "description": "Successful Response",
+                        "description": "Repository updated.",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -4750,8 +4929,25 @@
                             }
                         }
                     },
+                    "403": {
+                        "description": "You don't have the permission to update this repository.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/NotPermitted"
+                                }
+                            }
+                        }
+                    },
                     "404": {
-                        "description": "Not Found"
+                        "description": "Repository not found.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ResourceNotFound"
+                                }
+                            }
+                        }
                     },
                     "422": {
                         "description": "Validation Error",
@@ -4765,7 +4961,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -4922,8 +5119,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Anonymous"
+                    "Anonymous",
+                    "User"
                 ]
             }
         },
@@ -5243,8 +5440,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Anonymous"
+                    "Anonymous",
+                    "User"
                 ]
             }
         },
@@ -5541,17 +5738,20 @@
                 ]
             }
         },
-        "/v1/issues/search": {
+        "/v1/issues/": {
             "get": {
                 "tags": [
                     "issues"
                 ],
-                "summary": "Search issues",
-                "description": "Search issues.",
-                "operationId": "search",
+                "summary": "List Issues",
+                "description": "List issues.",
+                "operationId": "list",
                 "security": [
                     {
-                        "OpenIdConnect": []
+                        "OpenIdConnect": [
+                            "issues:write",
+                            "issues:read"
+                        ]
                     },
                     {
                         "HTTPBearer": []
@@ -5561,19 +5761,50 @@
                     {
                         "name": "platform",
                         "in": "query",
-                        "required": true,
+                        "required": false,
                         "schema": {
-                            "$ref": "#/components/schemas/Platforms"
-                        }
+                            "anyOf": [
+                                {
+                                    "$ref": "#/components/schemas/Platforms"
+                                },
+                                {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/Platforms"
+                                    }
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "Platform Filter",
+                            "description": "Filter by platform."
+                        },
+                        "description": "Filter by platform."
                     },
                     {
-                        "name": "organization_name",
+                        "name": "external_organization_name",
                         "in": "query",
-                        "required": true,
+                        "required": false,
                         "schema": {
-                            "type": "string",
-                            "title": "Organization Name"
-                        }
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "string"
+                                    }
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "ExternalOrganizationName Filter",
+                            "description": "Filter by external organization name."
+                        },
+                        "description": "Filter by external organization name."
                     },
                     {
                         "name": "repository_name",
@@ -5585,66 +5816,22 @@
                                     "type": "string"
                                 },
                                 {
-                                    "type": "null"
-                                }
-                            ],
-                            "title": "Repository Name"
-                        }
-                    },
-                    {
-                        "name": "sort",
-                        "in": "query",
-                        "required": false,
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/components/schemas/IssueSortBy"
-                                }
-                            ],
-                            "description": "Issue sorting method",
-                            "default": "issues_default",
-                            "title": "Sort"
-                        },
-                        "description": "Issue sorting method"
-                    },
-                    {
-                        "name": "have_pledge",
-                        "in": "query",
-                        "required": false,
-                        "schema": {
-                            "anyOf": [
-                                {
-                                    "type": "boolean"
+                                    "type": "array",
+                                    "items": {
+                                        "type": "string"
+                                    }
                                 },
                                 {
                                     "type": "null"
                                 }
                             ],
-                            "description": "Set to true to only return issues that have a pledge behind them",
-                            "title": "Have Pledge"
+                            "title": "RepositoryName Filter",
+                            "description": "Filter by repository name."
                         },
-                        "description": "Set to true to only return issues that have a pledge behind them"
+                        "description": "Filter by repository name."
                     },
                     {
-                        "name": "have_badge",
-                        "in": "query",
-                        "required": false,
-                        "schema": {
-                            "anyOf": [
-                                {
-                                    "type": "boolean"
-                                },
-                                {
-                                    "type": "null"
-                                }
-                            ],
-                            "description": "Set to true to only return issues that have the Polar badge in the issue description",
-                            "title": "Have Badge"
-                        },
-                        "description": "Set to true to only return issues that have the Polar badge in the issue description"
-                    },
-                    {
-                        "name": "github_milestone_number",
+                        "name": "number",
                         "in": "query",
                         "required": false,
                         "schema": {
@@ -5653,13 +5840,138 @@
                                     "type": "integer"
                                 },
                                 {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "integer"
+                                    }
+                                },
+                                {
                                     "type": "null"
                                 }
                             ],
-                            "description": "Filter to only return issues connected to this GitHub milestone.",
-                            "title": "Github Milestone Number"
+                            "title": "IssueNumber Filter",
+                            "description": "Filter by issue number."
                         },
-                        "description": "Filter to only return issues connected to this GitHub milestone."
+                        "description": "Filter by issue number."
+                    },
+                    {
+                        "name": "organization_id",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string",
+                                    "format": "uuid4",
+                                    "description": "The organization ID.",
+                                    "x-polar-selector-widget": {
+                                        "resourceRoot": "/v1/organizations",
+                                        "resourceName": "Organization",
+                                        "displayProperty": "name"
+                                    }
+                                },
+                                {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "string",
+                                        "format": "uuid4",
+                                        "description": "The organization ID.",
+                                        "x-polar-selector-widget": {
+                                            "resourceRoot": "/v1/organizations",
+                                            "resourceName": "Organization",
+                                            "displayProperty": "name"
+                                        }
+                                    }
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "OrganizationID Filter",
+                            "description": "Filter by organization ID."
+                        },
+                        "description": "Filter by organization ID."
+                    },
+                    {
+                        "name": "is_badged",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "boolean"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "description": "Filter by badged status.",
+                            "title": "Is Badged"
+                        },
+                        "description": "Filter by badged status."
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "exclusiveMinimum": 0,
+                            "description": "Page number, defaults to 1.",
+                            "default": 1,
+                            "title": "Page"
+                        },
+                        "description": "Page number, defaults to 1."
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "exclusiveMinimum": 0,
+                            "description": "Size of a page, defaults to 10. Maximum is 100.",
+                            "default": 10,
+                            "title": "Limit"
+                        },
+                        "description": "Size of a page, defaults to 10. Maximum is 100."
+                    },
+                    {
+                        "name": "sorting",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "string"
+                                    }
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "description": "Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.",
+                            "type": "string",
+                            "enum": [
+                                "created_at",
+                                "-created_at",
+                                "modified_at",
+                                "-modified_at",
+                                "engagement",
+                                "-engagement",
+                                "positive_reactions",
+                                "-positive_reactions",
+                                "funding_goal",
+                                "-funding_goal"
+                            ],
+                            "default": [
+                                "-modified_at"
+                            ],
+                            "title": "Sorting"
+                        },
+                        "description": "Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order."
                     }
                 ],
                 "responses": {
@@ -5688,8 +6000,9 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
+                    "Anonymous",
                     "User",
-                    "Anonymous"
+                    "Organization"
                 ]
             }
         },
@@ -5754,8 +6067,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Anonymous"
+                    "Anonymous",
+                    "User"
                 ]
             }
         },
@@ -5807,8 +6120,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Anonymous"
+                    "Anonymous",
+                    "User"
                 ]
             }
         },
@@ -5895,8 +6208,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Anonymous"
+                    "Anonymous",
+                    "User"
                 ]
             },
             "post": {
@@ -6282,42 +6595,29 @@
                 ],
                 "parameters": [
                     {
-                        "name": "platform",
-                        "in": "query",
-                        "required": false,
-                        "schema": {
-                            "anyOf": [
-                                {
-                                    "$ref": "#/components/schemas/Platforms"
-                                },
-                                {
-                                    "type": "null"
-                                }
-                            ],
-                            "title": "Platform"
-                        }
-                    },
-                    {
-                        "name": "organization_name",
+                        "name": "organization_id",
                         "in": "query",
                         "required": false,
                         "schema": {
                             "anyOf": [
                                 {
                                     "type": "string",
-                                    "minLength": 1
+                                    "format": "uuid4",
+                                    "description": "The organization ID.",
+                                    "x-polar-selector-widget": {
+                                        "resourceRoot": "/v1/organizations",
+                                        "resourceName": "Organization",
+                                        "displayProperty": "name"
+                                    }
                                 },
                                 {
                                     "type": "null"
                                 }
                             ],
-                            "description": "Search pledges in the organization with this name. Requires platform to be set.",
-                            "examples": [
-                                "my-org"
-                            ],
-                            "title": "Organization Name"
+                            "description": "Search pledges to this organization",
+                            "title": "Organization Id"
                         },
-                        "description": "Search pledges in the organization with this name. Requires platform to be set."
+                        "description": "Search pledges to this organization"
                     },
                     {
                         "name": "repository_name",
@@ -6422,8 +6722,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Anonymous"
+                    "Anonymous",
+                    "User"
                 ]
             }
         },
@@ -6478,8 +6778,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Anonymous"
+                    "Anonymous",
+                    "User"
                 ]
             }
         },
@@ -6644,8 +6944,8 @@
                     }
                 ],
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Anonymous"
+                    "Anonymous",
+                    "User"
                 ]
             }
         },
@@ -6817,8 +7117,8 @@
                     }
                 ],
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Anonymous"
+                    "Anonymous",
+                    "User"
                 ]
             }
         },
@@ -6881,8 +7181,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Anonymous"
+                    "Anonymous",
+                    "User"
                 ]
             }
         },
@@ -6952,10 +7252,11 @@
         "/v1/organizations/": {
             "get": {
                 "tags": [
-                    "organizations"
+                    "organizations",
+                    "documented"
                 ],
-                "summary": "List organizations",
-                "description": "List organizations that the authenticated user is a member of. Requires authentication.",
+                "summary": "List Organizations",
+                "description": "List organizations.",
                 "operationId": "list",
                 "security": [
                     {
@@ -6970,7 +7271,7 @@
                 ],
                 "parameters": [
                     {
-                        "name": "name",
+                        "name": "slug",
                         "in": "query",
                         "required": false,
                         "schema": {
@@ -6982,22 +7283,85 @@
                                     "type": "null"
                                 }
                             ],
-                            "description": "Filter organizations by name (one item in case of match)",
-                            "title": "Name"
+                            "description": "Filter by slug.",
+                            "title": "Slug"
                         },
-                        "description": "Filter organizations by name (one item in case of match)"
+                        "description": "Filter by slug."
                     },
                     {
-                        "name": "is_admin_only",
+                        "name": "is_member",
                         "in": "query",
                         "required": false,
                         "schema": {
-                            "type": "boolean",
-                            "description": "Filter organizations to include only the ones the user is an admin of.",
-                            "default": true,
-                            "title": "Is Admin Only"
+                            "anyOf": [
+                                {
+                                    "type": "boolean"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "description": "Filter by membership.If `true`, only organizations the user is a member of are returned.If `false`, only organizations the user is not a member of are returned.",
+                            "title": "Is Member"
                         },
-                        "description": "Filter organizations to include only the ones the user is an admin of."
+                        "description": "Filter by membership.If `true`, only organizations the user is a member of are returned.If `false`, only organizations the user is not a member of are returned."
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "exclusiveMinimum": 0,
+                            "description": "Page number, defaults to 1.",
+                            "default": 1,
+                            "title": "Page"
+                        },
+                        "description": "Page number, defaults to 1."
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "exclusiveMinimum": 0,
+                            "description": "Size of a page, defaults to 10. Maximum is 100.",
+                            "default": 10,
+                            "title": "Limit"
+                        },
+                        "description": "Size of a page, defaults to 10. Maximum is 100."
+                    },
+                    {
+                        "name": "sorting",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "string"
+                                    }
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "description": "Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.",
+                            "type": "string",
+                            "enum": [
+                                "created_at",
+                                "-created_at",
+                                "name",
+                                "-name"
+                            ],
+                            "default": [
+                                "created_at"
+                            ],
+                            "title": "Sorting"
+                        },
+                        "description": "Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order."
                     }
                 ],
                 "responses": {
@@ -7026,145 +7390,38 @@
                     "User",
                     "Organization"
                 ]
-            }
-        },
-        "/v1/organizations/search": {
-            "get": {
+            },
+            "post": {
                 "tags": [
-                    "organizations"
+                    "organizations",
+                    "documented"
                 ],
-                "summary": "Search organizations",
-                "description": "Search organizations.",
-                "operationId": "search",
+                "summary": "Create Organization",
+                "description": "Create an organization.",
+                "operationId": "create",
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "organizations:write",
-                            "organizations:read"
+                            "organizations:write"
                         ]
                     },
                     {
                         "HTTPBearer": []
                     }
                 ],
-                "parameters": [
-                    {
-                        "name": "platform",
-                        "in": "query",
-                        "required": false,
-                        "schema": {
-                            "anyOf": [
-                                {
-                                    "$ref": "#/components/schemas/Platforms"
-                                },
-                                {
-                                    "type": "null"
-                                }
-                            ],
-                            "title": "Platform"
-                        }
-                    },
-                    {
-                        "name": "organization_name",
-                        "in": "query",
-                        "required": false,
-                        "schema": {
-                            "anyOf": [
-                                {
-                                    "type": "string"
-                                },
-                                {
-                                    "type": "null"
-                                }
-                            ],
-                            "title": "Organization Name"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Successful Response",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/ListResource_Organization_"
-                                }
-                            }
-                        }
-                    },
-                    "422": {
-                        "description": "Validation Error",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/HTTPValidationError"
-                                }
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/OrganizationCreate"
                             }
                         }
                     }
                 },
-                "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
-                ]
-            }
-        },
-        "/v1/organizations/lookup": {
-            "get": {
-                "tags": [
-                    "organizations"
-                ],
-                "summary": "Lookup organization",
-                "description": "Lookup a single organization.",
-                "operationId": "lookup",
-                "security": [
-                    {
-                        "OpenIdConnect": [
-                            "organizations:write",
-                            "organizations:read"
-                        ]
-                    },
-                    {
-                        "HTTPBearer": []
-                    }
-                ],
-                "parameters": [
-                    {
-                        "name": "platform",
-                        "in": "query",
-                        "required": false,
-                        "schema": {
-                            "anyOf": [
-                                {
-                                    "$ref": "#/components/schemas/Platforms"
-                                },
-                                {
-                                    "type": "null"
-                                }
-                            ],
-                            "title": "Platform"
-                        }
-                    },
-                    {
-                        "name": "organization_name",
-                        "in": "query",
-                        "required": false,
-                        "schema": {
-                            "anyOf": [
-                                {
-                                    "type": "string"
-                                },
-                                {
-                                    "type": "null"
-                                }
-                            ],
-                            "title": "Organization Name"
-                        }
-                    }
-                ],
                 "responses": {
-                    "200": {
-                        "description": "Successful Response",
+                    "201": {
+                        "description": "Organization created.",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -7173,9 +7430,6 @@
                             }
                         }
                     },
-                    "404": {
-                        "description": "Not Found"
-                    },
                     "422": {
                         "description": "Validation Error",
                         "content": {
@@ -7188,18 +7442,18 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "User"
                 ]
             }
         },
         "/v1/organizations/{id}": {
             "get": {
                 "tags": [
-                    "organizations"
+                    "organizations",
+                    "documented"
                 ],
-                "summary": "Get organization",
-                "description": "Get a organization by ID",
+                "summary": "Get Organization",
+                "description": "Get an organization by ID.",
                 "operationId": "get",
                 "security": [
                     {
@@ -7219,7 +7473,13 @@
                         "required": true,
                         "schema": {
                             "type": "string",
-                            "format": "uuid",
+                            "format": "uuid4",
+                            "description": "The organization ID.",
+                            "x-polar-selector-widget": {
+                                "resourceRoot": "/v1/organizations",
+                                "resourceName": "Organization",
+                                "displayProperty": "name"
+                            },
                             "title": "Id"
                         }
                     }
@@ -7236,7 +7496,14 @@
                         }
                     },
                     "404": {
-                        "description": "Not Found"
+                        "description": "Organization not found.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ResourceNotFound"
+                                }
+                            }
+                        }
                     },
                     "422": {
                         "description": "Validation Error",
@@ -7256,10 +7523,11 @@
             },
             "patch": {
                 "tags": [
-                    "organizations"
+                    "organizations",
+                    "documented"
                 ],
-                "summary": "Update an organization",
-                "description": "Update organization",
+                "summary": "Update Organization",
+                "description": "Update an organization.",
                 "operationId": "update",
                 "security": [
                     {
@@ -7278,7 +7546,13 @@
                         "required": true,
                         "schema": {
                             "type": "string",
-                            "format": "uuid",
+                            "format": "uuid4",
+                            "description": "The organization ID.",
+                            "x-polar-selector-widget": {
+                                "resourceRoot": "/v1/organizations",
+                                "resourceName": "Organization",
+                                "displayProperty": "name"
+                            },
                             "title": "Id"
                         }
                     }
@@ -7295,7 +7569,7 @@
                 },
                 "responses": {
                     "200": {
-                        "description": "Successful Response",
+                        "description": "Organization updated.",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -7304,8 +7578,25 @@
                             }
                         }
                     },
+                    "403": {
+                        "description": "You don't have the permission to update this organization.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/NotPermitted"
+                                }
+                            }
+                        }
+                    },
                     "404": {
-                        "description": "Not Found"
+                        "description": "Organization not found.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ResourceNotFound"
+                                }
+                            }
+                        }
                     },
                     "422": {
                         "description": "Validation Error",
@@ -7327,7 +7618,8 @@
         "/v1/organizations/{id}/customers": {
             "get": {
                 "tags": [
-                    "organizations"
+                    "organizations",
+                    "documented"
                 ],
                 "summary": "List Organization Customers",
                 "description": "List organization customers.",
@@ -7372,10 +7664,10 @@
                             },
                             "description": "Filter by the type of purchase the customer made.",
                             "default": [
+                                "order",
                                 "paid_subscription",
                                 "donation",
-                                "free_subscription",
-                                "order"
+                                "free_subscription"
                             ],
                             "title": "Customer Types"
                         },
@@ -7447,12 +7739,96 @@
             }
         },
         "/v1/organizations/{id}/account": {
+            "get": {
+                "tags": [
+                    "organizations",
+                    "documented"
+                ],
+                "summary": "Get Organization Account",
+                "description": "Get the account for an organization.",
+                "operationId": "get_account",
+                "security": [
+                    {
+                        "OpenIdConnect": [
+                            "organizations:write"
+                        ]
+                    },
+                    {
+                        "HTTPBearer": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid4",
+                            "description": "The organization ID.",
+                            "x-polar-selector-widget": {
+                                "resourceRoot": "/v1/organizations",
+                                "resourceName": "Organization",
+                                "displayProperty": "name"
+                            },
+                            "title": "Id"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Account"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "You don't have the permission to update this organization.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/NotPermitted"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Organization not found or account not set.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ResourceNotFound"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                },
+                "x-polar-allowed-subjects": [
+                    "User",
+                    "Organization"
+                ]
+            },
             "patch": {
                 "tags": [
-                    "organizations"
+                    "organizations",
+                    "documented"
                 ],
-                "summary": "Set organization organization",
-                "description": "Set organization account",
+                "summary": "Set Organization Account",
+                "description": "Set the account for an organization.",
                 "operationId": "set_account",
                 "security": [
                     {
@@ -7471,7 +7847,13 @@
                         "required": true,
                         "schema": {
                             "type": "string",
-                            "format": "uuid",
+                            "format": "uuid4",
+                            "description": "The organization ID.",
+                            "x-polar-selector-widget": {
+                                "resourceRoot": "/v1/organizations",
+                                "resourceName": "Organization",
+                                "displayProperty": "name"
+                            },
                             "title": "Id"
                         }
                     }
@@ -7488,7 +7870,7 @@
                 },
                 "responses": {
                     "200": {
-                        "description": "Successful Response",
+                        "description": "Organization account set.",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -7497,8 +7879,25 @@
                             }
                         }
                     },
+                    "403": {
+                        "description": "You don't have the permission to update this organization.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/NotPermitted"
+                                }
+                            }
+                        }
+                    },
                     "404": {
-                        "description": "Not Found"
+                        "description": "Organization not found.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ResourceNotFound"
+                                }
+                            }
+                        }
                     },
                     "422": {
                         "description": "Validation Error",
@@ -7520,7 +7919,8 @@
         "/v1/organizations/{id}/members": {
             "get": {
                 "tags": [
-                    "organizations"
+                    "organizations",
+                    "documented"
                 ],
                 "summary": "List members in an organization",
                 "description": "List members of an organization. Requires authentication.",
@@ -7585,7 +7985,8 @@
         "/v1/organizations/{id}/stripe_customer_portal": {
             "post": {
                 "tags": [
-                    "organizations"
+                    "organizations",
+                    "documented"
                 ],
                 "summary": "Create Stripe Customer Portal",
                 "description": "Start a new Stripe Customer session for a organization.",
@@ -7640,68 +8041,11 @@
                 ]
             }
         },
-        "/v1/organizations/{id}/credit": {
-            "get": {
-                "tags": [
-                    "organizations"
-                ],
-                "summary": "Get Credits",
-                "description": "Get credits for a organization",
-                "operationId": "get_credits",
-                "security": [
-                    {
-                        "OpenIdConnect": [
-                            "organizations:write"
-                        ]
-                    },
-                    {
-                        "HTTPBearer": []
-                    }
-                ],
-                "parameters": [
-                    {
-                        "name": "id",
-                        "in": "path",
-                        "required": true,
-                        "schema": {
-                            "type": "string",
-                            "format": "uuid",
-                            "title": "Id"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Successful Response",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/CreditBalance"
-                                }
-                            }
-                        }
-                    },
-                    "422": {
-                        "description": "Validation Error",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/HTTPValidationError"
-                                }
-                            }
-                        }
-                    }
-                },
-                "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
-                ]
-            }
-        },
         "/v1/organizations/{id}/badge_settings": {
             "get": {
                 "tags": [
-                    "organizations"
+                    "organizations",
+                    "documented"
                 ],
                 "summary": "Get badge settings (Internal API)",
                 "operationId": "get_badge_settings",
@@ -7756,7 +8100,8 @@
             },
             "post": {
                 "tags": [
-                    "organizations"
+                    "organizations",
+                    "documented"
                 ],
                 "summary": "Update badge settings (Internal API)",
                 "operationId": "update_badge_settings",
@@ -8441,9 +8786,9 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
+                    "Anonymous",
                     "User",
-                    "Organization",
-                    "Anonymous"
+                    "Organization"
                 ]
             },
             "post": {
@@ -8574,9 +8919,9 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
+                    "Anonymous",
                     "User",
-                    "Organization",
-                    "Anonymous"
+                    "Organization"
                 ]
             },
             "patch": {
@@ -9496,37 +9841,20 @@
                 ],
                 "parameters": [
                     {
-                        "name": "organization_name",
+                        "name": "organization_id",
                         "in": "query",
                         "required": true,
                         "schema": {
                             "type": "string",
-                            "minLength": 1,
-                            "description": "Filter by organization name. Required unless you are authenticated as an organization.",
-                            "examples": [
-                                "my-org"
-                            ],
-                            "title": "Organization Name"
-                        },
-                        "description": "Filter by organization name. Required unless you are authenticated as an organization."
-                    },
-                    {
-                        "name": "platform",
-                        "in": "query",
-                        "required": true,
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/components/schemas/Platforms"
-                                }
-                            ],
-                            "description": "Platform linked to `organization_name`. Required if `organization_name` is set. Currently, only `github` is supported.",
-                            "examples": [
-                                "github"
-                            ],
-                            "title": "Platform"
-                        },
-                        "description": "Platform linked to `organization_name`. Required if `organization_name` is set. Currently, only `github` is supported."
+                            "format": "uuid4",
+                            "description": "The organization ID.",
+                            "x-polar-selector-widget": {
+                                "resourceRoot": "/v1/organizations",
+                                "resourceName": "Organization",
+                                "displayProperty": "name"
+                            },
+                            "title": "Organization Id"
+                        }
                     }
                 ],
                 "responses": {
@@ -10016,6 +10344,29 @@
                 ],
                 "parameters": [
                     {
+                        "name": "organization_id",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string",
+                                    "format": "uuid4",
+                                    "description": "The organization ID.",
+                                    "x-polar-selector-widget": {
+                                        "resourceRoot": "/v1/organizations",
+                                        "resourceName": "Organization",
+                                        "displayProperty": "name"
+                                    }
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "Organization Id"
+                        }
+                    },
+                    {
                         "name": "article_id",
                         "in": "query",
                         "required": false,
@@ -10075,49 +10426,6 @@
                             "default": false,
                             "title": "Group By Article"
                         }
-                    },
-                    {
-                        "name": "organization_name",
-                        "in": "query",
-                        "required": false,
-                        "schema": {
-                            "anyOf": [
-                                {
-                                    "type": "string",
-                                    "minLength": 1
-                                },
-                                {
-                                    "type": "null"
-                                }
-                            ],
-                            "description": "Filter by organization name. Required unless you are authenticated as an organization.",
-                            "examples": [
-                                "my-org"
-                            ],
-                            "title": "Organization Name"
-                        },
-                        "description": "Filter by organization name. Required unless you are authenticated as an organization."
-                    },
-                    {
-                        "name": "platform",
-                        "in": "query",
-                        "required": false,
-                        "schema": {
-                            "anyOf": [
-                                {
-                                    "$ref": "#/components/schemas/Platforms"
-                                },
-                                {
-                                    "type": "null"
-                                }
-                            ],
-                            "description": "Platform linked to `organization_name`. Required if `organization_name` is set. Currently, only `github` is supported.",
-                            "examples": [
-                                "github"
-                            ],
-                            "title": "Platform"
-                        },
-                        "description": "Platform linked to `organization_name`. Required if `organization_name` is set. Currently, only `github` is supported."
                     }
                 ],
                 "responses": {
@@ -10164,6 +10472,16 @@
                 ],
                 "parameters": [
                     {
+                        "name": "organization_id",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid",
+                            "title": "Organization Id"
+                        }
+                    },
+                    {
                         "name": "start_date",
                         "in": "query",
                         "required": true,
@@ -10208,39 +10526,6 @@
                             "title": "Limit"
                         },
                         "description": "Size of a page, defaults to 10. Maximum is 100."
-                    },
-                    {
-                        "name": "organization_name",
-                        "in": "query",
-                        "required": true,
-                        "schema": {
-                            "type": "string",
-                            "minLength": 1,
-                            "description": "Filter by organization name. Required unless you are authenticated as an organization.",
-                            "examples": [
-                                "my-org"
-                            ],
-                            "title": "Organization Name"
-                        },
-                        "description": "Filter by organization name. Required unless you are authenticated as an organization."
-                    },
-                    {
-                        "name": "platform",
-                        "in": "query",
-                        "required": true,
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/components/schemas/Platforms"
-                                }
-                            ],
-                            "description": "Platform linked to `organization_name`. Required if `organization_name` is set. Currently, only `github` is supported.",
-                            "examples": [
-                                "github"
-                            ],
-                            "title": "Platform"
-                        },
-                        "description": "Platform linked to `organization_name`. Required if `organization_name` is set. Currently, only `github` is supported."
                     }
                 ],
                 "responses": {
@@ -10448,8 +10733,8 @@
                     }
                 ],
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Anonymous"
+                    "Anonymous",
+                    "User"
                 ]
             }
         },
@@ -10512,8 +10797,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Anonymous"
+                    "Anonymous",
+                    "User"
                 ]
             }
         },
@@ -10614,6 +10899,22 @@
                 "operationId": "donations_public_search",
                 "parameters": [
                     {
+                        "name": "organization_id",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid4",
+                            "description": "The organization ID.",
+                            "x-polar-selector-widget": {
+                                "resourceRoot": "/v1/organizations",
+                                "resourceName": "Organization",
+                                "displayProperty": "name"
+                            },
+                            "title": "Organization Id"
+                        }
+                    },
+                    {
                         "name": "page",
                         "in": "query",
                         "required": false,
@@ -10638,39 +10939,6 @@
                             "title": "Limit"
                         },
                         "description": "Size of a page, defaults to 10. Maximum is 100."
-                    },
-                    {
-                        "name": "organization_name",
-                        "in": "query",
-                        "required": true,
-                        "schema": {
-                            "type": "string",
-                            "minLength": 1,
-                            "description": "Filter by organization name. Required unless you are authenticated as an organization.",
-                            "examples": [
-                                "my-org"
-                            ],
-                            "title": "Organization Name"
-                        },
-                        "description": "Filter by organization name. Required unless you are authenticated as an organization."
-                    },
-                    {
-                        "name": "platform",
-                        "in": "query",
-                        "required": true,
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/components/schemas/Platforms"
-                                }
-                            ],
-                            "description": "Platform linked to `organization_name`. Required if `organization_name` is set. Currently, only `github` is supported.",
-                            "examples": [
-                                "github"
-                            ],
-                            "title": "Platform"
-                        },
-                        "description": "Platform linked to `organization_name`. Required if `organization_name` is set. Currently, only `github` is supported."
                     },
                     {
                         "name": "sorting",
@@ -10901,8 +11169,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Anonymous"
+                    "Anonymous",
+                    "User"
                 ]
             },
             "put": {
@@ -10963,8 +11231,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Anonymous"
+                    "Anonymous",
+                    "User"
                 ]
             },
             "delete": {
@@ -11015,8 +11283,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Anonymous"
+                    "Anonymous",
+                    "User"
                 ]
             }
         },
@@ -11064,8 +11332,8 @@
                     }
                 ],
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Anonymous"
+                    "Anonymous",
+                    "User"
                 ]
             }
         },
@@ -11464,8 +11732,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "benefits:write",
-                            "benefits:read"
+                            "benefits:read",
+                            "benefits:write"
                         ]
                     },
                     {
@@ -11704,8 +11972,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "benefits:write",
-                            "benefits:read"
+                            "benefits:read",
+                            "benefits:write"
                         ]
                     },
                     {
@@ -12009,8 +12277,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "benefits:write",
-                            "benefits:read"
+                            "benefits:read",
+                            "benefits:write"
                         ]
                     },
                     {
@@ -12165,8 +12433,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "webhooks:write",
-                            "webhooks:read"
+                            "webhooks:read",
+                            "webhooks:write"
                         ]
                     },
                     {
@@ -12338,8 +12606,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "webhooks:write",
-                            "webhooks:read"
+                            "webhooks:read",
+                            "webhooks:write"
                         ]
                     },
                     {
@@ -12568,8 +12836,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "webhooks:write",
-                            "webhooks:read"
+                            "webhooks:read",
+                            "webhooks:write"
                         ]
                     },
                     {
@@ -12732,8 +13000,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "products:write",
-                            "products:read"
+                            "products:read",
+                            "products:write"
                         ]
                     },
                     {
@@ -12927,9 +13195,9 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
+                    "Anonymous",
                     "User",
-                    "Organization",
-                    "Anonymous"
+                    "Organization"
                 ]
             },
             "post": {
@@ -13010,8 +13278,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "products:write",
-                            "products:read"
+                            "products:read",
+                            "products:write"
                         ]
                     },
                     {
@@ -13069,9 +13337,9 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
+                    "Anonymous",
                     "User",
-                    "Organization",
-                    "Anonymous"
+                    "Organization"
                 ]
             },
             "patch": {
@@ -13696,8 +13964,8 @@
                     }
                 ],
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Anonymous"
+                    "Anonymous",
+                    "User"
                 ]
             }
         },
@@ -15710,29 +15978,20 @@
                         "format": "uuid4",
                         "title": "Id"
                     },
-                    "platform": {
-                        "$ref": "#/components/schemas/Platforms"
-                    },
-                    "name": {
+                    "slug": {
                         "type": "string",
-                        "title": "Name"
+                        "title": "Slug"
                     },
                     "avatar_url": {
                         "type": "string",
                         "title": "Avatar Url"
-                    },
-                    "is_personal": {
-                        "type": "boolean",
-                        "title": "Is Personal"
                     }
                 },
                 "type": "object",
                 "required": [
                     "id",
-                    "platform",
-                    "name",
-                    "avatar_url",
-                    "is_personal"
+                    "slug",
+                    "avatar_url"
                 ],
                 "title": "AuthorizeOrganization"
             },
@@ -15881,6 +16140,11 @@
                     "articles:write",
                     "webhooks:read",
                     "webhooks:write",
+                    "external_organizations:read",
+                    "repositories:read",
+                    "repositories:write",
+                    "issues:read",
+                    "issues:write",
                     "user:benefits:read",
                     "user:orders:read",
                     "user:subscriptions:read",
@@ -18595,23 +18859,6 @@
                 ],
                 "title": "CreatePledgePayLater"
             },
-            "CreditBalance": {
-                "properties": {
-                    "amount": {
-                        "allOf": [
-                            {
-                                "$ref": "#/components/schemas/CurrencyAmount"
-                            }
-                        ],
-                        "description": "The customers credit balance. A negative value means that Polar owes this customer money (credit), a positive number means that the customer owes Polar money (debit)."
-                    }
-                },
-                "type": "object",
-                "required": [
-                    "amount"
-                ],
-                "title": "CreditBalance"
-            },
             "CurrencyAmount": {
                 "properties": {
                     "currency": {
@@ -19429,6 +19676,134 @@
                 ],
                 "title": "ExternalGitHubPullRequestReference"
             },
+            "ExternalOrganization": {
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "title": "Id"
+                    },
+                    "platform": {
+                        "$ref": "#/components/schemas/Platforms"
+                    },
+                    "name": {
+                        "type": "string",
+                        "title": "Name"
+                    },
+                    "avatar_url": {
+                        "type": "string",
+                        "title": "Avatar Url"
+                    },
+                    "is_personal": {
+                        "type": "boolean",
+                        "title": "Is Personal"
+                    },
+                    "bio": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Bio"
+                    },
+                    "pretty_name": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Pretty Name"
+                    },
+                    "company": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Company"
+                    },
+                    "blog": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Blog"
+                    },
+                    "location": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Location"
+                    },
+                    "email": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Email"
+                    },
+                    "twitter_username": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Twitter Username"
+                    },
+                    "organization_id": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "uuid4",
+                                "description": "The organization ID.",
+                                "x-polar-selector-widget": {
+                                    "displayProperty": "name",
+                                    "resourceName": "Organization",
+                                    "resourceRoot": "/v1/organizations"
+                                }
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Organization Id"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "id",
+                    "platform",
+                    "name",
+                    "avatar_url",
+                    "is_personal"
+                ],
+                "title": "ExternalOrganization"
+            },
             "FileDownload": {
                 "properties": {
                     "id": {
@@ -19918,23 +20293,26 @@
             },
             "InstallationCreate": {
                 "properties": {
-                    "platform": {
-                        "type": "string",
-                        "enum": [
-                            "github"
-                        ],
-                        "const": "github",
-                        "title": "Platform"
-                    },
-                    "external_id": {
+                    "installation_id": {
                         "type": "integer",
-                        "title": "External Id"
+                        "title": "Installation Id"
+                    },
+                    "organization_id": {
+                        "type": "string",
+                        "format": "uuid4",
+                        "title": "Organization Id",
+                        "description": "The organization ID.",
+                        "x-polar-selector-widget": {
+                            "displayProperty": "name",
+                            "resourceName": "Organization",
+                            "resourceRoot": "/v1/organizations"
+                        }
                     }
                 },
                 "type": "object",
                 "required": [
-                    "platform",
-                    "external_id"
+                    "installation_id",
+                    "organization_id"
                 ],
                 "title": "InstallationCreate"
             },
@@ -20380,6 +20758,26 @@
                     "pagination"
                 ],
                 "title": "ListResource[DownloadableRead]"
+            },
+            "ListResource_ExternalOrganization_": {
+                "properties": {
+                    "items": {
+                        "items": {
+                            "$ref": "#/components/schemas/ExternalOrganization"
+                        },
+                        "type": "array",
+                        "title": "Items",
+                        "default": []
+                    },
+                    "pagination": {
+                        "$ref": "#/components/schemas/Pagination"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "pagination"
+                ],
+                "title": "ListResource[ExternalOrganization]"
             },
             "ListResource_IssueFunding_": {
                 "properties": {
@@ -22276,7 +22674,7 @@
                     "scope": {
                         "type": "string",
                         "title": "Scope",
-                        "default": "openid profile email user:read organizations:read organizations:write products:read products:write benefits:read benefits:write files:read files:write subscriptions:read subscriptions:write orders:read metrics:read articles:read articles:write webhooks:read webhooks:write user:benefits:read user:orders:read user:subscriptions:read user:subscriptions:write user:downloadables:read user:advertisement_campaigns:read user:advertisement_campaigns:write"
+                        "default": "openid profile email user:read organizations:read organizations:write products:read products:write benefits:read benefits:write files:read files:write subscriptions:read subscriptions:write orders:read metrics:read articles:read articles:write webhooks:read webhooks:write external_organizations:read repositories:read repositories:write issues:read issues:write user:benefits:read user:orders:read user:subscriptions:read user:subscriptions:write user:downloadables:read user:advertisement_campaigns:read user:advertisement_campaigns:write"
                     },
                     "client_name": {
                         "type": "string",
@@ -22437,7 +22835,7 @@
                     "scope": {
                         "type": "string",
                         "title": "Scope",
-                        "default": "openid profile email user:read organizations:read organizations:write products:read products:write benefits:read benefits:write files:read files:write subscriptions:read subscriptions:write orders:read metrics:read articles:read articles:write webhooks:read webhooks:write user:benefits:read user:orders:read user:subscriptions:read user:subscriptions:write user:downloadables:read user:advertisement_campaigns:read user:advertisement_campaigns:write"
+                        "default": "openid profile email user:read organizations:read organizations:write products:read products:write benefits:read benefits:write files:read files:write subscriptions:read subscriptions:write orders:read metrics:read articles:read articles:write webhooks:read webhooks:write external_organizations:read repositories:read repositories:write issues:read issues:write user:benefits:read user:orders:read user:subscriptions:read user:subscriptions:write user:downloadables:read user:advertisement_campaigns:read user:advertisement_campaigns:write"
                     },
                     "client_name": {
                         "type": "string",
@@ -22558,7 +22956,7 @@
                     "scope": {
                         "type": "string",
                         "title": "Scope",
-                        "default": "openid profile email user:read organizations:read organizations:write products:read products:write benefits:read benefits:write files:read files:write subscriptions:read subscriptions:write orders:read metrics:read articles:read articles:write webhooks:read webhooks:write user:benefits:read user:orders:read user:subscriptions:read user:subscriptions:write user:downloadables:read user:advertisement_campaigns:read user:advertisement_campaigns:write"
+                        "default": "openid profile email user:read organizations:read organizations:write products:read products:write benefits:read benefits:write files:read files:write subscriptions:read subscriptions:write orders:read metrics:read articles:read articles:write webhooks:read webhooks:write external_organizations:read repositories:read repositories:write issues:read issues:write user:benefits:read user:orders:read user:subscriptions:read user:subscriptions:write user:downloadables:read user:advertisement_campaigns:read user:advertisement_campaigns:write"
                     },
                     "client_name": {
                         "type": "string",
@@ -23266,6 +23664,38 @@
                 ],
                 "title": "OrganizationCheckPermissionsInput"
             },
+            "OrganizationCreate": {
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "title": "Name"
+                    },
+                    "slug": {
+                        "type": "string",
+                        "title": "Slug"
+                    },
+                    "avatar_url": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "maxLength": 2083,
+                                "minLength": 1,
+                                "format": "uri"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Avatar Url"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "name",
+                    "slug"
+                ],
+                "title": "OrganizationCreate"
+            },
             "OrganizationCustomer": {
                 "properties": {
                     "public_name": {
@@ -23362,16 +23792,11 @@
                             }
                         ],
                         "title": "Avatar Url"
-                    },
-                    "is_admin": {
-                        "type": "boolean",
-                        "title": "Is Admin"
                     }
                 },
                 "type": "object",
                 "required": [
-                    "name",
-                    "is_admin"
+                    "name"
                 ],
                 "title": "OrganizationMember"
             },
@@ -23513,6 +23938,31 @@
             },
             "OrganizationUpdate": {
                 "properties": {
+                    "name": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Name"
+                    },
+                    "avatar_url": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "maxLength": 2083,
+                                "minLength": 1,
+                                "format": "uri"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Avatar Url"
+                    },
                     "default_upfront_split_to_contributors": {
                         "anyOf": [
                             {
@@ -25152,7 +25602,7 @@
                 "properties": {
                     "id": {
                         "type": "string",
-                        "format": "uuid",
+                        "format": "uuid4",
                         "title": "Id"
                     },
                     "avatar_url": {
@@ -25227,7 +25677,7 @@
                 "properties": {
                     "id": {
                         "type": "string",
-                        "format": "uuid",
+                        "format": "uuid4",
                         "title": "Id"
                     },
                     "badge_auto_embed": {
@@ -25297,8 +25747,7 @@
                                     "type": "string",
                                     "format": "uuid4"
                                 },
-                                "type": "array",
-                                "maxItems": 3
+                                "type": "array"
                             },
                             {
                                 "type": "null"
@@ -25398,7 +25847,8 @@
                                     "type": "string",
                                     "format": "uuid4"
                                 },
-                                "type": "array"
+                                "type": "array",
+                                "maxItems": 3
                             },
                             {
                                 "type": "null"
@@ -25871,6 +26321,11 @@
                     "articles:write",
                     "webhooks:read",
                     "webhooks:write",
+                    "external_organizations:read",
+                    "repositories:read",
+                    "repositories:write",
+                    "issues:read",
+                    "issues:write",
                     "user:benefits:read",
                     "user:orders:read",
                     "user:subscriptions:read",
@@ -26054,19 +26509,6 @@
                     "type"
                 ],
                 "title": "SummaryPledge"
-            },
-            "SynchronizeMembersResponse": {
-                "properties": {
-                    "status": {
-                        "type": "boolean",
-                        "title": "Status"
-                    }
-                },
-                "type": "object",
-                "required": [
-                    "status"
-                ],
-                "title": "SynchronizeMembersResponse"
             },
             "TeamAdminMemberPledgedNotification": {
                 "properties": {
@@ -26963,6 +27405,59 @@
                 ],
                 "title": "TransactionEmbedded"
             },
+            "TransactionExternalOrganization": {
+                "properties": {
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "title": "Created At",
+                        "description": "Creation timestamp of the object."
+                    },
+                    "modified_at": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "date-time"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Modified At",
+                        "description": "Last modification timestamp of the object."
+                    },
+                    "id": {
+                        "type": "string",
+                        "format": "uuid4",
+                        "title": "Id"
+                    },
+                    "platform": {
+                        "$ref": "#/components/schemas/Platforms"
+                    },
+                    "name": {
+                        "type": "string",
+                        "title": "Name"
+                    },
+                    "avatar_url": {
+                        "type": "string",
+                        "title": "Avatar Url"
+                    },
+                    "is_personal": {
+                        "type": "boolean",
+                        "title": "Is Personal"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "created_at",
+                    "id",
+                    "platform",
+                    "name",
+                    "avatar_url",
+                    "is_personal"
+                ],
+                "title": "TransactionExternalOrganization"
+            },
             "TransactionIssue": {
                 "properties": {
                     "created_at": {
@@ -27011,7 +27506,7 @@
                         "title": "Title"
                     },
                     "organization": {
-                        "$ref": "#/components/schemas/TransactionOrganization"
+                        "$ref": "#/components/schemas/TransactionExternalOrganization"
                     },
                     "repository": {
                         "$ref": "#/components/schemas/TransactionRepository"
@@ -27171,30 +27666,32 @@
                         "format": "uuid4",
                         "title": "Id"
                     },
-                    "platform": {
-                        "$ref": "#/components/schemas/Platforms"
-                    },
                     "name": {
                         "type": "string",
                         "title": "Name"
                     },
-                    "avatar_url": {
+                    "slug": {
                         "type": "string",
-                        "title": "Avatar Url"
+                        "title": "Slug"
                     },
-                    "is_personal": {
-                        "type": "boolean",
-                        "title": "Is Personal"
+                    "avatar_url": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Avatar Url"
                     }
                 },
                 "type": "object",
                 "required": [
                     "created_at",
                     "id",
-                    "platform",
                     "name",
-                    "avatar_url",
-                    "is_personal"
+                    "slug"
                 ],
                 "title": "TransactionOrganization"
             },
@@ -28678,14 +29175,6 @@
                 ],
                 "title": "ValidationError"
             },
-            "Visibility": {
-                "type": "string",
-                "enum": [
-                    "public",
-                    "private"
-                ],
-                "title": "Visibility"
-            },
             "WebhookBenefitCreatedPayload": {
                 "properties": {
                     "type": {
@@ -29767,23 +30256,33 @@
                 "properties": {
                     "id": {
                         "type": "string",
-                        "format": "uuid",
-                        "title": "Id"
-                    },
-                    "platform": {
-                        "$ref": "#/components/schemas/Platforms"
+                        "format": "uuid4",
+                        "title": "Id",
+                        "description": "The organization ID.",
+                        "x-polar-selector-widget": {
+                            "displayProperty": "name",
+                            "resourceName": "Organization",
+                            "resourceRoot": "/v1/organizations"
+                        }
                     },
                     "name": {
                         "type": "string",
                         "title": "Name"
                     },
-                    "avatar_url": {
+                    "slug": {
                         "type": "string",
-                        "title": "Avatar Url"
+                        "title": "Slug"
                     },
-                    "is_personal": {
-                        "type": "boolean",
-                        "title": "Is Personal"
+                    "avatar_url": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Avatar Url"
                     },
                     "bio": {
                         "anyOf": [
@@ -29794,20 +30293,7 @@
                                 "type": "null"
                             }
                         ],
-                        "title": "Bio",
-                        "description": "Public field from GitHub"
-                    },
-                    "pretty_name": {
-                        "anyOf": [
-                            {
-                                "type": "string"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Pretty Name",
-                        "description": "Public field from GitHub"
+                        "title": "Bio"
                     },
                     "company": {
                         "anyOf": [
@@ -29818,8 +30304,7 @@
                                 "type": "null"
                             }
                         ],
-                        "title": "Company",
-                        "description": "Public field from GitHub"
+                        "title": "Company"
                     },
                     "blog": {
                         "anyOf": [
@@ -29830,8 +30315,7 @@
                                 "type": "null"
                             }
                         ],
-                        "title": "Blog",
-                        "description": "Public field from GitHub"
+                        "title": "Blog"
                     },
                     "location": {
                         "anyOf": [
@@ -29842,8 +30326,7 @@
                                 "type": "null"
                             }
                         ],
-                        "title": "Location",
-                        "description": "Public field from GitHub"
+                        "title": "Location"
                     },
                     "email": {
                         "anyOf": [
@@ -29854,8 +30337,7 @@
                                 "type": "null"
                             }
                         ],
-                        "title": "Email",
-                        "description": "Public field from GitHub"
+                        "title": "Email"
                     },
                     "twitter_username": {
                         "anyOf": [
@@ -29866,8 +30348,7 @@
                                 "type": "null"
                             }
                         ],
-                        "title": "Twitter Username",
-                        "description": "Public field from GitHub"
+                        "title": "Twitter Username"
                     },
                     "pledge_minimum_amount": {
                         "type": "integer",
@@ -29887,28 +30368,6 @@
                             }
                         ],
                         "title": "Default Upfront Split To Contributors"
-                    },
-                    "account_id": {
-                        "anyOf": [
-                            {
-                                "type": "string",
-                                "format": "uuid4"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Account Id"
-                    },
-                    "has_app_installed": {
-                        "type": "boolean",
-                        "title": "Has App Installed",
-                        "description": "Whether the organization has the Polar GitHub App installed for repositories or not."
-                    },
-                    "public_page_enabled": {
-                        "type": "boolean",
-                        "title": "Public Page Enabled",
-                        "description": "If this organization has a public Polar page"
                     },
                     "donations_enabled": {
                         "type": "boolean",
@@ -29941,65 +30400,19 @@
                             }
                         ],
                         "description": "Settings for the organization features"
-                    },
-                    "billing_email": {
-                        "anyOf": [
-                            {
-                                "type": "string"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Billing Email",
-                        "description": "Where to send emails about payments for pledegs that this organization/team has made. Only visible for members of the organization"
-                    },
-                    "total_monthly_spending_limit": {
-                        "anyOf": [
-                            {
-                                "type": "integer"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Total Monthly Spending Limit",
-                        "description": "Overall team monthly spending limit, per calendar month. Only visible for members of the organization"
-                    },
-                    "per_user_monthly_spending_limit": {
-                        "anyOf": [
-                            {
-                                "type": "integer"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Per User Monthly Spending Limit",
-                        "description": "Team members monthly spending limit, per calendar month. Only visible for members of the organization"
-                    },
-                    "is_teams_enabled": {
-                        "type": "boolean",
-                        "title": "Is Teams Enabled",
-                        "description": "Feature flag for if this organization is a team."
                     }
                 },
                 "type": "object",
                 "required": [
                     "id",
-                    "platform",
                     "name",
-                    "avatar_url",
-                    "is_personal",
+                    "slug",
                     "pledge_minimum_amount",
                     "pledge_badge_show_amount",
-                    "has_app_installed",
-                    "public_page_enabled",
                     "donations_enabled",
                     "public_donation_timestamps",
                     "profile_settings",
-                    "feature_settings",
-                    "is_teams_enabled"
+                    "feature_settings"
                 ],
                 "title": "Organization"
             },
@@ -30427,8 +30840,9 @@
                     "platform": {
                         "$ref": "#/components/schemas/Platforms"
                     },
-                    "visibility": {
-                        "$ref": "#/components/schemas/Visibility"
+                    "is_private": {
+                        "type": "boolean",
+                        "title": "Is Private"
                     },
                     "name": {
                         "type": "string",
@@ -30496,14 +30910,14 @@
                         "description": "Settings for the repository profile"
                     },
                     "organization": {
-                        "$ref": "#/components/schemas/Organization"
+                        "$ref": "#/components/schemas/ExternalOrganization"
                     }
                 },
                 "type": "object",
                 "required": [
                     "id",
                     "platform",
-                    "visibility",
+                    "is_private",
                     "name",
                     "profile_settings",
                     "organization"

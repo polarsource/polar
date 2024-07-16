@@ -27,7 +27,6 @@ import type {
   ListResourceUserOrder,
   ListResourceUserSubscription,
   OrderIDFilter,
-  Organization,
   OrganizationIDFilter,
   ProductIDFilter,
   ProductPriceTypeFilter,
@@ -1017,40 +1016,6 @@ export class UsersApi extends runtime.BaseAPI {
      */
     async listSubscriptions(requestParameters: UsersApiListSubscriptionsRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ListResourceUserSubscription> {
         const response = await this.listSubscriptionsRaw(requestParameters, initOverrides);
-        return await response.value();
-    }
-
-    /**
-     * Maintainer Upgrade
-     */
-    async maintainerUpgradeRaw(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Organization>> {
-        const queryParameters: any = {};
-
-        const headerParameters: runtime.HTTPHeaders = {};
-
-        if (this.configuration && this.configuration.accessToken) {
-            const token = this.configuration.accessToken;
-            const tokenString = await token("HTTPBearer", []);
-
-            if (tokenString) {
-                headerParameters["Authorization"] = `Bearer ${tokenString}`;
-            }
-        }
-        const response = await this.request({
-            path: `/v1/users/me/upgrade`,
-            method: 'POST',
-            headers: headerParameters,
-            query: queryParameters,
-        }, initOverrides);
-
-        return new runtime.JSONApiResponse(response);
-    }
-
-    /**
-     * Maintainer Upgrade
-     */
-    async maintainerUpgrade(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Organization> {
-        const response = await this.maintainerUpgradeRaw(initOverrides);
         return await response.value();
     }
 

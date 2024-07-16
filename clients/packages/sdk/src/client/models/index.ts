@@ -1428,28 +1428,16 @@ export interface AuthorizeOrganization {
     id: string;
     /**
      * 
-     * @type {Platforms}
-     * @memberof AuthorizeOrganization
-     */
-    platform: Platforms;
-    /**
-     * 
      * @type {string}
      * @memberof AuthorizeOrganization
      */
-    name: string;
+    slug: string;
     /**
      * 
      * @type {string}
      * @memberof AuthorizeOrganization
      */
     avatar_url: string;
-    /**
-     * 
-     * @type {boolean}
-     * @memberof AuthorizeOrganization
-     */
-    is_personal: boolean;
 }
 /**
  * 
@@ -1596,6 +1584,11 @@ export const AvailableScope = {
     ARTICLESWRITE: 'articles:write',
     WEBHOOKSREAD: 'webhooks:read',
     WEBHOOKSWRITE: 'webhooks:write',
+    EXTERNAL_ORGANIZATIONSREAD: 'external_organizations:read',
+    REPOSITORIESREAD: 'repositories:read',
+    REPOSITORIESWRITE: 'repositories:write',
+    ISSUESREAD: 'issues:read',
+    ISSUESWRITE: 'issues:write',
     USERBENEFITSREAD: 'user:benefits:read',
     USERORDERSREAD: 'user:orders:read',
     USERSUBSCRIPTIONSREAD: 'user:subscriptions:read',
@@ -4003,19 +3996,6 @@ export interface CreatePledgePayLater {
 /**
  * 
  * @export
- * @interface CreditBalance
- */
-export interface CreditBalance {
-    /**
-     * The customers credit balance. A negative value means that Polar owes this customer money (credit), a positive number means that the customer owes Polar money (debit).
-     * @type {CurrencyAmount}
-     * @memberof CreditBalance
-     */
-    amount: CurrencyAmount;
-}
-/**
- * 
- * @export
  * @interface CurrencyAmount
  */
 export interface CurrencyAmount {
@@ -4783,6 +4763,98 @@ export interface ExternalGitHubPullRequestReference {
     state: string;
 }
 /**
+ * 
+ * @export
+ * @interface ExternalOrganization
+ */
+export interface ExternalOrganization {
+    /**
+     * 
+     * @type {string}
+     * @memberof ExternalOrganization
+     */
+    id: string;
+    /**
+     * 
+     * @type {Platforms}
+     * @memberof ExternalOrganization
+     */
+    platform: Platforms;
+    /**
+     * 
+     * @type {string}
+     * @memberof ExternalOrganization
+     */
+    name: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof ExternalOrganization
+     */
+    avatar_url: string;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof ExternalOrganization
+     */
+    is_personal: boolean;
+    /**
+     * 
+     * @type {string}
+     * @memberof ExternalOrganization
+     */
+    bio?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof ExternalOrganization
+     */
+    pretty_name?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof ExternalOrganization
+     */
+    company?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof ExternalOrganization
+     */
+    blog?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof ExternalOrganization
+     */
+    location?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof ExternalOrganization
+     */
+    email?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof ExternalOrganization
+     */
+    twitter_username?: string;
+    /**
+     * The organization ID.
+     * @type {string}
+     * @memberof ExternalOrganization
+     */
+    organization_id?: string;
+}
+/**
+ * @type ExternalOrganizationNameFilter
+ * Filter by external organization name.
+ * @export
+ */
+export type ExternalOrganizationNameFilter = Array<string> | string;
+
+/**
  * @type FileCreate
  * 
  * @export
@@ -5247,27 +5319,17 @@ export type Id = string;
 export interface InstallationCreate {
     /**
      * 
-     * @type {string}
-     * @memberof InstallationCreate
-     */
-    platform: InstallationCreatePlatformEnum;
-    /**
-     * 
      * @type {number}
      * @memberof InstallationCreate
      */
-    external_id: number;
+    installation_id: number;
+    /**
+     * The organization ID.
+     * @type {string}
+     * @memberof InstallationCreate
+     */
+    organization_id: string;
 }
-
-
-/**
- * @export
- */
-export const InstallationCreatePlatformEnum = {
-    GITHUB: 'github'
-} as const;
-export type InstallationCreatePlatformEnum = typeof InstallationCreatePlatformEnum[keyof typeof InstallationCreatePlatformEnum];
-
 
 /**
  * 
@@ -5555,6 +5617,13 @@ export interface IssueListResponse {
     pagination: PaginationResponse;
 }
 /**
+ * @type IssueNumberFilter
+ * Filter by issue number.
+ * @export
+ */
+export type IssueNumberFilter = Array<number> | number;
+
+/**
  * 
  * @export
  * @interface IssueReferenceRead
@@ -5824,6 +5893,25 @@ export interface ListResourceDownloadableRead {
      * 
      * @type {Pagination}
      * @memberof ListResourceDownloadableRead
+     */
+    pagination: Pagination;
+}
+/**
+ * 
+ * @export
+ * @interface ListResourceExternalOrganization
+ */
+export interface ListResourceExternalOrganization {
+    /**
+     * 
+     * @type {Array<ExternalOrganization>}
+     * @memberof ListResourceExternalOrganization
+     */
+    items?: Array<ExternalOrganization>;
+    /**
+     * 
+     * @type {Pagination}
+     * @memberof ListResourceExternalOrganization
      */
     pagination: Pagination;
 }
@@ -8402,17 +8490,11 @@ export interface OrderUser {
  */
 export interface Organization {
     /**
-     * 
+     * The organization ID.
      * @type {string}
      * @memberof Organization
      */
     id: string;
-    /**
-     * 
-     * @type {Platforms}
-     * @memberof Organization
-     */
-    platform: Platforms;
     /**
      * 
      * @type {string}
@@ -8424,25 +8506,19 @@ export interface Organization {
      * @type {string}
      * @memberof Organization
      */
-    avatar_url: string;
+    slug: string;
     /**
      * 
-     * @type {boolean}
+     * @type {string}
      * @memberof Organization
      */
-    is_personal: boolean;
+    avatar_url?: string;
     /**
      * 
      * @type {string}
      * @memberof Organization
      */
     bio?: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof Organization
-     */
-    pretty_name?: string;
     /**
      * 
      * @type {string}
@@ -8492,24 +8568,6 @@ export interface Organization {
      */
     default_upfront_split_to_contributors?: number;
     /**
-     * 
-     * @type {string}
-     * @memberof Organization
-     */
-    account_id?: string;
-    /**
-     * Whether the organization has the Polar GitHub App installed for repositories or not.
-     * @type {boolean}
-     * @memberof Organization
-     */
-    has_app_installed: boolean;
-    /**
-     * If this organization has a public Polar page
-     * @type {boolean}
-     * @memberof Organization
-     */
-    public_page_enabled: boolean;
-    /**
      * If this organizations accepts donations
      * @type {boolean}
      * @memberof Organization
@@ -8533,30 +8591,6 @@ export interface Organization {
      * @memberof Organization
      */
     feature_settings: OrganizationFeatureSettings | null;
-    /**
-     * 
-     * @type {string}
-     * @memberof Organization
-     */
-    billing_email?: string;
-    /**
-     * 
-     * @type {number}
-     * @memberof Organization
-     */
-    total_monthly_spending_limit?: number;
-    /**
-     * 
-     * @type {number}
-     * @memberof Organization
-     */
-    per_user_monthly_spending_limit?: number;
-    /**
-     * Feature flag for if this organization is a team.
-     * @type {boolean}
-     * @memberof Organization
-     */
-    is_teams_enabled: boolean;
 }
 /**
  * 
@@ -8661,6 +8695,31 @@ export interface OrganizationCheckPermissionsInput {
 /**
  * 
  * @export
+ * @interface OrganizationCreate
+ */
+export interface OrganizationCreate {
+    /**
+     * 
+     * @type {string}
+     * @memberof OrganizationCreate
+     */
+    name: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof OrganizationCreate
+     */
+    slug: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof OrganizationCreate
+     */
+    avatar_url?: string;
+}
+/**
+ * 
+ * @export
  * @interface OrganizationCustomer
  */
 export interface OrganizationCustomer {
@@ -8759,12 +8818,6 @@ export interface OrganizationMember {
      * @memberof OrganizationMember
      */
     avatar_url?: string;
-    /**
-     * 
-     * @type {boolean}
-     * @memberof OrganizationMember
-     */
-    is_admin: boolean;
 }
 /**
  * 
@@ -8860,6 +8913,18 @@ export interface OrganizationSubscribePromoteSettings {
  * @interface OrganizationUpdate
  */
 export interface OrganizationUpdate {
+    /**
+     * 
+     * @type {string}
+     * @memberof OrganizationUpdate
+     */
+    name?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof OrganizationUpdate
+     */
+    avatar_url?: string;
     /**
      * 
      * @type {number}
@@ -9188,6 +9253,13 @@ export const PlatformFeeType = {
     ACCOUNT: 'account'
 } as const;
 export type PlatformFeeType = typeof PlatformFeeType[keyof typeof PlatformFeeType];
+
+/**
+ * @type PlatformFilter
+ * Filter by platform.
+ * @export
+ */
+export type PlatformFilter = Array<Platforms> | Platforms;
 
 
 /**
@@ -10621,10 +10693,10 @@ export interface Repository {
     platform: Platforms;
     /**
      * 
-     * @type {Visibility}
+     * @type {boolean}
      * @memberof Repository
      */
-    visibility: Visibility;
+    is_private: boolean;
     /**
      * 
      * @type {string}
@@ -10663,10 +10735,10 @@ export interface Repository {
     profile_settings: RepositoryProfileSettings | null;
     /**
      * 
-     * @type {Organization}
+     * @type {ExternalOrganization}
      * @memberof Repository
      */
-    organization: Organization;
+    organization: ExternalOrganization;
 }
 /**
  * 
@@ -10772,6 +10844,20 @@ export interface RepositoryBadgeSettingsUpdate {
      */
     retroactive: boolean;
 }
+/**
+ * @type RepositoryNameFilter
+ * Filter by name.
+ * @export
+ */
+export type RepositoryNameFilter = Array<string> | string;
+
+/**
+ * @type RepositoryNameFilter1
+ * Filter by repository name.
+ * @export
+ */
+export type RepositoryNameFilter1 = Array<string> | string;
+
 /**
  * 
  * @export
@@ -11326,6 +11412,11 @@ export const Scope = {
     ARTICLESWRITE: 'articles:write',
     WEBHOOKSREAD: 'webhooks:read',
     WEBHOOKSWRITE: 'webhooks:write',
+    EXTERNAL_ORGANIZATIONSREAD: 'external_organizations:read',
+    REPOSITORIESREAD: 'repositories:read',
+    REPOSITORIESWRITE: 'repositories:write',
+    ISSUESREAD: 'issues:read',
+    ISSUESWRITE: 'issues:write',
     USERBENEFITSREAD: 'user:benefits:read',
     USERORDERSREAD: 'user:orders:read',
     USERSUBSCRIPTIONSREAD: 'user:subscriptions:read',
@@ -11580,19 +11671,6 @@ export interface SummaryPledge {
      * @memberof SummaryPledge
      */
     pledger?: Pledger;
-}
-/**
- * 
- * @export
- * @interface SynchronizeMembersResponse
- */
-export interface SynchronizeMembersResponse {
-    /**
-     * 
-     * @type {boolean}
-     * @memberof SynchronizeMembersResponse
-     */
-    status: boolean;
 }
 /**
  * 
@@ -12301,6 +12379,55 @@ export interface TransactionEmbedded {
 /**
  * 
  * @export
+ * @interface TransactionExternalOrganization
+ */
+export interface TransactionExternalOrganization {
+    /**
+     * Creation timestamp of the object.
+     * @type {string}
+     * @memberof TransactionExternalOrganization
+     */
+    created_at: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof TransactionExternalOrganization
+     */
+    modified_at?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof TransactionExternalOrganization
+     */
+    id: string;
+    /**
+     * 
+     * @type {Platforms}
+     * @memberof TransactionExternalOrganization
+     */
+    platform: Platforms;
+    /**
+     * 
+     * @type {string}
+     * @memberof TransactionExternalOrganization
+     */
+    name: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof TransactionExternalOrganization
+     */
+    avatar_url: string;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof TransactionExternalOrganization
+     */
+    is_personal: boolean;
+}
+/**
+ * 
+ * @export
  * @interface TransactionIssue
  */
 export interface TransactionIssue {
@@ -12354,10 +12481,10 @@ export interface TransactionIssue {
     title: string;
     /**
      * 
-     * @type {TransactionOrganization}
+     * @type {TransactionExternalOrganization}
      * @memberof TransactionIssue
      */
-    organization: TransactionOrganization;
+    organization: TransactionExternalOrganization;
     /**
      * 
      * @type {TransactionRepository}
@@ -12471,12 +12598,6 @@ export interface TransactionOrganization {
     id: string;
     /**
      * 
-     * @type {Platforms}
-     * @memberof TransactionOrganization
-     */
-    platform: Platforms;
-    /**
-     * 
      * @type {string}
      * @memberof TransactionOrganization
      */
@@ -12486,13 +12607,13 @@ export interface TransactionOrganization {
      * @type {string}
      * @memberof TransactionOrganization
      */
-    avatar_url: string;
+    slug: string;
     /**
      * 
-     * @type {boolean}
+     * @type {string}
      * @memberof TransactionOrganization
      */
-    is_personal: boolean;
+    avatar_url?: string;
 }
 /**
  * 
@@ -13588,17 +13709,6 @@ export interface ValidationError {
      */
     type: string;
 }
-
-/**
- * 
- * @export
- */
-export const Visibility = {
-    PUBLIC: 'public',
-    PRIVATE: 'private'
-} as const;
-export type Visibility = typeof Visibility[keyof typeof Visibility];
-
 /**
  * 
  * @export

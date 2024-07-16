@@ -18,14 +18,12 @@ import type {
   HTTPValidationError,
   IssueListResponse,
   IssueSortBy,
-  Platforms,
   PledgesTypeSummaries,
 } from '../models/index';
 
 export interface DashboardApiGetDashboardRequest {
-    platform: Platforms;
-    orgName: string;
-    repoName?: string;
+    id: string;
+    repositoryName?: string;
     q?: string;
     sort?: IssueSortBy;
     onlyPledged?: boolean;
@@ -78,24 +76,17 @@ export class DashboardApi extends runtime.BaseAPI {
      * Get Dashboard
      */
     async getDashboardRaw(requestParameters: DashboardApiGetDashboardRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<IssueListResponse>> {
-        if (requestParameters['platform'] == null) {
+        if (requestParameters['id'] == null) {
             throw new runtime.RequiredError(
-                'platform',
-                'Required parameter "platform" was null or undefined when calling getDashboard().'
-            );
-        }
-
-        if (requestParameters['orgName'] == null) {
-            throw new runtime.RequiredError(
-                'orgName',
-                'Required parameter "orgName" was null or undefined when calling getDashboard().'
+                'id',
+                'Required parameter "id" was null or undefined when calling getDashboard().'
             );
         }
 
         const queryParameters: any = {};
 
-        if (requestParameters['repoName'] != null) {
-            queryParameters['repo_name'] = requestParameters['repoName'];
+        if (requestParameters['repositoryName'] != null) {
+            queryParameters['repository_name'] = requestParameters['repositoryName'];
         }
 
         if (requestParameters['q'] != null) {
@@ -133,7 +124,7 @@ export class DashboardApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/v1/dashboard/{platform}/{org_name}`.replace(`{${"platform"}}`, encodeURIComponent(String(requestParameters['platform']))).replace(`{${"org_name"}}`, encodeURIComponent(String(requestParameters['orgName']))),
+            path: `/v1/dashboard/organization/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,

@@ -17,7 +17,6 @@ import * as runtime from '../runtime';
 import type {
   HTTPValidationError,
   ListResourceWebhookIntegration,
-  Platforms,
   WebhookIntegration,
   WebhookIntegrationCreate,
   WebhookIntegrationUpdate,
@@ -32,8 +31,7 @@ export interface WebhookNotificationsApiDeleteRequest {
 }
 
 export interface WebhookNotificationsApiSearchRequest {
-    organizationName: string;
-    platform: Platforms;
+    organizationId: string;
 }
 
 export interface WebhookNotificationsApiUpdateRequest {
@@ -140,28 +138,17 @@ export class WebhookNotificationsApi extends runtime.BaseAPI {
      * Search webhook notification integrations
      */
     async searchRaw(requestParameters: WebhookNotificationsApiSearchRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListResourceWebhookIntegration>> {
-        if (requestParameters['organizationName'] == null) {
+        if (requestParameters['organizationId'] == null) {
             throw new runtime.RequiredError(
-                'organizationName',
-                'Required parameter "organizationName" was null or undefined when calling search().'
-            );
-        }
-
-        if (requestParameters['platform'] == null) {
-            throw new runtime.RequiredError(
-                'platform',
-                'Required parameter "platform" was null or undefined when calling search().'
+                'organizationId',
+                'Required parameter "organizationId" was null or undefined when calling search().'
             );
         }
 
         const queryParameters: any = {};
 
-        if (requestParameters['organizationName'] != null) {
-            queryParameters['organization_name'] = requestParameters['organizationName'];
-        }
-
-        if (requestParameters['platform'] != null) {
-            queryParameters['platform'] = requestParameters['platform'];
+        if (requestParameters['organizationId'] != null) {
+            queryParameters['organization_id'] = requestParameters['organizationId'];
         }
 
         const headerParameters: runtime.HTTPHeaders = {};

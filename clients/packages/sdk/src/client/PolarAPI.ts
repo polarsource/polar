@@ -9,6 +9,7 @@ import {
   Configuration,
   DashboardApi,
   DonationsApi,
+  ExternalOrganizationsApi,
   FilesApi,
   FundingApi,
   MetricsApi,
@@ -46,6 +47,7 @@ export class PolarAPI {
   public readonly benefits: BenefitsApi
   public readonly dashboard: DashboardApi
   public readonly donations: DonationsApi
+  public readonly externalOrganizations: ExternalOrganizationsApi
   public readonly funding: FundingApi
   public readonly integrationsDiscord: IntegrationsDiscordApi
   public readonly integrationsGitHub: IntegrationsGithubApi
@@ -82,6 +84,7 @@ export class PolarAPI {
     this.benefits = new BenefitsApi(config)
     this.dashboard = new DashboardApi(config)
     this.donations = new DonationsApi(config)
+    this.externalOrganizations = new ExternalOrganizationsApi(config)
     this.funding = new FundingApi(config)
     this.integrationsDiscord = new IntegrationsDiscordApi(config)
     this.integrationsGitHub = new IntegrationsGithubApi(config)

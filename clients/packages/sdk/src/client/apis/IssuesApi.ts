@@ -16,13 +16,16 @@
 import * as runtime from '../runtime';
 import type {
   ConfirmIssue,
+  ExternalOrganizationNameFilter,
   HTTPValidationError,
   Issue,
-  IssueSortBy,
+  IssueNumberFilter,
   IssueUpdateBadgeMessage,
   ListResourceIssue,
-  Platforms,
+  OrganizationIDFilter,
+  PlatformFilter,
   PostIssueComment,
+  RepositoryNameFilter1,
   UpdateIssue,
 } from '../models/index';
 
@@ -53,22 +56,24 @@ export interface IssuesApiGetBodyRequest {
     id: string;
 }
 
+export interface IssuesApiListRequest {
+    platform?: PlatformFilter;
+    externalOrganizationName?: ExternalOrganizationNameFilter;
+    repositoryName?: RepositoryNameFilter1;
+    number?: IssueNumberFilter;
+    organizationId?: OrganizationIDFilter;
+    isBadged?: boolean;
+    page?: number;
+    limit?: number;
+    sorting?: Array<string>;
+}
+
 export interface IssuesApiLookupRequest {
     externalUrl?: string;
 }
 
 export interface IssuesApiRemovePolarBadgeRequest {
     id: string;
-}
-
-export interface IssuesApiSearchRequest {
-    platform: Platforms;
-    organizationName: string;
-    repositoryName?: string;
-    sort?: IssueSortBy;
-    havePledge?: boolean;
-    haveBadge?: boolean;
-    githubMilestoneNumber?: number;
 }
 
 export interface IssuesApiUpdateRequest {
@@ -400,6 +405,78 @@ export class IssuesApi extends runtime.BaseAPI {
     }
 
     /**
+     * List issues.
+     * List Issues
+     */
+    async listRaw(requestParameters: IssuesApiListRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListResourceIssue>> {
+        const queryParameters: any = {};
+
+        if (requestParameters['platform'] != null) {
+            queryParameters['platform'] = requestParameters['platform'];
+        }
+
+        if (requestParameters['externalOrganizationName'] != null) {
+            queryParameters['external_organization_name'] = requestParameters['externalOrganizationName'];
+        }
+
+        if (requestParameters['repositoryName'] != null) {
+            queryParameters['repository_name'] = requestParameters['repositoryName'];
+        }
+
+        if (requestParameters['number'] != null) {
+            queryParameters['number'] = requestParameters['number'];
+        }
+
+        if (requestParameters['organizationId'] != null) {
+            queryParameters['organization_id'] = requestParameters['organizationId'];
+        }
+
+        if (requestParameters['isBadged'] != null) {
+            queryParameters['is_badged'] = requestParameters['isBadged'];
+        }
+
+        if (requestParameters['page'] != null) {
+            queryParameters['page'] = requestParameters['page'];
+        }
+
+        if (requestParameters['limit'] != null) {
+            queryParameters['limit'] = requestParameters['limit'];
+        }
+
+        if (requestParameters['sorting'] != null) {
+            queryParameters['sorting'] = requestParameters['sorting'];
+        }
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("HTTPBearer", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+        const response = await this.request({
+            path: `/v1/issues/`,
+            method: 'GET',
+            headers: headerParameters,
+            query: queryParameters,
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse(response);
+    }
+
+    /**
+     * List issues.
+     * List Issues
+     */
+    async list(requestParameters: IssuesApiListRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ListResourceIssue> {
+        const response = await this.listRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
      * Lookup
      */
     async lookupRaw(requestParameters: IssuesApiLookupRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Issue>> {
@@ -475,84 +552,6 @@ export class IssuesApi extends runtime.BaseAPI {
      */
     async removePolarBadge(requestParameters: IssuesApiRemovePolarBadgeRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Issue> {
         const response = await this.removePolarBadgeRaw(requestParameters, initOverrides);
-        return await response.value();
-    }
-
-    /**
-     * Search issues.
-     * Search issues
-     */
-    async searchRaw(requestParameters: IssuesApiSearchRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListResourceIssue>> {
-        if (requestParameters['platform'] == null) {
-            throw new runtime.RequiredError(
-                'platform',
-                'Required parameter "platform" was null or undefined when calling search().'
-            );
-        }
-
-        if (requestParameters['organizationName'] == null) {
-            throw new runtime.RequiredError(
-                'organizationName',
-                'Required parameter "organizationName" was null or undefined when calling search().'
-            );
-        }
-
-        const queryParameters: any = {};
-
-        if (requestParameters['platform'] != null) {
-            queryParameters['platform'] = requestParameters['platform'];
-        }
-
-        if (requestParameters['organizationName'] != null) {
-            queryParameters['organization_name'] = requestParameters['organizationName'];
-        }
-
-        if (requestParameters['repositoryName'] != null) {
-            queryParameters['repository_name'] = requestParameters['repositoryName'];
-        }
-
-        if (requestParameters['sort'] != null) {
-            queryParameters['sort'] = requestParameters['sort'];
-        }
-
-        if (requestParameters['havePledge'] != null) {
-            queryParameters['have_pledge'] = requestParameters['havePledge'];
-        }
-
-        if (requestParameters['haveBadge'] != null) {
-            queryParameters['have_badge'] = requestParameters['haveBadge'];
-        }
-
-        if (requestParameters['githubMilestoneNumber'] != null) {
-            queryParameters['github_milestone_number'] = requestParameters['githubMilestoneNumber'];
-        }
-
-        const headerParameters: runtime.HTTPHeaders = {};
-
-        if (this.configuration && this.configuration.accessToken) {
-            const token = this.configuration.accessToken;
-            const tokenString = await token("HTTPBearer", []);
-
-            if (tokenString) {
-                headerParameters["Authorization"] = `Bearer ${tokenString}`;
-            }
-        }
-        const response = await this.request({
-            path: `/v1/issues/search`,
-            method: 'GET',
-            headers: headerParameters,
-            query: queryParameters,
-        }, initOverrides);
-
-        return new runtime.JSONApiResponse(response);
-    }
-
-    /**
-     * Search issues.
-     * Search issues
-     */
-    async search(requestParameters: IssuesApiSearchRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ListResourceIssue> {
-        const response = await this.searchRaw(requestParameters, initOverrides);
         return await response.value();
     }
 

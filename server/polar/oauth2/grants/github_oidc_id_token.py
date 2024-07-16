@@ -16,7 +16,7 @@ from sqlalchemy import select
 from polar.auth.scope import RESERVED_SCOPES, Scope, scope_to_set
 from polar.enums import Platforms
 from polar.logging import Logger
-from polar.models import OAuth2Token, Organization
+from polar.models import ExternalOrganization, OAuth2Token, Organization
 
 from ..sub_type import SubType
 
@@ -108,9 +108,17 @@ class GitHubOIDCIDTokenGrant(BaseGrant, TokenEndpointMixin):
             log.info("Access token already issued for id_token.", nonce=nonce)
             raise InvalidGrantError('Invalid "id_token".')
 
-        statement = select(Organization).where(
-            Organization.platform == Platforms.github,
-            Organization.slug == id_token_data["repository_owner"],
+        statement = (
+            select(Organization)
+            .join(
+                ExternalOrganization,
+                onclause=Organization.id == ExternalOrganization.organization_id,
+            )
+            .where(
+                ExternalOrganization.platform == Platforms.github,
+                ExternalOrganization.external_id
+                == id_token_data["repository_owner_id"],
+            )
         )
         result = self.server.session.execute(statement)
         organization = result.unique().scalar_one_or_none()

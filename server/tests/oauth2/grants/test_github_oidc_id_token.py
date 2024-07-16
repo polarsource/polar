@@ -17,7 +17,7 @@ from sqlalchemy import select
 from polar.config import settings
 from polar.kit.crypto import get_token_hash
 from polar.kit.db.postgres import Session
-from polar.models import OAuth2Token, Organization
+from polar.models import ExternalOrganization, OAuth2Token, Organization
 from polar.oauth2.authorization_server import AuthorizationServer
 from polar.oauth2.grants.github_oidc_id_token import GitHubOIDCIDTokenGrant
 from polar.oauth2.sub_type import SubType
@@ -137,12 +137,39 @@ class TestValidateTokenRequest:
         with pytest.raises(InvalidGrantError):
             grant.validate_token_request()
 
-    def test_valid(self, get_grant: GetGrant, organization: Organization) -> None:
+    def test_not_linked_organization(
+        self, get_grant: GetGrant, external_organization: ExternalOrganization
+    ) -> None:
         id_token = _generate_id_token(
             PRIVATE_JWK,
             {
-                "repository_owner": organization.slug,
-                "repository_owner_id": organization.external_id,
+                "repository_owner": external_organization.name,
+                "repository_owner_id": external_organization.external_id,
+            },
+        )
+        request = _build_request(
+            {
+                "grant_type": "github_oidc_id_token",
+                "id_token": id_token,
+                "scope": "openid",
+            }
+        )
+        grant = get_grant(request)
+
+        with pytest.raises(InvalidGrantError):
+            grant.validate_token_request()
+
+    def test_valid(
+        self,
+        get_grant: GetGrant,
+        organization: Organization,
+        external_organization_linked: ExternalOrganization,
+    ) -> None:
+        id_token = _generate_id_token(
+            PRIVATE_JWK,
+            {
+                "repository_owner": external_organization_linked.name,
+                "repository_owner_id": external_organization_linked.external_id,
             },
         )
         request = _build_request(
@@ -161,7 +188,11 @@ class TestValidateTokenRequest:
 
     @pytest.mark.asyncio
     async def test_nonce_exists(
-        self, save_fixture: SaveFixture, get_grant: GetGrant, organization: Organization
+        self,
+        save_fixture: SaveFixture,
+        get_grant: GetGrant,
+        organization: Organization,
+        external_organization_linked: ExternalOrganization,
     ) -> None:
         nonce = "NONCE_VALUE"
         oauth2_token = OAuth2Token(
@@ -178,8 +209,8 @@ class TestValidateTokenRequest:
             PRIVATE_JWK,
             {
                 "jti": nonce,
-                "repository_owner": organization.slug,
-                "repository_owner_id": organization.external_id,
+                "repository_owner": external_organization_linked.name,
+                "repository_owner_id": external_organization_linked.external_id,
             },
         )
         request = _build_request(
@@ -197,7 +228,10 @@ class TestValidateTokenRequest:
 
 class TestCreateTokenResponse:
     def test_valid(
-        self, sync_session: Session, get_grant: GetGrant, organization: Organization
+        self,
+        sync_session: Session,
+        get_grant: GetGrant,
+        external_organization_linked: ExternalOrganization,
     ) -> None:
         jti = "ID_TOKEN_JTI"
         exp = int(time.time()) + 60
@@ -206,8 +240,8 @@ class TestCreateTokenResponse:
             {
                 "jti": jti,
                 "exp": exp,
-                "repository_owner": organization.slug,
-                "repository_owner_id": organization.external_id,
+                "repository_owner": external_organization_linked.name,
+                "repository_owner_id": external_organization_linked.external_id,
             },
         )
         request = _build_request(

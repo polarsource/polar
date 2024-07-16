@@ -7,7 +7,6 @@ from pydantic import UUID4, Field, HttpUrl
 
 from polar.config import settings
 from polar.currency.schemas import CurrencyAmount
-from polar.enums import Platforms
 from polar.kit.schemas import (
     EmptyStrToNoneValidator,
     MergeJSONSchema,

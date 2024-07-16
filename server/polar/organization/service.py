@@ -115,7 +115,7 @@ class OrganizationService(ResourceServiceReader[Organization]):
     async def get_by_id(
         self,
         session: AsyncSession,
-        auth_subject: AuthSubject[User | Organization],
+        auth_subject: AuthSubject[Anonymous | User | Organization],
         id: uuid.UUID,
     ) -> Organization | None:
         statement = self._get_readable_organization_statement(auth_subject).where(

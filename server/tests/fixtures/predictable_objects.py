@@ -25,17 +25,7 @@ async def predictable_external_organization(
 
 @pytest_asyncio.fixture
 async def predictable_pledging_organization(save_fixture: SaveFixture) -> Organization:
-    organization = Organization(
-        platform=Platforms.github,
-        name="pledging_org",
-        external_id=random.randrange(5000),
-        avatar_url="http://avatar_url",
-        is_personal=False,
-        installation_id=random.randrange(5000),
-        installation_created_at=datetime.now(),
-        installation_updated_at=datetime.now(),
-        installation_suspended_at=None,
-    )
+    organization = Organization(slug="pledging_org", avatar_url="http://avatar_url")
     await save_fixture(organization)
     return organization
 

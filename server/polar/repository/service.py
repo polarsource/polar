@@ -1,15 +1,26 @@
+import uuid
 from collections.abc import Sequence
+from typing import Any
 from uuid import UUID
 
 import structlog
-from sqlalchemy import and_, distinct
+from sqlalchemy import Select, UnaryExpression, and_, asc, desc, distinct, or_, select
 from sqlalchemy.orm import joinedload
 
+from polar.auth.models import Anonymous, AuthSubject, is_organization, is_user
+from polar.enums import Platforms
+from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.services import ResourceService
-from polar.models import Repository
-from polar.models.issue import Issue
-from polar.models.organization import Organization
-from polar.models.pull_request import PullRequest
+from polar.kit.sorting import Sorting
+from polar.models import (
+    ExternalOrganization,
+    Issue,
+    Organization,
+    PullRequest,
+    Repository,
+    User,
+)
+from polar.models.user_organization import UserOrganization
 from polar.organization.schemas import RepositoryBadgeSettingsUpdate
 from polar.postgres import AsyncSession, sql
 from polar.worker import enqueue_job
@@ -20,6 +31,7 @@ from .schemas import (
     RepositoryProfileSettings,
     RepositoryUpdate,
 )
+from .sorting import SortProperty
 
 log = structlog.get_logger()
 
@@ -27,6 +39,74 @@ log = structlog.get_logger()
 class RepositoryService(
     ResourceService[Repository, RepositoryCreate, RepositoryGitHubUpdate]
 ):
+    async def list(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Anonymous | User | Organization],
+        *,
+        name: str | None = None,
+        platform: Platforms | None = None,
+        is_private: bool | None = None,
+        external_organization_id: Sequence[uuid.UUID] | None = None,
+        organization_id: Sequence[uuid.UUID] | None = None,
+        pagination: PaginationParams,
+        sorting: list[Sorting[SortProperty]] = [(SortProperty.created_at, True)],
+    ) -> tuple[Sequence[Repository], int]:
+        statement = self._get_readable_repository_statement(auth_subject).options(
+            joinedload(Repository.organization)
+        )
+
+        if name is not None:
+            statement = statement.where(Repository.name == name)
+
+        if platform is not None:
+            statement = statement.where(Repository.platform == platform)
+
+        if is_private is not None:
+            statement = statement.where(Repository.is_private.is_(is_private))
+
+        if external_organization_id is not None:
+            statement = statement.where(
+                Repository.organization_id.in_(external_organization_id)
+            )
+
+        if organization_id is not None:
+            statement = statement.where(
+                Repository.organization_id.in_(
+                    select(ExternalOrganization.id).where(
+                        ExternalOrganization.organization_id.in_(organization_id)
+                    )
+                )
+            )
+
+        order_by_clauses: list[UnaryExpression[Any]] = []
+        for criterion, is_desc in sorting:
+            clause_function = desc if is_desc else asc
+            if criterion == SortProperty.created_at:
+                order_by_clauses.append(clause_function(Repository.created_at))
+            elif criterion == SortProperty.name:
+                order_by_clauses.append(clause_function(Repository.name))
+            elif criterion == SortProperty.stars:
+                order_by_clauses.append(clause_function(Repository.stars))
+        statement = statement.order_by(*order_by_clauses)
+
+        return await paginate(session, statement, pagination=pagination)
+
+    async def get_by_id(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Anonymous | User | Organization],
+        id: uuid.UUID,
+    ) -> Repository | None:
+        statement = (
+            self._get_readable_repository_statement(auth_subject)
+            .where(Repository.id == id)
+            .options(joinedload(Repository.organization))
+        )
+
+        result = await session.execute(statement)
+        return result.scalar_one_or_none()
+
     async def create(
         self, session: AsyncSession, create_schema: RepositoryCreate
     ) -> Repository:
@@ -104,7 +184,7 @@ class RepositoryService(
         self,
         session: AsyncSession,
         *,
-        org_ids: list[UUID],
+        org_ids: Sequence[UUID],
         repository_name: str | None = None,
         load_organization: bool = False,
         order_by_open_source: bool = False,
@@ -364,6 +444,39 @@ class RepositoryService(
         res = await session.execute(stmt)
         await session.commit()
         return res.scalars().one()
+
+    def _get_readable_repository_statement(
+        self, auth_subject: AuthSubject[Anonymous | User | Organization]
+    ) -> Select[tuple[Repository]]:
+        statement = select(Repository).where(Repository.deleted_at.is_(None))
+
+        if is_user(auth_subject):
+            statement = statement.where(
+                or_(
+                    Repository.is_private.is_(False),
+                    Repository.organization_id.in_(
+                        select(ExternalOrganization.id)
+                        .join(
+                            UserOrganization,
+                            onclause=UserOrganization.organization_id
+                            == ExternalOrganization.organization_id,
+                        )
+                        .where(UserOrganization.user_id == auth_subject.subject.id)
+                    ),
+                )
+            )
+        elif is_organization(auth_subject):
+            statement = statement.where(
+                Repository.organization_id.in_(
+                    select(ExternalOrganization.id).where(
+                        ExternalOrganization.organization_id == auth_subject.subject.id
+                    )
+                )
+            )
+        else:
+            statement = statement.where(Repository.is_private.is_(False))
+
+        return statement
 
 
 repository = RepositoryService(Repository)

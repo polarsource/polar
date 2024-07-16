@@ -110,8 +110,8 @@ const SubscribeAdminSettings = ({
   const [settings, setSettings] = useState<OrganizationSubscribePromoteSettings>(
     getDefaultSettings(organization)
   )
-  const updateSettings = async () => {
-    await updateOrganizationMutation
+  const updateSettings = (onSuccess: () => void) => {
+    updateOrganizationMutation
       .mutateAsync({
         id: organization.id,
         settings: {
@@ -119,6 +119,8 @@ const SubscribeAdminSettings = ({
             subscribe: settings
           },
         },
+      }, {
+        onSuccess
       })
       .then(() => revalidate(`organization:${organization.name}`))
   }
@@ -154,9 +156,18 @@ const SubscribeSettingsModal = ({
 }: {
   settings: OrganizationSubscribePromoteSettings
   setSettings: (settings: OrganizationSubscribePromoteSettings) => void
-  saveSettings: () => void
+  saveSettings: (onSuccess: () => void) => void
   hideModal: () => void
 }) => {
+  const [isSaving, setIsSaving] = useState(false)
+  const onSubmit = async () => {
+    setIsSaving(true)
+    saveSettings(() => {
+      setIsSaving(false)
+    })
+  }
+
+
   return (
     <div className="relative flex flex-col gap-y-8 p-10">
       <div className="absolute right-6 top-6">
@@ -203,7 +214,7 @@ const SubscribeSettingsModal = ({
             description="Include free subscriptions in public count" />
         </div>
 
-        <Button onClick={saveSettings}>Save</Button>
+        <Button onClick={onSubmit} loading={isSaving}>Save</Button>
       </div>
     </div>
   )

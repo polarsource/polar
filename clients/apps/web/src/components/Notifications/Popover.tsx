@@ -19,6 +19,7 @@ import {
   MaintainerCreateAccountNotification,
   MaintainerDonationReceivedNotification,
   MaintainerNewPaidSubscriptionNotification,
+  MaintainerNewProductSaleNotification,
   MaintainerPledgeConfirmationPendingNotification,
   MaintainerPledgeCreatedNotification,
   MaintainerPledgePaidNotification,
@@ -651,6 +652,32 @@ const MaintainerNewPaidSubscription = ({
   )
 }
 
+const MaintainerNewProductSale = ({
+  n,
+}: {
+  n: MaintainerNewProductSaleNotification
+}) => {
+  const { payload } = n
+  return (
+    <Item n={n} iconClasses="bg-green-200 text-green-500">
+      {{
+        text: (
+          <>
+            {payload.customer_name} just purchased {' '}
+            <InternalLink
+              href={`/maintainer/${payload.organization_name}/sales/orders`}
+            >
+              <>{payload.product_name}</>
+            </InternalLink>{' '}
+            (${getCentsInDollarString(payload.product_price_amount)})
+          </>
+        ),
+        icon: <DollarSignIcon />,
+      }}
+    </Item>
+  )
+}
+
 const BenefitPreconditionError = ({
   n,
 }: {
@@ -786,6 +813,9 @@ export const Notification = ({
 
     case 'MaintainerNewPaidSubscriptionNotification':
       return <MaintainerNewPaidSubscription n={n} />
+
+    case 'MaintainerNewProductSaleNotification':
+      return <MaintainerNewProductSale n={n} />
 
     case 'BenefitPreconditionErrorNotification':
       return <BenefitPreconditionError n={n} />

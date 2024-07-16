@@ -29,6 +29,7 @@ class NotificationType(StrEnum):
     maintainer_account_under_review = "MaintainerAccountUnderReviewNotification"
     maintainer_account_reviewed = "MaintainerAccountReviewedNotification"
     maintainer_new_paid_subscription = "MaintainerNewPaidSubscriptionNotification"
+    maintainer_new_product_sale = "MaintainerNewProductSaleNotification"
     benefit_precondition_error = "BenefitPreconditionErrorNotification"
     maintainer_create_account = "MaintainerCreateAccountNotification"
     maintainer_donation_received = "MaintainerDonationReceived"
@@ -424,7 +425,7 @@ class MaintainerNewPaidSubscriptionNotificationPayload(NotificationPayloadBase):
     tier_organization_name: str
 
     def subject(self) -> str:
-        return f"{self.subscriber_name} is now subscribing to {self.tier_name} (${get_cents_in_dollar_string(self.tier_price_amount)})"
+        return f"Congratulations! You have a new subscriber to {self.tier_name} (${get_cents_in_dollar_string(self.tier_price_amount)})"
 
     def body(self) -> str:
         return f"""Congratulations!<br><br>
@@ -436,6 +437,26 @@ class MaintainerNewPaidSubscriptionNotificationPayload(NotificationPayloadBase):
 class MaintainerNewPaidSubscriptionNotification(NotificationBase):
     type: Literal[NotificationType.maintainer_new_paid_subscription]
     payload: MaintainerNewPaidSubscriptionNotificationPayload
+
+
+class MaintainerNewProductSaleNotificationPayload(NotificationPayloadBase):
+    customer_name: str
+    product_name: str
+    product_price_amount: int
+
+    def subject(self) -> str:
+        return f"Congratulations! You have a new order (${get_cents_in_dollar_string(self.product_price_amount)})!"
+
+    def body(self) -> str:
+        return f"""Congratulations!<br><br>
+
+{self.customer_name} purchased <strong>{self.product_name}</strong> for ${get_cents_in_dollar_string(self.product_price_amount)}.<br><br>
+"""  # noqa: E501
+
+
+class MaintainerNewProductSaleNotification(NotificationBase):
+    type: Literal[NotificationType.maintainer_new_product_sale]
+    payload: MaintainerNewProductSaleNotificationPayload
 
 
 class BenefitPreconditionErrorNotificationContextualPayload(BaseModel):
@@ -548,6 +569,7 @@ NotificationPayload = (
     | MaintainerAccountUnderReviewNotificationPayload
     | MaintainerAccountReviewedNotificationPayload
     | MaintainerNewPaidSubscriptionNotificationPayload
+    | MaintainerNewProductSaleNotificationPayload
     | BenefitPreconditionErrorNotificationPayload
     | MaintainerCreateAccountNotificationPayload
     | MaintainerDonationReceivedNotificationPayload
@@ -566,6 +588,7 @@ Notification = Annotated[
     | MaintainerAccountUnderReviewNotification
     | MaintainerAccountReviewedNotification
     | MaintainerNewPaidSubscriptionNotification
+    | MaintainerNewProductSaleNotification
     | BenefitPreconditionErrorNotification
     | MaintainerCreateAccountNotification
     | MaintainerDonationReceivedNotification,

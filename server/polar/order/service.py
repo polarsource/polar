@@ -37,6 +37,7 @@ from polar.models.product_price import ProductPriceType
 from polar.models.transaction import TransactionType
 from polar.notifications.notification import (
     MaintainerCreateAccountNotificationPayload,
+    MaintainerNewProductSaleNotificationPayload,
     NotificationType,
 )
 from polar.notifications.service import PartialNotification
@@ -282,6 +283,7 @@ class OrderService(ResourceServiceReader[Order]):
                 order_id=order.id,
             )
 
+            await self.send_admin_notification(session, order)
             await self.send_confirmation_email(session, order)
 
         if invoice.billing_reason in ["manual", "subscription_create"]:
@@ -291,6 +293,23 @@ class OrderService(ResourceServiceReader[Order]):
             )
 
         return order
+
+    async def send_admin_notification(
+        self, session: AsyncSession, order: Order
+    ) -> None:
+        product = order.product
+        await notifications_service.send_to_org_admins(
+            session,
+            org_id=product.organization_id,
+            notif=PartialNotification(
+                type=NotificationType.maintainer_new_product_sale,
+                payload=MaintainerNewProductSaleNotificationPayload(
+                    customer_name=order.user.email,
+                    product_name=product.name,
+                    product_price_amount=order.product_price.price_amount,
+                ),
+            ),
+        )
 
     async def send_confirmation_email(
         self, session: AsyncSession, order: Order

@@ -8,7 +8,6 @@ import {
 import type { Organization, Repository } from '@polar-sh/sdk'
 import { useParams, useSearchParams } from 'next/navigation'
 import { useMemo } from 'react'
-import { useAuth } from '.'
 
 export const useCurrentOrgAndRepoFromURL = (): {
   org: Organization | undefined
@@ -62,15 +61,6 @@ export const useCurrentOrgAndRepoFromURL = (): {
     isLoaded,
     haveOrgs,
   }
-}
-
-export const usePersonalOrganization = () => {
-  const { currentUser } = useAuth()
-  const listOrganizationsQuery = useListMemberOrganizations()
-
-  return listOrganizationsQuery.data?.items?.find(
-    (o) => o.slug === currentUser?.username && o.is_personal,
-  )
 }
 
 export const useIsOrganizationAdmin = (org?: Organization) => {

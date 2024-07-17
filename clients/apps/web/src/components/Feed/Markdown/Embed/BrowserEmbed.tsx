@@ -66,7 +66,7 @@ const EmbedIssue = (props: { src: string }) => {
     repository: {
       id: 'embed',
       platform: 'github',
-      visibility: 'public',
+      is_private: false,
       name: m[2],
       profile_settings: {},
       organization: {

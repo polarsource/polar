@@ -20,11 +20,8 @@ export default async function Page({ article, products }: PostPageProps) {
   // Check if the user is the author of the article
   let isAuthor = false
   try {
-    const allOrganizations = await api.organizations.list()
-    const orgIds = allOrganizations.items?.map((org) => org.id) || []
-    isAuthor =
-      article.organization.is_personal &&
-      orgIds.includes(article.organization.id)
+    const user = await api.users.getAuthenticated()
+    isAuthor = article.user_id === user.id
   } catch (err) {}
 
   // Check if the user is subscriber

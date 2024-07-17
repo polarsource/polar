@@ -81,31 +81,14 @@ const Finance = (props: {
           title="Current pledges"
           amount={currentPledgesAmount}
           active={props.tab === 'current'}
-          href={
-            org.is_personal
-              ? `/finance/issue-funding`
-              : `/maintainer/${org.slug}/finance/issue-funding`
-          }
+          href={`/maintainer/${org.slug}/finance/issue-funding`}
         />
-
-        {!org.is_personal ? (
-          <HeaderPill
-            title={`Rewarded to ${org.slug}`}
-            amount={rewardedToSelfAmount}
-            active={props.tab === 'rewarded'}
-            href={`/maintainer/${org.slug}/finance/issue-funding/rewarded`}
-          />
-        ) : null}
 
         <HeaderPill
           title="Rewarded to contributors"
           amount={rewardedToContributorsAmount}
           active={props.tab === 'contributors'}
-          href={
-            org.is_personal
-              ? `/finance/issue-funding/contributors`
-              : `/maintainer/${org.slug}/finance/issue-funding/contributors`
-          }
+          href={`/maintainer/${org.slug}/finance/issue-funding/contributors`}
         />
       </div>
 

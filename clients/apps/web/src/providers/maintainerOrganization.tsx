@@ -8,7 +8,6 @@ export const MaintainerOrganizationContext = React.createContext<
       organization: Organization | undefined
       memberOrganizations: Organization[]
       adminOrganizations: Organization[]
-      personalOrganization: Organization | undefined
     }
   | undefined
 >(undefined)
@@ -17,7 +16,6 @@ export const MaintainerOrganizationContextProvider = ({
   organization,
   memberOrganizations,
   adminOrganizations,
-  personalOrganization,
   children,
 }: {
   organization: Organization | undefined
@@ -32,7 +30,6 @@ export const MaintainerOrganizationContextProvider = ({
         organization,
         memberOrganizations,
         adminOrganizations,
-        personalOrganization,
       }}
     >
       {children}

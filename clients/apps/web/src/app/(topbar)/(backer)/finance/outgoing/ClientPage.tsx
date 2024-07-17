@@ -2,7 +2,7 @@
 
 import AccountBanner from '@/components/Transactions/AccountBanner'
 import TransactionsList from '@/components/Transactions/TransactionsList'
-import { useAuth, usePersonalOrganization } from '@/hooks'
+import { useAuth } from '@/hooks'
 import { useSearchTransactions } from '@/hooks/queries'
 import {
   DataTablePaginationState,
@@ -23,7 +23,6 @@ export default function ClientPage({
   const router = useRouter()
   const pathname = usePathname()
   const { currentUser } = useAuth()
-  const personalOrganization = usePersonalOrganization()
 
   const setPagination = (
     updaterOrValue:
@@ -64,13 +63,7 @@ export default function ClientPage({
 
   return (
     <div className="flex flex-col gap-y-6">
-      {personalOrganization && currentUser && (
-        <AccountBanner
-          organization={personalOrganization}
-          user={currentUser}
-          isPersonal
-        />
-      )}
+      {currentUser && <AccountBanner user={currentUser} />}
       <ShadowBoxOnMd>
         <div className="mb-8 flex flex-row items-center justify-between">
           <div className="flex flex-col gap-y-2">

@@ -2,9 +2,7 @@
 
 import { useLogout } from '@/hooks'
 import { CONFIG } from '@/utils/config'
-import { organizationPageLink } from '@/utils/nav'
 import { useOutsideClick } from '@/utils/useOutsideClick'
-import { ArrowUpRightIcon } from '@heroicons/react/20/solid'
 import { LogoutOutlined } from '@mui/icons-material'
 import { UserRead } from '@polar-sh/sdk'
 import Link from 'next/link'
@@ -12,7 +10,6 @@ import Avatar from 'polarkit/components/ui/atoms/avatar'
 import { Separator } from 'polarkit/components/ui/separator'
 import { useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
-import { usePersonalOrganization } from '../../hooks'
 import { useBackerRoutes, useDashboardRoutes } from '../Dashboard/navigation'
 import { LinkItem, ListItem, Profile, TextItem } from './Navigation'
 
@@ -27,7 +24,6 @@ const PublicProfileDropdown = ({
 }) => {
   const classNames = twMerge('relative', className)
   const logout = useLogout()
-  const personalOrg = usePersonalOrganization()
 
   const [isOpen, setOpen] = useState<boolean>(false)
 
@@ -45,7 +41,7 @@ const PublicProfileDropdown = ({
 
   const backerRoutes = useBackerRoutes()
   const filteredBackerRoutes = showAllBackerRoutes ? backerRoutes : []
-  const personalRoutes = useDashboardRoutes(personalOrg, true, true)
+  const personalRoutes = useDashboardRoutes(undefined, true)
 
   if (!loggedUser) {
     return <></>
@@ -93,15 +89,6 @@ const PublicProfileDropdown = ({
                   <span className="mx-2 text-sm">{n.title}</span>
                 </LinkItem>
               ))}
-
-              {personalOrg && (
-                <LinkItem
-                  href={organizationPageLink(personalOrg)}
-                  icon={<ArrowUpRightIcon className="h-5 w-5" />}
-                >
-                  <span className="mx-2 text-sm">Public Page</span>
-                </LinkItem>
-              )}
 
               {personalRoutes.map((n) => {
                 return (

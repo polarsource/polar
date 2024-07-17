@@ -4,16 +4,12 @@ import { useGitHubAccount, useLogout } from '@/hooks'
 import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
 import { CONFIG } from '@/utils/config'
 import { useOutsideClick } from '@/utils/useOutsideClick'
-import {
-  AddOutlined,
-  KeyboardArrowDownOutlined,
-  LogoutOutlined,
-} from '@mui/icons-material'
+import { AddOutlined, KeyboardArrowDownOutlined } from '@mui/icons-material'
 import Link from 'next/link'
 import { useContext, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { useAuth } from '../../hooks'
-import { LinkItem, ListItem, Profile, TextItem } from './Navigation'
+import { LinkItem, ListItem, Profile } from './Navigation'
 
 const DashboardProfileDropdown = ({ className = '' }) => {
   const classNames = twMerge(
@@ -30,11 +26,6 @@ const DashboardProfileDropdown = ({ className = '' }) => {
   const orgContext = useContext(MaintainerOrganizationContext)
   const currentOrg = orgContext?.organization
   const orgs = orgContext?.memberOrganizations ?? []
-  const personalOrg = orgContext?.personalOrganization
-
-  const organizationsExceptSelf = orgs.filter(
-    (org) => org.slug !== loggedUser?.username,
-  )
 
   const ref = useRef(null)
 
@@ -82,47 +73,9 @@ const DashboardProfileDropdown = ({ className = '' }) => {
               'dark:bg-polar-800 dark:text-polar-400 rounded-4xl absolute -left-1 -top-1 right-0 overflow-hidden bg-white p-2 shadow-xl',
             )}
           >
-            <>
-              {personalOrg ? (
-                <Link
-                  href={`/maintainer/${personalOrg.slug}/overview`}
-                  className="w-full"
-                >
-                  <ListItem
-                    current={
-                      currentOrg === undefined ||
-                      currentOrg.slug === loggedUser.username
-                    }
-                  >
-                    <Profile
-                      name={loggedUser.username}
-                      avatar_url={loggedUser.avatar_url}
-                    />
-                  </ListItem>
-                </Link>
-              ) : null}
-            </>
-
-            <ul className="mt-2 flex w-full flex-col">
-              <TextItem
-                onClick={onLogout}
-                icon={<LogoutOutlined fontSize="small" />}
-              >
-                <span className="mx-3">Log out</span>
-              </TextItem>
-            </ul>
-
-            {organizationsExceptSelf.length > 0 || showAddOrganization ? (
-              <div className="mt-2 flex w-full flex-row items-center gap-x-2 py-4">
-                <div className="dark:text-polar-400 px-3 py-1 text-[10px] font-medium uppercase tracking-widest text-gray-500">
-                  Organizations
-                </div>
-              </div>
-            ) : null}
-
-            {organizationsExceptSelf.length > 0 ? (
+            {orgs.length > 0 ? (
               <div className="mb-2 flex flex-col">
-                {organizationsExceptSelf.map((org) => (
+                {orgs.map((org) => (
                   <Link
                     href={`/maintainer/${org.slug}/overview`}
                     className="w-full"

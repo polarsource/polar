@@ -1,5 +1,8 @@
-import { useAuth, usePersonalOrganization } from '@/hooks'
-import { useMaintainerUpgrade } from '@/hooks/queries'
+import { useAuth } from '@/hooks'
+import {
+  useListMemberOrganizations,
+  useMaintainerUpgrade,
+} from '@/hooks/queries'
 import { CONFIG } from '@/utils/config'
 import { ExclamationCircleIcon } from '@heroicons/react/20/solid'
 import { ArrowForwardOutlined } from '@mui/icons-material'
@@ -58,9 +61,10 @@ export const MaintainerUpsell = () => {
 }
 
 export const SetupProductsUpsell = () => {
-  const personalOrg = usePersonalOrganization()
+  const organizations = useListMemberOrganizations()
+  const firstOrg = organizations.data?.items?.[0]
 
-  if (!personalOrg) {
+  if (!firstOrg) {
     return null
   }
 
@@ -69,7 +73,7 @@ export const SetupProductsUpsell = () => {
       title="Create & Promote Products"
       description="Monetize your projects by selling digital products, subscriptions, and services to your community."
     >
-      <Link href={`/maintainer/${personalOrg.slug}/products/overview`}>
+      <Link href={`/maintainer/${firstOrg.slug}/products/overview`}>
         <Button size="sm" className="-z-1">
           <span>Get Started</span>
           <ArrowForwardOutlined className="ml-2" fontSize="inherit" />

@@ -2,7 +2,7 @@ import Current from '@/components/Finance/IssueFunding/Current'
 import { getServerSideAPI } from '@/utils/api/serverside'
 import { getOrganizationBySlug } from '@/utils/organization'
 import { Metadata } from 'next'
-import { RedirectType, notFound, redirect } from 'next/navigation'
+import { notFound } from 'next/navigation'
 
 const cacheConfig = {
   next: {
@@ -34,10 +34,6 @@ export default async function Page({
 
   if (!organization) {
     notFound()
-  }
-
-  if (organization.is_personal) {
-    redirect('/finance/issue-funding', RedirectType.replace)
   }
 
   return <Current organization={organization} />

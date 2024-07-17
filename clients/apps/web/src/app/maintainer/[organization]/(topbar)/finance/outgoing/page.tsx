@@ -2,7 +2,7 @@ import { getServerSideAPI } from '@/utils/api/serverside'
 import { DataTableSearchParams, parseSearchParams } from '@/utils/datatable'
 import { getOrganizationBySlug } from '@/utils/organization'
 import { Metadata } from 'next'
-import { RedirectType, notFound, redirect } from 'next/navigation'
+import { notFound } from 'next/navigation'
 import ClientPage from './ClientPage'
 
 const cacheConfig = {
@@ -33,10 +33,6 @@ export default async function Page({
 
   if (!organization) {
     notFound()
-  }
-
-  if (organization.is_personal) {
-    redirect('/finance/incoming', RedirectType.replace)
   }
 
   const { pagination, sorting } = parseSearchParams(searchParams, [

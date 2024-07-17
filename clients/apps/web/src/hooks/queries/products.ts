@@ -1,5 +1,6 @@
 import { api, queryClient } from '@/utils/api'
 import {
+  OrganizationIDFilter,
   ProductBenefitsUpdate,
   ProductCreate,
   ProductUpdate,
@@ -10,7 +11,7 @@ import { useMutation, useQuery } from '@tanstack/react-query'
 import { defaultRetry } from './retry'
 
 export const useProducts = (
-  organizationId?: string,
+  organizationId?: OrganizationIDFilter,
   parameters?: Omit<ProductsApiListRequest, 'organization_id' | 'limit'>,
   limit = 100,
 ) =>

@@ -4,12 +4,8 @@ import AccountBalance from '@/components/Transactions/AccountBalance'
 import AccountBanner from '@/components/Transactions/AccountBanner'
 import PayoutTransactionsList from '@/components/Transactions/PayoutTransactionsList'
 import TransactionsList from '@/components/Transactions/TransactionsList'
-import { useAuth, usePersonalOrganization } from '@/hooks'
-import {
-  useAccount,
-  useOrganizationAccount,
-  useSearchTransactions,
-} from '@/hooks/queries'
+import { useAuth } from '@/hooks'
+import { useAccount, useSearchTransactions } from '@/hooks/queries'
 import {
   DataTablePaginationState,
   DataTableSortingState,
@@ -24,7 +20,7 @@ import {
   TabsList,
   TabsTrigger,
 } from 'polarkit/components/ui/atoms/tabs'
-import { useCallback, useMemo } from 'react'
+import { useCallback } from 'react'
 
 export default function ClientPage({
   pagination,
@@ -37,7 +33,6 @@ export default function ClientPage({
   const router = useRouter()
   const pathname = usePathname()
   const params = useSearchParams()
-  const personalOrganization = usePersonalOrganization()
 
   const setActiveTab = useCallback(
     (value: string) => {
@@ -76,13 +71,8 @@ export default function ClientPage({
     )
   }
 
-  const { data: organizationAccount, isLoading: accountIsLoading } =
-    useOrganizationAccount(personalOrganization?.id)
-  const { data: personalAccount } = useAccount(currentUser?.account_id)
-
-  const account = useMemo(
-    () => organizationAccount || personalAccount,
-    [organizationAccount, personalAccount],
+  const { data: account, isLoading: accountIsLoading } = useAccount(
+    currentUser?.account_id,
   )
 
   const balancesHook = useSearchTransactions({
@@ -109,13 +99,7 @@ export default function ClientPage({
 
   return (
     <div className="flex flex-col gap-y-8">
-      {personalOrganization && currentUser && (
-        <AccountBanner
-          organization={personalOrganization}
-          user={currentUser}
-          isPersonal
-        />
-      )}
+      {currentUser && <AccountBanner user={currentUser} />}
       {account && (
         <AccountBalance
           account={account}

@@ -31,17 +31,13 @@ const Topbar = ({
   const { currentUser: clientCurrentUser } = useAuth()
   const currentUser = authenticatedUser ?? clientCurrentUser
 
-  const personalOrg = userAdminOrganizations?.find((o) => o.is_personal)
-
   const router = useRouter()
 
   const hasAdminOrgs = Boolean(
     userAdminOrganizations && userAdminOrganizations.length > 0,
   )
 
-  const creatorPath = personalOrg
-    ? `/maintainer/${currentUser?.username}/overview`
-    : `/maintainer/${userAdminOrganizations?.[0]?.slug}/overview`
+  const creatorPath = `/maintainer/${userAdminOrganizations?.[0]?.slug}/overview`
 
   const maintainerUpgrade = useMaintainerUpgrade()
 

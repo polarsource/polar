@@ -128,7 +128,6 @@ export const useMaintainerDisabledRoutes = (
 
 export const useDashboardRoutes = (
   org: Organization | undefined,
-  isPersonal: boolean,
   isOrgAdmin: boolean,
 ): RouteWithActive[] => {
   const path = usePathname()
@@ -137,7 +136,7 @@ export const useDashboardRoutes = (
     return []
   }
 
-  return dashboardRoutesList(org, isPersonal, isOrgAdmin)
+  return dashboardRoutesList(org, isOrgAdmin)
     .filter((o) => o.if)
     .map(applyIsActive(path))
 }
@@ -315,6 +314,24 @@ const backerRoutesList = (): Route[] => [
     if: true,
     subs: undefined,
   },
+  {
+    id: 'finance',
+    title: 'Finance',
+    link: `/finance`,
+    icon: <AttachMoneyOutlined className="h-5 w-5" fontSize="inherit" />,
+    postIcon: undefined,
+    if: true,
+    subs: personalFinanceSubRoutesList(),
+  },
+  {
+    id: 'settings',
+    title: 'Settings',
+    link: `/settings`,
+    icon: <TuneOutlined className="h-5 w-5" fontSize="inherit" />,
+    postIcon: undefined,
+    if: true,
+    subs: undefined,
+  },
 ]
 
 const personalFinanceSubRoutesList = (): SubRoute[] => [
@@ -329,10 +346,6 @@ const personalFinanceSubRoutesList = (): SubRoute[] => [
   {
     title: 'Issue Rewards',
     link: `/finance/rewards`,
-  },
-  {
-    title: 'Issue Funding',
-    link: `/finance/issue-funding`,
   },
   {
     title: 'Payout Account',
@@ -362,27 +375,22 @@ const orgFinanceSubRoutesList = (org: Organization): SubRoute[] => [
 
 const dashboardRoutesList = (
   org: Organization,
-  isPersonal: boolean,
   isOrgAdmin: boolean,
 ): Route[] => [
   {
     id: 'finance',
     title: 'Finance',
-    link: isPersonal ? `/finance` : `/maintainer/${org.slug}/finance`,
+    link: `/maintainer/${org.slug}/finance`,
     icon: <AttachMoneyOutlined className="h-5 w-5" fontSize="inherit" />,
-    postIcon: isPersonal ? <ArrowUpRightIcon className="h-5 w-5" /> : undefined,
     if: isOrgAdmin,
-    subs: isPersonal
-      ? personalFinanceSubRoutesList()
-      : orgFinanceSubRoutesList(org),
+    subs: orgFinanceSubRoutesList(org),
   },
   {
     id: 'settings',
     title: 'Settings',
-    link: isPersonal ? `/settings` : `/maintainer/${org.slug}/settings`,
+    link: `/maintainer/${org.slug}/settings`,
     icon: <TuneOutlined className="h-5 w-5" fontSize="inherit" />,
-    postIcon: isPersonal ? <ArrowUpRightIcon className="h-5 w-5" /> : undefined,
-    if: isPersonal || isOrgAdmin ? true : false,
+    if: isOrgAdmin,
     subs: undefined,
   },
 ]

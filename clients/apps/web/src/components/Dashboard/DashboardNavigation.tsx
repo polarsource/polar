@@ -8,10 +8,8 @@ const DashboardNavigation = () => {
   const orgContext = useContext(MaintainerOrganizationContext)
   const org = orgContext?.organization
   const adminOrgs = orgContext?.adminOrganizations ?? []
-  const personalOrg = orgContext?.personalOrganization
   const isOrgAdmin = adminOrgs.some((o) => org && o.id === org.id)
-  const isPersonal = Boolean(org && personalOrg && org.id === personalOrg.id)
-  const navs = useDashboardRoutes(org, isPersonal, isOrgAdmin ?? false)
+  const navs = useDashboardRoutes(org, isOrgAdmin ?? false)
 
   if (!org || navs.length === 0) {
     return <></>

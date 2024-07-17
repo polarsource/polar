@@ -6,14 +6,9 @@ import WebhookNotificationSettings from '@/components/Settings/Webhook/WebhookNo
 import WebhookSettings from '@/components/Settings/Webhook/WebhookSettings'
 import Spinner from '@/components/Shared/Spinner'
 import { useCurrentOrgAndRepoFromURL } from '@/hooks/org'
-import { redirect } from 'next/navigation'
 
 export default function ClientPage() {
   const { org, isLoaded } = useCurrentOrgAndRepoFromURL()
-
-  if (org?.is_personal) {
-    redirect('/settings')
-  }
 
   if (!isLoaded || !org) {
     return (

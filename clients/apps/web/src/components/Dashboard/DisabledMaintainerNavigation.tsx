@@ -9,9 +9,8 @@ import { useMaintainerDisabledRoutes } from './navigation'
 const DisabledMaintainerNavigation = () => {
   const orgContext = useContext(MaintainerOrganizationContext)
   const org = orgContext?.organization
-  const personalOrg = orgContext?.personalOrganization
 
-  const navs = useMaintainerDisabledRoutes(org ?? personalOrg ?? undefined)
+  const navs = useMaintainerDisabledRoutes(org ?? undefined)
 
   if (!org || navs.length === 0) {
     return <></>

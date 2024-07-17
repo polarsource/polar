@@ -1,48 +1,26 @@
 import { useAccount, useOrganizationAccount } from '@/hooks/queries'
 import { ACCOUNT_TYPE_DISPLAY_NAMES, ACCOUNT_TYPE_ICON } from '@/utils/account'
 import { ExclamationCircleIcon } from '@heroicons/react/20/solid'
-import { AccountType, Organization, Status, UserRead } from '@polar-sh/sdk'
+import {
+  Account,
+  AccountType,
+  Organization,
+  Status,
+  UserRead,
+} from '@polar-sh/sdk'
 import Link from 'next/link'
 import Button from 'polarkit/components/ui/atoms/button'
 import { Banner } from 'polarkit/components/ui/molecules'
 import Icon from '../Icons/Icon'
 
-interface AccountBannerProps {
-  organization: Organization
-  user?: UserRead
-  isPersonal?: boolean
-}
+const GenericAccountBanner: React.FC<{
+  account: Account | undefined
+  setupLink: string
+}> = ({ account, setupLink }) => {
+  const isActive = account?.status === Status.ACTIVE
+  const isUnderReview = account?.status === Status.UNDER_REVIEW
 
-const AccountBanner: React.FC<AccountBannerProps> = ({
-  organization,
-  user,
-  isPersonal,
-}) => {
-  const { data: organizationAccount, isLoading: organizationAccountIsLoading } =
-    useOrganizationAccount(organization.id)
-  const { data: personalAccount, isLoading: personalAccountIsLoading } =
-    useAccount(user?.account_id)
-
-  const setupLink = isPersonal
-    ? '/finance/account'
-    : `/maintainer/${organization.slug}/finance/account`
-
-  const currentAccount = isPersonal
-    ? organizationAccount || personalAccount
-    : organizationAccount
-  const bothOrganizationAndPersonal =
-    isPersonal &&
-    organizationAccount !== undefined &&
-    personalAccount !== undefined &&
-    organizationAccount.id !== personalAccount.id
-  const isActive = currentAccount?.status === Status.ACTIVE
-  const isUnderReview = currentAccount?.status === Status.UNDER_REVIEW
-
-  if (organizationAccountIsLoading || personalAccountIsLoading) {
-    return null
-  }
-
-  if (!currentAccount) {
+  if (!account) {
     return (
       <>
         <Banner
@@ -63,29 +41,8 @@ const AccountBanner: React.FC<AccountBannerProps> = ({
     )
   }
 
-  if (bothOrganizationAndPersonal) {
-    return (
-      <>
-        <Banner
-          color="default"
-          right={
-            <Link href={setupLink}>
-              <Button size="sm">Fix</Button>
-            </Link>
-          }
-        >
-          <ExclamationCircleIcon className="h-6 w-6 text-red-500" />
-          <span className="text-sm">
-            You have two payout accounts selected, both as a backer and
-            maintainer.
-          </span>
-        </Banner>
-      </>
-    )
-  }
-
-  if (currentAccount && isUnderReview) {
-    const AccountTypeIcon = ACCOUNT_TYPE_ICON[currentAccount.account_type]
+  if (account && isUnderReview) {
+    const AccountTypeIcon = ACCOUNT_TYPE_ICON[account.account_type]
     return (
       <Banner
         color="default"
@@ -98,17 +55,15 @@ const AccountBanner: React.FC<AccountBannerProps> = ({
         <Icon classes="bg-blue-500 p-1" icon={<AccountTypeIcon />} />
         <span className="text-sm">
           Your{' '}
-          <strong>
-            {ACCOUNT_TYPE_DISPLAY_NAMES[currentAccount.account_type]}
-          </strong>{' '}
+          <strong>{ACCOUNT_TYPE_DISPLAY_NAMES[account.account_type]}</strong>{' '}
           account is under review
         </span>
       </Banner>
     )
   }
 
-  if (currentAccount && !isActive && !isUnderReview) {
-    const AccountTypeIcon = ACCOUNT_TYPE_ICON[currentAccount.account_type]
+  if (account && !isActive && !isUnderReview) {
+    const AccountTypeIcon = ACCOUNT_TYPE_ICON[account.account_type]
     return (
       <Banner
         color="default"
@@ -121,17 +76,15 @@ const AccountBanner: React.FC<AccountBannerProps> = ({
         <Icon classes="bg-blue-500 p-1" icon={<AccountTypeIcon />} />
         <span className="text-sm">
           Continue the setup of your{' '}
-          <strong>
-            {ACCOUNT_TYPE_DISPLAY_NAMES[currentAccount.account_type]}
-          </strong>{' '}
+          <strong>{ACCOUNT_TYPE_DISPLAY_NAMES[account.account_type]}</strong>{' '}
           account to receive transfers
         </span>
       </Banner>
     )
   }
 
-  if (currentAccount && isActive) {
-    const accountType = currentAccount.account_type
+  if (account && isActive) {
+    const accountType = account.account_type
     const AccountTypeIcon = ACCOUNT_TYPE_ICON[accountType]
     return (
       <>
@@ -158,6 +111,52 @@ const AccountBanner: React.FC<AccountBannerProps> = ({
   }
 
   return null
+}
+
+const UserAccountBanner: React.FC<{ user: UserRead }> = ({ user }) => {
+  const { data: account, isLoading: personalAccountIsLoading } = useAccount(
+    user?.account_id,
+  )
+  const setupLink = '/finance/account'
+
+  if (personalAccountIsLoading) {
+    return null
+  }
+
+  return <GenericAccountBanner account={account} setupLink={setupLink} />
+}
+
+const OrganizationAccountBanner: React.FC<{ organization: Organization }> = ({
+  organization,
+}) => {
+  const { data: account, isLoading: organizationAccountIsLoading } =
+    useOrganizationAccount(organization?.id)
+  const setupLink = `/maintainer/${organization.slug}/finance/account`
+
+  if (organizationAccountIsLoading) {
+    return null
+  }
+
+  return <GenericAccountBanner account={account} setupLink={setupLink} />
+}
+
+interface AccountBannerProps {
+  organization?: Organization
+  user?: UserRead
+}
+
+const AccountBanner: React.FC<AccountBannerProps> = ({
+  organization,
+  user,
+}) => {
+  return (
+    <>
+      {organization && (
+        <OrganizationAccountBanner organization={organization} />
+      )}
+      {user && <UserAccountBanner user={user} />}
+    </>
+  )
 }
 
 export default AccountBanner

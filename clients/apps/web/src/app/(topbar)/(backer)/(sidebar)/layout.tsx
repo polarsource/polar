@@ -6,36 +6,34 @@ import {
   SetupProductsUpsell,
 } from '@/components/Dashboard/Upsell'
 import PurchaseSidebar from '@/components/Purchases/PurchasesSidebar'
-import { useAuth, useGitHubAccount, usePersonalOrganization } from '@/hooks'
+import { useAuth, useGitHubAccount } from '@/hooks'
 import { useListMemberOrganizations, useProducts } from '@/hooks/queries'
 import { PropsWithChildren, useEffect } from 'react'
 
 export default function Layout({ children }: PropsWithChildren) {
   const { authenticated, reloadUser } = useAuth()
-  const { isLoading: adminOrgsAreLoading } = useListMemberOrganizations()
-  const personalOrg = usePersonalOrganization()
+  const organizations = useListMemberOrganizations()
+  const products = useProducts(
+    organizations.data?.items?.map((o) => o.id) || [],
+  )
+  const githubAccount = useGitHubAccount()
 
   // Reload user on page load to make sure that the github oauth data is up to date
   useEffect(() => {
     reloadUser()
   }, [])
 
-  const products = useProducts(personalOrg?.id)
-  const productsAreLoading = products.isLoading
+  const shouldShowMaintainerUpsell =
+    authenticated &&
+    !organizations.isLoading &&
+    organizations.data?.pagination.total_count === 0
+
   const shouldShowProductsUpsell =
-    !adminOrgsAreLoading &&
-    !productsAreLoading &&
-    !!personalOrg &&
-    personalOrg.feature_settings?.subscriptions_enabled &&
+    !organizations.isLoading &&
+    !products.isLoading &&
     (products?.data?.items?.filter((p) => p.type !== 'free').length ?? 0) < 1
 
-  const githubAccount = useGitHubAccount()
   const shouldShowGitHubAuthUpsell = authenticated && !githubAccount
-
-  const listOrganizationQuery = useListMemberOrganizations()
-
-  const shouldShowMaintainerUpsell =
-    authenticated && !listOrganizationQuery.isLoading && !personalOrg
 
   return (
     <div className="flex h-full flex-col gap-12 md:flex-row">

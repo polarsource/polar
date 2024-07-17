@@ -5,12 +5,8 @@ import AccountSetup from '@/components/Accounts/AccountSetup'
 import AccountsList from '@/components/Accounts/AccountsList'
 import { Modal } from '@/components/Modal'
 import { useModal } from '@/components/Modal/useModal'
-import { useAuth, usePersonalOrganization } from '@/hooks'
-import {
-  useAccount,
-  useListAccounts,
-  useOrganizationAccount,
-} from '@/hooks/queries'
+import { useAuth } from '@/hooks'
+import { useAccount, useListAccounts } from '@/hooks/queries'
 import { ALL_ACCOUNT_TYPES } from '@/utils/account'
 import { api } from '@/utils/api'
 import { ShadowBoxOnMd } from 'polarkit/components/ui/atoms/shadowbox'
@@ -19,7 +15,6 @@ import { useCallback, useEffect, useState } from 'react'
 
 export default function ClientPage() {
   const { currentUser, reloadUser } = useAuth()
-  const personalOrganization = usePersonalOrganization()
   const { data: accounts } = useListAccounts()
   const {
     isShown: isShownSetupModal,
@@ -33,9 +28,6 @@ export default function ClientPage() {
     // eslint-disable-next-line
   }, [])
 
-  const { data: organizationAccount } = useOrganizationAccount(
-    personalOrganization?.id,
-  )
   const { data: personalAccount } = useAccount(currentUser?.account_id)
 
   const [linkAccountLoading, setLinkAccountLoading] = useState(false)
@@ -43,12 +35,6 @@ export default function ClientPage() {
     async (accountId: string) => {
       setLinkAccountLoading(true)
       try {
-        if (personalOrganization) {
-          await api.organizations.setAccount({
-            id: personalOrganization.id,
-            body: { account_id: accountId },
-          })
-        }
         await api.users.setAccount({
           body: { account_id: accountId },
         })
@@ -58,15 +44,15 @@ export default function ClientPage() {
         setLinkAccountLoading(false)
       }
     },
-    [personalOrganization, reloadUser],
+    [reloadUser],
   )
   return (
     <div className="flex flex-col gap-y-6">
       {accounts && (
         <AccountSetup
-          organization={personalOrganization}
+          organization={undefined}
+          organizationAccount={undefined}
           accounts={accounts.items || []}
-          organizationAccount={organizationAccount}
           personalAccount={personalAccount}
           loading={linkAccountLoading}
           onLinkAccount={onLinkAccount}
@@ -100,7 +86,6 @@ export default function ClientPage() {
           <AccountCreateModal
             onClose={hideSetupModal}
             accountTypes={ALL_ACCOUNT_TYPES}
-            forOrganizationId={personalOrganization?.id}
             forUserId={currentUser?.id}
             returnPath="/finance/account"
           />

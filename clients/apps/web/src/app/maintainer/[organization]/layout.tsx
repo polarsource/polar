@@ -39,8 +39,6 @@ export default async function Layout({
   // User does not have access to organization
   const org = orgs.find((o) => o.slug === params.organization)
 
-  const personalOrganization = orgs.find((o) => o.is_personal)
-
   if (!org) {
     return notFound()
   }
@@ -54,7 +52,6 @@ export default async function Layout({
       organization={org}
       memberOrganizations={orgs}
       adminOrganizations={adminOrgs}
-      personalOrganization={personalOrganization}
     >
       {children}
     </MaintainerOrganizationContextProvider>

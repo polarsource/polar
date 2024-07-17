@@ -7,16 +7,9 @@ import GeneralSettings from '@/components/Settings/GeneralSettings'
 import OAuthSettings from '@/components/Settings/OAuth/OAuthSettings'
 import PaymentMethodSettings from '@/components/Settings/PaymentMethodSettings'
 import { Section, SectionDescription } from '@/components/Settings/Section'
-import WebhookNotificationSettings from '@/components/Settings/Webhook/WebhookNotificationSettings'
-import WebhookSettings from '@/components/Settings/Webhook/WebhookSettings'
-import { useListMemberOrganizations } from '@/hooks/queries'
 import { Separator } from 'polarkit/components/ui/separator'
 
 export default function Page() {
-  const orgs = useListMemberOrganizations()
-
-  const org = orgs.data?.items?.find((o) => o.is_personal)
-
   return (
     <div className="relative z-0">
       <div className="mb-24 flex flex-col gap-y-8">
@@ -62,28 +55,6 @@ export default function Page() {
             />
             <AccessTokensSettings />
           </Section>
-
-          {org ? (
-            <>
-              <Section>
-                <SectionDescription
-                  title="Discord + Slack Notifications"
-                  description={`Send a incoming webhook to Discord or Slack when ${org.slug} gets a new pledge, subscription or donation.`}
-                />
-
-                <WebhookNotificationSettings org={org} />
-              </Section>
-
-              <Section>
-                <SectionDescription
-                  title="Webhooks"
-                  description={`Configure and send webhooks to custom URLs.`}
-                />
-
-                <WebhookSettings org={org} />
-              </Section>
-            </>
-          ) : null}
 
           <Section id="oauth">
             <SectionDescription

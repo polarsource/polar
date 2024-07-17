@@ -2,7 +2,6 @@
 
 import GithubLoginButton from '@/components/Auth/GithubLoginButton'
 import PublicProfileDropdown from '@/components/Navigation/PublicProfileDropdown'
-import { useAuth } from '@/hooks'
 import { useLoginLink } from '@/hooks/login'
 import { CONFIG } from '@/utils/config'
 import { ArrowForwardOutlined } from '@mui/icons-material'
@@ -19,19 +18,11 @@ const PolarMenu = ({
 }) => {
   const loginLink = useLoginLink()
 
-  // Fallback to client side user loading (needed as we're loading data in the layout, and it isn't refreshed on navigation)
-  const { currentUser: clientCurrentUser } = useAuth()
-  const currentUser = authenticatedUser ?? clientCurrentUser
-
-  const personalOrg = userAdminOrganizations?.find((o) => o.is_personal)
-
   const hasAdminOrgs = Boolean(
     userAdminOrganizations && userAdminOrganizations.length > 0,
   )
 
-  const creatorPath = personalOrg
-    ? `${CONFIG.FRONTEND_BASE_URL}/maintainer/${currentUser?.username}/overview`
-    : `${CONFIG.FRONTEND_BASE_URL}/maintainer/${userAdminOrganizations?.[0]?.slug}/overview`
+  const creatorPath = `${CONFIG.FRONTEND_BASE_URL}/maintainer/${userAdminOrganizations?.[0]?.slug}/overview`
 
   return (
     <div className="flex h-9 flex-row items-center gap-x-6">

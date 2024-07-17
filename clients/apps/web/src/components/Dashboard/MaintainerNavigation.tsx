@@ -9,9 +9,8 @@ import { useMaintainerRoutes } from './navigation'
 const MaintainerNavigation = () => {
   const orgContext = useContext(MaintainerOrganizationContext)
   const org = orgContext?.organization
-  const personalOrg = orgContext?.personalOrganization
 
-  const navs = useMaintainerRoutes(org ?? personalOrg ?? undefined)
+  const navs = useMaintainerRoutes(org ?? undefined)
 
   if (!org) {
     return <></>

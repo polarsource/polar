@@ -8,7 +8,6 @@ import {
   ListResourcePublicDonation,
   ListResourceRepository,
   Organization,
-  Platforms,
   Repository,
 } from '@polar-sh/sdk'
 import type { Metadata } from 'next'
@@ -45,18 +44,18 @@ export async function generateMetadata({
   }
 
   return {
-    title: `${organization.pretty_name || organization.name}`, // " | Polar is added by the template"
+    title: `${organization.pretty_name || organization.slug}`, // " | Polar is added by the template"
     description:
       organization.bio ||
-      `${organization.pretty_name || organization.name} on Polar`,
+      `${organization.pretty_name || organization.slug} on Polar`,
     openGraph: {
-      title: `${organization.pretty_name || organization.name} on Polar`,
-      description: `${organization.pretty_name || organization.name} on Polar`,
+      title: `${organization.pretty_name || organization.slug} on Polar`,
+      description: `${organization.pretty_name || organization.slug} on Polar`,
       siteName: 'Polar',
 
       images: [
         {
-          url: `https://polar.sh/og?org=${organization.name}`,
+          url: `https://polar.sh/og?org=${organization.slug}`,
           width: 1200,
           height: 630,
         },
@@ -65,23 +64,23 @@ export async function generateMetadata({
     twitter: {
       images: [
         {
-          url: `https://polar.sh/og?org=${organization.name}`,
+          url: `https://polar.sh/og?org=${organization.slug}`,
           width: 1200,
           height: 630,
-          alt: `${organization.pretty_name || organization.name} on Polar`,
+          alt: `${organization.pretty_name || organization.slug} on Polar`,
         },
       ],
       card: 'summary_large_image',
-      title: `${organization.pretty_name || organization.name} on Polar`,
-      description: `${organization.pretty_name || organization.name} on Polar`,
+      title: `${organization.pretty_name || organization.slug} on Polar`,
+      description: `${organization.pretty_name || organization.slug} on Polar`,
     },
 
     alternates: {
       types: {
         'application/rss+xml': [
           {
-            title: `${organization.pretty_name || organization.name}`,
-            url: `https://polar.sh/${organization.name}/rss`,
+            title: `${organization.pretty_name || organization.slug}`,
+            url: `https://polar.sh/${organization.slug}/rss`,
           },
         ],
       },
@@ -197,8 +196,7 @@ export default async function Page({
         }),
       api.funding.search(
         {
-          organizationName: params.organization,
-          platform: Platforms.GITHUB,
+          organizationId: organization.id,
           limit: 10,
           page: 1,
           closed: false,
@@ -213,21 +211,20 @@ export default async function Page({
           ...cacheConfig,
           next: {
             ...cacheConfig.next,
-            tags: [`funding:${params.organization}`],
+            tags: [`funding:${organization.id}`],
           },
         },
       ),
       api.donations.donationsPublicSearch(
         {
-          organizationName: params.organization,
-          platform: Platforms.GITHUB,
+          organizationId: organization.id,
           limit: 5,
         },
         {
           ...cacheConfig,
           next: {
             ...cacheConfig.next,
-            tags: [`donations:${params.organization}`],
+            tags: [`donations:${organization.id}`],
           },
         },
       ),
@@ -276,7 +273,6 @@ export default async function Page({
         : repositories.items?.slice(0, 2) ?? []
 
     const fallbackLinks = [
-      `https://github.com/${organization.name}`,
       ...(organization.blog
         ? [
             organization.blog.startsWith('http')
@@ -319,7 +315,7 @@ export default async function Page({
 
   // Build JSON-LD for this page
   let jsonLd: WithContext<JSONLDProfilePage> | undefined
-  const sameAs = [`https://github.com/${organization.name}`]
+  const sameAs = []
   if (organization.blog) {
     sameAs.push(externalURL(organization.blog))
   }
@@ -327,37 +323,20 @@ export default async function Page({
     sameAs.push(`https://twitter.com/${organization.twitter_username}`)
   }
 
-  if (organization.is_personal) {
-    const person: WithContext<JSONLDProfilePage> = {
-      '@context': 'https://schema.org',
-      '@type': 'ProfilePage',
-      name: organization.pretty_name || organization.name,
+  const org: WithContext<JSONLDProfilePage> = {
+    '@context': 'https://schema.org',
+    '@type': 'ProfilePage',
+    name: organization.pretty_name || organization.slug,
+    image: organization.avatar_url,
+    sameAs,
+    mainEntity: {
+      '@type': 'Organization',
+      name: organization.pretty_name || organization.slug,
+      alternateName: organization.slug,
       image: organization.avatar_url,
-      sameAs,
-      mainEntity: {
-        '@type': 'Person',
-        name: organization.pretty_name || organization.name,
-        alternateName: organization.name,
-        image: organization.avatar_url,
-      },
-    }
-    jsonLd = person
-  } else {
-    const org: WithContext<JSONLDProfilePage> = {
-      '@context': 'https://schema.org',
-      '@type': 'ProfilePage',
-      name: organization.pretty_name || organization.name,
-      image: organization.avatar_url,
-      sameAs,
-      mainEntity: {
-        '@type': 'Organization',
-        name: organization.pretty_name || organization.name,
-        alternateName: organization.name,
-        image: organization.avatar_url,
-      },
-    }
-    jsonLd = org
+    },
   }
+  jsonLd = org
 
   return (
     <>

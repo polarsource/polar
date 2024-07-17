@@ -69,7 +69,7 @@ const IssuesLookingForFunding = ({
   const { currentPage, setCurrentPage } = usePagination()
 
   const clientIssues = useSearchFunding({
-    organizationName: organization.name,
+    organizationId: organization.id,
     repositoryName: repository?.name,
     sort: filters.sort,
     badged: filters.badged,

@@ -1,14 +1,10 @@
 import { api } from '@/utils/api'
-import {
-  ListFundingSortBy,
-  ListResourceIssueFunding,
-  Platforms,
-} from '@polar-sh/sdk'
+import { ListFundingSortBy, ListResourceIssueFunding } from '@polar-sh/sdk'
 import { UseQueryResult, useQuery } from '@tanstack/react-query'
 import { defaultRetry } from './retry'
 
 export const useSearchFunding: (v: {
-  organizationName?: string
+  organizationId?: string
   repositoryName?: string
   q?: string
   sort?: Array<ListFundingSortBy>
@@ -17,7 +13,7 @@ export const useSearchFunding: (v: {
   closed?: boolean
   page?: number
 }) => UseQueryResult<ListResourceIssueFunding> = (v: {
-  organizationName?: string
+  organizationId?: string
   repositoryName?: string
   q?: string
   sort?: Array<ListFundingSortBy>
@@ -27,23 +23,10 @@ export const useSearchFunding: (v: {
   page?: number
 }) =>
   useQuery({
-    queryKey: [
-      'funded_issues',
-      v.organizationName,
-      v.repositoryName,
-      v.q,
-      JSON.stringify({
-        sort: v.sort,
-        badged: v.badged,
-        closed: v.closed,
-        limit: v.limit,
-        page: v.page,
-      }),
-    ],
+    queryKey: ['funded_issues', { ...v }],
     queryFn: () =>
       api.funding.search({
-        platform: Platforms.GITHUB,
-        organizationName: v.organizationName || '',
+        organizationId: v.organizationId as string,
         repositoryName: v.repositoryName,
         query: v.q,
         sorting: v.sort,
@@ -53,5 +36,5 @@ export const useSearchFunding: (v: {
         closed: v.closed,
       }),
     retry: defaultRetry,
-    enabled: !!v.organizationName,
+    enabled: !!v.organizationId,
   })

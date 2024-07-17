@@ -15,7 +15,6 @@ import {
   ListResourceOrganization,
   ListResourceProduct,
   Organization,
-  Platforms,
 } from '@polar-sh/sdk'
 import { Metadata } from 'next'
 import { notFound } from 'next/navigation'
@@ -55,7 +54,7 @@ export async function generateMetadata({
     notFound()
   }
 
-  const orgrepo = `${organization.name}/${repository.name}`
+  const orgrepo = `${organization.slug}/${repository.name}`
 
   return {
     title: `${orgrepo}`, // " | Polar is added by the template"
@@ -65,7 +64,7 @@ export async function generateMetadata({
       description: `${orgrepo} seeks funding for issues on Polar`,
       images: [
         {
-          url: `https://polar.sh/og?org=${organization.name}&repo=${repository.name}`,
+          url: `https://polar.sh/og?org=${organization.slug}&repo=${repository.name}`,
           width: 1200,
           height: 630,
         },
@@ -74,7 +73,7 @@ export async function generateMetadata({
     twitter: {
       images: [
         {
-          url: `https://polar.sh/og?org=${organization.name}&repo=${repository.name}`,
+          url: `https://polar.sh/og?org=${organization.slug}&repo=${repository.name}`,
           width: 1200,
           height: 630,
           alt: `${orgrepo} seeks funding for issues`,
@@ -134,8 +133,7 @@ export default async function Page({
     ;[issuesFunding, adminOrganizations, products, posts] = await Promise.all([
       api.funding.search(
         {
-          platform: Platforms.GITHUB,
-          organizationName: params.organization,
+          organizationId: organization.id,
           repositoryName: params.repo,
           query: filters.q,
           sorting: filters.sort,
@@ -159,7 +157,7 @@ export default async function Page({
         }),
       api.products.list(
         {
-          organizationId: repository.organization.id,
+          organizationId: organization.id,
           isArchived: false,
           isRecurring: true,
         },
@@ -167,7 +165,7 @@ export default async function Page({
       ),
       api.articles.list(
         {
-          organizationId: repository.organization.id,
+          organizationId: organization.id,
           isPublished: true,
           visibility: ArticleVisibility.PUBLIC,
           limit: 3,

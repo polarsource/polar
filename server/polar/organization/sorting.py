@@ -13,5 +13,5 @@ class SortProperty(StrEnum):
 
 ListSorting = Annotated[
     list[Sorting[SortProperty]],
-    Depends(SortingGetter(SortProperty, ["-created_at"])),
+    Depends(SortingGetter(SortProperty, ["created_at"])),
 ]

@@ -64,7 +64,7 @@ const DeliveriesTable: React.FC<DeliveriesTableProps> = ({
         : updaterOrValue
 
     router.push(
-      `/maintainer/${organization.name}/settings/webhooks/endpoints/${endpoint.id}?${getSearchParams(
+      `/maintainer/${organization.slug}/settings/webhooks/endpoints/${endpoint.id}?${getSearchParams(
         updatedPagination,
         sorting,
       )}`,
@@ -82,7 +82,7 @@ const DeliveriesTable: React.FC<DeliveriesTableProps> = ({
         : updaterOrValue
 
     router.push(
-      `/maintainer/${organization.name}/settings/webhooks/endpoints/${endpoint.id}?${getSearchParams(
+      `/maintainer/${organization.slug}/settings/webhooks/endpoints/${endpoint.id}?${getSearchParams(
         pagination,
         updatedSorting,
       )}`,

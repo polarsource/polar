@@ -62,7 +62,7 @@ const DashboardSidebar = () => {
 
   const shouldRenderMaintainerNavigation = currentOrg
     ? isOrgAdmin
-    : orgs?.some((org) => org.name === currentUser?.username)
+    : orgs?.some((org) => org.slug === currentUser?.username)
 
   const handleScroll: UIEventHandler<HTMLDivElement> = useCallback((e) => {
     setScrollTop(e.currentTarget.scrollTop)

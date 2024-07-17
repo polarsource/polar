@@ -41,7 +41,7 @@ const Topbar = ({
 
   const creatorPath = personalOrg
     ? `/maintainer/${currentUser?.username}/overview`
-    : `/maintainer/${userAdminOrganizations?.[0]?.name}/overview`
+    : `/maintainer/${userAdminOrganizations?.[0]?.slug}/overview`
 
   const maintainerUpgrade = useMaintainerUpgrade()
 

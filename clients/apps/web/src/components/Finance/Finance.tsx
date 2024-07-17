@@ -84,16 +84,16 @@ const Finance = (props: {
           href={
             org.is_personal
               ? `/finance/issue-funding`
-              : `/maintainer/${org.name}/finance/issue-funding`
+              : `/maintainer/${org.slug}/finance/issue-funding`
           }
         />
 
         {!org.is_personal ? (
           <HeaderPill
-            title={`Rewarded to ${org.name}`}
+            title={`Rewarded to ${org.slug}`}
             amount={rewardedToSelfAmount}
             active={props.tab === 'rewarded'}
-            href={`/maintainer/${org.name}/finance/issue-funding/rewarded`}
+            href={`/maintainer/${org.slug}/finance/issue-funding/rewarded`}
           />
         ) : null}
 
@@ -104,7 +104,7 @@ const Finance = (props: {
           href={
             org.is_personal
               ? `/finance/issue-funding/contributors`
-              : `/maintainer/${org.name}/finance/issue-funding/contributors`
+              : `/maintainer/${org.slug}/finance/issue-funding/contributors`
           }
         />
       </div>

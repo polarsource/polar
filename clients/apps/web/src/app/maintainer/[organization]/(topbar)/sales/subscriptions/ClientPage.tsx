@@ -103,7 +103,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
         : updaterOrValue
 
     router.push(
-      `/maintainer/${organization.name}/sales/subscriptions?${getSearchParams(
+      `/maintainer/${organization.slug}/sales/subscriptions?${getSearchParams(
         updatedPagination,
         sorting,
         filter,
@@ -123,7 +123,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
         : updaterOrValue
 
     router.push(
-      `/maintainer/${organization.name}/sales/subscriptions?${getSearchParams(
+      `/maintainer/${organization.slug}/sales/subscriptions?${getSearchParams(
         pagination,
         updatedSorting,
         filter,
@@ -134,7 +134,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
 
   const setFilter = (filter: string) => {
     router.push(
-      `/maintainer/${organization.name}/sales/subscriptions?${getSearchParams(
+      `/maintainer/${organization.slug}/sales/subscriptions?${getSearchParams(
         pagination,
         sorting,
         filter,
@@ -145,7 +145,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
 
   const setStatus = (status: string) => {
     router.push(
-      `/maintainer/${organization.name}/sales/subscriptions?${getSearchParams(
+      `/maintainer/${organization.slug}/sales/subscriptions?${getSearchParams(
         pagination,
         sorting,
         filter,

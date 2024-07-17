@@ -112,7 +112,7 @@ const ClientPage = ({ organization }: { organization: Organization }) => {
                   {benefitProducts.items.map((product) => (
                     <Link
                       key={product.id}
-                      href={`/maintainer/${organization.name}/products/${product.id}`}
+                      href={`/maintainer/${organization.slug}/products/${product.id}`}
                     >
                       <ListItem className="text-sm" size="small">
                         <span>{product.name}</span>

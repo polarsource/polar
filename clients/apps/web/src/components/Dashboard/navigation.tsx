@@ -162,7 +162,7 @@ const maintainerRoutesList = (org: Organization): Route[] => [
     title: 'Overview',
     icon: <SpaceDashboardOutlined className="h-5 w-5" fontSize="inherit" />,
     postIcon: undefined,
-    link: `/maintainer/${org.name}/overview`,
+    link: `/maintainer/${org.slug}/overview`,
     if: true,
   },
   {
@@ -170,9 +170,9 @@ const maintainerRoutesList = (org: Organization): Route[] => [
     title: 'Newsletter',
     icon: <StickyNote2Outlined className="h-5 w-5" fontSize="inherit" />,
     postIcon: undefined,
-    link: `/maintainer/${org.name}/posts`,
+    link: `/maintainer/${org.slug}/posts`,
     checkIsActive: (currentRoute: string): boolean => {
-      return currentRoute.startsWith(`/maintainer/${org.name}/posts`)
+      return currentRoute.startsWith(`/maintainer/${org.slug}/posts`)
     },
     if: org.feature_settings?.articles_enabled,
   },
@@ -181,19 +181,19 @@ const maintainerRoutesList = (org: Organization): Route[] => [
     title: 'Products',
     icon: <DiamondOutlined className="h-5 w-5" fontSize="inherit" />,
     postIcon: undefined,
-    link: `/maintainer/${org.name}/products/overview`,
+    link: `/maintainer/${org.slug}/products/overview`,
     checkIsActive: (currentRoute: string): boolean => {
-      return currentRoute.startsWith(`/maintainer/${org.name}/products`)
+      return currentRoute.startsWith(`/maintainer/${org.slug}/products`)
     },
     if: org.feature_settings?.subscriptions_enabled,
     subs: [
       {
         title: 'Overview',
-        link: `/maintainer/${org.name}/products/overview`,
+        link: `/maintainer/${org.slug}/products/overview`,
       },
       {
         title: 'Benefits',
-        link: `/maintainer/${org.name}/products/benefits`,
+        link: `/maintainer/${org.slug}/products/benefits`,
       },
     ],
   },
@@ -202,23 +202,23 @@ const maintainerRoutesList = (org: Organization): Route[] => [
     title: 'Sales',
     icon: <ShoppingCartOutlined className="h-5 w-5" fontSize="inherit" />,
     postIcon: undefined,
-    link: `/maintainer/${org.name}/sales/overview`,
+    link: `/maintainer/${org.slug}/sales/overview`,
     checkIsActive: (currentRoute: string): boolean => {
-      return currentRoute.startsWith(`/maintainer/${org.name}/sales`)
+      return currentRoute.startsWith(`/maintainer/${org.slug}/sales`)
     },
     if: org.feature_settings?.subscriptions_enabled,
     subs: [
       {
         title: 'Overview',
-        link: `/maintainer/${org.name}/sales/overview`,
+        link: `/maintainer/${org.slug}/sales/overview`,
       },
       {
         title: 'Orders',
-        link: `/maintainer/${org.name}/sales/orders`,
+        link: `/maintainer/${org.slug}/sales/orders`,
       },
       {
         title: 'Subscriptions',
-        link: `/maintainer/${org.name}/sales/subscriptions`,
+        link: `/maintainer/${org.slug}/sales/subscriptions`,
       },
     ],
   },
@@ -227,9 +227,9 @@ const maintainerRoutesList = (org: Organization): Route[] => [
     title: 'Donations',
     icon: <VolunteerActivismOutlined className="h-5 w-5" fontSize="inherit" />,
     postIcon: undefined,
-    link: `/maintainer/${org.name}/donations/overview`,
+    link: `/maintainer/${org.slug}/donations/overview`,
     checkIsActive: (currentRoute: string): boolean => {
-      return currentRoute.startsWith(`/maintainer/${org.name}/donations`)
+      return currentRoute.startsWith(`/maintainer/${org.slug}/donations`)
     },
     if: org.donations_enabled,
   },
@@ -238,26 +238,26 @@ const maintainerRoutesList = (org: Organization): Route[] => [
     title: 'Issues',
     icon: <HowToVoteOutlined className="h-5 w-5" fontSize="inherit" />,
     postIcon: undefined,
-    link: `/maintainer/${org.name}/issues/overview`,
+    link: `/maintainer/${org.slug}/issues/overview`,
     checkIsActive: (currentRoute: string): boolean => {
-      return currentRoute.startsWith(`/maintainer/${org.name}/issues`)
+      return currentRoute.startsWith(`/maintainer/${org.slug}/issues`)
     },
     if: org.feature_settings?.issue_funding_enabled,
     subs: [
       {
         title: 'Overview',
-        link: `/maintainer/${org.name}/issues/overview`,
+        link: `/maintainer/${org.slug}/issues/overview`,
       },
       {
         title: 'Badge',
-        link: `/maintainer/${org.name}/issues/badge`,
+        link: `/maintainer/${org.slug}/issues/badge`,
       },
     ],
   },
   {
     id: 'funding',
     title: 'Funding',
-    link: `/maintainer/${org.name}/funding`,
+    link: `/maintainer/${org.slug}/funding`,
     icon: <FavoriteBorderOutlined className="h-5 w-5" fontSize="inherit" />,
     postIcon: undefined,
     if: true,
@@ -268,7 +268,7 @@ const maintainerRoutesList = (org: Organization): Route[] => [
     title: 'Promote',
     icon: <WifiTetheringOutlined fontSize="inherit" />,
     postIcon: undefined,
-    link: `/maintainer/${org.name}/promote`,
+    link: `/maintainer/${org.slug}/promote`,
     if: true,
     subs: undefined,
   },
@@ -277,11 +277,11 @@ const maintainerRoutesList = (org: Organization): Route[] => [
     title: 'Webhooks',
     icon: <Webhook fontSize="inherit" />,
     postIcon: undefined,
-    link: `/maintainer/${org.name}/webhooks`,
+    link: `/maintainer/${org.slug}/webhooks`,
     if: false,
     checkIsActive: (currentRoute: string): boolean => {
       return currentRoute.startsWith(
-        `/maintainer/${org.name}/settings/webhooks`,
+        `/maintainer/${org.slug}/settings/webhooks`,
       )
     },
   },
@@ -343,20 +343,20 @@ const personalFinanceSubRoutesList = (): SubRoute[] => [
 const orgFinanceSubRoutesList = (org: Organization): SubRoute[] => [
   {
     title: 'Incoming',
-    link: `/maintainer/${org.name}/finance/incoming`,
+    link: `/maintainer/${org.slug}/finance/incoming`,
   },
   {
     title: 'Outgoing',
-    link: `/maintainer/${org.name}/finance/outgoing`,
+    link: `/maintainer/${org.slug}/finance/outgoing`,
   },
   {
     title: 'Issue Funding',
-    link: `/maintainer/${org.name}/finance/issue-funding`,
+    link: `/maintainer/${org.slug}/finance/issue-funding`,
   },
 
   {
     title: 'Payout Account',
-    link: `/maintainer/${org.name}/finance/account`,
+    link: `/maintainer/${org.slug}/finance/account`,
   },
 ]
 
@@ -368,7 +368,7 @@ const dashboardRoutesList = (
   {
     id: 'finance',
     title: 'Finance',
-    link: isPersonal ? `/finance` : `/maintainer/${org.name}/finance`,
+    link: isPersonal ? `/finance` : `/maintainer/${org.slug}/finance`,
     icon: <AttachMoneyOutlined className="h-5 w-5" fontSize="inherit" />,
     postIcon: isPersonal ? <ArrowUpRightIcon className="h-5 w-5" /> : undefined,
     if: isOrgAdmin,
@@ -379,7 +379,7 @@ const dashboardRoutesList = (
   {
     id: 'settings',
     title: 'Settings',
-    link: isPersonal ? `/settings` : `/maintainer/${org.name}/settings`,
+    link: isPersonal ? `/settings` : `/maintainer/${org.slug}/settings`,
     icon: <TuneOutlined className="h-5 w-5" fontSize="inherit" />,
     postIcon: isPersonal ? <ArrowUpRightIcon className="h-5 w-5" /> : undefined,
     if: isPersonal || isOrgAdmin ? true : false,

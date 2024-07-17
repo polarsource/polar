@@ -65,7 +65,7 @@ const BasePaywall = (props: {
           <p>
             This section is for premium subscribers only. Upgrade{' '}
             <LinkRenderer
-              href={`${props.article.organization.name}/subscriptions`}
+              href={`${props.article.organization.slug}/subscriptions`}
             >
               your subscription
             </LinkRenderer>{' '}
@@ -77,10 +77,10 @@ const BasePaywall = (props: {
           <p>
             This section is for premium subscribers only. Subscribe to{' '}
             <LinkRenderer
-              href={`/${props.article.organization.name}/subscriptions`}
+              href={`/${props.article.organization.slug}/subscriptions`}
             >
               {props.article.organization.pretty_name ||
-                props.article.organization.name}
+                props.article.organization.slug}
             </LinkRenderer>{' '}
             to get access to it.
           </p>

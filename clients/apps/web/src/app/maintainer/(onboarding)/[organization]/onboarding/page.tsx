@@ -28,7 +28,7 @@ export default async function Page({
   }
 
   if (!shouldBeOnboarded(organization)) {
-    return redirect(`/maintainer/${organization.name}`)
+    return redirect(`/maintainer/${organization.slug}`)
   }
 
   return <ClientPage organization={organization} />

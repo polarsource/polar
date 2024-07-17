@@ -17,7 +17,7 @@ const AccountAssociations: React.FC<AccountAssociationsProps> = ({
           array.some((value) => value === user.username)
             ? array
             : [...array, user.username],
-        account.organizations.map(({ name }) => name),
+        account.organizations.map(({ slug: name }) => name),
       ),
     [account],
   )

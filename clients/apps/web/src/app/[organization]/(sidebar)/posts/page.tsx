@@ -28,15 +28,15 @@ export async function generateMetadata({
   }
 
   return {
-    title: `${organization.pretty_name || organization.name}`, // " | Polar is added by the template"
+    title: `${organization.pretty_name || organization.slug}`, // " | Polar is added by the template"
     openGraph: {
-      title: `${organization.pretty_name || organization.name} on Polar`,
-      description: `${organization.pretty_name || organization.name} on Polar`,
+      title: `${organization.pretty_name || organization.slug} on Polar`,
+      description: `${organization.pretty_name || organization.slug} on Polar`,
       siteName: 'Polar',
 
       images: [
         {
-          url: `https://polar.sh/og?org=${organization.name}`,
+          url: `https://polar.sh/og?org=${organization.slug}`,
           width: 1200,
           height: 630,
         },
@@ -45,23 +45,23 @@ export async function generateMetadata({
     twitter: {
       images: [
         {
-          url: `https://polar.sh/og?org=${organization.name}`,
+          url: `https://polar.sh/og?org=${organization.slug}`,
           width: 1200,
           height: 630,
-          alt: `${organization.pretty_name || organization.name} on Polar`,
+          alt: `${organization.pretty_name || organization.slug} on Polar`,
         },
       ],
       card: 'summary_large_image',
-      title: `${organization.pretty_name || organization.name} on Polar`,
-      description: `${organization.pretty_name || organization.name} on Polar`,
+      title: `${organization.pretty_name || organization.slug} on Polar`,
+      description: `${organization.pretty_name || organization.slug} on Polar`,
     },
 
     alternates: {
       types: {
         'application/rss+xml': [
           {
-            title: `${organization.pretty_name || organization.name}`,
-            url: `https://polar.sh/${organization.name}/rss`,
+            title: `${organization.pretty_name || organization.slug}`,
+            url: `https://polar.sh/${organization.slug}/rss`,
           },
         ],
       },

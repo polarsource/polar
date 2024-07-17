@@ -162,7 +162,7 @@ const ClientPage = () => {
   }
 
   if (!post.data.organization.feature_settings?.articles_enabled) {
-    return redirect(`/maintainer/${post.data.organization.name}/posts`)
+    return redirect(`/maintainer/${post.data.organization.slug}/posts`)
   }
 
   return (

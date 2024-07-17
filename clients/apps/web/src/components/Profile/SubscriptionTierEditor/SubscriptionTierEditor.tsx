@@ -55,7 +55,7 @@ export const SubscriptionTierEditor = ({
           },
         })
         .then(() =>
-          revalidate(`repository:${organization.name}/${repository.name}`),
+          revalidate(`repository:${organization.slug}/${repository.name}`),
         ),
   )
 

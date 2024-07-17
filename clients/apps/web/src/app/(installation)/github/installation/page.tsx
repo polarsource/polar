@@ -63,16 +63,16 @@ export default function Page() {
         // As the Organization page & its data is fetched on the server, we need to revalidate the cache
         // to avoid stale data.
         await Promise.all([
-          revalidate(`organization:${organization.name}`),
-          revalidate(`funding:${organization.name}`),
-          revalidate(`repositories:${organization.name}`),
+          revalidate(`organization:${organization.slug}`),
+          revalidate(`funding:${organization.slug}`),
+          revalidate(`repositories:${organization.slug}`),
         ])
         return organization
       })
       .then((organization) => {
         setInstalled(organization)
         // redirect
-        router.replace(`/maintainer/${organization.name}/initialize`)
+        router.replace(`/maintainer/${organization.slug}/initialize`)
       })
       .catch((err) => {
         if (signal.aborted) {

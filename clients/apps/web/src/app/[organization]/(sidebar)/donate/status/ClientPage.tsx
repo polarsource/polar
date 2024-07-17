@@ -29,7 +29,7 @@ const ClientPage = ({
   const sendMagicLink = useSendMagicLink()
 
   useEffect(() => {
-    revalidate(`donations:${organization.name}`)
+    revalidate(`donations:${organization.slug}`)
   }, [organization])
 
   const router = useRouter()
@@ -42,7 +42,7 @@ const ClientPage = ({
 
     setEmailSigninLoading(true)
     try {
-      sendMagicLink(email, `/${organization.name}`)
+      sendMagicLink(email, `/${organization.slug}`)
     } catch (err) {
       // TODO: error handling
     } finally {
@@ -63,13 +63,13 @@ const ClientPage = ({
             <CardHeader>
               <CardTitle className="text-center text-xl font-medium">
                 Thank you for donating to{' '}
-                {organization.pretty_name || organization.name}!
+                {organization.pretty_name || organization.slug}!
               </CardTitle>
             </CardHeader>
             <CardFooter className="flex justify-center">
               {currentUser ? (
-                <Link className="grow" href={`/${organization.name}`}>
-                  <Button className="w-full">Go to {organization.name}</Button>
+                <Link className="grow" href={`/${organization.slug}`}>
+                  <Button className="w-full">Go to {organization.slug}</Button>
                 </Link>
               ) : (
                 <div className="flex flex-col gap-4">

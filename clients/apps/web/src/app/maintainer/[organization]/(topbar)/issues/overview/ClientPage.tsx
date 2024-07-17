@@ -107,7 +107,7 @@ const Issues = ({
   const [filters, setFilters] = useState<DashboardFilters>(initFilters)
 
   // TODO: Unless we're sending user-only events we should probably delay SSE
-  useSSE(org?.platform, org?.name, undefined)
+  useSSE(org?.platform, org?.slug, undefined)
 
   useEffect(() => {
     // Parse URL and use it to populate filters
@@ -138,7 +138,7 @@ const Issues = ({
     }
   }, [search])
 
-  if (!org || !org.name) {
+  if (!org || !org.slug) {
     return <></>
   }
 
@@ -146,7 +146,7 @@ const Issues = ({
     <OrganizationIssues
       filters={filters}
       onSetFilters={setFilters}
-      orgName={org.name}
+      orgName={org.slug}
       repoName={repo?.name}
       hasAppInstalled={org.has_app_installed}
     />

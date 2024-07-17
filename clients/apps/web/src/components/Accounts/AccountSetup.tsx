@@ -53,7 +53,7 @@ export const AccountSetup: React.FC<AccoutSetupProps> = ({
       returnPath:
         !organization || organization.is_personal
           ? '/finance/account'
-          : `/maintainer/${organization.name}/finance/account`,
+          : `/maintainer/${organization.slug}/finance/account`,
     })
     window.location.href = link.url
   }
@@ -120,7 +120,7 @@ export const AccountSetup: React.FC<AccoutSetupProps> = ({
             {organization && (
               <p>
                 You don&apos;t have a payout account setup for{' '}
-                <span className="font-medium">{organization.name}</span>.
+                <span className="font-medium">{organization.slug}</span>.
               </p>
             )}
             {!organization && (

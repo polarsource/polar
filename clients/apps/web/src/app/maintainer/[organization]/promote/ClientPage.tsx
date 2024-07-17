@@ -21,14 +21,14 @@ export default function ClientPage({
   const { repo: currentRepo } = useCurrentOrgAndRepoFromURL()
 
   const orgSlashRepo = currentRepo
-    ? `${organization.name}/${currentRepo.name}`
-    : `${organization.name}`
+    ? `${organization.slug}/${currentRepo.name}`
+    : `${organization.slug}`
 
   const orgRepoParams = currentRepo
-    ? `org=${organization.name}&repo=${currentRepo.name}`
-    : `org=${organization.name}`
+    ? `org=${organization.slug}&repo=${currentRepo.name}`
+    : `org=${organization.slug}`
 
-  const fundingYAML = `polar: ${organization.name}`
+  const fundingYAML = `polar: ${organization.slug}`
 
   // Get all repositories
   const listRepositoriesQuery = useListRepositories({
@@ -43,11 +43,11 @@ export default function ClientPage({
       <picture>
         <source
           media="(prefers-color-scheme: dark)"
-          srcSet={`/embed/tiers.svg?org=${organization.name}&darkmode`}
+          srcSet={`/embed/tiers.svg?org=${organization.slug}&darkmode`}
         />
         <img
           alt="Subscription Tiers on Polar"
-          src={`/embed/tiers.svg?org=${organization.name}`}
+          src={`/embed/tiers.svg?org=${organization.slug}`}
         />
       </picture>
     ),
@@ -55,11 +55,11 @@ export default function ClientPage({
       <picture>
         <source
           media="(prefers-color-scheme: dark)"
-          srcSet={`/embed/posts.svg?org=${organization.name}&darkmode`}
+          srcSet={`/embed/posts.svg?org=${organization.slug}&darkmode`}
         />
         <img
           alt="Newsletter on Polar"
-          src={`/embed/posts.svg?org=${organization.name}`}
+          src={`/embed/posts.svg?org=${organization.slug}`}
         />
       </picture>
     ),
@@ -67,11 +67,11 @@ export default function ClientPage({
       <picture>
         <source
           media="(prefers-color-scheme: dark)"
-          srcSet={`/embed/subscribe.svg?org=${organization.name}&label=Subscribe&darkmode`}
+          srcSet={`/embed/subscribe.svg?org=${organization.slug}&label=Subscribe&darkmode`}
         />
         <img
           alt="Subscribe on Polar"
-          src={`/embed/subscribe.svg?org=${organization.name}&label=Subscribe`}
+          src={`/embed/subscribe.svg?org=${organization.slug}&label=Subscribe`}
         />
       </picture>
     ),
@@ -80,9 +80,9 @@ export default function ClientPage({
   }
 
   const embedCodes: Record<string, string> = {
-    Tiers: `<a href="https://polar.sh/${organization.name}/subscriptions"><picture><source media="(prefers-color-scheme: dark)" srcset="https://polar.sh/embed/tiers.svg?org=${organization.name}&darkmode"><img alt="Subscription Tiers on Polar" src="https://polar.sh/embed/tiers.svg?org=${organization.name}"></picture></a>`,
-    Posts: `<a href="https://polar.sh/${organization.name}/posts"><picture><source media="(prefers-color-scheme: dark)" srcset="https://polar.sh/embed/posts.svg?org=${organization.name}&darkmode"><img alt="Posts on Polar" src="https://polar.sh/embed/posts.svg?org=${organization.name}"></picture></a>`,
-    Subscribe: `<a href="https://polar.sh/${orgSlashRepo}"><picture><source media="(prefers-color-scheme: dark)" srcset="https://polar.sh/embed/subscribe.svg?org=${organization.name}&label=Subscribe&darkmode"><img alt="Subscribe on Polar" src="https://polar.sh/embed/subscribe.svg?org=${organization.name}&label=Subscribe"></picture></a>`,
+    Tiers: `<a href="https://polar.sh/${organization.slug}/subscriptions"><picture><source media="(prefers-color-scheme: dark)" srcset="https://polar.sh/embed/tiers.svg?org=${organization.slug}&darkmode"><img alt="Subscription Tiers on Polar" src="https://polar.sh/embed/tiers.svg?org=${organization.slug}"></picture></a>`,
+    Posts: `<a href="https://polar.sh/${organization.slug}/posts"><picture><source media="(prefers-color-scheme: dark)" srcset="https://polar.sh/embed/posts.svg?org=${organization.slug}&darkmode"><img alt="Posts on Polar" src="https://polar.sh/embed/posts.svg?org=${organization.slug}"></picture></a>`,
+    Subscribe: `<a href="https://polar.sh/${orgSlashRepo}"><picture><source media="(prefers-color-scheme: dark)" srcset="https://polar.sh/embed/subscribe.svg?org=${organization.slug}&label=Subscribe&darkmode"><img alt="Subscribe on Polar" src="https://polar.sh/embed/subscribe.svg?org=${organization.slug}&label=Subscribe"></picture></a>`,
     Issues: `<a href="https://polar.sh/${orgSlashRepo}"><img src="https://polar.sh/embed/fund-our-backlog.svg?${orgRepoParams}" /></a>`,
     Shield: `<a href="https://polar.sh/${orgSlashRepo}"><img src="https://polar.sh/embed/seeks-funding-shield.svg?${orgRepoParams}" /></a>`,
   }

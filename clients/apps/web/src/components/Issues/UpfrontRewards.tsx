@@ -146,7 +146,7 @@ const PublicRewardsSetting = (props: {
                   src={props.org.avatar_url}
                   className="h-6 w-6 rounded-full"
                 />
-                <div>{props.org.pretty_name || props.org.name}</div>
+                <div>{props.org.pretty_name || props.org.slug}</div>
                 <div className="dark:text-polar-400 text-gray-500">
                   Reviews, feedback & maintenance. Reward yourself too.
                 </div>

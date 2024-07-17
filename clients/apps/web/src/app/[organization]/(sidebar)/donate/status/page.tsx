@@ -25,16 +25,16 @@ export async function generateMetadata({
   }
 
   return {
-    title: `Donate to ${organization.pretty_name || organization.name}`, // " | Polar is added by the template"
-    description: `Donate to ${organization.pretty_name || organization.name}`,
+    title: `Donate to ${organization.pretty_name || organization.slug}`, // " | Polar is added by the template"
+    description: `Donate to ${organization.pretty_name || organization.slug}`,
     openGraph: {
-      title: `Donate to ${organization.pretty_name || organization.name}`,
-      description: `Donate to ${organization.pretty_name || organization.name}`,
+      title: `Donate to ${organization.pretty_name || organization.slug}`,
+      description: `Donate to ${organization.pretty_name || organization.slug}`,
       siteName: 'Polar',
 
       images: [
         {
-          url: `https://polar.sh/og?org=${organization.name}`,
+          url: `https://polar.sh/og?org=${organization.slug}`,
           width: 1200,
           height: 630,
         },
@@ -43,15 +43,15 @@ export async function generateMetadata({
     twitter: {
       images: [
         {
-          url: `https://polar.sh/og?org=${organization.name}`,
+          url: `https://polar.sh/og?org=${organization.slug}`,
           width: 1200,
           height: 630,
-          alt: `Donate to ${organization.pretty_name || organization.name}`,
+          alt: `Donate to ${organization.pretty_name || organization.slug}`,
         },
       ],
       card: 'summary_large_image',
-      title: `Donate to ${organization.pretty_name || organization.name}`,
-      description: `Donate to ${organization.pretty_name || organization.name}`,
+      title: `Donate to ${organization.pretty_name || organization.slug}`,
+      description: `Donate to ${organization.pretty_name || organization.slug}`,
     },
   }
 }

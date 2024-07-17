@@ -32,7 +32,7 @@ export const CreatorsModal = ({
   const addCreator = async (organizationName: string) => {
     toggleOrgNotFound(false)
 
-    if (creators.find((c) => c.name === organizationName)) {
+    if (creators.find((c) => c.slug === organizationName)) {
       return
     }
 
@@ -152,9 +152,9 @@ const CreatorRow = ({
         <Avatar
           className="h-8 w-8"
           avatar_url={creator.avatar_url}
-          name={creator.name}
+          name={creator.slug}
         />
-        <span>{creator.name}</span>
+        <span>{creator.slug}</span>
       </div>
       <Button
         className="h-6 w-6"
@@ -195,9 +195,9 @@ const SubscriptionOrganization = ({
         <Avatar
           className="h-8 w-8"
           avatar_url={organization.avatar_url}
-          name={organization.name}
+          name={organization.slug}
         />
-        <span>{organization.name}</span>
+        <span>{organization.slug}</span>
       </div>
       <div className="flex flex-row items-center gap-x-4">
         <ProductPill product={subscriptionTier} />

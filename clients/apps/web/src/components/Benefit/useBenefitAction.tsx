@@ -27,7 +27,7 @@ export const useBenefitActions = (benefit: UserBenefit): BenefitAction[] => {
           key: 'article',
           icon: ArrowForwardOutlined,
           onClick: () => {
-            router.push(`/${organization?.name}`)
+            router.push(`/${organization?.slug}`)
           },
         },
       ]

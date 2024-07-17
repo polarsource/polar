@@ -711,8 +711,8 @@ export const OrganizationPledgeWithCreatedBy: Story = {
       {
         ...pledgePublicAPI,
         pledger: {
-          name: org.name,
-          github_username: org.name,
+          name: org.slug,
+          github_username: org.slug,
           avatar_url: org.avatar_url,
         },
         authed_can_admin_sender: true,
@@ -736,8 +736,8 @@ export const OrganizationPledgeWithInvoice: Story = {
       {
         ...pledgePublicAPI,
         pledger: {
-          name: org.name,
-          github_username: org.name,
+          name: org.slug,
+          github_username: org.slug,
           avatar_url: org.avatar_url,
         },
         authed_can_admin_sender: true,
@@ -751,8 +751,8 @@ export const OrganizationPledgeWithInvoice: Story = {
       {
         ...pledgePublicAPI,
         pledger: {
-          name: org.name,
-          github_username: org.name,
+          name: org.slug,
+          github_username: org.slug,
           avatar_url: org.avatar_url,
         },
         authed_can_admin_sender: true,

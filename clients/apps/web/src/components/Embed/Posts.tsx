@@ -54,7 +54,7 @@ export const Posts = ({
               width={36}
               height={36}
               avatar_url={organization.avatar_url}
-              name={organization.name}
+              name={organization.slug}
             />
           </div>
           <div
@@ -65,7 +65,7 @@ export const Posts = ({
               fontWeight: 600,
             }}
           >
-            {organization.name}
+            {organization.slug}
           </div>
         </div>
         <div

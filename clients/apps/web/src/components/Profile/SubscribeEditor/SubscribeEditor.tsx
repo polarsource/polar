@@ -1,29 +1,32 @@
 import revalidate from '@/app/actions'
 import { Modal } from '@/components/Modal'
-import { twMerge } from 'tailwind-merge'
 import { useModal } from '@/components/Modal/useModal'
 import { useUpdateOrganization } from '@/hooks/queries'
-import { SettingsOutlined } from '@mui/icons-material'
-import { useState } from 'react'
+import { CloseOutlined, SettingsOutlined } from '@mui/icons-material'
 import {
-  Organization,
   ListResourceOrganizationCustomer,
+  Organization,
   OrganizationSubscribePromoteSettings,
   Product,
   SubscriptionTierType,
 } from '@polar-sh/sdk'
-import Avatar from 'polarkit/components/ui/atoms/avatar'
 import { Switch } from 'polarkit/components/ui/atoms'
-import { FreeTierSubscribe } from '../../Organization/FreeTierSubscribe'
-import { CloseOutlined } from '@mui/icons-material'
+import Avatar from 'polarkit/components/ui/atoms/avatar'
 import Button from 'polarkit/components/ui/atoms/button'
+import { useState } from 'react'
+import { twMerge } from 'tailwind-merge'
+import { FreeTierSubscribe } from '../../Organization/FreeTierSubscribe'
 
-const getDefaultSettings = (organization: Organization): OrganizationSubscribePromoteSettings => {
-  return organization.profile_settings?.subscribe ?? {
-    promote: true,
-    show_count: true,
-    count_free: true,
-  }
+const getDefaultSettings = (
+  organization: Organization,
+): OrganizationSubscribePromoteSettings => {
+  return (
+    organization.profile_settings?.subscribe ?? {
+      promote: true,
+      show_count: true,
+      count_free: true,
+    }
+  )
 }
 
 export interface SubscribeEditorProps {
@@ -39,7 +42,8 @@ export const SubscribeEditor = ({
   products,
   isAdmin,
 }: SubscribeEditorProps) => {
-  const isSubscriptionsEnabled = organization.feature_settings?.subscriptions_enabled
+  const isSubscriptionsEnabled =
+    organization.feature_settings?.subscriptions_enabled
   if (!isSubscriptionsEnabled) {
     return null
   }
@@ -61,37 +65,42 @@ export const SubscribeEditor = ({
         />
       ) : null}
       <div className="flex flex-row items-center gap-x-4">
-      {showCount && (
-        <>
-          <div className="flex w-fit flex-shrink-0 flex-row items-center md:hidden lg:flex">
-            {customerList.items?.map((user, i, array) => (
-              <Avatar
-                className={twMerge(
-                  'h-10 w-10',
-                  i !== array.length - 1 && '-mr-3',
-                )}
-                key={i}
-                name={user.public_name ?? ''}
-                avatar_url={user.avatar_url}
-                height={30}
-                width={30}
-              />
-            ))}
-          </div>
-          <p className="text-sm font-medium">
-            {Intl.NumberFormat('en-US', {
-              notation: 'compact',
-              compactDisplay: 'short',
-            }).format(customerList.pagination.total_count)}{' '}
-            <span className="font-light">
-            {customerList.pagination.total_count === 1
-              ? 'Subscriber'
-              : 'Subscribers'}
-            </span>
-          </p>
-        </>
-      )}
-      {isAdmin && <SubscribeAdminSettings organization={organization} showTip={!customerCount} />}
+        {showCount && (
+          <>
+            <div className="flex w-fit flex-shrink-0 flex-row items-center md:hidden lg:flex">
+              {customerList.items?.map((user, i, array) => (
+                <Avatar
+                  className={twMerge(
+                    'h-10 w-10',
+                    i !== array.length - 1 && '-mr-3',
+                  )}
+                  key={i}
+                  name={user.public_name ?? ''}
+                  avatar_url={user.avatar_url}
+                  height={30}
+                  width={30}
+                />
+              ))}
+            </div>
+            <p className="text-sm font-medium">
+              {Intl.NumberFormat('en-US', {
+                notation: 'compact',
+                compactDisplay: 'short',
+              }).format(customerList.pagination.total_count)}{' '}
+              <span className="font-light">
+                {customerList.pagination.total_count === 1
+                  ? 'Subscriber'
+                  : 'Subscribers'}
+              </span>
+            </p>
+          </>
+        )}
+        {isAdmin && (
+          <SubscribeAdminSettings
+            organization={organization}
+            showTip={!customerCount}
+          />
+        )}
       </div>
     </div>
   )
@@ -99,7 +108,7 @@ export const SubscribeEditor = ({
 
 const SubscribeAdminSettings = ({
   organization,
-  showTip
+  showTip,
 }: {
   organization: Organization
   showTip: boolean
@@ -107,31 +116,38 @@ const SubscribeAdminSettings = ({
   const updateOrganizationMutation = useUpdateOrganization()
   const { isShown: isModalShown, hide: hideModal, show: showModal } = useModal()
 
-  const [settings, setSettings] = useState<OrganizationSubscribePromoteSettings>(
-    getDefaultSettings(organization)
-  )
+  const [settings, setSettings] =
+    useState<OrganizationSubscribePromoteSettings>(
+      getDefaultSettings(organization),
+    )
 
   const updateSettings = (onSuccess: () => void) => {
     updateOrganizationMutation
-      .mutateAsync({
-        id: organization.id,
-        settings: {
-          profile_settings: {
-            subscribe: settings
+      .mutateAsync(
+        {
+          id: organization.id,
+          settings: {
+            profile_settings: {
+              subscribe: settings,
+            },
           },
         },
-      }, {
-        onSuccess: (updated: Organization) => {
-          setSettings(getDefaultSettings(updated))
-          onSuccess()
-        }
-      })
-      .then(() => revalidate(`organization:${organization.name}`))
+        {
+          onSuccess: (updated: Organization) => {
+            setSettings(getDefaultSettings(updated))
+            onSuccess()
+          },
+        },
+      )
+      .then(() => revalidate(`organization:${organization.slug}`))
   }
 
   return (
     <>
-      <a className="text-sm flex flex-row cursor-pointer items-center gap-x-2 text-gray-600 dark:text-gray-400" onClick={showModal}>
+      <a
+        className="flex cursor-pointer flex-row items-center gap-x-2 text-sm text-gray-600 dark:text-gray-400"
+        onClick={showModal}
+      >
         <SettingsOutlined fontSize="small" className="mr-2" />
         {showTip && <span>Subscription promotion</span>}
       </a>
@@ -171,7 +187,6 @@ const SubscribeSettingsModal = ({
     })
   }
 
-
   return (
     <div className="relative flex flex-col gap-y-8 p-10">
       <div className="absolute right-6 top-6">
@@ -199,26 +214,30 @@ const SubscribeSettingsModal = ({
             settings={settings}
             setSettings={setSettings}
             settingKey="promote"
-            title='Promote Free Email Subscription'
-            description="Increase conversion of visitors to subscribers" />
+            title="Promote Free Email Subscription"
+            description="Increase conversion of visitors to subscribers"
+          />
 
           <SettingsRow
             settings={settings}
             setSettings={setSettings}
             settingKey="show_count"
-            title='Show subscriber count'
+            title="Show subscriber count"
             description="Add social proof for others to follow"
-            />
+          />
 
           <SettingsRow
             settings={settings}
             setSettings={setSettings}
             settingKey="count_free"
-            title='Count free subscriptions'
-            description="Include free subscriptions in public count" />
+            title="Count free subscriptions"
+            description="Include free subscriptions in public count"
+          />
         </div>
 
-        <Button onClick={onSubmit} loading={isSaving}>Save</Button>
+        <Button onClick={onSubmit} loading={isSaving}>
+          Save
+        </Button>
       </div>
     </div>
   )
@@ -229,7 +248,7 @@ const SettingsRow = ({
   setSettings,
   settingKey,
   title,
-  description
+  description,
 }: {
   settings: OrganizationSubscribePromoteSettings
   setSettings: (settings: OrganizationSubscribePromoteSettings) => void
@@ -241,19 +260,26 @@ const SettingsRow = ({
   const onChange = (checked: boolean) => {
     setSettings({
       ...settings,
-      [settingKey]: checked
+      [settingKey]: checked,
     })
   }
 
   return (
     <div className="flex flex-row items-center">
-      <label htmlFor={`subscribe-${settingKey}`} className="text-sm grow font-medium flex flex-col">
+      <label
+        htmlFor={`subscribe-${settingKey}`}
+        className="flex grow flex-col text-sm font-medium"
+      >
         {title}
         {description && (
           <span className="font-normal text-gray-500">{description}</span>
         )}
       </label>
-      <Switch id={`subscribe-${settingKey}`} checked={checked} onCheckedChange={onChange} />
+      <Switch
+        id={`subscribe-${settingKey}`}
+        checked={checked}
+        onCheckedChange={onChange}
+      />
     </div>
   )
 }

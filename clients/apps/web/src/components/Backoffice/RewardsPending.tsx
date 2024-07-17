@@ -283,7 +283,7 @@ const Pledges = () => {
                               src={r.organization.avatar_url}
                             />
                             <div className="underline">
-                              {r.organization.name}
+                              {r.organization.slug}
                             </div>
                           </>
                         )}

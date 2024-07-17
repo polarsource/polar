@@ -65,7 +65,7 @@ class OrganizationService(ResourceServiceReader[Organization]):
         slug: str | None = None,
         is_member: bool | None = None,
         pagination: PaginationParams,
-        sorting: list[Sorting[SortProperty]] = [(SortProperty.created_at, True)],
+        sorting: list[Sorting[SortProperty]] = [(SortProperty.created_at, False)],
     ) -> tuple[Sequence[Organization], int]:
         statement = self._get_readable_organization_statement(auth_subject)
 

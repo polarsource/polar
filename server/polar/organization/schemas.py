@@ -17,7 +17,7 @@ from polar.kit.schemas import (
 OrganizationID = Annotated[
     UUID4,
     MergeJSONSchema({"description": "The organization ID."}),
-    SelectorWidget("/v1/organizations/", "Organization", "name"),
+    SelectorWidget("/v1/organizations/", "Organization", "slug"),
 ]
 
 

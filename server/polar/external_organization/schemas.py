@@ -1,10 +1,18 @@
 from datetime import datetime
-from typing import Self
+from typing import Annotated, Self
 from uuid import UUID
+
+from pydantic import UUID4
 
 from polar.enums import Platforms
 from polar.integrations.github import types
-from polar.kit.schemas import Schema
+from polar.kit.schemas import MergeJSONSchema, Schema, SelectorWidget
+
+ExternalOrganizationID = Annotated[
+    UUID4,
+    MergeJSONSchema({"description": "The external organization ID."}),
+    SelectorWidget("/v1/external-organizations", "External Organization", "name"),
+]
 
 
 # Public API

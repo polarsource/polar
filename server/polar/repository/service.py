@@ -216,9 +216,16 @@ class RepositoryService(
         load_organization: bool = False,
         allow_deleted: bool = False,
     ) -> Repository | None:
-        statement = sql.select(Repository).where(
-            Repository.organization_id == organization_id,
-            Repository.name == name,
+        statement = (
+            sql.select(Repository)
+            .join(
+                ExternalOrganization,
+                onclause=ExternalOrganization.id == Repository.organization_id,
+            )
+            .where(
+                ExternalOrganization.organization_id == organization_id,
+                Repository.name == name,
+            )
         )
 
         if not allow_deleted:

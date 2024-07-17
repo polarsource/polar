@@ -56,7 +56,7 @@ const ClientPage = () => {
     clearDraft('ArticleCreate')
 
     router.replace(
-      `/maintainer/${created.organization.name}/posts/${created.slug}${extraPath ?? ''}`,
+      `/maintainer/${created.organization.slug}/posts/${created.slug}${extraPath ?? ''}`,
     )
   }
 
@@ -110,7 +110,7 @@ const ClientPage = () => {
   }
 
   if (!org.feature_settings?.articles_enabled) {
-    return redirect(`/maintainer/${org.name}/posts`)
+    return redirect(`/maintainer/${org.slug}/posts`)
   }
 
   return (

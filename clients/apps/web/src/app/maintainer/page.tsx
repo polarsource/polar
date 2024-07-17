@@ -51,8 +51,8 @@ export default function Page() {
     // redirect to first org
     if (personalOrg) {
       shouldBeOnboarded(personalOrg)
-        ? redirect(`/maintainer/${personalOrg.name}/onboarding`)
-        : redirect(`/maintainer/${personalOrg.name}/overview`)
+        ? redirect(`/maintainer/${personalOrg.slug}/onboarding`)
+        : redirect(`/maintainer/${personalOrg.slug}/overview`)
       return
     }
   }, [

@@ -16,7 +16,7 @@ export const PublishShareModal = ({
   isShown,
   hide,
 }: PublishShareModalProps) => {
-  const url = `https://polar.sh/${article.organization.name}/posts/${article.slug}`
+  const url = `https://polar.sh/${article.organization.slug}/posts/${article.slug}`
 
   return (
     <Modal

@@ -60,7 +60,7 @@ export default function NewWebhookModal({
             <div className="flex w-full flex-row items-center justify-between">
               <span>Your hook was setup, and is now receiving events!</span>
               <Link
-                href={`/maintainer/${organization.name}/settings/webhooks/endpoints/${created.id}`}
+                href={`/maintainer/${organization.slug}/settings/webhooks/endpoints/${created.id}`}
                 className="shrink-0"
               >
                 <Button asChild>Go to</Button>

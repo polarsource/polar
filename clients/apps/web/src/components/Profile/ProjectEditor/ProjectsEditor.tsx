@@ -47,7 +47,7 @@ export const ProjectsEditor = ({
           },
         },
       })
-      .then(() => revalidate(`organization:${organization.name}`)),
+      .then(() => revalidate(`organization:${organization.slug}`)),
   )
 
   const EditorEmptyState = () => {

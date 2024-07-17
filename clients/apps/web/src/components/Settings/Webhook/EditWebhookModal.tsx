@@ -75,7 +75,7 @@ export default function EditWebhookModal({
     await deleteWebhookEndpoint.mutateAsync({ id: endpoint.id })
     hideDeleteModal()
     hide()
-    router.push(`/maintainer/${organization.name}/settings`)
+    router.push(`/maintainer/${organization.slug}/settings`)
   }, [hideDeleteModal, router, endpoint, organization, hide])
 
   return (

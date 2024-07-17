@@ -20,7 +20,7 @@ const RepositoryCard = ({
   organization: Organization
   repository: Repository
 }) => {
-  const repoURL = githubRepoUrl(organization.name, repository.name)
+  const repoURL = githubRepoUrl(organization.slug, repository.name)
 
   return (
     <>

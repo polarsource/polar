@@ -61,7 +61,7 @@ const BenefitDetails = ({ benefit }: BenefitDetailsProps) => {
       </p>
       {benefit.type === 'custom' && benefit.properties.note && (
         <div className="rounded-2xl bg-blue-50 px-4 py-3 text-sm dark:bg-blue-950">
-          <p className="mb-4 font-medium">Note from {org.name}</p>
+          <p className="mb-4 font-medium">Note from {org.slug}</p>
           <p className="whitespace-pre-line">{benefit.properties.note}</p>
         </div>
       )}

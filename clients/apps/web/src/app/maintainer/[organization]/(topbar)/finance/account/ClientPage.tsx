@@ -71,7 +71,7 @@ export default function ClientPage({
           {accounts?.items && (
             <AccountsList
               accounts={accounts?.items}
-              returnPath={`/maintainer/${organization.name}/finance/account`}
+              returnPath={`/maintainer/${organization.slug}/finance/account`}
             />
           )}
         </ShadowBoxOnMd>
@@ -86,7 +86,7 @@ export default function ClientPage({
             onClose={hideSetupModal}
             accountTypes={ALL_ACCOUNT_TYPES}
             forOrganizationId={organization.id}
-            returnPath={`/maintainer/${organization.name}/finance/account`}
+            returnPath={`/maintainer/${organization.slug}/finance/account`}
           />
         }
       />

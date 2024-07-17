@@ -37,7 +37,7 @@ export default async function Layout({
   const adminOrgs = adminOrganizations.items ?? []
 
   // User does not have access to organization
-  const org = orgs.find((o) => o.name === params.organization)
+  const org = orgs.find((o) => o.slug === params.organization)
 
   const personalOrganization = orgs.find((o) => o.is_personal)
 
@@ -46,7 +46,7 @@ export default async function Layout({
   }
 
   if (shouldBeOnboarded(org)) {
-    return redirect(`/maintainer/${org.name}/onboarding`)
+    return redirect(`/maintainer/${org.slug}/onboarding`)
   }
 
   return (

@@ -26,8 +26,8 @@ import GitHubIcon from '../Icons/GitHubIcon'
 import { Modal, ModalHeader } from '../Modal'
 import { useModal } from '../Modal/useModal'
 import { DescriptionEditor } from '../Profile/DescriptionEditor/DescriptionEditor'
-import Spinner from '../Shared/Spinner'
 import { SubscribeEditor } from '../Profile/SubscribeEditor/SubscribeEditor'
+import Spinner from '../Shared/Spinner'
 
 interface OrganizationPublicSidebarProps {
   organization: Organization
@@ -62,7 +62,7 @@ export const OrganizationPublicSidebar = ({
           profile_settings: setting,
         },
       })
-      .then(() => revalidate(`organization:${organization.name}`))
+      .then(() => revalidate(`organization:${organization.slug}`))
   }
 
   const updateDescription = (description: string) => {
@@ -79,19 +79,19 @@ export const OrganizationPublicSidebar = ({
       <div className="flex w-full flex-row items-center gap-x-4 gap-y-6 md:flex-col md:items-start md:gap-x-0">
         <Avatar
           className="h-16 w-16 md:mb-6 md:h-32 md:w-32 lg:h-60 lg:w-60"
-          name={organization.name}
+          name={organization.slug}
           avatar_url={organization.avatar_url}
         />
         <div className="flex flex-col md:gap-y-2">
           <h1 className="text-xl text-gray-800 md:text-2xl dark:text-white">
-            {organization.pretty_name ?? organization.name}
+            {organization.pretty_name ?? organization.slug}
           </h1>
           {organization.pretty_name && (
             <Link
               className="text-blue-500 hover:text-blue-400 md:text-lg dark:text-blue-400 dark:hover:text-blue-300"
-              href={`/${organization.name}`}
+              href={`/${organization.slug}`}
             >
-              @{organization.name}
+              @{organization.slug}
             </Link>
           )}
         </div>
@@ -118,7 +118,7 @@ export const OrganizationPublicSidebar = ({
             maxLength={160}
           />
           <div className="flex flex-row flex-wrap items-center gap-3 text-lg">
-            <SocialLink href={`https://github.com/${organization.name}`}>
+            <SocialLink href={`https://github.com/${organization.slug}`}>
               <GitHubIcon width={20} height={20} />
             </SocialLink>
             {organization.twitter_username && (
@@ -158,7 +158,12 @@ export const OrganizationPublicSidebar = ({
             </Button>
           </div>
         </div>
-        <SubscribeEditor organization={organization} customerList={organizationCustomers} products={products} isAdmin={isAdmin} />
+        <SubscribeEditor
+          organization={organization}
+          customerList={organizationCustomers}
+          products={products}
+          isAdmin={isAdmin}
+        />
 
         {organization.donations_enabled && !isDonatePage ? (
           <DonateWidget organization={organization} />
@@ -198,7 +203,7 @@ const RssModal = ({
   const { currentUser } = useAuth()
   const [token, setToken] = useState<string>()
   const auth = token ? `?auth=${token}` : ''
-  const url = `${CONFIG.FRONTEND_BASE_URL}/${organization.name}/rss${auth}`
+  const url = `${CONFIG.FRONTEND_BASE_URL}/${organization.slug}/rss${auth}`
 
   useEffect(() => {
     if (!currentUser) {
@@ -210,7 +215,7 @@ const RssModal = ({
     api.personalAccessToken
       .createPersonalAccessToken({
         body: {
-          comment: `RSS for ${organization.name}`,
+          comment: `RSS for ${organization.slug}`,
           scopes: ['organizations:read', 'articles:read'],
         },
       })
@@ -229,7 +234,7 @@ const RssModal = ({
     <>
       <ModalHeader className="px-8 py-4" hide={hide}>
         <h3 className="text-lg font-medium text-gray-950 dark:text-white">
-          Subscribe to {organization.pretty_name || organization.name} via RSS
+          Subscribe to {organization.pretty_name || organization.slug} via RSS
         </h3>
       </ModalHeader>
       <div className="p-8">

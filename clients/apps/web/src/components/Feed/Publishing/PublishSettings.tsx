@@ -68,7 +68,7 @@ export const PublishSettings = ({ article }: PublishModalContentProps) => {
 
   const handleArchiveArticle = useCallback(async () => {
     await archiveArticle.mutateAsync({ id: article.id })
-    router.push(`/maintainer/${article.organization.name}/posts`)
+    router.push(`/maintainer/${article.organization.slug}/posts`)
     hideArchiveModal()
   }, [archiveArticle, article, hideArchiveModal, router])
 
@@ -112,7 +112,7 @@ export const PublishSettings = ({ article }: PublishModalContentProps) => {
       // Redirect if slug changed
       if (slugChanged) {
         router.push(
-          `/maintainer/${article.organization.name}/posts/${updatedArticle.slug}#settings`,
+          `/maintainer/${article.organization.slug}/posts/${updatedArticle.slug}#settings`,
         )
       }
     } catch (e) {
@@ -244,7 +244,7 @@ const FormSlug = (props: { article: Article }) => {
 
           // Redirect
           router.push(
-            `/maintainer/${art.organization.name}/posts/${art.slug}#settings`,
+            `/maintainer/${art.organization.slug}/posts/${art.slug}#settings`,
           )
 
           // Wait for redirect

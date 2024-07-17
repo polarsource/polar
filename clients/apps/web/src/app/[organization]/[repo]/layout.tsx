@@ -91,7 +91,7 @@ export default async function Layout({
               <Avatar
                 className="h-8 w-8"
                 avatar_url={organization.avatar_url}
-                name={organization.name}
+                name={organization.slug}
               />
             </Link>
             <h1 className="flex flex-row items-baseline gap-x-4 text-2xl !font-normal">

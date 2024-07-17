@@ -14,5 +14,5 @@ export default async function Page({
     notFound()
   }
 
-  return redirect(`/maintainer/${organization.name}/overview`)
+  return redirect(`/maintainer/${organization.slug}/overview`)
 }

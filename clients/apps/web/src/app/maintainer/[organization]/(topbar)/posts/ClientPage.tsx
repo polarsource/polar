@@ -80,7 +80,7 @@ const ClientPage = () => {
   const showNoPostsYet = infinitePosts.length === 0 && posts.isFetched
 
   const trafficStatistics = useTrafficStatistics({
-    orgName: org?.name ?? '',
+    orgName: org?.slug ?? '',
     platform: org?.platform,
     startDate: startOfMonthThreeMonthsAgo,
     endDate: startOfMonth,
@@ -96,7 +96,7 @@ const ClientPage = () => {
       ?.views ?? 0
 
   const referrers = useTrafficTopReferrers({
-    orgName: org?.name ?? '',
+    orgName: org?.slug ?? '',
     platform: org?.platform,
     startDate: startOfMonthThreeMonthsAgo,
     endDate: today,
@@ -164,7 +164,7 @@ const ClientPage = () => {
                 Overview
               </h3>
               <Link
-                href={`/maintainer/${org?.name}/posts/new`}
+                href={`/maintainer/${org?.slug}/posts/new`}
                 onClick={() => captureEvent('posts:overview_create_new:click')}
               >
                 <Button className="h-8 w-8 rounded-full">
@@ -246,7 +246,7 @@ const ClientPage = () => {
                     ))}
                     <Link
                       className="mt-2 flex flex-row items-center gap-x-2 text-sm text-blue-500 hover:text-blue-400 dark:text-blue-400 dark:hover:text-blue-300"
-                      href={`/maintainer/${org?.name}/posts/analytics`}
+                      href={`/maintainer/${org?.slug}/posts/analytics`}
                     >
                       <span>View Analytics</span>
                       <ArrowForwardOutlined fontSize="inherit" />
@@ -268,7 +268,7 @@ const PostItem = (post: Article) => {
   const ref = useRef<HTMLAnchorElement>(null)
   const { org: currentOrg } = useCurrentOrgAndRepoFromURL()
   const isHovered = useHoverDirty(ref)
-  const href = `/maintainer/${currentOrg?.name}/posts/${post.slug}`
+  const href = `/maintainer/${currentOrg?.slug}/posts/${post.slug}`
 
   return (
     <Link

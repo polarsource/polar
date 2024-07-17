@@ -28,7 +28,7 @@ const OpenGraphImageArticle = ({
         justifyContent: 'space-between',
         background: 'white',
         backgroundImage: `url(${imageBaseURL}/${generatePostOGFallbackPath(
-          organization.name,
+          organization.slug,
           7,
         )})`,
         backgroundSize: 'cover',
@@ -62,7 +62,7 @@ const OpenGraphImageArticle = ({
           whiteSpace: 'nowrap',
         }}
       >
-        {organization.name}
+        {organization.slug}
       </div>
       <LogoIcon size={72} />
     </div>

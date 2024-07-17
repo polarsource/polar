@@ -78,7 +78,7 @@ const PostHeader = (props: FeedPost & { isHovered: boolean }) => {
           >
             <h3 className="text-blue-500 hover:text-blue-600 dark:text-blue-400 hover:dark:text-blue-500">
               {props.article.organization.pretty_name ||
-                props.article.organization.name}
+                props.article.organization.slug}
             </h3>
           </Link>
         </div>

@@ -40,7 +40,7 @@ const WebhookSettings = (props: { org: Organization }) => {
         ) : (
           <ShadowListGroup.Item>
             <p className="dark:text-polar-400 text-sm text-gray-500">
-              {props.org.name} doesn&apos;t have any webhooks yet
+              {props.org.slug} doesn&apos;t have any webhooks yet
             </p>
           </ShadowListGroup.Item>
         )}
@@ -102,7 +102,7 @@ const Endpoint = ({
         </div>
         <div className="dark:text-polar-400 flex flex-shrink-0 flex-row items-center gap-x-4 space-x-4 text-gray-500">
           <Link
-            href={`/maintainer/${organization.name}/settings/webhooks/endpoints/${endpoint.id}`}
+            href={`/maintainer/${organization.slug}/settings/webhooks/endpoints/${endpoint.id}`}
           >
             <Button asChild variant="secondary">
               Details

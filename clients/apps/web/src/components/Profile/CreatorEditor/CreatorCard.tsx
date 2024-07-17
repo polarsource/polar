@@ -47,15 +47,15 @@ export const CreatorCard = ({
           <Avatar
             className="h-10 w-10"
             avatar_url={organization.avatar_url}
-            name={organization.name}
+            name={organization.slug}
           />
           <div className="flex flex-col">
             <h3 className="text-gray-950 dark:text-white">
-              {organization.pretty_name || organization.name}
+              {organization.pretty_name || organization.slug}
             </h3>
             {organization.pretty_name && (
               <h3 className="text-sm text-blue-500 dark:text-blue-400">
-                @{organization.name}
+                @{organization.slug}
               </h3>
             )}
           </div>
@@ -91,7 +91,7 @@ export const CreatorCard = ({
             </Link>
           )}
           <Link
-            href={`https://github.com/${organization.name}`}
+            href={`https://github.com/${organization.slug}`}
             target="_blank"
           >
             <Button className="aspect-square" size="icon" variant="secondary">

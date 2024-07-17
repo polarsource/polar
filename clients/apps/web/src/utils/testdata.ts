@@ -47,7 +47,7 @@ export function addHours(date: Date, hours: number) {
 export const org: Organization = {
   id: 'xxxabc',
   platform: Platforms.GITHUB,
-  name: 'pydantic',
+  slug: 'pydantic',
   avatar_url: 'https://avatars.githubusercontent.com/u/110818415?s=48&v=4',
   pledge_minimum_amount: 2000,
   pretty_name: 'Pydantic',
@@ -336,7 +336,7 @@ export const article: Article = {
   organization_id: org.id,
   organization: {
     ...org,
-    name: 'polarsource',
+    slug: 'polarsource',
     pretty_name: 'Polar',
   },
   title: 'Build SaaS with Polar using our API, Webhooks & OAuth',

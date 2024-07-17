@@ -33,7 +33,7 @@ const postTemplates = (organization: Organization, hasNoPosts: boolean) =>
               className="text-blue-500 dark:text-blue-400"
             />
           ),
-          link: `/maintainer/${organization.name}/posts/new`,
+          link: `/maintainer/${organization.slug}/posts/new`,
         }
       : {
           title: 'TIL',
@@ -45,7 +45,7 @@ const postTemplates = (organization: Organization, hasNoPosts: boolean) =>
               className="text-blue-500 dark:text-blue-400"
             />
           ),
-          link: `/maintainer/${organization.name}/posts/new`,
+          link: `/maintainer/${organization.slug}/posts/new`,
         },
     {
       title: 'Technical Deep-dive',
@@ -57,7 +57,7 @@ const postTemplates = (organization: Organization, hasNoPosts: boolean) =>
           fontSize="large"
         />
       ),
-      link: `/maintainer/${organization.name}/posts/new`,
+      link: `/maintainer/${organization.slug}/posts/new`,
     },
   ].slice(0, 2)
 
@@ -179,7 +179,7 @@ const DraftPost = ({
   return (
     <Link
       ref={ref}
-      href={`/maintainer/${organization.name}/posts/${draft.slug}`}
+      href={`/maintainer/${organization.slug}/posts/${draft.slug}`}
       className="flex w-full flex-row items-center justify-between"
     >
       <div className="flex flex-1 flex-col overflow-hidden">

@@ -25,7 +25,7 @@ const AccountBanner: React.FC<AccountBannerProps> = ({
 
   const setupLink = isPersonal
     ? '/finance/account'
-    : `/maintainer/${organization.name}/finance/account`
+    : `/maintainer/${organization.slug}/finance/account`
 
   const currentAccount = isPersonal
     ? organizationAccount || personalAccount

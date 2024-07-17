@@ -28,17 +28,17 @@ export async function generateMetadata({
   }
 
   return {
-    title: `${organization.pretty_name || organization.name}`, // " | Polar is added by the template"
+    title: `${organization.pretty_name || organization.slug}`, // " | Polar is added by the template"
     openGraph: {
-      title: `${organization.pretty_name || organization.name} subscriptions`,
+      title: `${organization.pretty_name || organization.slug} subscriptions`,
       description: `Subscribe to ${
-        organization.pretty_name || organization.name
+        organization.pretty_name || organization.slug
       }`,
       siteName: 'Polar',
 
       images: [
         {
-          url: `https://polar.sh/og?org=${organization.name}`,
+          url: `https://polar.sh/og?org=${organization.slug}`,
           width: 1200,
           height: 630,
         },
@@ -47,16 +47,16 @@ export async function generateMetadata({
     twitter: {
       images: [
         {
-          url: `https://polar.sh/og?org=${organization.name}`,
+          url: `https://polar.sh/og?org=${organization.slug}`,
           width: 1200,
           height: 630,
-          alt: `${organization.pretty_name || organization.name} subscriptions`,
+          alt: `${organization.pretty_name || organization.slug} subscriptions`,
         },
       ],
       card: 'summary_large_image',
-      title: `${organization.pretty_name || organization.name} subscriptions`,
+      title: `${organization.pretty_name || organization.slug} subscriptions`,
       description: `Subscribe to ${
-        organization.pretty_name || organization.name
+        organization.pretty_name || organization.slug
       }`,
     },
   }

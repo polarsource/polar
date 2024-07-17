@@ -126,9 +126,9 @@ export async function generateMetadata({
         'application/rss+xml': [
           {
             title: `${
-              article.organization.pretty_name || article.organization.name
+              article.organization.pretty_name || article.organization.slug
             }`,
-            url: `https://polar.sh/${article.organization.name}/rss`,
+            url: `https://polar.sh/${article.organization.slug}/rss`,
           },
         ],
       },
@@ -173,12 +173,12 @@ export default async function Page({
     author: {
       '@type': 'Organization',
       name: article.byline.name,
-      url: `https://polar.sh/${article.organization.name}`,
+      url: `https://polar.sh/${article.organization.slug}`,
     },
     publisher: {
       '@type': 'Organization',
       name: article.byline.name,
-      url: `https://polar.sh/${article.organization.name}`,
+      url: `https://polar.sh/${article.organization.slug}`,
     },
   }
 

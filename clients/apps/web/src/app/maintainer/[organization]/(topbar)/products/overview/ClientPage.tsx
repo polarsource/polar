@@ -26,7 +26,7 @@ export default function ClientPage() {
     (value: ProductPriceType | 'all') => {
       const params = new URLSearchParams({ type: value })
       router.push(
-        `/maintainer/${org?.name}/products/overview?${params.toString()}`,
+        `/maintainer/${org?.slug}/products/overview?${params.toString()}`,
       )
     },
     [router, org],
@@ -62,7 +62,7 @@ export default function ClientPage() {
             value={productPriceType}
             onChange={onFilterChange}
           />
-          <Link href={`/maintainer/${org?.name}/products/new`}>
+          <Link href={`/maintainer/${org?.slug}/products/new`}>
             <Button size="icon" role="link">
               <AddOutlined className="h-4 w-4" />
             </Button>
@@ -73,7 +73,7 @@ export default function ClientPage() {
         {products.data?.items?.sort(sortProducts).map((product) => (
           <Link
             key={product.id}
-            href={`/maintainer/${org?.name}/products/${product.id}`}
+            href={`/maintainer/${org?.slug}/products/${product.id}`}
           >
             {product.is_recurring ? (
               <SubscriptionTierCard

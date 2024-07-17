@@ -79,7 +79,7 @@ export default ClientPage
 
 const TopReferrers = ({ org }: { org: Organization }) => {
   const data = useTrafficTopReferrers({
-    orgName: org?.name ?? '',
+    orgName: org?.slug ?? '',
     platform: org?.platform,
     startDate: startOfMonthThreeMonthsAgo,
     endDate: today,
@@ -129,7 +129,7 @@ const TopReferrers = ({ org }: { org: Organization }) => {
 
 const DailyViews = ({ org }: { org: Organization }) => {
   const trafficStatistics = useTrafficStatistics({
-    orgName: org?.name ?? '',
+    orgName: org?.slug ?? '',
     platform: org?.platform,
     startDate: startOfMonthThreeMonthsAgo,
     endDate: today,

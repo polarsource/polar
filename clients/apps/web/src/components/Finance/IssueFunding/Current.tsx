@@ -27,7 +27,7 @@ export default function Current({
 
   const pledges = useListPledgesForOrganization(
     organization.platform,
-    organization.name,
+    organization.slug,
   )
   const rewards = useListRewards(organization.id)
 

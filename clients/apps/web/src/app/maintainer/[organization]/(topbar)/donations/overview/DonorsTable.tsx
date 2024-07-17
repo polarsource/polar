@@ -53,7 +53,7 @@ const DonorsTable: React.FC<DonorsTableProps> = ({
         : updaterOrValue
 
     router.push(
-      `/maintainer/${organization.name}/donations/overview?${getSearchParams(
+      `/maintainer/${organization.slug}/donations/overview?${getSearchParams(
         updatedPagination,
         sorting,
       )}`,
@@ -71,7 +71,7 @@ const DonorsTable: React.FC<DonorsTableProps> = ({
         : updaterOrValue
 
     router.push(
-      `/maintainer/${organization.name}/donations/overview?${getSearchParams(
+      `/maintainer/${organization.slug}/donations/overview?${getSearchParams(
         pagination,
         updatedSorting,
       )}`,

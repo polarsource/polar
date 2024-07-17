@@ -53,7 +53,7 @@ const ucfirst = (s: string): string => {
 const WebhookNotificationSettings = (props: { org: Organization }) => {
   const webhooks = useSearchWebhookNotifications(
     props.org.platform,
-    props.org.name,
+    props.org.slug,
   )
   const createWebhook = useCreateWebhookNotification()
 
@@ -95,7 +95,7 @@ const WebhookNotificationSettings = (props: { org: Organization }) => {
         ) : (
           <ShadowListGroup.Item>
             <p className="dark:text-polar-400 text-sm text-gray-500">
-              {props.org.name} doesn&apos;t have any webhooks yet
+              {props.org.slug} doesn&apos;t have any webhooks yet
             </p>
           </ShadowListGroup.Item>
         )}

@@ -43,7 +43,7 @@ const ClientPage: React.FC<OrganizationSubscriptionsPublicPageProps> = ({
       <div className="flex flex-col gap-y-2">
         <h2 className="text-xl">Subscriptions</h2>
         <p className="dark:text-polar-500 text-gray-500">
-          Support {organization.name} with a subscription and receive unique
+          Support {organization.slug} with a subscription and receive unique
           benefits in return
         </p>
       </div>

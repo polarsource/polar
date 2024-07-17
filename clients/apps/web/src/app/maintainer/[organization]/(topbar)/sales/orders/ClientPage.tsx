@@ -77,7 +77,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
         : updaterOrValue
 
     router.push(
-      `/maintainer/${organization.name}/sales/orders?${getSearchParams(
+      `/maintainer/${organization.slug}/sales/orders?${getSearchParams(
         updatedPagination,
         sorting,
         productId,
@@ -97,7 +97,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
         : updaterOrValue
 
     router.push(
-      `/maintainer/${organization.name}/sales/orders?${getSearchParams(
+      `/maintainer/${organization.slug}/sales/orders?${getSearchParams(
         pagination,
         updatedSorting,
         productId,
@@ -116,7 +116,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
   }, [productId, productPriceType])
   const onProductSelect = (value: ProductSelectType | undefined) => {
     router.push(
-      `/maintainer/${organization.name}/sales/orders?${getSearchParams(
+      `/maintainer/${organization.slug}/sales/orders?${getSearchParams(
         pagination,
         sorting,
         value && 'productId' in value ? value.productId : undefined,

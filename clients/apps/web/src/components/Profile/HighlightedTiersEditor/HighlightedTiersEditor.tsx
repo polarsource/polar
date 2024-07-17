@@ -96,7 +96,7 @@ export const HighlightedTiersEditor = ({
             </Link>
           </div>
           <p className="dark:text-polar-500 text-sm text-gray-500">
-            Support {organization.name} with a subscription & receive unique
+            Support {organization.slug} with a subscription & receive unique
             benefits in return
           </p>
         </div>
@@ -211,7 +211,7 @@ const HighlightedTiersEditorAuthenticatedEmptyState = ({
             >
               Setup Suggested Tier
             </Button>
-            <Link href={`/maintainer/${organization.name}/products/new`}>
+            <Link href={`/maintainer/${organization.slug}/products/new`}>
               <Button variant="ghost" fullWidth size="sm">
                 Create Custom
               </Button>

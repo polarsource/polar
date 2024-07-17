@@ -211,7 +211,7 @@ const renderArticle = async (
   unsubscribeLink =
     unsubscribeLink ??
     // If we don't have a subscription token. Send user to the subscriptions page.
-    preAuthLink(`/${post.organization.name}/subscriptions`)
+    preAuthLink(`/${post.organization.slug}/subscriptions`)
 
   // Fetch and create ads context
   const benefitIds = parseBenefitIdsFromBody(article.body)
@@ -253,7 +253,7 @@ const renderArticle = async (
                   <center>
                     <a
                       href={preAuthLink(
-                        `/${post.organization.name}/posts/${post.slug}`,
+                        `/${post.organization.slug}/posts/${post.slug}`,
                       )}
                       target="_blank"
                       className="text-sm text-black"
@@ -269,7 +269,7 @@ const renderArticle = async (
                   <h1>
                     <a
                       href={preAuthLink(
-                        `/${post.organization.name}/posts/${post.slug}`,
+                        `/${post.organization.slug}/posts/${post.slug}`,
                       )}
                       target="_blank"
                       className="text-gray-900 no-underline"
@@ -323,11 +323,11 @@ const renderArticle = async (
               <center className="py-3 pt-3 text-xs text-gray-500">
                 You received this email because you&apos;re a subscriber to{' '}
                 <a
-                  href={preAuthLink(`/${post.organization.name}`)}
+                  href={preAuthLink(`/${post.organization.slug}`)}
                   target="_blank"
                   className="!underline underline-offset-1"
                 >
-                  {post.organization.pretty_name || post.organization.name}
+                  {post.organization.pretty_name || post.organization.slug}
                 </a>
                 . Thanks!
               </center>

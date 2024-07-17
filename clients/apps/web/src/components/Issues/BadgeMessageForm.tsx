@@ -122,7 +122,7 @@ const BadgeMessageForm = (props: {
             </div>
 
             <IssueBadge
-              orgName={props.org.name}
+              orgName={props.org.slug}
               showAmountRaised={showAmountRaised}
               darkmode={resolvedTheme === 'dark'}
               funding={funding}

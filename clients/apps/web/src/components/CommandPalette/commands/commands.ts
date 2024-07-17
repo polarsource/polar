@@ -82,7 +82,7 @@ const organizationSpecificCommands: Command[] = [
       if (organization) {
         hidePalette()
 
-        router.push(`/${organization.name}`)
+        router.push(`/${organization.slug}`)
       }
     },
   },
@@ -95,7 +95,7 @@ const organizationSpecificCommands: Command[] = [
       if (organization) {
         hidePalette()
 
-        router.push(`/maintainer/${organization.name}/posts/new`)
+        router.push(`/maintainer/${organization.slug}/posts/new`)
       }
     },
   },

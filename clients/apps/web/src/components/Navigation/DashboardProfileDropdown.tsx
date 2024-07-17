@@ -2,8 +2,8 @@
 
 import { useGitHubAccount, useLogout } from '@/hooks'
 import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
-import { useOutsideClick } from '@/utils/useOutsideClick'
 import { CONFIG } from '@/utils/config'
+import { useOutsideClick } from '@/utils/useOutsideClick'
 import {
   AddOutlined,
   KeyboardArrowDownOutlined,
@@ -33,7 +33,7 @@ const DashboardProfileDropdown = ({ className = '' }) => {
   const personalOrg = orgContext?.personalOrganization
 
   const organizationsExceptSelf = orgs.filter(
-    (org) => org.name !== loggedUser?.username,
+    (org) => org.slug !== loggedUser?.username,
   )
 
   const ref = useRef(null)
@@ -52,7 +52,7 @@ const DashboardProfileDropdown = ({ className = '' }) => {
 
   const current = currentOrg
     ? ({
-        name: currentOrg.name,
+        name: currentOrg.slug,
         avatar_url: currentOrg.avatar_url,
       } as const)
     : ({
@@ -85,13 +85,13 @@ const DashboardProfileDropdown = ({ className = '' }) => {
             <>
               {personalOrg ? (
                 <Link
-                  href={`/maintainer/${personalOrg.name}/overview`}
+                  href={`/maintainer/${personalOrg.slug}/overview`}
                   className="w-full"
                 >
                   <ListItem
                     current={
                       currentOrg === undefined ||
-                      currentOrg.name === loggedUser.username
+                      currentOrg.slug === loggedUser.username
                     }
                   >
                     <Profile
@@ -124,12 +124,12 @@ const DashboardProfileDropdown = ({ className = '' }) => {
               <div className="mb-2 flex flex-col">
                 {organizationsExceptSelf.map((org) => (
                   <Link
-                    href={`/maintainer/${org.name}/overview`}
+                    href={`/maintainer/${org.slug}/overview`}
                     className="w-full"
                     key={org.id}
                   >
                     <ListItem current={currentOrg?.id === org.id}>
-                      <Profile name={org.name} avatar_url={org.avatar_url} />
+                      <Profile name={org.slug} avatar_url={org.avatar_url} />
                     </ListItem>
                   </Link>
                 ))}

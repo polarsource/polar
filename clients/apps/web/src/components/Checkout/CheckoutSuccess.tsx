@@ -39,7 +39,7 @@ export const CheckoutSuccess = (props: {
 
     setEmailSigninLoading(true)
     try {
-      sendMagicLink(email, `/${organization.name}`)
+      sendMagicLink(email, `/${organization.slug}`)
     } catch (err) {
       // TODO: error handling
     } finally {
@@ -62,7 +62,7 @@ export const CheckoutSuccess = (props: {
           <Card className="w-full md:w-1/2">
             <CardHeader>
               <CardTitle className="text-xl font-medium">
-                Thank you for supporting {organization.name}!
+                Thank you for supporting {organization.slug}!
               </CardTitle>
               <p className="text-muted-foreground text-sm">
                 You&apos;re now eligible for the benefits of {product.name}.
@@ -85,8 +85,8 @@ export const CheckoutSuccess = (props: {
             </CardContent>
             <CardFooter className="flex justify-center">
               {currentUser && (
-                <Link className="grow" href={`/${organization.name}`}>
-                  <Button className="w-full">Go to {organization.name}</Button>
+                <Link className="grow" href={`/${organization.slug}`}>
+                  <Button className="w-full">Go to {organization.slug}</Button>
                 </Link>
               )}
               {!currentUser && (

@@ -38,7 +38,7 @@ export default function ClientPage({
   const setActiveTab = useCallback(
     (value: string) => {
       router.replace(
-        `/maintainer/${organization.name}/finance/incoming?type=${value}`,
+        `/maintainer/${organization.slug}/finance/incoming?type=${value}`,
       )
     },
     [organization, router],

@@ -91,7 +91,7 @@ const SubscribeNowWithModal = ({
 
   return (
     <div className="flex flex-col items-center py-1">
-      <Link href={`/${organization.name}/subscriptions`}>
+      <Link href={`/${organization.slug}/subscriptions`}>
         {isSubscriber || isSubscribed ? (
           <Button disabled={true}>
             <CheckIcon className="-ml-1 mr-2 h-4 w-4" /> Subscribed
@@ -110,7 +110,7 @@ const SubscribeNowWithModal = ({
                 <>{children}</>
               ) : (
                 <>
-                  Subscribe to {organization.pretty_name || organization.name}
+                  Subscribe to {organization.pretty_name || organization.slug}
                 </>
               )}
             </>
@@ -183,7 +183,7 @@ const LoggedInSubscribeModalContent = ({
               tier.
             </p>
             <Link
-              href={`/${organization.name}/subscriptions`}
+              href={`/${organization.slug}/subscriptions`}
               className="text-center text-blue-500"
               onClick={() => {
                 captureEvent(
@@ -260,7 +260,7 @@ const AnonymousSubscribeModalContent = ({
           <CheckoutCelebration />
           <p className="text-muted-foreground text-center">Thank you!</p>
           <h2 className="text-center text-lg">
-            You&apos;re now subscribed to {organization.name}
+            You&apos;re now subscribed to {organization.slug}
           </h2>
           <Button
             type="button"
@@ -272,7 +272,7 @@ const AnonymousSubscribeModalContent = ({
             Sign in with email
           </Button>
           <Link
-            href={`/${organization.name}/subscriptions`}
+            href={`/${organization.slug}/subscriptions`}
             className="text-center text-blue-400"
             onClick={() => {
               captureEvent(
@@ -291,7 +291,7 @@ const AnonymousSubscribeModalContent = ({
     <>
       <ModalHeader hide={hide}>
         <h3 className="text-center text-lg font-medium text-gray-950 dark:text-white ">
-          Subscribe to {organization.pretty_name || organization.name}
+          Subscribe to {organization.pretty_name || organization.slug}
         </h3>
       </ModalHeader>
       <div className="flex flex-col gap-y-2 p-8">

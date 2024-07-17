@@ -63,7 +63,7 @@ const PaymentForm = ({
     if (havePaymentMethod) {
       posthog.capture('Pledge Form Completed', {
         'Organization ID': organization.id,
-        'Organization Name': organization.name,
+        'Organization Name': organization.slug,
         'Repository ID': repository.id,
         'Repository Name': repository.name,
         'Issue ID': issue.id,
@@ -75,7 +75,7 @@ const PaymentForm = ({
     issue.id,
     issue.number,
     organization.id,
-    organization.name,
+    organization.slug,
     repository.id,
     repository.name,
   ])
@@ -87,7 +87,7 @@ const PaymentForm = ({
         posthog.capture('Pledge Payment Success', {
           Status: paymentIntent.status,
           'Organization ID': organization.id,
-          'Organization Name': organization.name,
+          'Organization Name': organization.slug,
           'Repository ID': repository.id,
           'Repository Name': repository.name,
           'Issue ID': issue.id,
@@ -100,7 +100,7 @@ const PaymentForm = ({
         posthog.capture('Pledge Payment Failed', {
           Status: paymentIntent.status,
           'Organization ID': organization.id,
-          'Organization Name': organization.name,
+          'Organization Name': organization.slug,
           'Repository ID': repository.id,
           'Repository Name': repository.name,
           'Issue ID': issue.id,
@@ -113,7 +113,7 @@ const PaymentForm = ({
         posthog.capture('Pledge Payment Failed', {
           Status: paymentIntent.status,
           'Organization ID': organization.id,
-          'Organization Name': organization.name,
+          'Organization Name': organization.slug,
           'Repository ID': repository.id,
           'Repository Name': repository.name,
           'Issue ID': issue.id,
@@ -161,7 +161,7 @@ const PaymentForm = ({
 
     posthog.capture('Pledge Form Submitted', {
       'Organization ID': organization.id,
-      'Organization Name': organization.name,
+      'Organization Name': organization.slug,
       'Repository ID': repository.id,
       'Repository Name': repository.name,
       'Issue ID': issue.id,
@@ -180,7 +180,7 @@ const PaymentForm = ({
         if (!paymentIntent) {
           posthog.capture('Pledge Payment Failed', {
             'Organization ID': organization.id,
-            'Organization Name': organization.name,
+            'Organization Name': organization.slug,
             'Repository ID': repository.id,
             'Repository Name': repository.name,
             'Issue ID': issue.id,

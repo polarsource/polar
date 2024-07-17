@@ -23,7 +23,7 @@ const ClientPage = ({
   if (!organization.donations_enabled) {
     return (
       <div className="w-full pt-8 text-center text-gray-500">
-        {organization.pretty_name ?? organization.name} does not accept
+        {organization.pretty_name ?? organization.slug} does not accept
         donations via Polar at this moment.
       </div>
     )
@@ -41,14 +41,14 @@ const ClientPage = ({
                 {issue ? (
                   <p className="dark:text-polar-500 text-gray-500">
                     Say thanks with a donation to{' '}
-                    {organization.pretty_name ?? organization.name} for fixing{' '}
+                    {organization.pretty_name ?? organization.slug} for fixing{' '}
                     {issue.repository.organization.name}/{issue.repository.name}
                     #{issue.number}
                   </p>
                 ) : (
                   <p className="dark:text-polar-500 text-gray-500">
                     Say thanks with a donation to{' '}
-                    {organization.pretty_name ?? organization.name}
+                    {organization.pretty_name ?? organization.slug}
                   </p>
                 )}
               </div>

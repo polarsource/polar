@@ -31,7 +31,7 @@ const PolarMenu = ({
 
   const creatorPath = personalOrg
     ? `${CONFIG.FRONTEND_BASE_URL}/maintainer/${currentUser?.username}/overview`
-    : `${CONFIG.FRONTEND_BASE_URL}/maintainer/${userAdminOrganizations?.[0]?.name}/overview`
+    : `${CONFIG.FRONTEND_BASE_URL}/maintainer/${userAdminOrganizations?.[0]?.slug}/overview`
 
   return (
     <div className="flex h-9 flex-row items-center gap-x-6">

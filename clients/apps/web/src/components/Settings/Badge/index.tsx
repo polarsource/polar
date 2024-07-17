@@ -123,7 +123,7 @@ const BadgeSetup = ({
     message: '',
   })
   const [isRetroactiveEnabled, setRetroactiveEnabled] = useState<boolean>(false)
-  const emitter = useSSE(org.platform, org.name)
+  const emitter = useSSE(org.platform, org.slug)
 
   useEffect(() => {
     if (!remoteSettings.data) return
@@ -456,7 +456,7 @@ export const Controls = ({
   const router = useRouter()
 
   const redirectToOrgDashboard = () => {
-    router.push(`/maintainer/${org.name}/overview`)
+    router.push(`/maintainer/${org.slug}/overview`)
   }
 
   const isRetroactiveApplicable = (

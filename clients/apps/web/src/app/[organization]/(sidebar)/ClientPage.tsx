@@ -74,7 +74,7 @@ const ClientPage = ({
           profile_settings: setting,
         },
       })
-      .then(() => revalidate(`organization:${organization.name}`))
+      .then(() => revalidate(`organization:${organization.slug}`))
   }
 
   const updateFeaturedCreators = (organizations: Organization[]) => {
@@ -103,10 +103,10 @@ const ClientPage = ({
         <StickyNote2Outlined fontSize="large" />
         <div className="flex w-full flex-col items-center gap-y-2 px-12 text-center">
           <h3 className="p-2 text-lg font-medium">
-            {organization.name} is typing...
+            {organization.slug} is typing...
           </h3>
           <p className="dark:text-polar-500 w-full min-w-0 text-gray-500">
-            Subscribe to {organization.name} to get future posts fresh out of
+            Subscribe to {organization.slug} to get future posts fresh out of
             the press.
           </p>
         </div>

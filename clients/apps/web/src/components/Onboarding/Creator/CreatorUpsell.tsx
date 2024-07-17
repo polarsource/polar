@@ -88,7 +88,7 @@ export const useUpsellSteps = () => {
         title: 'Write your first post',
         description:
           'Start building a community & newsletter by writing your first post – your hello world on Polar',
-        href: `/maintainer/${currentOrg?.name}/posts/new`,
+        href: `/maintainer/${currentOrg?.slug}/posts/new`,
         onboardingKey: 'postCreated',
         onDismiss: handleDismiss,
       })
@@ -107,7 +107,7 @@ export const useUpsellSteps = () => {
         title: 'Setup paid subscriptions & membership benefits',
         description:
           'Offer built-in benefits like premium posts, Discord invites, sponsor ads & private GitHub repository access',
-        href: `/maintainer/${currentOrg?.name}/products/overview`,
+        href: `/maintainer/${currentOrg?.slug}/products/overview`,
         onboardingKey: 'subscriptionTierCreated',
         onDismiss: handleDismiss,
       })
@@ -119,8 +119,8 @@ export const useUpsellSteps = () => {
           <LogoIcon className="-mr-2 h-8 w-8 text-blue-500 dark:text-blue-400" />
         ),
         title: 'Add Polar to your FUNDING.yml',
-        description: `Add 'polar: ${currentOrg?.name}' to your FUNDING.yml to link your Polar page with your GitHub repository`,
-        href: `/maintainer/${currentOrg?.name}/promote`,
+        description: `Add 'polar: ${currentOrg?.slug}' to your FUNDING.yml to link your Polar page with your GitHub repository`,
+        href: `/maintainer/${currentOrg?.slug}/promote`,
         onboardingKey: 'fundingInYaml',
         onDismiss: handleDismiss,
       })

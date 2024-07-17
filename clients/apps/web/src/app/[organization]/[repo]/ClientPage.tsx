@@ -71,7 +71,7 @@ const ClientPage = ({
         },
       })
       .then(() =>
-        revalidate(`repository:${organization.name}/${repository.name}`),
+        revalidate(`repository:${organization.slug}/${repository.name}`),
       )
   }
 
@@ -168,7 +168,7 @@ const ClientPage = ({
                   <Avatar
                     className="h-12 w-12"
                     avatar_url={organization.avatar_url}
-                    name={organization.name}
+                    name={organization.slug}
                   />
                   <span className="flex flex-row flex-wrap gap-2">
                     <Link

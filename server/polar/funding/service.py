@@ -19,7 +19,14 @@ from polar.auth.models import Anonymous, Subject
 from polar.funding.schemas import FundingResultType
 from polar.issue.search import search_query
 from polar.kit.pagination import PaginationParams
-from polar.models import Issue, Organization, Pledge, Repository, UserOrganization
+from polar.models import (
+    ExternalOrganization,
+    Issue,
+    Organization,
+    Pledge,
+    Repository,
+    UserOrganization,
+)
 from polar.models.pledge import PledgeState, PledgeType
 from polar.models.user import OAuthAccount, OAuthPlatform, User
 from polar.postgres import AsyncSession
@@ -176,12 +183,20 @@ class FundingService:
         self, selector: Select[T], auth_subject: Subject
     ) -> Select[T]:
         statement = (
-            selector.join(Issue.repository)
-            .join(Repository.organization)
+            selector.join(Repository, onclause=Repository.id == Issue.repository_id)
+            .join(
+                ExternalOrganization,
+                onclause=ExternalOrganization.id == Repository.organization_id,
+            )
+            .join(
+                Organization,
+                onclause=Organization.id == ExternalOrganization.organization_id,
+                isouter=True,
+            )
             .where(
                 Issue.deleted_at.is_(None),
                 Repository.deleted_at.is_(None),
-                Organization.deleted_at.is_(None),
+                ExternalOrganization.deleted_at.is_(None),
             )
         )
 

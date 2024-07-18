@@ -129,6 +129,10 @@ export const useUpdateOrganization = () =>
       })
 
       queryClient.invalidateQueries({
+        queryKey: ['organization', 'slug', result.slug],
+      })
+
+      queryClient.invalidateQueries({
         queryKey: ['user', 'adminOrganizations'],
       })
 
@@ -143,7 +147,7 @@ export const useOrganizationBySlug = (
   enabled: boolean = true,
 ) =>
   useQuery({
-    queryKey: ['organization', slug],
+    queryKey: ['organization', 'slug', slug],
     queryFn: () =>
       api.organizations.list({ slug, limit: 1 }).then((r) => r.items?.[0]),
     retry: defaultRetry,

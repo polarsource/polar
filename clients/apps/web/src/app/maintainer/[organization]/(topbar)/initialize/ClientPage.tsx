@@ -2,7 +2,7 @@
 
 import BadgeSetup from '@/components/Settings/Badge'
 import Spinner from '@/components/Shared/Spinner'
-import { useSSE } from '@/hooks/sse'
+import { useUserSSE } from '@/hooks/sse'
 import { useState } from 'react'
 import { useCurrentOrgAndRepoFromURL } from '../../../../../hooks'
 
@@ -11,7 +11,7 @@ export default function ClientPage() {
   const [syncedIssuesCount, setSyncIssuesCount] = useState<number>(0)
   const { org } = useCurrentOrgAndRepoFromURL()
 
-  useSSE()
+  useUserSSE()
 
   if (!org) {
     return (

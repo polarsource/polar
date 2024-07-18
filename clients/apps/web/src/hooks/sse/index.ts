@@ -16,27 +16,8 @@ const ACTIONS: {
 
 const emitter = new EventEmitter()
 
-export const useSSE = (
-  platform?: string,
-  orgName?: string,
-  repoName?: string,
-): EventEmitter => {
-  let streamURL = getServerURL('/v1')
-  if (!orgName && !repoName) {
-    streamURL += '/user'
-  } else {
-    streamURL += `/${platform}/${orgName}`
-    if (repoName) {
-      streamURL += `/${repoName}`
-    }
-  }
-  streamURL += '/stream'
-
+const useSSE = (streamURL: string): EventEmitter => {
   useEffect(() => {
-    if (!streamURL) {
-      return
-    }
-
     const connection = new EventSource(streamURL, {
       withCredentials: true,
     })
@@ -61,3 +42,7 @@ export const useSSE = (
 
   return emitter
 }
+
+export const useUserSSE = () => useSSE(getServerURL('/v1/stream/user'))
+export const useOrganizationSSE = (organizationId: string) =>
+  useSSE(getServerURL(`/v1/stream/organizations/${organizationId}`))

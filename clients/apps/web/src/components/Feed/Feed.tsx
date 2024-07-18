@@ -1,7 +1,7 @@
 'use client'
 
 import { useListArticles } from '@/hooks/queries'
-import { useSSE } from '@/hooks/sse'
+import { useUserSSE } from '@/hooks/sse'
 import { StickyNote2Outlined } from '@mui/icons-material'
 import { Article } from '@polar-sh/sdk'
 import { useEffect } from 'react'
@@ -13,7 +13,7 @@ export const Feed = () => {
   const articles = useListArticles()
 
   // Connect to eventstream and listen for events that may update the feed
-  useSSE()
+  useUserSSE()
 
   const infiniteArticles =
     articles.data?.pages

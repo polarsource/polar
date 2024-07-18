@@ -5,6 +5,7 @@ import GithubLoginButton from '@/components/Auth/GithubLoginButton'
 import LoadingScreen, {
   LoadingScreenError,
 } from '@/components/Dashboard/LoadingScreen'
+import { useListMemberOrganizations } from '@/hooks/queries'
 import { useStore } from '@/store'
 import { api } from '@/utils/api'
 import {
@@ -15,6 +16,7 @@ import {
   ValidationError,
 } from '@polar-sh/sdk'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
+import Avatar from 'polarkit/components/ui/atoms/avatar'
 import Button from 'polarkit/components/ui/atoms/button'
 import { useCallback, useEffect, useState } from 'react'
 
@@ -22,9 +24,11 @@ export default function Page() {
   const search = useSearchParams()
   const installationId = search?.get('installation_id')
   const setupAction = search?.get('setup_action')
-  const {
-    gitHubInstallation: { organizationId },
-  } = useStore()
+  const { gitHubInstallation } = useStore()
+  const [organizationId, setOrganizationId] = useState<string | undefined>(
+    gitHubInstallation.organizationId,
+  )
+  const organizations = useListMemberOrganizations(organizationId === undefined)
 
   const router = useRouter()
   const pathname = usePathname()
@@ -116,6 +120,44 @@ export default function Page() {
       controller.abort()
     }
   }, [installationId, organizationId, install])
+
+  if (!installationId) {
+    return (
+      <LoadingScreen animate={false}>
+        <LoadingScreenError error={'Missing installation_id'} />
+      </LoadingScreen>
+    )
+  }
+
+  if (!organizationId) {
+    return (
+      <div className="dark:bg-polar-950 flex h-screen w-full grow items-center justify-center bg-gray-50">
+        <div id="polar-bg-gradient"></div>
+        <div className="flex w-80 flex-col items-center gap-6">
+          <div className="w-full text-center">
+            Select one of your organization to link with this GitHub
+            organization:
+          </div>
+          <div className="flex w-full flex-col gap-2">
+            {organizations.data?.items?.map((organization) => (
+              <div
+                key={organization.id}
+                className="hover:bg-polar-600 flex w-full cursor-pointer flex-row items-center gap-2 rounded-md border px-4 py-3 text-sm transition-colors"
+                onClick={() => setOrganizationId(organization.id)}
+              >
+                <Avatar
+                  className="h-8 w-8"
+                  avatar_url={organization.avatar_url}
+                  name={organization.slug}
+                />
+                {organization.slug}
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   if (installed) {
     return (

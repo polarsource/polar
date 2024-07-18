@@ -117,7 +117,6 @@ def get_orders_cte(
                 select(UserOrganization.organization_id).where(
                     UserOrganization.user_id == auth_subject.subject.id,
                     UserOrganization.deleted_at.is_(None),
-                    UserOrganization.is_admin.is_(True),
                 )
             )
         )
@@ -190,7 +189,6 @@ def get_active_subscriptions_cte(
                 select(UserOrganization.organization_id).where(
                     UserOrganization.user_id == auth_subject.subject.id,
                     UserOrganization.deleted_at.is_(None),
-                    UserOrganization.is_admin.is_(True),
                 )
             )
         )

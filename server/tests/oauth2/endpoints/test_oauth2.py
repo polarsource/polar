@@ -499,7 +499,7 @@ class TestOAuth2Authorize:
         save_fixture: SaveFixture,
         client: AsyncClient,
         organization: Organization,
-        user_organization_admin: UserOrganization,
+        user_organization: UserOrganization,
         oauth2_client: OAuth2Client,
     ) -> None:
         await create_oauth2_grant(
@@ -529,7 +529,7 @@ class TestOAuth2Authorize:
         save_fixture: SaveFixture,
         client: AsyncClient,
         organization: Organization,
-        user_organization_admin: UserOrganization,
+        user_organization: UserOrganization,
         oauth2_client: OAuth2Client,
     ) -> None:
         await create_oauth2_grant(
@@ -559,7 +559,7 @@ class TestOAuth2Authorize:
         client: AsyncClient,
         oauth2_client: OAuth2Client,
         organization: Organization,
-        user_organization_admin: UserOrganization,
+        user_organization: UserOrganization,
     ) -> None:
         params = {
             "client_id": oauth2_client.client_id,
@@ -687,7 +687,7 @@ class TestOAuth2Consent:
         self,
         client: AsyncClient,
         organization: Organization,
-        user_organization_admin: UserOrganization,
+        user_organization: UserOrganization,
         oauth2_client: OAuth2Client,
         sync_session: Session,
     ) -> None:
@@ -712,7 +712,7 @@ class TestOAuth2Consent:
         self,
         client: AsyncClient,
         organization: Organization,
-        user_organization_admin: UserOrganization,
+        user_organization: UserOrganization,
         oauth2_client: OAuth2Client,
         sync_session: Session,
     ) -> None:

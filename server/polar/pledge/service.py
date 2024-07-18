@@ -345,7 +345,7 @@ class PledgeService(ResourceServiceReader[Pledge]):
             issue_id=issue.id,
         )
 
-        await notification_service.send_to_org_admins(
+        await notification_service.send_to_org_members(
             session=session,
             org_id=org.id,
             notif=PartialNotification(
@@ -445,7 +445,7 @@ class PledgeService(ResourceServiceReader[Pledge]):
             issue_id=issue_id,
         )
 
-        await notification_service.send_to_org_admins(
+        await notification_service.send_to_org_members(
             session=session,
             org_id=org.id,
             notif=PartialNotification(
@@ -494,7 +494,7 @@ class PledgeService(ResourceServiceReader[Pledge]):
             pledge_id=pledge.id,
         )
 
-        await notification_service.send_to_org_admins(
+        await notification_service.send_to_org_members(
             session=session,
             org_id=pledge.by_organization_id,
             notif=PartialNotification(
@@ -930,7 +930,7 @@ class PledgeService(ResourceServiceReader[Pledge]):
         )
 
         if split.organization_id:
-            await notification_service.send_to_org_admins(
+            await notification_service.send_to_org_members(
                 session=session,
                 org_id=split.organization_id,
                 notif=PartialNotification(
@@ -1226,7 +1226,7 @@ class PledgeService(ResourceServiceReader[Pledge]):
 
         if pledge.by_organization_id:
             for m in memberships:
-                if m.organization_id == pledge.by_organization_id and m.is_admin:
+                if m.organization_id == pledge.by_organization_id:
                     return True
 
         return False
@@ -1238,18 +1238,12 @@ class PledgeService(ResourceServiceReader[Pledge]):
         Returns true if the User can modify the pledge on behalf of the entity that
         received the pledge, such as confirming it, and managing payouts.
         """
-        return any(
-            m.organization_id == pledge.organization_id and m.is_admin
-            for m in memberships
-        )
+        return any(m.organization_id == pledge.organization_id for m in memberships)
 
     def user_can_admin_received_pledge_on_issue(
         self, issue: Issue, memberships: Sequence[UserOrganization]
     ) -> bool:
-        return any(
-            m.organization_id == issue.organization_id and m.is_admin
-            for m in memberships
-        )
+        return any(m.organization_id == issue.organization_id for m in memberships)
 
     async def issue_pledge_summary(
         self, session: AsyncSession, issue: Issue

@@ -1163,9 +1163,7 @@ async def test_pledge_states(
             pledging_user = await create_user(save_fixture)
 
             user_organization = UserOrganization(
-                user_id=user.id,
-                organization_id=org.id,
-                is_admin=True,
+                user_id=user.id, organization_id=org.id
             )
             await save_fixture(user_organization)
 

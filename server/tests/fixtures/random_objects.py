@@ -170,6 +170,17 @@ async def issue(
     return await create_issue(save_fixture, external_organization, repository)
 
 
+@pytest_asyncio.fixture(scope="function")
+async def issue_linked(
+    save_fixture: SaveFixture,
+    external_organization_linked: ExternalOrganization,
+    repository_linked: Repository,
+) -> Issue:
+    return await create_issue(
+        save_fixture, external_organization_linked, repository_linked
+    )
+
+
 async def create_issue(
     save_fixture: SaveFixture,
     external_organization: ExternalOrganization,
@@ -425,21 +436,6 @@ async def user_organization(
     user_organization = UserOrganization(
         user_id=user.id,
         organization_id=organization.id,
-    )
-    await save_fixture(user_organization)
-    return user_organization
-
-
-@pytest_asyncio.fixture(scope="function")
-async def user_organization_admin(
-    save_fixture: SaveFixture,
-    organization: Organization,
-    user: User,
-) -> UserOrganization:
-    user_organization = UserOrganization(
-        user_id=user.id,
-        organization_id=organization.id,
-        is_admin=True,
     )
     await save_fixture(user_organization)
     return user_organization
@@ -793,19 +789,6 @@ async def organization_account(
 
 
 @pytest_asyncio.fixture
-async def organization_second_admin(
-    save_fixture: SaveFixture, organization_second: Organization, user_second: User
-) -> User:
-    user_organization = UserOrganization(
-        user_id=user_second.id,
-        organization_id=organization_second.id,
-        is_admin=True,
-    )
-    await save_fixture(user_organization)
-    return user_second
-
-
-@pytest_asyncio.fixture
 async def organization_second_members(
     save_fixture: SaveFixture, organization_second: Organization
 ) -> list[User]:
@@ -813,9 +796,7 @@ async def organization_second_members(
     for _ in range(5):
         user = await create_user(save_fixture)
         user_organization = UserOrganization(
-            user_id=user.id,
-            organization_id=organization_second.id,
-            is_admin=False,
+            user_id=user.id, organization_id=organization_second.id
         )
         await save_fixture(user_organization)
         users.append(user)

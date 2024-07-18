@@ -43,10 +43,10 @@ class TestEndpoints:
         client: AsyncClient,
         auth_subject: AuthSubject[User],
         session: AsyncSession,
-        user_organization_admin: UserOrganization,
+        user_organization: UserOrganization,
         logo_png: TestFile,
     ) -> None:
-        organization_id = user_organization_admin.organization_id
+        organization_id = user_organization.organization_id
         await logo_png.create(client, organization_id)
 
     @pytest.mark.http_auto_expunge
@@ -54,10 +54,10 @@ class TestEndpoints:
     async def test_create_downloadable_with_non_ascii_name(
         self,
         client: AsyncClient,
-        user_organization_admin: UserOrganization,
+        user_organization: UserOrganization,
         non_ascii_file_name: TestFile,
     ) -> None:
-        organization_id = user_organization_admin.organization_id
+        organization_id = user_organization.organization_id
         await non_ascii_file_name.create(client, organization_id)
 
     @pytest.mark.http_auto_expunge
@@ -69,10 +69,10 @@ class TestEndpoints:
         client: AsyncClient,
         auth_subject: AuthSubject[User],
         session: AsyncSession,
-        user_organization_admin: UserOrganization,
+        user_organization: UserOrganization,
         logo_jpg: TestFile,
     ) -> None:
-        organization_id = user_organization_admin.organization_id
+        organization_id = user_organization.organization_id
         created = await logo_jpg.create(client, organization_id)
 
         await logo_jpg.upload(created)
@@ -95,10 +95,10 @@ class TestEndpoints:
         client: AsyncClient,
         auth_subject: AuthSubject[User],
         session: AsyncSession,
-        user_organization_admin: UserOrganization,
+        user_organization: UserOrganization,
         logo_jpg: TestFile,
     ) -> None:
-        organization_id = user_organization_admin.organization_id
+        organization_id = user_organization.organization_id
 
         created = await logo_jpg.create(client, organization_id)
 
@@ -154,10 +154,10 @@ class TestEndpoints:
         client: AsyncClient,
         auth_subject: AuthSubject[User],
         session: AsyncSession,
-        user_organization_admin: UserOrganization,
+        user_organization: UserOrganization,
         logo_jpg: TestFile,
     ) -> None:
-        organization_id = user_organization_admin.organization_id
+        organization_id = user_organization.organization_id
         created = await logo_jpg.create(client, organization_id)
         uploaded = await logo_jpg.upload(created)
         await logo_jpg.complete(client, created, uploaded)

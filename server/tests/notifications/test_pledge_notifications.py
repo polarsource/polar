@@ -285,12 +285,6 @@ async def test_deduplicate(
     user_organization_second: UserOrganization,  # two members
     mocker: MockerFixture,
 ) -> None:
-    user_organization.is_admin = True
-    await save_fixture(user_organization)
-
-    user_organization_second.is_admin = True
-    await save_fixture(user_organization_second)
-
     spy = mocker.spy(NotificationsService, "send_to_org_admins")
 
     pledge = Pledge(

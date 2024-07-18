@@ -196,7 +196,7 @@ class TestGetMetrics:
         self,
         session: AsyncSession,
         auth_subject: AuthSubject[User | Organization],
-        user_organization_admin: UserOrganization,
+        user_organization: UserOrganization,
         fixtures: tuple[dict[str, Subscription], dict[str, Order]],
     ) -> None:
         metrics = await metrics_service.get_metrics(
@@ -294,7 +294,7 @@ class TestGetMetrics:
         self,
         session: AsyncSession,
         auth_subject: AuthSubject[User | Organization],
-        user_organization_admin: UserOrganization,
+        user_organization: UserOrganization,
         fixtures: tuple[dict[str, Subscription], dict[str, Order]],
     ) -> None:
         metrics = await metrics_service.get_metrics(
@@ -365,7 +365,7 @@ class TestGetMetrics:
         self,
         session: AsyncSession,
         auth_subject: AuthSubject[User | Organization],
-        user_organization_admin: UserOrganization,
+        user_organization: UserOrganization,
         fixtures: tuple[dict[str, Subscription], dict[str, Order]],
     ) -> None:
         metrics = await metrics_service.get_metrics(
@@ -434,7 +434,7 @@ class TestGetMetrics:
         self,
         session: AsyncSession,
         auth_subject: AuthSubject[User],
-        user_organization_admin: UserOrganization,
+        user_organization: UserOrganization,
         fixtures: tuple[dict[str, Subscription], dict[str, Order]],
     ) -> None:
         metrics = await metrics_service.get_metrics(
@@ -466,7 +466,7 @@ class TestGetMetrics:
         save_fixture: SaveFixture,
         session: AsyncSession,
         auth_subject: AuthSubject[User],
-        user_organization_admin: UserOrganization,
+        user_organization: UserOrganization,
         user: User,
         organization: Organization,
     ) -> None:
@@ -553,7 +553,7 @@ class TestGetMetrics:
         save_fixture: SaveFixture,
         session: AsyncSession,
         auth_subject: AuthSubject[User],
-        user_organization_admin: UserOrganization,
+        user_organization: UserOrganization,
         user: User,
         organization: Organization,
     ) -> None:

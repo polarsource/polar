@@ -97,29 +97,10 @@ class TestList:
         assert len(orders) == 0
 
     @pytest.mark.auth
-    async def test_user_not_organization_admin(
+    async def test_user_organization_member(
         self,
         auth_subject: AuthSubject[User],
         user_organization: UserOrganization,
-        save_fixture: SaveFixture,
-        session: AsyncSession,
-        product: Product,
-        user_second: User,
-    ) -> None:
-        await create_order(save_fixture, product=product, user=user_second)
-
-        orders, count = await order_service.list(
-            session, auth_subject, pagination=PaginationParams(1, 10)
-        )
-
-        assert count == 0
-        assert len(orders) == 0
-
-    @pytest.mark.auth
-    async def test_user_organization_admin(
-        self,
-        auth_subject: AuthSubject[User],
-        user_organization_admin: UserOrganization,
         save_fixture: SaveFixture,
         session: AsyncSession,
         product: Product,
@@ -144,7 +125,7 @@ class TestList:
         self,
         auth_subject: AuthSubject[User],
         user: User,
-        user_organization_admin: UserOrganization,
+        user_organization: UserOrganization,
         organization_second: Organization,
         save_fixture: SaveFixture,
         session: AsyncSession,
@@ -153,9 +134,7 @@ class TestList:
         user_second: User,
     ) -> None:
         user_organization_second_admin = UserOrganization(
-            user_id=user.id,
-            organization_id=organization_second.id,
-            is_admin=True,
+            user_id=user.id, organization_id=organization_second.id
         )
         await save_fixture(user_organization_second_admin)
 

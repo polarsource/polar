@@ -597,9 +597,7 @@ class TestListReceivers:
         # this test checks that list_receivers doesn't have a bad join
         other_org = await create_organization(save_fixture)
         user_organization = UserOrganization(
-            user_id=user.id,
-            organization_id=other_org.id,
-            is_admin=True,
+            user_id=user.id, organization_id=other_org.id
         )
         await save_fixture(user_organization)
 

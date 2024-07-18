@@ -393,7 +393,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         )
 
         # Send notification to managing org
-        await notifications_service.send_to_org_admins(
+        await notifications_service.send_to_org_members(
             session,
             org_id=subscription_tier_org.id,
             notif=PartialNotification(

@@ -47,7 +47,7 @@ class TestCreateEndpoint:
         user: User,
     ) -> None:
         create_schema = WebhookEndpointCreate(
-            url=webhook_url, secret="SECRET", events=[]
+            url=webhook_url, secret="SECRET", events=[], organization_id=None
         )
 
         endpoint = await webhook_service.create_endpoint(
@@ -55,24 +55,6 @@ class TestCreateEndpoint:
         )
         assert endpoint.user_id == user.id
         assert endpoint.organization_id is None
-
-    @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.webhooks_write}))
-    async def test_user_organization_id_not_admin(
-        self,
-        auth_subject: AuthSubject[User],
-        session: AsyncSession,
-        authz: Authz,
-        organization: Organization,
-        user_organization: UserOrganization,
-    ) -> None:
-        create_schema = WebhookEndpointCreate(
-            url=webhook_url, secret="SECRET", events=[], organization_id=organization.id
-        )
-
-        with pytest.raises(PolarRequestValidationError):
-            await webhook_service.create_endpoint(
-                session, authz, auth_subject, create_schema
-            )
 
     @pytest.mark.auth(
         AuthSubjectFixture(scopes={Scope.web_default}),
@@ -84,7 +66,7 @@ class TestCreateEndpoint:
         session: AsyncSession,
         authz: Authz,
         organization: Organization,
-        user_organization_admin: UserOrganization,
+        user_organization: UserOrganization,
     ) -> None:
         create_schema = WebhookEndpointCreate(
             url=webhook_url, secret="SECRET", events=[], organization_id=organization.id
@@ -125,7 +107,7 @@ class TestCreateEndpoint:
         organization: Organization,
     ) -> None:
         create_schema = WebhookEndpointCreate(
-            url=webhook_url, secret="SECRET", events=[]
+            url=webhook_url, secret="SECRET", events=[], organization_id=None
         )
 
         endpoint = await webhook_service.create_endpoint(
@@ -189,7 +171,7 @@ class TestUpdateEndpoint:
         auth_subject: AuthSubject[User],
         session: AsyncSession,
         authz: Authz,
-        user_organization_admin: UserOrganization,
+        user_organization: UserOrganization,
         webhook_endpoint_organization: WebhookEndpoint,
     ) -> None:
         update_schema = WebhookEndpointUpdate(secret="UPDATED_SECRET")
@@ -287,7 +269,7 @@ class TestDeleteEndpoint:
         auth_subject: AuthSubject[User],
         session: AsyncSession,
         authz: Authz,
-        user_organization_admin: UserOrganization,
+        user_organization: UserOrganization,
         webhook_endpoint_organization: WebhookEndpoint,
     ) -> None:
         deleted_endpoint = await webhook_service.delete_endpoint(
@@ -368,7 +350,7 @@ class TestRedeliverEvent:
         auth_subject: AuthSubject[User],
         session: AsyncSession,
         authz: Authz,
-        user_organization_admin: UserOrganization,
+        user_organization: UserOrganization,
         webhook_event_organization: WebhookEvent,
         enqueue_job_mock: MagicMock,
     ) -> None:

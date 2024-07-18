@@ -51,12 +51,12 @@ async def include_receiver_admin_fields(
     if not subject.id:
         return False
 
-    # is admin of receiver org
+    # is member of receiver org
     if pledge.organization_id:
         m = await user_organization_service.get_by_user_and_org(
             session, subject.id, pledge.organization_id
         )
-        if m and m.is_admin:
+        if m:
             return True
 
     return False
@@ -77,19 +77,19 @@ async def include_sender_admin_fields(
     if pledge.by_user_id == subject.id:
         return True
 
-    # is member if sending org
+    # is member of sending org
     if pledge.by_organization_id:
         m = await user_organization_service.get_by_user_and_org(
             session, subject.id, pledge.by_organization_id
         )
-        if m and m.is_admin:
+        if m:
             return True
 
     if pledge.on_behalf_of_organization_id:
         m = await user_organization_service.get_by_user_and_org(
             session, subject.id, pledge.on_behalf_of_organization_id
         )
-        if m and m.is_admin:
+        if m:
             return True
 
     return False

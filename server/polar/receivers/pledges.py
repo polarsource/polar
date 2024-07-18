@@ -247,7 +247,7 @@ async def pledge_created_notification(pledge: Pledge, session: AsyncSession) -> 
         pledge_type=PledgeType.from_str(pledge.type),
     )
 
-    await notification_service.send_to_org_admins(
+    await notification_service.send_to_org_members(
         session=session,
         org_id=org.id,
         notif=PartialNotification(

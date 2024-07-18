@@ -298,11 +298,11 @@ def non_ascii_file_name() -> TestFile:
 async def uploaded_logo_png(
     client: AsyncClient,
     auth_subject: AuthSubject[User],
-    user_organization_admin: UserOrganization,
+    user_organization: UserOrganization,
     organization: Organization,
 ) -> FileRead:
     img = TestFile("logo.png")
-    return await uploaded_fixture(client, user_organization_admin.organization_id, img)
+    return await uploaded_fixture(client, user_organization.organization_id, img)
 
 
 @pytest_asyncio.fixture(scope="function")
@@ -314,11 +314,11 @@ def logo_jpg() -> TestFile:
 async def uploaded_logo_jpg(
     client: AsyncClient,
     auth_subject: AuthSubject[User],
-    user_organization_admin: UserOrganization,
+    user_organization: UserOrganization,
     organization: Organization,
 ) -> FileRead:
     img = TestFile("logo.jpg")
-    return await uploaded_fixture(client, user_organization_admin.organization_id, img)
+    return await uploaded_fixture(client, user_organization.organization_id, img)
 
 
 @pytest_asyncio.fixture(scope="function")

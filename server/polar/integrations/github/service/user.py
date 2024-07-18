@@ -422,7 +422,7 @@ class GithubUserService(UserService):
                 )
 
                 # Add as admin in Polar (or upgrade existing memeber to admin)
-                await organization.add_user(session, org, user, is_admin=True)
+                await organization.add_user(session, org, user)
                 org_count += 1
                 continue
 
@@ -445,7 +445,7 @@ class GithubUserService(UserService):
                         )
 
                         # Add as admin in Polar (or upgrade existing member to admin)
-                        await organization.add_user(session, org, user, is_admin=True)
+                        await organization.add_user(session, org, user)
                         org_count += 1
 
                     elif data.state == "active":
@@ -456,7 +456,7 @@ class GithubUserService(UserService):
                         )
 
                         # Add as admin in Polar
-                        await organization.add_user(session, org, user, is_admin=False)
+                        await organization.add_user(session, org, user)
                         org_count += 1
                     else:
                         log.info(

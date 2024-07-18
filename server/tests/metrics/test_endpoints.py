@@ -20,7 +20,7 @@ class TestGetMetrics:
         AuthSubjectFixture(scopes={Scope.metrics_read}),
     )
     async def test_over_limits(
-        self, client: AsyncClient, user_organization_admin: UserOrganization
+        self, client: AsyncClient, user_organization: UserOrganization
     ) -> None:
         response = await client.get(
             "/v1/metrics/",
@@ -38,7 +38,7 @@ class TestGetMetrics:
         AuthSubjectFixture(scopes={Scope.metrics_read}),
     )
     async def test_user_valid(
-        self, client: AsyncClient, user_organization_admin: UserOrganization
+        self, client: AsyncClient, user_organization: UserOrganization
     ) -> None:
         response = await client.get(
             "/v1/metrics/",

@@ -60,13 +60,11 @@ class Authz:
     # request scoped caches
     _cache_can_user_read_repository_id: dict[tuple[UUID, UUID], bool]
     _cache_is_member: dict[tuple[UUID, UUID], bool]
-    _cache_is_member_and_admin: dict[tuple[UUID, UUID], bool]
 
     def __init__(self, session: AsyncSession):
         self.session = session
         self._cache_can_user_read_repository_id = {}
         self._cache_is_member = {}
-        self._cache_is_member_and_admin = {}
 
     @classmethod
     async def authz(cls, session: AsyncSession = Depends(get_db_session)) -> Self:
@@ -311,15 +309,16 @@ class Authz:
     async def _can_user_read_repository(
         self, subject: User, object: Repository
     ) -> bool:
+        key = (subject.id, object.id)
         if self._can_anonymous_read_repository(object):
+            self._cache_can_user_read_repository_id[key] = True
             return True
 
-        if object.organization_id and await self._is_member(
-            subject.id, object.organization_id
-        ):
-            return True
-
-        return False
+        res = await self._can_user_read_external_organization_id(
+            subject, object.organization_id
+        )
+        self._cache_can_user_read_repository_id[key] = res
+        return res
 
     async def _can_user_read_repository_id(
         self, subject: User, repository_id: UUID
@@ -334,11 +333,7 @@ class Authz:
             self._cache_can_user_read_repository_id[key] = False
             return False
 
-        res = await self._can_user_read_external_organization_id(
-            subject, repo.organization_id
-        )
-        self._cache_can_user_read_repository_id[key] = res
-        return res
+        return await self._can_user_read_repository(subject, repo)
 
     async def _can_user_write_repository(
         self, subject: User, object: Repository
@@ -395,7 +390,7 @@ class Authz:
     async def _can_user_write_organization(
         self, subject: User, object: Organization
     ) -> bool:
-        if await self._is_member_and_admin(subject.id, object.id):
+        if await self._is_member(subject.id, object.id):
             return True
         return False
 
@@ -414,23 +409,6 @@ class Authz:
                 return True
 
         self._cache_is_member[key] = False
-        return False
-
-    async def _is_member_and_admin(self, user_id: UUID, organization_id: UUID) -> bool:
-        key = (user_id, organization_id)
-        if key in self._cache_is_member_and_admin:
-            return self._cache_is_member_and_admin[key]
-
-        memberships = await user_organization_service.list_by_user_id(
-            self.session, user_id
-        )
-
-        for m in memberships:
-            if m.organization_id == organization_id and m.is_admin:
-                self._cache_is_member_and_admin[key] = True
-                return True
-
-        self._cache_is_member_and_admin[key] = False
         return False
 
     #
@@ -539,14 +517,14 @@ class Authz:
         if object.by_user_id and object.by_user_id == subject.id:
             return True
 
-        # If admin of pledging org
-        if object.by_organization_id and await self._is_member_and_admin(
+        # If member of pledging org
+        if object.by_organization_id and await self._is_member(
             subject.id, object.by_organization_id
         ):
             return True
 
-        # If admin of receiving org
-        if object.organization_id and await self._is_member_and_admin(
+        # If member of receiving org
+        if object.organization_id and await self._is_member(
             subject.id, object.organization_id
         ):
             return True
@@ -557,8 +535,8 @@ class Authz:
     # Article
     #
     async def _can_user_write_article(self, subject: User, object: Article) -> bool:
-        # If member and admin of org
-        if object.organization_id and await self._is_member_and_admin(
+        # If member of org
+        if object.organization_id and await self._is_member(
             subject.id, object.organization_id
         ):
             return True
@@ -586,8 +564,8 @@ class Authz:
         if object.user_id and object.user_id == subject.id:
             return True
 
-        # If member and admin of org
-        if object.organization_id and await self._is_member_and_admin(
+        # If member of org
+        if object.organization_id and await self._is_member(
             subject.id, object.organization_id
         ):
             return True

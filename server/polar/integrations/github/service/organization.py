@@ -5,7 +5,6 @@ from uuid import UUID
 import structlog
 from githubkit import AppInstallationAuthStrategy, GitHub, TokenAuthStrategy
 from githubkit.exception import RequestFailed
-from pydantic import BaseModel
 
 from polar.authz.service import AccessType, Authz
 from polar.enums import Platforms
@@ -29,13 +28,6 @@ from ..schemas import InstallationCreate
 from .repository import github_repository
 
 log: Logger = structlog.get_logger(service="GithubOrganizationService")
-
-
-class Member(BaseModel):
-    external_id: int
-    username: str
-    is_admin: bool
-    avatar_url: str
 
 
 class GithubOrganizationService(ExternalOrganizationService):

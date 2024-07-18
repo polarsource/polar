@@ -146,7 +146,7 @@ async def authorize(
     if grant.sub_type == SubType.organization:
         assert is_user(auth_subject)
         organizations = await organization_service.list_all_orgs_by_user_id(
-            session, auth_subject.subject.id, is_admin_only=True
+            session, auth_subject.subject.id
         )
 
     return authorize_response_adapter.validate_python(

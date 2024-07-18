@@ -179,7 +179,7 @@ class TestUpdateOrganization:
         self,
         client: AsyncClient,
         organization: Organization,
-        user_organization_admin: UserOrganization,
+        user_organization: UserOrganization,
     ) -> None:
         response = await client.patch(
             f"/v1/organizations/{organization.id}",
@@ -198,7 +198,7 @@ class TestUpdateOrganization:
 async def test_list_members(
     session: AsyncSession,
     organization: Organization,
-    user_organization_admin: UserOrganization,  # makes User a member of Organization
+    user_organization: UserOrganization,  # makes User a member of Organization
     user_organization_second: UserOrganization,  # adds another member
     client: AsyncClient,
 ) -> None:
@@ -211,12 +211,6 @@ async def test_list_members(
 
     assert len(items) == 2
 
-    admins = [i for i in items if i.is_admin]
-    non_admins = [i for i in items if not i.is_admin]
-
-    assert len(admins) == 1
-    assert len(non_admins) == 1
-
 
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
@@ -224,7 +218,7 @@ async def test_list_members(
 async def test_list_members_not_member(
     session: AsyncSession,
     organization: Organization,
-    # user_organization_admin: UserOrganization,  # makes User a member of Organization
+    # user_organization: UserOrganization,  # makes User a member of Organization
     user_organization_second: UserOrganization,  # adds another member
     client: AsyncClient,
 ) -> None:
@@ -241,11 +235,7 @@ async def test_update_organization_profile_settings(
     user_organization: UserOrganization,  # makes User a member of Organization
     repository: Repository,
     session: AsyncSession,
-    save_fixture: SaveFixture,
 ) -> None:
-    user_organization.is_admin = True
-    await save_fixture(user_organization)
-
     # then
     session.expunge_all()
 
@@ -320,9 +310,6 @@ async def test_update_organization_profile_settings_featured_projects(
     session: AsyncSession,
     save_fixture: SaveFixture,
 ) -> None:
-    user_organization.is_admin = True
-    await save_fixture(user_organization)
-
     # then
     session.expunge_all()
 
@@ -367,11 +354,7 @@ async def test_update_organization_profile_settings_featured_organizations(
     user_organization: UserOrganization,  # makes User a member of Organization
     repository: Repository,
     session: AsyncSession,
-    save_fixture: SaveFixture,
 ) -> None:
-    user_organization.is_admin = True
-    await save_fixture(user_organization)
-
     # then
     session.expunge_all()
 
@@ -415,11 +398,7 @@ async def test_update_organization_profile_settings_description(
     client: AsyncClient,
     user_organization: UserOrganization,  # makes User a member of Organization
     session: AsyncSession,
-    save_fixture: SaveFixture,
 ) -> None:
-    user_organization.is_admin = True
-    await save_fixture(user_organization)
-
     # then
     session.expunge_all()
 
@@ -470,11 +449,7 @@ async def test_update_organization_profile_settings_links(
     client: AsyncClient,
     user_organization: UserOrganization,  # makes User a member of Organization
     session: AsyncSession,
-    save_fixture: SaveFixture,
 ) -> None:
-    user_organization.is_admin = True
-    await save_fixture(user_organization)
-
     # then
     session.expunge_all()
 
@@ -521,11 +496,7 @@ async def test_issue_funding_enabled(
     client: AsyncClient,
     user_organization: UserOrganization,  # makes User a member of Organization
     session: AsyncSession,
-    save_fixture: SaveFixture,
 ) -> None:
-    user_organization.is_admin = True
-    await save_fixture(user_organization)
-
     # then
     session.expunge_all()
 
@@ -569,11 +540,7 @@ async def test_articles_enabled(
     client: AsyncClient,
     user_organization: UserOrganization,  # makes User a member of Organization
     session: AsyncSession,
-    save_fixture: SaveFixture,
 ) -> None:
-    user_organization.is_admin = True
-    await save_fixture(user_organization)
-
     # then
     session.expunge_all()
 
@@ -613,11 +580,7 @@ async def test_subscriptions_enabled(
     client: AsyncClient,
     user_organization: UserOrganization,  # makes User a member of Organization
     session: AsyncSession,
-    save_fixture: SaveFixture,
 ) -> None:
-    user_organization.is_admin = True
-    await save_fixture(user_organization)
-
     # then
     session.expunge_all()
 
@@ -661,11 +624,7 @@ async def test_donations_enabled(
     client: AsyncClient,
     user_organization: UserOrganization,  # makes User a member of Organization
     session: AsyncSession,
-    save_fixture: SaveFixture,
 ) -> None:
-    user_organization.is_admin = True
-    await save_fixture(user_organization)
-
     # then
     session.expunge_all()
 
@@ -698,11 +657,7 @@ async def test_public_donation_timestamps(
     client: AsyncClient,
     user_organization: UserOrganization,  # makes User a member of Organization
     session: AsyncSession,
-    save_fixture: SaveFixture,
 ) -> None:
-    user_organization.is_admin = True
-    await save_fixture(user_organization)
-
     # then
     session.expunge_all()
 

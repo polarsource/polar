@@ -90,11 +90,7 @@ async def test_update_repository_profile_settings_featured_organizations(
     user_organization: UserOrganization,  # makes User a member of Organization
     repository_linked: Repository,
     session: AsyncSession,
-    save_fixture: SaveFixture,
 ) -> None:
-    user_organization.is_admin = True
-    await save_fixture(user_organization)
-
     # then
     session.expunge_all()
 
@@ -139,11 +135,7 @@ async def test_update_repository_profile_settings_highlighted_subscription_tiers
     product: Product,
     repository_linked: Repository,
     session: AsyncSession,
-    save_fixture: SaveFixture,
 ) -> None:
-    user_organization.is_admin = True
-    await save_fixture(user_organization)
-
     # then
     session.expunge_all()
 
@@ -204,11 +196,7 @@ async def test_update_repository_profile_settings_cover_image_url(
     user_organization: UserOrganization,  # makes User a member of Organization
     repository_linked: Repository,
     session: AsyncSession,
-    save_fixture: SaveFixture,
 ) -> None:
-    user_organization.is_admin = True
-    await save_fixture(user_organization)
-
     # then
     session.expunge_all()
 
@@ -276,11 +264,7 @@ async def test_update_repository_profile_settings_description(
     user_organization: UserOrganization,  # makes User a member of Organization
     repository_linked: Repository,
     session: AsyncSession,
-    save_fixture: SaveFixture,
 ) -> None:
-    user_organization.is_admin = True
-    await save_fixture(user_organization)
-
     # then
     session.expunge_all()
 
@@ -350,11 +334,7 @@ async def test_update_repository_profile_settings_links(
     user_organization: UserOrganization,  # makes User a member of Organization
     repository_linked: Repository,
     session: AsyncSession,
-    save_fixture: SaveFixture,
 ) -> None:
-    user_organization.is_admin = True
-    await save_fixture(user_organization)
-
     # then
     session.expunge_all()
 

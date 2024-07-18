@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from sqlalchemy import Boolean, ForeignKey
+from sqlalchemy import ForeignKey
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.kit.db.models import TimestampedModel
@@ -33,5 +33,3 @@ class UserOrganization(TimestampedModel):
     @declared_attr
     def organization(cls) -> "Mapped[Organization]":
         return relationship("Organization", lazy="raise")
-
-    is_admin: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)

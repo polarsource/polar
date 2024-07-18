@@ -32,34 +32,12 @@ class TestSearch:
         assert response.status_code == 401
 
     @pytest.mark.auth
-    async def test_authenticated_not_admin(
-        self,
-        client: AsyncClient,
-        organization: Organization,
-        user: User,
-        user_organization: UserOrganization,
-        save_fixture: SaveFixture,
-    ) -> None:
-        user_organization.is_admin = False
-        await save_fixture(user_organization)
-
-        params = {"to_organization_id": str(organization.id)}
-        response = await client.get("/v1/donations/search", params=params)
-
-        assert response.status_code == 401
-
-    @pytest.mark.auth
     async def test_authenticated(
         self,
         client: AsyncClient,
         organization: Organization,
-        user: User,
         user_organization: UserOrganization,
-        save_fixture: SaveFixture,
     ) -> None:
-        user_organization.is_admin = True
-        await save_fixture(user_organization)
-
         params = {"to_organization_id": str(organization.id)}
         response = await client.get("/v1/donations/search", params=params)
 
@@ -79,9 +57,6 @@ class TestSearch:
         save_fixture: SaveFixture,
         donation_sender: DonationSender,
     ) -> None:
-        user_organization.is_admin = True
-        await save_fixture(user_organization)
-
         # 3 donations
         for x in range(3):
             await donation_sender.send_payment_intent_then_charge(
@@ -137,13 +112,9 @@ class TestSearch:
         client: AsyncClient,
         organization: Organization,
         user_organization: UserOrganization,
-        save_fixture: SaveFixture,
         donation_sender: DonationSender,
         issue: Issue,
     ) -> None:
-        user_organization.is_admin = True
-        await save_fixture(user_organization)
-
         await donation_sender.send_payment_intent_then_charge(
             issue_id=issue.id,
         )
@@ -156,13 +127,6 @@ class TestSearch:
 
         assert 1 == len(json["items"])
         assert str(issue.id) == json["items"][0]["issue"]["id"]
-        assert issue.title == json["items"][0]["issue"]["title"]
-        assert json["items"][0]["issue"]["repository"]
-        assert json["items"][0]["issue"]["repository"]["organization"]
-        assert (
-            str(organization.id)
-            == json["items"][0]["issue"]["repository"]["organization"]["id"]
-        )
 
     async def test_public_search(
         self,
@@ -199,8 +163,10 @@ class TestSearch:
             by_user_id=user_second.id,
         )
 
-        params = {"organization_name": str(organization.slug), "platform": "github"}
-        response = await client.get("/v1/donations/public/search", params=params)
+        response = await client.get(
+            "/v1/donations/public/search",
+            params={"organization_id": str(organization.id)},
+        )
 
         assert response.status_code == 200
         json = response.json()
@@ -244,8 +210,10 @@ class TestSearch:
         organization.public_donation_timestamps = True
         await save_fixture(organization)
 
-        params = {"organization_name": str(organization.slug), "platform": "github"}
-        response = await client.get("/v1/donations/public/search", params=params)
+        response = await client.get(
+            "/v1/donations/public/search",
+            params={"organization_id": str(organization.id)},
+        )
 
         assert response.status_code == 200
         json = response.json()

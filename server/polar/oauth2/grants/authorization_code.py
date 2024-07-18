@@ -273,10 +273,7 @@ class ValidateSubAndPrompt:
             select(Organization)
             .join(
                 UserOrganization,
-                onclause=and_(
-                    UserOrganization.user_id == user.id,
-                    UserOrganization.is_admin.is_(True),
-                ),
+                onclause=and_(UserOrganization.user_id == user.id),
             )
             .where(Organization.id == organization_id)
         )

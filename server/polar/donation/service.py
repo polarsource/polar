@@ -294,7 +294,7 @@ class DonationService:
             )
             await held_balance_service.create(session, held_balance=held_balance)
 
-            await notification_service.send_to_org_admins(
+            await notification_service.send_to_org_members(
                 session=session,
                 org_id=donation.to_organization_id,
                 notif=PartialNotification(
@@ -324,7 +324,7 @@ class DonationService:
         )
 
         # Send notification to receiving org
-        await notification_service.send_to_org_admins(
+        await notification_service.send_to_org_members(
             session,
             donation.to_organization_id,
             notif=PartialNotification(

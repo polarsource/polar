@@ -682,7 +682,7 @@ class TestUserCreate:
         session: AsyncSession,
         authz: Authz,
         organization: Organization,
-        user_organization_admin: UserOrganization,
+        user_organization: UserOrganization,
         stripe_service_mock: MagicMock,
     ) -> None:
         create_product_mock: MagicMock = stripe_service_mock.create_product
@@ -727,7 +727,7 @@ class TestUserCreate:
         save_fixture: SaveFixture,
         authz: Authz,
         organization: Organization,
-        user_organization_admin: UserOrganization,
+        user_organization: UserOrganization,
         stripe_service_mock: MagicMock,
     ) -> None:
         highlighted_product = await create_product(
@@ -777,7 +777,7 @@ class TestUserCreate:
         session: AsyncSession,
         authz: Authz,
         organization: Organization,
-        user_organization_admin: UserOrganization,
+        user_organization: UserOrganization,
         stripe_service_mock: MagicMock,
     ) -> None:
         create_product_mock: MagicMock = stripe_service_mock.create_product
@@ -876,7 +876,7 @@ class TestUserCreate:
         session: AsyncSession,
         authz: Authz,
         organization: Organization,
-        user_organization_admin: UserOrganization,
+        user_organization: UserOrganization,
         stripe_service_mock: MagicMock,
     ) -> None:
         create_product_mock: MagicMock = stripe_service_mock.create_product
@@ -924,7 +924,7 @@ class TestUserCreate:
         session: AsyncSession,
         authz: Authz,
         organization: Organization,
-        user_organization_admin: UserOrganization,
+        user_organization: UserOrganization,
         stripe_service_mock: MagicMock,
     ) -> None:
         file = File(
@@ -978,7 +978,7 @@ class TestUserCreate:
         session: AsyncSession,
         authz: Authz,
         organization: Organization,
-        user_organization_admin: UserOrganization,
+        user_organization: UserOrganization,
         stripe_service_mock: MagicMock,
     ) -> None:
         file = File(
@@ -1062,7 +1062,7 @@ class TestUserUpdate:
         session: AsyncSession,
         authz: Authz,
         product: Product,
-        user_organization_admin: UserOrganization,
+        user_organization: UserOrganization,
     ) -> None:
         # load
         product_organization_loaded = await product_service.get_loaded(
@@ -1091,7 +1091,7 @@ class TestUserUpdate:
         auth_subject: AuthSubject[User | Organization],
         product: Product,
         organization: Organization,
-        user_organization_admin: UserOrganization,
+        user_organization: UserOrganization,
         stripe_service_mock: MagicMock,
     ) -> None:
         update_product_mock: MagicMock = stripe_service_mock.update_product
@@ -1127,7 +1127,7 @@ class TestUserUpdate:
         authz: Authz,
         auth_subject: AuthSubject[User | Organization],
         product: Product,
-        user_organization_admin: UserOrganization,
+        user_organization: UserOrganization,
         stripe_service_mock: MagicMock,
     ) -> None:
         update_product_mock: MagicMock = stripe_service_mock.update_product
@@ -1163,7 +1163,7 @@ class TestUserUpdate:
         authz: Authz,
         auth_subject: AuthSubject[User | Organization],
         product: Product,
-        user_organization_admin: UserOrganization,
+        user_organization: UserOrganization,
         stripe_service_mock: MagicMock,
     ) -> None:
         update_product_mock: MagicMock = stripe_service_mock.update_product
@@ -1196,7 +1196,7 @@ class TestUserUpdate:
         authz: Authz,
         auth_subject: AuthSubject[User | Organization],
         product: Product,
-        user_organization_admin: UserOrganization,
+        user_organization: UserOrganization,
         stripe_service_mock: MagicMock,
     ) -> None:
         create_price_for_product_mock: MagicMock = (
@@ -1248,7 +1248,7 @@ class TestUserUpdate:
         authz: Authz,
         auth_subject: AuthSubject[User | Organization],
         product: Product,
-        user_organization_admin: UserOrganization,
+        user_organization: UserOrganization,
         stripe_service_mock: MagicMock,
     ) -> None:
         create_price_for_product_mock: MagicMock = (
@@ -1303,7 +1303,7 @@ class TestUserUpdate:
         auth_subject: AuthSubject[User | Organization],
         organization: Organization,
         product: Product,
-        user_organization_admin: UserOrganization,
+        user_organization: UserOrganization,
         stripe_service_mock: MagicMock,
     ) -> None:
         highlighted_product = await create_product(
@@ -1348,7 +1348,7 @@ class TestUserUpdate:
         authz: Authz,
         auth_subject: AuthSubject[User | Organization],
         product: Product,
-        user_organization_admin: UserOrganization,
+        user_organization: UserOrganization,
         stripe_service_mock: MagicMock,
     ) -> None:
         archive_product_mock: MagicMock = stripe_service_mock.archive_product
@@ -1382,7 +1382,7 @@ class TestUserUpdate:
         authz: Authz,
         auth_subject: AuthSubject[User | Organization],
         subscription_tier_free: Product,
-        user_organization_admin: UserOrganization,
+        user_organization: UserOrganization,
     ) -> None:
         # load
         subscription_tier_free_loaded = await product_service.get_loaded(
@@ -1412,7 +1412,7 @@ class TestUserUpdate:
         authz: Authz,
         auth_subject: AuthSubject[User | Organization],
         product: Product,
-        user_organization_admin: UserOrganization,
+        user_organization: UserOrganization,
         stripe_service_mock: MagicMock,
     ) -> None:
         product.is_archived = True
@@ -1449,7 +1449,7 @@ class TestUserUpdate:
         session: AsyncSession,
         authz: Authz,
         product: Product,
-        user_organization_admin: UserOrganization,
+        user_organization: UserOrganization,
     ) -> None:
         # load
         product_organization_loaded = await product_service.get_loaded(
@@ -1488,7 +1488,7 @@ class TestUserUpdate:
         authz: Authz,
         product: Product,
         organization: Organization,
-        user_organization_admin: UserOrganization,
+        user_organization: UserOrganization,
     ) -> None:
         file = File(
             **{
@@ -1533,7 +1533,7 @@ class TestUserUpdate:
         authz: Authz,
         product: Product,
         organization: Organization,
-        user_organization_admin: UserOrganization,
+        user_organization: UserOrganization,
     ) -> None:
         file = File(
             **{
@@ -1650,7 +1650,7 @@ class TestUpdateBenefits:
         save_fixture: SaveFixture,
         authz: Authz,
         auth_subject: AuthSubject[User | Organization],
-        user_organization_admin: UserOrganization,
+        user_organization: UserOrganization,
         product: Product,
         benefits: list[Benefit],
     ) -> None:
@@ -1690,7 +1690,7 @@ class TestUpdateBenefits:
         enqueue_job_mock: AsyncMock,
         authz: Authz,
         auth_subject: AuthSubject[User | Organization],
-        user_organization_admin: UserOrganization,
+        user_organization: UserOrganization,
         product: Product,
         benefits: list[Benefit],
     ) -> None:
@@ -1742,7 +1742,7 @@ class TestUpdateBenefits:
         enqueue_job_mock: AsyncMock,
         authz: Authz,
         auth_subject: AuthSubject[User | Organization],
-        user_organization_admin: UserOrganization,
+        user_organization: UserOrganization,
         product: Product,
         benefits: list[Benefit],
     ) -> None:
@@ -1795,7 +1795,7 @@ class TestUpdateBenefits:
         enqueue_job_mock: AsyncMock,
         authz: Authz,
         auth_subject: AuthSubject[User | Organization],
-        user_organization_admin: UserOrganization,
+        user_organization: UserOrganization,
         product: Product,
         benefits: list[Benefit],
     ) -> None:
@@ -1846,7 +1846,7 @@ class TestUpdateBenefits:
         enqueue_job_mock: AsyncMock,
         authz: Authz,
         auth_subject: AuthSubject[User | Organization],
-        user_organization_admin: UserOrganization,
+        user_organization: UserOrganization,
         product: Product,
         benefits: list[Benefit],
     ) -> None:
@@ -1904,7 +1904,7 @@ class TestUpdateBenefits:
         save_fixture: SaveFixture,
         authz: Authz,
         auth_subject: AuthSubject[User | Organization],
-        user_organization_admin: UserOrganization,
+        user_organization: UserOrganization,
         organization: Organization,
         product: Product,
     ) -> None:
@@ -1942,7 +1942,7 @@ class TestUpdateBenefits:
         save_fixture: SaveFixture,
         authz: Authz,
         auth_subject: AuthSubject[User | Organization],
-        user_organization_admin: UserOrganization,
+        user_organization: UserOrganization,
         organization: Organization,
         product: Product,
     ) -> None:
@@ -1987,7 +1987,7 @@ class TestUpdateBenefits:
         enqueue_job_mock: AsyncMock,
         authz: Authz,
         auth_subject: AuthSubject[User | Organization],
-        user_organization_admin: UserOrganization,
+        user_organization: UserOrganization,
         organization: Organization,
         product: Product,
     ) -> None:

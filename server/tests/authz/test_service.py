@@ -26,14 +26,14 @@ from tests.fixtures.random_objects import (
 @pytest.mark.asyncio
 async def test_can_read_repository_private(
     session: AsyncSession,
-    repository: Repository,
+    repository_linked: Repository,
     user: User,
     user_second: User,
     user_organization: UserOrganization,
     save_fixture: SaveFixture,
 ) -> None:
-    repository.is_private = True
-    await save_fixture(repository)
+    repository_linked.is_private = True
+    await save_fixture(repository_linked)
 
     # then
     session.expunge_all()
@@ -44,7 +44,7 @@ async def test_can_read_repository_private(
         await authz.can(
             Anonymous(),
             AccessType.read,
-            repository,
+            repository_linked,
         )
         is False
     )
@@ -53,7 +53,7 @@ async def test_can_read_repository_private(
         await authz.can(
             user,
             AccessType.read,
-            repository,
+            repository_linked,
         )
         is True
     )
@@ -62,7 +62,7 @@ async def test_can_read_repository_private(
         await authz.can(
             user_second,
             AccessType.read,
-            repository,
+            repository_linked,
         )
         is False
     )
@@ -116,14 +116,14 @@ async def test_can_read_repository_public(
 @pytest.mark.asyncio
 async def test_can_write_repository(
     session: AsyncSession,
-    repository: Repository,
+    repository_linked: Repository,
     user: User,
     user_second: User,
     user_organization: UserOrganization,
     save_fixture: SaveFixture,
 ) -> None:
-    repository.is_private = False
-    await save_fixture(repository)
+    repository_linked.is_private = False
+    await save_fixture(repository_linked)
 
     # then
     session.expunge_all()
@@ -132,29 +132,16 @@ async def test_can_write_repository(
         await Authz(session).can(
             Anonymous(),
             AccessType.write,
-            repository,
+            repository_linked,
         )
         is False
     )
 
-    user_organization.is_admin = False
-    await save_fixture(user_organization)
     assert (
         await Authz(session).can(
             user,
             AccessType.write,
-            repository,
-        )
-        is False
-    )
-
-    user_organization.is_admin = True
-    await save_fixture(user_organization)
-    assert (
-        await Authz(session).can(
-            user,
-            AccessType.write,
-            repository,
+            repository_linked,
         )
         is True
     )
@@ -163,7 +150,7 @@ async def test_can_write_repository(
         await Authz(session).can(
             user_second,
             AccessType.write,
-            repository,
+            repository_linked,
         )
         is False
     )
@@ -190,19 +177,6 @@ async def test_can_write_organization(
         is False
     )
 
-    user_organization.is_admin = False
-    await save_fixture(user_organization)
-    assert (
-        await Authz(session).can(
-            user,
-            AccessType.write,
-            organization,
-        )
-        is False
-    )
-
-    user_organization.is_admin = True
-    await save_fixture(user_organization)
     assert (
         await Authz(session).can(
             user,
@@ -249,19 +223,6 @@ async def test_can_read_issue_public_repository(
         is True
     )
 
-    user_organization.is_admin = False
-    await save_fixture(user_organization)
-    assert (
-        await authz.can(
-            user,
-            AccessType.read,
-            issue,
-        )
-        is True
-    )
-
-    user_organization.is_admin = True
-    await save_fixture(user_organization)
     assert (
         await authz.can(
             user,
@@ -284,15 +245,15 @@ async def test_can_read_issue_public_repository(
 @pytest.mark.asyncio
 async def test_can_read_issue_private_repository(
     session: AsyncSession,
-    repository: Repository,
-    issue: Issue,
+    repository_linked: Repository,
+    issue_linked: Issue,
     user: User,
     user_second: User,
     user_organization: UserOrganization,
     save_fixture: SaveFixture,
 ) -> None:
-    repository.is_private = True
-    await save_fixture(repository)
+    repository_linked.is_private = True
+    await save_fixture(repository_linked)
 
     # then
     session.expunge_all()
@@ -303,29 +264,16 @@ async def test_can_read_issue_private_repository(
         await authz.can(
             Anonymous(),
             AccessType.read,
-            issue,
+            issue_linked,
         )
         is False
     )
 
-    user_organization.is_admin = False
-    await save_fixture(user_organization)
     assert (
         await authz.can(
             user,
             AccessType.read,
-            issue,
-        )
-        is True
-    )
-
-    user_organization.is_admin = True
-    await save_fixture(user_organization)
-    assert (
-        await authz.can(
-            user,
-            AccessType.read,
-            issue,
+            issue_linked,
         )
         is True
     )
@@ -334,7 +282,7 @@ async def test_can_read_issue_private_repository(
         await authz.can(
             user_second,
             AccessType.read,
-            issue,
+            issue_linked,
         )
         is False
     )
@@ -343,7 +291,7 @@ async def test_can_read_issue_private_repository(
 @pytest.mark.asyncio
 async def test_can_write_issue(
     session: AsyncSession,
-    issue: Issue,
+    issue_linked: Issue,
     user: User,
     user_second: User,
     user_organization: UserOrganization,
@@ -356,29 +304,16 @@ async def test_can_write_issue(
         await Authz(session).can(
             Anonymous(),
             AccessType.write,
-            issue,
+            issue_linked,
         )
         is False
     )
 
-    user_organization.is_admin = False
-    await save_fixture(user_organization)
     assert (
         await Authz(session).can(
             user,
             AccessType.write,
-            issue,
-        )
-        is False
-    )
-
-    user_organization.is_admin = True
-    await save_fixture(user_organization)
-    assert (
-        await Authz(session).can(
-            user,
-            AccessType.write,
-            issue,
+            issue_linked,
         )
         is True
     )
@@ -387,7 +322,7 @@ async def test_can_write_issue(
         await Authz(session).can(
             user_second,
             AccessType.write,
-            issue,
+            issue_linked,
         )
         is False
     )
@@ -440,7 +375,6 @@ async def test_can_read_issue_reward(
         expected: bool
         is_reward_receiver: bool | None = None
         is_pledge_issue_member: bool | None = None
-        is_pledge_issue_member_admin: bool = False
 
     for idx, tc in enumerate(
         [
@@ -465,13 +399,6 @@ async def test_can_read_issue_reward(
                 subject=await create_user(save_fixture),
                 is_reward_receiver=False,
                 is_pledge_issue_member=True,
-                expected=False,
-            ),
-            TestCase(
-                subject=await create_user(save_fixture),
-                is_reward_receiver=False,
-                is_pledge_issue_member=True,
-                is_pledge_issue_member_admin=True,
                 expected=True,
             ),
         ]
@@ -481,7 +408,9 @@ async def test_can_read_issue_reward(
             id=idx,
         ):
             org = await create_organization(save_fixture)
-            external_org = await create_external_organization(save_fixture)
+            external_org = await create_external_organization(
+                save_fixture, organization=org
+            )
             repo = await create_repository(save_fixture, external_org)
             issue = await create_issue(save_fixture, external_org, repo)
 
@@ -499,7 +428,6 @@ async def test_can_read_issue_reward(
                 user_organization = UserOrganization(
                     user_id=tc.subject.id,
                     organization_id=org.id,
-                    is_admin=tc.is_pledge_issue_member_admin,
                 )
                 await save_fixture(user_organization)
 
@@ -530,9 +458,7 @@ async def test_can_read_pledge(
         expected: bool
         is_pledging_user: bool = False
         is_pledging_org_member: bool = False
-        is_pledging_org_member_admin: bool = False
         receiving_org_member: bool = False
-        receiving_org_member_admin: bool = False
 
     for idx, tc in enumerate(
         [
@@ -550,25 +476,21 @@ async def test_can_read_pledge(
             TestCase(
                 subject=await create_user(save_fixture),
                 is_pledging_org_member=False,
-                is_pledging_org_member_admin=False,
                 expected=False,
             ),
             TestCase(
                 subject=await create_user(save_fixture),
                 is_pledging_org_member=True,
-                is_pledging_org_member_admin=True,
                 expected=True,
             ),
             TestCase(
                 subject=await create_user(save_fixture),
                 receiving_org_member=True,
-                receiving_org_member_admin=False,
                 expected=True,
             ),
             TestCase(
                 subject=await create_user(save_fixture),
                 receiving_org_member=True,
-                receiving_org_member_admin=True,
                 expected=True,
             ),
         ]
@@ -578,7 +500,9 @@ async def test_can_read_pledge(
             id=idx,
         ):
             org = await create_organization(save_fixture)
-            external_org = await create_external_organization(save_fixture)
+            external_org = await create_external_organization(
+                save_fixture, organization=org
+            )
             repo = await create_repository(save_fixture, external_org)
             issue = await create_issue(save_fixture, external_org, repo)
 
@@ -600,7 +524,6 @@ async def test_can_read_pledge(
                 user_organization = UserOrganization(
                     user_id=tc.subject.id,
                     organization_id=org.id,
-                    is_admin=tc.receiving_org_member_admin,
                 )
                 await save_fixture(user_organization)
 
@@ -613,7 +536,6 @@ async def test_can_read_pledge(
                 user_organization = UserOrganization(
                     user_id=tc.subject.id,
                     organization_id=pledging_org.id,
-                    is_admin=tc.is_pledging_org_member_admin,
                 )
                 await save_fixture(user_organization)
 
@@ -644,9 +566,7 @@ async def test_can_write_pledge(
         expected: bool
         is_pledging_user: bool = False
         is_pledging_org_member: bool = False
-        is_pledging_org_member_admin: bool = False
         receiving_org_member: bool = False
-        receiving_org_member_admin: bool = False
 
     for idx, tc in enumerate(
         [
@@ -664,25 +584,16 @@ async def test_can_write_pledge(
             TestCase(
                 subject=await create_user(save_fixture),
                 is_pledging_org_member=False,
-                is_pledging_org_member_admin=False,
                 expected=False,
             ),
             TestCase(
                 subject=await create_user(save_fixture),
                 is_pledging_org_member=True,
-                is_pledging_org_member_admin=True,
                 expected=True,
             ),
             TestCase(
                 subject=await create_user(save_fixture),
                 receiving_org_member=True,
-                receiving_org_member_admin=False,
-                expected=False,
-            ),
-            TestCase(
-                subject=await create_user(save_fixture),
-                receiving_org_member=True,
-                receiving_org_member_admin=True,
                 expected=True,
             ),
         ]
@@ -692,7 +603,9 @@ async def test_can_write_pledge(
             id=idx,
         ):
             org = await create_organization(save_fixture)
-            external_org = await create_external_organization(save_fixture)
+            external_org = await create_external_organization(
+                save_fixture, organization=org
+            )
             repo = await create_repository(save_fixture, external_org)
             issue = await create_issue(save_fixture, external_org, repo)
 
@@ -714,7 +627,6 @@ async def test_can_write_pledge(
                 user_organization = UserOrganization(
                     user_id=tc.subject.id,
                     organization_id=org.id,
-                    is_admin=tc.receiving_org_member_admin,
                 )
                 await save_fixture(user_organization)
 
@@ -727,7 +639,6 @@ async def test_can_write_pledge(
                 user_organization = UserOrganization(
                     user_id=tc.subject.id,
                     organization_id=pledging_org.id,
-                    is_admin=tc.is_pledging_org_member_admin,
                 )
                 await save_fixture(user_organization)
 

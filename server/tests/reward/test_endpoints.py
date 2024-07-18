@@ -28,9 +28,6 @@ async def test_search(
     user: User,
     client: AsyncClient,
 ) -> None:
-    user_organization.is_admin = True
-    await save_fixture(user_organization)
-
     await pledge_service.mark_pending_by_issue_id(session, pledge.issue_id)
 
     got = await pledge_service.get(session, pledge.id)

@@ -87,7 +87,7 @@ class TestGetBenefit:
         self,
         client: AsyncClient,
         benefit_organization: Benefit,
-        user_organization_admin: UserOrganization,
+        user_organization: UserOrganization,
     ) -> None:
         response = await client.get(f"/v1/benefits/{benefit_organization.id}")
 
@@ -143,7 +143,7 @@ class TestCreateBenefit:
         payload: dict[str, Any],
         client: AsyncClient,
         organization: Organization,
-        user_organization_admin: UserOrganization,
+        user_organization: UserOrganization,
     ) -> None:
         response = await client.post(
             "/v1/benefits/",
@@ -161,7 +161,7 @@ class TestCreateBenefit:
         self,
         client: AsyncClient,
         organization: Organization,
-        user_organization_admin: UserOrganization,
+        user_organization: UserOrganization,
     ) -> None:
         response = await client.post(
             "/v1/benefits/",
@@ -223,7 +223,7 @@ class TestUpdateBenefit:
         payload: dict[str, Any],
         client: AsyncClient,
         benefit_organization: Benefit,
-        user_organization_admin: UserOrganization,
+        user_organization: UserOrganization,
     ) -> None:
         response = await client.patch(
             f"/v1/benefits/{benefit_organization.id}",
@@ -237,7 +237,7 @@ class TestUpdateBenefit:
         self,
         client: AsyncClient,
         benefit_organization: Benefit,
-        user_organization_admin: UserOrganization,
+        user_organization: UserOrganization,
     ) -> None:
         response = await client.patch(
             f"/v1/benefits/{benefit_organization.id}",
@@ -259,7 +259,7 @@ class TestUpdateBenefit:
         save_fixture: SaveFixture,
         client: AsyncClient,
         organization: Organization,
-        user_organization_admin: UserOrganization,
+        user_organization: UserOrganization,
     ) -> None:
         benefit = await create_benefit(
             save_fixture,
@@ -289,7 +289,7 @@ class TestUpdateBenefit:
         save_fixture: SaveFixture,
         client: AsyncClient,
         organization: Organization,
-        user_organization_admin: UserOrganization,
+        user_organization: UserOrganization,
     ) -> None:
         benefit = await create_benefit(
             save_fixture,
@@ -338,7 +338,7 @@ class TestDeleteBenefit:
         self,
         client: AsyncClient,
         benefit_organization: Benefit,
-        user_organization_admin: UserOrganization,
+        user_organization: UserOrganization,
     ) -> None:
         response = await client.delete(f"/v1/benefits/{benefit_organization.id}")
 

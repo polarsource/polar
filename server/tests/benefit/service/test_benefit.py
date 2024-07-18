@@ -284,7 +284,7 @@ class TestUserCreate:
         authz: Authz,
         user: User,
         organization: Organization,
-        user_organization_admin: UserOrganization,
+        user_organization: UserOrganization,
     ) -> None:
         create_schema = BenefitCustomCreate(
             type=BenefitType.custom,
@@ -333,7 +333,7 @@ class TestUserCreate:
         session: AsyncSession,
         authz: Authz,
         organization: Organization,
-        user_organization_admin: UserOrganization,
+        user_organization: UserOrganization,
     ) -> None:
         service_mock = MagicMock(spec=BenefitServiceProtocol)
         service_mock.validate_properties.side_effect = BenefitPropertiesValidationError(
@@ -410,7 +410,7 @@ class TestUserUpdate:
         authz: Authz,
         benefit_organization: Benefit,
         auth_subject: AuthSubject[User | Organization],
-        user_organization_admin: UserOrganization,
+        user_organization: UserOrganization,
     ) -> None:
         enqueue_benefit_grant_updates_mock = mocker.patch.object(
             benefit_grant_service,
@@ -473,7 +473,7 @@ class TestUserDelete:
         save_fixture: SaveFixture,
         authz: Authz,
         organization: Organization,
-        user_organization_admin: UserOrganization,
+        user_organization: UserOrganization,
         auth_subject: AuthSubject[User | Organization],
     ) -> None:
         benefit = await create_benefit(
@@ -507,7 +507,7 @@ class TestUserDelete:
         authz: Authz,
         benefit_organization: Benefit,
         auth_subject: AuthSubject[User | Organization],
-        user_organization_admin: UserOrganization,
+        user_organization: UserOrganization,
     ) -> None:
         enqueue_benefit_grant_updates_mock = mocker.patch.object(
             benefit_grant_service,

@@ -42,7 +42,7 @@ class TestListOrders:
     async def test_user_valid(
         self,
         client: AsyncClient,
-        user_organization_admin: UserOrganization,
+        user_organization: UserOrganization,
         orders: list[Order],
     ) -> None:
         response = await client.get("/v1/orders/")
@@ -77,7 +77,7 @@ class TesGetOrdersStatistics:
         AuthSubjectFixture(scopes={Scope.orders_read}),
     )
     async def test_user_valid(
-        self, client: AsyncClient, user_organization_admin: UserOrganization
+        self, client: AsyncClient, user_organization: UserOrganization
     ) -> None:
         response = await client.get("/v1/orders/statistics")
 

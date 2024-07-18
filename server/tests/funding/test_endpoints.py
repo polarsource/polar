@@ -1,3 +1,5 @@
+import uuid
+
 import pytest
 from httpx import AsyncClient
 
@@ -17,15 +19,9 @@ from .conftest import IssuesPledgesFixture, create_issues_pledges
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
 class TestSearch:
-    async def test_missing_organization_name(self, client: AsyncClient) -> None:
-        response = await client.get("/v1/funding/search", params={"platform": "github"})
-
-        assert response.status_code == 422
-
     async def test_unknown_organization(self, client: AsyncClient) -> None:
         response = await client.get(
-            "/v1/funding/search",
-            params={"platform": "github", "organization_name": "not-existing"},
+            "/v1/funding/search", params={"organization_id": str(uuid.uuid4())}
         )
 
         assert response.status_code == 404
@@ -36,8 +32,7 @@ class TestSearch:
         response = await client.get(
             "/v1/funding/search",
             params={
-                "platform": organization.platform.value,
-                "organization_name": organization.slug,
+                "organization_id": str(organization.id),
                 "repository_name": "not-existing",
             },
         )
@@ -56,11 +51,7 @@ class TestSearch:
         await save_fixture(repository)
 
         response = await client.get(
-            "/v1/funding/search",
-            params={
-                "platform": organization.platform.value,
-                "organization_name": organization.slug,
-            },
+            "/v1/funding/search", params={"organization_id": str(organization.id)}
         )
 
         assert response.status_code == 200
@@ -82,8 +73,7 @@ class TestSearch:
         response = await client.get(
             "/v1/funding/search",
             params={
-                "platform": organization.platform.value,
-                "organization_name": organization.slug,
+                "organization_id": str(organization.id),
                 "sorting": ["newest", "most_funded"],
             },
         )
@@ -114,10 +104,7 @@ class TestSearch:
 
         response = await client.get(
             "/v1/funding/search",
-            params={
-                "platform": organization.platform.value,
-                "organization_name": organization.slug,
-            },
+            params={"organization_id": str(organization.id)},
         )
 
         assert response.status_code == 200
@@ -148,10 +135,7 @@ class TestSearch:
 
         response = await client.get(
             "/v1/funding/search",
-            params={
-                "platform": organization.platform.value,
-                "organization_name": organization.slug,
-            },
+            params={"organization_id": str(organization.id)},
         )
 
         assert response.status_code == 200
@@ -168,8 +152,7 @@ class TestSearch:
         response = await client.get(
             "/v1/funding/search",
             params={
-                "platform": organization.platform.value,
-                "organization_name": organization.slug,
+                "organization_id": str(organization.id),
                 "sorting": ["newest"],
                 "limit": 1,
                 "page": 3,

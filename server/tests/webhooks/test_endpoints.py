@@ -8,7 +8,6 @@ from polar.models.user_organization import UserOrganization
 from polar.models.webhook_delivery import WebhookDelivery
 from polar.models.webhook_endpoint import WebhookEndpoint
 from tests.fixtures.auth import AuthSubjectFixture
-from tests.fixtures.database import SaveFixture
 
 
 @pytest.mark.asyncio
@@ -39,38 +38,14 @@ class TestListWebhookEndpoints:
         assert len(json["items"]) == 0
 
     @pytest.mark.auth
-    async def test_authenticated_not_admin(
-        self,
-        client: AsyncClient,
-        organization: Organization,
-        user: User,
-        user_organization: UserOrganization,
-        save_fixture: SaveFixture,
-        webhook_endpoint_organization: WebhookEndpoint,
-    ) -> None:
-        user_organization.is_admin = False
-        await save_fixture(user_organization)
-
-        params = {"organization_id": str(organization.id)}
-        response = await client.get("/v1/webhooks/endpoints", params=params)
-
-        assert response.status_code == 200
-        json = response.json()
-        assert len(json["items"]) == 0
-
-    @pytest.mark.auth
     async def test_authenticated(
         self,
         client: AsyncClient,
         organization: Organization,
         user: User,
         user_organization: UserOrganization,
-        save_fixture: SaveFixture,
         webhook_endpoint_organization: WebhookEndpoint,
     ) -> None:
-        user_organization.is_admin = True
-        await save_fixture(user_organization)
-
         params = {"organization_id": str(organization.id)}
         response = await client.get("/v1/webhooks/endpoints", params=params)
 
@@ -143,7 +118,7 @@ class TestUpdateWebhookEndpoint:
         self,
         client: AsyncClient,
         webhook_endpoint_organization: WebhookEndpoint,
-        user_organization_admin: UserOrganization,
+        user_organization: UserOrganization,
     ) -> None:
         response = await client.patch(
             f"/v1/webhooks/endpoints/{webhook_endpoint_organization.id}", json={}
@@ -159,7 +134,7 @@ class TestUpdateWebhookEndpoint:
         self,
         client: AsyncClient,
         webhook_endpoint_organization: WebhookEndpoint,
-        user_organization_admin: UserOrganization,
+        user_organization: UserOrganization,
     ) -> None:
         response = await client.patch(
             f"/v1/webhooks/endpoints/{webhook_endpoint_organization.id}", json={}
@@ -198,7 +173,7 @@ class TestDeleteWebhookEndpoint:
         self,
         client: AsyncClient,
         webhook_endpoint_organization: WebhookEndpoint,
-        user_organization_admin: UserOrganization,
+        user_organization: UserOrganization,
     ) -> None:
         response = await client.delete(
             f"/v1/webhooks/endpoints/{webhook_endpoint_organization.id}"
@@ -214,7 +189,7 @@ class TestDeleteWebhookEndpoint:
         self,
         client: AsyncClient,
         webhook_endpoint_organization: WebhookEndpoint,
-        user_organization_admin: UserOrganization,
+        user_organization: UserOrganization,
     ) -> None:
         response = await client.delete(
             f"/v1/webhooks/endpoints/{webhook_endpoint_organization.id}"
@@ -262,28 +237,13 @@ class TestListWebhookDeliveries:
         assert len(json["items"]) == 0
 
     @pytest.mark.auth
-    async def test_user_not_admin(
-        self,
-        client: AsyncClient,
-        user: User,
-        webhook_endpoint_organization: WebhookEndpoint,
-        webhook_delivery: WebhookDelivery,
-        user_organization: UserOrganization,
-    ) -> None:
-        response = await client.get("/v1/webhooks/deliveries")
-
-        assert response.status_code == 200
-        json = response.json()
-        assert len(json["items"]) == 0
-
-    @pytest.mark.auth
     async def test_user(
         self,
         client: AsyncClient,
         user: User,
         webhook_endpoint_organization: WebhookEndpoint,
         webhook_delivery: WebhookDelivery,
-        user_organization_admin: UserOrganization,
+        user_organization: UserOrganization,
     ) -> None:
         response = await client.get("/v1/webhooks/deliveries")
 

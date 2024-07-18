@@ -302,7 +302,7 @@ class OrderService(ResourceServiceReader[Order]):
         self, session: AsyncSession, organization: Organization, order: Order
     ) -> None:
         product = order.product
-        await notifications_service.send_to_org_admins(
+        await notifications_service.send_to_org_members(
             session,
             org_id=product.organization_id,
             notif=PartialNotification(
@@ -311,7 +311,7 @@ class OrderService(ResourceServiceReader[Order]):
                     customer_name=order.user.email,
                     product_name=product.name,
                     product_price_amount=order.product_price.price_amount,
-                    organization_name=organization.name,
+                    organization_name=organization.slug,
                 ),
             ),
         )
@@ -394,7 +394,7 @@ class OrderService(ResourceServiceReader[Order]):
             held_balance.organization_id = managing_organization.id
             await held_balance_service.create(session, held_balance=held_balance)
 
-            await notifications_service.send_to_org_admins(
+            await notifications_service.send_to_org_members(
                 session=session,
                 org_id=managing_organization.id,
                 notif=PartialNotification(
@@ -440,7 +440,6 @@ class OrderService(ResourceServiceReader[Order]):
                     select(UserOrganization.organization_id).where(
                         UserOrganization.user_id == user.id,
                         UserOrganization.deleted_at.is_(None),
-                        UserOrganization.is_admin.is_(True),
                     )
                 )
             )
@@ -468,7 +467,6 @@ class OrderService(ResourceServiceReader[Order]):
                     select(UserOrganization.organization_id).where(
                         UserOrganization.user_id == user.id,
                         UserOrganization.deleted_at.is_(None),
-                        UserOrganization.is_admin.is_(True),
                     )
                 )
             )

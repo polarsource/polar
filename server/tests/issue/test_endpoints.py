@@ -207,13 +207,9 @@ async def test_update_funding_goal(
     repository: Repository,
     issue: Issue,
     session: AsyncSession,
-    save_fixture: SaveFixture,
     user_organization: UserOrganization,  # makes User a member of Organization
     client: AsyncClient,
 ) -> None:
-    user_organization.is_admin = True
-    await save_fixture(user_organization)
-
     # then
     session.expunge_all()
 
@@ -256,15 +252,11 @@ async def test_confirm_solved(
     issue: Issue,
     pledge: Pledge,
     session: AsyncSession,
-    save_fixture: SaveFixture,
     user_organization: UserOrganization,  # makes User a member of Organization
     mocker: MockerFixture,
     client: AsyncClient,
     user: User,
 ) -> None:
-    user_organization.is_admin = True
-    await save_fixture(user_organization)
-
     # then
     session.expunge_all()
 

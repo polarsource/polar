@@ -147,7 +147,7 @@ class TestCreateProduct:
         self,
         client: AsyncClient,
         organization: Organization,
-        user_organization_admin: UserOrganization,
+        user_organization: UserOrganization,
     ) -> None:
         response = await client.post(
             "/v1/products/",
@@ -217,7 +217,7 @@ class TestCreateProduct:
         payload: dict[str, Any],
         client: AsyncClient,
         organization: Organization,
-        user_organization_admin: UserOrganization,
+        user_organization: UserOrganization,
         stripe_service_mock: MagicMock,
         session: AsyncSession,
     ) -> None:
@@ -273,7 +273,7 @@ class TestCreateProduct:
         prices: list[dict[str, Any]],
         client: AsyncClient,
         organization: Organization,
-        user_organization_admin: UserOrganization,
+        user_organization: UserOrganization,
         stripe_service_mock: MagicMock,
         session: AsyncSession,
     ) -> None:
@@ -334,7 +334,7 @@ class TestUpdateProduct:
         payload: dict[str, Any],
         client: AsyncClient,
         product: Product,
-        user_organization_admin: UserOrganization,
+        user_organization: UserOrganization,
     ) -> None:
         response = await client.patch(
             f"/v1/products/{product.id}",
@@ -348,7 +348,7 @@ class TestUpdateProduct:
         self,
         client: AsyncClient,
         product: Product,
-        user_organization_admin: UserOrganization,
+        user_organization: UserOrganization,
     ) -> None:
         response = await client.patch(
             f"/v1/products/{product.id}",
@@ -365,7 +365,7 @@ class TestUpdateProduct:
         self,
         client: AsyncClient,
         product_one_time: Product,
-        user_organization_admin: UserOrganization,
+        user_organization: UserOrganization,
     ) -> None:
         """
         We should handle the case where we want to keep the existing price, but we pass
@@ -423,7 +423,7 @@ class TestUpdateProductBenefits:
         self,
         client: AsyncClient,
         product: Product,
-        user_organization_admin: UserOrganization,
+        user_organization: UserOrganization,
         benefit_organization: Benefit,
     ) -> None:
         response = await client.post(

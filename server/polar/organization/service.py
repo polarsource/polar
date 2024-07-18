@@ -30,9 +30,6 @@ from polar.models import (
 from polar.models.user import OAuthPlatform
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.postgres import AsyncSession, sql
-from polar.user_organization.service import (
-    user_organization as user_organization_service,
-)
 from polar.webhook.service import webhook as webhook_service
 from polar.worker import enqueue_job
 
@@ -215,7 +212,6 @@ class OrganizationService(ResourceServiceReader[Organization]):
         self,
         session: AsyncSession,
         user_id: UUID,
-        is_admin_only: bool,
         filter_by_name: str | None = None,
     ) -> Sequence[Organization]:
         statement = (
@@ -229,9 +225,6 @@ class OrganizationService(ResourceServiceReader[Organization]):
             )
         )
 
-        if is_admin_only:
-            statement = statement.where(UserOrganization.is_admin.is_(True))
-
         if filter_by_name:
             statement = statement.where(Organization.slug == filter_by_name)
 
@@ -243,14 +236,11 @@ class OrganizationService(ResourceServiceReader[Organization]):
         session: AsyncSession,
         organization: Organization,
         user: User,
-        is_admin: bool,
     ) -> None:
         nested = await session.begin_nested()
         try:
             relation = UserOrganization(
-                user_id=user.id,
-                organization_id=organization.id,
-                is_admin=is_admin,
+                user_id=user.id, organization_id=organization.id
             )
             session.add(relation)
             await nested.commit()
@@ -259,7 +249,6 @@ class OrganizationService(ResourceServiceReader[Organization]):
                 "organization.add_user.created",
                 user_id=user.id,
                 organization_id=organization.id,
-                is_admin=is_admin,
             )
         except IntegrityError:
             # TODO: Currently, we treat this as success since the connection
@@ -280,7 +269,6 @@ class OrganizationService(ResourceServiceReader[Organization]):
                     UserOrganization.organization_id == organization.id,
                 )
                 .values(
-                    is_admin=is_admin,
                     deleted_at=None,  # un-delete user if exists
                 )
             )
@@ -312,24 +300,6 @@ class OrganizationService(ResourceServiceReader[Organization]):
 
         if first_account_set:
             enqueue_job("organization.account_set", organization.id)
-
-        await self._after_update(session, organization)
-
-        return organization
-
-    async def set_personal_account(
-        self, session: AsyncSession, *, organization: Organization
-    ) -> Organization:
-        if organization.is_personal and organization.account_id is None:
-            user_admins = await user_organization_service.list_by_org(
-                session, organization.id, is_admin=True
-            )
-            if len(user_admins) > 0:
-                user_admin = user_admins[0]
-                if user_admin.user.account_id is not None:
-                    organization.account_id = user_admin.user.account_id
-                    session.add(organization)
-                    await session.commit()
 
         await self._after_update(session, organization)
 

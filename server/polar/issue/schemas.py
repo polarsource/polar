@@ -152,7 +152,7 @@ class Issue(Schema):
             assignees=cast(list[Assignee], i.assignees) if i.assignees else None,
             reactions=cast(Reactions, i.reactions) if i.reactions else None,
             funding=funding,
-            repository=Repository.from_db(i.repository),
+            repository=Repository.model_validate(i.repository),
             labels=labels,
             upfront_split_to_contributors=i.upfront_split_to_contributors,
             pledge_badge_currently_embedded=i.pledge_badge_currently_embedded,

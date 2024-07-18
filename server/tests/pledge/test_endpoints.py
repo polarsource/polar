@@ -31,12 +31,8 @@ async def test_get_pledge(
     issue: Issue,
     user_organization: UserOrganization,  # makes User a member of Organization
     session: AsyncSession,
-    save_fixture: SaveFixture,
     client: AsyncClient,
 ) -> None:
-    user_organization.is_admin = True
-    await save_fixture(user_organization)
-
     # then
     session.expunge_all()
 
@@ -189,27 +185,6 @@ async def test_get_pledge_member_receiving_org(
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
 @pytest.mark.auth
-async def test_get_pledge_not_admin(
-    organization: Organization,
-    pledging_organization: Organization,
-    repository: Repository,
-    pledge: Pledge,
-    user: User,
-    user_organization: UserOrganization,  # makes User a member of Organization
-    save_fixture: SaveFixture,
-    client: AsyncClient,
-) -> None:
-    user_organization.is_admin = False
-    await save_fixture(user_organization)
-
-    response = await client.get(f"/v1/pledges/{pledge.id}")
-
-    assert response.status_code == 200
-
-
-@pytest.mark.asyncio
-@pytest.mark.http_auto_expunge
-@pytest.mark.auth
 async def test_get_pledge_not_member(
     organization: Organization,
     repository: Repository,
@@ -230,13 +205,9 @@ async def test_search_pledge(
     repository: Repository,
     user_organization: UserOrganization,  # makes User a member of Organization
     pledge: Pledge,
-    save_fixture: SaveFixture,
     issue: Issue,
     client: AsyncClient,
 ) -> None:
-    user_organization.is_admin = True
-    await save_fixture(user_organization)
-
     response = await client.get(
         f"/v1/pledges/search?platform=github&organization_name={organization.slug}"
     )
@@ -260,12 +231,8 @@ async def test_search_pledge_no_admin(
     repository: Repository,
     user_organization: UserOrganization,  # makes User a member of Organization
     pledge: Pledge,
-    save_fixture: SaveFixture,
     client: AsyncClient,
 ) -> None:
-    user_organization.is_admin = False
-    await save_fixture(user_organization)
-
     response = await client.get(
         f"/v1/pledges/search?platform=github&organization_name={organization.slug}"
     )
@@ -305,9 +272,6 @@ async def test_search_pledge_by_issue_id(
     issue: Issue,
     client: AsyncClient,
 ) -> None:
-    user_organization.is_admin = True
-    await save_fixture(user_organization)
-
     # create another issue and another pledge
     other_issue = await create_issue(
         save_fixture, external_organization=external_organization, repository=repository

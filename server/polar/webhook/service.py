@@ -357,7 +357,6 @@ class WebhookService:
                     and_(
                         UserOrganization.deleted_at.is_(None),
                         UserOrganization.user_id == user.id,
-                        UserOrganization.is_admin.is_(True),
                     ),
                 )
             )

@@ -15,11 +15,7 @@ async def test_create_no_body(
     organization: Organization,
     user_organization: UserOrganization,  # makes User a member of Organization
     client: AsyncClient,
-    save_fixture: SaveFixture,
 ) -> None:
-    user_organization.is_admin = True
-    await save_fixture(user_organization)
-
     response = await client.post(
         "/v1/articles/",
         json={
@@ -39,11 +35,7 @@ async def test_create(
     organization: Organization,
     user_organization: UserOrganization,  # makes User a member of Organization
     client: AsyncClient,
-    save_fixture: SaveFixture,
 ) -> None:
-    user_organization.is_admin = True
-    await save_fixture(user_organization)
-
     response = await client.post(
         "/v1/articles/",
         json={
@@ -67,11 +59,7 @@ async def test_create_with_slug(
     organization: Organization,
     user_organization: UserOrganization,  # makes User a member of Organization
     client: AsyncClient,
-    save_fixture: SaveFixture,
 ) -> None:
-    user_organization.is_admin = True
-    await save_fixture(user_organization)
-
     response = await client.post(
         "/v1/articles/",
         json={
@@ -96,11 +84,7 @@ async def test_create_with_slug_slugify(
     organization: Organization,
     user_organization: UserOrganization,  # makes User a member of Organization
     client: AsyncClient,
-    save_fixture: SaveFixture,
 ) -> None:
-    user_organization.is_admin = True
-    await save_fixture(user_organization)
-
     response = await client.post(
         "/v1/articles/",
         json={
@@ -136,27 +120,6 @@ async def test_create_non_member(
 
 
 @pytest.mark.asyncio
-@pytest.mark.http_auto_expunge
-@pytest.mark.auth
-async def test_create_non_admin(
-    user: User,
-    organization: Organization,
-    user_organization: UserOrganization,  # makes User a member of Organization
-    client: AsyncClient,
-) -> None:
-    response = await client.post(
-        "/v1/articles/",
-        json={
-            "title": "Hello",
-            "body": "Body body",
-            "organization_id": str(organization.id),
-        },
-    )
-
-    assert response.status_code == 403
-
-
-@pytest.mark.asyncio
 @pytest.mark.auth
 async def test_get_public(
     user: User,
@@ -164,12 +127,7 @@ async def test_get_public(
     user_organization: UserOrganization,  # makes User a member of Organization
     client: AsyncClient,
     session: AsyncSession,
-    save_fixture: SaveFixture,
 ) -> None:
-    user_organization.is_admin = True
-    await save_fixture(user_organization)
-
-    # then
     session.expunge_all()
 
     response = await client.post(
@@ -213,11 +171,7 @@ async def test_get_hidden(
     user_organization: UserOrganization,  # makes User a member of Organization
     client: AsyncClient,
     session: AsyncSession,
-    save_fixture: SaveFixture,
 ) -> None:
-    user_organization.is_admin = True
-    await save_fixture(user_organization)
-
     # then
     session.expunge_all()
 
@@ -257,9 +211,6 @@ async def test_get_private_user(
     session: AsyncSession,
     save_fixture: SaveFixture,
 ) -> None:
-    user_organization.is_admin = True
-    await save_fixture(user_organization)
-
     article = article = Article(
         slug="hello-world",
         title="Hello World!",
@@ -292,9 +243,6 @@ async def test_get_private_anonymous(
     session: AsyncSession,
     save_fixture: SaveFixture,
 ) -> None:
-    user_organization.is_admin = True
-    await save_fixture(user_organization)
-
     article = article = Article(
         slug="hello-world",
         title="Hello World!",
@@ -320,11 +268,7 @@ async def test_byline_default(
     user_organization: UserOrganization,  # makes User a member of Organization
     client: AsyncClient,
     session: AsyncSession,
-    save_fixture: SaveFixture,
 ) -> None:
-    user_organization.is_admin = True
-    await save_fixture(user_organization)
-
     # then
     session.expunge_all()
 
@@ -350,11 +294,7 @@ async def test_byline_user_github(
     user_organization: UserOrganization,  # makes User a member of Organization
     client: AsyncClient,
     session: AsyncSession,
-    save_fixture: SaveFixture,
 ) -> None:
-    user_organization.is_admin = True
-    await save_fixture(user_organization)
-
     # then
     session.expunge_all()
 
@@ -381,11 +321,7 @@ async def test_byline_user_no_oauth(
     user_organization: UserOrganization,  # makes User a member of Organization
     client: AsyncClient,
     session: AsyncSession,
-    save_fixture: SaveFixture,
 ) -> None:
-    user_organization.is_admin = True
-    await save_fixture(user_organization)
-
     # then
     session.expunge_all()
 
@@ -412,11 +348,7 @@ async def test_byline_org(
     user_organization: UserOrganization,  # makes User a member of Organization
     client: AsyncClient,
     session: AsyncSession,
-    save_fixture: SaveFixture,
 ) -> None:
-    user_organization.is_admin = True
-    await save_fixture(user_organization)
-
     # then
     session.expunge_all()
 
@@ -443,11 +375,7 @@ async def test_slug_collision(
     user_organization: UserOrganization,  # makes User a member of Organization
     client: AsyncClient,
     session: AsyncSession,
-    save_fixture: SaveFixture,
 ) -> None:
-    user_organization.is_admin = True
-    await save_fixture(user_organization)
-
     # then
     session.expunge_all()
 
@@ -496,11 +424,7 @@ async def test_update(
     user_organization: UserOrganization,  # makes User a member of Organization
     client: AsyncClient,
     session: AsyncSession,
-    save_fixture: SaveFixture,
 ) -> None:
-    user_organization.is_admin = True
-    await save_fixture(user_organization)
-
     # then
     session.expunge_all()
 
@@ -544,11 +468,7 @@ async def test_body_base64(
     organization: Organization,
     user_organization: UserOrganization,  # makes User a member of Organization
     client: AsyncClient,
-    save_fixture: SaveFixture,
 ) -> None:
-    user_organization.is_admin = True
-    await save_fixture(user_organization)
-
     response = await client.post(
         "/v1/articles/",
         json={

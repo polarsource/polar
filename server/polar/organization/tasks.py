@@ -70,10 +70,6 @@ async def organization_post_creation_actions(
             session, benefits=[public_articles], organization=organization
         )
 
-        await organization_service.set_personal_account(
-            session, organization=organization
-        )
-
 
 @task("organization.account_set")
 async def organization_account_set(

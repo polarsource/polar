@@ -7,9 +7,7 @@ import { useDashboardRoutes } from './navigation'
 const DashboardNavigation = () => {
   const orgContext = useContext(MaintainerOrganizationContext)
   const org = orgContext?.organization
-  const adminOrgs = orgContext?.adminOrganizations ?? []
-  const isOrgAdmin = adminOrgs.some((o) => org && o.id === org.id)
-  const navs = useDashboardRoutes(org, isOrgAdmin ?? false)
+  const navs = useDashboardRoutes(org)
 
   if (!org || navs.length === 0) {
     return <></>

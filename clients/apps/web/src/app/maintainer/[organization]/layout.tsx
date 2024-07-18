@@ -14,27 +14,23 @@ export default async function Layout({
 }) {
   const api = getServerSideAPI()
 
-  let organizations: ListResourceOrganization | undefined
-  let adminOrganizations: ListResourceOrganization | undefined
+  let userOrganizations: ListResourceOrganization | undefined
 
   try {
-    const [loadOrganizations, loadAdminOrganizations] = await Promise.all([
-      api.organizations.list({}, { cache: 'no-store' }),
-      api.organizations.list({ isMember: true }, { cache: 'no-store' }),
-    ])
-
-    organizations = loadOrganizations
-    adminOrganizations = loadAdminOrganizations
+    const loadUserOrganizations = await api.organizations.list(
+      { isMember: true },
+      { cache: 'no-store' },
+    )
+    userOrganizations = loadUserOrganizations
   } catch (e) {
     notFound()
   }
 
-  if (!organizations) {
+  if (!userOrganizations) {
     notFound()
   }
 
-  const orgs = organizations.items ?? []
-  const adminOrgs = adminOrganizations.items ?? []
+  const orgs = userOrganizations.items ?? []
 
   // User does not have access to organization
   const org = orgs.find((o) => o.slug === params.organization)
@@ -50,8 +46,7 @@ export default async function Layout({
   return (
     <MaintainerOrganizationContextProvider
       organization={org}
-      memberOrganizations={orgs}
-      adminOrganizations={adminOrgs}
+      organizations={orgs}
     >
       {children}
     </MaintainerOrganizationContextProvider>

@@ -39,7 +39,7 @@ const ClientPage = ({
   featuredOrganizations,
   repositories,
   featuredProjects,
-  adminOrganizations,
+  userOrganizations,
   issues,
   links,
   donations,
@@ -50,16 +50,16 @@ const ClientPage = ({
   featuredOrganizations: Organization[]
   repositories: Repository[]
   featuredProjects: Repository[]
-  adminOrganizations: Organization[]
+  userOrganizations: Organization[]
   issues: IssueFunding[]
   links: LinkItem[]
   donations: PublicDonation[]
 }) => {
   useTrafficRecordPageView({ organization })
 
-  const isAdmin = useMemo(
-    () => adminOrganizations?.some((org) => org.id === organization.id),
-    [organization, adminOrganizations],
+  const isOrgMember = useMemo(
+    () => userOrganizations?.some((org) => org.id === organization.id),
+    [organization, userOrganizations],
   )
 
   const updateOrganizationMutation = useUpdateOrganization()
@@ -90,7 +90,7 @@ const ClientPage = ({
   }
 
   const PostsEmptyState = () => {
-    return isAdmin ? (
+    return isOrgMember ? (
       <div className="flex flex-col gap-y-6">
         <p className="dark:text-polar-500 text-gray-500">
           Build out an audience by writing posts and share it with your
@@ -118,7 +118,7 @@ const ClientPage = ({
     <div className="flex w-full flex-col gap-y-24">
       <div className="flex flex-col gap-24 lg:flex-row lg:gap-16">
         <div className="flex w-full min-w-0 flex-shrink flex-col gap-y-16 md:max-w-xl xl:max-w-3xl">
-          {isAdmin && !organization.has_app_installed && (
+          {isOrgMember && !organization.has_app_installed && (
             <GitHubAppUpsell organization={organization} />
           )}
 
@@ -155,7 +155,7 @@ const ClientPage = ({
             <div className="flex w-full flex-col lg:hidden">
               <HighlightedTiersEditor
                 organization={organization}
-                adminOrganizations={adminOrganizations}
+                userOrganizations={userOrganizations}
                 products={products}
               />
             </div>
@@ -166,7 +166,7 @@ const ClientPage = ({
               organization={organization}
               repositories={repositories}
               featuredRepositories={featuredProjects}
-              disabled={!isAdmin}
+              disabled={!isOrgMember}
             />
           ) : null}
 
@@ -174,7 +174,7 @@ const ClientPage = ({
             organization={organization}
             featuredOrganizations={featuredOrganizations}
             onChange={updateFeaturedCreators}
-            disabled={!isAdmin}
+            disabled={!isOrgMember}
           />
 
           {organization.donations_enabled && (
@@ -187,7 +187,7 @@ const ClientPage = ({
             <LinksEditor
               links={links}
               onChange={updateLinks}
-              disabled={!isAdmin}
+              disabled={!isOrgMember}
               variant="column"
             />
           </div>
@@ -205,7 +205,7 @@ const ClientPage = ({
           {organization.feature_settings?.subscriptions_enabled && (
             <HighlightedTiersEditor
               organization={organization}
-              adminOrganizations={adminOrganizations}
+              userOrganizations={userOrganizations}
               products={products}
             />
           )}
@@ -217,7 +217,7 @@ const ClientPage = ({
           <LinksEditor
             links={links}
             onChange={updateLinks}
-            disabled={!isAdmin}
+            disabled={!isOrgMember}
             variant="column"
           />
         </div>

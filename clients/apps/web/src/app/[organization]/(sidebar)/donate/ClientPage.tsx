@@ -7,13 +7,13 @@ import Checkout from './Checkout'
 
 const ClientPage = ({
   organization,
-  adminOrganizations,
+  userOrganizations,
   products,
   defaultAmount,
   issue,
 }: {
   organization: Organization
-  adminOrganizations: Organization[]
+  userOrganizations: Organization[]
   products: Product[]
   defaultAmount: number
   issue: Issue | undefined
@@ -65,7 +65,7 @@ const ClientPage = ({
         <div className="hidden w-full flex-col gap-y-16 md:max-w-52 lg:flex lg:max-w-72">
           <HighlightedTiersEditor
             organization={organization}
-            adminOrganizations={adminOrganizations}
+            userOrganizations={userOrganizations}
             products={products}
           />
         </div>

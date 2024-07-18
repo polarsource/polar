@@ -39,7 +39,7 @@ const ClientPage = ({
   repository,
   issuesFunding,
   featuredOrganizations,
-  adminOrganizations,
+  userOrganizations,
   products,
   links,
   posts,
@@ -48,14 +48,14 @@ const ClientPage = ({
   repository: Repository
   issuesFunding: ListResourceIssueFunding
   featuredOrganizations: Organization[]
-  adminOrganizations: Organization[]
+  userOrganizations: Organization[]
   products: Product[]
   links: { opengraph: OgObject; url: string }[]
   posts: Article[]
 }) => {
-  const isAdmin = useMemo(
-    () => adminOrganizations?.some((org) => org.id === organization.id),
-    [organization, adminOrganizations],
+  const isOrgMember = useMemo(
+    () => userOrganizations?.some((org) => org.id === organization.id),
+    [organization, userOrganizations],
   )
 
   useTrafficRecordPageView({ organization })
@@ -113,7 +113,7 @@ const ClientPage = ({
                 ''
               }
               onChange={updateDescription}
-              disabled={!isAdmin}
+              disabled={!isOrgMember}
               loading={updateProjectMutation.isPending}
               failed={updateProjectMutation.isError}
               maxLength={240}
@@ -123,7 +123,7 @@ const ClientPage = ({
               organization={organization}
               onChange={updateCoverImage}
               coverImageUrl={repository.profile_settings?.cover_image_url}
-              disabled={!isAdmin}
+              disabled={!isOrgMember}
             />
 
             {organization.feature_settings?.subscriptions_enabled && (
@@ -131,7 +131,7 @@ const ClientPage = ({
                 organization={organization}
                 repository={repository}
                 subscriptionTiers={products}
-                disabled={!isAdmin}
+                disabled={!isOrgMember}
               />
             )}
 
@@ -139,7 +139,7 @@ const ClientPage = ({
               organization={organization}
               featuredOrganizations={featuredOrganizations}
               onChange={updateFeaturedCreators}
-              disabled={!isAdmin}
+              disabled={!isOrgMember}
             />
 
             {organization.feature_settings?.issue_funding_enabled &&
@@ -250,7 +250,7 @@ const ClientPage = ({
               {(organization.feature_settings?.subscriptions_enabled ||
                 organization.feature_settings?.articles_enabled) &&
               freeSubscriptionTier &&
-              !isAdmin ? (
+              !isOrgMember ? (
                 <>
                   <FreeTierSubscribe
                     product={freeSubscriptionTier}
@@ -308,7 +308,7 @@ const ClientPage = ({
             <LinksEditor
               links={links}
               onChange={updateLinks}
-              disabled={!isAdmin}
+              disabled={!isOrgMember}
               variant="column"
             />
           </div>

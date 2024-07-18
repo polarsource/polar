@@ -1,7 +1,7 @@
 'use client'
 
 import { Post as PostComponent } from '@/components/Feed/Posts/Post'
-import { useIsOrganizationAdmin } from '@/hooks'
+import { useIsOrganizationMember } from '@/hooks'
 import { useListArticles } from '@/hooks/queries'
 import { organizationPageLink } from '@/utils/nav'
 import { useTrafficRecordPageView } from '@/utils/traffic'
@@ -29,7 +29,7 @@ const ClientPage = ({
 }) => {
   useTrafficRecordPageView({ organization })
 
-  const isAdmin = useIsOrganizationAdmin(organization)
+  const isMember = useIsOrganizationMember(organization)
   const posts = useListArticles({
     organizationId: organization.id,
     isPublished: true,
@@ -81,7 +81,7 @@ const ClientPage = ({
               <div className="dark:text-polar-400 flex h-full w-full flex-col items-center gap-y-4 pt-32 text-gray-600">
                 <StickyNote2Outlined fontSize="large" />
                 <div className="flex w-full flex-col items-center gap-y-2 px-12 text-center">
-                  {isAdmin ? (
+                  {isMember ? (
                     <>
                       <h3 className="p-2 text-lg font-medium">
                         {organization.slug} is typing...

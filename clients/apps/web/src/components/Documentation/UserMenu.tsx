@@ -25,7 +25,7 @@ const UserMenu = () => {
   return (
     <PolarMenu
       authenticatedUser={user}
-      userAdminOrganizations={organizations?.items ?? []}
+      userOrganizations={organizations?.items ?? []}
     />
   )
 }

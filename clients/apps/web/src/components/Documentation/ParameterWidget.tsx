@@ -84,7 +84,7 @@ const SelectorWidget = ({
   const widgetSchema = schema['x-polar-selector-widget']
   const parameterKey = getParameterName(parameterName, parameterIn)
 
-  // Always limit results to organizations the user is an admin of
+  // Always limit results to organizations the user is a member of
   const { data: organizations } = useListMemberOrganizations()
   const organization_ids = organizations?.items?.map((org) => org.id) || []
   const {

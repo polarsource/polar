@@ -33,14 +33,14 @@ export interface SubscribeEditorProps {
   organization: Organization
   customerList: ListResourceOrganizationCustomer | undefined
   products: Product[]
-  isAdmin: boolean
+  isOrgMember: boolean
 }
 
 export const SubscribeEditor = ({
   organization,
   customerList,
   products,
-  isAdmin,
+  isOrgMember,
 }: SubscribeEditorProps) => {
   const isSubscriptionsEnabled =
     organization.feature_settings?.subscriptions_enabled
@@ -57,7 +57,7 @@ export const SubscribeEditor = ({
 
   return (
     <div className="flex w-full flex-col gap-y-6">
-      {settings.promote && freeSubscriptionTier && !isAdmin ? (
+      {settings.promote && freeSubscriptionTier && !isOrgMember ? (
         <FreeTierSubscribe
           product={freeSubscriptionTier}
           organization={organization}
@@ -95,8 +95,8 @@ export const SubscribeEditor = ({
             </p>
           </>
         )}
-        {isAdmin && (
-          <SubscribeAdminSettings
+        {isOrgMember && (
+          <SubscribeSettings
             organization={organization}
             showTip={!customerCount}
           />
@@ -106,7 +106,7 @@ export const SubscribeEditor = ({
   )
 }
 
-const SubscribeAdminSettings = ({
+const SubscribeSettings = ({
   organization,
   showTip,
 }: {

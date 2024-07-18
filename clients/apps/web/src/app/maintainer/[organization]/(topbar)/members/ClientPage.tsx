@@ -1,7 +1,6 @@
 'use client'
 
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
-import { Pill } from 'polarkit/components/ui/atoms'
 import Avatar from 'polarkit/components/ui/atoms/avatar'
 
 import { useListOrganizationMembers } from '@/hooks/queries'
@@ -38,7 +37,6 @@ export default function ClientPage() {
           <TableHeader>
             <TableRow>
               <TableHead className="min-w-[100px]">User</TableHead>
-              <TableHead>Role</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -53,13 +51,6 @@ export default function ClientPage() {
                     />
                     <span className="whitespace-nowrap">{m.name}</span>
                   </div>
-                </TableCell>
-                <TableCell>
-                  {m.is_admin ? (
-                    <Pill color="purple">Admin</Pill>
-                  ) : (
-                    <Pill color="gray">Member</Pill>
-                  )}
                 </TableCell>
               </TableRow>
             ))}

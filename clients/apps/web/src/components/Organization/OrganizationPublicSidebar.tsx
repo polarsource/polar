@@ -32,14 +32,14 @@ import Spinner from '../Shared/Spinner'
 interface OrganizationPublicSidebarProps {
   organization: Organization
   organizationCustomers: ListResourceOrganizationCustomer | undefined
-  userAdminOrganizations: Organization[]
+  userOrganizations: Organization[]
   products: Product[]
 }
 
 export const OrganizationPublicSidebar = ({
   organization,
   organizationCustomers,
-  userAdminOrganizations,
+  userOrganizations,
   products,
 }: OrganizationPublicSidebarProps) => {
   const segment = useSelectedLayoutSegment()
@@ -50,7 +50,7 @@ export const OrganizationPublicSidebar = ({
     show: showRssModal,
   } = useModal()
 
-  const isAdmin = userAdminOrganizations.some((o) => o.id === organization.id)
+  const isOrgMember = userOrganizations.some((o) => o.id === organization.id)
 
   const updateOrganizationMutation = useUpdateOrganization()
 
@@ -111,7 +111,7 @@ export const OrganizationPublicSidebar = ({
               ''
             }
             onChange={updateDescription}
-            disabled={!isAdmin}
+            disabled={!isOrgMember}
             size="small"
             loading={updateOrganizationMutation.isPending}
             failed={updateOrganizationMutation.isError}
@@ -162,7 +162,7 @@ export const OrganizationPublicSidebar = ({
           organization={organization}
           customerList={organizationCustomers}
           products={products}
-          isAdmin={isAdmin}
+          isOrgMember={isOrgMember}
         />
 
         {organization.donations_enabled && !isDonatePage ? (

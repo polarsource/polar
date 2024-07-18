@@ -47,27 +47,25 @@ export default async function Layout({
   }
 
   let authenticatedUser: UserRead | undefined
-  let userAdminOrganizations: Organization[] | undefined
+  let userOrganizations: Organization[] | undefined
 
   try {
-    const [loadAuthenticatedUser, loadUserAdminOrganizations] =
-      await Promise.all([
-        api.users.getAuthenticated({ cache: 'no-store' }).catch(() => {
+    const [loadAuthenticatedUser, loadUserOrganizations] = await Promise.all([
+      api.users.getAuthenticated({ cache: 'no-store' }).catch(() => {
+        // Handle unauthenticated
+        return undefined
+      }),
+      // No caching, as we're expecting immediate updates to the response if the user converts to a maintainer
+      api.organizations
+        .list({ isMember: true }, { cache: 'no-store' })
+        .catch(() => {
           // Handle unauthenticated
           return undefined
         }),
-        getRepositoryByName(api, organization.id, params.repo, cacheConfig),
-        // No caching, as we're expecting immediate updates to the response if the user converts to a maintainer
-        api.organizations
-          .list({ isMember: true }, { cache: 'no-store' })
-          .catch(() => {
-            // Handle unauthenticated
-            return undefined
-          }),
-      ])
+    ])
 
     authenticatedUser = loadAuthenticatedUser
-    userAdminOrganizations = loadUserAdminOrganizations?.items ?? []
+    userOrganizations = loadUserOrganizations?.items ?? []
   } catch (e) {
     notFound()
   }
@@ -81,7 +79,7 @@ export default async function Layout({
           </a>
           <PolarMenu
             authenticatedUser={authenticatedUser}
-            userAdminOrganizations={userAdminOrganizations ?? []}
+            userOrganizations={userOrganizations ?? []}
           />
         </div>
         <div className="jusitfy-between flex w-full flex-row items-center gap-x-10">
@@ -116,7 +114,7 @@ export default async function Layout({
           <div className="hidden flex-row items-center md:flex">
             <PolarMenu
               authenticatedUser={authenticatedUser}
-              userAdminOrganizations={userAdminOrganizations}
+              userOrganizations={userOrganizations}
             />
           </div>
         </div>

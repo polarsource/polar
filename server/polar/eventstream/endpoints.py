@@ -9,12 +9,11 @@ from sse_starlette.sse import EventSourceResponse
 from uvicorn import Server
 
 from polar.auth.dependencies import WebUser
-from polar.enums import Platforms
 from polar.exceptions import ResourceNotFound, Unauthorized
+from polar.organization.schemas import OrganizationID
 from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession, get_db_session
 from polar.redis import Redis, get_redis
-from polar.repository.service import repository as repository_service
 from polar.routing import APIRouter
 from polar.user_organization.service import (
     user_organization as user_organization_service,
@@ -22,7 +21,7 @@ from polar.user_organization.service import (
 
 from .service import Receivers
 
-router = APIRouter(tags=["stream"], include_in_schema=False)
+router = APIRouter(prefix="/stream", tags=["stream"], include_in_schema=False)
 
 log = structlog.get_logger()
 
@@ -80,7 +79,7 @@ async def subscribe(
                 raise e
 
 
-@router.get("/user/stream")
+@router.get("/user")
 async def user_stream(
     request: Request,
     auth_subject: WebUser,
@@ -90,10 +89,9 @@ async def user_stream(
     return EventSourceResponse(subscribe(redis, receivers.get_channels(), request))
 
 
-@router.get("/{platform}/{org_name}/stream")
-async def user_org_stream(
-    platform: Platforms,
-    org_name: str,
+@router.get("/organizations/{id}")
+async def org_stream(
+    id: OrganizationID,
     request: Request,
     auth_subject: WebUser,
     redis: Redis = Depends(get_redis),
@@ -102,7 +100,7 @@ async def user_org_stream(
     if not auth_subject.subject:
         raise Unauthorized()
 
-    org = await organization_service.get_by_name(session, platform, org_name)
+    org = await organization_service.get(session, id)
     if not org:
         raise ResourceNotFound()
 
@@ -115,43 +113,4 @@ async def user_org_stream(
         raise Unauthorized()
 
     receivers = Receivers(user_id=auth_subject.subject.id, organization_id=org.id)
-    return EventSourceResponse(subscribe(redis, receivers.get_channels(), request))
-
-
-@router.get("/{platform}/{org_name}/{repo_name}/stream")
-async def user_org_repo_stream(
-    platform: Platforms,
-    org_name: str,
-    repo_name: str,
-    request: Request,
-    auth_subject: WebUser,
-    redis: Redis = Depends(get_redis),
-    session: AsyncSession = Depends(get_db_session),
-) -> EventSourceResponse:
-    if not auth_subject.subject:
-        raise Unauthorized()
-
-    org = await organization_service.get_by_name(session, platform, org_name)
-    if not org:
-        raise ResourceNotFound()
-
-    # only if user is a member of this org
-    if not await user_organization_service.get_by_user_and_org(
-        session,
-        auth_subject.subject.id,
-        organization_id=org.id,
-    ):
-        raise Unauthorized()
-
-    repo = await repository_service.get_by_org_and_name(
-        session, organization_id=org.id, name=repo_name
-    )
-    if not repo:
-        raise ResourceNotFound()
-
-    receivers = Receivers(
-        user_id=auth_subject.subject.id,
-        organization_id=org.id,
-        repository_id=repo.id,
-    )
     return EventSourceResponse(subscribe(redis, receivers.get_channels(), request))

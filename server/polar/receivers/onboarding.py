@@ -69,7 +69,6 @@ async def on_issue_updated(hook: IssueHook) -> None:
             "organization_id": hook.issue.organization_id,
             "repository_id": hook.issue.repository_id,
         },
-        repository_id=hook.issue.repository_id,
         organization_id=hook.issue.organization_id,
     )
 
@@ -81,7 +80,6 @@ async def on_pull_request_updated(hook: PullRequestHook) -> None:
     await publish(
         "pull_request.updated",
         {"pull_request": hook.pull_request.id},
-        repository_id=hook.pull_request.repository_id,
         organization_id=hook.pull_request.organization_id,
     )
 

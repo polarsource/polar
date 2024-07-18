@@ -81,8 +81,7 @@ router.include_router(accounts_router)
 router.include_router(issue_router)
 # /pledges
 router.include_router(pledge_router)
-# /{org_name}/stream
-# /{org_name}/{repo_name}/stream
+# /stream
 router.include_router(stream_router)
 # /organizations
 router.include_router(organization_router)

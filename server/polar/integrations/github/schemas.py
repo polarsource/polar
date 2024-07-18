@@ -4,6 +4,7 @@ from typing import Any
 from pydantic import UUID4, model_validator
 
 from polar.kit.schemas import Schema
+from polar.organization.schemas import OrganizationID
 
 from .types import AppPermissionsType
 
@@ -51,3 +52,8 @@ class OrganizationBillingPlan(Schema):
     organization_id: UUID4
     is_free: bool
     plan_name: str
+
+
+class InstallationCreate(Schema):
+    installation_id: int
+    organization_id: OrganizationID

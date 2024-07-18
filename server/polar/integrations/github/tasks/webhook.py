@@ -5,7 +5,6 @@ from uuid import UUID
 import structlog
 
 from polar.context import ExecutionContext
-from polar.eventstream.service import publish_members
 from polar.exceptions import PolarTaskError
 from polar.integrations.github import client as github
 from polar.kit.extensions.sqlalchemy import sql
@@ -174,7 +173,7 @@ async def get_or_create_org_from_installation(
         | types.WebhookInstallationRepositoriesRemovedPropRepositoriesRemovedItems
     ],
 ) -> ExternalOrganization:
-    organization = await service.github_organization.install_from_webhook(
+    organization = await service.github_organization.create_or_update_from_installation(
         session, installation
     )
 
@@ -1015,22 +1014,22 @@ async def installation_new_permissions_accepted(
             return
 
         async with AsyncSessionMaker(ctx) as session:
-            # create/update organization object
-            # this will also update organization.installation_permissions
-            organization = await service.github_organization.install_from_webhook(
-                session,
-                event.installation,
+            external_organization = (
+                await service.github_organization.create_or_update_from_installation(
+                    session,
+                    event.installation,
+                )
             )
 
             raise NotImplementedError("TODO ORG DECOUPLING")
-            await publish_members(
-                session=session,
-                key="external_organization.updated",
-                payload={
-                    "organization_id": organization.id,
-                },
-                organization_id=organization.id,
-            )
+            # await publish_members(
+            #     session=session,
+            #     key="external_organization.updated",
+            #     payload={
+            #         "organization_id": organization.id,
+            #     },
+            #     organization_id=organization.id,
+            # )
 
 
 @task("github.webhook.installation.deleted")

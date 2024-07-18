@@ -10,7 +10,7 @@ import OnboardingAddBadge from '@/components/Onboarding/OnboardingAddBadge'
 import { RepoPickerHeader } from '@/components/Organization/RepoPickerHeader'
 import { useToast } from '@/components/Toast/use-toast'
 import { useDashboard, useListRepositories } from '@/hooks/queries'
-import { useSSE } from '@/hooks/sse'
+import { useOrganizationSSE } from '@/hooks/sse'
 import { HowToVoteOutlined } from '@mui/icons-material'
 import { IssueSortBy, Organization, Repository } from '@polar-sh/sdk'
 import { useRouter, useSearchParams } from 'next/navigation'
@@ -57,6 +57,10 @@ export default function ClientPage() {
     return <></>
   }
 
+  if (!org) {
+    return null
+  }
+
   if (org && !org.feature_settings?.issue_funding_enabled) {
     return <EnableIssuesView organization={org} />
   }
@@ -93,7 +97,7 @@ const Issues = ({
   org,
   repo,
 }: {
-  org: Organization | undefined
+  org: Organization
   repo: Repository | undefined
 }) => {
   const search = useSearchParams()
@@ -107,7 +111,7 @@ const Issues = ({
   const [filters, setFilters] = useState<DashboardFilters>(initFilters)
 
   // TODO: Unless we're sending user-only events we should probably delay SSE
-  useSSE(org?.platform, org?.slug, undefined)
+  useOrganizationSSE(org.id)
 
   useEffect(() => {
     // Parse URL and use it to populate filters

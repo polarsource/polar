@@ -1,6 +1,6 @@
 import { useAuth } from '@/hooks'
 import { useListIntegrationsGithubRepositoryBenefitUserRepositories } from '@/hooks/queries'
-import { useSSE } from '@/hooks/sse'
+import { useUserSSE } from '@/hooks/sse'
 import { getGitHubRepositoryBenefitAuthorizeURL } from '@/utils/auth'
 import { defaultApiUrl } from '@/utils/domain'
 import { isFeatureEnabled } from '@/utils/feature-flags'
@@ -178,7 +178,7 @@ export const GitHubRepositoryBenefitForm = ({
     (o) => o.platform === OAuthPlatform.GITHUB_REPOSITORY_BENEFIT,
   )
 
-  const emitter = useSSE()
+  const emitter = useUserSSE()
 
   const openInstallationURL = useCallback(() => {
     const installationWindow = window.open(

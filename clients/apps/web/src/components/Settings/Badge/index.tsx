@@ -5,7 +5,7 @@ import {
   useUpdateOrganization,
   useUpdateOrganizationBadgeSettings,
 } from '@/hooks/queries'
-import { useSSE } from '@/hooks/sse'
+import { useOrganizationSSE } from '@/hooks/sse'
 import { ExclamationCircleIcon } from '@heroicons/react/24/outline'
 import { InfoOutlined } from '@mui/icons-material'
 import {
@@ -123,7 +123,7 @@ const BadgeSetup = ({
     message: '',
   })
   const [isRetroactiveEnabled, setRetroactiveEnabled] = useState<boolean>(false)
-  const emitter = useSSE(org.platform, org.slug)
+  const emitter = useOrganizationSSE(org.id)
 
   useEffect(() => {
     if (!remoteSettings.data) return

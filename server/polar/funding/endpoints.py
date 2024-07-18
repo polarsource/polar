@@ -6,7 +6,6 @@ from polar.auth.dependencies import WebUserOrAnonymous
 from polar.exceptions import ResourceNotFound
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.models import Repository
-from polar.organization.dependencies import OrganizationNamePlatform
 from polar.organization.schemas import OrganizationID
 from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession, get_db_session

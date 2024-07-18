@@ -11,10 +11,7 @@ from polar.authz.service import AccessType, Authz
 from polar.exceptions import BadRequest, ResourceNotFound, Unauthorized
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.openapi import IN_DEVELOPMENT_ONLY
-from polar.organization.dependencies import (
-    OptionalOrganizationNamePlatform,
-    OrganizationNamePlatform,
-)
+from polar.organization.schemas import OrganizationID
 from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession, get_db_session
 from polar.routing import APIRouter
@@ -59,7 +56,7 @@ async def track_page_view(
 )
 async def statistics(
     auth_subject: WebUser,
-    organization_name_platform: OptionalOrganizationNamePlatform,
+    organization_id: OrganizationID | None = Query(None),
     article_id: UUID | None = Query(None),
     start_date: datetime.date = Query(...),
     end_date: datetime.date = Query(...),
@@ -81,11 +78,8 @@ async def statistics(
             raise Unauthorized()
 
         article_ids = [article.id]
-    elif organization_name_platform:
-        (org_name, org_platform) = organization_name_platform
-        org = await organization_service.get_by_name(
-            session, name=org_name, platform=org_platform
-        )
+    elif organization_id:
+        org = await organization_service.get(session, organization_id)
         if not org:
             raise ResourceNotFound()
 
@@ -122,7 +116,7 @@ async def statistics(
 async def referrers(
     pagination: PaginationParamsQuery,
     auth_subject: WebUser,
-    organization_name_platform: OrganizationNamePlatform,
+    organization_id: OrganizationID = Query(...),
     start_date: datetime.date = Query(...),
     end_date: datetime.date = Query(...),
     session: AsyncSession = Depends(get_db_session),
@@ -130,10 +124,7 @@ async def referrers(
 ) -> ListResource[TrafficReferrer]:
     article_ids = []
 
-    (org_name, org_platform) = organization_name_platform
-    org = await organization_service.get_by_name(
-        session, name=org_name, platform=org_platform
-    )
+    org = await organization_service.get(session, organization_id)
     if not org:
         raise ResourceNotFound()
 

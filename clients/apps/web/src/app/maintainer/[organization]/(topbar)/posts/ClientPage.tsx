@@ -6,13 +6,13 @@ import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import EmptyLayout from '@/components/Layout/EmptyLayout'
 import { StaggerReveal } from '@/components/Shared/StaggerReveal'
 import { Chart } from '@/components/Subscriptions/SubscriptionsChart'
-import { useCurrentOrgAndRepoFromURL } from '@/hooks'
 import {
   useListArticles,
   useTrafficStatistics,
   useTrafficTopReferrers,
   useUpdateOrganization,
 } from '@/hooks/queries'
+import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
 import { captureEvent } from '@/utils/posthog'
 import { prettyReferrerURL } from '@/utils/traffic'
 import { EnvelopeIcon } from '@heroicons/react/24/outline'
@@ -29,7 +29,7 @@ import { useRouter } from 'next/navigation'
 import { PolarTimeAgo } from 'polarkit/components/ui/atoms'
 import Button from 'polarkit/components/ui/atoms/button'
 import { Card } from 'polarkit/components/ui/atoms/card'
-import { useEffect, useRef, useState } from 'react'
+import { useContext, useEffect, useRef, useState } from 'react'
 import { useInView } from 'react-intersection-observer'
 import { useHoverDirty } from 'react-use'
 import { twMerge } from 'tailwind-merge'
@@ -58,10 +58,10 @@ function idxOrLast<T>(arr: Array<T>, idx?: number): T | undefined {
 const ClientPage = () => {
   const updateOrganization = useUpdateOrganization()
   const [enablingPosts, setEnablingPosts] = useState(false)
-  const { org } = useCurrentOrgAndRepoFromURL()
+  const { organization: org } = useContext(MaintainerOrganizationContext)
 
   const posts = useListArticles({
-    organizationId: org?.id,
+    organizationId: org.id,
   })
   const infinitePosts =
     posts.data?.pages
@@ -80,8 +80,7 @@ const ClientPage = () => {
   const showNoPostsYet = infinitePosts.length === 0 && posts.isFetched
 
   const trafficStatistics = useTrafficStatistics({
-    orgName: org?.slug ?? '',
-    platform: org?.platform,
+    organizationId: org.id,
     startDate: startOfMonthThreeMonthsAgo,
     endDate: startOfMonth,
     interval: 'month',
@@ -96,8 +95,7 @@ const ClientPage = () => {
       ?.views ?? 0
 
   const referrers = useTrafficTopReferrers({
-    orgName: org?.slug ?? '',
-    platform: org?.platform,
+    organizationId: org.id,
     startDate: startOfMonthThreeMonthsAgo,
     endDate: today,
     limit: 5,
@@ -110,13 +108,11 @@ const ClientPage = () => {
   const router = useRouter()
 
   const enablePosts = async () => {
-    if (!org) return
-
     setEnablingPosts(true)
 
     await updateOrganization
       .mutateAsync({
-        id: org?.id,
+        id: org.id,
         settings: {
           feature_settings: {
             articles_enabled: true,
@@ -131,7 +127,7 @@ const ClientPage = () => {
       })
   }
 
-  if (org && !org.feature_settings?.articles_enabled) {
+  if (!org.feature_settings?.articles_enabled) {
     return (
       <EmptyLayout>
         <div className="dark:text-polar-200 flex flex-col items-center justify-center space-y-10 py-32 text-gray-600">
@@ -164,7 +160,7 @@ const ClientPage = () => {
                 Overview
               </h3>
               <Link
-                href={`/maintainer/${org?.slug}/posts/new`}
+                href={`/maintainer/${org.slug}/posts/new`}
                 onClick={() => captureEvent('posts:overview_create_new:click')}
               >
                 <Button className="h-8 w-8 rounded-full">
@@ -246,7 +242,7 @@ const ClientPage = () => {
                     ))}
                     <Link
                       className="mt-2 flex flex-row items-center gap-x-2 text-sm text-blue-500 hover:text-blue-400 dark:text-blue-400 dark:hover:text-blue-300"
-                      href={`/maintainer/${org?.slug}/posts/analytics`}
+                      href={`/maintainer/${org.slug}/posts/analytics`}
                     >
                       <span>View Analytics</span>
                       <ArrowForwardOutlined fontSize="inherit" />
@@ -266,9 +262,9 @@ export default ClientPage
 
 const PostItem = (post: Article) => {
   const ref = useRef<HTMLAnchorElement>(null)
-  const { org: currentOrg } = useCurrentOrgAndRepoFromURL()
+  const { organization: org } = useContext(MaintainerOrganizationContext)
   const isHovered = useHoverDirty(ref)
-  const href = `/maintainer/${currentOrg?.slug}/posts/${post.slug}`
+  const href = `/maintainer/${org.slug}/posts/${post.slug}`
 
   return (
     <Link

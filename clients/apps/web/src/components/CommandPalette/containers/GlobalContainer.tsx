@@ -1,4 +1,4 @@
-import { useCurrentOrgAndRepoFromURL } from '@/hooks'
+import { Organization } from '@polar-sh/sdk'
 import {
   useParams,
   usePathname,
@@ -9,7 +9,11 @@ import { CommandItem } from '../CommandItem'
 import { CommandType } from '../commands/commands'
 import { useCommands } from '../commands/useCommands'
 
-export const GlobalContainer = () => {
+export const GlobalContainer = ({
+  organization,
+}: {
+  organization: Organization | undefined
+}) => {
   const { commands, selectedCommand, setSelectedCommand, hideCommandPalette } =
     useCommands()
 
@@ -17,7 +21,6 @@ export const GlobalContainer = () => {
   const searchParams = useSearchParams()
   const pathname = usePathname()
   const router = useRouter()
-  const { org } = useCurrentOrgAndRepoFromURL()
 
   return (
     <div className="flex h-[360px] flex-grow flex-row">
@@ -36,7 +39,7 @@ export const GlobalContainer = () => {
                   searchParams,
                   pathname,
                   router,
-                  organization: org,
+                  organization,
                   hidePalette: hideCommandPalette,
                 })
               }}

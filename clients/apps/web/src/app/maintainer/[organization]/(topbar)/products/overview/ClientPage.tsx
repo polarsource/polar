@@ -5,17 +5,17 @@ import { EnableProductsView } from '@/components/Products/EnableProductsView'
 import { ProductCard } from '@/components/Products/ProductCard'
 import ProductPriceTypeSelect from '@/components/Products/ProductPriceTypeSelect'
 import SubscriptionTierCard from '@/components/Subscriptions/SubscriptionTierCard'
-import { useCurrentOrgAndRepoFromURL } from '@/hooks'
 import { useProducts } from '@/hooks/queries/products'
+import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
 import { AddOutlined } from '@mui/icons-material'
 import { Product, ProductPriceType } from '@polar-sh/sdk'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Button from 'polarkit/components/ui/atoms/button'
-import { useCallback } from 'react'
+import { useCallback, useContext } from 'react'
 
 export default function ClientPage() {
-  const { org } = useCurrentOrgAndRepoFromURL()
+  const { organization: org } = useContext(MaintainerOrganizationContext)
   const searchParams = useSearchParams()
   const router = useRouter()
 
@@ -26,13 +26,13 @@ export default function ClientPage() {
     (value: ProductPriceType | 'all') => {
       const params = new URLSearchParams({ type: value })
       router.push(
-        `/maintainer/${org?.slug}/products/overview?${params.toString()}`,
+        `/maintainer/${org.slug}/products/overview?${params.toString()}`,
       )
     },
     [router, org],
   )
 
-  const products = useProducts(org?.id, {
+  const products = useProducts(org.id, {
     isRecurring:
       productPriceType === 'all'
         ? undefined
@@ -62,7 +62,7 @@ export default function ClientPage() {
             value={productPriceType}
             onChange={onFilterChange}
           />
-          <Link href={`/maintainer/${org?.slug}/products/new`}>
+          <Link href={`/maintainer/${org.slug}/products/new`}>
             <Button size="icon" role="link">
               <AddOutlined className="h-4 w-4" />
             </Button>
@@ -73,7 +73,7 @@ export default function ClientPage() {
         {products.data?.items?.sort(sortProducts).map((product) => (
           <Link
             key={product.id}
-            href={`/maintainer/${org?.slug}/products/${product.id}`}
+            href={`/maintainer/${org.slug}/products/${product.id}`}
           >
             {product.is_recurring ? (
               <SubscriptionTierCard

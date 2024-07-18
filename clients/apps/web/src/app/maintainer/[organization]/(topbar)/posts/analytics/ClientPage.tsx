@@ -2,8 +2,8 @@
 
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { Chart } from '@/components/Subscriptions/SubscriptionsChart'
-import { useCurrentOrgAndRepoFromURL } from '@/hooks'
 import { useTrafficStatistics, useTrafficTopReferrers } from '@/hooks/queries'
+import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
 import { prettyReferrerURL } from '@/utils/traffic'
 import { Organization, TrafficReferrer } from '@polar-sh/sdk'
 import { Card } from 'polarkit/components/ui/atoms/card'
@@ -12,7 +12,7 @@ import {
   DataTableColumnDef,
   DataTableColumnHeader,
 } from 'polarkit/components/ui/atoms/datatable'
-import { useState } from 'react'
+import { useContext, useState } from 'react'
 
 const startOfMonth = new Date()
 startOfMonth.setUTCHours(0, 0, 0, 0)
@@ -36,7 +36,7 @@ function idxOrLast<T>(arr: Array<T>, idx?: number): T | undefined {
 }
 
 const ClientPage = () => {
-  const { org } = useCurrentOrgAndRepoFromURL()
+  const { organization: org } = useContext(MaintainerOrganizationContext)
 
   return (
     <>
@@ -79,8 +79,7 @@ export default ClientPage
 
 const TopReferrers = ({ org }: { org: Organization }) => {
   const data = useTrafficTopReferrers({
-    orgName: org?.slug ?? '',
-    platform: org?.platform,
+    organizationId: org.id,
     startDate: startOfMonthThreeMonthsAgo,
     endDate: today,
   })
@@ -129,8 +128,7 @@ const TopReferrers = ({ org }: { org: Organization }) => {
 
 const DailyViews = ({ org }: { org: Organization }) => {
   const trafficStatistics = useTrafficStatistics({
-    orgName: org?.slug ?? '',
-    platform: org?.platform,
+    organizationId: org.id,
     startDate: startOfMonthThreeMonthsAgo,
     endDate: today,
     interval: 'day',

@@ -124,8 +124,9 @@ const DashboardSidebar = () => {
 }
 
 const DashboardLayout = (props: PropsWithChildren<{ className?: string }>) => {
+  const { organization } = useContext(MaintainerOrganizationContext)
   return (
-    <DashboardProvider>
+    <DashboardProvider organization={organization}>
       <div className="relative flex h-full w-full flex-col md:flex-row md:p-4">
         <MobileNav />
         <div className="hidden md:flex">

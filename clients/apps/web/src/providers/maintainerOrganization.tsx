@@ -3,14 +3,21 @@
 import { Organization } from '@polar-sh/sdk'
 import React from 'react'
 
-export const MaintainerOrganizationContext = React.createContext<
-  | {
-      organization: Organization | undefined
-      memberOrganizations: Organization[]
-      adminOrganizations: Organization[]
-    }
-  | undefined
->(undefined)
+const stub = (): never => {
+  throw new Error(
+    'You forgot to wrap your component in <MaintainerOrganizationContextProvider>.',
+  )
+}
+
+interface MaintainerOrganizationContextType {
+  organization: Organization
+  memberOrganizations: Organization[]
+  adminOrganizations: Organization[]
+}
+
+export const MaintainerOrganizationContext =
+  // @ts-ignore
+  React.createContext<MaintainerOrganizationContextType>(stub)
 
 export const MaintainerOrganizationContextProvider = ({
   organization,
@@ -18,10 +25,9 @@ export const MaintainerOrganizationContextProvider = ({
   adminOrganizations,
   children,
 }: {
-  organization: Organization | undefined
+  organization: Organization
   memberOrganizations: Organization[]
   adminOrganizations: Organization[]
-  personalOrganization: Organization | undefined
   children: React.ReactNode
 }) => {
   return (

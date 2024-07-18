@@ -4,10 +4,10 @@ import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import DashboardTopbar from '@/components/Navigation/DashboardTopbar'
 import { RepoPickerHeader } from '@/components/Organization/RepoPickerHeader'
 import Spinner from '@/components/Shared/Spinner'
-import { useCurrentOrgAndRepoFromURL } from '@/hooks/org'
 import { useListRepositories } from '@/hooks/queries'
 import { Skeleton } from '@mui/material'
 import { Organization } from '@polar-sh/sdk'
+import { useSearchParams } from 'next/navigation'
 import CopyToClipboardInput from 'polarkit/components/ui/atoms/copytoclipboardinput'
 import ShadowBox from 'polarkit/components/ui/atoms/shadowbox'
 import { Tabs, TabsList, TabsTrigger } from 'polarkit/components/ui/atoms/tabs'
@@ -18,7 +18,17 @@ export default function ClientPage({
 }: {
   organization: Organization
 }) {
-  const { repo: currentRepo } = useCurrentOrgAndRepoFromURL()
+  const searchParams = useSearchParams()
+  const repoSlug = searchParams.get('repo')
+  const repositories = useListRepositories(
+    {
+      organizationId: organization.id,
+      name: repoSlug ?? '',
+      limit: 1,
+    },
+    !!repoSlug,
+  )
+  const currentRepo = repositories.data?.items?.[0]
 
   const orgSlashRepo = currentRepo
     ? `${organization.slug}/${currentRepo.name}`
@@ -34,7 +44,7 @@ export default function ClientPage({
   const listRepositoriesQuery = useListRepositories({
     organizationId: organization.id,
   })
-  const allOrgRepositories = listRepositoriesQuery?.data?.items
+  const allOrgRepositories = listRepositoriesQuery?.data?.items || []
 
   const [currentEmbedTab, setCurrentEmbedTab] = useState('Tiers')
 

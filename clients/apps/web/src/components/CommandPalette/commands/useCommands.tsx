@@ -1,5 +1,4 @@
 import { resolveEndpointMetadata } from '@/components/Documentation/openapi'
-import { useCurrentOrgAndRepoFromURL } from '@/hooks'
 import openapiSchema from '@/openapi.json'
 import SwaggerParser from '@apidevtools/swagger-parser'
 import { Organization } from '@polar-sh/sdk'
@@ -92,7 +91,6 @@ export const CommandPaletteContextProvider = ({
   const searchParams = useSearchParams()
   const pathname = usePathname()
   const router = useRouter()
-  const { org } = useCurrentOrgAndRepoFromURL()
 
   const [apiSchema, setApiSchema] = useState<OpenAPIV3_1.Document>()
   const [scopeKeys, setScopeKeys] = useState<ScopeKey[]>(['global'])
@@ -239,7 +237,7 @@ export const CommandPaletteContextProvider = ({
         selectedCommand.action({
           hidePalette: hideCommandPalette,
           router,
-          organization: org,
+          organization,
           params,
           searchParams,
           pathname,
@@ -273,7 +271,7 @@ export const CommandPaletteContextProvider = ({
     scopeKey,
     setScopeKeys,
     router,
-    org,
+    organization,
     params,
     searchParams,
     pathname,

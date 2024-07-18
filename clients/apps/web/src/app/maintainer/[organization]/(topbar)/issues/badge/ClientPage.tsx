@@ -4,21 +4,11 @@ import { GitHubAppInstallationUpsell } from '@/components/Dashboard/Upsell'
 import { EnableIssuesView } from '@/components/Issues/EnableIssuesView'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import BadgeSetup from '@/components/Settings/Badge'
-import { useCurrentOrgAndRepoFromURL } from '@/hooks/org'
+import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
+import { useContext } from 'react'
 
 export default function ClientPage() {
-  const { org, isLoaded } = useCurrentOrgAndRepoFromURL()
-
-  if (!org && isLoaded) {
-    return (
-      <>
-        <div className="mx-auto mt-32 flex max-w-[1100px] flex-col items-center">
-          <span>Organization not found</span>
-          <span>404 Not Found</span>
-        </div>
-      </>
-    )
-  }
+  const { organization: org } = useContext(MaintainerOrganizationContext)
 
   if (org && !org.feature_settings?.issue_funding_enabled) {
     return <EnableIssuesView organization={org} />

@@ -3,13 +3,13 @@
 import BadgeSetup from '@/components/Settings/Badge'
 import Spinner from '@/components/Shared/Spinner'
 import { useUserSSE } from '@/hooks/sse'
-import { useState } from 'react'
-import { useCurrentOrgAndRepoFromURL } from '../../../../../hooks'
+import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
+import { useContext, useState } from 'react'
 
 export default function ClientPage() {
   const [showControls, setShowControls] = useState<boolean>(false)
   const [syncedIssuesCount, setSyncIssuesCount] = useState<number>(0)
-  const { org } = useCurrentOrgAndRepoFromURL()
+  const { organization: org } = useContext(MaintainerOrganizationContext)
 
   useUserSSE()
 

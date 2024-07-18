@@ -1,8 +1,8 @@
 import { DiscordIcon } from '@/components/Benefit/utils'
 import LogoIcon from '@/components/Brand/LogoIcon'
 import SubscriptionGroupIcon from '@/components/Subscriptions/SubscriptionGroupIcon'
-import { useCurrentOrgAndRepoFromURL } from '@/hooks'
 import { useListArticles, useProducts } from '@/hooks/queries'
+import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
 import { organizationPageLink } from '@/utils/nav'
 import {
   CloseOutlined,
@@ -12,7 +12,7 @@ import {
 } from '@mui/icons-material'
 import Link from 'next/link'
 import ShadowBox from 'polarkit/components/ui/atoms/shadowbox'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useContext, useEffect, useRef, useState } from 'react'
 
 const ONBOARDING_MAP_KEY = 'creator_onboarding'
 
@@ -30,16 +30,14 @@ export const useUpsellSteps = () => {
     onboardingMap = JSON.parse(localStorage.getItem(ONBOARDING_MAP_KEY) ?? '{}')
   }
 
-  const { org: currentOrg } = useCurrentOrgAndRepoFromURL()
+  const { organization: currentOrg } = useContext(MaintainerOrganizationContext)
   const [upsellSteps, setUpsellSteps] = useState<UpsellStepProps[]>([])
   const [onboardingCompletedMap, setOnboardingCompletedMap] =
     useState<Partial<OnboardingMap>>(onboardingMap)
 
-  const { data: products, isPending: tiersPending } = useProducts(
-    currentOrg?.id ?? '',
-  )
+  const { data: products, isPending: tiersPending } = useProducts(currentOrg.id)
   const { data: posts, isPending: articlesPending } = useListArticles({
-    organizationId: currentOrg?.id,
+    organizationId: currentOrg.id,
     isPublished: true,
     limit: 1,
   })
@@ -58,10 +56,6 @@ export const useUpsellSteps = () => {
   useEffect(() => {
     const steps: UpsellStepProps[] = []
 
-    if (!currentOrg) {
-      return
-    }
-
     if (!onboardingCompletedMap.polarPageShared) {
       steps.push({
         icon: (
@@ -79,7 +73,7 @@ export const useUpsellSteps = () => {
     if (
       postsCount === 0 &&
       !onboardingCompletedMap.postCreated &&
-      currentOrg?.feature_settings?.articles_enabled
+      currentOrg.feature_settings?.articles_enabled
     ) {
       steps.push({
         icon: (
@@ -88,7 +82,7 @@ export const useUpsellSteps = () => {
         title: 'Write your first post',
         description:
           'Start building a community & newsletter by writing your first post – your hello world on Polar',
-        href: `/maintainer/${currentOrg?.slug}/posts/new`,
+        href: `/maintainer/${currentOrg.slug}/posts/new`,
         onboardingKey: 'postCreated',
         onDismiss: handleDismiss,
       })
@@ -100,14 +94,14 @@ export const useUpsellSteps = () => {
     if (
       nonFreeTiers.length === 0 &&
       !onboardingCompletedMap.subscriptionTierCreated &&
-      currentOrg?.feature_settings?.subscriptions_enabled
+      currentOrg.feature_settings?.subscriptions_enabled
     ) {
       steps.push({
         icon: <SubscriptionGroupIcon type="individual" className="text-2xl" />,
         title: 'Setup paid subscriptions & membership benefits',
         description:
           'Offer built-in benefits like premium posts, Discord invites, sponsor ads & private GitHub repository access',
-        href: `/maintainer/${currentOrg?.slug}/products/overview`,
+        href: `/maintainer/${currentOrg.slug}/products/overview`,
         onboardingKey: 'subscriptionTierCreated',
         onDismiss: handleDismiss,
       })
@@ -119,8 +113,8 @@ export const useUpsellSteps = () => {
           <LogoIcon className="-mr-2 h-8 w-8 text-blue-500 dark:text-blue-400" />
         ),
         title: 'Add Polar to your FUNDING.yml',
-        description: `Add 'polar: ${currentOrg?.slug}' to your FUNDING.yml to link your Polar page with your GitHub repository`,
-        href: `/maintainer/${currentOrg?.slug}/promote`,
+        description: `Add 'polar: ${currentOrg.slug}' to your FUNDING.yml to link your Polar page with your GitHub repository`,
+        href: `/maintainer/${currentOrg.slug}/promote`,
         onboardingKey: 'fundingInYaml',
         onDismiss: handleDismiss,
       })
@@ -139,7 +133,14 @@ export const useUpsellSteps = () => {
     }
 
     setUpsellSteps(steps)
-  }, [currentOrg, onboardingCompletedMap, posts, products, handleDismiss])
+  }, [
+    currentOrg,
+    onboardingCompletedMap,
+    posts,
+    products,
+    handleDismiss,
+    postsCount,
+  ])
 
   if (tiersPending || articlesPending) {
     return []

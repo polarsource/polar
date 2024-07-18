@@ -11,25 +11,24 @@ export default async function Layout({
 }) {
   const api = getServerSideAPI()
   let authenticatedUser: UserRead | undefined
-  let userAdminOrganizations: ListResourceOrganization | undefined
+  let userOrganizations: ListResourceOrganization | undefined
 
   try {
-    const [loadAuthenticatedUser, loadUserAdminOrganizations] =
-      await Promise.all([
-        api.users.getAuthenticated({ cache: 'no-store' }).catch(() => {
+    const [loadAuthenticatedUser, loadUserOrganizations] = await Promise.all([
+      api.users.getAuthenticated({ cache: 'no-store' }).catch(() => {
+        // Handle unauthenticated
+        return undefined
+      }),
+      // No caching, as we're expecting immediate updates to the response if the user converts to a maintainer
+      api.organizations
+        .list({ isMember: true }, { cache: 'no-store' })
+        .catch(() => {
           // Handle unauthenticated
           return undefined
         }),
-        // No caching, as we're expecting immediate updates to the response if the user converts to a maintainer
-        api.organizations
-          .list({ isMember: true }, { cache: 'no-store' })
-          .catch(() => {
-            // Handle unauthenticated
-            return undefined
-          }),
-      ])
+    ])
     authenticatedUser = loadAuthenticatedUser
-    userAdminOrganizations = loadUserAdminOrganizations
+    userOrganizations = loadUserOrganizations
   } catch (e) {
     notFound()
   }
@@ -38,7 +37,7 @@ export default async function Layout({
     <div className="flex flex-col md:gap-y-8">
       <Topbar
         authenticatedUser={authenticatedUser}
-        userAdminOrganizations={userAdminOrganizations?.items ?? []}
+        userOrganizations={userOrganizations?.items ?? []}
       />
       <PublicLayout showUpsellFooter={!authenticatedUser} wide>
         <div className="relative flex min-h-screen w-full flex-col py-4 md:py-0">

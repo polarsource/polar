@@ -32,7 +32,7 @@ export default async function Layout({
 
   let authenticatedUser: UserRead | undefined
   let organizationCustomers: ListResourceOrganizationCustomer | undefined
-  let userAdminOrganizations: ListResourceOrganization | undefined
+  let userOrganizations: ListResourceOrganization | undefined
   let products: ListResourceProduct | undefined
 
   const organization = await getOrganizationBySlug(api, params.organization, {
@@ -49,7 +49,7 @@ export default async function Layout({
   try {
     const [
       loadAuthenticatedUser,
-      loadUserAdminOrganizations,
+      loadUserOrganizations,
       loadSubscriptionTiers,
     ] = await Promise.all([
       api.users.getAuthenticated({ cache: 'no-store' }).catch(() => {
@@ -79,7 +79,7 @@ export default async function Layout({
     ])
 
     authenticatedUser = loadAuthenticatedUser
-    userAdminOrganizations = loadUserAdminOrganizations
+    userOrganizations = loadUserOrganizations
     products = loadSubscriptionTiers
   } catch (e) {
     notFound()
@@ -116,14 +116,14 @@ export default async function Layout({
           </a>
           <PolarMenu
             authenticatedUser={authenticatedUser}
-            userAdminOrganizations={userAdminOrganizations?.items ?? []}
+            userOrganizations={userOrganizations?.items ?? []}
           />
         </div>
         <div className="relative flex w-fit flex-shrink-0 flex-col justify-between py-8 md:sticky md:top-0 md:py-16">
           <OrganizationPublicSidebar
             organizationCustomers={organizationCustomers}
             organization={organization}
-            userAdminOrganizations={userAdminOrganizations?.items ?? []}
+            userOrganizations={userOrganizations?.items ?? []}
             products={products?.items ?? []}
           />
         </div>
@@ -140,7 +140,7 @@ export default async function Layout({
             <div className="ml-auto hidden flex-row md:flex">
               <PolarMenu
                 authenticatedUser={authenticatedUser}
-                userAdminOrganizations={userAdminOrganizations?.items ?? []}
+                userOrganizations={userOrganizations?.items ?? []}
               />
             </div>
           </div>

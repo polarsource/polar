@@ -11,8 +11,7 @@ const stub = (): never => {
 
 interface MaintainerOrganizationContextType {
   organization: Organization
-  memberOrganizations: Organization[]
-  adminOrganizations: Organization[]
+  organizations: Organization[]
 }
 
 export const MaintainerOrganizationContext =
@@ -21,21 +20,18 @@ export const MaintainerOrganizationContext =
 
 export const MaintainerOrganizationContextProvider = ({
   organization,
-  memberOrganizations,
-  adminOrganizations,
+  organizations,
   children,
 }: {
   organization: Organization
-  memberOrganizations: Organization[]
-  adminOrganizations: Organization[]
+  organizations: Organization[]
   children: React.ReactNode
 }) => {
   return (
     <MaintainerOrganizationContext.Provider
       value={{
         organization,
-        memberOrganizations,
-        adminOrganizations,
+        organizations,
       }}
     >
       {children}

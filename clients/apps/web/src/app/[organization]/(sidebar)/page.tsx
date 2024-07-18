@@ -99,7 +99,7 @@ export default async function Page({
   let articles: ListResourceArticle | undefined
   let products: ListResourceProduct | undefined
   let repositories: ListResourceRepository | undefined
-  let listAdminOrganizations: ListResourceOrganization | undefined
+  let listUserOrganizations: ListResourceOrganization | undefined
   let listIssueFunding: ListResourceIssueFunding | undefined
   let donations: ListResourcePublicDonation | undefined
 
@@ -119,7 +119,7 @@ export default async function Page({
       loadPinnedArticles,
       loadProducts,
       loadRepositories,
-      loadListAdminOrganizations,
+      loadListUserOrganizations,
       loadListIssueFunding,
       loadDonations,
     ] = await Promise.all([
@@ -234,7 +234,7 @@ export default async function Page({
     pinnedArticles = loadPinnedArticles
     products = loadProducts
     repositories = loadRepositories
-    listAdminOrganizations = loadListAdminOrganizations
+    listUserOrganizations = loadListUserOrganizations
     listIssueFunding = loadListIssueFunding
     donations = loadDonations
   } catch (e) {
@@ -351,7 +351,7 @@ export default async function Page({
         featuredProjects={featuredProjects}
         featuredOrganizations={featuredOrganizations}
         products={products?.items ?? []}
-        adminOrganizations={listAdminOrganizations?.items ?? []}
+        userOrganizations={listUserOrganizations?.items ?? []}
         issues={listIssueFunding?.items ?? []}
         links={links}
         donations={donations?.items ?? []}

@@ -81,12 +81,12 @@ export default async function Page({
     notFound()
   }
 
-  let listAdminOrganizations: ListResourceOrganization | undefined
+  let listUserOrganizations: ListResourceOrganization | undefined
   let products: ListResourceProduct | undefined
   let issue: Issue | undefined
 
   try {
-    const [loadListAdminOrganizations, loadSubscriptionTiers, loadIssue] =
+    const [loadListUserOrganizations, loadSubscriptionTiers, loadIssue] =
       await Promise.all([
         api.organizations
           .list(
@@ -121,7 +121,7 @@ export default async function Page({
           : Promise.resolve(undefined),
       ])
 
-    listAdminOrganizations = loadListAdminOrganizations
+    listUserOrganizations = loadListUserOrganizations
     products = loadSubscriptionTiers
     issue = loadIssue
   } catch (e) {
@@ -136,7 +136,7 @@ export default async function Page({
   return (
     <ClientPage
       organization={organization}
-      adminOrganizations={listAdminOrganizations?.items ?? []}
+      userOrganizations={listUserOrganizations?.items ?? []}
       products={products?.items ?? []}
       defaultAmount={parseInt(amount ?? '2000')}
       issue={issue}

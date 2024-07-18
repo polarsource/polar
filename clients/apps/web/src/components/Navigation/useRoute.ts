@@ -8,11 +8,9 @@ import {
 export const useRoute = () => {
   const orgContext = useContext(MaintainerOrganizationContext)
   const org = orgContext?.organization
-  const adminOrgs = orgContext?.adminOrganizations ?? []
-  const isOrgAdmin = adminOrgs.some((o) => org && o.id === org.id)
 
   const maintainerRoutes = useMaintainerRoutes(org, true)
-  const dashboardRoutes = useDashboardRoutes(org, isOrgAdmin ?? false)
+  const dashboardRoutes = useDashboardRoutes(org)
 
   const routes = [...maintainerRoutes, ...dashboardRoutes]
   const currentRoute = routes.find((r) => r.isActive)

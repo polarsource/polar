@@ -10,7 +10,7 @@ import { defaultRetry } from './retry'
 
 export const useListMemberOrganizations = (enabled: boolean = true) =>
   useQuery({
-    queryKey: ['user', 'adminOrganizations'],
+    queryKey: ['user', 'organizations'],
     queryFn: () =>
       api.organizations.list({
         isMember: true,
@@ -66,31 +66,7 @@ export const useUpdateOrganizationBadgeSettings: () => UseMutationResult<
 const updateOrgsCache = (result: Organization) => {
   queryClient.setQueriesData<ListResourceOrganization>(
     {
-      queryKey: ['user', 'adminOrganizations'],
-    },
-    (data) => {
-      if (!data) {
-        return data
-      }
-
-      return {
-        ...data,
-        items: data.items?.map((i) => {
-          if (i.id === result.id) {
-            return {
-              ...i,
-              issue: result,
-            }
-          }
-          return { ...i }
-        }),
-      }
-    },
-  )
-
-  queryClient.setQueriesData<ListResourceOrganization>(
-    {
-      queryKey: ['user', 'allOrganizations'],
+      queryKey: ['user', 'organizations'],
     },
     (data) => {
       if (!data) {
@@ -133,11 +109,7 @@ export const useUpdateOrganization = () =>
       })
 
       queryClient.invalidateQueries({
-        queryKey: ['user', 'adminOrganizations'],
-      })
-
-      queryClient.invalidateQueries({
-        queryKey: ['user', 'allOrganizations'],
+        queryKey: ['user', 'organizations'],
       })
     },
   })

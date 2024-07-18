@@ -21,11 +21,11 @@ import TopbarRight from './TopbarRight'
 const Topbar = ({
   hideProfile,
   authenticatedUser,
-  userAdminOrganizations,
+  userOrganizations,
 }: {
   hideProfile?: boolean
   authenticatedUser: UserRead | undefined
-  userAdminOrganizations: Organization[]
+  userOrganizations: Organization[]
 }) => {
   // Fallback to client side user loading
   const { currentUser: clientCurrentUser } = useAuth()
@@ -33,11 +33,9 @@ const Topbar = ({
 
   const router = useRouter()
 
-  const hasAdminOrgs = Boolean(
-    userAdminOrganizations && userAdminOrganizations.length > 0,
-  )
+  const hasOrgs = Boolean(userOrganizations && userOrganizations.length > 0)
 
-  const creatorPath = `/maintainer/${userAdminOrganizations?.[0]?.slug}/overview`
+  const creatorPath = `/maintainer/${userOrganizations?.[0]?.slug}/overview`
 
   const maintainerUpgrade = useMaintainerUpgrade()
 
@@ -70,7 +68,7 @@ const Topbar = ({
       )
     }
 
-    if (hasAdminOrgs) {
+    if (hasOrgs) {
       return (
         <Link href={creatorPath}>
           <Button>

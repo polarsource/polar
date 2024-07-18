@@ -28,23 +28,23 @@ import { HighlightedTiersModal } from './HighlightedTiersModal'
 
 export interface HighlightedTiersEditorProps {
   organization: Organization
-  adminOrganizations: Organization[]
+  userOrganizations: Organization[]
   products: Product[]
 }
 
 export const HighlightedTiersEditor = ({
   organization,
-  adminOrganizations,
+  userOrganizations,
   products,
 }: HighlightedTiersEditorProps) => {
   const { isShown: isModalShown, hide: hideModal, show: showModal } = useModal()
 
-  const isAdmin = useMemo(
-    () => adminOrganizations.some((org) => org.id === organization.id),
-    [organization, adminOrganizations],
+  const isOrgMember = useMemo(
+    () => userOrganizations.some((org) => org.id === organization.id),
+    [organization, userOrganizations],
   )
 
-  const shouldRenderSubscribeButton = !isAdmin
+  const shouldRenderSubscribeButton = !isOrgMember
 
   const highlightedTiers = useMemo(
     () => products?.filter(({ is_highlighted }) => is_highlighted) ?? [],
@@ -63,13 +63,13 @@ export const HighlightedTiersEditor = ({
     [products],
   )
 
-  if (!isAdmin && highlightedTiers.length === 0) {
+  if (!isOrgMember && highlightedTiers.length === 0) {
     return null
   }
 
   return (
     <div className="flex w-full flex-col gap-y-8">
-      {isAdmin ? (
+      {isOrgMember ? (
         <div className="flex flex-col gap-y-4">
           <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
             <h2 className="text-lg">Subscriptions</h2>
@@ -142,11 +142,11 @@ export const HighlightedTiersEditor = ({
                 ) : null}
               </SubscriptionTierCard>
             ))
-        ) : isAdmin && paidSubscriptionTiers.length === 0 ? (
+        ) : isOrgMember && paidSubscriptionTiers.length === 0 ? (
           <HighlightedTiersEditorAuthenticatedEmptyState
             organization={organization}
           />
-        ) : isAdmin && paidSubscriptionTiers.length > 0 ? (
+        ) : isOrgMember && paidSubscriptionTiers.length > 0 ? (
           <Button className="self-start" size="sm" onClick={showModal}>
             <div className="flex flex-row items-center gap-2">
               <span>Highlight a tier</span>

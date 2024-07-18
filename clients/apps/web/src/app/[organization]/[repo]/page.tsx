@@ -125,12 +125,12 @@ export default async function Page({
   const filters = buildFundingFilters(urlSearchFromObj(searchParams))
 
   let issuesFunding: ListResourceIssueFunding | undefined
-  let adminOrganizations: ListResourceOrganization | undefined
+  let userOrganizations: ListResourceOrganization | undefined
   let products: ListResourceProduct | undefined
   let posts: ListResourceArticle | undefined
 
   try {
-    ;[issuesFunding, adminOrganizations, products, posts] = await Promise.all([
+    ;[issuesFunding, userOrganizations, products, posts] = await Promise.all([
       api.funding.search(
         {
           organizationId: organization.id,
@@ -215,7 +215,7 @@ export default async function Page({
       issuesFunding={issuesFunding}
       featuredOrganizations={featuredOrganizations}
       products={products?.items ?? []}
-      adminOrganizations={adminOrganizations?.items ?? []}
+      userOrganizations={userOrganizations?.items ?? []}
       links={links}
       posts={posts?.items ?? []}
     />

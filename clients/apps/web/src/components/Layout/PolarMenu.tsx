@@ -11,24 +11,22 @@ import Button from 'polarkit/components/ui/atoms/button'
 
 const PolarMenu = ({
   authenticatedUser,
-  userAdminOrganizations,
+  userOrganizations,
 }: {
   authenticatedUser?: UserRead
-  userAdminOrganizations: Organization[]
+  userOrganizations: Organization[]
 }) => {
   const loginLink = useLoginLink()
 
-  const hasAdminOrgs = Boolean(
-    userAdminOrganizations && userAdminOrganizations.length > 0,
-  )
+  const hasOrgs = Boolean(userOrganizations && userOrganizations.length > 0)
 
-  const creatorPath = `${CONFIG.FRONTEND_BASE_URL}/maintainer/${userAdminOrganizations?.[0]?.slug}/overview`
+  const creatorPath = `${CONFIG.FRONTEND_BASE_URL}/maintainer/${userOrganizations?.[0]?.slug}/overview`
 
   return (
     <div className="flex h-9 flex-row items-center gap-x-6">
       {authenticatedUser ? (
         <div className="relative flex w-max flex-shrink-0 flex-row items-center justify-between gap-x-6">
-          {hasAdminOrgs && (
+          {hasOrgs && (
             <Link href={creatorPath}>
               <Button>
                 <div className="flex flex-row items-center gap-x-2">

@@ -25,7 +25,7 @@ const DashboardProfileDropdown = ({ className = '' }) => {
 
   const orgContext = useContext(MaintainerOrganizationContext)
   const currentOrg = orgContext?.organization
-  const orgs = orgContext?.memberOrganizations ?? []
+  const orgs = orgContext?.organizations ?? []
 
   const ref = useRef(null)
 

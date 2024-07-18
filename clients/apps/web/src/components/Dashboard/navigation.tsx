@@ -128,7 +128,6 @@ export const useMaintainerDisabledRoutes = (
 
 export const useDashboardRoutes = (
   org: Organization | undefined,
-  isOrgAdmin: boolean,
 ): RouteWithActive[] => {
   const path = usePathname()
 
@@ -136,7 +135,7 @@ export const useDashboardRoutes = (
     return []
   }
 
-  return dashboardRoutesList(org, isOrgAdmin)
+  return dashboardRoutesList(org)
     .filter((o) => o.if)
     .map(applyIsActive(path))
 }
@@ -373,16 +372,13 @@ const orgFinanceSubRoutesList = (org: Organization): SubRoute[] => [
   },
 ]
 
-const dashboardRoutesList = (
-  org: Organization,
-  isOrgAdmin: boolean,
-): Route[] => [
+const dashboardRoutesList = (org: Organization): Route[] => [
   {
     id: 'finance',
     title: 'Finance',
     link: `/maintainer/${org.slug}/finance`,
     icon: <AttachMoneyOutlined className="h-5 w-5" fontSize="inherit" />,
-    if: isOrgAdmin,
+    if: true,
     subs: orgFinanceSubRoutesList(org),
   },
   {
@@ -390,7 +386,7 @@ const dashboardRoutesList = (
     title: 'Settings',
     link: `/maintainer/${org.slug}/settings`,
     icon: <TuneOutlined className="h-5 w-5" fontSize="inherit" />,
-    if: isOrgAdmin,
+    if: true,
     subs: undefined,
   },
 ]

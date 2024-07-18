@@ -54,14 +54,7 @@ const DashboardSidebar = () => {
 
   const orgContext = useContext(MaintainerOrganizationContext)
   const currentOrg = orgContext?.organization
-  const orgs = orgContext?.memberOrganizations ?? []
-  const adminOrgs = orgContext?.adminOrganizations ?? []
-  const isOrgAdmin = adminOrgs.some((o) => currentOrg && o.id === currentOrg.id)
   const { showCommandPalette } = useDashboard()
-
-  const shouldRenderMaintainerNavigation = currentOrg
-    ? isOrgAdmin
-    : orgs?.some((org) => org.slug === currentUser?.username)
 
   const handleScroll: UIEventHandler<HTMLDivElement> = useCallback((e) => {
     setScrollTop(e.currentTarget.scrollTop)
@@ -101,11 +94,9 @@ const DashboardSidebar = () => {
             {currentOrg && !currentOrg.has_app_installed && (
               <GitHubAppUpsell organization={currentOrg} />
             )}
-            {shouldRenderMaintainerNavigation && <MaintainerNavigation />}
+            <MaintainerNavigation />
             <DashboardNavigation />
-            {shouldRenderMaintainerNavigation && (
-              <DisabledMaintainerNavigation />
-            )}
+            <DisabledMaintainerNavigation />
           </div>
           <div className="flex flex-col">
             <div className="flex px-8">

@@ -1,5 +1,5 @@
-import { useCurrentOrgAndRepoFromURL } from '@/hooks'
 import { useMetrics } from '@/hooks/queries'
+import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
 import { Card, CardFooter, CardHeader } from 'polarkit/components/ui/atoms/card'
 import {
   Tooltip,
@@ -7,6 +7,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from 'polarkit/components/ui/tooltip'
+import { useContext } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 export interface ActivityWidgetProps {
@@ -14,13 +15,13 @@ export interface ActivityWidgetProps {
 }
 
 export const ActivityWidget = ({ className }: ActivityWidgetProps) => {
-  const { org } = useCurrentOrgAndRepoFromURL()
+  const { organization: org } = useContext(MaintainerOrganizationContext)
 
   const startDate = new Date()
   startDate.setFullYear(startDate.getFullYear() - 1)
 
   const orderMetrics = useMetrics({
-    organizationId: org?.id,
+    organizationId: org.id,
     interval: 'day',
     startDate: getNearestMonday(startDate),
     endDate: new Date(),

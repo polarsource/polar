@@ -1,13 +1,14 @@
 import SubscriptionTierCard from '@/components/Subscriptions/SubscriptionTierCard'
-import { useCurrentOrgAndRepoFromURL } from '@/hooks'
 import { useProducts } from '@/hooks/queries'
+import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
 import { ArrowForwardOutlined, Bolt } from '@mui/icons-material'
 import Link from 'next/link'
 import Button from 'polarkit/components/ui/atoms/button'
+import { useContext } from 'react'
 
 export const SetupSubscriptions = () => {
-  const { org } = useCurrentOrgAndRepoFromURL()
-  const { data: products } = useProducts(org?.id ?? '')
+  const { organization: org } = useContext(MaintainerOrganizationContext)
+  const { data: products } = useProducts(org.id ?? '')
 
   const hasPaidSubscriptionTiers = products?.items?.some(
     (tier) => tier.type === 'individual' || tier.type === 'business',
@@ -33,7 +34,7 @@ export const SetupSubscriptions = () => {
             Create a few subscription tiers to offer your followers and
             supporters
           </p>
-          <Link href={`/maintainer/${org?.slug}/products/new`}>
+          <Link href={`/maintainer/${org.slug}/products/new`}>
             <Button>
               <span>Create Tier</span>
               <ArrowForwardOutlined className="ml-2" fontSize="inherit" />

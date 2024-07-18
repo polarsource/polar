@@ -1,4 +1,4 @@
-import { useCurrentOrgAndRepoFromURL } from '@/hooks'
+import { Organization } from '@polar-sh/sdk'
 import { PropsWithChildren, createContext, useContext } from 'react'
 import { CommandPalette } from '../CommandPalette/CommandPalette'
 import { useCommandPaletteTrigger } from '../CommandPalette/commands/trigger'
@@ -23,9 +23,10 @@ export const DashboardContext = createContext<DashboardContextValue>(
   defaultDashboardContextValue,
 )
 
-export const DashboardProvider = ({ children }: PropsWithChildren) => {
-  const { org: organization } = useCurrentOrgAndRepoFromURL()
-
+export const DashboardProvider = ({
+  organization,
+  children,
+}: PropsWithChildren<{ organization: Organization | undefined }>) => {
   const {
     isShown: isCommandPaletteOpen,
     hide: hideCommandPalette,

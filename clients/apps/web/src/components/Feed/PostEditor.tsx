@@ -1,5 +1,5 @@
-import { useCurrentOrgAndRepoFromURL } from '@/hooks'
 import { useBenefits } from '@/hooks/queries'
+import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
 import { Article } from '@polar-sh/sdk'
 import Link from 'next/link'
 import Button from 'polarkit/components/ui/atoms/button'
@@ -81,11 +81,6 @@ export const PostEditor = ({
   canCreate,
 }: PostEditorProps) => {
   const [previewAs, setPreviewAs] = useState<string>('premium')
-  const { org } = useCurrentOrgAndRepoFromURL()
-
-  if (!org) {
-    return null
-  }
 
   return (
     <PostEditorContextProvider onChange={onBodyChange}>
@@ -194,9 +189,9 @@ const Sidebar = () => {
   const { insertPaywall, insertSubscribeNow, insertAd } =
     useMarkdownComponents()
 
-  const { org } = useCurrentOrgAndRepoFromURL()
+  const { organization: org } = useContext(MaintainerOrganizationContext)
 
-  const benefits = useBenefits(org?.id)
+  const benefits = useBenefits(org.id)
   const benefitItems = benefits.data?.items ?? []
   const adBenefits = benefitItems.filter((b) => b.type === 'ads')
 
@@ -272,7 +267,7 @@ const Sidebar = () => {
                     <p className="dark:text-polar-400 text-sm text-gray-600">
                       Setup your first ad{' '}
                       <Link
-                        href={`/maintainer/${org?.slug}/products/benefits`}
+                        href={`/maintainer/${org.slug}/products/benefits`}
                         className="text-blue-500 hover:text-blue-400 dark:text-blue-400 dark:hover:text-blue-300"
                       >
                         subscription benefit

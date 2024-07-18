@@ -1,5 +1,5 @@
-import { useCurrentOrgAndRepoFromURL } from '@/hooks'
 import { useOrders } from '@/hooks/queries/orders'
+import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
 import { ShoppingCartOutlined } from '@mui/icons-material'
 import { Order } from '@polar-sh/sdk'
 import { getCentsInDollarString } from '@polarkit/lib/money'
@@ -11,6 +11,7 @@ import {
   CardFooter,
   CardHeader,
 } from 'polarkit/components/ui/atoms/card'
+import { useContext } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 interface OrderCardProps {
@@ -66,9 +67,9 @@ export interface OrdersWidgetProps {
 }
 
 export const OrdersWidget = ({ className }: OrdersWidgetProps) => {
-  const { org } = useCurrentOrgAndRepoFromURL()
+  const { organization: org } = useContext(MaintainerOrganizationContext)
 
-  const orders = useOrders(org?.id, { limit: 3, sorting: ['-created_at'] })
+  const orders = useOrders(org.id, { limit: 3, sorting: ['-created_at'] })
 
   const stackingClassNames = [
     'scale-90',
@@ -79,7 +80,7 @@ export const OrdersWidget = ({ className }: OrdersWidgetProps) => {
   return (
     <Link
       className={twMerge('h-80', className)}
-      href={`/maintainer/${org?.slug}/sales/orders`}
+      href={`/maintainer/${org.slug}/sales/orders`}
     >
       {(orders.data?.items?.length ?? 0) > 0 ? (
         <div className="relative h-full">

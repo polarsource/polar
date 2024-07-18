@@ -1,10 +1,11 @@
-import { useCurrentOrgAndRepoFromURL } from '@/hooks'
 import { useOrganizationAccount, useTransactionsSummary } from '@/hooks/queries'
+import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
 import { Status } from '@polar-sh/sdk'
 import { getCentsInDollarString } from '@polarkit/lib/money'
 import Link from 'next/link'
 import Button from 'polarkit/components/ui/atoms/button'
 import { Card, CardFooter, CardHeader } from 'polarkit/components/ui/atoms/card'
+import { useContext } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 export interface AccountWidgetProps {
@@ -12,9 +13,9 @@ export interface AccountWidgetProps {
 }
 
 export const AccountWidget = ({ className }: AccountWidgetProps) => {
-  const { org } = useCurrentOrgAndRepoFromURL()
+  const { organization: org } = useContext(MaintainerOrganizationContext)
 
-  const { data: account } = useOrganizationAccount(org?.id)
+  const { data: account } = useOrganizationAccount(org.id)
   const { data: summary } = useTransactionsSummary(account?.id ?? '')
 
   const canWithdraw =
@@ -45,7 +46,7 @@ export const AccountWidget = ({ className }: AccountWidgetProps) => {
         <h2 className="text-2xl">
           ${getCentsInDollarString(summary?.balance.amount ?? 0, false)}
         </h2>
-        <Link href={`/maintainer/${org?.slug}/finance`}>
+        <Link href={`/maintainer/${org.slug}/finance`}>
           <Button variant={canWithdraw ? 'default' : 'secondary'}>
             {canWithdraw ? 'Withdraw' : 'View Transactions'}
           </Button>

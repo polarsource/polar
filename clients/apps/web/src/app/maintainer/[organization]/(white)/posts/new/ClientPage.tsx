@@ -2,18 +2,18 @@
 
 import { PostEditor } from '@/components/Feed/PostEditor'
 import DashboardTopbar from '@/components/Navigation/DashboardTopbar'
-import { useCurrentOrgAndRepoFromURL } from '@/hooks'
 import { useCreateArticle } from '@/hooks/queries'
+import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
 import { useStore } from '@/store'
 import { captureEvent } from '@/utils/posthog'
 import { ArticleCreate } from '@polar-sh/sdk'
 import { redirect, useRouter } from 'next/navigation'
 import Button from 'polarkit/components/ui/atoms/button'
 import { Tabs } from 'polarkit/components/ui/atoms/tabs'
-import { useEffect, useState } from 'react'
+import { useContext, useEffect, useState } from 'react'
 
 const ClientPage = () => {
-  const { org } = useCurrentOrgAndRepoFromURL()
+  const { organization: org } = useContext(MaintainerOrganizationContext)
   const [tab, setTab] = useState('edit')
 
   const {
@@ -41,7 +41,7 @@ const ClientPage = () => {
   const router = useRouter()
   const create = useCreateArticle()
 
-  const canCreate = org && localArticle.title.length > 0
+  const canCreate = localArticle.title.length > 0
 
   const createAndRedirect = async (extraPath?: string) => {
     if (!canCreate) {

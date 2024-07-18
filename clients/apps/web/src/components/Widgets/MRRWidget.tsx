@@ -1,5 +1,5 @@
-import { useCurrentOrgAndRepoFromURL } from '@/hooks'
 import { useMetrics } from '@/hooks/queries'
+import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
 import { getCentsInDollarString } from '@polarkit/lib/money'
 import { Card, CardFooter, CardHeader } from 'polarkit/components/ui/atoms/card'
 import {
@@ -8,6 +8,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from 'polarkit/components/ui/tooltip'
+import { useContext } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 export interface MRRWidgetProps {
@@ -15,13 +16,13 @@ export interface MRRWidgetProps {
 }
 
 export const MRRWidget = ({ className }: MRRWidgetProps) => {
-  const { org } = useCurrentOrgAndRepoFromURL()
+  const { organization: org } = useContext(MaintainerOrganizationContext)
 
   const startDate = new Date()
   startDate.setFullYear(startDate.getFullYear() - 1)
 
   const revenueMetrics = useMetrics({
-    organizationId: org?.id,
+    organizationId: org.id,
     interval: 'month',
     startDate,
     endDate: new Date(),

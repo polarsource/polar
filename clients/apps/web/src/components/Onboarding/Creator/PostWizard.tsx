@@ -1,6 +1,6 @@
 import { AnimatedIconButton } from '@/components/Feed/Posts/Post'
-import { useCurrentOrgAndRepoFromURL } from '@/hooks'
 import { useListArticles } from '@/hooks/queries'
+import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
 import {
   ArrowForward,
   BiotechOutlined,
@@ -17,7 +17,7 @@ import {
   CardHeader,
 } from 'polarkit/components/ui/atoms/card'
 import { List, ListItem } from 'polarkit/components/ui/atoms/list'
-import { useRef } from 'react'
+import { useContext, useRef } from 'react'
 import { useHoverDirty } from 'react-use'
 
 const postTemplates = (organization: Organization, hasNoPosts: boolean) =>
@@ -62,10 +62,10 @@ const postTemplates = (organization: Organization, hasNoPosts: boolean) =>
   ].slice(0, 2)
 
 export const PostWizard = () => {
-  const { org } = useCurrentOrgAndRepoFromURL()
+  const { organization: org } = useContext(MaintainerOrganizationContext)
 
   const { data: posts, isPending: articlesPending } = useListArticles({
-    organizationId: org?.id,
+    organizationId: org.id,
     limit: 100,
   })
 
@@ -75,7 +75,7 @@ export const PostWizard = () => {
   const drafts =
     posts?.pages[0].items?.filter((post) => !post.published_at) ?? []
 
-  if (!org || !org.feature_settings?.articles_enabled) return null
+  if (!org.feature_settings?.articles_enabled) return null
 
   return (
     <div className="flex grid-cols-2 flex-col gap-6 md:grid xl:grid-cols-3">

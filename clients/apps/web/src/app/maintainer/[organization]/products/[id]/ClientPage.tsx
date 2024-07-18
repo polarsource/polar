@@ -1,18 +1,19 @@
 'use client'
 
 import { EditProductPage } from '@/components/Products/EditProductPage'
-import { useCurrentOrgAndRepoFromURL } from '@/hooks'
 import { useProduct } from '@/hooks/queries'
-import { useParams } from 'next/navigation'
+import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
+import { notFound, useParams } from 'next/navigation'
+import { useContext } from 'react'
 
 export default function Page() {
   const { id } = useParams()
-  const { org } = useCurrentOrgAndRepoFromURL()
+  const { organization: org } = useContext(MaintainerOrganizationContext)
 
   const { data: product } = useProduct(id as string)
 
-  if (!org || !product) {
-    return null
+  if (!product) {
+    notFound()
   }
 
   return <EditProductPage product={product} organization={org} />

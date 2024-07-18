@@ -8,60 +8,43 @@ import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import EmptyLayout from '@/components/Layout/EmptyLayout'
 import OnboardingAddBadge from '@/components/Onboarding/OnboardingAddBadge'
 import { RepoPickerHeader } from '@/components/Organization/RepoPickerHeader'
-import { useToast } from '@/components/Toast/use-toast'
 import { useDashboard, useListRepositories } from '@/hooks/queries'
 import { useOrganizationSSE } from '@/hooks/sse'
+import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
 import { HowToVoteOutlined } from '@mui/icons-material'
 import { IssueSortBy, Organization, Repository } from '@polar-sh/sdk'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useSearchParams } from 'next/navigation'
 import { ShadowBoxOnMd } from 'polarkit/components/ui/atoms/shadowbox'
 import {
   Dispatch,
   SetStateAction,
+  useContext,
   useEffect,
   useMemo,
   useRef,
   useState,
 } from 'react'
-import { useCurrentOrgAndRepoFromURL } from '../../../../../../hooks'
 
 export default function ClientPage() {
-  const router = useRouter()
   const searchParams = useSearchParams()
 
   const orgSlug = searchParams?.get('organization')
   const repoSlug = searchParams?.get('repo')
-  const status = searchParams?.get('status')
 
-  const { toast } = useToast()
-  const { org, repo, isLoaded } = useCurrentOrgAndRepoFromURL()
+  const { organization: org } = useContext(MaintainerOrganizationContext)
   const key = `org-${orgSlug}-repo-${repoSlug}` // use key to force reload of state
 
-  useEffect(() => {
-    if (isLoaded && !org) {
-      router.push('/maintainer')
-      return
-    }
-  }, [isLoaded, org, router])
+  const repositories = useListRepositories(
+    {
+      organizationId: org.id,
+      name: repoSlug ?? '',
+      limit: 1,
+    },
+    !!repoSlug,
+  )
+  const repo = repositories.data?.items?.[0]
 
-  useEffect(() => {
-    if (status === 'stripe-connected') {
-      toast({
-        title: 'Stripe setup complete',
-        description: 'Your account is now ready to accept pledges.',
-      })
-    }
-  }, [status, toast])
-
-  if (!isLoaded) {
-    return <></>
-  }
-
-  if (!org) {
-    return null
-  }
-
-  if (org && !org.feature_settings?.issue_funding_enabled) {
+  if (!org.feature_settings?.issue_funding_enabled) {
     return <EnableIssuesView organization={org} />
   }
 
@@ -150,29 +133,29 @@ const Issues = ({
     <OrganizationIssues
       filters={filters}
       onSetFilters={setFilters}
-      orgName={org.slug}
-      repoName={repo?.name}
+      org={org}
+      repo={repo}
       hasAppInstalled={org.has_app_installed}
     />
   )
 }
 
 const OrganizationIssues = ({
-  orgName,
-  repoName,
+  org,
+  repo,
   filters,
   onSetFilters,
   hasAppInstalled,
 }: {
-  orgName: string
-  repoName: string | undefined
+  org: Organization
+  repo: Repository | undefined
   filters: DashboardFilters
   onSetFilters: Dispatch<SetStateAction<DashboardFilters>>
   hasAppInstalled: boolean
 }) => {
   const dashboardQuery = useDashboard({
-    orgName,
-    repoName,
+    orgName: org.slug,
+    repoName: repo?.name,
     q: filters.q,
     sort: filters.sort,
     onlyPledged: filters.onlyPledged,
@@ -206,33 +189,23 @@ const OrganizationIssues = ({
     )
   }, [dashboardQuery, anyIssueHasPledgeOrBadge, haveIssues, isDefaultFilters])
 
-  // Get current org & repo from URL
-  const { org: currentOrg, repo: currentRepo } = useCurrentOrgAndRepoFromURL()
-
   // Get all repositories
-  const listRepositoriesQuery = useListRepositories(
-    {
-      organizationId: currentOrg?.id,
-    },
-    !!currentOrg,
-  )
+  const listRepositoriesQuery = useListRepositories({
+    organizationId: org.id,
+  })
   const allOrgRepositories = listRepositoriesQuery?.data?.items
-
-  if (!currentOrg || (!allOrgRepositories && hasAppInstalled)) {
-    return <></>
-  }
 
   return (
     <DashboardBody className="flex flex-col gap-y-8">
-      {!currentOrg.has_app_installed && (
-        <GitHubAppInstallationUpsell organization={currentOrg} />
+      {!org.has_app_installed && (
+        <GitHubAppInstallationUpsell organization={org} />
       )}
       {showAddBadgeBanner && <OnboardingAddBadge />}
       <ShadowBoxOnMd className="md:rounded-4xl md:px-12 md:py-8">
         <div className="-mx-6 space-y-8">
           <div className="mx-6">
             <RepoPickerHeader
-              currentRepository={currentRepo}
+              currentRepository={repo}
               repositories={allOrgRepositories ?? []}
             >
               <Header

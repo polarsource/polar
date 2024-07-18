@@ -1,12 +1,11 @@
 'use client'
 
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
-import Spinner from '@/components/Shared/Spinner'
-import { useCurrentOrgAndRepoFromURL } from '@/hooks/org'
 import { Pill } from 'polarkit/components/ui/atoms'
 import Avatar from 'polarkit/components/ui/atoms/avatar'
 
 import { useListOrganizationMembers } from '@/hooks/queries'
+import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
 import {
   Table,
   TableBody,
@@ -15,22 +14,15 @@ import {
   TableHeader,
   TableRow,
 } from 'polarkit/components/ui/table'
+import { useContext } from 'react'
 
 export default function ClientPage() {
-  const { org, isLoaded } = useCurrentOrgAndRepoFromURL()
+  const { organization: org } = useContext(MaintainerOrganizationContext)
 
   const members = useListOrganizationMembers(org?.id)
 
   const mems = members.data?.items || []
   const sortedMembers = mems.sort((a, b) => a.name.localeCompare(b.name))
-
-  if (!isLoaded || !org) {
-    return (
-      <DashboardBody>
-        <Spinner />
-      </DashboardBody>
-    )
-  }
 
   return (
     <DashboardBody>

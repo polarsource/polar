@@ -1,6 +1,5 @@
 'use client'
 
-import { useCurrentOrgAndRepoFromURL } from '@/hooks'
 import { ArrowBackOutlined } from '@mui/icons-material'
 import { Organization } from '@polar-sh/sdk'
 import {
@@ -48,7 +47,7 @@ export const CommandPalette = ({ organization, hide }: CommandPaletteProps) => {
       <SyntaxHighlighterProvider>
         <div className="dark:bg-polar-950 dark:porder-polar-700 rounded-4xl bg-gray-75 flex w-full flex-grow flex-col overflow-hidden dark:border">
           <CommandPaletteInput />
-          <CommandPaletteContainer />
+          <CommandPaletteContainer organization={organization} />
         </div>
       </SyntaxHighlighterProvider>
     </CommandPaletteContextProvider>
@@ -88,7 +87,11 @@ const CommandPaletteInput = () => {
   )
 }
 
-const CommandPaletteContainer = () => {
+const CommandPaletteContainer = ({
+  organization,
+}: {
+  organization: Organization | undefined
+}) => {
   const { scopes, scope, setScopeKeys } = useCommands()
   const pathname = usePathname()
 
@@ -107,16 +110,20 @@ const CommandPaletteContainer = () => {
   const container = useMemo(() => {
     switch (scope?.name.split(':')[0]) {
       case 'api':
-        return <APINavigator />
+        return <APINavigator organization={organization} />
       default:
-        return <GlobalContainer />
+        return <GlobalContainer organization={organization} />
     }
   }, [scope])
 
   return container
 }
 
-const APINavigator = () => {
+const APINavigator = ({
+  organization,
+}: {
+  organization: Organization | undefined
+}) => {
   const { commands, selectedCommand, setSelectedCommand, hideCommandPalette } =
     useCommands()
 
@@ -124,7 +131,6 @@ const APINavigator = () => {
   const searchParams = useSearchParams()
   const pathname = usePathname()
   const router = useRouter()
-  const { org } = useCurrentOrgAndRepoFromURL()
 
   const apiEndpoint = useMemo(() => {
     return selectedCommand?.type === CommandType.API ? selectedCommand : null
@@ -152,7 +158,7 @@ const APINavigator = () => {
                   searchParams,
                   pathname,
                   router,
-                  organization: org,
+                  organization,
                   hidePalette: hideCommandPalette,
                 })
               }}

@@ -1,14 +1,11 @@
 'use client'
 
 import { CreateProductPage } from '@/components/Products/CreateProductPage'
-import { useCurrentOrgAndRepoFromURL } from '@/hooks'
+import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
+import { useContext } from 'react'
 
 export default function Page() {
-  const { org } = useCurrentOrgAndRepoFromURL()
-
-  if (!org) {
-    return null
-  }
+  const { organization: org } = useContext(MaintainerOrganizationContext)
 
   return <CreateProductPage organization={org} />
 }

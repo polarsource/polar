@@ -14,7 +14,6 @@ from polar.user_organization.service import (
 class Receivers(BaseModel):
     user_id: UUID | None = None
     organization_id: UUID | None = None
-    repository_id: UUID | None = None
 
     def generate_channel_name(self, scope: str, resource_id: UUID) -> str:
         return f"{scope}:{resource_id}"
@@ -26,9 +25,6 @@ class Receivers(BaseModel):
 
         if self.organization_id:
             channels.append(self.generate_channel_name("org", self.organization_id))
-
-        if self.repository_id:
-            channels.append(self.generate_channel_name("repo", self.repository_id))
 
         return channels
 
@@ -50,11 +46,8 @@ async def publish(
     payload: dict[str, Any],
     user_id: UUID | None = None,
     organization_id: UUID | None = None,
-    repository_id: UUID | None = None,
 ) -> None:
-    receivers = Receivers(
-        user_id=user_id, organization_id=organization_id, repository_id=repository_id
-    )
+    receivers = Receivers(user_id=user_id, organization_id=organization_id)
     channels = receivers.get_channels()
     event = Event(
         id=generate_uuid(),

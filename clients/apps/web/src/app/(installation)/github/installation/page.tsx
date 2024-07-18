@@ -5,26 +5,31 @@ import GithubLoginButton from '@/components/Auth/GithubLoginButton'
 import LoadingScreen, {
   LoadingScreenError,
 } from '@/components/Dashboard/LoadingScreen'
+import { useStore } from '@/store'
 import { api } from '@/utils/api'
 import {
-  InstallationCreatePlatformEnum,
+  FetchError,
   Organization,
+  ResponseError,
   UserSignupType,
+  ValidationError,
 } from '@polar-sh/sdk'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import Button from 'polarkit/components/ui/atoms/button'
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 
 export default function Page() {
+  const search = useSearchParams()
+  const installationId = search?.get('installation_id')
+  const setupAction = search?.get('setup_action')
+  const {
+    gitHubInstallation: { organizationId },
+  } = useStore()
+
   const router = useRouter()
   const pathname = usePathname()
   const [error, setError] = useState<string | null>(null)
   const [installed, setInstalled] = useState<Organization | null>(null)
-
-  const search = useSearchParams()
-
-  const installationID = search?.get('installation_id')
-  const setupAction = search?.get('setup_action')
 
   const [showLogin, setShowLogin] = useState(false)
 
@@ -33,82 +38,84 @@ export default function Page() {
     return
   }
 
-  const install = () => {
-    if (!installationID) {
-      console.error('no installation id')
-      setError('Unexpected installation_id')
-      return
-    }
-
-    const controller = new AbortController()
-    const signal = controller.signal
-
-    const request = api.integrationsGitHub.install(
-      {
-        body: {
-          platform: InstallationCreatePlatformEnum.GITHUB,
-          external_id: parseInt(installationID),
+  const install = useCallback(
+    (installationId: string, organizationId: string) => {
+      const controller = new AbortController()
+      const signal = controller.signal
+      const request = api.integrationsGitHub.install(
+        {
+          body: {
+            installation_id: Number.parseInt(installationId, 10),
+            organization_id: organizationId,
+          },
         },
-      },
-      {
-        signal,
-      },
-    )
+        {
+          signal,
+        },
+      )
 
-    setShowLogin(false)
-    setError(null)
+      setShowLogin(false)
+      setError(null)
 
-    request
-      .then(async (organization) => {
-        // As the Organization page & its data is fetched on the server, we need to revalidate the cache
-        // to avoid stale data.
-        await Promise.all([
-          revalidate(`organization:${organization.slug}`),
-          revalidate(`funding:${organization.slug}`),
-          revalidate(`repositories:${organization.slug}`),
-        ])
-        return organization
-      })
-      .then((organization) => {
-        setInstalled(organization)
-        // redirect
-        router.replace(`/maintainer/${organization.slug}/initialize`)
-      })
-      .catch((err) => {
-        if (signal.aborted) {
-          return
-        }
+      request
+        .then(async (externalOrganization) => {
+          const organization = await api.organizations.get({
+            id: externalOrganization.organization_id as string,
+          })
+          // As the Organization page & its data is fetched on the server, we need to revalidate the cache
+          // to avoid stale data.
+          await Promise.all([
+            revalidate(`organization:${organization.id}`),
+            revalidate(`funding:${organization.id}`),
+            revalidate(`repositories:${organization.id}`),
+          ])
+          setInstalled(organization)
+          // redirect
+          router.replace(`/maintainer/${organization.slug}/initialize`)
+        })
+        .catch(async (err) => {
+          if (signal.aborted) {
+            return
+          }
 
-        if (err.name === 'FetchError') {
-          setError('Could not fetch data from GitHub. Try refreshing the page.')
-          // Since we get rare issues here sometimes. Raise so we capture in
-          // Sentry for more details.
-          throw err
-        }
-        if (err.response.status === 401) {
-          setShowLogin(true)
-          return
-        }
-        console.error(err)
-        setError('Error installing organization')
-      })
-    return { request, controller }
-  }
+          if (err instanceof FetchError) {
+            setError(
+              'Could not fetch data from GitHub. Try refreshing the page.',
+            )
+            // Since we get rare issues here sometimes. Raise so we capture in
+            // Sentry for more details.
+            throw err
+          }
+
+          if (err instanceof ResponseError) {
+            const status = err.response.status
+            if (status === 401) {
+              setShowLogin(true)
+              return
+            } else if (status === 422) {
+              const body = await err.response.json()
+              const validationErrors = body['detail'] as ValidationError[]
+              setError(validationErrors[0].msg)
+            }
+          }
+        })
+
+      return { request, controller }
+    },
+    [router],
+  )
 
   useEffect(() => {
-    if (!installationID) {
+    if (!installationId || !organizationId) {
       return
     }
 
-    const i = install()
+    const { controller } = install(installationId, organizationId)
 
     return () => {
-      if (i) {
-        const { controller } = i
-        controller.abort()
-      }
+      controller.abort()
     }
-  }, [installationID])
+  }, [installationId, organizationId, install])
 
   if (installed) {
     return (

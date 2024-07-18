@@ -2,11 +2,10 @@
 
 import LogoIcon from '@/components/Brand/LogoIcon'
 import { useAuth } from '@/hooks/auth'
+import { useRedirectToGitHubInstallation } from '@/hooks/github'
 import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
-import { CONFIG } from '@/utils/config'
 import { CloseOutlined, ShortTextOutlined } from '@mui/icons-material'
-import { Repository } from '@polar-sh/sdk'
-import Link from 'next/link'
+import { Organization, Repository } from '@polar-sh/sdk'
 import { usePathname } from 'next/navigation'
 import Button from 'polarkit/components/ui/atoms/button'
 import {
@@ -30,20 +29,20 @@ import MetaNavigation from '../Dashboard/MetaNavigation'
 import DashboardProfileDropdown from '../Navigation/DashboardProfileDropdown'
 import { BrandingMenu } from './Public/BrandingMenu'
 
-const GitHubAppUpsell = () => {
+const GitHubAppUpsell = ({ organization }: { organization: Organization }) => {
+  const redirectToGitHubInstallation =
+    useRedirectToGitHubInstallation(organization)
   return (
     <div className="dark:from-polar-800 dark:to-polar-800 m-6 flex flex-row gap-y-8 rounded-2xl bg-gradient-to-r from-blue-200 to-blue-400 p-4 text-white">
       <div className="flex w-full flex-col gap-y-4">
         <h3 className="leading-normal [text-wrap:balance]">
           Import your repositories & enable crowdfunding for issues
         </h3>
-        <Link href={CONFIG.GITHUB_INSTALLATION_URL}>
-          <Button size="sm">
-            <div className="flex flex-row items-center gap-2">
-              <span>Install GitHub App</span>
-            </div>
-          </Button>
-        </Link>
+        <Button size="sm" onClick={redirectToGitHubInstallation}>
+          <div className="flex flex-row items-center gap-2">
+            <span>Install GitHub App</span>
+          </div>
+        </Button>
       </div>
     </div>
   )
@@ -99,7 +98,9 @@ const DashboardSidebar = () => {
           onScroll={handleScroll}
         >
           <div>
-            {currentOrg && !currentOrg.has_app_installed && <GitHubAppUpsell />}
+            {currentOrg && !currentOrg.has_app_installed && (
+              <GitHubAppUpsell organization={currentOrg} />
+            )}
             {shouldRenderMaintainerNavigation && <MaintainerNavigation />}
             <DashboardNavigation />
             {shouldRenderMaintainerNavigation && (

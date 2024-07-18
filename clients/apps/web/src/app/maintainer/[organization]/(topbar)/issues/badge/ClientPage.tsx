@@ -27,7 +27,9 @@ export default function ClientPage() {
   return (
     <DashboardBody>
       <div className="relative z-0">
-        {!org?.has_app_installed && <GitHubAppInstallationUpsell />}
+        {org && !org.has_app_installed && (
+          <GitHubAppInstallationUpsell organization={org} />
+        )}
         <div className="dark:divide-polar-700 divide-gray-200">
           {org && (
             <BadgeSetup

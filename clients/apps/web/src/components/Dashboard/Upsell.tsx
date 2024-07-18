@@ -1,12 +1,12 @@
 import { useAuth } from '@/hooks'
+import { useRedirectToGitHubInstallation } from '@/hooks/github'
 import {
   useListMemberOrganizations,
   useMaintainerUpgrade,
 } from '@/hooks/queries'
-import { CONFIG } from '@/utils/config'
 import { ExclamationCircleIcon } from '@heroicons/react/20/solid'
 import { ArrowForwardOutlined } from '@mui/icons-material'
-import { UserSignupType } from '@polar-sh/sdk'
+import { Organization, UserSignupType } from '@polar-sh/sdk'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import Button from 'polarkit/components/ui/atoms/button'
@@ -101,15 +101,21 @@ export const Upsell = ({
   )
 }
 
-export const GitHubAppInstallationUpsell = () => {
+export const GitHubAppInstallationUpsell = ({
+  organization,
+}: {
+  organization: Organization
+}) => {
+  const redirectToGitHubInstallation =
+    useRedirectToGitHubInstallation(organization)
   return (
     <>
       <Banner
         color="default"
         right={
-          <Link href={CONFIG.GITHUB_INSTALLATION_URL}>
-            <Button size="sm">Install GitHub App</Button>
-          </Link>
+          <Button size="sm" onClick={redirectToGitHubInstallation}>
+            Install GitHub App
+          </Button>
         }
       >
         <ExclamationCircleIcon className="h-6 w-6 text-red-500" />

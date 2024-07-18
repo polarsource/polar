@@ -224,7 +224,9 @@ const OrganizationIssues = ({
 
   return (
     <DashboardBody className="flex flex-col gap-y-8">
-      {!currentOrg.has_app_installed && <GitHubAppInstallationUpsell />}
+      {!currentOrg.has_app_installed && (
+        <GitHubAppInstallationUpsell organization={currentOrg} />
+      )}
       {showAddBadgeBanner && <OnboardingAddBadge />}
       <ShadowBoxOnMd className="md:rounded-4xl md:px-12 md:py-8">
         <div className="-mx-6 space-y-8">

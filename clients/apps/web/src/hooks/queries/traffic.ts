@@ -9,45 +9,42 @@ import { UseQueryResult, useQuery } from '@tanstack/react-query'
 import { defaultRetry } from './retry'
 
 export const useTrafficStatistics = (variables: {
-  orgName?: string
-  platform?: Platforms
+  organizationId?: string
   startDate: Date
   endDate: Date
   interval: StatisticsTrafficIntervalEnum
   groupByArticle?: boolean
 }): UseQueryResult<TrafficStatistics> =>
   useQuery({
-    queryKey: ['traffic', JSON.stringify(variables)],
+    queryKey: ['traffic', { ...variables }],
     queryFn: () =>
       api.traffic.statistics({
-        organizationName: variables.orgName ?? '',
-        platform: variables.platform ?? Platforms.GITHUB,
+        organizationId: variables.organizationId,
         startDate: variables.startDate.toISOString().split('T')[0],
         endDate: variables.endDate.toISOString().split('T')[0],
         trafficInterval: variables.interval,
         groupByArticle: variables.groupByArticle,
       }),
     retry: defaultRetry,
-    enabled: !!variables.orgName,
+    enabled: !!variables.organizationId,
   })
 
 export const useTrafficTopReferrers = (variables: {
-  orgName?: string
+  organizationId?: string
   platform?: Platforms
   startDate: Date
   endDate: Date
   limit?: number
 }): UseQueryResult<ListResourceTrafficReferrer> =>
   useQuery({
-    queryKey: ['traffic', 'topReferrers', JSON.stringify(variables)],
+    queryKey: ['traffic', 'topReferrers', { ...variables }],
     queryFn: () =>
       api.traffic.referrers({
-        organizationName: variables.orgName ?? '',
-        platform: variables.platform ?? Platforms.GITHUB,
+        organizationId: variables.organizationId ?? '',
         startDate: variables.startDate.toISOString().split('T')[0],
         endDate: variables.endDate.toISOString().split('T')[0],
         limit: variables.limit ?? 20,
       }),
     retry: defaultRetry,
-    enabled: !!variables.orgName,
+    enabled: !!variables.organizationId,
   })

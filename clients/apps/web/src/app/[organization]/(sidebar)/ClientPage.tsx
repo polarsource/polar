@@ -11,8 +11,8 @@ import {
   LinksEditor,
 } from '@/components/Profile/LinksEditor/LinksEditor'
 import { ProjectsEditor } from '@/components/Profile/ProjectEditor/ProjectsEditor'
+import { useRedirectToGitHubInstallation } from '@/hooks/github'
 import { useUpdateOrganization } from '@/hooks/queries'
-import { CONFIG } from '@/utils/config'
 import { organizationPageLink } from '@/utils/nav'
 import { useTrafficRecordPageView } from '@/utils/traffic'
 import { GitHub, StickyNote2Outlined } from '@mui/icons-material'
@@ -118,7 +118,9 @@ const ClientPage = ({
     <div className="flex w-full flex-col gap-y-24">
       <div className="flex flex-col gap-24 lg:flex-row lg:gap-16">
         <div className="flex w-full min-w-0 flex-shrink flex-col gap-y-16 md:max-w-xl xl:max-w-3xl">
-          {isAdmin && !organization.has_app_installed && <GitHubAppUpsell />}
+          {isAdmin && !organization.has_app_installed && (
+            <GitHubAppUpsell organization={organization} />
+          )}
 
           {organization.feature_settings?.articles_enabled && (
             <div className="flex w-full flex-col gap-y-6">
@@ -226,21 +228,21 @@ const ClientPage = ({
 
 export default ClientPage
 
-const GitHubAppUpsell = () => {
+const GitHubAppUpsell = ({ organization }: { organization: Organization }) => {
+  const redirectToGitHubInstallation =
+    useRedirectToGitHubInstallation(organization)
   return (
     <div className="dark:from-polar-700 dark:to-polar-800 dark:border-polar-700 rounded-4xl flex flex-row gap-y-8 bg-gradient-to-r from-blue-200 to-blue-500 p-8 text-white dark:border">
       <div className="flex w-full flex-col gap-y-8">
         <h3 className="text-4xl leading-normal [text-wrap:balance]">
           Highlight your projects & enable crowdfunding for issues
         </h3>
-        <Link href={CONFIG.GITHUB_INSTALLATION_URL}>
-          <Button size="lg">
-            <div className="flex flex-row items-center gap-2">
-              <GitHub fontSize="small" />
-              <span>Install the Polar GitHub App</span>
-            </div>
-          </Button>
-        </Link>
+        <Button size="lg" onClick={redirectToGitHubInstallation}>
+          <div className="flex flex-row items-center gap-2">
+            <GitHub fontSize="small" />
+            <span>Install the Polar GitHub App</span>
+          </div>
+        </Button>
       </div>
     </div>
   )

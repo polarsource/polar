@@ -7,6 +7,7 @@ from pydantic import UUID4
 from polar.enums import Platforms
 from polar.integrations.github import types
 from polar.kit.schemas import MergeJSONSchema, Schema, SelectorWidget
+from polar.organization.schemas import OrganizationID
 
 ExternalOrganizationID = Annotated[
     UUID4,
@@ -30,6 +31,8 @@ class ExternalOrganization(Schema):
     location: str | None = None
     email: str | None = None
     twitter_username: str | None = None
+
+    organization_id: OrganizationID | None = None
 
 
 #

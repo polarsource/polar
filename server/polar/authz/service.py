@@ -39,8 +39,9 @@ class AccessType(StrEnum):
 Object = (
     User
     | Organization
-    | Repository
     | Account
+    | ExternalOrganization
+    | Repository
     | IssueReward
     | Issue
     | Pledge
@@ -84,34 +85,6 @@ class Authz:
             return False
 
         #
-        # Repository
-        #
-
-        if (
-            isinstance(subject, User)
-            and accessType == AccessType.read
-            and isinstance(object, Repository)
-        ):
-            return await self._can_user_read_repository(subject, object)
-
-        if (
-            isinstance(subject, User)
-            and accessType == AccessType.write
-            and isinstance(object, Repository)
-        ):
-            return await self._can_user_write_repository(subject, object)
-
-        if isinstance(subject, Organization) and isinstance(object, Repository):
-            return object.organization_id == subject.id
-
-        if (
-            isinstance(subject, Anonymous)
-            and accessType == AccessType.read
-            and isinstance(object, Repository)
-        ):
-            return self._can_anonymous_read_repository(object)
-
-        #
         # Organization
         #
 
@@ -149,6 +122,57 @@ class Authz:
             and isinstance(object, Account)
         ):
             return self._can_user_write_account(subject, object)
+
+        #
+        # ExternalOrganization
+        #
+
+        if (
+            isinstance(subject, Organization)
+            and isinstance(object, ExternalOrganization)
+            and subject.id == object.organization_id
+        ):
+            return True
+
+        if accessType == AccessType.read and isinstance(object, ExternalOrganization):
+            return True
+
+        if (
+            isinstance(subject, User)
+            and accessType == AccessType.write
+            and isinstance(object, ExternalOrganization)
+        ):
+            return await self._can_user_write_external_organization_id(
+                subject, object.id
+            )
+
+        #
+        # Repository
+        #
+
+        if (
+            isinstance(subject, User)
+            and accessType == AccessType.read
+            and isinstance(object, Repository)
+        ):
+            return await self._can_user_read_repository(subject, object)
+
+        if (
+            isinstance(subject, User)
+            and accessType == AccessType.write
+            and isinstance(object, Repository)
+        ):
+            return await self._can_user_write_repository(subject, object)
+
+        if isinstance(subject, Organization) and isinstance(object, Repository):
+            return object.organization_id == subject.id
+
+        if (
+            isinstance(subject, Anonymous)
+            and accessType == AccessType.read
+            and isinstance(object, Repository)
+        ):
+            return self._can_anonymous_read_repository(object)
 
         #
         # Issue

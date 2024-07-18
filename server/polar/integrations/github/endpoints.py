@@ -1,4 +1,3 @@
-from typing import Literal
 from uuid import UUID
 
 import structlog
@@ -13,7 +12,7 @@ from githubkit.exception import RequestFailed
 from httpx_oauth.clients.github import GitHubOAuth2
 from httpx_oauth.integrations.fastapi import OAuth2AuthorizeCallback
 from httpx_oauth.oauth2 import OAuth2Token
-from pydantic import UUID4, BaseModel, ValidationError
+from pydantic import BaseModel, ValidationError
 
 from polar.auth.dependencies import WebUser, WebUserOrAnonymous
 from polar.auth.models import is_user
@@ -28,13 +27,17 @@ from polar.exceptions import (
     PolarRedirectionError,
     ResourceNotFound,
 )
+from polar.external_organization.schemas import (
+    ExternalOrganization as ExternalOrganizationSchema,
+)
+from polar.external_organization.schemas import ExternalOrganizationID
 from polar.integrations.github import client as github
 from polar.kit import jwt
 from polar.kit.http import ReturnTo
 from polar.locker import Locker, get_locker
+from polar.models import ExternalOrganization
 from polar.models.benefit import BenefitType
 from polar.openapi import IN_DEVELOPMENT_ONLY
-from polar.organization.schemas import Organization as OrganizationSchema
 from polar.pledge.service import pledge as pledge_service
 from polar.postgres import AsyncSession, get_db_session
 from polar.posthog import posthog
@@ -43,6 +46,7 @@ from polar.worker import enqueue_job
 
 from .schemas import (
     GithubUser,
+    InstallationCreate,
     OAuthAccessToken,
     OrganizationBillingPlan,
     OrganizationCheckPermissionsInput,
@@ -223,63 +227,68 @@ async def lookup_user(
 
 @router.get("/organizations/{id}/installation")
 async def redirect_to_organization_installation(
-    id: UUID4,
+    id: ExternalOrganizationID,
     return_to: ReturnTo,
     auth_subject: WebUser,
     authz: Authz = Depends(Authz.authz),
     session: AsyncSession = Depends(get_db_session),
 ) -> RedirectResponse:
-    organization = await github_organization.get(session, id)
+    external_organization = await github_organization.get(session, id)
 
-    if organization is None:
+    if external_organization is None:
         raise PolarRedirectionError("Organization not found", return_to=return_to)
 
-    if not await authz.can(auth_subject.subject, AccessType.write, organization):
+    if not await authz.can(
+        auth_subject.subject, AccessType.write, external_organization
+    ):
         raise PolarRedirectionError(
             "You don't have access to this organization", return_to=return_to
         )
 
-    if organization.installation_id is None:
+    if external_organization.installation_id is None:
         return RedirectResponse(
             f"https://github.com/apps/{settings.GITHUB_APP_NAMESPACE}"
-            f"/installations/new/permissions?target_id={organization.external_id}"
+            f"/installations/new/permissions?target_id={external_organization.external_id}"
         )
 
-    if organization.is_personal:
+    if external_organization.is_personal:
         return RedirectResponse(
             "https://github.com/settings/installations"
-            f"/{organization.installation_id}/permissions/update"
+            f"/{external_organization.installation_id}/permissions/update"
         )
 
     return RedirectResponse(
-        f"https://github.com/organizations/{organization.name}"
-        f"/settings/installations/{organization.installation_id}/permissions/update"
+        f"https://github.com/organizations/{external_organization.name}"
+        f"/settings/installations/{external_organization.installation_id}/permissions/update"
     )
 
 
 @router.post("/organizations/{id}/check_permissions", status_code=204)
 async def check_organization_permissions(
-    id: UUID4,
+    id: ExternalOrganizationID,
     input: OrganizationCheckPermissionsInput,
     auth_subject: WebUser,
     authz: Authz = Depends(Authz.authz),
     session: AsyncSession = Depends(get_db_session),
 ) -> None:
-    organization = await github_organization.get(session, id)
+    external_organization = await github_organization.get(session, id)
 
-    if organization is None:
+    if external_organization is None:
         raise ResourceNotFound()
 
-    if not await authz.can(auth_subject.subject, AccessType.write, organization):
+    if not await authz.can(
+        auth_subject.subject, AccessType.write, external_organization
+    ):
         raise NotPermitted()
 
-    if organization.installation_id is None:
+    if external_organization.installation_id is None:
         raise NotPermitted()
 
     app_client = github.get_app_client()
     try:
         await app_client.rest.apps.async_create_installation_access_token(
-            organization.installation_id, data={"permissions": input.permissions}
+            external_organization.installation_id,
+            data={"permissions": input.permissions},
         )
     except RequestFailed as e:
         if e.response.status_code == 422:
@@ -289,32 +298,36 @@ async def check_organization_permissions(
 
 @router.get("/organizations/{id}/billing")
 async def get_organization_billing_plan(
-    id: UUID4,
+    id: ExternalOrganizationID,
     auth_subject: WebUser,
     authz: Authz = Depends(Authz.authz),
     session: AsyncSession = Depends(get_db_session),
     locker: Locker = Depends(get_locker),
 ) -> OrganizationBillingPlan:
-    organization = await github_organization.get(session, id)
+    external_organization = await github_organization.get(session, id)
 
-    if organization is None:
+    if external_organization is None:
         raise ResourceNotFound()
 
-    if not await authz.can(auth_subject.subject, AccessType.write, organization):
+    if not await authz.can(
+        auth_subject.subject, AccessType.write, external_organization
+    ):
         raise NotPermitted()
 
-    if organization.is_personal:
+    if external_organization.is_personal:
         user_client = await github.get_user_client(
             session, locker, auth_subject.subject
         )
         user_response = await user_client.rest.users.async_get_authenticated()
         plan = user_response.parsed_data.plan
     else:
-        if organization.installation_id is None:
+        if external_organization.installation_id is None:
             raise ResourceNotFound()
 
-        org_client = github.get_app_installation_client(organization.installation_id)
-        org_response = await org_client.rest.orgs.async_get(organization.name)
+        org_client = github.get_app_installation_client(
+            external_organization.installation_id
+        )
+        org_response = await org_client.rest.orgs.async_get(external_organization.name)
         plan = org_response.parsed_data.plan
 
     if not plan:
@@ -323,7 +336,7 @@ async def get_organization_billing_plan(
     plan_name = plan.name
 
     return OrganizationBillingPlan(
-        organization_id=organization.id,
+        organization_id=external_organization.id,
         plan_name=plan_name,
         is_free=plan_name.lower() == "free",
     )
@@ -334,37 +347,31 @@ async def get_organization_billing_plan(
 ###############################################################################
 
 
-class InstallationCreate(BaseModel):
-    platform: Literal["github"]
-    external_id: int
-
-
-@router.post("/installations", response_model=OrganizationSchema)
+@router.post("/installations", response_model=ExternalOrganizationSchema)
 async def install(
-    installation: InstallationCreate,
+    installation_create: InstallationCreate,
     auth_subject: WebUser,
+    authz: Authz = Depends(Authz.authz),
     session: AsyncSession = Depends(get_db_session),
     locker: Locker = Depends(get_locker),
-) -> OrganizationSchema:
+) -> ExternalOrganization:
     with ExecutionContext(is_during_installation=True):
-        organization = await github_organization.install_from_user_browser(
-            session,
-            locker,
-            auth_subject.subject,
-            installation_id=installation.external_id,
+        external_organization = await github_organization.install(
+            session, locker, authz, auth_subject.subject, installation_create
         )
-        if not organization:
-            raise ResourceNotFound()
 
         posthog.auth_subject_event(
             auth_subject,
             "organizations",
             "github_install",
             "submit",
-            {"organization_id": organization.id},
+            {
+                "organization_id": external_organization.organization_id,
+                "external_organization_id": external_organization.id,
+            },
         )
 
-        return OrganizationSchema.model_validate(organization)
+        return external_organization
 
 
 ###############################################################################

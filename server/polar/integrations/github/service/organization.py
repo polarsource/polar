@@ -7,7 +7,9 @@ from githubkit import AppInstallationAuthStrategy, GitHub, TokenAuthStrategy
 from githubkit.exception import RequestFailed
 from pydantic import BaseModel
 
+from polar.authz.service import AccessType, Authz
 from polar.enums import Platforms
+from polar.exceptions import PolarRequestValidationError
 from polar.external_organization.schemas import (
     ExternalOrganizationCreateFromGitHubInstallation,
     ExternalOrganizationCreateFromGitHubUser,
@@ -18,11 +20,12 @@ from polar.kit.utils import utc_now
 from polar.locker import Locker
 from polar.logging import Logger
 from polar.models import ExternalOrganization, User
+from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession
-from polar.worker import enqueue_job
 
 from .. import client as github
 from .. import types
+from ..schemas import InstallationCreate
 from .repository import github_repository
 
 log: Logger = structlog.get_logger(service="GithubOrganizationService")
@@ -53,7 +56,7 @@ class GithubOrganizationService(ExternalOrganizationService):
 
     async def fetch_installations(
         self, session: AsyncSession, locker: Locker, user: User
-    ) -> list[types.Installation] | None:
+    ) -> list[types.Installation]:
         client = await github.get_user_client(session, locker, user)
         response = (
             await client.rest.apps.async_list_installations_for_authenticated_user()
@@ -66,39 +69,82 @@ class GithubOrganizationService(ExternalOrganizationService):
             user_id=user.id,
             installation_count=len(installations),
         )
-        if not installations:
-            return None
         return installations
 
-    async def install_from_user_browser(
-        self, session: AsyncSession, locker: Locker, user: User, installation_id: int
-    ) -> ExternalOrganization | None:
-        installations = await self.fetch_installations(session, locker, user)
-        if not installations:
-            raise Exception(f"no user installations found. id={installation_id}")
-
+    async def install(
+        self,
+        session: AsyncSession,
+        locker: Locker,
+        authz: Authz,
+        user: User,
+        installation_create: InstallationCreate,
+    ) -> ExternalOrganization:
         # Ideally, we could fetch the specific resource with /apps/installation/{id}
         # instead. However, Github only provides the installation_id and no verification
         # token. Therefore, using it would expose us to CSRF risks, e.g malicious user
         # guessing other installation IDs to get connected to them.
-        filtered = [i for i in installations if i.id == installation_id]
-        if not filtered:
-            raise Exception(
-                f"user installation not found in filter. id={installation_id}"
+        installations = await self.fetch_installations(session, locker, user)
+        for installation in installations:
+            if installation.id == installation_create.installation_id:
+                break
+        else:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "loc": ("installation_id",),
+                        "msg": "GitHub installation does not exist.",
+                        "type": "value_error",
+                        "input": installation_create.installation_id,
+                    }
+                ]
             )
 
-        org_installation = filtered.pop()
+        organization = await organization_service.get(
+            session, installation_create.organization_id
+        )
 
-        organization = await self._install(session, org_installation)
+        if organization is None or not await authz.can(
+            user, AccessType.write, organization
+        ):
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "loc": ("organization_id",),
+                        "msg": "Organization does not exist.",
+                        "type": "value_error",
+                        "input": installation_create.organization_id,
+                    }
+                ]
+            )
 
-        return organization
+        external_organization = await self.create_or_update_from_installation(
+            session, installation
+        )
+        if (
+            external_organization.organization_id is not None
+            and external_organization.organization_id != organization.id
+        ):
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "loc": ("installation_id",),
+                        "msg": (
+                            "This GitHub organization is "
+                            "already connected to another organization."
+                        ),
+                        "type": "value_error",
+                        "input": installation_create.organization_id,
+                    }
+                ]
+            )
 
-    async def install_from_webhook(
-        self, session: AsyncSession, installation: types.Installation
-    ) -> ExternalOrganization:
-        return await self._install(session, installation)
+        external_organization.organization_id = organization.id
+        session.add(external_organization)
+        await session.flush()
 
-    async def _install(
+        return external_organization
+
+    async def create_or_update_from_installation(
         self, session: AsyncSession, installation: types.Installation
     ) -> ExternalOrganization:
         account = installation.account
@@ -131,12 +177,6 @@ class GithubOrganizationService(ExternalOrganizationService):
         await self.populate_org_metadata(session, organization)
 
         await github_repository.install_for_organization(session, organization)
-
-        enqueue_job("organization.post_install", organization_id=organization.id)
-
-        enqueue_job(
-            "github.organization.synchronize_members", organization_id=organization.id
-        )
 
         return organization
 

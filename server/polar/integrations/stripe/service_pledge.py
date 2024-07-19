@@ -8,6 +8,7 @@ from polar.integrations.stripe.schemas import (
     PledgePaymentIntentMetadata,
     ProductType,
 )
+from polar.models.external_organization import ExternalOrganization
 from polar.models.issue import Issue
 from polar.models.organization import Organization
 from polar.models.pledge import Pledge
@@ -131,7 +132,7 @@ class PledgeStripeService:
         pledge: Pledge,
         pledge_issue: Issue,
         pledge_issue_repo: Repository,
-        pledge_issue_org: Organization,
+        pledge_issue_external_org: ExternalOrganization,
     ) -> stripe_lib.Invoice | None:
         customer = await stripe_service.get_or_create_user_customer(session, user)
         if not customer:
@@ -149,7 +150,7 @@ class PledgeStripeService:
             pledge,
             pledge_issue,
             pledge_issue_repo,
-            pledge_issue_org,
+            pledge_issue_external_org,
         )
 
     async def create_organization_pledge_invoice(
@@ -159,7 +160,7 @@ class PledgeStripeService:
         pledge: Pledge,
         pledge_issue: Issue,
         pledge_issue_repo: Repository,
-        pledge_issue_org: Organization,
+        pledge_issue_external_org: ExternalOrganization,
     ) -> stripe_lib.Invoice | None:
         customer = await stripe_service.get_or_create_org_customer(
             session, organization
@@ -182,7 +183,7 @@ class PledgeStripeService:
             pledge,
             pledge_issue,
             pledge_issue_repo,
-            pledge_issue_org,
+            pledge_issue_external_org,
         )
 
     def create_pledge_invoice(
@@ -191,12 +192,12 @@ class PledgeStripeService:
         pledge: Pledge,
         pledge_issue: Issue,
         pledge_issue_repo: Repository,
-        pledge_issue_org: Organization,
+        pledge_issue_external_org: ExternalOrganization,
     ) -> stripe_lib.Invoice | None:
         # Create an invoice, then add line items to it
         invoice = stripe_lib.Invoice.create(
             customer=customer.id,
-            description=f"""You pledged to {pledge_issue_org.slug}/{pledge_issue_repo.name}#{pledge_issue.number} on {pledge.created_at.strftime('%Y-%m-%d')}, which has now been fixed!
+            description=f"""You pledged to {pledge_issue_external_org.name}/{pledge_issue_repo.name}#{pledge_issue.number} on {pledge.created_at.strftime('%Y-%m-%d')}, which has now been fixed!
 
 Thank you for your support!
 """,  # noqa: E501
@@ -217,7 +218,7 @@ Thank you for your support!
             invoice=invoice.id,
             customer=customer.id,
             amount=pledge.amount_including_fee,
-            description=f"Pledge to {pledge_issue_org.slug}/{pledge_issue_repo.name}#{pledge_issue.number}",  # noqa: E501
+            description=f"Pledge to {pledge_issue_external_org.name}/{pledge_issue_repo.name}#{pledge_issue.number}",  # noqa: E501
             currency="USD",
             metadata={
                 "pledge_id": str(pledge.id),

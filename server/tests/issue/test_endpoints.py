@@ -1,9 +1,9 @@
 import pytest
 from httpx import AsyncClient
-from pytest_mock import MockerFixture
 
 from polar.issue.schemas import Reactions
 from polar.issue.service import issue as issue_service
+from polar.models.external_organization import ExternalOrganization
 from polar.models.issue import Issue
 from polar.models.organization import Organization
 from polar.models.pledge import Pledge
@@ -18,7 +18,7 @@ from tests.fixtures.database import SaveFixture
 @pytest.mark.http_auto_expunge
 @pytest.mark.auth
 async def test_get_issue(
-    organization: Organization,
+    external_organization: ExternalOrganization,
     repository: Repository,
     issue: Issue,
     save_fixture: SaveFixture,
@@ -32,14 +32,15 @@ async def test_get_issue(
     assert response.status_code == 200
     assert response.json()["id"] == str(issue.id)
     assert response.json()["repository"]["id"] == str(repository.id)
-    assert response.json()["repository"]["organization"]["id"] == str(organization.id)
+    assert response.json()["repository"]["organization"]["id"] == str(
+        external_organization.id
+    )
 
 
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
 @pytest.mark.auth
 async def test_get_issue_reactions(
-    organization: Organization,
     repository: Repository,
     issue: Issue,
     save_fixture: SaveFixture,
@@ -73,15 +74,15 @@ async def test_get_issue_reactions(
 @pytest.mark.auth
 async def test_get_not_found_private_repo(
     organization: Organization,
-    repository: Repository,
-    issue: Issue,
+    repository_linked: Repository,
+    issue_linked: Issue,
     save_fixture: SaveFixture,
     client: AsyncClient,
 ) -> None:
-    repository.is_private = True
-    await save_fixture(repository)
+    repository_linked.is_private = True
+    await save_fixture(repository_linked)
 
-    response = await client.get(f"/v1/issues/{issue.id}")
+    response = await client.get(f"/v1/issues/{issue_linked.id}")
 
     assert response.status_code == 404
 
@@ -90,20 +91,19 @@ async def test_get_not_found_private_repo(
 @pytest.mark.http_auto_expunge
 @pytest.mark.auth
 async def test_get_private_repo_member(
-    organization: Organization,
-    repository: Repository,
-    issue: Issue,
+    repository_linked: Repository,
+    issue_linked: Issue,
     save_fixture: SaveFixture,
     user_organization: UserOrganization,  # makes User a member of Organization
     client: AsyncClient,
 ) -> None:
-    repository.is_private = True
-    await save_fixture(repository)
+    repository_linked.is_private = True
+    await save_fixture(repository_linked)
 
-    response = await client.get(f"/v1/issues/{issue.id}")
+    response = await client.get(f"/v1/issues/{issue_linked.id}")
 
     assert response.status_code == 200
-    assert response.json()["id"] == str(issue.id)
+    assert response.json()["id"] == str(issue_linked.id)
 
 
 @pytest.mark.asyncio
@@ -111,25 +111,30 @@ async def test_get_private_repo_member(
 @pytest.mark.auth
 async def test_issue_search_public_repo(
     organization: Organization,
-    repository: Repository,
-    issue: Issue,
+    external_organization_linked: ExternalOrganization,
+    repository_linked: Repository,
+    issue_linked: Issue,
     save_fixture: SaveFixture,
     client: AsyncClient,
 ) -> None:
-    repository.is_private = False
-    repository.is_archived = False
-    await save_fixture(repository)
+    repository_linked.is_private = False
+    repository_linked.is_archived = False
+    await save_fixture(repository_linked)
 
     response = await client.get(
-        f"/v1/issues/search?platform=github&organization_name={organization.slug}&repository_name={repository.name}"
+        "/v1/issues/search",
+        params={
+            "organization_id": str(organization.id),
+            "repository_name": repository_linked.name,
+        },
     )
 
     assert response.status_code == 200
     assert len(response.json()["items"]) == 1
-    assert response.json()["items"][0]["id"] == str(issue.id)
-    assert response.json()["items"][0]["repository"]["id"] == str(repository.id)
+    assert response.json()["items"][0]["id"] == str(issue_linked.id)
+    assert response.json()["items"][0]["repository"]["id"] == str(repository_linked.id)
     assert response.json()["items"][0]["repository"]["organization"]["id"] == str(
-        organization.id
+        external_organization_linked.id
     )
 
 
@@ -138,22 +143,25 @@ async def test_issue_search_public_repo(
 @pytest.mark.auth
 async def test_issue_search_public_repo_without_repo_selector(
     organization: Organization,
-    repository: Repository,
-    issue: Issue,
+    repository_linked: Repository,
+    issue_linked: Issue,
     save_fixture: SaveFixture,
     client: AsyncClient,
 ) -> None:
-    repository.is_private = False
-    repository.is_archived = False
-    await save_fixture(repository)
+    repository_linked.is_private = False
+    repository_linked.is_archived = False
+    await save_fixture(repository_linked)
 
     response = await client.get(
-        f"/v1/issues/search?platform=github&organization_name={organization.slug}"
+        "/v1/issues/search",
+        params={
+            "organization_id": str(organization.id),
+        },
     )
 
     assert response.status_code == 200
     assert len(response.json()["items"]) == 1
-    assert response.json()["items"][0]["id"] == str(issue.id)
+    assert response.json()["items"][0]["id"] == str(issue_linked.id)
 
 
 @pytest.mark.asyncio
@@ -161,17 +169,20 @@ async def test_issue_search_public_repo_without_repo_selector(
 @pytest.mark.auth
 async def test_issue_search_private_repo(
     organization: Organization,
-    repository: Repository,
-    issue: Issue,
+    repository_linked: Repository,
     save_fixture: SaveFixture,
     client: AsyncClient,
 ) -> None:
-    repository.is_private = True
-    repository.is_archived = False
-    await save_fixture(repository)
+    repository_linked.is_private = True
+    repository_linked.is_archived = False
+    await save_fixture(repository_linked)
 
     response = await client.get(
-        f"/v1/issues/search?platform=github&organization_name={organization.slug}&repository_name={repository.name}"
+        "/v1/issues/search",
+        params={
+            "organization_id": str(organization.id),
+            "repository_name": repository_linked.name,
+        },
     )
 
     assert response.status_code == 404
@@ -183,17 +194,17 @@ async def test_issue_search_private_repo(
 @pytest.mark.auth
 async def test_issue_search_private_repo_without_repo_selector(
     organization: Organization,
-    repository: Repository,
-    issue: Issue,
+    repository_linked: Repository,
     save_fixture: SaveFixture,
     client: AsyncClient,
 ) -> None:
-    repository.is_private = True
-    repository.is_archived = False
-    await save_fixture(repository)
+    repository_linked.is_private = True
+    repository_linked.is_archived = False
+    await save_fixture(repository_linked)
 
     response = await client.get(
-        f"/v1/issues/search?platform=github&organization_name={organization.slug}"
+        "/v1/issues/search",
+        params={"organization_id": str(organization.id)},
     )
 
     assert response.status_code == 200
@@ -203,9 +214,7 @@ async def test_issue_search_private_repo_without_repo_selector(
 @pytest.mark.asyncio
 @pytest.mark.auth
 async def test_update_funding_goal(
-    organization: Organization,
-    repository: Repository,
-    issue: Issue,
+    issue_linked: Issue,
     session: AsyncSession,
     user_organization: UserOrganization,  # makes User a member of Organization
     client: AsyncClient,
@@ -214,30 +223,30 @@ async def test_update_funding_goal(
     session.expunge_all()
 
     # get, default value should be None
-    response = await client.get(f"/v1/issues/{issue.id}")
+    response = await client.get(f"/v1/issues/{issue_linked.id}")
 
     assert response.status_code == 200
-    assert response.json()["id"] == str(issue.id)
+    assert response.json()["id"] == str(issue_linked.id)
     assert response.json()["funding"]["funding_goal"] is None
 
     # update value
     response = await client.post(
-        f"/v1/issues/{issue.id}",
+        f"/v1/issues/{issue_linked.id}",
         json={"funding_goal": {"currency": "USD", "amount": 12000}},
     )
 
     assert response.status_code == 200
-    assert response.json()["id"] == str(issue.id)
+    assert response.json()["id"] == str(issue_linked.id)
     assert response.json()["funding"]["funding_goal"] == {
         "currency": "USD",
         "amount": 12000,
     }
 
     # get after post, should be persisted
-    response = await client.get(f"/v1/issues/{issue.id}")
+    response = await client.get(f"/v1/issues/{issue_linked.id}")
 
     assert response.status_code == 200
-    assert response.json()["id"] == str(issue.id)
+    assert response.json()["id"] == str(issue_linked.id)
     assert response.json()["funding"]["funding_goal"] == {
         "currency": "USD",
         "amount": 12000,
@@ -248,23 +257,21 @@ async def test_update_funding_goal(
 @pytest.mark.auth
 async def test_confirm_solved(
     organization: Organization,
-    repository: Repository,
-    issue: Issue,
-    pledge: Pledge,
+    issue_linked: Issue,
+    pledge_linked: Pledge,
     session: AsyncSession,
     user_organization: UserOrganization,  # makes User a member of Organization
-    mocker: MockerFixture,
     client: AsyncClient,
     user: User,
 ) -> None:
     # then
     session.expunge_all()
 
-    await issue_service.mark_confirmed_solved(session, issue.id, user.id)
+    await issue_service.mark_confirmed_solved(session, issue_linked.id, user.id)
 
     # fetch pledges
     pledges_response = await client.get(
-        f"/v1/pledges/search?issue_id={pledge.issue_id}"
+        f"/v1/pledges/search?issue_id={pledge_linked.issue_id}"
     )
 
     assert pledges_response.status_code == 200
@@ -273,7 +280,7 @@ async def test_confirm_solved(
 
     # confirm as solved
     response = await client.post(
-        f"/v1/issues/{issue.id}/confirm_solved",
+        f"/v1/issues/{issue_linked.id}/confirm_solved",
         json={
             "splits": [
                 {
@@ -289,11 +296,11 @@ async def test_confirm_solved(
     )
 
     assert response.status_code == 200
-    assert response.json()["id"] == str(issue.id)
+    assert response.json()["id"] == str(issue_linked.id)
 
     # fetch pledges
     pledges_response = await client.get(
-        f"/v1/pledges/search?issue_id={pledge.issue_id}"
+        f"/v1/pledges/search?issue_id={pledge_linked.issue_id}"
     )
 
     assert pledges_response.status_code == 200

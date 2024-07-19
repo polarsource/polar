@@ -26,12 +26,12 @@ async def test_list_by_repository_type_and_status_sorting(
     session: AsyncSession,
     save_fixture: SaveFixture,
     repository: Repository,
-    organization: Organization,
+    external_organization: ExternalOrganization,
 ) -> None:
     # create testdata
     issue_1 = Issue(
         id=uuid.uuid4(),
-        organization_id=organization.id,
+        organization_id=external_organization.id,
         repository_id=repository.id,
         title="issue_1",
         number=secrets.randbelow(100000),
@@ -47,7 +47,7 @@ async def test_list_by_repository_type_and_status_sorting(
 
     issue_2 = Issue(
         id=uuid.uuid4(),
-        organization_id=organization.id,
+        organization_id=external_organization.id,
         repository_id=repository.id,
         title="issue_2",
         number=secrets.randbelow(100000),
@@ -65,7 +65,7 @@ async def test_list_by_repository_type_and_status_sorting(
 
     issue_3 = Issue(
         id=uuid.uuid4(),
-        organization_id=organization.id,
+        organization_id=external_organization.id,
         repository_id=repository.id,
         title="issue_3",
         number=secrets.randbelow(100000),
@@ -83,7 +83,7 @@ async def test_list_by_repository_type_and_status_sorting(
 
     issue_4 = Issue(
         id=uuid.uuid4(),
-        organization_id=organization.id,
+        organization_id=external_organization.id,
         repository_id=repository.id,
         title="issue_4",
         number=secrets.randbelow(100000),
@@ -201,6 +201,7 @@ async def test_list_by_repository_type_and_status_dependencies_pledge(
         by_organization_id=organization.id,
         issue_id=third_party_issue.id,
         repository_id=third_party_repo.id,
+        organization_id=third_party_org.id,
         amount=2000,
         fee=200,
         state=PledgeState.created,
@@ -212,6 +213,7 @@ async def test_list_by_repository_type_and_status_dependencies_pledge(
         id=uuid.uuid4(),
         issue_id=third_party_issue.id,
         repository_id=third_party_repo.id,
+        organization_id=third_party_org.id,
         amount=2100,
         fee=200,
         state=PledgeState.created,
@@ -223,6 +225,7 @@ async def test_list_by_repository_type_and_status_dependencies_pledge(
         id=uuid.uuid4(),
         issue_id=third_party_issue_3.id,
         repository_id=third_party_repo.id,
+        organization_id=third_party_org.id,
         amount=2100,
         fee=200,
         state=PledgeState.created,
@@ -234,6 +237,7 @@ async def test_list_by_repository_type_and_status_dependencies_pledge(
         id=uuid.uuid4(),
         issue_id=third_party_issue_3.id,
         repository_id=third_party_repo.id,
+        organization_id=third_party_org.id,
         amount=2100,
         fee=200,
         state=PledgeState.created,
@@ -311,6 +315,7 @@ async def test_list_by_repository_type_and_status_dependencies_pledge_state(
             by_organization_id=organization.id,
             issue_id=third_party_issue.id,
             repository_id=third_party_repo.id,
+            organization_id=third_party_org.id,
             amount=2000,
             fee=200,
             state=state,
@@ -440,6 +445,6 @@ async def test_transfer(
     for pledge in pledges:
         updated_pledge = await pledge_service.get(session, pledge.id)
         assert updated_pledge is not None
-        assert updated_pledge.organization_id == organization.id
+        assert updated_pledge.organization_id == external_organization.id
         assert updated_pledge.repository_id == new_repository.id
         assert updated_pledge.issue_id == new_issue.id

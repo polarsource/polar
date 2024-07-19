@@ -147,8 +147,8 @@ class Pledge(RecordModel):
     repository_id: Mapped[UUID] = mapped_column(
         PostgresUUID, ForeignKey("repositories.id"), nullable=False
     )
-    organization_id: Mapped[UUID | None] = mapped_column(
-        PostgresUUID, ForeignKey("external_organizations.id"), nullable=True
+    organization_id: Mapped[UUID] = mapped_column(
+        PostgresUUID, ForeignKey("external_organizations.id"), nullable=False
     )
 
     # Stripe Payment Intents (may or may not have been paid)

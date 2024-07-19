@@ -13,6 +13,9 @@ from polar.dashboard.schemas import (
     PaginationResponse,
 )
 from polar.exceptions import ResourceNotFound, Unauthorized
+from polar.external_organization.service import (
+    external_organization as external_organization_service,
+)
 from polar.funding.schemas import PledgesTypeSummaries
 from polar.issue.schemas import Issue as IssueSchema
 from polar.issue.schemas import IssueReferenceRead
@@ -219,8 +222,16 @@ async def dashboard(
                     user, pled, user_memberships
                 )
             )
+
+            external_organization = await external_organization_service.get_linked(
+                session, i.organization_id
+            )
             pledge_schema.authed_can_admin_received = (
-                pledge_service.user_can_admin_received_pledge(pled, user_memberships)
+                external_organization is not None
+                and any(
+                    m.organization_id == external_organization.organization_id
+                    for m in user_memberships
+                )
             )
 
             irefs = issue_pledges.get(i.id, [])

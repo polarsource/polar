@@ -365,8 +365,18 @@ def downgrade() -> None:
         """
     )
 
+    # Relink repositories, issues, pull_requests, and issue_dependencies
     op.drop_constraint(
         op.f("repositories_organization_id_fkey"), "repositories", type_="foreignkey"
+    )
+    op.execute(
+        """
+        UPDATE repositories
+        SET organization_id = organizations.id
+        FROM organizations
+        LEFT JOIN external_organizations ON external_organizations.external_id = organizations.external_id
+        WHERE repositories.organization_id = external_organizations.id;
+        """
     )
     op.create_foreign_key(
         "repositories_organization_id_fkey",
@@ -375,8 +385,18 @@ def downgrade() -> None:
         ["organization_id"],
         ["id"],
     )
+
     op.drop_constraint(
         op.f("pull_requests_organization_id_fkey"), "pull_requests", type_="foreignkey"
+    )
+    op.execute(
+        """
+        UPDATE pull_requests
+        SET organization_id = organizations.id
+        FROM organizations
+        LEFT JOIN external_organizations ON external_organizations.external_id = organizations.external_id
+        WHERE pull_requests.organization_id = external_organizations.id;
+        """
     )
     op.create_foreign_key(
         "pull_requests_organization_id_fkey",
@@ -385,8 +405,18 @@ def downgrade() -> None:
         ["organization_id"],
         ["id"],
     )
+
     op.drop_constraint(
         op.f("issues_organization_id_fkey"), "issues", type_="foreignkey"
+    )
+    op.execute(
+        """
+        UPDATE issues
+        SET organization_id = organizations.id
+        FROM organizations
+        LEFT JOIN external_organizations ON external_organizations.external_id = organizations.external_id
+        WHERE issues.organization_id = external_organizations.id;
+        """
     )
     op.create_foreign_key(
         "issues_organization_id_fkey",
@@ -395,10 +425,20 @@ def downgrade() -> None:
         ["organization_id"],
         ["id"],
     )
+
     op.drop_constraint(
         op.f("issue_dependencies_organization_id_fkey"),
         "issue_dependencies",
         type_="foreignkey",
+    )
+    op.execute(
+        """
+        UPDATE issue_dependencies
+        SET organization_id = organizations.id
+        FROM organizations
+        LEFT JOIN external_organizations ON external_organizations.external_id = organizations.external_id
+        WHERE issue_dependencies.organization_id = external_organizations.id;
+        """
     )
     op.create_foreign_key(
         "issue_dependencies_organization_id_fkey",
@@ -407,6 +447,7 @@ def downgrade() -> None:
         ["organization_id"],
         ["id"],
     )
+
     op.drop_index(
         op.f("ix_external_organizations_modified_at"),
         table_name="external_organizations",

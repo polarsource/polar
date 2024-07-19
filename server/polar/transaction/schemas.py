@@ -8,19 +8,19 @@ from polar.models.transaction import PaymentProcessor, PlatformFeeType, Transact
 from polar.product.schemas import ProductPrice
 
 
-class TransactionRepository(TimestampedSchema):
-    id: UUID4
-    platform: Platforms
-    organization_id: UUID4
-    name: str
-
-
-class TransactionOrganization(TimestampedSchema):
+class TransactionExternalOrganization(TimestampedSchema):
     id: UUID4
     platform: Platforms
     name: str
     avatar_url: str
     is_personal: bool
+
+
+class TransactionRepository(TimestampedSchema):
+    id: UUID4
+    platform: Platforms
+    organization_id: UUID4
+    name: str
 
 
 class TransactionUser(Schema):
@@ -37,7 +37,7 @@ class TransactionIssue(TimestampedSchema):
     number: int
     title: str
 
-    organization: TransactionOrganization
+    organization: TransactionExternalOrganization
     repository: TransactionRepository
 
 
@@ -45,6 +45,12 @@ class TransactionPledge(TimestampedSchema):
     id: UUID4
     state: PledgeState
     issue: TransactionIssue
+
+
+class TransactionOrganization(TimestampedSchema):
+    id: UUID4
+    slug: str
+    avatar_url: str
 
 
 class TransactionDonation(TimestampedSchema):

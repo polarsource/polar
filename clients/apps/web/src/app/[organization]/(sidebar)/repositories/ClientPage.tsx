@@ -1,5 +1,6 @@
 'use client'
 
+import { useHasLinkedExternalOrganizations } from '@/hooks'
 import { organizationPageLink } from '@/utils/nav'
 import { formatStarsNumber } from '@/utils/stars'
 import { useTrafficRecordPageView } from '@/utils/traffic'
@@ -34,7 +35,10 @@ export const ClientPage = ({
   const repositoriesAsCards = repositoriesByStars.slice(0, 4)
   const repositoriesAsList = repositoriesByStars.slice(4)
 
-  if (!organization.has_app_installed) {
+  const hasLinkedExternalOrganizations =
+    useHasLinkedExternalOrganizations(organization)
+
+  if (!hasLinkedExternalOrganizations) {
     return redirect(organizationPageLink(organization))
   }
 

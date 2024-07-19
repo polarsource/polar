@@ -1,5 +1,6 @@
 'use client'
 
+import { useHasLinkedExternalOrganizations } from '@/hooks'
 import { useProducts } from '@/hooks/queries'
 import { organizationPageLink } from '@/utils/nav'
 import { Organization } from '@polar-sh/sdk'
@@ -24,6 +25,9 @@ export const OrganizationPublicPageNav = ({
     isRecurring: false,
   })
   const renderProductsTab = (products?.items?.length ?? 0) > 0
+
+  const hasLinkedExternalOrganizations =
+    useHasLinkedExternalOrganizations(organization)
 
   return (
     <Tabs value={currentTab}>
@@ -71,7 +75,7 @@ export const OrganizationPublicPageNav = ({
           </Link>
         )}
 
-        {organization.has_app_installed && (
+        {hasLinkedExternalOrganizations && (
           <Link href={organizationPageLink(organization, 'repositories')}>
             <TabsTrigger value="repositories" size="small">
               Repositories

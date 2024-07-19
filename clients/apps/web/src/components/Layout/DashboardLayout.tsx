@@ -1,6 +1,7 @@
 'use client'
 
 import LogoIcon from '@/components/Brand/LogoIcon'
+import { useHasLinkedExternalOrganizations } from '@/hooks'
 import { useAuth } from '@/hooks/auth'
 import { useRedirectToGitHubInstallation } from '@/hooks/github'
 import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
@@ -53,8 +54,11 @@ const DashboardSidebar = () => {
   const { currentUser } = useAuth()
 
   const orgContext = useContext(MaintainerOrganizationContext)
-  const currentOrg = orgContext?.organization
+  const currentOrg = orgContext.organization
   const { showCommandPalette } = useDashboard()
+
+  const hasLinkedExternalOrganizations =
+    useHasLinkedExternalOrganizations(currentOrg)
 
   const handleScroll: UIEventHandler<HTMLDivElement> = useCallback((e) => {
     setScrollTop(e.currentTarget.scrollTop)
@@ -91,7 +95,7 @@ const DashboardSidebar = () => {
           onScroll={handleScroll}
         >
           <div>
-            {currentOrg && !currentOrg.has_app_installed && (
+            {currentOrg && !hasLinkedExternalOrganizations && (
               <GitHubAppUpsell organization={currentOrg} />
             )}
             <MaintainerNavigation />

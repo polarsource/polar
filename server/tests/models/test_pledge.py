@@ -1,9 +1,6 @@
 import pytest
 
-from polar.models.issue import Issue
-from polar.models.organization import Organization
-from polar.models.pledge import Pledge
-from polar.models.repository import Repository
+from polar.models import ExternalOrganization, Issue, Pledge, Repository
 from polar.pledge.service import pledge
 from polar.postgres import AsyncSession
 from tests.fixtures.database import SaveFixture
@@ -19,7 +16,7 @@ async def test_pledge(
     session: AsyncSession,
     save_fixture: SaveFixture,
     test_amount: str,
-    organization: Organization,
+    external_organization: ExternalOrganization,
     repository: Repository,
     issue: Issue,
 ) -> None:
@@ -28,7 +25,7 @@ async def test_pledge(
     created = Pledge(
         issue_id=issue.id,
         repository_id=repository.id,
-        organization_id=organization.id,
+        organization_id=external_organization.id,
         email=email,
         amount=int(test_amount),
         fee=0,

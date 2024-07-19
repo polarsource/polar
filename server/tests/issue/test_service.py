@@ -415,10 +415,10 @@ async def test_transfer(
     pledges = [
         await random_objects.create_pledge(
             save_fixture,
-            organization,
+            external_organization,
             old_repository,
             old_issue,
-            pledging_organization,
+            pledging_organization=pledging_organization,
         )
         for _ in range(2)
     ]

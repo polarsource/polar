@@ -511,7 +511,7 @@ async def test_can_read_pledge(
                 amount=12345,
                 fee=0,
                 repository_id=repo.id,
-                organization_id=org.id,
+                organization_id=external_org.id,
                 state=PledgeState.created,
             )
             await save_fixture(pledge)
@@ -614,7 +614,7 @@ async def test_can_write_pledge(
                 amount=12345,
                 fee=0,
                 repository_id=repo.id,
-                organization_id=org.id,
+                organization_id=external_org.id,
                 state=PledgeState.created,
             )
             await save_fixture(pledge)

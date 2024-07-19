@@ -8,7 +8,6 @@ from polar.enums import Platforms
 from polar.models.external_organization import ExternalOrganization
 from polar.models.issue import Issue
 from polar.models.organization import Organization
-from polar.models.pledge import Pledge, PledgeState
 from polar.models.pull_request import PullRequest
 from polar.models.repository import Repository
 from polar.models.user import User
@@ -79,28 +78,6 @@ async def predictable_user(save_fixture: SaveFixture) -> User:
     )
     await save_fixture(user)
     return user
-
-
-@pytest_asyncio.fixture
-async def predictable_pledge(
-    save_fixture: SaveFixture,
-    predictable_organization: Organization,
-    predictable_repository: Repository,
-    predictable_issue: Issue,
-    predictable_pledging_organization: Organization,
-) -> Pledge:
-    pledge = Pledge(
-        id=uuid.uuid4(),
-        by_organization_id=predictable_pledging_organization.id,
-        issue_id=predictable_issue.id,
-        repository_id=predictable_repository.id,
-        organization_id=predictable_organization.id,
-        amount=12345,
-        fee=123,
-        state=PledgeState.created,
-    )
-    await save_fixture(pledge)
-    return pledge
 
 
 @pytest_asyncio.fixture

@@ -9,6 +9,7 @@ from polar.enums import AccountType, Platforms
 from polar.issue.schemas import ConfirmIssueSplit
 from polar.kit.utils import utc_now
 from polar.models.account import Account
+from polar.models.external_organization import ExternalOrganization
 from polar.models.issue import Issue
 from polar.models.organization import Organization
 from polar.models.pledge import Pledge, PledgeState
@@ -122,8 +123,9 @@ async def test_list_rewards_to_user(
     save_fixture: SaveFixture,
     organization: Organization,
     pledging_organization: Organization,
-    issue: Issue,
-    repository: Repository,
+    external_organization_linked: ExternalOrganization,
+    issue_linked: Issue,
+    repository_linked: Repository,
     user: User,
 ) -> None:
     oauth = OAuthAccount(
@@ -140,9 +142,9 @@ async def test_list_rewards_to_user(
     pledge_1 = Pledge(
         id=uuid.uuid4(),
         by_organization_id=pledging_organization.id,
-        issue_id=issue.id,
-        repository_id=repository.id,
-        organization_id=organization.id,
+        issue_id=issue_linked.id,
+        repository_id=repository_linked.id,
+        organization_id=external_organization_linked.id,
         amount=1000,
         fee=0,
         state=PledgeState.created,
@@ -154,9 +156,9 @@ async def test_list_rewards_to_user(
     pledge_2 = Pledge(
         id=uuid.uuid4(),
         by_organization_id=pledging_organization.id,
-        issue_id=issue.id,
-        repository_id=repository.id,
-        organization_id=organization.id,
+        issue_id=issue_linked.id,
+        repository_id=repository_linked.id,
+        organization_id=external_organization_linked.id,
         amount=2000,
         fee=0,
         state=PledgeState.created,
@@ -185,7 +187,7 @@ async def test_list_rewards_to_user(
 
     splits = await pledge_service.create_issue_rewards(
         session,
-        issue.id,
+        issue_linked.id,
         splits=[
             ConfirmIssueSplit(share_thousands=300, github_username="test_gh_user"),
             ConfirmIssueSplit(share_thousands=300, github_username="other_gh_user"),

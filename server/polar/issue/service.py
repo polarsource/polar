@@ -28,6 +28,7 @@ from polar.models.issue_dependency import IssueDependency
 from polar.models.issue_reference import IssueReference
 from polar.models.issue_reward import IssueReward
 from polar.models.notification import Notification
+from polar.models.organization import Organization
 from polar.models.pledge import Pledge, PledgeState
 from polar.models.repository import Repository
 from polar.models.user import User
@@ -177,7 +178,7 @@ class IssueService(ResourceService[Issue, IssueCreate, IssueUpdate]):
         show_closed: bool = False,
         show_closed_if_needs_action: bool = False,
     ) -> tuple[Sequence[Issue], int]:  # (issues, total_issue_count)
-        pledge_by_organization = aliased(ExternalOrganization)
+        pledge_by_organization = aliased(Organization)
         issue_repository = aliased(Repository)
         issue_organization = aliased(ExternalOrganization, name="pledge_organization")
 

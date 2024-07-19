@@ -20,10 +20,12 @@ from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 from polar.kit.db.models import RecordModel
 from polar.kit.extensions.sqlalchemy import PostgresUUID
 from polar.kit.utils import utc_now
-from polar.models.issue import Issue
-from polar.models.organization import Organization
-from polar.models.repository import Repository
-from polar.models.user import User
+
+from .external_organization import ExternalOrganization
+from .issue import Issue
+from .organization import Organization
+from .repository import Repository
+from .user import User
 
 
 class PledgeState(StrEnum):
@@ -146,7 +148,7 @@ class Pledge(RecordModel):
         PostgresUUID, ForeignKey("repositories.id"), nullable=False
     )
     organization_id: Mapped[UUID | None] = mapped_column(
-        PostgresUUID, ForeignKey("organizations.id"), nullable=True
+        PostgresUUID, ForeignKey("external_organizations.id"), nullable=True
     )
 
     # Stripe Payment Intents (may or may not have been paid)
@@ -280,10 +282,10 @@ class Pledge(RecordModel):
         )
 
     @declared_attr
-    def to_organization(cls) -> Mapped[Organization]:
+    def to_organization(cls) -> Mapped[ExternalOrganization]:
         return relationship(
-            Organization,
-            primaryjoin=Organization.id == cls.organization_id,
+            ExternalOrganization,
+            primaryjoin=ExternalOrganization.id == cls.organization_id,
             lazy="raise",
         )
 

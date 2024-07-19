@@ -215,6 +215,16 @@ def upgrade() -> None:
         """
     )
 
+    op.drop_constraint("pledges_organization_id_fkey", "pledges", type_="foreignkey")
+    op.execute(
+        """
+        UPDATE pledges
+        SET organization_id = external_organizations.new_id
+        FROM external_organizations
+        WHERE pledges.organization_id = external_organizations.id;
+        """
+    )
+
     # Drop old ID and rename new_id to id
     op.drop_constraint(op.f("external_organizations_pkey"), "external_organizations")
     op.drop_column("external_organizations", "id")
@@ -365,7 +375,7 @@ def downgrade() -> None:
         """
     )
 
-    # Relink repositories, issues, pull_requests, and issue_dependencies
+    # Relink repositories, issues, pull_requests, issue_dependencies and pledges
     op.drop_constraint(
         op.f("repositories_organization_id_fkey"), "repositories", type_="foreignkey"
     )
@@ -443,6 +453,26 @@ def downgrade() -> None:
     op.create_foreign_key(
         "issue_dependencies_organization_id_fkey",
         "issue_dependencies",
+        "organizations",
+        ["organization_id"],
+        ["id"],
+    )
+
+    op.drop_constraint(
+        op.f("pledges_organization_id_fkey"), "pledges", type_="foreignkey"
+    )
+    op.execute(
+        """
+        UPDATE pledges
+        SET organization_id = organizations.id
+        FROM organizations
+        LEFT JOIN external_organizations ON external_organizations.external_id = organizations.external_id
+        WHERE pledges.organization_id = external_organizations.id;
+        """
+    )
+    op.create_foreign_key(
+        "pledges_organization_id_fkey",
+        "pledges",
         "organizations",
         ["organization_id"],
         ["id"],

@@ -13,7 +13,7 @@ from polar.worker import (
 )
 
 from ..service.issue import github_issue
-from .utils import get_organization_and_repo, github_rate_limit_retry
+from .utils import get_external_organization_and_repo, github_rate_limit_retry
 
 log = structlog.get_logger()
 
@@ -38,16 +38,20 @@ async def embed_badge(
                 )
                 return
 
-            organization, repository = await get_organization_and_repo(
+            (
+                external_organization,
+                repository,
+            ) = await get_external_organization_and_repo(
                 session, issue.organization_id, issue.repository_id
             )
 
             try:
                 await github_issue.embed_badge(
                     session,
-                    organization=organization,
+                    external_organization=external_organization,
                     repository=repository,
                     issue=issue,
+                    organization=external_organization.safe_organization,
                     triggered_from_label=False,
                 )
             except httpx.HTTPError as e:
@@ -75,16 +79,20 @@ async def update_on_issue(
                 )
                 return
 
-            organization, repository = await get_organization_and_repo(
+            (
+                external_organization,
+                repository,
+            ) = await get_external_organization_and_repo(
                 session, issue.organization_id, issue.repository_id
             )
 
             try:
                 await github_issue.update_embed_badge(
                     session,
-                    organization=organization,
+                    external_organization=external_organization,
                     repository=repository,
                     issue=issue,
+                    organization=external_organization.safe_organization,
                 )
             except httpx.HTTPError as e:
                 if ctx["job_try"] <= BADGE_UPDATE_MAX_RETRIES:
@@ -111,16 +119,20 @@ async def remove_badge(
                 )
                 return
 
-            organization, repository = await get_organization_and_repo(
+            (
+                external_organization,
+                repository,
+            ) = await get_external_organization_and_repo(
                 session, issue.organization_id, issue.repository_id
             )
 
             try:
                 await github_issue.remove_badge(
                     session,
-                    organization=organization,
+                    external_organization=external_organization,
                     repository=repository,
                     issue=issue,
+                    organization=external_organization.safe_organization,
                     triggered_from_label=False,
                 )
             except httpx.HTTPError as e:
@@ -140,7 +152,7 @@ async def embed_badge_retroactively_on_repository(
 ) -> None:
     with polar_context.to_execution_context():
         async with AsyncSessionMaker(ctx) as session:
-            organization, repository = await get_organization_and_repo(
+            organization, repository = await get_external_organization_and_repo(
                 session, organization_id, repository_id
             )
 
@@ -153,7 +165,7 @@ async def embed_badge_retroactively_on_repository(
             for i in await github_issue.list_issues_to_add_badge_to_auto(
                 session=session,
                 repository=repository,
-                organization=organization,
+                external_organization=organization,
             ):
                 enqueue_job("github.badge.embed_on_issue", i.id)
 
@@ -168,7 +180,7 @@ async def remove_badges_on_repository(
 ) -> None:
     with polar_context.to_execution_context():
         async with AsyncSessionMaker(ctx) as session:
-            organization, repository = await get_organization_and_repo(
+            organization, repository = await get_external_organization_and_repo(
                 session, organization_id, repository_id
             )
 
@@ -179,6 +191,6 @@ async def remove_badges_on_repository(
             for i in await github_issue.list_issues_to_remove_badge_from_auto(
                 session=session,
                 repository=repository,
-                organization=organization,
+                external_organization=organization,
             ):
                 enqueue_job("github.badge.remove_on_issue", i.id)

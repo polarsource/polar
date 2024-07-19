@@ -3,6 +3,7 @@ from collections.abc import Sequence
 from typing import Any
 
 from sqlalchemy import Select, UnaryExpression, asc, desc, select
+from sqlalchemy.orm import joinedload
 
 from polar.auth.models import Anonymous, AuthSubject, is_organization
 from polar.enums import Platforms
@@ -57,6 +58,22 @@ class ExternalOrganizationService(ResourceServiceReader[ExternalOrganization]):
         self, session: AsyncSession, platform: Platforms, external_id: int
     ) -> ExternalOrganization | None:
         return await self.get_by(session, platform=platform, external_id=external_id)
+
+    async def get_linked(
+        self, session: AsyncSession, id: uuid.UUID
+    ) -> ExternalOrganization | None:
+        statement = (
+            select(ExternalOrganization)
+            .where(
+                ExternalOrganization.id == id,
+                ExternalOrganization.deleted_at.is_(None),
+                ExternalOrganization.organization_id.isnot(None),
+            )
+            .options(joinedload(ExternalOrganization.organization))
+        )
+
+        result = await session.execute(statement)
+        return result.scalar_one_or_none()
 
     def _get_readable_external_organization_statement(
         self, auth_subject: AuthSubject[Anonymous | User | Organization]

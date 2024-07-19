@@ -6,8 +6,10 @@ from fastapi.responses import HTMLResponse
 from polar.auth.dependencies import WebUser, WebUserOrAnonymous
 from polar.authz.service import AccessType, Authz
 from polar.dashboard.schemas import IssueSortBy
-from polar.enums import Platforms
 from polar.exceptions import ResourceNotFound, Unauthorized
+from polar.external_organization.service import (
+    external_organization as external_organization_service,
+)
 from polar.integrations.github.badge import GithubBadge
 from polar.integrations.github.client import get_polar_client
 from polar.integrations.github.service.issue import github_issue as github_issue_service
@@ -17,6 +19,7 @@ from polar.kit.db.postgres import AsyncSessionMaker
 from polar.kit.pagination import ListResource, Pagination
 from polar.locker import Locker, get_locker
 from polar.openapi import IN_DEVELOPMENT_ONLY
+from polar.organization.schemas import OrganizationID
 from polar.organization.service import organization as organization_service
 from polar.pledge.service import pledge as pledge_service
 from polar.postgres import AsyncSession, get_db_session, get_db_sessionmaker
@@ -48,8 +51,7 @@ router = APIRouter(tags=["issues"])
 )
 async def search(
     auth_subject: WebUserOrAnonymous,
-    platform: Platforms,
-    organization_name: str,
+    organization_id: OrganizationID,
     repository_name: str | None = None,
     sort: IssueSortBy = Query(
         default=IssueSortBy.issues_default, description="Issue sorting method"
@@ -69,7 +71,7 @@ async def search(
     session: AsyncSession = Depends(get_db_session),
     authz: Authz = Depends(Authz.authz),
 ) -> ListResource[IssueSchema]:
-    org = await organization_service.get_by_name(session, platform, organization_name)
+    org = await organization_service.get(session, organization_id)
     if not org:
         raise HTTPException(
             status_code=404,
@@ -79,31 +81,19 @@ async def search(
     all_org_repos = await repository_service.list_by(
         session,
         organization_id=[org.id],
+        repository_name=repository_name,
     )
     all_org_repos = [
         r for r in all_org_repos if r.is_private is False and r.is_archived is False
     ]
 
-    if repository_name:
-        repo = await repository_service.get_by(
-            session,
-            organization_id=org.id,
-            name=repository_name,
-            is_private=False,
-            is_archived=False,
-            deleted_at=None,
+    if repository_name and not all_org_repos:
+        raise HTTPException(
+            status_code=404,
+            detail="Repository not found",
         )
 
-        if not repo:
-            raise HTTPException(
-                status_code=404,
-                detail="Repository not found",
-            )
-
-        issues_in_repos = [repo]
-    else:
-        issues_in_repos = all_org_repos
-
+    issues_in_repos = all_org_repos
     issues_in_repos_ids = [r.id for r in issues_in_repos]
 
     (issues, count) = await issue_service.list_by_repository_type_and_status(
@@ -451,15 +441,19 @@ async def add_polar_badge(
     if not await authz.can(auth_subject.subject, AccessType.write, issue):
         raise Unauthorized()
 
-    org = await organization_service.get(session, issue.organization_id)
-    if not org:
+    external_org = await external_organization_service.get_linked(
+        session, issue.organization_id
+    )
+    if not external_org:
         raise ResourceNotFound()
 
     repo = await repository_service.get(session, issue.repository_id)
     if not repo:
         raise ResourceNotFound()
 
-    issue = await github_issue_service.add_polar_label(session, org, repo, issue)
+    issue = await github_issue_service.add_polar_label(
+        session, external_org, repo, issue
+    )
 
     # get for return
     issue_ret = await issue_service.get_loaded(session, issue.id)
@@ -487,15 +481,19 @@ async def remove_polar_badge(
     if not await authz.can(auth_subject.subject, AccessType.write, issue):
         raise Unauthorized()
 
-    org = await organization_service.get(session, issue.organization_id)
-    if not org:
+    external_org = await external_organization_service.get_linked(
+        session, issue.organization_id
+    )
+    if not external_org:
         raise ResourceNotFound()
 
     repo = await repository_service.get(session, issue.repository_id)
     if not repo:
         raise ResourceNotFound()
 
-    issue = await github_issue_service.remove_polar_label(session, org, repo, issue)
+    issue = await github_issue_service.remove_polar_label(
+        session, external_org, repo, issue
+    )
 
     # get for return
     issue_ret = await issue_service.get_loaded(session, issue.id)
@@ -525,8 +523,10 @@ async def add_issue_comment(
     if not await authz.can(auth_subject.subject, AccessType.write, issue):
         raise Unauthorized()
 
-    org = await organization_service.get(session, issue.organization_id)
-    if not org:
+    external_org = await external_organization_service.get_linked(
+        session, issue.organization_id
+    )
+    if not external_org:
         raise ResourceNotFound()
 
     repo = await repository_service.get(session, issue.repository_id)
@@ -537,16 +537,17 @@ async def add_issue_comment(
 
     if comment.append_badge:
         badge = GithubBadge(
-            organization=org,
+            external_organization=external_org,
             repository=repo,
             issue=issue,
+            organization=external_org.safe_organization,
         )
         # Crucial with newlines. See: https://github.com/polarsource/polar/issues/868
         message += "\n\n"
         message += badge.badge_markdown("")
 
     await github_issue_service.add_comment_as_user(
-        session, locker, org, repo, issue, auth_subject.subject, message
+        session, locker, external_org, repo, issue, auth_subject.subject, message
     )
 
     # get for return
@@ -576,8 +577,10 @@ async def badge_with_message(
     if not await authz.can(auth_subject.subject, AccessType.write, issue):
         raise Unauthorized()
 
-    org = await organization_service.get(session, issue.organization_id)
-    if not org:
+    external_org = await external_organization_service.get_linked(
+        session, issue.organization_id
+    )
+    if not external_org:
         raise ResourceNotFound()
 
     repo = await repository_service.get(session, issue.repository_id)
@@ -590,9 +593,10 @@ async def badge_with_message(
 
     await github_issue_service.embed_badge(
         session,
-        organization=org,
+        external_organization=external_org,
         repository=repo,
         issue=issue,
+        organization=external_org.safe_organization,
         triggered_from_label=True,
     )
 

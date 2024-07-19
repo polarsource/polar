@@ -27,7 +27,7 @@ from polar.kit.extensions.sqlalchemy import sql
 from polar.kit.utils import utc_now
 from polar.locker import Locker
 from polar.logging import Logger
-from polar.models import ExternalOrganization, Issue, Repository
+from polar.models import ExternalOrganization, Issue, Organization, Repository
 from polar.models.user import User
 from polar.redis import redis
 from polar.repository.hooks import (
@@ -174,13 +174,14 @@ class GithubIssueService(IssueService):
         self,
         session: AsyncSession,
         *,
-        organization: ExternalOrganization,
+        external_organization: ExternalOrganization,
         repository: Repository,
         issue: Issue,
+        organization: Organization,
         triggered_from_label: bool,
     ) -> bool:
         (should, reason) = GithubBadge.should_add_badge(
-            organization=organization,
+            external_organization=external_organization,
             repository=repository,
             issue=issue,
             triggered_from_label=triggered_from_label,
@@ -195,7 +196,10 @@ class GithubIssueService(IssueService):
             return False
 
         badge = GithubBadge(
-            organization=organization, repository=repository, issue=issue
+            external_organization=external_organization,
+            repository=repository,
+            issue=issue,
+            organization=organization,
         )
         await badge.embed()
 
@@ -218,13 +222,14 @@ class GithubIssueService(IssueService):
         self,
         session: AsyncSession,
         *,
-        organization: ExternalOrganization,
+        external_organization: ExternalOrganization,
         repository: Repository,
         issue: Issue,
+        organization: Organization,
         triggered_from_label: bool,
     ) -> bool:
         (should, reason) = GithubBadge.should_remove_badge(
-            organization=organization,
+            external_organization=external_organization,
             repository=repository,
             issue=issue,
             triggered_from_label=triggered_from_label,
@@ -239,7 +244,10 @@ class GithubIssueService(IssueService):
             return False
 
         badge = GithubBadge(
-            organization=organization, repository=repository, issue=issue
+            external_organization=external_organization,
+            repository=repository,
+            issue=issue,
+            organization=organization,
         )
         # TODO: Abort unless not successful
         await badge.remove()
@@ -263,9 +271,10 @@ class GithubIssueService(IssueService):
         self,
         session: AsyncSession,
         *,
-        organization: ExternalOrganization,
+        external_organization: ExternalOrganization,
         repository: Repository,
         issue: Issue,
+        organization: Organization,
     ) -> bool:
         if not issue.pledge_badge_currently_embedded:
             log.info(
@@ -276,7 +285,10 @@ class GithubIssueService(IssueService):
             return False
 
         badge = GithubBadge(
-            organization=organization, repository=repository, issue=issue
+            external_organization=external_organization,
+            repository=repository,
+            issue=issue,
+            organization=organization,
         )
         await badge.embed()
 
@@ -448,7 +460,7 @@ class GithubIssueService(IssueService):
     async def list_issues_to_add_badge_to_auto(
         self,
         session: AsyncSession,
-        organization: ExternalOrganization,
+        external_organization: ExternalOrganization,
         repository: Repository,
     ) -> Sequence[Issue]:
         (issues, _) = await self.list_by_repository_type_and_status(
@@ -459,7 +471,7 @@ class GithubIssueService(IssueService):
 
         def filter(issue: Issue) -> bool:
             (should, _) = GithubBadge.should_add_badge(
-                organization=organization,
+                external_organization=external_organization,
                 repository=repository,
                 issue=issue,
                 triggered_from_label=False,
@@ -473,7 +485,7 @@ class GithubIssueService(IssueService):
     async def list_issues_to_remove_badge_from_auto(
         self,
         session: AsyncSession,
-        organization: ExternalOrganization,
+        external_organization: ExternalOrganization,
         repository: Repository,
     ) -> Sequence[Issue]:
         (issues, _) = await self.list_by_repository_type_and_status(
@@ -484,7 +496,7 @@ class GithubIssueService(IssueService):
 
         def filter(issue: Issue) -> bool:
             (should, _) = GithubBadge.should_remove_badge(
-                organization=organization,
+                external_organization=external_organization,
                 repository=repository,
                 issue=issue,
                 triggered_from_label=False,

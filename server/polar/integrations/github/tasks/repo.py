@@ -12,7 +12,7 @@ from polar.worker import (
     task,
 )
 
-from .utils import get_organization_and_repo, github_rate_limit_retry
+from .utils import get_external_organization_and_repo, github_rate_limit_retry
 
 log = structlog.get_logger()
 
@@ -49,7 +49,7 @@ async def sync_repository_issues(
 ) -> None:
     with polar_context.to_execution_context():
         async with AsyncSessionMaker(ctx) as session:
-            organization, repository = await get_organization_and_repo(
+            organization, repository = await get_external_organization_and_repo(
                 session, organization_id, repository_id
             )
             await service.github_issue.sync_issues(
@@ -71,7 +71,7 @@ async def sync_repository_pull_requests(
 ) -> None:
     with polar_context.to_execution_context():
         async with AsyncSessionMaker(ctx) as session:
-            organization, repository = await get_organization_and_repo(
+            organization, repository = await get_external_organization_and_repo(
                 session, organization_id, repository_id
             )
             await service.github_pull_request.sync_pull_requests(
@@ -100,7 +100,7 @@ async def repo_sync_issue_references(
 ) -> None:
     with polar_context.to_execution_context():
         async with AsyncSessionMaker(ctx) as session:
-            organization, repository = await get_organization_and_repo(
+            organization, repository = await get_external_organization_and_repo(
                 session, organization_id, repository_id
             )
             await service.github_reference.sync_repo_references(

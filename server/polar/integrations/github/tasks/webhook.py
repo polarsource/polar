@@ -24,7 +24,7 @@ from polar.worker import (
 
 from .. import service, types
 from .utils import (
-    get_organization_and_repo,
+    get_external_organization_and_repo,
     github_rate_limit_retry,
 )
 
@@ -692,13 +692,13 @@ async def update_issue_embed(
     embed: bool = False,
 ) -> bool:
     try:
-        org, repo = await get_organization_and_repo(
+        external_org, repo = await get_external_organization_and_repo(
             session, issue.organization_id, issue.repository_id
         )
     except ValueError:
         log.error(
             "github.webhook.issues.badge",
-            error="no org/repo",
+            error="no external org/repo",
             issue_id=issue.id,
         )
         return False
@@ -706,9 +706,10 @@ async def update_issue_embed(
     if embed:
         res = await service.github_issue.embed_badge(
             session,
-            organization=org,
+            external_organization=external_org,
             repository=repo,
             issue=issue,
+            organization=external_org.safe_organization,
             triggered_from_label=True,
         )
         log.info(
@@ -726,9 +727,10 @@ async def update_issue_embed(
     # However, we need to first update `remove_badge` to return a true bool
     return await service.github_issue.remove_badge(
         session,
-        organization=org,
+        external_organization=external_org,
         repository=repo,
         issue=issue,
+        organization=external_org.safe_organization,
         triggered_from_label=True,
     )
 

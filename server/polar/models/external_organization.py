@@ -24,9 +24,16 @@ if TYPE_CHECKING:
     from polar.models.organization import Organization
 
 
-class NotInstalledOrganization(PolarError):
+class NotInstalledExternalOrganization(PolarError):
     def __init__(self) -> None:
-        super().__init__("This organization is not installed.")
+        super().__init__("This external organization is not installed.")
+
+
+class NotLinkedOrganization(PolarError):
+    def __init__(self) -> None:
+        super().__init__(
+            "This external organization is not linked to a Polar organization."
+        )
 
 
 class ExternalOrganization(RecordModel):
@@ -108,5 +115,11 @@ class ExternalOrganization(RecordModel):
     @property
     def safe_installation_id(self) -> int:
         if self.installation_id is None:
-            raise NotInstalledOrganization()
+            raise NotInstalledExternalOrganization()
         return self.installation_id
+
+    @property
+    def safe_organization(self) -> "Organization":
+        if self.organization is None:
+            raise NotLinkedOrganization()
+        return self.organization

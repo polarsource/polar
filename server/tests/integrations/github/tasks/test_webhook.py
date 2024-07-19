@@ -950,12 +950,14 @@ async def test_webhook_repository_transferred(
     github_webhook: TestWebhookFactory,
     repository: Repository,
 ) -> None:
-    new_organization = await random_objects.create_organization(save_fixture)
+    new_external_organization = await random_objects.create_external_organization(
+        save_fixture
+    )
 
     hook = github_webhook.create("repository.transferred")
     hook["repository"]["id"] = repository.external_id
     hook["repository"]["name"] = repository.name
-    hook["repository"]["owner"]["id"] = new_organization.external_id
+    hook["repository"]["owner"]["id"] = new_external_organization.external_id
 
     # then
     session.expunge_all()
@@ -972,7 +974,7 @@ async def test_webhook_repository_transferred(
         session, repository.external_id
     )
     assert updated_repository is not None
-    assert updated_repository.organization_id == new_organization.id
+    assert updated_repository.organization_id == new_external_organization.id
 
 
 @pytest.mark.asyncio
@@ -984,12 +986,14 @@ async def test_webhook_repository_transferred_duplicate_name(
     github_webhook: TestWebhookFactory,
     repository: Repository,
 ) -> None:
-    new_organization = await random_objects.create_organization(save_fixture)
+    new_external_organization = await random_objects.create_external_organization(
+        save_fixture
+    )
 
     hook = github_webhook.create("repository.transferred")
     hook["repository"]["id"] = repository.external_id
     hook["repository"]["name"] = repository.name
-    hook["repository"]["owner"]["id"] = new_organization.external_id
+    hook["repository"]["owner"]["id"] = new_external_organization.external_id
 
     # A _deleted_ repository with the same name already exists in new_organization
     deleted_repo = Repository(
@@ -997,7 +1001,7 @@ async def test_webhook_repository_transferred_duplicate_name(
         name=repository.name,
         platform=repository.platform,
         is_private=True,
-        organization_id=new_organization.id,
+        organization_id=new_external_organization.id,
         deleted_at=utils.utc_now(),
     )
     await save_fixture(deleted_repo)
@@ -1017,7 +1021,7 @@ async def test_webhook_repository_transferred_duplicate_name(
         session, repository.external_id
     )
     assert updated_repository is not None
-    assert updated_repository.organization_id == new_organization.id
+    assert updated_repository.organization_id == new_external_organization.id
 
 
 @pytest.mark.asyncio

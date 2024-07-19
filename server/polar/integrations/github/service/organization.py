@@ -213,7 +213,7 @@ class GithubOrganizationService(ExternalOrganizationService):
 
     async def remove(self, session: AsyncSession, org_id: UUID) -> None:
         # mark all repositories as deleted
-        repos = await github_repository.list_by(session, org_ids=[org_id])
+        repos = await github_repository.list_by(session, organization_id=[org_id])
         for repo in repos:
             await github_repository.soft_delete(session, repo.id)
 

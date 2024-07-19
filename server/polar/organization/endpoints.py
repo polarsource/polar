@@ -352,7 +352,7 @@ async def get_badge_settings(
         raise Unauthorized()
 
     repositories = await repository_service.list_by(
-        session, org_ids=[org.id], order_by_open_source=True
+        session, organization_id=[org.id], order_by_open_source=True
     )
 
     synced = await repository_service.get_repositories_synced_count(session, org)

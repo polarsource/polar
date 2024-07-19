@@ -23,6 +23,9 @@ from polar.exceptions import (
     NotPermitted,
     ResourceNotFound,
 )
+from polar.external_organization.service import (
+    external_organization as external_organization_service,
+)
 from polar.funding.funding_schema import Funding
 from polar.funding.schemas import PledgesSummary as FundingPledgesSummary
 from polar.funding.schemas import PledgesTypeSummaries
@@ -320,25 +323,34 @@ class PledgeService(ResourceServiceReader[Pledge]):
         if not issue:
             raise Exception("issue not found")
 
-        org = await organization_service.get(session, issue.organization_id)
-        if not org:
+        external_org = await external_organization_service.get(
+            session, issue.organization_id
+        )
+        if not external_org:
             raise Exception("org not found")
+
+        # This organization is not linked to a Polar organization,
+        # don't send any notifications
+        if not external_org.organization_id:
+            return
 
         repo = await repository_service.get(session, issue.repository_id)
         if not repo:
             raise Exception("repo not found")
 
+        org = await organization_service.get(session, external_org.organization_id)
+        assert org is not None
+
         org_account: Account | None = None
-        if org.account_id is not None:
-            org_account = await account_service.get_by_id(session, org.account_id)
+        org_account = await account_service.get_by_organization_id(session, org.id)
 
         pledge_amount_sum = sum([p.amount for p in pledges])
 
         n = MaintainerPledgedIssueConfirmationPendingNotificationPayload(
             pledge_amount_sum=get_cents_in_dollar_string(pledge_amount_sum),
-            issue_url=f"https://github.com/{org.slug}/{repo.name}/issues/{issue.number}",
+            issue_url=f"https://github.com/{external_org.name}/{repo.name}/issues/{issue.number}",
             issue_title=issue.title,
-            issue_org_name=org.slug,
+            issue_org_name=external_org.name,
             issue_repo_name=repo.name,
             issue_number=issue.number,
             maintainer_has_account=True if org_account else False,
@@ -419,26 +431,34 @@ class PledgeService(ResourceServiceReader[Pledge]):
         if not issue:
             raise Exception("issue not found")
 
-        org = await organization_service.get(session, issue.organization_id)
-        if not org:
+        external_org = await external_organization_service.get(
+            session, issue.organization_id
+        )
+        if not external_org:
             raise Exception("org not found")
+
+        # This organization is not linked to a Polar organization,
+        # don't send any notifications
+        if not external_org.organization_id:
+            return
 
         repo = await repository_service.get(session, issue.repository_id)
         if not repo:
             raise Exception("repo not found")
 
-        org_account: Account | None = None
-        if org.account_id is not None:
-            org_account = await account_service.get_by_id(session, org.account_id)
+        org = await organization_service.get(session, external_org.organization_id)
+        assert org is not None
 
+        org_account: Account | None = None
+        org_account = await account_service.get_by_organization_id(session, org.id)
         pledge_amount_sum = sum([p.amount for p in pledges])
 
         # Thanks for confirming that X is completed...
         n = MaintainerPledgedIssuePendingNotificationPayload(
             pledge_amount_sum=get_cents_in_dollar_string(pledge_amount_sum),
-            issue_url=f"https://github.com/{org.slug}/{repo.name}/issues/{issue.number}",
+            issue_url=f"https://github.com/{external_org.name}/{repo.name}/issues/{issue.number}",
             issue_title=issue.title,
-            issue_org_name=org.slug,
+            issue_org_name=external_org.name,
             issue_repo_name=repo.name,
             issue_number=issue.number,
             maintainer_has_account=True if org_account else False,
@@ -468,8 +488,10 @@ class PledgeService(ResourceServiceReader[Pledge]):
         if not issue:
             raise Exception("issue not found")
 
-        org = await organization_service.get(session, issue.organization_id)
-        if not org:
+        external_org = await external_organization_service.get(
+            session, issue.organization_id
+        )
+        if not external_org:
             raise Exception("org not found")
 
         repo = await repository_service.get(session, issue.repository_id)
@@ -484,9 +506,9 @@ class PledgeService(ResourceServiceReader[Pledge]):
 
         n = TeamAdminMemberPledgedNotificationPayload(
             pledge_amount=get_cents_in_dollar_string(pledge.amount),
-            issue_url=f"https://github.com/{org.slug}/{repo.name}/issues/{issue.number}",
+            issue_url=f"https://github.com/{external_org.name}/{repo.name}/issues/{issue.number}",
             issue_title=issue.title,
-            issue_org_name=org.slug,
+            issue_org_name=external_org.name,
             issue_repo_name=repo.name,
             issue_number=issue.number,
             team_member_name=created_by_user.username_or_email,
@@ -517,8 +539,10 @@ class PledgeService(ResourceServiceReader[Pledge]):
         if not issue:
             raise Exception("issue not found")
 
-        org = await organization_service.get(session, issue.organization_id)
-        if not org:
+        external_org = await external_organization_service.get(
+            session, issue.organization_id
+        )
+        if not external_org:
             raise Exception("org not found")
 
         repo = await repository_service.get(session, issue.repository_id)
@@ -528,9 +552,9 @@ class PledgeService(ResourceServiceReader[Pledge]):
         pledger_notif = PledgerPledgePendingNotificationPayload(
             pledge_amount=get_cents_in_dollar_string(pledge.amount),
             pledge_date=pledge.created_at.strftime("%Y-%m-%d"),
-            issue_url=f"https://github.com/{org.slug}/{repo.name}/issues/{issue.number}",
+            issue_url=f"https://github.com/{external_org.name}/{repo.name}/issues/{issue.number}",
             issue_title=issue.title,
-            issue_org_name=org.slug,
+            issue_org_name=external_org.name,
             issue_repo_name=repo.name,
             issue_number=issue.number,
             pledge_id=pledge.id,
@@ -908,9 +932,11 @@ class PledgeService(ResourceServiceReader[Pledge]):
             log.error("pledge_paid_notification.no_issue_found")
             return
 
-        org = await organization_service.get(session, issue.organization_id)
-        if not org:
-            log.error("pledge_paid_notification.no_org_found")
+        external_org = await external_organization_service.get(
+            session, issue.organization_id
+        )
+        if not external_org:
+            log.error("pledge_paid_notification.no_external_org_found")
             return
 
         repo = await repository_service.get(session, issue.repository_id)
@@ -919,9 +945,9 @@ class PledgeService(ResourceServiceReader[Pledge]):
             return
 
         n = RewardPaidNotificationPayload(
-            issue_url=f"https://github.com/{org.slug}/{repo.name}/issues/{issue.number}",
+            issue_url=f"https://github.com/{external_org.name}/{repo.name}/issues/{issue.number}",
             issue_title=issue.title,
-            issue_org_name=org.slug,
+            issue_org_name=external_org.name,
             issue_repo_name=repo.name,
             issue_number=issue.number,
             paid_out_amount=get_cents_in_dollar_string(transaction.amount),
@@ -1083,12 +1109,12 @@ class PledgeService(ResourceServiceReader[Pledge]):
         assert full_pledge
 
         # send webhooks to receiving organization
-        if receiving_org := await organization_service.get(
+        if receiving_external_org := await external_organization_service.get_linked(
             session, pledge.organization_id
         ):
             await webhook_service.send(
                 session,
-                receiving_org,
+                receiving_external_org.safe_organization,
                 (WebhookEventType.pledge_created, full_pledge),
             )
 
@@ -1103,12 +1129,12 @@ class PledgeService(ResourceServiceReader[Pledge]):
         await pledge_updated.call(PledgeHook(session, full_pledge))
 
         # send webhooks to receiving organization
-        if receiving_org := await organization_service.get(
+        if receiving_external_org := await external_organization_service.get_linked(
             session, pledge.organization_id
         ):
             await webhook_service.send(
                 session,
-                receiving_org,
+                receiving_external_org.safe_organization,
                 (WebhookEventType.pledge_updated, full_pledge),
             )
 
@@ -1158,10 +1184,10 @@ class PledgeService(ResourceServiceReader[Pledge]):
         if not pledge_issue_repo:
             raise ResourceNotFound()
 
-        pledge_issue_org = await organization_service.get(
+        pledge_issue_external_org = await external_organization_service.get(
             session, pledge_issue.organization_id
         )
-        if not pledge_issue_org:
+        if not pledge_issue_external_org:
             raise ResourceNotFound()
 
         invoice: stripe_lib.Invoice | None = None
@@ -1177,7 +1203,7 @@ class PledgeService(ResourceServiceReader[Pledge]):
                 pledge=pledge,
                 pledge_issue=pledge_issue,
                 pledge_issue_repo=pledge_issue_repo,
-                pledge_issue_org=pledge_issue_org,
+                pledge_issue_external_org=pledge_issue_external_org,
             )
         elif pledge.by_organization_id:
             pledger_org = await organization_service.get(
@@ -1192,7 +1218,7 @@ class PledgeService(ResourceServiceReader[Pledge]):
                 pledge=pledge,
                 pledge_issue=pledge_issue,
                 pledge_issue_repo=pledge_issue_repo,
-                pledge_issue_org=pledge_issue_org,
+                pledge_issue_external_org=pledge_issue_external_org,
             )
         else:
             raise NotPermitted("Pledger is not user or org")
@@ -1230,20 +1256,6 @@ class PledgeService(ResourceServiceReader[Pledge]):
                     return True
 
         return False
-
-    def user_can_admin_received_pledge(
-        self, pledge: Pledge, memberships: Sequence[UserOrganization]
-    ) -> bool:
-        """
-        Returns true if the User can modify the pledge on behalf of the entity that
-        received the pledge, such as confirming it, and managing payouts.
-        """
-        return any(m.organization_id == pledge.organization_id for m in memberships)
-
-    def user_can_admin_received_pledge_on_issue(
-        self, issue: Issue, memberships: Sequence[UserOrganization]
-    ) -> bool:
-        return any(m.organization_id == issue.organization_id for m in memberships)
 
     async def issue_pledge_summary(
         self, session: AsyncSession, issue: Issue

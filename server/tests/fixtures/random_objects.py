@@ -338,7 +338,7 @@ async def create_user_pledge(
         created_by_user=pledging_user,
         issue=issue,
         to_repository=repository,
-        organization=external_organization,
+        to_organization=external_organization,
         amount=amount,
         fee=fee,
         state=state,

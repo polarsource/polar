@@ -11,7 +11,7 @@ from polar.external_organization.service import (
     external_organization as external_organization_service,
 )
 from polar.integrations.github.badge import GithubBadge
-from polar.integrations.github.client import get_polar_client
+from polar.integrations.github.client import Forbidden, get_polar_client
 from polar.integrations.github.service.issue import github_issue as github_issue_service
 from polar.integrations.github.service.url import github_url
 from polar.issue.body import IssueBodyRenderer, get_issue_body_renderer
@@ -369,22 +369,21 @@ async def confirm(
         )
 
     if not await authz.can(auth_subject.subject, AccessType.write, issue):
-        raise HTTPException(
-            status_code=401,
-            detail="Unauthorized",
-        )
+        raise Forbidden()
 
-    user_memberships = await user_organization_service.list_by_user_id(
-        session, auth_subject.subject.id
+    external_organization = await external_organization_service.get_linked(
+        session, issue.organization_id
     )
+    if external_organization is None:
+        raise Forbidden()
 
-    if not pledge_service.user_can_admin_received_pledge_on_issue(
-        issue, user_memberships
-    ):
-        raise HTTPException(
-            status_code=401,
-            detail="Access denied",
+    if (
+        await user_organization_service.get_by_user_and_org(
+            session, auth_subject.subject.id, external_organization.safe_organization.id
         )
+        is None
+    ):
+        raise Forbidden()
 
     try:
         await pledge_service.create_issue_rewards(

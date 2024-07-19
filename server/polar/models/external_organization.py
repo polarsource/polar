@@ -51,7 +51,7 @@ class ExternalOrganization(RecordModel):
     )
 
     @declared_attr
-    def organization(cls) -> Mapped["Organization"]:
+    def organization(cls) -> Mapped["Organization | None"]:
         return relationship("Organization", lazy="raise")
 
     platform: Mapped[Platforms] = mapped_column(StringEnum(Platforms), nullable=False)

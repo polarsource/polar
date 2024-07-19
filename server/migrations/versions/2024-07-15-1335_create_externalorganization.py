@@ -270,26 +270,6 @@ def upgrade() -> None:
         ["id"],
     )
 
-    # Need to nullify pledges on non-installed organizations
-    op.alter_column(
-        "pledges",
-        "organization_id",
-        existing_type=sa.UUID(),
-        nullable=True,
-        existing_nullable=False,
-    )
-    op.execute(
-        """
-        UPDATE pledges
-        SET organization_id = NULL
-        WHERE organization_id IN (
-            SELECT id FROM organizations
-            WHERE installation_created_at IS NULL
-            AND created_from_user_maintainer_upgrade IS FALSE
-        );
-        """
-    )
-
     # Drop sync-only organizations from organizations
     # Need to drop traffic recorded for these organizations
     op.execute(

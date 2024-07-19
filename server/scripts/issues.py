@@ -42,7 +42,7 @@ async def delete_invalid_issues(org_name: str) -> None:
 
         client = github.get_app_installation_client(org.safe_installation_id)
 
-        repos = await github_repository.list_by(session, org_ids=[org.id])
+        repos = await github_repository.list_by(session, organization_id=[org.id])
 
         for repo in repos:
             typer.echo(f"Checking {repo.name}")

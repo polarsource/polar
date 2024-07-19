@@ -184,15 +184,27 @@ class RepositoryService(
         self,
         session: AsyncSession,
         *,
-        org_ids: Sequence[UUID],
+        organization_id: Sequence[UUID] | None = None,
+        external_organization_id: Sequence[UUID] | None = None,
         repository_name: str | None = None,
         load_organization: bool = False,
         order_by_open_source: bool = False,
     ) -> Sequence[Repository]:
-        statement = sql.select(Repository).where(
-            Repository.organization_id.in_(org_ids),
-            Repository.deleted_at.is_(None),
-        )
+        statement = sql.select(Repository).where(Repository.deleted_at.is_(None))
+
+        if organization_id:
+            statement = statement.where(
+                Repository.organization_id.in_(
+                    select(ExternalOrganization.id).where(
+                        ExternalOrganization.organization_id.in_(organization_id)
+                    )
+                )
+            )
+
+        if external_organization_id:
+            statement = statement.where(
+                Repository.organization_id.in_(external_organization_id)
+            )
 
         if repository_name:
             statement = statement.where(Repository.name == repository_name)

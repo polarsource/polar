@@ -12,7 +12,6 @@ from polar.dashboard.schemas import (
     IssueSortBy,
     PaginationResponse,
 )
-from polar.enums import Platforms
 from polar.exceptions import ResourceNotFound, Unauthorized
 from polar.funding.schemas import PledgesTypeSummaries
 from polar.issue.schemas import Issue as IssueSchema
@@ -24,11 +23,13 @@ from polar.models.repository import Repository
 from polar.models.user import User
 from polar.models.user_organization import UserOrganization
 from polar.openapi import IN_DEVELOPMENT_ONLY
+from polar.organization.schemas import OrganizationID
 from polar.organization.service import organization as organization_service
 from polar.pledge.endpoints import to_schema as pledge_to_schema
 from polar.pledge.schemas import Pledge as PledgeSchema
 from polar.pledge.service import pledge as pledge_service
 from polar.postgres import AsyncSession, get_db_session
+from polar.repository.dependencies import OptionalRepositoryNameQuery
 from polar.repository.service import repository
 from polar.reward.endpoints import to_resource
 from polar.reward.schemas import Reward
@@ -72,14 +73,13 @@ async def get_personal_dashboard(
 
 
 @router.get(
-    "/dashboard/{platform}/{org_name}",
+    "/dashboard/organization/{id}",
     response_model=IssueListResponse,
 )
 async def get_dashboard(
     auth_subject: WebUser,
-    platform: Platforms,
-    org_name: str,
-    repo_name: str | None = Query(default=None),
+    id: OrganizationID,
+    repository_name: OptionalRepositoryNameQuery = None,
     q: str | None = Query(default=None),
     sort: IssueSortBy | None = Query(default=None),
     only_pledged: bool = Query(default=False),
@@ -89,7 +89,7 @@ async def get_dashboard(
     session: AsyncSession = Depends(get_db_session),
     authz: Authz = Depends(Authz.authz),
 ) -> IssueListResponse:
-    org = await organization_service.get_by_name(session, platform, org_name)
+    org = await organization_service.get(session, id)
     if not org:
         raise ResourceNotFound()
 
@@ -102,11 +102,11 @@ async def get_dashboard(
     repositories: Sequence[Repository] = []
 
     # if repo name is set, use that repository
-    if repo_name:
+    if repository_name:
         repo = await repository.get_by_org_and_name(
             session,
             organization_id=org.id,
-            name=repo_name,
+            name=repository_name,
             load_organization=True,
         )
         if not repo:
@@ -118,7 +118,7 @@ async def get_dashboard(
     else:
         repositories = await repository.list_by(
             session,
-            org_ids=[org.id],
+            organization_id=[org.id],
             load_organization=True,
         )
 

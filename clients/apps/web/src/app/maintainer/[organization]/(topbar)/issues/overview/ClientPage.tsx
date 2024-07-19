@@ -8,6 +8,7 @@ import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import EmptyLayout from '@/components/Layout/EmptyLayout'
 import OnboardingAddBadge from '@/components/Onboarding/OnboardingAddBadge'
 import { RepoPickerHeader } from '@/components/Organization/RepoPickerHeader'
+import { useHasLinkedExternalOrganizations } from '@/hooks'
 import { useDashboard, useListRepositories } from '@/hooks/queries'
 import { useOrganizationSSE } from '@/hooks/sse'
 import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
@@ -84,6 +85,7 @@ const Issues = ({
   repo: Repository | undefined
 }) => {
   const search = useSearchParams()
+  const hasLinkedExternalOrganizations = useHasLinkedExternalOrganizations(org)
 
   const initFilters = {
     ...DefaultFilters,
@@ -135,7 +137,7 @@ const Issues = ({
       onSetFilters={setFilters}
       org={org}
       repo={repo}
-      hasAppInstalled={org.has_app_installed}
+      hasAppInstalled={hasLinkedExternalOrganizations}
     />
   )
 }
@@ -189,6 +191,8 @@ const OrganizationIssues = ({
     )
   }, [dashboardQuery, anyIssueHasPledgeOrBadge, haveIssues, isDefaultFilters])
 
+  const hasLinkedExternalOrganizations = useHasLinkedExternalOrganizations(org)
+
   // Get all repositories
   const listRepositoriesQuery = useListRepositories({
     organizationId: org.id,
@@ -197,7 +201,7 @@ const OrganizationIssues = ({
 
   return (
     <DashboardBody className="flex flex-col gap-y-8">
-      {!org.has_app_installed && (
+      {!hasLinkedExternalOrganizations && (
         <GitHubAppInstallationUpsell organization={org} />
       )}
       {showAddBadgeBanner && <OnboardingAddBadge />}

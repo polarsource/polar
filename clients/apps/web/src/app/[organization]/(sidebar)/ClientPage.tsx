@@ -11,6 +11,7 @@ import {
   LinksEditor,
 } from '@/components/Profile/LinksEditor/LinksEditor'
 import { ProjectsEditor } from '@/components/Profile/ProjectEditor/ProjectsEditor'
+import { useHasLinkedExternalOrganizations } from '@/hooks'
 import { useRedirectToGitHubInstallation } from '@/hooks/github'
 import { useUpdateOrganization } from '@/hooks/queries'
 import { organizationPageLink } from '@/utils/nav'
@@ -61,6 +62,8 @@ const ClientPage = ({
     () => userOrganizations?.some((org) => org.id === organization.id),
     [organization, userOrganizations],
   )
+  const hasLinkedExternalOrganizations =
+    useHasLinkedExternalOrganizations(organization)
 
   const updateOrganizationMutation = useUpdateOrganization()
 
@@ -118,7 +121,7 @@ const ClientPage = ({
     <div className="flex w-full flex-col gap-y-24">
       <div className="flex flex-col gap-24 lg:flex-row lg:gap-16">
         <div className="flex w-full min-w-0 flex-shrink flex-col gap-y-16 md:max-w-xl xl:max-w-3xl">
-          {isOrgMember && !organization.has_app_installed && (
+          {isOrgMember && !hasLinkedExternalOrganizations && (
             <GitHubAppUpsell organization={organization} />
           )}
 

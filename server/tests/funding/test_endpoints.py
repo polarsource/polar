@@ -96,7 +96,7 @@ class TestSearch:
             save_fixture, external_organization, is_private=True
         )
         issues_pledges = await create_issues_pledges(
-            save_fixture, external_organization, organization, private_repository
+            save_fixture, organization, external_organization, private_repository
         )
 
         # then
@@ -127,7 +127,7 @@ class TestSearch:
             save_fixture, external_organization, is_private=True
         )
         issues_pledges = await create_issues_pledges(
-            save_fixture, external_organization, organization, private_repository
+            save_fixture, organization, external_organization, private_repository
         )
 
         # then

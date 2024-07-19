@@ -3,6 +3,7 @@ import pytest_asyncio
 from polar.enums import AccountType
 from polar.models import (
     Account,
+    ExternalOrganization,
     Issue,
     IssueReward,
     Order,
@@ -105,15 +106,16 @@ async def account(
 async def transaction_pledge(
     save_fixture: SaveFixture,
     organization: Organization,
-    repository: Repository,
-    issue: Issue,
+    external_organization_linked: ExternalOrganization,
+    repository_linked: Repository,
+    issue_linked: Issue,
 ) -> Pledge:
     return await create_pledge(
         save_fixture,
-        organization,
-        repository,
-        issue,
-        organization,
+        external_organization_linked,
+        repository_linked,
+        issue_linked,
+        pledging_organization=organization,
         type=PledgeType.pay_on_completion,
     )
 

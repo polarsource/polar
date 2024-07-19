@@ -10,15 +10,15 @@ IssuesPledgesFixture = list[tuple[Issue, list[Pledge]]]
 
 async def create_issues_pledges(
     save_fixture: SaveFixture,
-    external_organization: ExternalOrganization,
     organization: Organization,
+    external_organization: ExternalOrganization,
     repository: Repository,
 ) -> IssuesPledgesFixture:
     issue_1 = await create_issue(save_fixture, external_organization, repository)
     issue_1_pledges = [
         await create_pledge(
             save_fixture,
-            organization,
+            external_organization,
             repository,
             issue_1,
             pledging_organization=organization,
@@ -26,7 +26,7 @@ async def create_issues_pledges(
         ),
         await create_pledge(
             save_fixture,
-            organization,
+            external_organization,
             repository,
             issue_1,
             pledging_organization=organization,
@@ -34,7 +34,7 @@ async def create_issues_pledges(
         ),
         await create_pledge(
             save_fixture,
-            organization,
+            external_organization,
             repository,
             issue_1,
             pledging_organization=organization,
@@ -49,7 +49,7 @@ async def create_issues_pledges(
     issue_3_pledges: list[Pledge] = [
         await create_pledge(
             save_fixture,
-            organization,
+            external_organization,
             repository,
             issue_3,
             pledging_organization=organization,
@@ -73,5 +73,5 @@ async def issues_pledges(
     public_repository: Repository,
 ) -> IssuesPledgesFixture:
     return await create_issues_pledges(
-        save_fixture, external_organization, organization, public_repository
+        save_fixture, organization, external_organization, public_repository
     )

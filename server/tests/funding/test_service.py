@@ -169,6 +169,7 @@ class TestListBy:
     async def test_private_repository(
         self,
         session: AsyncSession,
+        organization: Organization,
         external_organization: ExternalOrganization,
         user: User,
         user_organization: UserOrganization,  # makes User a member of Organization
@@ -178,7 +179,7 @@ class TestListBy:
             save_fixture, external_organization, is_private=True
         )
         issues_pledges = await create_issues_pledges(
-            save_fixture, external_organization, private_repository
+            save_fixture, organization, external_organization, private_repository
         )
 
         # then
@@ -250,7 +251,7 @@ class TestListBy:
         for n in range(3):
             await create_user_pledge(
                 save_fixture,
-                organization,
+                external_organization,
                 repository,
                 issues[4],
                 pledging_user=pledging_user,
@@ -393,7 +394,7 @@ class TestListBy:
 
         await create_user_pledge(
             save_fixture,
-            organization,
+            external_organization,
             repository,
             issue,
             pledging_user=pledging_user,
@@ -569,6 +570,7 @@ class TestGetByIssueId:
     async def test_private_issue(
         self,
         session: AsyncSession,
+        organization: Organization,
         external_organization: ExternalOrganization,
         user: User,
         user_organization: UserOrganization,  # makes User a member of Organization
@@ -578,7 +580,7 @@ class TestGetByIssueId:
             save_fixture, external_organization, is_private=True
         )
         issues_pledges = await create_issues_pledges(
-            save_fixture, external_organization, private_repository
+            save_fixture, organization, external_organization, private_repository
         )
         issue, pledges = issues_pledges[0]
 

@@ -17,6 +17,7 @@ from polar.issue.schemas import ConfirmIssueSplit
 from polar.issue.service import issue as issue_service
 from polar.kit.utils import utc_now
 from polar.models.account import Account
+from polar.models.external_organization import ExternalOrganization
 from polar.models.issue import Issue
 from polar.models.issue_reward import IssueReward
 from polar.models.organization import Organization
@@ -61,8 +62,9 @@ async def test_mark_pending_by_issue_id(
     session: AsyncSession,
     save_fixture: SaveFixture,
     organization: Organization,
-    repository: Repository,
-    issue: Issue,
+    external_organization_linked: ExternalOrganization,
+    repository_linked: Repository,
+    issue_linked: Issue,
     user: User,
     pledging_organization: Organization,
     mocker: MockerFixture,
@@ -89,9 +91,9 @@ async def test_mark_pending_by_issue_id(
         pledge = Pledge(
             id=uuid.uuid4(),
             by_organization=pledging_organization,
-            issue=issue,
-            repository_id=repository.id,
-            organization_id=organization.id,
+            issue=issue_linked,
+            repository_id=repository_linked.id,
+            organization_id=external_organization_linked.id,
             amount=amount,
             fee=fee,
             state=PledgeState.created,
@@ -112,9 +114,9 @@ async def test_mark_pending_by_issue_id(
     pledge = Pledge(
         id=uuid.uuid4(),
         user=user,
-        issue=issue,
-        repository_id=repository.id,
-        organization_id=organization.id,
+        issue=issue_linked,
+        repository_id=repository_linked.id,
+        organization_id=external_organization_linked.id,
         amount=amount,
         fee=fee,
         state=PledgeState.created,
@@ -125,10 +127,10 @@ async def test_mark_pending_by_issue_id(
     # then
     session.expunge_all()
 
-    await pledge_service.mark_pending_by_issue_id(session, issue.id)
+    await pledge_service.mark_pending_by_issue_id(session, issue_linked.id)
 
     get_pledges = await pledge_service.list_by(
-        session, issue_ids=[issue.id], all_states=True
+        session, issue_ids=[issue_linked.id], all_states=True
     )
     states = [p.state for p in get_pledges if p]
 
@@ -144,7 +146,7 @@ async def test_mark_pending_by_issue_id(
     assert pledger_notif.call_count == 3
 
     # do it again, no notifications should be sent!
-    await pledge_service.mark_pending_by_issue_id(session, issue.id)
+    await pledge_service.mark_pending_by_issue_id(session, issue_linked.id)
     assert maintainer_notif.call_count == 1
     assert pledger_notif.call_count == 3
 
@@ -154,8 +156,9 @@ async def test_mark_pending_already_pending_no_notification(
     session: AsyncSession,
     save_fixture: SaveFixture,
     organization: Organization,
-    repository: Repository,
-    issue: Issue,
+    external_organization_linked: ExternalOrganization,
+    repository_linked: Repository,
+    issue_linked: Issue,
     user: User,
     pledging_organization: Organization,
     mocker: MockerFixture,
@@ -181,9 +184,9 @@ async def test_mark_pending_already_pending_no_notification(
     for x in range(2):
         pledge = Pledge(
             by_organization=pledging_organization,
-            issue=issue,
-            repository_id=repository.id,
-            organization_id=organization.id,
+            issue=issue_linked,
+            repository_id=repository_linked.id,
+            organization_id=external_organization_linked.id,
             amount=amount,
             fee=fee,
             state=PledgeState.pending,
@@ -199,10 +202,10 @@ async def test_mark_pending_already_pending_no_notification(
     # then
     session.expunge_all()
 
-    await pledge_service.mark_pending_by_issue_id(session, issue.id)
+    await pledge_service.mark_pending_by_issue_id(session, issue_linked.id)
 
     get_pledges = await pledge_service.list_by(
-        session, issue_ids=[issue.id], all_states=True
+        session, issue_ids=[issue_linked.id], all_states=True
     )
     states = [p.state for p in get_pledges if p]
 
@@ -215,7 +218,7 @@ async def test_mark_pending_already_pending_no_notification(
     assert pledger_notif.call_count == 0
 
     # do it again, no notifications should be sent!
-    await pledge_service.mark_pending_by_issue_id(session, issue.id)
+    await pledge_service.mark_pending_by_issue_id(session, issue_linked.id)
     assert maintainer_notif.call_count == 0
     assert pledger_notif.call_count == 0
 
@@ -785,14 +788,15 @@ async def test_mark_created_by_payment_id(
     session: AsyncSession,
     save_fixture: SaveFixture,
     organization: Organization,
-    repository: Repository,
-    issue: Issue,
+    external_organization_linked: ExternalOrganization,
+    repository_linked: Repository,
+    issue_linked: Issue,
     mocker: MockerFixture,
 ) -> None:
     pledge = Pledge(
-        issue=issue,
-        repository_id=repository.id,
-        organization_id=organization.id,
+        issue=issue_linked,
+        repository_id=repository_linked.id,
+        organization_id=external_organization_linked.id,
         amount=12300,
         fee=123,
         by_organization=organization,
@@ -830,14 +834,15 @@ async def test_sum_pledges_period(
     session: AsyncSession,
     save_fixture: SaveFixture,
     organization: Organization,
-    repository: Repository,
-    issue: Issue,
+    external_organization_linked: ExternalOrganization,
+    repository_linked: Repository,
+    issue_linked: Issue,
     user: User,
 ) -> None:
     p1 = Pledge(
-        issue=issue,
-        repository_id=repository.id,
-        organization_id=organization.id,
+        issue=issue_linked,
+        repository_id=repository_linked.id,
+        organization_id=external_organization_linked.id,
         amount=12300,
         fee=123,
         by_organization=organization,
@@ -847,9 +852,9 @@ async def test_sum_pledges_period(
     await save_fixture(p1)
 
     p2 = Pledge(
-        issue=issue,
-        repository_id=repository.id,
-        organization_id=organization.id,
+        issue=issue_linked,
+        repository_id=repository_linked.id,
+        organization_id=external_organization_linked.id,
         amount=800,
         fee=123,
         by_organization=organization,
@@ -860,9 +865,9 @@ async def test_sum_pledges_period(
     await save_fixture(p2)
 
     p3 = Pledge(
-        issue=issue,
-        repository_id=repository.id,
-        organization_id=organization.id,
+        issue=issue_linked,
+        repository_id=repository_linked.id,
+        organization_id=external_organization_linked.id,
         amount=800,
         fee=123,
         by_organization=organization,
@@ -1157,7 +1162,9 @@ async def test_pledge_states(
             create_invoice.reset_mock()
 
             org = await create_organization(save_fixture)
-            external_org = await create_external_organization(save_fixture)
+            external_org = await create_external_organization(
+                save_fixture, organization=org
+            )
             repo = await create_repository(save_fixture, external_org)
             issue = await create_issue(save_fixture, external_org, repo)
             pledging_user = await create_user(save_fixture)
@@ -1227,7 +1234,7 @@ async def test_pledge_states(
                 pledge = Pledge(
                     issue_id=issue.id,
                     repository_id=repo.id,
-                    organization_id=org.id,
+                    organization_id=external_org.id,
                     amount=2500,
                     fee=0,
                     state=PledgeState.created,

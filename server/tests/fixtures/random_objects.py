@@ -292,11 +292,12 @@ async def user_blocked(save_fixture: SaveFixture) -> User:
 
 async def create_pledge(
     save_fixture: SaveFixture,
-    organization: Organization,
+    external_organization: ExternalOrganization,
     repository: Repository,
     issue: Issue,
-    pledging_organization: Organization,
     *,
+    pledging_organization: Organization | None = None,
+    pledging_user: User | None = None,
     state: PledgeState = PledgeState.created,
     type: PledgeType = PledgeType.pay_upfront,
 ) -> Pledge:
@@ -304,10 +305,11 @@ async def create_pledge(
     fee = round(amount * 0.05)
     pledge = Pledge(
         id=uuid.uuid4(),
-        by_organization_id=pledging_organization.id,
-        issue_id=issue.id,
-        repository_id=repository.id,
-        organization_id=organization.id,
+        by_organization=pledging_organization,
+        user=pledging_user,
+        issue=issue,
+        to_repository=repository,
+        to_organization=external_organization,
         amount=amount,
         fee=fee,
         state=state,
@@ -320,7 +322,7 @@ async def create_pledge(
 
 async def create_user_pledge(
     save_fixture: SaveFixture,
-    organization: Organization,
+    external_organization: ExternalOrganization,
     repository: Repository,
     issue: Issue,
     *,
@@ -332,11 +334,11 @@ async def create_user_pledge(
     fee = round(amount * 0.05)
     pledge = Pledge(
         id=uuid.uuid4(),
-        by_user_id=pledging_user.id,
-        created_by_user_id=pledging_user.id,
-        issue_id=issue.id,
-        repository_id=repository.id,
-        organization_id=organization.id,
+        user=pledging_user,
+        created_by_user=pledging_user,
+        issue=issue,
+        to_repository=repository,
+        organization=external_organization,
         amount=amount,
         fee=fee,
         state=state,
@@ -350,20 +352,41 @@ async def create_user_pledge(
 @pytest_asyncio.fixture(scope="function")
 async def pledge(
     save_fixture: SaveFixture,
-    organization: Organization,
+    external_organization: ExternalOrganization,
     repository: Repository,
     issue: Issue,
     pledging_organization: Organization,
 ) -> Pledge:
     return await create_pledge(
-        save_fixture, organization, repository, issue, pledging_organization
+        save_fixture,
+        external_organization,
+        repository,
+        issue,
+        pledging_organization=pledging_organization,
+    )
+
+
+@pytest_asyncio.fixture(scope="function")
+async def pledge_linked(
+    save_fixture: SaveFixture,
+    external_organization_linked: ExternalOrganization,
+    repository_linked: Repository,
+    issue_linked: Issue,
+    pledging_organization: Organization,
+) -> Pledge:
+    return await create_pledge(
+        save_fixture,
+        external_organization_linked,
+        repository_linked,
+        issue_linked,
+        pledging_organization=pledging_organization,
     )
 
 
 @pytest_asyncio.fixture(scope="function")
 async def pledge_by_user(
     save_fixture: SaveFixture,
-    organization: Organization,
+    external_organization: ExternalOrganization,
     repository: Repository,
     issue: Issue,
 ) -> Pledge:
@@ -373,10 +396,10 @@ async def pledge_by_user(
     fee = round(amount * 0.05)
     pledge = Pledge(
         id=uuid.uuid4(),
-        issue_id=issue.id,
-        repository_id=repository.id,
-        organization_id=organization.id,
-        by_user_id=user.id,
+        issue=issue,
+        to_repository=repository,
+        to_organization=external_organization,
+        user=user,
         amount=amount,
         fee=fee,
         state=PledgeState.created,

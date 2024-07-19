@@ -52,10 +52,9 @@ async def test_get_pledge(
 @pytest.mark.http_auto_expunge
 @pytest.mark.auth
 async def test_get_pledge_member_sending_org(
-    organization: Organization,
-    repository: Repository,
-    pledge: Pledge,
-    issue: Issue,
+    external_organization_linked: ExternalOrganization,
+    repository_linked: Repository,
+    issue_linked: Issue,
     save_fixture: SaveFixture,
     client: AsyncClient,
     user: User,
@@ -66,9 +65,9 @@ async def test_get_pledge_member_sending_org(
 
     pledge = await create_pledge(
         save_fixture,
-        organization=organization,
-        repository=repository,
-        issue=issue,
+        external_organization_linked,
+        repository_linked,
+        issue_linked,
         pledging_organization=pledging_organization,
     )
     pledge.created_by_user_id = pledge_created_by_user.id
@@ -96,10 +95,9 @@ async def test_get_pledge_member_sending_org(
 @pytest.mark.http_auto_expunge
 @pytest.mark.auth
 async def test_get_pledge_member_sending_org_user_has_github(
-    organization: Organization,
-    repository: Repository,
-    pledge: Pledge,
-    issue: Issue,
+    external_organization_linked: ExternalOrganization,
+    repository_linked: Repository,
+    issue_linked: Issue,
     save_fixture: SaveFixture,
     client: AsyncClient,
     user: User,
@@ -113,9 +111,9 @@ async def test_get_pledge_member_sending_org_user_has_github(
 
     pledge = await create_pledge(
         save_fixture,
-        organization=organization,
-        repository=repository,
-        issue=issue,
+        external_organization_linked,
+        repository_linked,
+        issue_linked,
         pledging_organization=pledging_organization,
     )
     pledge.created_by_user_id = pledge_created_by_user.id
@@ -144,9 +142,9 @@ async def test_get_pledge_member_sending_org_user_has_github(
 @pytest.mark.auth
 async def test_get_pledge_member_receiving_org(
     organization: Organization,
-    repository: Repository,
-    pledge: Pledge,
-    issue: Issue,
+    external_organization_linked: ExternalOrganization,
+    repository_linked: Repository,
+    issue_linked: Issue,
     save_fixture: SaveFixture,
     client: AsyncClient,
     user: User,
@@ -157,9 +155,9 @@ async def test_get_pledge_member_receiving_org(
 
     pledge = await create_pledge(
         save_fixture,
-        organization=organization,
-        repository=repository,
-        issue=issue,
+        external_organization_linked,
+        repository_linked,
+        issue_linked,
         pledging_organization=pledging_organization,
     )
     pledge.created_by_user_id = pledge_created_by_user.id

@@ -4,6 +4,7 @@ import pytest
 from pytest_mock import MockerFixture
 
 from polar.kit.extensions.sqlalchemy import sql
+from polar.models.external_organization import ExternalOrganization
 from polar.models.issue import Issue
 from polar.models.notification import Notification
 from polar.models.organization import Organization
@@ -26,8 +27,9 @@ async def test_create_pledge_from_created(
     session: AsyncSession,
     save_fixture: SaveFixture,
     organization: Organization,
-    repository: Repository,
-    issue: Issue,
+    external_organization_linked: ExternalOrganization,
+    repository_linked: Repository,
+    issue_linked: Issue,
     mocker: MockerFixture,
 ) -> None:
     m = mocker.patch(
@@ -37,9 +39,9 @@ async def test_create_pledge_from_created(
     payment_id = "xxx-1"
 
     pledge = Pledge(
-        issue_id=issue.id,
-        repository_id=repository.id,
-        organization_id=organization.id,
+        issue_id=issue_linked.id,
+        repository_id=repository_linked.id,
+        organization_id=external_organization_linked.id,
         amount=12300,
         fee=123,
         by_organization_id=organization.id,
@@ -64,18 +66,18 @@ async def test_create_pledge_from_created(
         session=ANY,
         org_id=organization.id,
         notif=PartialNotification(
-            issue_id=issue.id,
+            issue_id=issue_linked.id,
             pledge_id=pledge.id,
             type=NotificationType.maintainer_pledge_created,
             payload=MaintainerPledgeCreatedNotificationPayload(
                 pledge_id=pledge.id,
                 pledger_name=organization.slug,
                 pledge_amount="123",
-                issue_url=f"https://github.com/{organization.slug}/{repository.name}/issues/{issue.number}",
-                issue_title=issue.title,
-                issue_org_name=organization.slug,
-                issue_repo_name=repository.name,
-                issue_number=issue.number,
+                issue_url=f"https://github.com/{external_organization_linked.name}/{repository_linked.name}/issues/{issue_linked.number}",
+                issue_title=issue_linked.title,
+                issue_org_name=external_organization_linked.name,
+                issue_repo_name=repository_linked.name,
+                issue_number=issue_linked.number,
                 maintainer_has_stripe_account=False,
                 pledge_type=PledgeType.pay_upfront,
             ),
@@ -88,8 +90,9 @@ async def test_create_pledge_from_created_by_user(
     session: AsyncSession,
     save_fixture: SaveFixture,
     organization: Organization,
-    repository: Repository,
-    issue: Issue,
+    external_organization_linked: ExternalOrganization,
+    repository_linked: Repository,
+    issue_linked: Issue,
     mocker: MockerFixture,
     user: User,
 ) -> None:
@@ -100,9 +103,9 @@ async def test_create_pledge_from_created_by_user(
     payment_id = "xxx-1"
 
     pledge = Pledge(
-        issue_id=issue.id,
-        repository_id=repository.id,
-        organization_id=organization.id,
+        issue_id=issue_linked.id,
+        repository_id=repository_linked.id,
+        organization_id=external_organization_linked.id,
         amount=12300,
         fee=123,
         by_user_id=user.id,
@@ -127,18 +130,18 @@ async def test_create_pledge_from_created_by_user(
         session=ANY,
         org_id=organization.id,
         notif=PartialNotification(
-            issue_id=issue.id,
+            issue_id=issue_linked.id,
             pledge_id=pledge.id,
             type=NotificationType.maintainer_pledge_created,
             payload=MaintainerPledgeCreatedNotificationPayload(
                 pledge_id=pledge.id,
                 pledger_name=user.email,
                 pledge_amount="123",
-                issue_url=f"https://github.com/{organization.slug}/{repository.name}/issues/{issue.number}",
-                issue_title=issue.title,
-                issue_org_name=organization.slug,
-                issue_repo_name=repository.name,
-                issue_number=issue.number,
+                issue_url=f"https://github.com/{external_organization_linked.name}/{repository_linked.name}/issues/{issue_linked.number}",
+                issue_title=issue_linked.title,
+                issue_org_name=external_organization_linked.name,
+                issue_repo_name=repository_linked.name,
+                issue_number=issue_linked.number,
                 maintainer_has_stripe_account=False,
                 pledge_type=PledgeType.pay_upfront,
             ),
@@ -151,8 +154,9 @@ async def test_create_pledge_from_created_by_user_with_github(
     session: AsyncSession,
     save_fixture: SaveFixture,
     organization: Organization,
-    repository: Repository,
-    issue: Issue,
+    external_organization_linked: ExternalOrganization,
+    repository_linked: Repository,
+    issue_linked: Issue,
     mocker: MockerFixture,
     user: User,
     user_github_oauth: OAuthAccount,
@@ -164,9 +168,9 @@ async def test_create_pledge_from_created_by_user_with_github(
     payment_id = "xxx-1"
 
     pledge = Pledge(
-        issue_id=issue.id,
-        repository_id=repository.id,
-        organization_id=organization.id,
+        issue_id=issue_linked.id,
+        repository_id=repository_linked.id,
+        organization_id=external_organization_linked.id,
         amount=12300,
         fee=123,
         by_user_id=user.id,
@@ -191,18 +195,18 @@ async def test_create_pledge_from_created_by_user_with_github(
         session=ANY,
         org_id=organization.id,
         notif=PartialNotification(
-            issue_id=issue.id,
+            issue_id=issue_linked.id,
             pledge_id=pledge.id,
             type=NotificationType.maintainer_pledge_created,
             payload=MaintainerPledgeCreatedNotificationPayload(
                 pledge_id=pledge.id,
                 pledger_name=user_github_oauth.account_username,
                 pledge_amount="123",
-                issue_url=f"https://github.com/{organization.slug}/{repository.name}/issues/{issue.number}",
-                issue_title=issue.title,
-                issue_org_name=organization.slug,
-                issue_repo_name=repository.name,
-                issue_number=issue.number,
+                issue_url=f"https://github.com/{external_organization_linked.name}/{repository_linked.name}/issues/{issue_linked.number}",
+                issue_title=issue_linked.title,
+                issue_org_name=external_organization_linked.name,
+                issue_repo_name=repository_linked.name,
+                issue_number=issue_linked.number,
                 maintainer_has_stripe_account=False,
                 pledge_type=PledgeType.pay_upfront,
             ),
@@ -215,8 +219,9 @@ async def test_create_pledge_from_created_on_behalf_of(
     session: AsyncSession,
     save_fixture: SaveFixture,
     organization: Organization,
-    repository: Repository,
-    issue: Issue,
+    external_organization_linked: ExternalOrganization,
+    repository_linked: Repository,
+    issue_linked: Issue,
     mocker: MockerFixture,
     user: User,
 ) -> None:
@@ -227,9 +232,9 @@ async def test_create_pledge_from_created_on_behalf_of(
     payment_id = "xxx-1"
 
     pledge = Pledge(
-        issue_id=issue.id,
-        repository_id=repository.id,
-        organization_id=organization.id,
+        issue_id=issue_linked.id,
+        repository_id=repository_linked.id,
+        organization_id=external_organization_linked.id,
         amount=12300,
         fee=123,
         on_behalf_of_organization_id=organization.id,
@@ -255,18 +260,18 @@ async def test_create_pledge_from_created_on_behalf_of(
         session=ANY,
         org_id=organization.id,
         notif=PartialNotification(
-            issue_id=issue.id,
+            issue_id=issue_linked.id,
             pledge_id=pledge.id,
             type=NotificationType.maintainer_pledge_created,
             payload=MaintainerPledgeCreatedNotificationPayload(
                 pledge_id=pledge.id,
                 pledger_name=organization.slug,
                 pledge_amount="123",
-                issue_url=f"https://github.com/{organization.slug}/{repository.name}/issues/{issue.number}",
-                issue_title=issue.title,
-                issue_org_name=organization.slug,
-                issue_repo_name=repository.name,
-                issue_number=issue.number,
+                issue_url=f"https://github.com/{external_organization_linked.name}/{repository_linked.name}/issues/{issue_linked.number}",
+                issue_title=issue_linked.title,
+                issue_org_name=external_organization_linked.name,
+                issue_repo_name=repository_linked.name,
+                issue_number=issue_linked.number,
                 maintainer_has_stripe_account=False,
                 pledge_type=PledgeType.pay_upfront,
             ),
@@ -279,8 +284,9 @@ async def test_deduplicate(
     session: AsyncSession,
     save_fixture: SaveFixture,
     organization: Organization,
-    repository: Repository,
-    issue: Issue,
+    external_organization_linked: ExternalOrganization,
+    repository_linked: Repository,
+    issue_linked: Issue,
     user_organization: UserOrganization,
     user_organization_second: UserOrganization,  # two members
     mocker: MockerFixture,
@@ -288,9 +294,9 @@ async def test_deduplicate(
     spy = mocker.spy(NotificationsService, "send_to_org_admins")
 
     pledge = Pledge(
-        issue_id=issue.id,
-        repository_id=repository.id,
-        organization_id=organization.id,
+        issue_id=issue_linked.id,
+        repository_id=repository_linked.id,
+        organization_id=external_organization_linked.id,
         amount=12300,
         fee=123,
         by_organization_id=organization.id,
@@ -331,7 +337,7 @@ async def test_deduplicate(
         (
             await session.execute(
                 sql.select(Notification).where(
-                    Notification.issue_id == issue.id,
+                    Notification.issue_id == issue_linked.id,
                     Notification.user_id == user_organization.user_id,
                 )
             )
@@ -346,7 +352,7 @@ async def test_deduplicate(
         (
             await session.execute(
                 sql.select(Notification).where(
-                    Notification.issue_id == issue.id,
+                    Notification.issue_id == issue_linked.id,
                     Notification.user_id == user_organization_second.user_id,
                 )
             )

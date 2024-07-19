@@ -105,11 +105,11 @@ def downgrade() -> None:
     )
     op.add_column(
         "organizations",
-        sa.Column("platform", sa.VARCHAR(), autoincrement=False, nullable=False),
+        sa.Column("platform", sa.VARCHAR(), autoincrement=False, nullable=True),
     )
     op.add_column(
         "organizations",
-        sa.Column("external_id", sa.BIGINT(), autoincrement=False, nullable=False),
+        sa.Column("external_id", sa.BIGINT(), autoincrement=False, nullable=True),
     )
     op.add_column(
         "organizations",
@@ -117,7 +117,7 @@ def downgrade() -> None:
     )
     op.add_column(
         "organizations",
-        sa.Column("is_personal", sa.BOOLEAN(), autoincrement=False, nullable=False),
+        sa.Column("is_personal", sa.BOOLEAN(), autoincrement=False, nullable=True),
     )
     op.add_column(
         "organizations",
@@ -178,6 +178,25 @@ def downgrade() -> None:
         FROM external_organizations
         WHERE external_organizations.organization_id = organizations.id
         """
+    )
+
+    op.alter_column(
+        "organizations",
+        "platform",
+        existing_type=sa.VARCHAR(),
+        nullable=False,
+    )
+    op.alter_column(
+        "organizations",
+        "external_id",
+        existing_type=sa.BIGINT(),
+        nullable=False,
+    )
+    op.alter_column(
+        "organizations",
+        "is_personal",
+        existing_type=sa.BOOLEAN(),
+        nullable=False,
     )
 
     op.drop_constraint(

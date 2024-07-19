@@ -20,7 +20,7 @@ from polar.worker import (
 from ..service.api import github_api
 from ..service.issue import github_issue
 from ..service.organization import github_organization as github_organization_service
-from .utils import get_organization_and_repo, github_rate_limit_retry
+from .utils import get_external_organization_and_repo, github_rate_limit_retry
 
 log = structlog.get_logger()
 
@@ -45,7 +45,7 @@ async def issue_sync(
                 )
                 return
 
-            organization, repository = await get_organization_and_repo(
+            organization, repository = await get_external_organization_and_repo(
                 session, issue.organization_id, issue.repository_id
             )
 
@@ -78,7 +78,7 @@ async def issue_sync_issue_references(
                 )
                 return
 
-            organization, repository = await get_organization_and_repo(
+            organization, repository = await get_external_organization_and_repo(
                 session, issue.organization_id, issue.repository_id
             )
 
@@ -109,7 +109,7 @@ async def issue_sync_issue_dependencies(
                 )
                 return
 
-            organization, repository = await get_organization_and_repo(
+            organization, repository = await get_external_organization_and_repo(
                 session, issue.organization_id, issue.repository_id
             )
 

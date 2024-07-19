@@ -14,22 +14,29 @@ from polar.postgres import AsyncSession
 log = structlog.get_logger()
 
 
-async def get_organization_and_repo(
+async def get_external_organization_and_repo(
     session: AsyncSession,
-    organization_id: UUID,
+    external_organization_id: UUID,
     repository_id: UUID,
 ) -> tuple[ExternalOrganization, Repository]:
-    organization = await service.github_organization.get(session, organization_id)
-    if not organization:
-        log.warning("no organization found", organization_id=organization_id)
-        raise ValueError("no organization found")
+    external_organization = await service.github_organization.get_linked(
+        session, external_organization_id
+    )
+    if not external_organization:
+        log.warning(
+            "no external organization found or not linked to a Polar organization",
+            external_organization_id=external_organization_id,
+        )
+        raise ValueError(
+            "no external organization found or not linked to a Polar organization"
+        )
 
     repository = await service.github_repository.get(session, repository_id)
     if not repository:
-        log.warning("no repository found", repository_id=organization_id)
+        log.warning("no repository found", repository_id=repository_id)
         raise ValueError("no repository found")
 
-    return (organization, repository)
+    return (external_organization, repository)
 
 
 Params = ParamSpec("Params")

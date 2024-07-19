@@ -5,7 +5,7 @@ from githubkit import AppInstallationAuthStrategy, GitHub
 
 from polar.config import settings
 from polar.kit import template
-from polar.models import Issue, Organization, Repository
+from polar.models import ExternalOrganization, Issue, Organization, Repository
 
 from . import client as github
 from . import types
@@ -23,14 +23,15 @@ PLEDGE_BADGE_COMMENT_END = "<!-- POLAR PLEDGE BADGE END -->"
 
 @dataclass
 class GithubBadge:
-    organization: Organization
+    external_organization: ExternalOrganization
     repository: Repository
     issue: Issue
+    organization: Organization
 
     @classmethod
     def should_add_badge(
         cls,
-        organization: Organization,
+        external_organization: ExternalOrganization,
         repository: Repository,
         issue: Issue,
         triggered_from_label: bool,
@@ -38,7 +39,7 @@ class GithubBadge:
         if not settings.GITHUB_BADGE_EMBED:
             return (False, "app_badge_not_enabled")
 
-        if organization.installation_id is None:
+        if external_organization.installation_id is None:
             return (False, "org_not_installed")
 
         # Triggered by label
@@ -57,7 +58,7 @@ class GithubBadge:
     @classmethod
     def should_remove_badge(
         cls,
-        organization: Organization,
+        external_organization: ExternalOrganization,
         repository: Repository,
         issue: Issue,
         triggered_from_label: bool,
@@ -65,7 +66,7 @@ class GithubBadge:
         if not settings.GITHUB_BADGE_EMBED:
             return (False, "app_badge_not_enabled")
 
-        if organization.installation_id is None:
+        if external_organization.installation_id is None:
             return (False, "org_not_installed")
 
         if triggered_from_label:
@@ -79,14 +80,14 @@ class GithubBadge:
     def generate_svg_url(self, darkmode: bool = False) -> str:
         return "{base}/api/github/{org}/{repo}/issues/{number}/pledge.svg{maybeDarkmode}".format(  # noqa: E501
             base=settings.FRONTEND_BASE_URL,
-            org=self.organization.slug,
+            org=self.external_organization.name,
             repo=self.repository.name,
             number=self.issue.number,
             maybeDarkmode="?darkmode=1" if darkmode else "",
         )
 
     def generate_funding_url(self) -> str:
-        return f"{settings.FRONTEND_BASE_URL}/{self.organization.slug}/{self.repository.name}/issues/{self.issue.number}"
+        return f"{settings.FRONTEND_BASE_URL}/{self.external_organization.name}/{self.repository.name}/issues/{self.issue.number}"
 
     def badge_markdown(self, message: str) -> str:
         funding_url = self.generate_funding_url()
@@ -167,7 +168,7 @@ class GithubBadge:
         self, client: GitHub[AppInstallationAuthStrategy]
     ) -> str:
         latest = await client.rest.issues.async_get(
-            owner=self.organization.slug,
+            owner=self.external_organization.name,
             repo=self.repository.name,
             issue_number=self.issue.number,
         )
@@ -182,7 +183,7 @@ class GithubBadge:
         self, client: GitHub[AppInstallationAuthStrategy], body: str
     ) -> types.Issue:
         updated = await client.rest.issues.async_update(
-            owner=self.organization.slug,
+            owner=self.external_organization.name,
             repo=self.repository.name,
             issue_number=self.issue.number,
             body=body,
@@ -192,7 +193,7 @@ class GithubBadge:
 
     async def embed(self) -> None:
         client = github.get_app_installation_client(
-            self.organization.safe_installation_id
+            self.external_organization.safe_installation_id
         )
 
         body = await self.get_current_body(client)
@@ -209,7 +210,7 @@ class GithubBadge:
 
     async def remove(self) -> None:
         client = github.get_app_installation_client(
-            self.organization.safe_installation_id
+            self.external_organization.safe_installation_id
         )
 
         body = await self.get_current_body(client)

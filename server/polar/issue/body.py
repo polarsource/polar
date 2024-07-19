@@ -11,7 +11,7 @@ from polar.integrations.github.client import (
 )
 from polar.logging import Logger
 from polar.models import ExternalOrganization, Issue, Repository
-from polar.models.external_organization import NotInstalledOrganization
+from polar.models.external_organization import NotInstalledExternalOrganization
 from polar.redis import Redis
 from polar.redis import redis as redis_client
 
@@ -69,7 +69,7 @@ class IssueBodyRenderer:
             client: GitHub[Any] = get_app_installation_client(
                 external_organization.safe_installation_id
             )
-        except NotInstalledOrganization:
+        except NotInstalledExternalOrganization:
             client = get_polar_client()
 
         response = await client.rest.markdown.async_render(

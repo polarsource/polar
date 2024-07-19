@@ -154,7 +154,7 @@ const OrganizationIssues = ({
   hasAppInstalled: boolean
 }) => {
   const dashboardQuery = useDashboard({
-    orgName: org.slug,
+    organizationId: org.id,
     repoName: repo?.name,
     q: filters.q,
     sort: filters.sort,

@@ -4,17 +4,14 @@ import {
   CurrencyAmount,
   Issue,
   IssueListResponse,
-  IssueSortBy,
   IssueUpdateBadgeMessage,
   ListResourceIssue,
   ListResourcePledge,
-  Platforms,
   PostIssueComment,
 } from '@polar-sh/sdk'
 import {
   InfiniteData,
   UseMutationResult,
-  UseQueryResult,
   useMutation,
   useQuery,
 } from '@tanstack/react-query'
@@ -213,43 +210,6 @@ const updateIssuesCache = (result: Issue) => {
     },
   )
 }
-
-export const useSearchIssues: (v: {
-  organizationName?: string
-  repositoryName?: string
-  sort?: IssueSortBy
-  havePledge?: boolean
-  haveBadge?: boolean
-}) => UseQueryResult<ListResourceIssue> = (v: {
-  organizationName?: string
-  repositoryName?: string
-  sort?: IssueSortBy
-  havePledge?: boolean
-  haveBadge?: boolean
-}) =>
-  useQuery({
-    queryKey: [
-      'issues',
-      v.organizationName,
-      v.repositoryName,
-      JSON.stringify({
-        sort: v.sort,
-        havePledge: v.havePledge,
-        haveBadge: v.haveBadge,
-      }),
-    ],
-    queryFn: () =>
-      api.issues.search({
-        platform: Platforms.GITHUB,
-        organizationName: v.organizationName || '',
-        repositoryName: v.repositoryName,
-        sort: v.sort,
-        havePledge: v.havePledge,
-        haveBadge: v.haveBadge,
-      }),
-    retry: defaultRetry,
-    enabled: !!v.organizationName,
-  })
 
 export const useListForYouIssues = () =>
   useQuery({

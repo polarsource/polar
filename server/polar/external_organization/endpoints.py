@@ -14,7 +14,7 @@ from .schemas import ExternalOrganization
 from .service import external_organization as external_organization_service
 
 router = APIRouter(
-    prefix="/external-organizations", tags=["external_organizations", APITag.documented]
+    prefix="/external_organizations", tags=["external_organizations", APITag.documented]
 )
 
 ExternalOrganizationNotFound = {

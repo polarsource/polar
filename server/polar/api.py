@@ -10,6 +10,7 @@ from polar.checkout.endpoints import router as checkout_router
 from polar.dashboard.endpoints import router as dashboard_router
 from polar.donation.endpoints import router as donations_router
 from polar.eventstream.endpoints import router as stream_router
+from polar.external_organization.endpoints import router as external_organization_router
 from polar.file.endpoints import router as files_router
 from polar.funding.endpoints import router as funding_router
 from polar.integrations.discord.endpoints import router as discord_router
@@ -61,6 +62,8 @@ router.include_router(funding_router)
 router.include_router(magic_link_router)
 # /notifications
 router.include_router(notifications_router)
+# /external-organizations
+router.include_router(external_organization_router)
 # /repositories
 router.include_router(repository_router)
 # /rewards

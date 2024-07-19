@@ -1,5 +1,5 @@
 import { api } from '@/utils/api'
-import { IssueListResponse, IssueSortBy, Platforms } from '@polar-sh/sdk'
+import { IssueListResponse, IssueSortBy } from '@polar-sh/sdk'
 import {
   InfiniteData,
   UseInfiniteQueryResult,
@@ -8,7 +8,7 @@ import {
 import { defaultRetry } from './retry'
 
 export const useDashboard = (vars: {
-  orgName: string
+  organizationId: string
   repoName?: string
   q?: string
   sort?: IssueSortBy
@@ -21,15 +21,14 @@ export const useDashboard = (vars: {
     queryKey: [
       'dashboard',
       'repo',
-      vars.orgName,
+      vars.organizationId,
       vars.repoName,
       JSON.stringify(vars),
     ],
     queryFn: ({ signal, pageParam = 1 }) => {
       const promise = api.dashboard.getDashboard({
-        platform: Platforms.GITHUB,
-        orgName: vars.orgName,
-        repoName: vars.repoName,
+        id: vars.organizationId,
+        repositoryName: vars.repoName,
         q: vars.q,
         sort: vars.sort,
         onlyPledged: vars.onlyPledged,
@@ -49,7 +48,7 @@ export const useDashboard = (vars: {
       return lastPage.pagination.next_page
     },
     initialPageParam: 1,
-    enabled: !!vars.orgName && !!vars.hasAppInstalled,
+    enabled: !!vars.hasAppInstalled,
     retry: defaultRetry,
   })
 

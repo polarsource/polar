@@ -504,9 +504,12 @@ class Authz:
         ):
             return True
 
-        # If member of receiving org
-        if object.organization_id and await self._is_member(
-            subject.id, object.organization_id
+        # If member of receiving linked org
+        if (
+            object.organization_id
+            and await self._can_user_write_external_organization_id(
+                subject, object.organization_id
+            )
         ):
             return True
 
@@ -523,9 +526,12 @@ class Authz:
         ):
             return True
 
-        # If member of receiving org
-        if object.organization_id and await self._is_member(
-            subject.id, object.organization_id
+        # If member of receiving linked org
+        if (
+            object.organization_id
+            and await self._can_user_write_external_organization_id(
+                subject, object.organization_id
+            )
         ):
             return True
 

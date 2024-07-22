@@ -13,7 +13,7 @@ import { useContext } from 'react'
 export default function ClientPage() {
   const { organization: org } = useContext(MaintainerOrganizationContext)
 
-  const pledges = useSearchPledges({ byOrganizationId: org?.id })
+  const pledges = useSearchPledges({ byOrganizationId: org.id })
 
   const groupByIssue = (pledges: Pledge[]): Record<string, Pledge[]> => {
     let ret: Record<string, Pledge[]> = {}

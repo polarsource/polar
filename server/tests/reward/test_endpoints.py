@@ -22,15 +22,15 @@ from tests.fixtures.database import SaveFixture
 async def test_search(
     session: AsyncSession,
     save_fixture: SaveFixture,
-    pledge: Pledge,
+    pledge_linked: Pledge,
     organization: Organization,
     user_organization: UserOrganization,
     user: User,
     client: AsyncClient,
 ) -> None:
-    await pledge_service.mark_pending_by_issue_id(session, pledge.issue_id)
+    await pledge_service.mark_pending_by_issue_id(session, pledge_linked.issue_id)
 
-    got = await pledge_service.get(session, pledge.id)
+    got = await pledge_service.get(session, pledge_linked.id)
     assert got is not None
     got.scheduled_payout_at = utc_now() - timedelta(days=2)
     got.payment_id = "test_transfer_payment_id"
@@ -54,7 +54,7 @@ async def test_search(
 
     splits = await pledge_service.create_issue_rewards(
         session,
-        pledge.issue_id,
+        pledge_linked.issue_id,
         splits=[
             ConfirmIssueSplit(share_thousands=300, github_username="zegl"),
             ConfirmIssueSplit(share_thousands=700, organization_id=organization.id),
@@ -72,17 +72,17 @@ async def test_search(
     json = response.json()
     assert len(json["items"]) == 2
 
-    assert json["items"][0]["pledge"]["id"] == str(pledge.id)
-    assert json["items"][1]["pledge"]["id"] == str(pledge.id)
+    assert json["items"][0]["pledge"]["id"] == str(pledge_linked.id)
+    assert json["items"][1]["pledge"]["id"] == str(pledge_linked.id)
 
-    assert json["items"][0]["pledge"]["issue"]["id"] == str(pledge.issue_id)
-    assert json["items"][1]["pledge"]["issue"]["id"] == str(pledge.issue_id)
+    assert json["items"][0]["pledge"]["issue"]["id"] == str(pledge_linked.issue_id)
+    assert json["items"][1]["pledge"]["issue"]["id"] == str(pledge_linked.issue_id)
 
     assert json["items"][0]["user"]["username"] == "zegl"
     assert json["items"][0]["organization"] is None
 
     assert json["items"][1]["user"] is None
-    assert json["items"][1]["organization"]["name"] == organization.slug
+    assert json["items"][1]["organization"]["id"] == str(organization.id)
 
     assert json["items"][0]["state"] == "pending"
     assert json["items"][1]["state"] == "pending"

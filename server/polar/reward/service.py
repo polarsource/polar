@@ -2,11 +2,10 @@ from collections.abc import Sequence
 from uuid import UUID
 
 import structlog
-from sqlalchemy import and_
-from sqlalchemy.orm import (
-    joinedload,
-)
+from sqlalchemy import and_, select
+from sqlalchemy.orm import joinedload
 
+from polar.models.external_organization import ExternalOrganization
 from polar.models.issue import Issue
 from polar.models.issue_reward import IssueReward
 from polar.models.organization import Organization
@@ -54,7 +53,13 @@ class RewardService:
             statement = statement.where(Pledge.id == pledge_id)
 
         if pledge_org_id:
-            statement = statement.where(Pledge.organization_id == pledge_org_id)
+            statement = statement.where(
+                Pledge.organization_id.in_(
+                    select(ExternalOrganization.id).where(
+                        ExternalOrganization.organization_id == pledge_org_id
+                    )
+                )
+            )
 
         if issue_id:
             statement = statement.where(Pledge.issue_id == issue_id)

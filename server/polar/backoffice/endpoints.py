@@ -7,6 +7,9 @@ from fastapi import Depends, HTTPException
 from polar.auth.dependencies import AdminUser
 from polar.enums import Platforms
 from polar.exceptions import ResourceNotFound
+from polar.external_organization.service import (
+    external_organization as external_organization_service,
+)
 from polar.integrations.github.service.issue import github_issue
 from polar.issue.schemas import Issue
 from polar.issue.service import issue as issue_service
@@ -16,7 +19,6 @@ from polar.models.issue_reward import IssueReward
 from polar.models.pledge import Pledge as PledgeModel
 from polar.models.pledge_transaction import PledgeTransaction as PledgeTransactionModel
 from polar.openapi import IN_DEVELOPMENT_ONLY
-from polar.organization.service import organization as organization_service
 from polar.pledge.service import pledge as pledge_service
 from polar.postgres import AsyncSession, get_db_session
 from polar.repository.service import repository as repository_service
@@ -209,20 +211,27 @@ async def manage_badge(
         admin=auth_subject.subject.email,
     )
 
-    org = await organization_service.get_by_name(
+    external_org = await external_organization_service.get_by_name(
         session, Platforms.github, badge.org_slug
     )
-    if not org:
+    if not external_org:
+        raise ResourceNotFound()
+
+    if external_org.organization_id is None:
         raise ResourceNotFound()
 
     repo = await repository_service.get_by_org_and_name(
-        session, org.id, badge.repo_slug
+        session, external_org.organization_id, badge.repo_slug
     )
     if not repo:
         raise ResourceNotFound()
 
     issue = await issue_service.get_by_number(
-        session, Platforms.github, org.id, repo.id, badge.issue_number
+        session,
+        Platforms.github,
+        external_org.id,
+        repo.id,
+        badge.issue_number,
     )
     if not issue:
         raise ResourceNotFound()
@@ -233,7 +242,7 @@ async def manage_badge(
     if badge.action == "remove":
         issue = await github_issue.remove_polar_label(
             session,
-            organization=org,
+            organization=external_org,
             repository=repo,
             issue=issue,
         )
@@ -241,14 +250,14 @@ async def manage_badge(
     else:
         issue = await github_issue.add_polar_label(
             session,
-            organization=org,
+            organization=external_org,
             repository=repo,
             issue=issue,
         )
         success = issue.has_pledge_badge_label
 
     return BackofficeBadgeResponse(
-        org_slug=org.name,
+        org_slug=external_org.name,
         repo_slug=repo.name,
         issue_number=issue.number,
         action=badge.action,
@@ -266,11 +275,18 @@ async def update_badge_contents(
     auth_subject: AdminUser,
     session: AsyncSession = Depends(get_db_session),
 ) -> dict[Any, Any]:
-    org = await organization_service.get_by_name(session, Platforms.github, org_slug)
-    if not org:
+    external_org = await external_organization_service.get_by_name(
+        session, Platforms.github, org_slug
+    )
+    if not external_org:
         raise ResourceNotFound()
 
-    repo = await repository_service.get_by_org_and_name(session, org.id, repo_slug)
+    if external_org.organization_id is None:
+        raise ResourceNotFound()
+
+    repo = await repository_service.get_by_org_and_name(
+        session, external_org.organization_id, repo_slug
+    )
     if not repo:
         raise ResourceNotFound()
 

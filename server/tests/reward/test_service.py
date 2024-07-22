@@ -27,7 +27,7 @@ from tests.fixtures.database import SaveFixture
 async def test_list_rewards(
     session: AsyncSession,
     save_fixture: SaveFixture,
-    pledge: Pledge,
+    pledge_linked: Pledge,
     organization: Organization,
     user: User,
     mocker: MockerFixture,
@@ -35,9 +35,9 @@ async def test_list_rewards(
     # then
     session.expunge_all()
 
-    await pledge_service.mark_pending_by_issue_id(session, pledge.issue_id)
+    await pledge_service.mark_pending_by_issue_id(session, pledge_linked.issue_id)
 
-    got = await pledge_service.get(session, pledge.id)
+    got = await pledge_service.get(session, pledge_linked.id)
     assert got is not None
     got.scheduled_payout_at = utc_now() - timedelta(days=2)
     got.payment_id = "test_transfer_payment_id"
@@ -65,7 +65,7 @@ async def test_list_rewards(
 
     splits = await pledge_service.create_issue_rewards(
         session,
-        pledge.issue_id,
+        pledge_linked.issue_id,
         splits=[
             ConfirmIssueSplit(share_thousands=300, github_username="zegl"),
             ConfirmIssueSplit(share_thousands=700, organization_id=organization.id),
@@ -76,14 +76,14 @@ async def test_list_rewards(
     assert len(rewards) == 2
 
     user_tuple = [r for r in rewards if r[1].github_username == "zegl"][0]
-    assert user_tuple[0].id == pledge.id
+    assert user_tuple[0].id == pledge_linked.id
     assert user_tuple[1].github_username == "zegl"
     assert user_tuple[1].organization_id is None
     assert user_tuple[1].share_thousands == 300
     assert user_tuple[2] is None  # no transfer
 
     org_tuple = [r for r in rewards if r[1].organization_id == organization.id][0]
-    assert org_tuple[0].id == pledge.id
+    assert org_tuple[0].id == pledge_linked.id
     assert org_tuple[1].github_username is None
     assert org_tuple[1].organization_id is organization.id
     assert org_tuple[1].share_thousands == 700
@@ -97,7 +97,9 @@ async def test_list_rewards(
         "polar.transaction.service.platform_fee.PlatformFeeTransactionService.create_fees_reversal_balances"
     )
 
-    await pledge_service.transfer(session, pledge.id, issue_reward_id=org_tuple[1].id)
+    await pledge_service.transfer(
+        session, pledge_linked.id, issue_reward_id=org_tuple[1].id
+    )
 
     balance.assert_called_once()
     platform_fee.assert_called_once()
@@ -107,14 +109,14 @@ async def test_list_rewards(
     assert len(rewards) == 2
 
     org_tuple = [r for r in rewards if r[1].organization_id == organization.id][0]
-    assert org_tuple[0].id == pledge.id
+    assert org_tuple[0].id == pledge_linked.id
     assert org_tuple[1].github_username is None
     assert org_tuple[1].organization_id is organization.id
     assert org_tuple[1].share_thousands == 700
 
     pct = org_tuple[1].pct
     assert pct == Decimal("0.7")
-    assert org_tuple[2].amount == round(pledge.amount * pct)
+    assert org_tuple[2].amount == round(pledge_linked.amount * pct)
 
 
 @pytest.mark.asyncio

@@ -2,7 +2,6 @@
 
 import IssueListItem from '@/components/Issues/IssueListItem'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
-import Spinner from '@/components/Shared/Spinner'
 import { HowToVoteOutlined } from '@mui/icons-material'
 import { Pledge } from '@polar-sh/sdk'
 
@@ -42,14 +41,6 @@ export default function ClientPage() {
   const groupedClosedIssues = groupByIssue(closedIssues)
 
   const havePledges = (pledges.data?.items?.length || 0) > 0
-
-  if (!isLoaded || !org) {
-    return (
-      <DashboardBody>
-        <Spinner />
-      </DashboardBody>
-    )
-  }
 
   return (
     <DashboardBody>

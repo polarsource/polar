@@ -8,10 +8,10 @@ import PledgeCheckoutPanel from '@/components/Pledge/PledgeCheckoutPanel'
 import { useTrafficRecordPageView } from '@/utils/traffic'
 import {
   Issue,
+  Organization,
   Pledger,
   PullRequest,
   RewardsSummary,
-  Visibility,
 } from '@polar-sh/sdk'
 import { Banner } from 'polarkit/components/ui/molecules'
 import posthog from 'posthog-js'
@@ -19,6 +19,7 @@ import { useEffect, useState } from 'react'
 
 const ClientPage = ({
   issue,
+  organization,
   htmlBody,
   pledgers,
   gotoURL,
@@ -26,13 +27,14 @@ const ClientPage = ({
   pullRequests,
 }: {
   issue: Issue
+  organization: Organization
   htmlBody?: string
   pledgers: Pledger[]
   gotoURL?: string
   rewards?: RewardsSummary
   pullRequests?: PullRequest[]
 }) => {
-  useTrafficRecordPageView({ organization: issue.repository.organization })
+  useTrafficRecordPageView({ organization })
 
   const [amount, setAmount] = useState(0)
   const onAmountChange = (amount: number) => {
@@ -42,19 +44,19 @@ const ClientPage = ({
   useEffect(() => {
     if (issue) {
       posthog.capture('Pledge page shown', {
-        'Organization ID': issue.repository.organization.id,
-        'Organization Name': issue.repository.organization.name,
+        'Organization ID': organization.id,
+        'Organization Name': organization.slug,
         'Repository ID': issue.repository.id,
         'Repository Name': issue.repository.name,
         'Issue ID': issue.id,
         'Issue Number': issue.number,
       })
     }
-  }, [issue])
+  }, [issue, organization])
 
   return (
     <>
-      {issue.repository.visibility === Visibility.PRIVATE && (
+      {issue.repository.is_private && (
         <div className="w-full">
           <Banner color="muted">
             This is an issue in a private repository. Only logged in users that
@@ -68,6 +70,7 @@ const ClientPage = ({
         <div className="mt-12">
           <IssueCard
             issue={issue}
+            organization={organization}
             htmlBody={htmlBody}
             pledgers={pledgers}
             currentPledgeAmount={amount}

@@ -3,8 +3,7 @@ import PolarMenu from '@/components/Layout/PolarMenu'
 import { BrandingMenu } from '@/components/Layout/Public/BrandingMenu'
 import { getServerSideAPI } from '@/utils/api/serverside'
 import { organizationPageLink } from '@/utils/nav'
-import { getOrganizationBySlug } from '@/utils/organization'
-import { getRepositoryByName } from '@/utils/repository'
+import { resolveRepositoryPath } from '@/utils/repository'
 import { Organization, UserRead } from '@polar-sh/sdk'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
@@ -25,26 +24,18 @@ export default async function Layout({
   children: React.ReactNode
 }) {
   const api = getServerSideAPI()
-  const organization = await getOrganizationBySlug(
+  const resolvedRepositoryOrganization = await resolveRepositoryPath(
     api,
     params.organization,
-    cacheConfig,
-  )
-
-  if (!organization) {
-    notFound()
-  }
-
-  const repository = await getRepositoryByName(
-    api,
-    organization.id,
     params.repo,
     cacheConfig,
   )
 
-  if (!repository) {
+  if (!resolvedRepositoryOrganization) {
     notFound()
   }
+
+  const [repository, organization] = resolvedRepositoryOrganization
 
   let authenticatedUser: UserRead | undefined
   let userOrganizations: Organization[] | undefined
@@ -97,7 +88,7 @@ export default async function Layout({
                 className="dark:text-polar-600 text-gray-400 transition-colors hover:text-blue-500 dark:hover:text-blue-400"
                 href={organizationPageLink(organization)}
               >
-                {repository.organization.name}
+                {organization.slug}
               </Link>
               <span className="dark:text-polar-600 text-gray-400">/</span>
               <Link
@@ -107,9 +98,6 @@ export default async function Layout({
                 <span>{repository.name}</span>
               </Link>
             </h1>
-            {/* <div className="flex flex-row rounded-full bg-gradient-to-r from-blue-300 to-blue-950 px-3 py-1.5 text-xs text-white">
-                Staff Pick
-              </div> */}
           </div>
           <div className="hidden flex-row items-center md:flex">
             <PolarMenu

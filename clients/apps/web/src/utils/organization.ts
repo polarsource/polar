@@ -13,3 +13,16 @@ export const getOrganizationBySlug = async (
   )
   return data.items?.[0]
 }
+
+export const getOrganizationById = async (
+  api: PolarAPI,
+  id: string,
+  initOverrides?: RequestInit | InitOverrideFunction,
+): Promise<Organization> => {
+  return await api.organizations.get(
+    {
+      id,
+    },
+    initOverrides,
+  )
+}

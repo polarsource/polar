@@ -1,7 +1,7 @@
 import { getServerSideAPI } from '@/utils/api/serverside'
+import { resolveIssuePath } from '@/utils/issue'
 import { organizationPageLink } from '@/utils/nav'
 import {
-  Issue,
   Pledger,
   PullRequest,
   ResponseError,
@@ -20,23 +20,29 @@ export async function generateMetadata({
 }: {
   params: { organization: string; repo: string; number: string }
 }): Promise<Metadata> {
-  let issue: Issue | undefined
+  const api = getServerSideAPI()
+  const resolvedIssueOrganization = await resolveIssuePath(
+    api,
+    params.organization,
+    params.repo,
+    params.number,
+    cacheConfig,
+  )
 
-  try {
-    issue = await getServerSideAPI().issues.lookup(
-      {
-        externalUrl: `https://github.com/${params.organization}/${params.repo}/issues/${params.number}`,
-      },
-      cacheConfig,
-    )
-  } catch (e) {
-    if (e instanceof ResponseError && e.response.status === 404) {
-      notFound()
-    }
+  if (!resolvedIssueOrganization) {
+    notFound()
   }
 
-  if (!issue) {
-    return {}
+  const [issue, organization] = resolvedIssueOrganization
+
+  // Redirect to the actual Polar organization if resolved from external organization
+  if (organization.slug !== params.organization) {
+    redirect(
+      organizationPageLink(
+        organization,
+        `${issue.repository.name}/issues/${issue.number}`,
+      ),
+    )
   }
 
   return {
@@ -73,22 +79,37 @@ export default async function Page({
 }: {
   params: { organization: string; repo: string; number: string }
 }) {
-  let issue: Issue | undefined
+  const api = getServerSideAPI()
+  const resolvedIssueOrganization = await resolveIssuePath(
+    api,
+    params.organization,
+    params.repo,
+    params.number,
+    cacheConfig,
+  )
+
+  if (!resolvedIssueOrganization) {
+    notFound()
+  }
+
+  const [issue, organization] = resolvedIssueOrganization
+
+  // Redirect to the actual Polar organization if resolved from external organization
+  if (organization.slug !== params.organization) {
+    redirect(
+      organizationPageLink(
+        organization,
+        `${issue.repository.name}/issues/${issue.number}`,
+      ),
+    )
+  }
+
   let issueHTMLBody: string | undefined
   let pledgers: Pledger[] = []
   let rewards: RewardsSummary | undefined
   let pulls: PullRequest[] = []
 
-  const api = getServerSideAPI()
-
   try {
-    issue = await api.issues.lookup(
-      {
-        externalUrl: `https://github.com/${params.organization}/${params.repo}/issues/${params.number}`,
-      },
-      cacheConfig,
-    )
-
     const [bodyResponse, pledgeSummary, rewardsSummary, pullRequests] =
       await Promise.all([
         api.issues.getBody({ id: issue.id }, { next: { revalidate: 60 } }), // Cache for 60s
@@ -109,26 +130,15 @@ export default async function Page({
     }
   }
 
-  if (!issue) {
-    notFound()
-  }
-
-  // Closed issue, redirect to donation instead
-  if (
-    issue.issue_closed_at &&
-    issue.repository.organization.donations_enabled
-  ) {
-    redirect(
-      organizationPageLink(
-        issue.repository.organization,
-        `donate?issue_id=${issue.id}`,
-      ),
-    )
+  // Closed issue, redirect to donation instead if linked organization
+  if (issue.issue_closed_at) {
+    redirect(organizationPageLink(organization, `donate?issue_id=${issue.id}`))
   }
 
   return (
     <ClientPage
       issue={issue}
+      organization={organization}
       htmlBody={issueHTMLBody}
       pledgers={pledgers}
       rewards={rewards}

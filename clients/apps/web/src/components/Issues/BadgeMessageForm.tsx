@@ -1,4 +1,4 @@
-import { CurrencyAmount, Funding, Organization } from '@polar-sh/sdk'
+import { CurrencyAmount, Funding } from '@polar-sh/sdk'
 import Markdown from 'markdown-to-jsx'
 import { useTheme } from 'next-themes'
 import { LabeledRadioButton } from 'polarkit/components/ui/atoms'
@@ -20,10 +20,10 @@ const BadgeMessageForm = (props: {
   showAmountRaised: boolean
   canSetFundingGoal: boolean
   funding: Funding
+  orgName: string
   title?: string
   subtitle?: string
   upfrontSplit?: number
-  org: Organization
 }) => {
   const [message, setMessage] = useState(props.value)
 
@@ -122,7 +122,7 @@ const BadgeMessageForm = (props: {
             </div>
 
             <IssueBadge
-              orgName={props.org.slug}
+              orgName={props.orgName}
               showAmountRaised={showAmountRaised}
               darkmode={resolvedTheme === 'dark'}
               funding={funding}

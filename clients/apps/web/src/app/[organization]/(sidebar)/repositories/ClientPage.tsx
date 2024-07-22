@@ -6,7 +6,7 @@ import { formatStarsNumber } from '@/utils/stars'
 import { useTrafficRecordPageView } from '@/utils/traffic'
 import { StarIcon } from '@heroicons/react/24/solid'
 import { HiveOutlined } from '@mui/icons-material'
-import { Organization, Repository, Visibility } from '@polar-sh/sdk'
+import { Organization, Repository } from '@polar-sh/sdk'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { Pill } from 'polarkit/components/ui/atoms'
@@ -80,7 +80,7 @@ export const ClientPage = ({
                         Unlicensed
                       </Pill>
                     )}
-                    {repository.visibility === Visibility.PRIVATE ? (
+                    {repository.is_private ? (
                       <Pill className="grow-0 px-3" color="gray">
                         Private
                       </Pill>
@@ -116,7 +116,7 @@ export const ClientPage = ({
                             Unlicensed
                           </Pill>
                         )}
-                        {repository.visibility === Visibility.PRIVATE ? (
+                        {repository.is_private ? (
                           <Pill className="grow-0 px-3" color="gray">
                             Private
                           </Pill>

@@ -30,11 +30,12 @@ export const useListOrganizationMembers = (id?: string) =>
     enabled: !!id,
   })
 
-export const useOrganizationBadgeSettings = (id: string) =>
+export const useOrganizationBadgeSettings = (id?: string) =>
   useQuery({
     queryKey: ['organizationBadgeSettings', id],
-    queryFn: () => api.organizations.getBadgeSettings({ id }),
+    queryFn: () => api.organizations.getBadgeSettings({ id: id ?? '' }),
     retry: defaultRetry,
+    enabled: !!id,
   })
 
 export const useUpdateOrganizationBadgeSettings: () => UseMutationResult<

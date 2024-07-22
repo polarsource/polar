@@ -1,3 +1,4 @@
+import { useOrganization } from '@/hooks/queries'
 import { organizationPageLink } from '@/utils/nav'
 import { formatStarsNumber } from '@/utils/stars'
 import { useSortable } from '@dnd-kit/sortable'
@@ -29,6 +30,11 @@ export const ProjectCard = ({
   disabled?: boolean
   sortable?: ReturnType<typeof useSortable>
 }) => {
+  const repositoryOrganizationId = repository.organization.organization_id
+  const { data: repositoryOrganization } = useOrganization(
+    repositoryOrganizationId as string,
+    !!repositoryOrganizationId,
+  )
   return (
     <Card
       ref={sortable ? sortable.setNodeRef : undefined}
@@ -48,7 +54,10 @@ export const ProjectCard = ({
     >
       <Link
         className="h-full"
-        href={organizationPageLink(repository.organization, repository.name)}
+        href={organizationPageLink(
+          repositoryOrganization || organization,
+          repository.name,
+        )}
       >
         <CardHeader className="flex flex-row justify-between p-6">
           <div className="flex flex-row items-baseline gap-x-3 overflow-hidden">
@@ -56,10 +65,11 @@ export const ProjectCard = ({
               <HiveOutlined fontSize="inherit" />
             </span>
             <h3 className="truncate text-lg text-gray-950 dark:text-white">
-              {repository.organization.id !== organization.id ? (
+              {repositoryOrganization &&
+              repositoryOrganization.id !== organization.id ? (
                 <span className="flex flex-row items-baseline gap-x-1">
                   <span className="dark:text-polar-500 text-gray-500">
-                    {repository.organization.name}
+                    {repositoryOrganization.slug}
                   </span>
                   <span className="dark:text-polar-500 text-gray-500">/</span>
                   <span>{repository.name}</span>

@@ -1,4 +1,4 @@
-from collections.abc import Sequence
+import builtins
 from uuid import UUID
 
 from fastapi import Depends, HTTPException, Query
@@ -212,9 +212,9 @@ async def for_you(
     )
 
     # hacky solution to spread out the repositories in the results
-    def spread(items: Sequence[IssueSchema]) -> Sequence[IssueSchema]:
+    def spread(items: builtins.list[IssueSchema]) -> builtins.list[IssueSchema]:
         penalties: dict[str, int] = {}
-        res = []
+        res: builtins.list[IssueSchema] = []
 
         while len(items) > 0:
             # In the next 5 issues, pick the one with the lowest penalty

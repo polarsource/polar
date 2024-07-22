@@ -1,45 +1,120 @@
 from __future__ import annotations
 
+import uuid
 from collections.abc import Sequence
 from datetime import timedelta
+from typing import Any
 from uuid import UUID
 
 import structlog
 from sqlalchemy import (
     ColumnElement,
     Integer,
+    Select,
+    UnaryExpression,
     and_,
     asc,
     desc,
     func,
     nullslast,
     or_,
+    select,
 )
 from sqlalchemy.orm import aliased, contains_eager, joinedload
 
+from polar.auth.models import Anonymous, AuthSubject, is_organization, is_user
 from polar.dashboard.schemas import IssueSortBy
 from polar.enums import Platforms
 from polar.issue.search import search_query
+from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.services import ResourceService
+from polar.kit.sorting import Sorting
 from polar.kit.utils import utc_now
-from polar.models import ExternalOrganization
-from polar.models.issue import Issue
-from polar.models.issue_dependency import IssueDependency
-from polar.models.issue_reference import IssueReference
-from polar.models.issue_reward import IssueReward
-from polar.models.notification import Notification
-from polar.models.organization import Organization
-from polar.models.pledge import Pledge, PledgeState
-from polar.models.repository import Repository
-from polar.models.user import User
+from polar.models import (
+    ExternalOrganization,
+    Issue,
+    IssueDependency,
+    IssueReference,
+    IssueReward,
+    Notification,
+    Organization,
+    Pledge,
+    Repository,
+    User,
+    UserOrganization,
+)
+from polar.models.pledge import PledgeState
 from polar.postgres import AsyncSession, sql
 
 from .schemas import IssueCreate, IssueUpdate
+from .sorting import SortProperty
 
 log = structlog.get_logger()
 
 
 class IssueService(ResourceService[Issue, IssueCreate, IssueUpdate]):
+    async def list(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Anonymous | User | Organization],
+        *,
+        platform: Sequence[Platforms] | None = None,
+        external_organization_name: Sequence[str] | None = None,
+        repository_name: Sequence[str] | None = None,
+        number: Sequence[int] | None = None,
+        organization_id: Sequence[uuid.UUID] | None = None,
+        pagination: PaginationParams,
+        sorting: list[Sorting[SortProperty]] = [(SortProperty.modified_at, True)],
+    ) -> tuple[Sequence[Issue], int]:
+        IssueExternalOrganization = aliased(ExternalOrganization)
+        statement = (
+            self._get_readable_issue_statement(auth_subject)
+            .join(
+                IssueExternalOrganization,
+                Issue.organization_id == IssueExternalOrganization.id,
+            )
+            .options(
+                contains_eager(Issue.repository).contains_eager(
+                    Repository.organization.of_type(IssueExternalOrganization),
+                ),
+                contains_eager(Issue.organization.of_type(IssueExternalOrganization)),
+            )
+        )
+
+        if platform is not None:
+            statement = statement.where(Issue.platform.in_(platform))
+
+        if external_organization_name is not None:
+            statement = statement.where(
+                IssueExternalOrganization.name.in_(external_organization_name)
+            )
+
+        if repository_name is not None:
+            statement = statement.where(Repository.name.in_(repository_name))
+
+        if number is not None:
+            statement = statement.where(Issue.number.in_(number))
+
+        if organization_id is not None:
+            statement = statement.where(
+                IssueExternalOrganization.organization_id.in_(organization_id)
+            )
+
+        order_by_clauses: list[UnaryExpression[Any]] = []
+        for criterion, is_desc in sorting:
+            clause_function = desc if is_desc else asc
+            if criterion == SortProperty.created_at:
+                order_by_clauses.append(clause_function(Issue.created_at))
+            elif criterion == SortProperty.modified_at:
+                order_by_clauses.append(clause_function(Issue.modified_at))
+            elif criterion == SortProperty.engagement:
+                order_by_clauses.append(clause_function(Issue.total_engagement_count))
+            elif criterion == SortProperty.positive_reactions:
+                order_by_clauses.append(clause_function(Issue.positive_reactions_count))
+        statement = statement.order_by(*order_by_clauses)
+
+        return await paginate(session, statement, pagination=pagination)
+
     async def create(self, session: AsyncSession, create_schema: IssueCreate) -> Issue:
         issue = Issue(
             platform=create_schema.platform,
@@ -146,7 +221,7 @@ class IssueService(ResourceService[Issue, IssueCreate, IssueUpdate]):
         return issues
 
     async def list_by_repository_and_numbers(
-        self, session: AsyncSession, repository_id: UUID, numbers: list[int]
+        self, session: AsyncSession, repository_id: UUID, numbers: Sequence[int]
     ) -> Sequence[Issue]:
         statement = (
             sql.select(Issue)
@@ -160,7 +235,7 @@ class IssueService(ResourceService[Issue, IssueCreate, IssueUpdate]):
     async def list_by_repository_type_and_status(
         self,
         session: AsyncSession,
-        repository_ids: list[UUID] = [],
+        repository_ids: Sequence[UUID] = [],
         text: str | None = None,
         pledged_by_org: UUID
         | None = None,  # Only include issues that have been pledged by this org
@@ -404,7 +479,7 @@ class IssueService(ResourceService[Issue, IssueCreate, IssueUpdate]):
         return refs
 
     async def list_issue_references_for_issues(
-        self, session: AsyncSession, issue_ids: list[UUID]
+        self, session: AsyncSession, issue_ids: Sequence[UUID]
     ) -> Sequence[IssueReference]:
         stmt = (
             sql.select(IssueReference)
@@ -572,6 +647,43 @@ class IssueService(ResourceService[Issue, IssueCreate, IssueUpdate]):
         await session.commit()
 
         return new_issue
+
+    def _get_readable_issue_statement(
+        self, auth_subject: AuthSubject[Anonymous | User | Organization]
+    ) -> Select[tuple[Issue]]:
+        statement = (
+            select(Issue)
+            .where(Issue.deleted_at.is_(None))
+            .join(Repository, onclause=Issue.repository_id == Repository.id)
+        )
+
+        if is_user(auth_subject):
+            statement = statement.where(
+                or_(
+                    Repository.is_private.is_(False),
+                    Repository.organization_id.in_(
+                        select(ExternalOrganization.id)
+                        .join(
+                            UserOrganization,
+                            onclause=UserOrganization.organization_id
+                            == ExternalOrganization.organization_id,
+                        )
+                        .where(UserOrganization.user_id == auth_subject.subject.id)
+                    ),
+                )
+            )
+        elif is_organization(auth_subject):
+            statement = statement.where(
+                Repository.organization_id.in_(
+                    select(ExternalOrganization.id).where(
+                        ExternalOrganization.organization_id == auth_subject.subject.id
+                    )
+                )
+            )
+        else:
+            statement = statement.where(Repository.is_private.is_(False))
+
+        return statement
 
 
 issue = IssueService(Issue)

@@ -44,6 +44,9 @@ class Scope(StrEnum):
     repositories_read = "repositories:read"
     repositories_write = "repositories:write"
 
+    issues_read = "issues:read"
+    issues_write = "issues:write"
+
     user_benefits_read = "user:benefits:read"
     user_orders_read = "user:orders:read"
     user_subscriptions_read = "user:subscriptions:read"

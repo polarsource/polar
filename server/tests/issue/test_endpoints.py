@@ -109,7 +109,7 @@ async def test_get_private_repo_member(
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
 @pytest.mark.auth
-async def test_issue_search_public_repo(
+async def test_issue_list_public_repo(
     organization: Organization,
     external_organization_linked: ExternalOrganization,
     repository_linked: Repository,
@@ -122,7 +122,7 @@ async def test_issue_search_public_repo(
     await save_fixture(repository_linked)
 
     response = await client.get(
-        "/v1/issues/search",
+        "/v1/issues/",
         params={
             "organization_id": str(organization.id),
             "repository_name": repository_linked.name,
@@ -141,7 +141,7 @@ async def test_issue_search_public_repo(
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
 @pytest.mark.auth
-async def test_issue_search_public_repo_without_repo_selector(
+async def test_issue_list_public_repo_without_repo_selector(
     organization: Organization,
     repository_linked: Repository,
     issue_linked: Issue,
@@ -153,7 +153,7 @@ async def test_issue_search_public_repo_without_repo_selector(
     await save_fixture(repository_linked)
 
     response = await client.get(
-        "/v1/issues/search",
+        "/v1/issues/",
         params={
             "organization_id": str(organization.id),
         },
@@ -167,7 +167,7 @@ async def test_issue_search_public_repo_without_repo_selector(
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
 @pytest.mark.auth
-async def test_issue_search_private_repo(
+async def test_issue_list_private_repo(
     organization: Organization,
     repository_linked: Repository,
     save_fixture: SaveFixture,
@@ -178,21 +178,21 @@ async def test_issue_search_private_repo(
     await save_fixture(repository_linked)
 
     response = await client.get(
-        "/v1/issues/search",
+        "/v1/issues/",
         params={
             "organization_id": str(organization.id),
             "repository_name": repository_linked.name,
         },
     )
 
-    assert response.status_code == 404
-    assert response.json() == {"detail": "Repository not found"}
+    assert response.status_code == 200
+    assert response.json()["items"] == []
 
 
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
 @pytest.mark.auth
-async def test_issue_search_private_repo_without_repo_selector(
+async def test_issue_list_private_repo_without_repo_selector(
     organization: Organization,
     repository_linked: Repository,
     save_fixture: SaveFixture,
@@ -203,7 +203,7 @@ async def test_issue_search_private_repo_without_repo_selector(
     await save_fixture(repository_linked)
 
     response = await client.get(
-        "/v1/issues/search",
+        "/v1/issues/",
         params={"organization_id": str(organization.id)},
     )
 

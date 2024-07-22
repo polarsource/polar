@@ -1,6 +1,6 @@
 import { PolarQueryClientProvider } from '@/app/providers'
 import { UserContextProvider } from '@/providers/auth'
-import { org, repo } from '@/utils/testdata'
+import { repo } from '@/utils/testdata'
 import type { Meta, StoryObj } from '@storybook/react'
 import {
   DashboardBody,
@@ -12,9 +12,6 @@ import {
 const meta: Meta<typeof DashboardLayout> = {
   title: 'Layouts/DashboardLayout',
   component: DashboardLayout,
-  args: {
-    organization: org,
-  },
   parameters: {
     nextjs: {
       appDirectory: true,

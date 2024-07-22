@@ -109,6 +109,7 @@ const IssuesLookingForFunding = ({
                     <div className="p-4">
                       <IssueFundingDetails
                         issue={i.issue}
+                        organization={organization}
                         total={i.total}
                         fundingGoal={i.funding_goal}
                         pledgesSummaries={i.pledges_summaries}

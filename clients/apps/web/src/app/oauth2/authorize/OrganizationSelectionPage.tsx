@@ -69,9 +69,9 @@ const OrganizationSelectionPage = ({
                   <Avatar
                     className="h-8 w-8"
                     avatar_url={organization.avatar_url}
-                    name={organization.name}
+                    name={organization.slug}
                   />
-                  {organization.name}
+                  {organization.slug}
                 </div>
               </Link>
             ))}

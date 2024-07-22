@@ -39,13 +39,13 @@ const getTransactionMeta = (transaction: Transaction) => {
   } else if (transaction.issue_reward) {
     return {
       type: 'Reward',
-      organization: transaction.pledge?.issue.organization,
+      externalOrganization: transaction.pledge?.issue.organization,
       meta: transaction.pledge,
     }
   } else if (transaction.pledge) {
     return {
       type: 'Pledge',
-      organization: transaction.pledge?.issue.organization,
+      externalOrganization: transaction.pledge?.issue.organization,
       meta: transaction.pledge,
     }
   } else if (transaction.donation) {
@@ -81,12 +81,24 @@ const TransactionMeta: React.FC<TransactionMetaProps> = ({ transaction }) => {
       {transactionMeta.organization && (
         <Link
           className="hidden flex-shrink-0 md:block"
-          href={`/${transactionMeta.organization.name}`}
+          href={`/${transactionMeta.organization.slug}`}
         >
           <Avatar
             className="h-6 w-6"
-            name={transactionMeta.organization?.name}
-            avatar_url={transactionMeta.organization?.avatar_url}
+            name={transactionMeta.organization.slug}
+            avatar_url={transactionMeta.organization.avatar_url}
+          />
+        </Link>
+      )}
+      {transactionMeta.externalOrganization && (
+        <Link
+          className="hidden flex-shrink-0 md:block"
+          href={`/${transactionMeta.externalOrganization.name}`}
+        >
+          <Avatar
+            className="h-6 w-6"
+            name={transactionMeta.externalOrganization.name}
+            avatar_url={transactionMeta.externalOrganization.avatar_url}
           />
         </Link>
       )}
@@ -101,7 +113,7 @@ const TransactionMeta: React.FC<TransactionMetaProps> = ({ transaction }) => {
                 <div>
                   <Link
                     className=" text-blue-500 dark:text-blue-400"
-                    href={`/${transactionMeta.organization?.name}/subscriptions`}
+                    href={`/${transactionMeta.organization?.slug}/subscriptions`}
                   >
                     <ProductPill
                       product={transactionMeta.meta.product}
@@ -127,9 +139,9 @@ const TransactionMeta: React.FC<TransactionMetaProps> = ({ transaction }) => {
               <div className="flex flex-col gap-1">
                 <Link
                   className=" text-blue-500 dark:text-blue-400"
-                  href={`/${transactionMeta.meta.to_organization.name}`}
+                  href={`/${transactionMeta.meta.to_organization.slug}`}
                 >
-                  {transactionMeta.meta.to_organization.name}
+                  {transactionMeta.meta.to_organization.slug}
                 </Link>
               </div>
             ) : null}

@@ -1,5 +1,6 @@
 import {
   Article,
+  ExternalOrganization,
   Issue,
   IssueFunding,
   IssueStateEnum,
@@ -67,16 +68,23 @@ export const user: UserRead = {
   oauth_accounts: [],
 }
 
-// Public API
+export const externalOrganization: ExternalOrganization = {
+  id: '',
+  platform: Platforms.GITHUB,
+  name: 'polarsource',
+  avatar_url: 'https://avatars.githubusercontent.com/u/105373340?v=4',
+  is_personal: false,
+}
+
 export const repo: Repository = {
   platform: Platforms.GITHUB,
   name: 'pydantic',
   id: 'bb',
-  visibility: Visibility.PUBLIC,
+  is_private: false,
   license: 'Apache 2.0',
   description: 'Data validation using Python type hints',
   homepage: 'https://docs.pydantic.dev/latest/',
-  organization: org,
+  organization: externalOrganization,
   stars: 26000,
   profile_settings: {},
 }

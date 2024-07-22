@@ -6,7 +6,7 @@ import { useAuth } from '@/hooks'
 import { useSendMagicLink } from '@/hooks/magicLink'
 import { organizationPageLink } from '@/utils/nav'
 import { CheckCircleIcon } from '@heroicons/react/24/outline'
-import { Pledge } from '@polar-sh/sdk'
+import { Organization, Pledge } from '@polar-sh/sdk'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { PolarTimeAgo } from 'polarkit/components/ui/atoms'
@@ -16,6 +16,7 @@ import GrayCard from '../Cards/GrayCard'
 
 export const Status = (props: {
   pledge: Pledge
+  organization: Organization
   email: string | undefined
 }) => {
   const pledge = props.pledge
@@ -49,7 +50,7 @@ export const Status = (props: {
     } finally {
       setEmailSigninLoading(false)
     }
-  }, [email, router])
+  }, [email, router, sendMagicLink])
 
   // TODO: Handle different statuses than success... #happy-path-alpha-programming
   return (
@@ -67,12 +68,8 @@ export const Status = (props: {
 
         {currentUser ? (
           <div className=" my-8 flex w-full justify-center">
-            <Link
-              href={organizationPageLink(pledge.issue.repository.organization)}
-            >
-              <Button>
-                Continue to {pledge.issue.repository.organization.name}
-              </Button>
+            <Link href={organizationPageLink(props.organization)}>
+              <Button>Continue to {props.organization.slug}</Button>
             </Link>
           </div>
         ) : null}

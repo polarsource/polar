@@ -68,7 +68,7 @@ export default function Page() {
 
   return (
     <Gatekeeper>
-      <DashboardLayout organization={undefined}>
+      <DashboardLayout>
         {isBacker && (
           <div
             className={

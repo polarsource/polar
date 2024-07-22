@@ -52,16 +52,6 @@ export const useDeletePersonalAccessToken = () =>
     },
   })
 
-export const useMaintainerUpgrade = () =>
-  useMutation({
-    mutationFn: () => {
-      return api.users.maintainerUpgrade()
-    },
-    onSuccess: (_result, _variables, _ctx) => {
-      queryClient.invalidateQueries()
-    },
-  })
-
 export const useUserSubscriptions = (
   parameters: UsersApiListSubscriptionsRequest = {},
 ) =>

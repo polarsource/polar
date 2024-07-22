@@ -1,9 +1,6 @@
 import { useAuth } from '@/hooks'
 import { useRedirectToGitHubInstallation } from '@/hooks/github'
-import {
-  useListMemberOrganizations,
-  useMaintainerUpgrade,
-} from '@/hooks/queries'
+import { useListMemberOrganizations } from '@/hooks/queries'
 import { ExclamationCircleIcon } from '@heroicons/react/20/solid'
 import { ArrowForwardOutlined } from '@mui/icons-material'
 import { Organization, UserSignupType } from '@polar-sh/sdk'
@@ -32,12 +29,11 @@ export const GitHubAuthUpsell = () => {
 }
 
 export const MaintainerUpsell = () => {
-  const maintainerUpgrade = useMaintainerUpgrade()
   const { currentUser } = useAuth()
   const router = useRouter()
 
   const upgrade = async () => {
-    await maintainerUpgrade.mutateAsync()
+    alert('CREATE ORG!')
     // TODO: Find a way to refresh the page using router.refresh() without keeping stale data
     router.push(`/maintainer/${currentUser?.username}/overview`)
   }
@@ -47,12 +43,7 @@ export const MaintainerUpsell = () => {
       title="Become a creator"
       description="Build, engage & convert your own community of free- and paid subscribers."
     >
-      <Button
-        size="sm"
-        className="-z-1 self-start"
-        onClick={upgrade}
-        loading={maintainerUpgrade.isPending}
-      >
+      <Button size="sm" className="-z-1 self-start" onClick={upgrade}>
         <span>Get Started</span>
         <ArrowForwardOutlined className="ml-2" fontSize="inherit" />
       </Button>

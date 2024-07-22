@@ -20,7 +20,6 @@ export const Default: Story = {
     organization: {
       ...org,
       id: '12313',
-      platform: 'github',
       slug: 'polarsource',
       avatar_url: 'https://avatars.githubusercontent.com/u/68443778?v=4',
     },

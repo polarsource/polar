@@ -663,7 +663,7 @@ const MaintainerNewProductSale = ({
       {{
         text: (
           <>
-            {payload.customer_name} just purchased {' '}
+            {payload.customer_name} just purchased{' '}
             <InternalLink
               href={`/maintainer/${payload.organization_name}/sales/orders`}
             >

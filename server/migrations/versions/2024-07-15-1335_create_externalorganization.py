@@ -271,6 +271,13 @@ def upgrade() -> None:
         ["organization_id"],
         ["id"],
     )
+    op.create_foreign_key(
+        op.f("pledges_organization_id_fkey"),
+        "pledges",
+        "external_organizations",
+        ["organization_id"],
+        ["id"],
+    )
 
     # Drop sync-only organizations from organizations
     # Need to drop traffic recorded for these organizations

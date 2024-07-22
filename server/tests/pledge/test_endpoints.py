@@ -26,9 +26,10 @@ from tests.fixtures.random_objects import (
 @pytest.mark.auth
 async def test_get_pledge(
     organization: Organization,
-    repository: Repository,
-    pledge: Pledge,
-    issue: Issue,
+    external_organization_linked: ExternalOrganization,
+    repository_linked: Repository,
+    pledge_linked: Pledge,
+    issue_linked: Issue,
     user_organization: UserOrganization,  # makes User a member of Organization
     session: AsyncSession,
     client: AsyncClient,
@@ -36,15 +37,15 @@ async def test_get_pledge(
     # then
     session.expunge_all()
 
-    response = await client.get(f"/v1/pledges/{pledge.id}")
+    response = await client.get(f"/v1/pledges/{pledge_linked.id}")
 
     assert response.status_code == 200
-    assert response.json()["id"] == str(pledge.id)
+    assert response.json()["id"] == str(pledge_linked.id)
     assert response.json()["type"] == "pay_upfront"
-    assert response.json()["issue"]["id"] == str(issue.id)
-    assert response.json()["issue"]["repository"]["id"] == str(repository.id)
+    assert response.json()["issue"]["id"] == str(issue_linked.id)
+    assert response.json()["issue"]["repository"]["id"] == str(repository_linked.id)
     assert response.json()["issue"]["repository"]["organization"]["id"] == str(
-        organization.id
+        external_organization_linked.id
     )
 
 
@@ -200,43 +201,26 @@ async def test_get_pledge_not_member(
 @pytest.mark.auth
 async def test_search_pledge(
     organization: Organization,
-    repository: Repository,
     user_organization: UserOrganization,  # makes User a member of Organization
-    pledge: Pledge,
-    issue: Issue,
+    external_organization_linked: ExternalOrganization,
+    repository_linked: Repository,
+    pledge_linked: Pledge,
+    issue_linked: Issue,
     client: AsyncClient,
 ) -> None:
     response = await client.get(
-        f"/v1/pledges/search?platform=github&organization_name={organization.slug}"
+        "/v1/pledges/search", params={"organization_id": str(organization.id)}
     )
 
     assert response.status_code == 200
-    assert response.json()["items"][0]["id"] == str(pledge.id)
-    assert response.json()["items"][0]["issue"]["id"] == str(issue.id)
+    assert response.json()["items"][0]["id"] == str(pledge_linked.id)
+    assert response.json()["items"][0]["issue"]["id"] == str(issue_linked.id)
     assert response.json()["items"][0]["issue"]["repository"]["id"] == str(
-        repository.id
+        repository_linked.id
     )
     assert response.json()["items"][0]["issue"]["repository"]["organization"][
         "id"
-    ] == str(organization.id)
-
-
-@pytest.mark.asyncio
-@pytest.mark.http_auto_expunge
-@pytest.mark.auth
-async def test_search_pledge_no_admin(
-    organization: Organization,
-    repository: Repository,
-    user_organization: UserOrganization,  # makes User a member of Organization
-    pledge: Pledge,
-    client: AsyncClient,
-) -> None:
-    response = await client.get(
-        f"/v1/pledges/search?platform=github&organization_name={organization.slug}"
-    )
-
-    assert response.status_code == 200
-    assert len(response.json()["items"]) == 1
+    ] == str(external_organization_linked.id)
 
 
 @pytest.mark.asyncio
@@ -244,12 +228,14 @@ async def test_search_pledge_no_admin(
 @pytest.mark.auth
 async def test_search_pledge_no_member(
     organization: Organization,
-    repository: Repository,
-    pledge: Pledge,
+    external_organization_linked: ExternalOrganization,
+    repository_linked: Repository,
+    pledge_linked: Pledge,
+    issue_linked: Issue,
     client: AsyncClient,
 ) -> None:
     response = await client.get(
-        f"/v1/pledges/search?platform=github&organization_name={organization.slug}"
+        "/v1/pledges/search", params={"organization_id": str(organization.id)}
     )
 
     assert response.status_code == 200
@@ -260,27 +246,29 @@ async def test_search_pledge_no_member(
 @pytest.mark.auth
 async def test_search_pledge_by_issue_id(
     organization: Organization,
-    external_organization: ExternalOrganization,
+    external_organization_linked: ExternalOrganization,
     pledging_organization: Organization,
-    repository: Repository,
+    repository_linked: Repository,
     user_organization: UserOrganization,  # makes User a member of Organization
-    pledge: Pledge,
+    pledge_linked: Pledge,
     save_fixture: SaveFixture,
     session: AsyncSession,
-    issue: Issue,
+    issue_linked: Issue,
     client: AsyncClient,
 ) -> None:
     # create another issue and another pledge
     other_issue = await create_issue(
-        save_fixture, external_organization=external_organization, repository=repository
+        save_fixture,
+        external_organization=external_organization_linked,
+        repository=repository_linked,
     )
 
     other_pledge = Pledge(
         id=uuid.uuid4(),
         by_organization_id=pledging_organization.id,
         issue_id=other_issue.id,
-        repository_id=repository.id,
-        organization_id=external_organization.id,
+        repository_id=repository_linked.id,
+        organization_id=external_organization_linked.id,
         amount=50000,
         fee=50,
         state=PledgeState.created,
@@ -291,8 +279,8 @@ async def test_search_pledge_by_issue_id(
         id=uuid.uuid4(),
         by_organization_id=pledging_organization.id,
         issue_id=other_issue.id,
-        repository_id=repository.id,
-        organization_id=external_organization.id,
+        repository_id=repository_linked.id,
+        organization_id=external_organization_linked.id,
         amount=50000,
         fee=50,
         state=PledgeState.created,
@@ -302,18 +290,18 @@ async def test_search_pledge_by_issue_id(
     # then
     session.expunge_all()
 
-    response = await client.get(f"/v1/pledges/search?issue_id={pledge.issue_id}")
+    response = await client.get(f"/v1/pledges/search?issue_id={pledge_linked.issue_id}")
 
     assert response.status_code == 200
     assert len(response.json()["items"]) == 1
-    assert response.json()["items"][0]["id"] == str(pledge.id)
-    assert response.json()["items"][0]["issue"]["id"] == str(issue.id)
+    assert response.json()["items"][0]["id"] == str(pledge_linked.id)
+    assert response.json()["items"][0]["issue"]["id"] == str(issue_linked.id)
     assert response.json()["items"][0]["issue"]["repository"]["id"] == str(
-        repository.id
+        repository_linked.id
     )
     assert response.json()["items"][0]["issue"]["repository"]["organization"][
         "id"
-    ] == str(organization.id)
+    ] == str(external_organization_linked.id)
 
     response = await client.get(f"/v1/pledges/search?issue_id={other_issue.id}")
 

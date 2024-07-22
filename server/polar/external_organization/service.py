@@ -54,6 +54,11 @@ class ExternalOrganizationService(ResourceServiceReader[ExternalOrganization]):
 
         return await paginate(session, statement, pagination=pagination)
 
+    async def get_by_name(
+        self, session: AsyncSession, platform: Platforms, name: str
+    ) -> ExternalOrganization | None:
+        return await self.get_by(session, platform=platform, name=name)
+
     async def get_by_platform(
         self, session: AsyncSession, platform: Platforms, external_id: int
     ) -> ExternalOrganization | None:

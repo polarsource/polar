@@ -33,7 +33,7 @@ async def test_create_pledge_from_created(
     mocker: MockerFixture,
 ) -> None:
     m = mocker.patch(
-        "polar.notifications.service.NotificationsService.send_to_org_admins"
+        "polar.notifications.service.NotificationsService.send_to_org_members"
     )
 
     payment_id = "xxx-1"
@@ -97,7 +97,7 @@ async def test_create_pledge_from_created_by_user(
     user: User,
 ) -> None:
     m = mocker.patch(
-        "polar.notifications.service.NotificationsService.send_to_org_admins"
+        "polar.notifications.service.NotificationsService.send_to_org_members"
     )
 
     payment_id = "xxx-1"
@@ -162,7 +162,7 @@ async def test_create_pledge_from_created_by_user_with_github(
     user_github_oauth: OAuthAccount,
 ) -> None:
     m = mocker.patch(
-        "polar.notifications.service.NotificationsService.send_to_org_admins"
+        "polar.notifications.service.NotificationsService.send_to_org_members"
     )
 
     payment_id = "xxx-1"
@@ -226,7 +226,7 @@ async def test_create_pledge_from_created_on_behalf_of(
     user: User,
 ) -> None:
     m = mocker.patch(
-        "polar.notifications.service.NotificationsService.send_to_org_admins"
+        "polar.notifications.service.NotificationsService.send_to_org_members"
     )
 
     payment_id = "xxx-1"
@@ -291,7 +291,7 @@ async def test_deduplicate(
     user_organization_second: UserOrganization,  # two members
     mocker: MockerFixture,
 ) -> None:
-    spy = mocker.spy(NotificationsService, "send_to_org_admins")
+    spy = mocker.spy(NotificationsService, "send_to_org_members")
 
     pledge = Pledge(
         issue_id=issue_linked.id,

@@ -17,6 +17,7 @@ from polar.integrations.github.tasks import webhook as webhook_tasks
 from polar.kit import utils
 from polar.kit.extensions.sqlalchemy import sql
 from polar.models.external_organization import ExternalOrganization
+from polar.models.organization import Organization
 from polar.models.repository import Repository
 from polar.postgres import AsyncSession
 from polar.repository.schemas import RepositoryCreate
@@ -58,6 +59,7 @@ async def get_asserted_org(
 
 async def create_org(
     session: AsyncSession,
+    organization: Organization | None,
     github_webhook: TestWebhookFactory,
 ) -> ExternalOrganization:
     hook = github_webhook.create("installation.created")
@@ -80,12 +82,17 @@ async def create_org(
         installation_suspended_at=event.installation.suspended_at,
         installation_permissions={},
     )
+
+    insert_data = create_schema.model_dump()
+    if organization is not None:
+        insert_data["organization_id"] = organization.id
+
     stmt = (
         sql.insert(ExternalOrganization)
-        .values(**create_schema.model_dump())
+        .values(**insert_data)
         .on_conflict_do_update(
             index_elements=[ExternalOrganization.external_id],
-            set_={**create_schema.model_dump()},
+            set_=insert_data,
         )
         .returning(ExternalOrganization)
         .execution_options(populate_existing=True)
@@ -97,9 +104,11 @@ async def create_org(
 
 
 async def create_repositories(
-    session: AsyncSession, github_webhook: TestWebhookFactory
+    session: AsyncSession,
+    organization: Organization,
+    github_webhook: TestWebhookFactory,
 ) -> ExternalOrganization:
-    org = await create_org(session, github_webhook)
+    org = await create_org(session, organization, github_webhook)
     hook = github_webhook.create("installation_repositories.added")
 
     parsed = github.webhooks.parse_obj("installation_repositories", hook.json)
@@ -126,9 +135,12 @@ async def create_repositories(
 
 
 async def create_issue(
-    job_context: JobContext, session: AsyncSession, github_webhook: TestWebhookFactory
+    job_context: JobContext,
+    organization: Organization,
+    session: AsyncSession,
+    github_webhook: TestWebhookFactory,
 ) -> TestWebhook:
-    await create_repositories(session, github_webhook)
+    await create_repositories(session, organization, github_webhook)
     hook = github_webhook.create("issues.opened")
 
     await webhook_tasks.issue_opened(
@@ -142,9 +154,12 @@ async def create_issue(
 
 
 async def create_pr(
-    job_context: JobContext, session: AsyncSession, github_webhook: TestWebhookFactory
+    job_context: JobContext,
+    organization: Organization,
+    session: AsyncSession,
+    github_webhook: TestWebhookFactory,
 ) -> TestWebhook:
-    await create_repositories(session, github_webhook)
+    await create_repositories(session, organization, github_webhook)
     hook = github_webhook.create("pull_request.opened")
 
     await webhook_tasks.pull_request_opened(
@@ -161,10 +176,11 @@ async def create_pr(
 async def test_webhook_installation_suspend(
     job_context: JobContext,
     session: AsyncSession,
+    organization: Organization,
     mocker: MockerFixture,
     github_webhook: TestWebhookFactory,
 ) -> None:
-    org = await create_org(session, github_webhook)
+    org = await create_org(session, organization, github_webhook)
 
     hook = github_webhook.create("installation.suspend")
     org_id = hook["installation"]["account"]["id"]
@@ -189,10 +205,11 @@ async def test_webhook_installation_suspend(
 async def test_webhook_installation_unsuspend(
     job_context: JobContext,
     session: AsyncSession,
+    organization: Organization,
     mocker: MockerFixture,
     github_webhook: TestWebhookFactory,
 ) -> None:
-    org = await create_org(session, github_webhook)
+    org = await create_org(session, organization, github_webhook)
 
     hook = github_webhook.create("installation.unsuspend")
     org_id = hook["installation"]["account"]["id"]
@@ -217,6 +234,7 @@ async def test_webhook_installation_unsuspend(
 async def test_webhook_installation_delete(
     job_context: JobContext,
     session: AsyncSession,
+    organization: Organization,
     save_fixture: SaveFixture,
     mocker: MockerFixture,
     github_webhook: TestWebhookFactory,
@@ -224,7 +242,7 @@ async def test_webhook_installation_delete(
     hook = github_webhook.create("installation.deleted")
     org_id = hook["installation"]["account"]["id"]
 
-    org = await create_org(session, github_webhook)
+    org = await create_org(session, organization, github_webhook)
     assert org
     assert org.external_id == org_id
 
@@ -459,12 +477,13 @@ async def test_webhook_repositories_removed(
     job_context: JobContext,
     mocker: MockerFixture,
     session: AsyncSession,
+    organization: Organization,
     github_webhook: TestWebhookFactory,
 ) -> None:
     hook = github_webhook.create("installation_repositories.removed")
     delete_repo = hook["repositories_removed"][0]
 
-    await create_repositories(session, github_webhook)
+    await create_repositories(session, organization, github_webhook)
     await assert_repository_exists(session, delete_repo)
 
     def api_response(self: Any, *args: Any, **kwargs: Any) -> httpx.Response:
@@ -523,9 +542,10 @@ async def test_webhook_issues_opened(
     job_context: JobContext,
     mocker: MockerFixture,
     session: AsyncSession,
+    organization: Organization,
     github_webhook: TestWebhookFactory,
 ) -> None:
-    await create_repositories(session, github_webhook)
+    await create_repositories(session, organization, github_webhook)
     hook = github_webhook.create("issues.opened")
     issue_id = hook["issue"]["id"]
 
@@ -552,10 +572,11 @@ async def test_webhook_issues_closed(
     job_context: JobContext,
     mocker: MockerFixture,
     session: AsyncSession,
+    organization: Organization,
     github_webhook: TestWebhookFactory,
 ) -> None:
     # create issue
-    await create_repositories(session, github_webhook)
+    await create_repositories(session, organization, github_webhook)
     hook = github_webhook.create("issues.opened")
     issue_id = hook["issue"]["id"]
 
@@ -593,11 +614,12 @@ async def test_webhook_issues_closed(
 async def test_webhook_issues_labeled(
     job_context: JobContext,
     session: AsyncSession,
+    organization: Organization,
     mocker: MockerFixture,
     github_webhook: TestWebhookFactory,
 ) -> None:
-    await create_repositories(session, github_webhook)
-    hook = await create_issue(job_context, session, github_webhook)
+    await create_repositories(session, organization, github_webhook)
+    hook = await create_issue(job_context, organization, session, github_webhook)
 
     # then
     session.expunge_all()
@@ -628,6 +650,7 @@ async def test_webhook_pull_request_opened(
     job_context: JobContext,
     mocker: MockerFixture,
     session: AsyncSession,
+    organization: Organization,
     github_webhook: TestWebhookFactory,
 ) -> None:
     hook = github_webhook.create("pull_request.opened")
@@ -639,7 +662,7 @@ async def test_webhook_pull_request_opened(
     pr = await service.github_pull_request.get_by_external_id(session, pr_id)
     assert pr is None
 
-    await create_pr(job_context, session, github_webhook)
+    await create_pr(job_context, organization, session, github_webhook)
 
     pr = await service.github_pull_request.get_by_external_id(session, pr_id)
     assert pr is not None
@@ -653,6 +676,7 @@ async def test_webhook_pull_request_edited(
     job_context: JobContext,
     mocker: MockerFixture,
     session: AsyncSession,
+    organization: Organization,
     github_webhook: TestWebhookFactory,
 ) -> None:
     # then
@@ -664,7 +688,7 @@ async def test_webhook_pull_request_edited(
     pr = await service.github_pull_request.get_by_external_id(session, pr_id)
     assert pr is None
 
-    await create_repositories(session, github_webhook)
+    await create_repositories(session, organization, github_webhook)
     hook = github_webhook.create("pull_request.edited")
     await webhook_tasks.pull_request_edited(
         job_context,
@@ -679,10 +703,11 @@ async def test_webhook_pull_request_edited(
 async def test_webhook_pull_request_synchronize(
     job_context: JobContext,
     session: AsyncSession,
+    organization: Organization,
     mocker: MockerFixture,
     github_webhook: TestWebhookFactory,
 ) -> None:
-    await create_pr(job_context, session, github_webhook)
+    await create_pr(job_context, organization, session, github_webhook)
 
     # then
     session.expunge_all()
@@ -712,9 +737,10 @@ async def test_webhook_issues_deleted(
     job_context: JobContext,
     mocker: MockerFixture,
     session: AsyncSession,
+    organization: Organization,
     github_webhook: TestWebhookFactory,
 ) -> None:
-    await create_repositories(session, github_webhook)
+    await create_repositories(session, organization, github_webhook)
 
     # then
     session.expunge_all()
@@ -770,6 +796,7 @@ async def test_webhook_opened_with_label(
     job_context: JobContext,
     mocker: MockerFixture,
     session: AsyncSession,
+    organization: Organization,
     save_fixture: SaveFixture,
     github_webhook: TestWebhookFactory,
 ) -> None:
@@ -777,7 +804,7 @@ async def test_webhook_opened_with_label(
         "polar.integrations.github.service.github_issue.embed_badge"
     )
 
-    org = await create_repositories(session, github_webhook)
+    org = await create_repositories(session, organization, github_webhook)
 
     # first create an issue
     hook = github_webhook.create("issues.opened_with_polar_label")
@@ -809,9 +836,10 @@ async def test_webhook_opened_with_label(
 
     embed_mock.assert_called_once_with(
         ANY,  # session
-        organization=ANY,
+        external_organization=ANY,
         repository=ANY,
         issue=ANY,
+        organization=ANY,
         triggered_from_label=True,
     )
 
@@ -822,6 +850,7 @@ async def test_webhook_labeled_remove_badge_body(
     job_context: JobContext,
     mocker: MockerFixture,
     session: AsyncSession,
+    organization: Organization,
     save_fixture: SaveFixture,
     github_webhook: TestWebhookFactory,
 ) -> None:
@@ -841,7 +870,7 @@ async def test_webhook_labeled_remove_badge_body(
         "polar.integrations.github.service.github_issue.embed_badge"
     )
 
-    org = await create_repositories(session, github_webhook)
+    org = await create_repositories(session, organization, github_webhook)
 
     # first create an issue labeled with "polar" label
     hook = github_webhook.create("issues.opened_with_polar_label")
@@ -874,9 +903,10 @@ async def test_webhook_labeled_remove_badge_body(
     # add badge
     embed_mock.assert_called_once_with(
         ANY,  # session
-        organization=ANY,
+        external_organization=ANY,
         repository=ANY,
         issue=ANY,
+        organization=ANY,
         triggered_from_label=True,
     )
 
@@ -905,9 +935,10 @@ async def test_webhook_labeled_remove_badge_body(
 
     embed_mock.assert_called_once_with(
         ANY,  # session
-        organization=ANY,
+        external_organization=ANY,
         repository=ANY,
         issue=ANY,
+        organization=ANY,
         triggered_from_label=True,
     )
 

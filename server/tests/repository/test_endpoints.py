@@ -1,6 +1,5 @@
 import pytest
 from httpx import AsyncClient
-from pydantic import ValidationError
 
 from polar.models import (
     ExternalOrganization,
@@ -171,21 +170,21 @@ async def test_update_repository_profile_settings_highlighted_subscription_tiers
     assert response.json()["id"] == str(repository_linked.id)
     assert response.json()["profile_settings"]["highlighted_subscription_tiers"] == []
 
-    with pytest.raises(ValidationError):
-        # more than 3 highlighted_subscription_tiers
-        response = await client.patch(
-            f"/v1/repositories/{repository_linked.id}",
-            json={
-                "profile_settings": {
-                    "highlighted_subscription_tiers": [
-                        str(product.id),
-                        str(product.id),
-                        str(product.id),
-                        str(product.id),
-                    ],
-                }
-            },
-        )
+    # more than 3 highlighted_subscription_tiers
+    response = await client.patch(
+        f"/v1/repositories/{repository_linked.id}",
+        json={
+            "profile_settings": {
+                "highlighted_subscription_tiers": [
+                    str(product.id),
+                    str(product.id),
+                    str(product.id),
+                    str(product.id),
+                ],
+            }
+        },
+    )
+    assert response.status_code == 422
 
 
 @pytest.mark.asyncio

@@ -32,7 +32,7 @@ class RepositoryProfileSettings(Schema):
         None, description="A list of featured organizations"
     )
     highlighted_subscription_tiers: list[UUID4] | None = Field(
-        None, description="A list of highlighted subscription tiers", max_length=3
+        None, description="A list of highlighted subscription tiers"
     )
     links: list[HttpUrl] | None = Field(
         None, description="A list of links related to the repository"
@@ -67,7 +67,7 @@ class RepositoryProfileSettingsUpdate(Schema):
     cover_image_url: str | None = None
 
     featured_organizations: list[UUID4] | None = None
-    highlighted_subscription_tiers: list[UUID4] | None = None
+    highlighted_subscription_tiers: list[UUID4] | None = Field(None, max_length=3)
     links: list[HttpUrl] | None = None
 
 

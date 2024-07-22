@@ -4,6 +4,9 @@ from fastapi import Depends, Query
 from polar.authz.service import AccessType, Authz
 from polar.enums import Platforms
 from polar.exceptions import NotPermitted, ResourceNotFound
+from polar.external_organization.service import (
+    external_organization as external_organization_service,
+)
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.schemas import MultipleQueryFilter
 from polar.models import Repository
@@ -125,6 +128,12 @@ async def update(
     if repository is None:
         raise ResourceNotFound()
 
+    external_organization = await external_organization_service.get_linked(
+        session, repository.organization_id
+    )
+    if external_organization is None:
+        raise ResourceNotFound()
+
     if not await authz.can(auth_subject.subject, AccessType.write, repository):
         raise NotPermitted()
 
@@ -144,7 +153,12 @@ async def update(
                 tier_id
             ) in repository_update.profile_settings.highlighted_subscription_tiers:
                 tier = await product_service.get_by_id(session, auth_subject, tier_id)
-                raise NotImplementedError("TODO")
+                if (
+                    tier is None
+                    or external_organization.safe_organization.id
+                    != tier.organization_id
+                ):
+                    raise ResourceNotFound()
 
     return await repository_service.update_settings(
         session, repository, repository_update

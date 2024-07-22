@@ -4,7 +4,6 @@ from fastapi import Depends, Query
 from polar.authz.service import AccessType, Authz
 from polar.enums import Platforms
 from polar.exceptions import NotPermitted, ResourceNotFound
-from polar.external_organization.schemas import ExternalOrganizationID
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.schemas import MultipleQueryFilter
 from polar.models import Repository
@@ -42,15 +41,18 @@ async def list(
     auth_subject: auth.RepositoriesReadOrAnonymous,
     pagination: PaginationParamsQuery,
     sorting: sorting.ListSorting,
-    name: str | None = Query(None, description="Filter by name."),
-    platform: Platforms | None = Query(None, description="Filter by platform."),
-    is_private: bool | None = Query(None, description="Filter by private status."),
-    external_organization_id: MultipleQueryFilter[ExternalOrganizationID]
-    | None = Query(
-        None,
-        title="ExternalOrganizationID Filter",
-        description="Filter by external organization ID.",
+    platform: MultipleQueryFilter[Platforms] | None = Query(
+        None, title="Platform Filter", description="Filter by platform."
     ),
+    name: MultipleQueryFilter[str] | None = Query(
+        None, title="RepositoryName Filter", description="Filter by name."
+    ),
+    external_organization_name: MultipleQueryFilter[str] | None = Query(
+        None,
+        title="ExternalOrganizationName Filter",
+        description="Filter by external organization name.",
+    ),
+    is_private: bool | None = Query(None, description="Filter by private status."),
     organization_id: MultipleQueryFilter[OrganizationID] | None = Query(
         None, title="OrganizationID Filter", description="Filter by organization ID."
     ),
@@ -60,10 +62,10 @@ async def list(
     results, count = await repository_service.list(
         session,
         auth_subject,
-        name=name,
         platform=platform,
+        name=name,
+        external_organization_name=external_organization_name,
         is_private=is_private,
-        external_organization_id=external_organization_id,
         organization_id=organization_id,
         pagination=pagination,
         sorting=sorting,

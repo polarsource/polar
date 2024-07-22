@@ -131,13 +131,6 @@ class FundingService:
             )
         )
 
-        # Also add organization filter to the outer query.
-        # This does not affect the result of the query, but does significantly improve performance
-        if organization is not None:
-            outer_statement = outer_statement.where(
-                Issue.organization_id == organization.id
-            )
-
         outer_statement = outer_statement.order_by(*order_by_clauses)
         outer_statement = outer_statement.add_columns(count_statement.scalar_subquery())
 

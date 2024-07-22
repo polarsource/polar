@@ -1,3 +1,4 @@
+from collections.abc import Sequence
 from uuid import UUID
 
 from fastapi import Depends, HTTPException, Query
@@ -5,7 +6,7 @@ from fastapi.responses import HTMLResponse
 
 from polar.auth.dependencies import WebUser, WebUserOrAnonymous
 from polar.authz.service import AccessType, Authz
-from polar.dashboard.schemas import IssueSortBy
+from polar.enums import Platforms
 from polar.exceptions import ResourceNotFound, Unauthorized
 from polar.external_organization.service import (
     external_organization as external_organization_service,
@@ -16,11 +17,11 @@ from polar.integrations.github.service.issue import github_issue as github_issue
 from polar.integrations.github.service.url import github_url
 from polar.issue.body import IssueBodyRenderer, get_issue_body_renderer
 from polar.kit.db.postgres import AsyncSessionMaker
-from polar.kit.pagination import ListResource, Pagination
+from polar.kit.pagination import ListResource, Pagination, PaginationParamsQuery
+from polar.kit.schemas import MultipleQueryFilter
 from polar.locker import Locker, get_locker
 from polar.openapi import IN_DEVELOPMENT_ONLY
 from polar.organization.schemas import OrganizationID
-from polar.organization.service import organization as organization_service
 from polar.pledge.service import pledge as pledge_service
 from polar.postgres import AsyncSession, get_db_session, get_db_sessionmaker
 from polar.repository.service import repository as repository_service
@@ -29,6 +30,7 @@ from polar.user_organization.service import (
     user_organization as user_organization_service,
 )
 
+from . import auth, sorting
 from .schemas import (
     ConfirmIssue,
     IssueUpdateBadgeMessage,
@@ -42,77 +44,52 @@ router = APIRouter(tags=["issues"])
 
 
 @router.get(
-    "/issues/search",
+    "/issues/",
     response_model=ListResource[IssueSchema],
-    description="Search issues.",
-    summary="Search issues",
+    summary="List Issues",
     status_code=200,
     responses={404: {}},
 )
-async def search(
-    auth_subject: WebUserOrAnonymous,
-    organization_id: OrganizationID,
-    repository_name: str | None = None,
-    sort: IssueSortBy = Query(
-        default=IssueSortBy.issues_default, description="Issue sorting method"
+async def list(
+    auth_subject: auth.IssuesReadOrAnonymous,
+    pagination: PaginationParamsQuery,
+    sorting: sorting.ListSorting,
+    platform: MultipleQueryFilter[Platforms] | None = Query(
+        None, title="Platform Filter", description="Filter by platform."
     ),
-    have_pledge: bool | None = Query(
-        default=None,
-        description="Set to true to only return issues that have a pledge behind them",
+    external_organization_name: MultipleQueryFilter[str] | None = Query(
+        None,
+        title="ExternalOrganizationName Filter",
+        description="Filter by external organization name.",
     ),
-    have_badge: bool | None = Query(
-        default=None,
-        description="Set to true to only return issues that have the Polar badge in the issue description",  # noqa: E501
+    repository_name: MultipleQueryFilter[str] | None = Query(
+        None, title="RepositoryName Filter", description="Filter by repository name."
     ),
-    github_milestone_number: int | None = Query(
-        default=None,
-        description="Filter to only return issues connected to this GitHub milestone.",
+    number: MultipleQueryFilter[int] | None = Query(
+        None, title="IssueNumber Filter", description="Filter by issue number."
+    ),
+    organization_id: MultipleQueryFilter[OrganizationID] | None = Query(
+        None, title="OrganizationID Filter", description="Filter by organization ID."
     ),
     session: AsyncSession = Depends(get_db_session),
-    authz: Authz = Depends(Authz.authz),
 ) -> ListResource[IssueSchema]:
-    org = await organization_service.get(session, organization_id)
-    if not org:
-        raise HTTPException(
-            status_code=404,
-            detail="Organization not found",
-        )
-
-    all_org_repos = await repository_service.list_by(
+    """List issues."""
+    results, count = await issue_service.list(
         session,
-        organization_id=[org.id],
+        auth_subject,
+        platform=platform,
+        external_organization_name=external_organization_name,
         repository_name=repository_name,
-    )
-    all_org_repos = [
-        r for r in all_org_repos if r.is_private is False and r.is_archived is False
-    ]
-
-    if repository_name and not all_org_repos:
-        raise HTTPException(
-            status_code=404,
-            detail="Repository not found",
-        )
-
-    issues_in_repos = all_org_repos
-    issues_in_repos_ids = [r.id for r in issues_in_repos]
-
-    (issues, count) = await issue_service.list_by_repository_type_and_status(
-        session=session,
-        repository_ids=issues_in_repos_ids,
-        sort_by=sort,
-        limit=50,
-        load_repository=True,
-        have_pledge=have_pledge,
-        have_polar_badge=have_badge,
+        number=number,
+        organization_id=organization_id,
+        pagination=pagination,
+        sorting=sorting,
     )
 
-    return ListResource(
-        items=[
-            IssueSchema.from_db(i)
-            for i in issues
-            if await authz.can(auth_subject.subject, AccessType.read, i)
-        ],
-        pagination=Pagination(total_count=count, max_page=1),
+    return ListResource.from_paginated_results(
+        [IssueSchema.from_db(result) for result in results],
+        count,
+        pagination,
     )
 
 
@@ -235,9 +212,9 @@ async def for_you(
     )
 
     # hacky solution to spread out the repositories in the results
-    def spread(items: list[IssueSchema]) -> list[IssueSchema]:
+    def spread(items: Sequence[IssueSchema]) -> Sequence[IssueSchema]:
         penalties: dict[str, int] = {}
-        res: list[IssueSchema] = []
+        res = []
 
         while len(items) > 0:
             # In the next 5 issues, pick the one with the lowest penalty

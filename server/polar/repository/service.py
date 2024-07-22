@@ -44,10 +44,10 @@ class RepositoryService(
         session: AsyncSession,
         auth_subject: AuthSubject[Anonymous | User | Organization],
         *,
-        name: str | None = None,
-        platform: Platforms | None = None,
+        platform: Sequence[Platforms] | None = None,
+        name: Sequence[str] | None = None,
+        external_organization_name: Sequence[str] | None = None,
         is_private: bool | None = None,
-        external_organization_id: Sequence[uuid.UUID] | None = None,
         organization_id: Sequence[uuid.UUID] | None = None,
         pagination: PaginationParams,
         sorting: list[Sorting[SortProperty]] = [(SortProperty.created_at, True)],
@@ -57,18 +57,22 @@ class RepositoryService(
         )
 
         if name is not None:
-            statement = statement.where(Repository.name == name)
+            statement = statement.where(Repository.name.in_(name))
 
         if platform is not None:
-            statement = statement.where(Repository.platform == platform)
+            statement = statement.where(Repository.platform.in_(platform))
+
+        if external_organization_name is not None:
+            statement = statement.where(
+                Repository.organization_id.in_(
+                    select(ExternalOrganization.id).where(
+                        ExternalOrganization.name.in_(external_organization_name)
+                    )
+                )
+            )
 
         if is_private is not None:
             statement = statement.where(Repository.is_private.is_(is_private))
-
-        if external_organization_id is not None:
-            statement = statement.where(
-                Repository.organization_id.in_(external_organization_id)
-            )
 
         if organization_id is not None:
             statement = statement.where(

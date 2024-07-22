@@ -27,7 +27,7 @@ class PledgeStripeService:
         self,
         amount: int,
         pledge_issue: Issue,
-        pledge_issue_org: Organization,
+        pledge_issue_org: ExternalOrganization,
         pledge_issue_repo: Repository,
         anonymous_email: str,
     ) -> stripe_lib.PaymentIntent:
@@ -42,7 +42,7 @@ class PledgeStripeService:
             currency="USD",
             metadata=metadata.model_dump(exclude_none=True),
             receipt_email=anonymous_email,
-            description=f"Pledge to {pledge_issue_org.slug}/{pledge_issue_repo.name}#{pledge_issue.number}",  # noqa: E501
+            description=f"Pledge to {pledge_issue_org.name}/{pledge_issue_repo.name}#{pledge_issue.number}",  # noqa: E501
         )
 
     async def create_user_intent(
@@ -50,7 +50,7 @@ class PledgeStripeService:
         session: AsyncSession,
         amount: int,
         pledge_issue: Issue,
-        pledge_issue_org: Organization,
+        pledge_issue_org: ExternalOrganization,
         pledge_issue_repo: Repository,
         user: User,
         on_behalf_of_organization_id: UUID | None = None,
@@ -76,7 +76,7 @@ class PledgeStripeService:
             customer=customer.id,
             metadata=metadata.model_dump(exclude_none=True),
             receipt_email=user.email,
-            description=f"Pledge to {pledge_issue_org.slug}/{pledge_issue_repo.name}#{pledge_issue.number}",  # noqa: E501
+            description=f"Pledge to {pledge_issue_org.name}/{pledge_issue_repo.name}#{pledge_issue.number}",  # noqa: E501
         )
 
     def create_organization_intent(

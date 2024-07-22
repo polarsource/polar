@@ -1,5 +1,5 @@
 import { CommandLineIcon, HeartIcon } from '@heroicons/react/24/solid'
-import { Issue } from '@polar-sh/sdk'
+import { Issue, Organization } from '@polar-sh/sdk'
 import {
   Tabs,
   TabsContent,
@@ -51,10 +51,12 @@ PledgeTabsTrigger.displayName = 'PledgeTabsTrigger'
 
 const PledgeCheckoutPanel = ({
   issue,
+  organization,
   gotoURL,
   onAmountChange: onAmountChangeProp,
 }: {
   issue: Issue
+  organization: Organization
   gotoURL?: string
   onAmountChange?: (amount: number) => void
 }) => {
@@ -91,6 +93,7 @@ const PledgeCheckoutPanel = ({
           <TabsContent value="fund">
             <PledgeCheckoutFund
               issue={issue}
+              organization={organization}
               gotoURL={gotoURL}
               onAmountChange={onAmountChangeProp}
             />

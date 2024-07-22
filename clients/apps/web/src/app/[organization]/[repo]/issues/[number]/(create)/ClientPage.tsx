@@ -84,6 +84,7 @@ const ClientPage = ({
           <WhiteCard padding>
             <PledgeCheckoutPanel
               issue={issue}
+              organization={organization}
               gotoURL={gotoURL}
               onAmountChange={onAmountChange}
             />

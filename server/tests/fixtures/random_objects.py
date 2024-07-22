@@ -188,8 +188,8 @@ async def create_issue(
 ) -> Issue:
     issue = Issue(
         id=uuid.uuid4(),
-        organization_id=external_organization.id,
-        repository_id=repository.id,
+        organization=external_organization,
+        repository=repository,
         title="issue title",
         number=secrets.randbelow(100000),
         platform=Platforms.github,
@@ -412,13 +412,13 @@ async def pledge_by_user(
 @pytest_asyncio.fixture(scope="function")
 async def pull_request(
     save_fixture: SaveFixture,
-    organization: Organization,
+    external_organization: ExternalOrganization,
     repository: Repository,
 ) -> PullRequest:
     pr = PullRequest(
         id=uuid.uuid4(),
-        repository_id=repository.id,
-        organization_id=organization.id,
+        repository=repository,
+        organization=external_organization,
         number=secrets.randbelow(5000),
         external_id=secrets.randbelow(5000),
         title="PR Title",

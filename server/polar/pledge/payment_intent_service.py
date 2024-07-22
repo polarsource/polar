@@ -4,6 +4,7 @@ from typing import cast
 
 import stripe as stripe_lib
 import structlog
+from sqlalchemy.orm import joinedload
 
 from polar.exceptions import NotPermitted, PolarError, ResourceNotFound
 from polar.integrations.loops.service import loops as loops_service
@@ -11,15 +12,13 @@ from polar.integrations.stripe.schemas import PledgePaymentIntentMetadata
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.integrations.stripe.service_pledge import pledge_stripe_service
 from polar.issue.service import issue as issue_service
+from polar.models.external_organization import ExternalOrganization
 from polar.models.issue import Issue
-from polar.models.organization import Organization
 from polar.models.pledge import Pledge, PledgeState, PledgeType
 from polar.models.repository import Repository
 from polar.models.user import User
-from polar.organization.service import organization as organization_service
 from polar.pledge.hooks import PledgeHook, pledge_created
 from polar.postgres import AsyncSession
-from polar.repository.service import repository as repository_service
 from polar.user.service.user import user as user_service
 
 from .schemas import (
@@ -39,7 +38,7 @@ class PaymentIntentService:
         user: User | None,
         intent: PledgeStripePaymentIntentCreate,
         pledge_issue: Issue,
-        pledge_issue_org: Organization,
+        pledge_issue_org: ExternalOrganization,
         pledge_issue_repo: Repository,
         session: AsyncSession,
     ) -> PledgeStripePaymentIntentMutationResponse:
@@ -64,7 +63,7 @@ class PaymentIntentService:
         self,
         *,
         pledge_issue: Issue,
-        pledge_issue_org: Organization,
+        pledge_issue_org: ExternalOrganization,
         pledge_issue_repo: Repository,
         intent: PledgeStripePaymentIntentCreate,
     ) -> PledgeStripePaymentIntentMutationResponse:
@@ -99,7 +98,7 @@ class PaymentIntentService:
         self,
         *,
         pledge_issue: Issue,
-        pledge_issue_org: Organization,
+        pledge_issue_org: ExternalOrganization,
         pledge_issue_repo: Repository,
         intent: PledgeStripePaymentIntentCreate,
         user: User,
@@ -174,16 +173,15 @@ class PaymentIntentService:
         if not issue_id:
             raise ResourceNotFound("issue_id is not set")
 
-        issue = await issue_service.get(session, issue_id)
+        issue = await issue_service.get(
+            session,
+            issue_id,
+            options=(
+                joinedload(Issue.organization),
+                joinedload(Issue.repository),
+            ),
+        )
         if not issue:
-            raise ResourceNotFound()
-
-        org = await organization_service.get(session, issue.organization_id)
-        if not org:
-            raise ResourceNotFound()
-
-        repo = await repository_service.get(session, issue.repository_id)
-        if not repo:
             raise ResourceNotFound()
 
         email = intent["receipt_email"]
@@ -207,9 +205,9 @@ class PaymentIntentService:
 
         pledge = Pledge(
             payment_id=payment_intent_id,
-            issue_id=issue.id,
-            repository_id=repo.id,
-            organization_id=org.id,
+            issue=issue,
+            to_repository=issue.repository,
+            to_organization=issue.organization,
             email=email,
             amount=amount,
             fee=0,
@@ -220,7 +218,7 @@ class PaymentIntentService:
             on_behalf_of_organization_id=metadata.on_behalf_of_organization_id,
         )
         session.add(pledge)
-        await session.commit()
+        await session.flush()
 
         if state == PledgeState.created:
             await pledge_created.call(PledgeHook(session, pledge))

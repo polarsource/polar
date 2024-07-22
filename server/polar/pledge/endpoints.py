@@ -1,6 +1,7 @@
 from uuid import UUID
 
 from fastapi import Depends, HTTPException, Query
+from sqlalchemy.orm import joinedload
 
 from polar import locker
 from polar.auth.dependencies import WebUser, WebUserOrAnonymous
@@ -10,6 +11,7 @@ from polar.currency.schemas import CurrencyAmount
 from polar.exceptions import BadRequest, ResourceNotFound, Unauthorized
 from polar.issue.service import issue as issue_service
 from polar.kit.pagination import ListResource, Pagination
+from polar.models.issue import Issue
 from polar.models.pledge import Pledge
 from polar.models.user import User
 from polar.openapi import IN_DEVELOPMENT_ONLY
@@ -357,7 +359,6 @@ async def create_pay_on_completion(
     create: CreatePledgePayLater,
     auth_subject: WebUser,
     session: AsyncSession = Depends(get_db_session),
-    authz: Authz = Depends(Authz.authz),
 ) -> PledgeSchema:
     is_org_pledge = True if create.by_organization_id else False
     is_user_pledge = True if not is_org_pledge else False
@@ -427,7 +428,11 @@ async def create_payment_intent(
     session: AsyncSession = Depends(get_db_session),
     authz: Authz = Depends(Authz.authz),
 ) -> PledgeStripePaymentIntentMutationResponse:
-    issue = await issue_service.get(session, intent.issue_id)
+    issue = await issue_service.get(
+        session,
+        intent.issue_id,
+        options=(joinedload(Issue.organization), joinedload(Issue.repository)),
+    )
     if not issue:
         raise ResourceNotFound()
 
@@ -444,21 +449,12 @@ async def create_payment_intent(
         if not member:
             raise Unauthorized()
 
-    # get org and repo
-    pledge_issue_org = await organization_service.get(session, issue.organization_id)
-    if not pledge_issue_org:
-        raise ResourceNotFound()
-
-    pledge_issue_repo = await repository_service.get(session, issue.repository_id)
-    if not pledge_issue_repo:
-        raise ResourceNotFound()
-
     return await payment_intent_service.create_payment_intent(
         session=session,
         user=auth_subject.subject if is_user(auth_subject) else None,
         pledge_issue=issue,
-        pledge_issue_org=pledge_issue_org,
-        pledge_issue_repo=pledge_issue_repo,
+        pledge_issue_org=issue.organization,
+        pledge_issue_repo=issue.repository,
         intent=intent,
     )
 

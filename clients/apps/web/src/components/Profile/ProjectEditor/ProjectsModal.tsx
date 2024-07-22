@@ -1,6 +1,6 @@
 import { SpinnerNoMargin } from '@/components/Shared/Spinner'
 import { api } from '@/utils/api'
-import { getRepositoryByName } from '@/utils/repository'
+import { resolveRepositoryPath } from '@/utils/repository'
 import { formatStarsNumber } from '@/utils/stars'
 import { StarIcon } from '@heroicons/react/20/solid'
 import { CloseOutlined, HiveOutlined } from '@mui/icons-material'
@@ -36,15 +36,16 @@ export const ProjectsModal = ({
 
     const [organizationName, repositoryName] = orgAndRepo.split('/')
 
-    const repository = await getRepositoryByName(
+    const resolvedRepositoryOrganization = await resolveRepositoryPath(
       api,
-      organizationName, // FIXME: organizationId
+      organizationName,
       repositoryName,
     )
     setRepositoryRequestLoading(false)
-    if (!repository) {
+    if (!resolvedRepositoryOrganization) {
       toggleOrgNotFound(true)
     } else {
+      const [repository] = resolvedRepositoryOrganization
       addRepository(repository)
     }
   }

@@ -5,6 +5,7 @@ import {
   useIssueAddPolarBadge,
   useIssueRemovePolarBadge,
   useListPledesForIssue,
+  useOrganization,
   useOrganizationBadgeSettings,
   useUpdateIssue,
 } from '@/hooks/queries'
@@ -198,15 +199,16 @@ export const BadgePromotionModal = (props: {
     toggle()
   }
 
-  const badgeSettings = useOrganizationBadgeSettings(
-    props.issue.repository.organization.id,
+  const { data: linkedOrganization } = useOrganization(
+    props.issue.repository.organization.organization_id as string,
   )
+  const badgeSettings = useOrganizationBadgeSettings(linkedOrganization?.id)
   const isBadged = useMemo(() => isIssueBadged(props.issue), [props.issue])
   const gitHubIssueLink = githubIssueLink(props.issue)
 
   const upfrontRewards =
     props.issue.upfront_split_to_contributors ??
-    props.issue.repository.organization.default_upfront_split_to_contributors
+    linkedOrganization?.default_upfront_split_to_contributors
 
   return (
     <>
@@ -262,7 +264,7 @@ export const BadgePromotionModal = (props: {
             showUpdateButton={true}
             innerClassNames="shadow"
             canSetFundingGoal={true}
-            org={props.issue.repository.organization}
+            orgName={props.issue.repository.organization.name}
             upfrontSplit={upfrontRewards}
           />
         </TabsContent>
@@ -517,9 +519,12 @@ const PromoteTab = (props: {
 }
 
 const RewardsTab = (props: { issue: Issue; user: UserRead }) => {
+  const { data: linkedOrganization } = useOrganization(
+    props.issue.repository.organization.organization_id as string,
+  )
   const upfront =
     props.issue.upfront_split_to_contributors ??
-    props.issue.repository.organization.default_upfront_split_to_contributors
+    linkedOrganization?.default_upfront_split_to_contributors
 
   const [contributorsShare, setContributorsShare] = useState<
     number | undefined
@@ -581,12 +586,14 @@ const RewardsTab = (props: { issue: Issue; user: UserRead }) => {
 
   return (
     <div className="flex w-full flex-col space-y-6">
-      <PublicRewardsSetting
-        value={contributorsShare}
-        org={props.issue.repository.organization}
-        onSave={saveUpFrontSplit}
-        isIssue={true}
-      />
+      {linkedOrganization && (
+        <PublicRewardsSetting
+          value={contributorsShare}
+          org={linkedOrganization}
+          onSave={saveUpFrontSplit}
+          isIssue={true}
+        />
+      )}
 
       {contributorsShare !== undefined && (
         <>

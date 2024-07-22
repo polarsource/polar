@@ -6,8 +6,8 @@ import {
 import { Link } from '@/components/Profile/LinksEditor/LinksEditor'
 import { getServerSideAPI } from '@/utils/api/serverside'
 import { CONFIG } from '@/utils/config'
-import { getOrganizationBySlug } from '@/utils/organization'
-import { getRepositoryByName } from '@/utils/repository'
+import { organizationPageLink } from '@/utils/nav'
+import { resolveRepositoryPath } from '@/utils/repository'
 import {
   ArticleVisibility,
   ListResourceArticle,
@@ -17,7 +17,7 @@ import {
   Organization,
 } from '@polar-sh/sdk'
 import { Metadata } from 'next'
-import { notFound } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
 import { OgObject } from 'open-graph-scraper-lite/dist/lib/types'
 import ClientPage from './ClientPage'
 
@@ -33,25 +33,21 @@ export async function generateMetadata({
   params: { organization: string; repo: string }
 }): Promise<Metadata> {
   const api = getServerSideAPI()
-  const organization = await getOrganizationBySlug(
+  const resolvedRepositoryOrganization = await resolveRepositoryPath(
     api,
     params.organization,
-    cacheConfig,
-  )
-
-  if (!organization) {
-    notFound()
-  }
-
-  const repository = await getRepositoryByName(
-    api,
-    organization.id,
     params.repo,
     cacheConfig,
   )
 
-  if (!repository) {
+  if (!resolvedRepositoryOrganization) {
     notFound()
+  }
+
+  const [repository, organization] = resolvedRepositoryOrganization
+
+  if (organization.slug !== params.organization) {
+    redirect(organizationPageLink(organization, repository.name))
   }
 
   const orgrepo = `${organization.slug}/${repository.name}`
@@ -94,32 +90,28 @@ export default async function Page({
   searchParams: FilterSearchParams
 }) {
   const api = getServerSideAPI()
-  const organization = await getOrganizationBySlug(
+  const resolvedRepositoryOrganization = await resolveRepositoryPath(
     api,
     params.organization,
-    cacheConfig,
-  )
-
-  if (!organization) {
-    notFound()
-  }
-
-  const repository = await getRepositoryByName(
-    api,
-    organization.id,
     params.repo,
     {
       ...cacheConfig,
       next: {
         ...cacheConfig.next,
         // Make it possible to revalidate the page when the repository is updated from client
-        tags: [`repository:${organization.id}/${params.repo}`],
+        tags: [`repository:${params.organization}/${params.repo}`],
       },
     },
   )
 
-  if (!repository) {
+  if (!resolvedRepositoryOrganization) {
     notFound()
+  }
+
+  const [repository, organization] = resolvedRepositoryOrganization
+
+  if (organization.slug !== params.organization) {
+    redirect(organizationPageLink(organization, repository.name))
   }
 
   const filters = buildFundingFilters(urlSearchFromObj(searchParams))

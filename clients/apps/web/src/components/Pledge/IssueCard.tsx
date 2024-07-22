@@ -1,5 +1,4 @@
 import { githubIssueUrl } from '@/utils/github'
-import { organizationPageLink } from '@/utils/nav'
 import { formatStarsNumber } from '@/utils/stars'
 import { HeartIcon, StarIcon } from '@heroicons/react/24/solid'
 import { ChatBubbleOutline } from '@mui/icons-material'
@@ -7,11 +6,11 @@ import {
   Assignee,
   Funding,
   Issue,
+  Organization,
   Pledger,
   PullRequest,
   RewardsSummary,
 } from '@polar-sh/sdk'
-import Link from 'next/link'
 import { IssueBodyRenderer, PolarTimeAgo } from 'polarkit/components/ui/atoms'
 import Alert from 'polarkit/components/ui/atoms/alert'
 import Avatar from 'polarkit/components/ui/atoms/avatar'
@@ -27,6 +26,7 @@ import { generateMarkdownTitle } from '../Issues/markdown'
 
 const IssueCard = ({
   issue,
+  organization,
   htmlBody,
   pledgers,
   currentPledgeAmount,
@@ -34,19 +34,20 @@ const IssueCard = ({
   pullRequests,
 }: {
   issue: Issue
+  organization: Organization
   htmlBody?: string
   pledgers: Pledger[]
   currentPledgeAmount: number
   rewards?: RewardsSummary
   pullRequests?: PullRequest[]
 }) => {
+  const { repository } = issue
+  const { organization: externalOrganization } = repository
   const url = githubIssueUrl(
-    issue.repository.organization.name,
-    issue.repository.name,
+    externalOrganization.name,
+    repository.name,
     issue.number,
   )
-  const { repository } = issue
-  const { organization } = repository
 
   const haveRewards = rewards && rewards.receivers.length > 0
   const haveAssignees = issue.assignees && issue.assignees.length > 0
@@ -54,7 +55,7 @@ const IssueCard = ({
 
   const upfrontSplit =
     issue.upfront_split_to_contributors ??
-    issue.repository.organization.default_upfront_split_to_contributors
+    organization.default_upfront_split_to_contributors
 
   return (
     <div className="dark:divide-polar-700 divide-y-[1px] divide-gray-200">
@@ -135,27 +136,20 @@ const IssueCard = ({
         {/* Name/description */}
         <div className="col-span-1 flex flex-row items-start gap-4 sm:col-span-2">
           <div className="min-w-max">
-            <Link href={organizationPageLink(organization)}>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={organization.avatar_url}
-                alt={organization.name}
-                className="h-8 w-8 rounded-full"
-              />
-            </Link>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={externalOrganization.avatar_url}
+              alt={externalOrganization.name}
+              className="h-8 w-8 rounded-full"
+            />
           </div>
           <div className="dark:text-polar-500 flex flex-col justify-center text-gray-500">
             <div className="flex flex-row items-center">
-              <Link href={organizationPageLink(organization)}>
-                {organization.name}
-              </Link>
+              {externalOrganization.name}
               &nbsp;/&nbsp;
-              <Link
-                className="dark:text-polar-200 font-medium text-gray-600"
-                href={organizationPageLink(organization, repository.name)}
-              >
+              <span className="dark:text-polar-200 font-medium text-gray-600">
                 {repository.name}
-              </Link>
+              </span>
             </div>
             <div className="mt-2 text-sm">
               {repository.description && <div>{repository.description}</div>}

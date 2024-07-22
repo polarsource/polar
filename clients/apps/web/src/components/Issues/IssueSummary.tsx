@@ -1,6 +1,6 @@
 'use client'
 
-import { organizationPageLink } from '@/utils/nav'
+import { CONFIG } from '@/utils/config'
 import { CheckCircleIcon } from '@heroicons/react/24/outline'
 import { FavoriteBorderOutlined } from '@mui/icons-material'
 import { Issue, IssueStateEnum, Label } from '@polar-sh/sdk'
@@ -56,10 +56,7 @@ const IssueSummary: React.FC<IssueSummaryProps> = ({
 
   const markdownTitle = generateMarkdownTitle(title)
 
-  const fundingLink = organizationPageLink(
-    organization,
-    `${repository.name}/issues/${number}`,
-  )
+  const fundingLink = `${CONFIG.FRONTEND_BASE_URL}/${organization.name}/${repository.name}/issues/${number}`
   linkToFunding = linkToFunding !== undefined ? linkToFunding : true
 
   return (

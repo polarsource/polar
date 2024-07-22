@@ -17,6 +17,13 @@ import {
 } from '@tanstack/react-query'
 import { defaultRetry } from './retry'
 
+export const useIssue = (id: string) =>
+  useQuery({
+    queryKey: ['issues', id],
+    queryFn: () => api.issues.get({ id }),
+    retry: defaultRetry,
+  })
+
 export const useIssueAddPolarBadge: () => UseMutationResult<
   Issue,
   Error,

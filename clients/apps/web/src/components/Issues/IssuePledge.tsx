@@ -5,6 +5,7 @@ import {
 import {
   Funding,
   Issue,
+  Organization,
   Pledge,
   PledgeState,
   PledgeType,
@@ -28,11 +29,17 @@ interface Props {
 
   issue: Issue
   pledgesSummary: PledgesTypeSummaries
+  organization: Organization
 }
 
 const IssuePledge = (props: Props) => {
-  const { pledges, showConfirmPledgeAction, confirmPledgeIsLoading, issue } =
-    props
+  const {
+    pledges,
+    showConfirmPledgeAction,
+    confirmPledgeIsLoading,
+    issue,
+    organization,
+  } = props
 
   const totalPledgeAmount = Math.max(
     issue.funding.pledges_sum?.amount ?? 0,
@@ -58,7 +65,7 @@ const IssuePledge = (props: Props) => {
 
   const upfrontSplit =
     issue.upfront_split_to_contributors ??
-    issue.repository.organization.default_upfront_split_to_contributors
+    organization.default_upfront_split_to_contributors
 
   return (
     <>

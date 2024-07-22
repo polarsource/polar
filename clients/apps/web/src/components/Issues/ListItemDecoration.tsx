@@ -2,6 +2,7 @@ import {
   Funding,
   Issue,
   IssueReferenceRead,
+  Organization,
   Pledge,
   PledgeState,
   PledgesTypeSummaries,
@@ -38,6 +39,7 @@ const IssueListItemDecoration = ({
   confirmPledgeIsLoading,
   funding,
   issue,
+  organization,
   rewards,
 }: {
   pledges: Array<Pledge>
@@ -50,6 +52,7 @@ const IssueListItemDecoration = ({
   confirmPledgeIsLoading: boolean
   funding: Funding
   issue: Issue
+  organization: Organization
   rewards?: Reward[]
 }) => {
   const showPledges = pledges && pledges.length > 0
@@ -131,6 +134,7 @@ const IssueListItemDecoration = ({
         {showPledges && (
           <IssuePledge
             issue={issue}
+            organization={organization}
             pledges={pledges}
             pledgesSummary={pledgesSummaryOrDefault}
             onConfirmPledges={onConfirmPledges}

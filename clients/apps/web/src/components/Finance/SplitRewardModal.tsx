@@ -1,8 +1,10 @@
 import { useAuth } from '@/hooks'
 import {
+  useIssue,
   useIssueMarkConfirmed,
   useListPledesForIssue,
   useListPullsReferencingIssue,
+  useOrganization,
 } from '@/hooks/queries'
 import { Author, ConfirmIssueSplit } from '@polar-sh/sdk'
 import { useState } from 'react'
@@ -11,6 +13,12 @@ import Split, { Contributor, Share } from './Split'
 import SplitNotify from './SplitNotify'
 
 const SplitRewardModal = (props: { issueId: string; onClose: () => void }) => {
+  const { data: issue } = useIssue(props.issueId)
+  const { data: organization } = useOrganization(
+    issue?.repository.organization.organization_id as string,
+    issue !== undefined &&
+      issue.repository.organization.organization_id !== undefined,
+  )
   const pledges = useListPledesForIssue(props.issueId)
   const pulls = useListPullsReferencingIssue(props.issueId)
 
@@ -123,8 +131,6 @@ const SplitRewardModal = (props: { issueId: string; onClose: () => void }) => {
     return <Spinner />
   }
 
-  const issue = pledges.data?.items ? pledges.data?.items[0].issue : undefined
-
   if (currentUser && issue && showNotifyScreen) {
     return (
       <SplitNotify
@@ -137,11 +143,12 @@ const SplitRewardModal = (props: { issueId: string; onClose: () => void }) => {
     )
   }
 
-  if (issue && pledges.data?.items) {
+  if (issue && organization && pledges.data?.items) {
     return (
       <>
         <Split
           issue={issue}
+          organization={organization}
           pledges={pledges.data?.items || []}
           shares={shares}
           contributors={contributors}

@@ -64,9 +64,9 @@ const AuthorizePage = ({
                 <Avatar
                   className="h-8 w-8"
                   avatar_url={sub.avatar_url}
-                  name={sub.name}
+                  name={sub.slug}
                 />
-                {sub.name}
+                {sub.slug}
               </div>
             </>
           )}

@@ -1,8 +1,8 @@
 import {
-  Platforms,
   ProductPrice,
   Transaction,
   TransactionDonation,
+  TransactionExternalOrganization,
   TransactionIssue,
   TransactionIssueReward,
   TransactionOrder,
@@ -42,11 +42,9 @@ const donation: TransactionDonation = {
   id: '',
   to_organization: {
     id: '',
-    name: 'hello',
-    is_personal: false,
+    slug: 'hello',
     avatar_url: '',
     created_at: '2024-03-27',
-    platform: Platforms.GITHUB,
   },
 }
 
@@ -65,8 +63,15 @@ const issue_reward: TransactionIssueReward = {
 const organization: TransactionOrganization = {
   created_at: '',
   id: '',
-  platform: 'github',
+  slug: 'OrgName',
+  avatar_url: 'https://avatars.githubusercontent.com/u/1144727?s=60&v=4',
+}
+
+const externalOrganization: TransactionExternalOrganization = {
+  id: '',
+  created_at: '',
   name: 'OrgName',
+  platform: 'github',
   avatar_url: 'https://avatars.githubusercontent.com/u/1144727?s=60&v=4',
   is_personal: false,
 }
@@ -87,7 +92,7 @@ const issue: TransactionIssue = {
   repository_id: '',
   number: 0,
   title: '',
-  organization,
+  organization: externalOrganization,
   repository,
 }
 

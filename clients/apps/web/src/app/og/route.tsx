@@ -241,17 +241,16 @@ export async function GET(req: NextRequest) {
     let repoData: Repository | undefined
     let issueData: Issue | undefined
 
-    if (org && repo && number) {
+    orgData = await getOrg(org)
+
+    if (repo && number) {
       issueData = await getIssue(
         `https://github.com/${org}/${repo}/issues/${number}`,
       )
       repoData = issueData.repository
-      orgData = repoData.organization
     } else if (org && repo) {
       repoData = await getRepo(org, repo)
-      orgData = repoData.organization
     } else if (org) {
-      orgData = await getOrg(org)
       return await renderCreatorOG(orgData)
     }
 

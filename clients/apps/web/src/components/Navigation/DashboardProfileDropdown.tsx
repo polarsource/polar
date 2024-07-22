@@ -1,6 +1,6 @@
 'use client'
 
-import { useGitHubAccount, useLogout } from '@/hooks'
+import { useGitHubAccount } from '@/hooks'
 import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
 import { CONFIG } from '@/utils/config'
 import { useOutsideClick } from '@/utils/useOutsideClick'
@@ -17,7 +17,6 @@ const DashboardProfileDropdown = ({ className = '' }) => {
     className,
   )
   const { currentUser: loggedUser } = useAuth()
-  const logout = useLogout()
 
   const githubAccount = useGitHubAccount()
 
@@ -32,10 +31,6 @@ const DashboardProfileDropdown = ({ className = '' }) => {
   useOutsideClick([ref], () => {
     setOpen(false)
   })
-
-  const onLogout = async () => {
-    await logout()
-  }
 
   if (!loggedUser) {
     return <></>

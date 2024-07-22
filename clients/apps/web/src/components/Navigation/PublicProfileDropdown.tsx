@@ -41,7 +41,7 @@ const PublicProfileDropdown = ({
 
   const backerRoutes = useBackerRoutes()
   const filteredBackerRoutes = showAllBackerRoutes ? backerRoutes : []
-  const personalRoutes = useDashboardRoutes(undefined, true)
+  const personalRoutes = useDashboardRoutes(undefined)
 
   if (!loggedUser) {
     return <></>

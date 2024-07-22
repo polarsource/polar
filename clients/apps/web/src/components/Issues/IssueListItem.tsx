@@ -1,6 +1,7 @@
 'use client'
 
 import { ModalBox, Modal as ModernModal } from '@/components/Modal'
+import { useOrganization } from '@/hooks/queries'
 import { useToastLatestPledged } from '@/hooks/stripe'
 import { api } from '@/utils/api'
 import {
@@ -35,12 +36,16 @@ const IssueListItem = (props: {
   showIssueOpenClosedStatus?: boolean
   rewards?: Reward[]
 }) => {
-  const org = props.issue.repository.organization
+  const externalOrganization = props.issue.repository.organization
   const repo = props.issue.repository
+  const { data: organization } = useOrganization(
+    externalOrganization.organization_id as string,
+    !!externalOrganization.organization_id,
+  )
 
   const mergedPledges = props.pledges || []
   const latestPledge = useToastLatestPledged(
-    org.id,
+    externalOrganization.id,
     repo.id,
     props.issue.id,
     props.checkJustPledged,
@@ -95,10 +100,11 @@ const IssueListItem = (props: {
           }
           linkToFunding={!props.canAddRemovePolarLabel}
         />
-        {havePledgeOrReference && (
+        {havePledgeOrReference && organization && (
           <IssueActivityBox>
             <IssueListItemDecoration
               issue={props.issue}
+              organization={organization}
               pledges={mergedPledges}
               pledgesSummary={props.pledgesSummary}
               references={props.references}

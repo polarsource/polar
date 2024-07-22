@@ -14,7 +14,6 @@ import { usePathname, useRouter } from 'next/navigation'
 import Button from 'polarkit/components/ui/atoms/button'
 import { useCallback } from 'react'
 
-import { useMaintainerUpgrade } from '@/hooks/queries'
 import { BrandingMenu } from './BrandingMenu'
 import TopbarRight from './TopbarRight'
 
@@ -37,12 +36,10 @@ const Topbar = ({
 
   const creatorPath = `/maintainer/${userOrganizations?.[0]?.slug}/overview`
 
-  const maintainerUpgrade = useMaintainerUpgrade()
-
   const upgradeToMaintainer = useCallback(async () => {
-    await maintainerUpgrade.mutateAsync()
+    alert('CREATE ORG!')
     router.push(`/maintainer/${currentUser?.username}/overview`)
-  }, [currentUser, maintainerUpgrade, router])
+  }, [currentUser, router])
 
   const githubAccount = currentUser?.oauth_accounts.find(
     (o) => o.platform === Platforms.GITHUB,
@@ -84,10 +81,7 @@ const Topbar = ({
     }
 
     return (
-      <Button
-        onClick={upgradeToMaintainer}
-        loading={maintainerUpgrade.isPending}
-      >
+      <Button onClick={upgradeToMaintainer}>
         <div className="flex flex-row items-center gap-x-2">
           <span className="whitespace-nowrap text-xs">Become a Creator</span>
           <ArrowForwardOutlined fontSize="inherit" />

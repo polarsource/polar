@@ -4,12 +4,15 @@ from slack_sdk.webhook import WebhookClient as SlackWebhookClient
 
 from polar.account.service import account as account_service
 from polar.config import settings
+from polar.external_organization.service import (
+    external_organization as external_organization_service,
+)
 from polar.issue.hooks import IssueHook, issue_upserted
 from polar.issue.service import issue as issue_service
 from polar.kit.money import get_cents_in_dollar_string
 from polar.models import Issue
 from polar.models.account import Account
-from polar.models.organization import Organization
+from polar.models.external_organization import ExternalOrganization
 from polar.models.pledge import Pledge, PledgeType
 from polar.models.repository import Repository
 from polar.notifications.notification import (
@@ -201,8 +204,8 @@ pledge_created_hook.add(pledge_created_issue_pledge_sum)
 pledge_updated_hook.add(pledge_created_issue_pledge_sum)
 
 
-def issue_url(org: Organization, repo: Repository, issue: Issue) -> str:
-    return f"https://github.com/{org.slug}/{repo.name}/issues/{issue.number}"
+def issue_url(org: ExternalOrganization, repo: Repository, issue: Issue) -> str:
+    return f"https://github.com/{org.name}/{repo.name}/issues/{issue.number}"
 
 
 def pledger_name(pledge: Pledge) -> str | None:
@@ -218,15 +221,17 @@ async def pledge_created_notification(pledge: Pledge, session: AsyncSession) -> 
         log.error("pledge_created_notification.no_issue_found")
         return
 
-    org: Organization | None = await organization_service.get(
+    external_organization = await external_organization_service.get_linked(
         session, issue.organization_id
     )
-    if not org:
-        log.error("pledge_created_notification.no_org_found")
+
+    if not external_organization:
+        log.error("pledge_created_notification.no_external_org_found")
         return
 
+    organization = external_organization.safe_organization
     org_account: Account | None = await account_service.get_by_organization_id(
-        session, org.id
+        session, organization.id
     )
 
     repo: Repository | None = await repository_service.get(session, issue.repository_id)
@@ -237,9 +242,9 @@ async def pledge_created_notification(pledge: Pledge, session: AsyncSession) -> 
     n = MaintainerPledgeCreatedNotificationPayload(
         pledger_name=pledger_name(pledge),
         pledge_amount=get_cents_in_dollar_string(pledge.amount),
-        issue_url=issue_url(org, repo, issue),
+        issue_url=issue_url(external_organization, repo, issue),
         issue_title=issue.title,
-        issue_org_name=org.slug,
+        issue_org_name=external_organization.name,
         issue_repo_name=repo.name,
         issue_number=issue.number,
         maintainer_has_stripe_account=True if org_account else False,
@@ -249,7 +254,7 @@ async def pledge_created_notification(pledge: Pledge, session: AsyncSession) -> 
 
     await notification_service.send_to_org_members(
         session=session,
-        org_id=org.id,
+        org_id=organization.id,
         notif=PartialNotification(
             issue_id=pledge.issue_id,
             pledge_id=pledge.id,

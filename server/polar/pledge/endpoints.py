@@ -7,13 +7,13 @@ from polar.auth.dependencies import WebUser, WebUserOrAnonymous
 from polar.auth.models import Subject, is_user
 from polar.authz.service import AccessType, Authz
 from polar.currency.schemas import CurrencyAmount
-from polar.enums import Platforms
 from polar.exceptions import BadRequest, ResourceNotFound, Unauthorized
 from polar.issue.service import issue as issue_service
 from polar.kit.pagination import ListResource, Pagination
 from polar.models.pledge import Pledge
 from polar.models.user import User
 from polar.openapi import IN_DEVELOPMENT_ONLY
+from polar.organization.schemas import OrganizationID
 from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession, get_db_session
 from polar.repository.service import repository as repository_service
@@ -148,12 +148,8 @@ async def to_schema(session: AsyncSession, subject: Subject, p: Pledge) -> Pledg
 )
 async def search(
     auth_subject: WebUserOrAnonymous,
-    platform: Platforms | None = None,
-    organization_name: str | None = Query(
-        default=None,
-        min_length=1,
-        examples=["my-org"],
-        description="Search pledges in the organization with this name. Requires platform to be set.",  # noqa: E501
+    organization_id: OrganizationID | None = Query(
+        None, description="Search pledges to this organization"
     ),
     repository_name: str | None = Query(
         default=None,
@@ -177,31 +173,9 @@ async def search(
     list_by_repos: list[UUID] = []
     list_by_issues: list[UUID] = []
 
-    if organization_name:
-        if not platform:
-            raise HTTPException(
-                status_code=400,
-                detail="platform is not set",
-            )
-
-        if not platform:
-            raise HTTPException(
-                status_code=400,
-                detail="platform is not set",
-            )
-
-        if not organization_name:
-            raise HTTPException(
-                status_code=400,
-                detail="organization_name is not set",
-            )
-
+    if organization_id:
         # get org
-        org = await organization_service.get_by_name(
-            session,
-            platform=Platforms.github,
-            name=organization_name,
-        )
+        org = await organization_service.get(session, organization_id)
 
         if not org:
             raise HTTPException(

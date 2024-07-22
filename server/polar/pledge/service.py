@@ -9,7 +9,7 @@ from uuid import UUID
 import stripe as stripe_lib
 import structlog
 from discord_webhook import AsyncDiscordWebhook, DiscordEmbed
-from sqlalchemy import func, or_
+from sqlalchemy import func, or_, select
 from sqlalchemy.orm import (
     joinedload,
 )
@@ -40,6 +40,7 @@ from polar.kit.money import get_cents_in_dollar_string
 from polar.kit.services import ResourceServiceReader
 from polar.kit.utils import utc_now
 from polar.models.account import Account
+from polar.models.external_organization import ExternalOrganization
 from polar.models.issue import Issue
 from polar.models.issue_reward import IssueReward
 from polar.models.pledge import Pledge, PledgeState, PledgeType
@@ -139,7 +140,13 @@ class PledgeService(ResourceServiceReader[Pledge]):
             )
 
         if organization_ids:
-            statement = statement.where(Pledge.organization_id.in_(organization_ids))
+            statement = statement.where(
+                Pledge.organization_id.in_(
+                    select(ExternalOrganization.id).where(
+                        ExternalOrganization.organization_id.in_(organization_ids)
+                    )
+                )
+            )
 
         if repository_ids:
             statement = statement.where(Pledge.repository_id.in_(repository_ids))
@@ -190,30 +197,6 @@ class PledgeService(ResourceServiceReader[Pledge]):
     ) -> Sequence[Pledge]:
         # Deprecated, please use list_by directly
         return await self.list_by(session, pledging_user=user_id)
-
-    async def list_by_receiving_organization(
-        self, session: AsyncSession, organization_id: UUID
-    ) -> Sequence[Pledge]:
-        statement = (
-            sql.select(Pledge)
-            .where(
-                Pledge.organization_id == organization_id,
-                Pledge.state != PledgeState.initiated,
-            )
-            .options(
-                joinedload(Pledge.user),
-                joinedload(Pledge.by_organization),
-                joinedload(Pledge.issue)
-                .joinedload(Issue.repository)
-                .joinedload(Repository.organization),
-                joinedload(Pledge.to_repository).joinedload(Repository.organization),
-                joinedload(Pledge.to_organization),
-                joinedload(Pledge.on_behalf_of_organization),
-                joinedload(Pledge.created_by_user),
-            )
-        )
-        res = await session.execute(statement)
-        return res.scalars().unique().all()
 
     async def get_by_issue_ids(
         self,

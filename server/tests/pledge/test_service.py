@@ -227,12 +227,13 @@ async def test_mark_pending_already_pending_no_notification(
 async def test_transfer_unexpected_state(
     session: AsyncSession,
     save_fixture: SaveFixture,
-    pledge: Pledge,
+    organization: Organization,
+    pledge_linked: Pledge,
     mocker: MockerFixture,
 ) -> None:
     reward = IssueReward(
-        issue_id=pledge.issue_id,
-        organization_id=pledge.organization_id,
+        issue_id=pledge_linked.issue_id,
+        organization_id=organization.id,
         share_thousands=1000,
     )
     await save_fixture(reward)
@@ -241,21 +242,24 @@ async def test_transfer_unexpected_state(
     session.expunge_all()
 
     with pytest.raises(Exception, match="Pledge is not in pending state") as excinfo:
-        await pledge_service.transfer(session, pledge.id, issue_reward_id=reward.id)
+        await pledge_service.transfer(
+            session, pledge_linked.id, issue_reward_id=reward.id
+        )
 
 
 @pytest.mark.asyncio
 async def test_transfer_early(
     session: AsyncSession,
     save_fixture: SaveFixture,
-    pledge: Pledge,
+    organization: Organization,
+    pledge_linked: Pledge,
     mocker: MockerFixture,
 ) -> None:
-    await pledge_service.mark_pending_by_issue_id(session, pledge.issue_id)
+    await pledge_service.mark_pending_by_issue_id(session, pledge_linked.issue_id)
 
     reward = IssueReward(
-        issue_id=pledge.issue_id,
-        organization_id=pledge.organization_id,
+        issue_id=pledge_linked.issue_id,
+        organization_id=organization.id,
         share_thousands=1000,
     )
     await save_fixture(reward)
@@ -267,7 +271,9 @@ async def test_transfer_early(
         Exception,
         match=re.escape("Pledge is not ready for payput (still in dispute window)"),
     ) as excinfo:
-        await pledge_service.transfer(session, pledge.id, issue_reward_id=reward.id)
+        await pledge_service.transfer(
+            session, pledge_linked.id, issue_reward_id=reward.id
+        )
 
 
 @pytest.mark.asyncio
@@ -984,8 +990,8 @@ async def test_pledge_states(
         notifications_sent[k] = c + 1
         return None
 
-    send_to_org_admins = mocker.patch(
-        "polar.notifications.service.NotificationsService.send_to_org_admins",
+    send_to_org_members = mocker.patch(
+        "polar.notifications.service.NotificationsService.send_to_org_members",
         new=_mocked_notifications,
     )
     send_to_pledger = mocker.patch(

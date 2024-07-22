@@ -67,6 +67,7 @@ class ExternalOrganizationService(ResourceServiceReader[ExternalOrganization]):
     async def get_linked(
         self, session: AsyncSession, id: uuid.UUID
     ) -> ExternalOrganization | None:
+        """Get an ExternalOrganization by ID that is linked to an Organization."""
         statement = (
             select(ExternalOrganization)
             .where(

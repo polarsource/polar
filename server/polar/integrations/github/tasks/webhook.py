@@ -5,6 +5,7 @@ from uuid import UUID
 import structlog
 
 from polar.context import ExecutionContext
+from polar.eventstream.service import publish_members
 from polar.exceptions import PolarTaskError
 from polar.integrations.github import client as github
 from polar.kit.extensions.sqlalchemy import sql
@@ -1023,15 +1024,15 @@ async def installation_new_permissions_accepted(
                 )
             )
 
-            raise NotImplementedError("TODO ORG DECOUPLING")
-            # await publish_members(
-            #     session=session,
-            #     key="external_organization.updated",
-            #     payload={
-            #         "organization_id": organization.id,
-            #     },
-            #     organization_id=organization.id,
-            # )
+            if external_organization.organization_id:
+                await publish_members(
+                    session=session,
+                    key="organization.updated",
+                    payload={
+                        "organization_id": external_organization.organization_id,
+                    },
+                    organization_id=external_organization.organization_id,
+                )
 
 
 @task("github.webhook.installation.deleted")

@@ -122,11 +122,10 @@ class GithubRepositoryService(RepositoryService):
         # exists in our database.
         #
         # If it does, rename the existing repository to allow for the name to be re-used.
-        same_name_repo = await self.get_by_org_and_name(
+        same_name_repo = await self.get_by(
             session,
             organization_id=organization.id,
             name=data.name,
-            allow_deleted=True,
         )
 
         if (

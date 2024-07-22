@@ -170,16 +170,16 @@ class TestListBy:
         self,
         session: AsyncSession,
         organization: Organization,
-        external_organization: ExternalOrganization,
+        external_organization_linked: ExternalOrganization,
         user: User,
         user_organization: UserOrganization,  # makes User a member of Organization
         save_fixture: SaveFixture,
     ) -> None:
         private_repository = await create_repository(
-            save_fixture, external_organization, is_private=True
+            save_fixture, external_organization_linked, is_private=True
         )
         issues_pledges = await create_issues_pledges(
-            save_fixture, organization, external_organization, private_repository
+            save_fixture, organization, external_organization_linked, private_repository
         )
 
         # then
@@ -571,16 +571,16 @@ class TestGetByIssueId:
         self,
         session: AsyncSession,
         organization: Organization,
-        external_organization: ExternalOrganization,
+        external_organization_linked: ExternalOrganization,
         user: User,
         user_organization: UserOrganization,  # makes User a member of Organization
         save_fixture: SaveFixture,
     ) -> None:
         private_repository = await create_repository(
-            save_fixture, external_organization, is_private=True
+            save_fixture, external_organization_linked, is_private=True
         )
         issues_pledges = await create_issues_pledges(
-            save_fixture, organization, external_organization, private_repository
+            save_fixture, organization, external_organization_linked, private_repository
         )
         issue, pledges = issues_pledges[0]
 

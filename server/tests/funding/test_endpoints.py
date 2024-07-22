@@ -86,17 +86,17 @@ class TestSearch:
     async def test_anonymous_private_repository(
         self,
         client: AsyncClient,
-        external_organization: ExternalOrganization,
+        external_organization_linked: ExternalOrganization,
         organization: Organization,
         user_organization: UserOrganization,  # makes User a member of Organization
         save_fixture: SaveFixture,
         session: AsyncSession,
     ) -> None:
         private_repository = await create_repository(
-            save_fixture, external_organization, is_private=True
+            save_fixture, external_organization_linked, is_private=True
         )
         issues_pledges = await create_issues_pledges(
-            save_fixture, organization, external_organization, private_repository
+            save_fixture, organization, external_organization_linked, private_repository
         )
 
         # then
@@ -117,17 +117,17 @@ class TestSearch:
     async def test_user_private_repository(
         self,
         client: AsyncClient,
-        external_organization: ExternalOrganization,
+        external_organization_linked: ExternalOrganization,
         organization: Organization,
         user_organization: UserOrganization,  # makes User a member of Organization
         save_fixture: SaveFixture,
         session: AsyncSession,
     ) -> None:
         private_repository = await create_repository(
-            save_fixture, external_organization, is_private=True
+            save_fixture, external_organization_linked, is_private=True
         )
         issues_pledges = await create_issues_pledges(
-            save_fixture, organization, external_organization, private_repository
+            save_fixture, organization, external_organization_linked, private_repository
         )
 
         # then

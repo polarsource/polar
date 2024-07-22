@@ -145,6 +145,15 @@ async def public_repository(
     )
 
 
+@pytest_asyncio.fixture
+async def public_repository_linked(
+    save_fixture: SaveFixture, external_organization_linked: ExternalOrganization
+) -> Repository:
+    return await create_repository(
+        save_fixture, external_organization_linked, is_private=False
+    )
+
+
 async def create_repository(
     save_fixture: SaveFixture,
     external_organization: ExternalOrganization,

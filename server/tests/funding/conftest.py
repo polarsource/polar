@@ -68,10 +68,13 @@ async def create_issues_pledges(
 @pytest_asyncio.fixture
 async def issues_pledges(
     save_fixture: SaveFixture,
-    external_organization: ExternalOrganization,
+    external_organization_linked: ExternalOrganization,
     organization: Organization,
-    public_repository: Repository,
+    public_repository_linked: Repository,
 ) -> IssuesPledgesFixture:
     return await create_issues_pledges(
-        save_fixture, organization, external_organization, public_repository
+        save_fixture,
+        organization,
+        external_organization_linked,
+        public_repository_linked,
     )

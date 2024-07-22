@@ -11,6 +11,7 @@ class SortProperty(StrEnum):
     modified_at = "modified_at"
     engagement = "engagement"
     positive_reactions = "positive_reactions"
+    funding_goal = "funding_goal"
 
 
 ListSorting = Annotated[

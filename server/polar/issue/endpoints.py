@@ -71,6 +71,7 @@ async def list(
     organization_id: MultipleQueryFilter[OrganizationID] | None = Query(
         None, title="OrganizationID Filter", description="Filter by organization ID."
     ),
+    is_badged: bool | None = Query(None, description="Filter by badged status."),
     session: AsyncSession = Depends(get_db_session),
 ) -> ListResource[IssueSchema]:
     """List issues."""
@@ -82,6 +83,7 @@ async def list(
         repository_name=repository_name,
         number=number,
         organization_id=organization_id,
+        is_badged=is_badged,
         pagination=pagination,
         sorting=sorting,
     )

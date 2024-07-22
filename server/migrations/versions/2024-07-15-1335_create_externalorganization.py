@@ -153,6 +153,8 @@ def upgrade() -> None:
         """
     )
 
+    op.execute('CREATE EXTENSION IF NOT EXISTS "uuid-ossp";')
+
     # Generate a new ID
     op.add_column(
         "external_organizations",

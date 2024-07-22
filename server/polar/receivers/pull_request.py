@@ -1,7 +1,9 @@
 from polar.enums import Platforms
+from polar.external_organization.service import (
+    external_organization as external_organization_service,
+)
 from polar.integrations.github.service.url import github_url
 from polar.issue.service import issue as issue_service
-from polar.organization.service import organization as organization_service
 from polar.pull_request.hooks import PullRequestHook, pull_request_upserted
 from polar.repository.service import repository as repository_service
 from polar.worker import QueueName, enqueue_job
@@ -28,15 +30,17 @@ async def pull_request_find_reverse_references(
     if not repo:
         return
 
-    org = await organization_service.get(session, item.organization_id)
-    if not org:
+    external_org = await external_organization_service.get(
+        session, item.organization_id
+    )
+    if not external_org:
         return
 
     urls = github_url.parse_urls(item.body)
 
     for url in urls:
         # Find deps in same repository, and trigger syncs for the issue
-        is_same_owner = url.owner is None or url.owner == org.slug
+        is_same_owner = url.owner is None or url.owner == external_org.name
         is_same_repo = url.repo is None or url.repo == repo.name
 
         if not is_same_owner or not is_same_repo:
@@ -45,7 +49,7 @@ async def pull_request_find_reverse_references(
         linked_issue = await issue_service.get_by_number(
             session,
             Platforms.github,
-            organization_id=org.id,
+            external_organization_id=external_org.id,
             repository_id=repo.id,
             number=url.number,
         )

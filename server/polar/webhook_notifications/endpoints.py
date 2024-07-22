@@ -6,7 +6,7 @@ from polar.auth.dependencies import WebUser
 from polar.authz.service import AccessType, Authz
 from polar.exceptions import ResourceNotFound, Unauthorized
 from polar.kit.pagination import ListResource, Pagination
-from polar.organization.dependencies import OrganizationNamePlatform
+from polar.organization.schemas import OrganizationID
 from polar.organization.service import organization as organization_service
 from polar.postgres import (
     AsyncSession,
@@ -30,13 +30,12 @@ router = APIRouter(tags=["webhook_notifications"])
     responses={404: {}},
 )
 async def search(
-    organization_name_platform: OrganizationNamePlatform,
+    organization_id: OrganizationID,
     auth_subject: WebUser,
     session: AsyncSession = Depends(get_db_session),
     authz: Authz = Depends(Authz.authz),
 ) -> ListResource[WebhookIntegrationSchema]:
-    (organization_name, platform) = organization_name_platform
-    org = await organization_service.get_by_name(session, platform, organization_name)
+    org = await organization_service.get(session, organization_id)
     if not org:
         raise ResourceNotFound()
 

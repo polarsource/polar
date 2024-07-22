@@ -63,6 +63,7 @@ class IssueService(ResourceService[Issue, IssueCreate, IssueUpdate]):
         repository_name: Sequence[str] | None = None,
         number: Sequence[int] | None = None,
         organization_id: Sequence[uuid.UUID] | None = None,
+        is_badged: bool | None = None,
         pagination: PaginationParams,
         sorting: list[Sorting[SortProperty]] = [(SortProperty.modified_at, True)],
     ) -> tuple[Sequence[Issue], int]:
@@ -100,6 +101,12 @@ class IssueService(ResourceService[Issue, IssueCreate, IssueUpdate]):
                 IssueExternalOrganization.organization_id.in_(organization_id)
             )
 
+        if is_badged is not None:
+            if is_badged:
+                statement = statement.where(Issue.pledge_badge_embedded_at.isnot(None))
+            else:
+                statement = statement.where(Issue.pledge_badge_embedded_at.is_(None))
+
         order_by_clauses: list[UnaryExpression[Any]] = []
         for criterion, is_desc in sorting:
             clause_function = desc if is_desc else asc
@@ -111,6 +118,8 @@ class IssueService(ResourceService[Issue, IssueCreate, IssueUpdate]):
                 order_by_clauses.append(clause_function(Issue.total_engagement_count))
             elif criterion == SortProperty.positive_reactions:
                 order_by_clauses.append(clause_function(Issue.positive_reactions_count))
+            elif criterion == SortProperty.funding_goal:
+                order_by_clauses.append(nullslast(clause_function(Issue.funding_goal)))
         statement = statement.order_by(*order_by_clauses)
 
         return await paginate(session, statement, pagination=pagination)

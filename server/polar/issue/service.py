@@ -202,14 +202,14 @@ class IssueService(ResourceService[Issue, IssueCreate, IssueUpdate]):
         self,
         session: AsyncSession,
         platform: Platforms,
-        organization_id: UUID,
+        external_organization_id: UUID,
         repository_id: UUID,
         number: int,
     ) -> Issue | None:
         return await self.get_by(
             session,
             platform=platform,
-            organization_id=organization_id,
+            organization_id=external_organization_id,
             repository_id=repository_id,
             number=number,
         )

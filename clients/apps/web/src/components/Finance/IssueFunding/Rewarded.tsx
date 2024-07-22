@@ -9,10 +9,7 @@ export default function ClientPage({
 }: {
   organization: Organization
 }) {
-  const pledges = useListPledgesForOrganization(
-    organization.platform,
-    organization.slug,
-  )
+  const pledges = useListPledgesForOrganization(organization.id)
   const rewards = useListRewards(organization.id)
 
   return (

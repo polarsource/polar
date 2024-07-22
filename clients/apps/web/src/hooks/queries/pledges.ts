@@ -1,10 +1,5 @@
 import { api, queryClient } from '@/utils/api'
-import {
-  PaymentMethod,
-  Platforms,
-  Pledge,
-  PledgesApiSearchRequest,
-} from '@polar-sh/sdk'
+import { PaymentMethod, Pledge, PledgesApiSearchRequest } from '@polar-sh/sdk'
 import {
   UseMutationResult,
   UseQueryResult,
@@ -26,44 +21,18 @@ export const useGetPledge: (
     retry: defaultRetry,
   })
 
-export const useListPledesForIssue = (issueId?: string) =>
+export const useSearchPledges = (params: PledgesApiSearchRequest) =>
   useQuery({
-    queryKey: ['pledgeByIssue', issueId],
-    queryFn: () =>
-      api.pledges.search({
-        issueId: issueId || '',
-      }),
-
-    enabled: !!issueId,
+    queryKey: ['pledges', { ...params }],
+    queryFn: () => api.pledges.search(params),
     retry: defaultRetry,
   })
 
-export const useListPledgesForOrganization = (
-  platform?: Platforms,
-  orgName?: string,
-) =>
-  useQuery({
-    queryKey: ['pledgeList', platform, orgName],
-    queryFn: () =>
-      api.pledges.search({
-        platform: platform || Platforms.GITHUB,
-        organizationName: orgName || '',
-      }),
+export const useListPledesForIssue = (issueId: string) =>
+  useSearchPledges({ issueId })
 
-    retry: defaultRetry,
-    enabled: !!platform && !!orgName,
-  })
-
-export const useSearchPledges = (search: PledgesApiSearchRequest) =>
-  useQuery({
-    queryKey: ['pledgeSearch', JSON.stringify(search)],
-    queryFn: () => api.pledges.search(search),
-    retry: defaultRetry,
-    enabled:
-      Boolean(search.byOrganizationId) ||
-      Boolean(search.organizationName) ||
-      Boolean(search.byUserId),
-  })
+export const useListPledgesForOrganization = (organizationId: string) =>
+  useSearchPledges({ organizationId })
 
 export const useListPaymentMethods = () =>
   useQuery({

@@ -1,32 +1,14 @@
 import { api, queryClient } from '@/utils/api'
-import {
-  ListResourceWebhookIntegration,
-  Platforms,
-  ResponseError,
-  WebhookIntegration,
-  WebhookIntegrationCreate,
-} from '@polar-sh/sdk'
-import {
-  UseMutationResult,
-  UseQueryResult,
-  useMutation,
-  useQuery,
-} from '@tanstack/react-query'
+import { WebhookIntegration, WebhookIntegrationCreate } from '@polar-sh/sdk'
+import { UseMutationResult, useMutation, useQuery } from '@tanstack/react-query'
 import { defaultRetry } from './retry'
 
-export const useSearchWebhookNotifications: (
-  platform: Platforms,
-  organizationName: string,
-) => UseQueryResult<ListResourceWebhookIntegration, ResponseError> = (
-  platform: Platforms,
-  organizationName: string,
-) =>
+export const useSearchWebhookNotifications = (organizationId: string) =>
   useQuery({
-    queryKey: ['webhookNotifications', organizationName],
+    queryKey: ['webhookNotifications', organizationId],
     queryFn: () =>
       api.webhookNotifications.search({
-        platform: platform,
-        organizationName: organizationName,
+        organizationId,
       }),
     retry: defaultRetry,
   })

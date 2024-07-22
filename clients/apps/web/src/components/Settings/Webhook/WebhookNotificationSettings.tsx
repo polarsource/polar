@@ -51,10 +51,7 @@ const ucfirst = (s: string): string => {
 }
 
 const WebhookNotificationSettings = (props: { org: Organization }) => {
-  const webhooks = useSearchWebhookNotifications(
-    props.org.platform,
-    props.org.slug,
-  )
+  const webhooks = useSearchWebhookNotifications(props.org.id)
   const createWebhook = useCreateWebhookNotification()
 
   const [webhookUrl, setWebhookUrl] = useState('')

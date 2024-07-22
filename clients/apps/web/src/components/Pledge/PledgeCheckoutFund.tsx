@@ -4,7 +4,7 @@ import {
   ClockIcon,
   CurrencyDollarIcon,
 } from '@heroicons/react/24/outline'
-import { Issue } from '@polar-sh/sdk'
+import { Issue, Organization } from '@polar-sh/sdk'
 import Link from 'next/link'
 import { Tabs, TabsContent } from 'polarkit/components/ui/atoms/tabs'
 import PledgeCheckoutFundByTeam from './PledgeCheckoutFundByTeam'
@@ -14,10 +14,12 @@ import { PledgeTabsList, PledgeTabsTrigger } from './PledgeCheckoutPanel'
 
 const PledgeCheckoutFund = ({
   issue,
+  organization,
   gotoURL,
   onAmountChange: onAmountChangeProp,
 }: {
   issue: Issue
+  organization: Organization
   gotoURL?: string
   onAmountChange?: (amount: number) => void
 }) => {
@@ -60,15 +62,22 @@ const PledgeCheckoutFund = ({
           <TabsContent value="fund_today">
             <PledgeCheckoutFundToday
               issue={issue}
+              organization={organization}
               gotoURL={gotoURL}
               onAmountChange={onAmountChangeProp}
             />
           </TabsContent>
           <TabsContent value="fund_on_completion">
-            <PledgeCheckoutFundOnCompletion issue={issue} />
+            <PledgeCheckoutFundOnCompletion
+              issue={issue}
+              organization={organization}
+            />
           </TabsContent>
           <TabsContent value="fund_by_team">
-            <PledgeCheckoutFundByTeam issue={issue} />
+            <PledgeCheckoutFundByTeam
+              issue={issue}
+              organization={organization}
+            />
           </TabsContent>
         </Tabs>
       </div>

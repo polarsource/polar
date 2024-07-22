@@ -46,10 +46,12 @@ type PledgeFormState = {
 
 const PledgeCheckoutFundToday = ({
   issue,
+  organization,
   gotoURL,
   onAmountChange: onAmountChangeProp,
 }: {
   issue: Issue
+  organization: Organization
   gotoURL?: string
   onAmountChange?: (amount: number) => void
 }) => {
@@ -57,7 +59,7 @@ const PledgeCheckoutFundToday = ({
     useState<PledgeStripePaymentIntentMutationResponse | null>(null)
 
   const [formState, setFormState] = useState<PledgeFormState>({
-    amount: issue.repository.organization.pledge_minimum_amount,
+    amount: organization.pledge_minimum_amount,
     email: '',
     setup_future_usage: undefined,
     on_behalf_of_organization_id: undefined,
@@ -76,9 +78,7 @@ const PledgeCheckoutFundToday = ({
       return false
     }
 
-    return (
-      formState.amount >= issue.repository.organization.pledge_minimum_amount
-    )
+    return formState.amount >= organization.pledge_minimum_amount
   }
 
   // Redirect to personal dashboard if authenticated unless gotoURL is set
@@ -125,9 +125,7 @@ const PledgeCheckoutFundToday = ({
 
   const shouldSynchronizePledge = useCallback(
     (pledgeSync: PledgeFormState) => {
-      if (
-        pledgeSync.amount < issue.repository.organization.pledge_minimum_amount
-      ) {
+      if (pledgeSync.amount < organization.pledge_minimum_amount) {
         return false
       }
 
@@ -152,7 +150,7 @@ const PledgeCheckoutFundToday = ({
 
       return false
     },
-    [issue.repository.organization.pledge_minimum_amount],
+    [organization],
   )
 
   const synchronizePledge = useCallback(
@@ -223,9 +221,7 @@ const PledgeCheckoutFundToday = ({
     }
     const amountInCents = newAmount * 100
 
-    if (
-      formState.amount === issue.repository.organization.pledge_minimum_amount
-    ) {
+    if (formState.amount === organization.pledge_minimum_amount) {
       posthog.capture('Pledge amount changed', {
         Amount: newAmount,
         'Organization ID': issue.repository.organization.id,
@@ -304,7 +300,6 @@ const PledgeCheckoutFundToday = ({
     PaymentMethod | undefined
   >()
   const showStripeForm = polarPaymentIntent ? true : false
-  const organization = issue.repository.organization
   const repository = issue.repository
 
   const onSavePaymentMethodChanged = (save: boolean) => {

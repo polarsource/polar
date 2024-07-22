@@ -17,14 +17,18 @@ import { twMerge } from 'tailwind-merge'
 import GithubLoginButton from '../Auth/GithubLoginButton'
 import OrganizationSelect from './OrganizationSelect'
 
-const PledgeCheckoutFundOnCompletion = ({ issue }: { issue: Issue }) => {
-  const organization = issue.repository.organization
-
+const PledgeCheckoutFundOnCompletion = ({
+  issue,
+  organization,
+}: {
+  issue: Issue
+  organization: Organization
+}) => {
   const [formState, setFormState] = useState<{
     amount: number
     on_behalf_of_organization_id: string | undefined
   }>({
-    amount: issue.repository.organization.pledge_minimum_amount,
+    amount: organization.pledge_minimum_amount,
     on_behalf_of_organization_id: undefined,
   })
 
@@ -39,7 +43,7 @@ const PledgeCheckoutFundOnCompletion = ({ issue }: { issue: Issue }) => {
   const [paymentPromise, setPaymentPromise] = useState(false)
 
   const hasValidDetails =
-    formState.amount >= issue.repository.organization.pledge_minimum_amount &&
+    formState.amount >= organization.pledge_minimum_amount &&
     !!currentUser &&
     paymentPromise
 

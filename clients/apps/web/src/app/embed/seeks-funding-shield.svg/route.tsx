@@ -1,28 +1,40 @@
 import { SeeksFundingShield } from '@/components/Embed/SeeksFundingShield'
-import { getServerURL } from '@/utils/api'
-import { ListResourceIssue } from '@polar-sh/sdk'
+import { getServerSideAPI } from '@/utils/api/serverside'
+import { getOrganizationBySlug } from '@/utils/organization'
+import { PolarAPI } from '@polar-sh/sdk'
 const { default: satori } = require('satori')
 
 export const runtime = 'edge'
 
-const getData = async (
-  org: string,
-  repo?: string,
-): Promise<ListResourceIssue> => {
-  let url = `${getServerURL()}/v1/issues/search?platform=github&organization_name=${org}&sort=funding_goal_desc_and_most_positive_reactions&have_badge=true`
+const cacheConfig = {
+  next: { revalidate: 60 },
+}
 
-  if (repo) {
-    url += `&repository_name=${repo}`
+const getData = async (
+  api: PolarAPI,
+  organizationSlug: string,
+  repositoryName: string | undefined,
+): Promise<number> => {
+  const organization = await getOrganizationBySlug(
+    api,
+    organizationSlug,
+    cacheConfig,
+  )
+
+  if (!organization) {
+    throw new Error('Organization not found')
   }
 
-  return await fetch(url, {
-    method: 'GET',
-  }).then((response) => {
-    if (!response.ok) {
-      throw new Error(`Unexpected ${response.status} status code`)
-    }
-    return response.json()
+  const {
+    pagination: { total_count },
+  } = await api.issues.list({
+    organizationId: organization.id,
+    isBadged: true,
+    limit: 1,
+    ...(repositoryName ? { repositoryName } : {}),
   })
+
+  return total_count
 }
 
 const renderBadge = async (count: number) => {
@@ -52,9 +64,11 @@ export async function GET(request: Request) {
     return new Response('No org provided', { status: 400 })
   }
 
+  const api = getServerSideAPI()
+
   try {
-    const data = await getData(org, repo || undefined)
-    const svg = await renderBadge(data.pagination.total_count)
+    const data = await getData(api, org, repo || undefined)
+    const svg = await renderBadge(data)
 
     return new Response(svg, {
       headers: {

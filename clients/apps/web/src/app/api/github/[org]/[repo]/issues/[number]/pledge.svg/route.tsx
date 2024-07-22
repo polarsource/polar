@@ -1,71 +1,65 @@
 import IssueBadge from '@/components/Embed/IssueBadge'
-import { getServerURL } from '@/utils/api'
+import { getServerSideAPI } from '@/utils/api/serverside'
+import { resolveIssuePath } from '@/utils/issue'
 import {
   Issue,
   IssueStateEnum,
+  Organization,
   PledgePledgesSummary,
   Pledger,
+  PolarAPI,
 } from '@polar-sh/sdk'
 const { default: satori } = require('satori')
 
 export const runtime = 'edge'
 
-type Data = {
-  pledges: PledgePledgesSummary
-  issue: Issue
+const cacheConfig = {
+  next: { revalidate: 60 },
 }
 
-const lookupIssue = (externalUrl: string): Promise<Issue> =>
-  fetch(`${getServerURL()}/v1/issues/lookup?external_url=${externalUrl}`, {
-    method: 'GET',
-    next: { revalidate: 60 },
-  }).then((response) => {
-    if (!response.ok) {
-      throw new Error(`Unexpected ${response.status} status code`)
-    }
-    return response.json()
-  })
-
-const pledgesSummary = (issueId: string): Promise<PledgePledgesSummary> =>
-  fetch(`${getServerURL()}/v1/pledges/summary?issue_id=${issueId}`, {
-    method: 'GET',
-    next: { revalidate: 60 },
-  }).then((response) => {
-    if (!response.ok) {
-      throw new Error(`Unexpected ${response.status} status code`)
-    }
-    return response.json()
-  })
+type Data = {
+  issue: Issue
+  organization: Organization
+  pledges: PledgePledgesSummary
+}
 
 const getBadgeData = async (
+  api: PolarAPI,
   org: string,
   repo: string,
-  number: number,
+  number: string,
 ): Promise<Data> => {
-  try {
-    const issue = await lookupIssue(
-      `https://github.com/${org}/${repo}/issues/${number}`,
-    )
+  const resolvedIssueOrganization = await resolveIssuePath(
+    api,
+    org,
+    repo,
+    number,
+    cacheConfig,
+  )
 
-    const pledges = await pledgesSummary(issue.id)
-
-    return { pledges, issue }
-  } catch (e) {
-    throw e
+  if (!resolvedIssueOrganization) {
+    throw new Error('Issue not found')
   }
+
+  const [issue, organization] = resolvedIssueOrganization
+  const pledges = await api.pledges.summary({ issueId: issue.id }, cacheConfig)
+  return { pledges, issue, organization }
 }
 
 const renderBadge = async (data: Data, isDarkmode: boolean) => {
-  const funding = data.pledges.funding
+  const {
+    pledges: { funding, pledges },
+    organization,
+    issue,
+  } = data
 
   const hasAmount =
     (funding.pledges_sum?.amount && funding.pledges_sum.amount > 0) || false
 
-  const showAmountRaised =
-    hasAmount && data.issue.repository.organization.pledge_badge_show_amount
+  const showAmountRaised = hasAmount && organization.pledge_badge_show_amount
 
   const avatarUrlsSet = new Set(
-    data.pledges.pledges
+    pledges
       .map(({ pledger }) => pledger)
       .filter((p): p is Pledger => !!p)
       .map((p) => p.avatar_url ?? '')
@@ -83,8 +77,8 @@ const renderBadge = async (data: Data, isDarkmode: boolean) => {
   ])
 
   const upfront_split_to_contributors =
-    data.issue.upfront_split_to_contributors ??
-    data.issue.repository.organization.default_upfront_split_to_contributors
+    issue.upfront_split_to_contributors ??
+    organization.default_upfront_split_to_contributors
 
   return await satori(
     <IssueBadge
@@ -93,12 +87,11 @@ const renderBadge = async (data: Data, isDarkmode: boolean) => {
       funding={funding}
       avatarsUrls={Array.from(avatarUrlsSet)}
       upfront_split_to_contributors={upfront_split_to_contributors}
-      orgName={data.issue.repository.organization.name}
+      orgName={issue.repository.organization.name}
       issueIsClosed={
-        Boolean(data.issue.issue_closed_at) ||
-        data.issue.state === IssueStateEnum.CLOSED
+        Boolean(issue.issue_closed_at) || issue.state === IssueStateEnum.CLOSED
       }
-      donationsEnabled={data.issue.repository.organization.donations_enabled}
+      donationsEnabled={organization.donations_enabled}
     />,
     {
       width: 400,
@@ -131,14 +124,10 @@ export async function GET(
   const { searchParams } = new URL(request.url)
   const isDarkMode = searchParams.has('darkmode')
 
-  try {
-    const data = await getBadgeData(
-      params.org,
-      params.repo,
-      parseInt(params.number),
-    )
+  const api = getServerSideAPI()
 
-    data.issue.repository.organization.pledge_minimum_amount
+  try {
+    const data = await getBadgeData(api, params.org, params.repo, params.number)
 
     const svg = await renderBadge(data, isDarkMode)
 

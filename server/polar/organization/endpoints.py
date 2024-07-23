@@ -32,6 +32,7 @@ from .schemas import (
 from .schemas import (
     OrganizationBadgeSettingsRead,
     OrganizationBadgeSettingsUpdate,
+    OrganizationCreate,
     OrganizationCustomer,
     OrganizationCustomerType,
     OrganizationID,
@@ -141,6 +142,22 @@ async def list_organization_customers(
         count,
         pagination,
     )
+
+
+@router.post(
+    "/",
+    response_model=OrganizationSchema,
+    status_code=201,
+    summary="Create Organization",
+    responses={201: {"description": "Organization created."}},
+)
+async def create(
+    organization_create: OrganizationCreate,
+    auth_subject: auth.OrganizationsCreate,
+    session: AsyncSession = Depends(get_db_session),
+) -> Organization:
+    """Create an organization."""
+    return await organization_service.create(session, organization_create, auth_subject)
 
 
 @router.patch(

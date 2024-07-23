@@ -7,7 +7,6 @@ import pytest_asyncio
 from polar.enums import Platforms
 from polar.models.external_organization import ExternalOrganization
 from polar.models.issue import Issue
-from polar.models.organization import Organization
 from polar.models.pull_request import PullRequest
 from polar.models.repository import Repository
 from polar.models.user import User
@@ -20,13 +19,6 @@ async def predictable_external_organization(
     save_fixture: SaveFixture,
 ) -> ExternalOrganization:
     return await create_external_organization(save_fixture)
-
-
-@pytest_asyncio.fixture
-async def predictable_pledging_organization(save_fixture: SaveFixture) -> Organization:
-    organization = Organization(slug="pledging_org", avatar_url="http://avatar_url")
-    await save_fixture(organization)
-    return organization
 
 
 @pytest_asyncio.fixture

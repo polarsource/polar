@@ -1,7 +1,7 @@
 import PreviewText, { UnescapeText } from '@/components/Feed/Markdown/preview'
 import { getServerSideAPI } from '@/utils/api/serverside'
 import { firstImageUrlFromMarkdown } from '@/utils/markdown'
-import { getOrganizationBySlug } from '@/utils/organization'
+import { getOrganizationBySlugOrNotFound } from '@/utils/organization'
 import { Article, ListResourceProduct, ResponseError } from '@polar-sh/sdk'
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
@@ -18,15 +18,11 @@ const getArticle = async (
   postSlug: string,
 ): Promise<Article> => {
   const api = getServerSideAPI()
-  const organization = await getOrganizationBySlug(
+  const organization = await getOrganizationBySlugOrNotFound(
     api,
     organizationName,
     cacheConfig,
   )
-
-  if (!organization) {
-    notFound()
-  }
 
   try {
     const articles = await api.articles.list(
@@ -125,9 +121,7 @@ export async function generateMetadata({
       types: {
         'application/rss+xml': [
           {
-            title: `${
-              article.organization.name
-            }`,
+            title: `${article.organization.name}`,
             url: `https://polar.sh/${article.organization.slug}/rss`,
           },
         ],

@@ -1,7 +1,6 @@
 import { getServerSideAPI } from '@/utils/api/serverside'
 import { DataTableSearchParams, parseSearchParams } from '@/utils/datatable'
-import { getOrganizationBySlug } from '@/utils/organization'
-import { notFound } from 'next/navigation'
+import { getOrganizationBySlugOrNotFound } from '@/utils/organization'
 import ClientPage from './ClientPage'
 
 export default async function Page({
@@ -12,11 +11,10 @@ export default async function Page({
   searchParams: DataTableSearchParams
 }) {
   const api = getServerSideAPI()
-  const organization = await getOrganizationBySlug(api, params.organization)
-
-  if (!organization) {
-    notFound()
-  }
+  const organization = await getOrganizationBySlugOrNotFound(
+    api,
+    params.organization,
+  )
 
   const { pagination, sorting } = parseSearchParams(searchParams, [
     { id: 'created_at', desc: true },

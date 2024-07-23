@@ -1,6 +1,6 @@
 import { getServerSideAPI } from '@/utils/api/serverside'
-import { getOrganizationBySlug } from '@/utils/organization'
-import { notFound, redirect } from 'next/navigation'
+import { getOrganizationBySlugOrNotFound } from '@/utils/organization'
+import { redirect } from 'next/navigation'
 
 export default async function Page({
   params,
@@ -8,11 +8,10 @@ export default async function Page({
   params: { organization: string }
 }) {
   const api = getServerSideAPI()
-  const organization = await getOrganizationBySlug(api, params.organization)
-
-  if (!organization) {
-    notFound()
-  }
+  const organization = await getOrganizationBySlugOrNotFound(
+    api,
+    params.organization,
+  )
 
   return redirect(`/maintainer/${organization.slug}/overview`)
 }

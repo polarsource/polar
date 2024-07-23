@@ -1,8 +1,6 @@
 'use client'
 
-import { useGitHubAccount } from '@/hooks'
 import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
-import { CONFIG } from '@/utils/config'
 import { useOutsideClick } from '@/utils/useOutsideClick'
 import { AddOutlined, KeyboardArrowDownOutlined } from '@mui/icons-material'
 import Link from 'next/link'
@@ -17,8 +15,6 @@ const DashboardProfileDropdown = ({ className = '' }) => {
     className,
   )
   const { currentUser: loggedUser } = useAuth()
-
-  const githubAccount = useGitHubAccount()
 
   const [isOpen, setOpen] = useState<boolean>(false)
 
@@ -45,8 +41,6 @@ const DashboardProfileDropdown = ({ className = '' }) => {
         name: loggedUser.username,
         avatar_url: loggedUser.avatar_url,
       } as const)
-
-  const showAddOrganization = !!githubAccount
 
   return (
     <>
@@ -84,21 +78,19 @@ const DashboardProfileDropdown = ({ className = '' }) => {
               </div>
             ) : null}
 
-            {showAddOrganization ? (
-              <LinkItem
-                href={CONFIG.GITHUB_INSTALLATION_URL}
-                icon={
-                  <AddOutlined
-                    fontSize="small"
-                    className="h-5 w-5 text-blue-500 dark:text-blue-400"
-                  />
-                }
-              >
-                <span className="mx-2 text-blue-500 dark:text-blue-400">
-                  Add GitHub Organization
-                </span>
-              </LinkItem>
-            ) : null}
+            <LinkItem
+              href="/maintainer/create"
+              icon={
+                <AddOutlined
+                  fontSize="small"
+                  className="h-5 w-5 text-blue-500 dark:text-blue-400"
+                />
+              }
+            >
+              <span className="mx-2 text-blue-500 dark:text-blue-400">
+                Create organization
+              </span>
+            </LinkItem>
           </div>
         )}
       </div>

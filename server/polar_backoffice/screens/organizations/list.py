@@ -22,7 +22,6 @@ class OrganizationsListScreen(Screen[None]):
     BINDINGS = [
         ("ctrl+r", "refresh", "Refresh"),
         ("ctrl+f", "find", "Find"),
-        ("ctrl+g", "open_in_github", "Open in GitHub"),
         ("ctrl+p", "open_in_polar", "Open in Polar"),
     ]
 
@@ -39,9 +38,7 @@ class OrganizationsListScreen(Screen[None]):
         self.sub_title = "Organizations"
 
         table = self.query_one(DataTable)
-        table.add_columns(
-            "Name", "Platform", "Personal", "Teams enabled", "Installed at"
-        )
+        table.add_columns("Name", "Slug", "Created At")
         self.get_organizations()
 
     def action_refresh(self) -> None:
@@ -50,16 +47,6 @@ class OrganizationsListScreen(Screen[None]):
     def action_find(self) -> None:
         search_bar = self.query_one(SearchBar)
         search_bar.toggle()
-
-    def action_open_in_github(self) -> None:
-        table = self.query_one(DataTable)
-        cell_key = table.coordinate_to_cell_key(table.cursor_coordinate)
-        row_key = cell_key.row_key.value
-        if row_key is None:
-            return
-
-        organization = self.organizations[row_key]
-        webbrowser.open_new_tab(f"https://github.com/{organization.slug}")
 
     def action_open_in_polar(self) -> None:
         table = self.query_one(DataTable)
@@ -93,11 +80,7 @@ class OrganizationsListScreen(Screen[None]):
         table.loading = True
         table.clear()
         async with sessionmaker() as session:
-            statement = (
-                (select(Organization))
-                .where(Organization.installation_id.is_not(None))
-                .order_by(Organization.slug)
-            )
+            statement = (select(Organization)).order_by(Organization.slug)
 
             if self.search_query:
                 statement = statement.where(
@@ -107,12 +90,10 @@ class OrganizationsListScreen(Screen[None]):
             stream = await session.stream_scalars(statement)
             async for organization in stream.unique():
                 table.add_row(
+                    organization.name,
                     organization.slug,
-                    organization.platform,
-                    "✅" if organization.is_personal else "❌",
-                    "✅" if organization.is_teams_enabled else "❌",
                     format_datetime(
-                        organization.installation_created_at,
+                        organization.created_at,
                         locale="en_US",
                         tzinfo=system_timezone(),
                     ),

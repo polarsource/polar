@@ -12,9 +12,9 @@ from textual.widgets import DataTable, Footer
 
 from polar.issue.search import search_query
 from polar.models import (
+    ExternalOrganization,
     Issue,
     IssueReward,
-    Organization,
     Pledge,
     PledgeTransaction,
     Repository,
@@ -119,7 +119,10 @@ class PledgesListScreen(Screen[None]):
                         Pledge.state != PledgeState.initiated,
                     ),
                 )
-                .join(Organization, onclause=Issue.organization_id == Organization.id)
+                .join(
+                    ExternalOrganization,
+                    onclause=Issue.organization_id == ExternalOrganization.id,
+                )
                 .join(Repository, onclause=Issue.repository_id == Repository.id)
                 .join(
                     IssueReward, onclause=Issue.id == IssueReward.issue_id, isouter=True
@@ -148,7 +151,7 @@ class PledgesListScreen(Screen[None]):
                 for clause in clauses:
                     if clause.startswith("org:"):
                         statement = statement.where(
-                            Organization.slug.ilike(f"%{clause[len("org:"):]}%")
+                            ExternalOrganization.name.ilike(f"%{clause[len("org:"):]}%")
                         )
                     elif clause.startswith("repo:"):
                         statement = statement.where(

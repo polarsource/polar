@@ -42,6 +42,7 @@ const donation: TransactionDonation = {
   id: '',
   to_organization: {
     id: '',
+    name: 'OrgName',
     slug: 'hello',
     avatar_url: '',
     created_at: '2024-03-27',
@@ -63,6 +64,7 @@ const issue_reward: TransactionIssueReward = {
 const organization: TransactionOrganization = {
   created_at: '',
   id: '',
+  name: 'OrgName',
   slug: 'OrgName',
   avatar_url: 'https://avatars.githubusercontent.com/u/1144727?s=60&v=4',
 }

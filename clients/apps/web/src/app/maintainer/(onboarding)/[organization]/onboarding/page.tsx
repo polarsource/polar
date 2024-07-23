@@ -1,8 +1,8 @@
 import { shouldBeOnboarded } from '@/hooks/onboarding'
 import { getServerSideAPI } from '@/utils/api/serverside'
-import { getOrganizationBySlug } from '@/utils/organization'
+import { getOrganizationBySlugOrNotFound } from '@/utils/organization'
 import { Metadata } from 'next'
-import { notFound, redirect } from 'next/navigation'
+import { redirect } from 'next/navigation'
 import ClientPage from './ClientPage'
 
 export async function generateMetadata({
@@ -10,8 +10,12 @@ export async function generateMetadata({
 }: {
   params: { organization: string }
 }): Promise<Metadata> {
+  const organization = await getOrganizationBySlugOrNotFound(
+    getServerSideAPI(),
+    params.organization,
+  )
   return {
-    title: `${params.organization}`, // " | Polar is added by the template"
+    title: `${organization.name}`, // " | Polar is added by the template"
   }
 }
 
@@ -21,11 +25,10 @@ export default async function Page({
   params: { organization: string }
 }) {
   const api = getServerSideAPI()
-  const organization = await getOrganizationBySlug(api, params.organization)
-
-  if (!organization) {
-    notFound()
-  }
+  const organization = await getOrganizationBySlugOrNotFound(
+    api,
+    params.organization,
+  )
 
   if (!shouldBeOnboarded(organization)) {
     return redirect(`/maintainer/${organization.slug}`)

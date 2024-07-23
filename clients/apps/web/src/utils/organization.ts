@@ -1,4 +1,5 @@
 import { InitOverrideFunction, Organization, PolarAPI } from '@polar-sh/sdk'
+import { notFound } from 'next/navigation'
 
 export const getOrganizationBySlug = async (
   api: PolarAPI,
@@ -12,6 +13,18 @@ export const getOrganizationBySlug = async (
     initOverrides,
   )
   return data.items?.[0]
+}
+
+export const getOrganizationBySlugOrNotFound = async (
+  api: PolarAPI,
+  slug: string,
+  initOverrides?: RequestInit | InitOverrideFunction,
+): Promise<Organization> => {
+  const organization = await getOrganizationBySlug(api, slug, initOverrides)
+  if (!organization) {
+    notFound()
+  }
+  return organization
 }
 
 export const getOrganizationById = async (

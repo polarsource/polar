@@ -1,7 +1,6 @@
 import { getServerSideAPI } from '@/utils/api/serverside'
-import { getOrganizationBySlug } from '@/utils/organization'
+import { getOrganizationBySlugOrNotFound } from '@/utils/organization'
 import { Metadata } from 'next'
-import { notFound } from 'next/navigation'
 import ClientPage from './ClientPage'
 
 const cacheConfig = {
@@ -22,15 +21,11 @@ export default async function Page({
   params: { organization: string }
 }) {
   const api = getServerSideAPI()
-  const organization = await getOrganizationBySlug(
+  const organization = await getOrganizationBySlugOrNotFound(
     api,
     params.organization,
     cacheConfig,
   )
-
-  if (!organization) {
-    notFound()
-  }
 
   return <ClientPage organization={organization} />
 }

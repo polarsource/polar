@@ -1,7 +1,6 @@
 import { getServerSideAPI } from '@/utils/api/serverside'
-import { getOrganizationBySlug } from '@/utils/organization'
+import { getOrganizationBySlugOrNotFound } from '@/utils/organization'
 import type { Metadata } from 'next'
-import { notFound } from 'next/navigation'
 import ClientPage from './ClientPage'
 
 const cacheConfig = {
@@ -16,15 +15,11 @@ export async function generateMetadata({
   params: { organization: string }
 }): Promise<Metadata> {
   const api = getServerSideAPI()
-  const organization = await getOrganizationBySlug(
+  const organization = await getOrganizationBySlugOrNotFound(
     api,
     params.organization,
     cacheConfig,
   )
-
-  if (!organization) {
-    notFound()
-  }
 
   return {
     title: `${organization.name}`, // " | Polar is added by the template"
@@ -74,15 +69,11 @@ export default async function Page({
   params: { organization: string }
 }) {
   const api = getServerSideAPI()
-  const organization = await getOrganizationBySlug(
+  const organization = await getOrganizationBySlugOrNotFound(
     api,
     params.organization,
     cacheConfig,
   )
-
-  if (!organization) {
-    notFound()
-  }
 
   const products = await api.products.list(
     { organizationId: organization.id, isArchived: false, isRecurring: false },

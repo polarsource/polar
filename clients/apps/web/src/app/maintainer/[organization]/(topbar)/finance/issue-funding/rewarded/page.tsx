@@ -1,8 +1,7 @@
 import Rewarded from '@/components/Finance/IssueFunding/Rewarded'
 import { getServerSideAPI } from '@/utils/api/serverside'
-import { getOrganizationBySlug } from '@/utils/organization'
+import { getOrganizationBySlugOrNotFound } from '@/utils/organization'
 import { Metadata } from 'next'
-import { notFound } from 'next/navigation'
 
 const cacheConfig = {
   next: {
@@ -10,13 +9,9 @@ const cacheConfig = {
   },
 }
 
-export async function generateMetadata({
-  params,
-}: {
-  params: { organization: string }
-}): Promise<Metadata> {
+export async function generateMetadata(): Promise<Metadata> {
   return {
-    title: `${params.organization}`, // " | Polar is added by the template"
+    title: 'Finance - Issue funding - Rewarded', // " | Polar is added by the template"
   }
 }
 
@@ -26,15 +21,11 @@ export default async function Page({
   params: { organization: string }
 }) {
   const api = getServerSideAPI()
-  const organization = await getOrganizationBySlug(
+  const organization = await getOrganizationBySlugOrNotFound(
     api,
     params.organization,
     cacheConfig,
   )
-
-  if (!organization) {
-    notFound()
-  }
 
   return <Rewarded organization={organization} />
 }

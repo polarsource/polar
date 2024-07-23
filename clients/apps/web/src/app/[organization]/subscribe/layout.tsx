@@ -1,6 +1,5 @@
 import { getServerSideAPI } from '@/utils/api/serverside'
-import { getOrganizationBySlug } from '@/utils/organization'
-import { notFound } from 'next/navigation'
+import { getOrganizationBySlugOrNotFound } from '@/utils/organization'
 import React from 'react'
 
 const cacheConfig = {
@@ -17,15 +16,7 @@ export default async function Layout({
   children: React.ReactNode
 }) {
   const api = getServerSideAPI()
-  const organization = await getOrganizationBySlug(
-    api,
-    params.organization,
-    cacheConfig,
-  )
-
-  if (!organization) {
-    notFound()
-  }
+  await getOrganizationBySlugOrNotFound(api, params.organization, cacheConfig)
 
   return (
     <div className="flex flex-col">

@@ -17,7 +17,7 @@ import ClientPage from './ClientPage'
 import { externalURL } from '@/components/Organization'
 import { Link } from '@/components/Profile/LinksEditor/LinksEditor'
 import { CONFIG } from '@/utils/config'
-import { getOrganizationBySlug } from '@/utils/organization'
+import { getOrganizationBySlugOrNotFound } from '@/utils/organization'
 import { OgObject } from 'open-graph-scraper-lite/dist/lib/types'
 import { ProfilePage as JSONLDProfilePage, WithContext } from 'schema-dts'
 
@@ -33,21 +33,15 @@ export async function generateMetadata({
   params: { organization: string }
 }): Promise<Metadata> {
   const api = getServerSideAPI()
-  const organization = await getOrganizationBySlug(
+  const organization = await getOrganizationBySlugOrNotFound(
     api,
     params.organization,
     cacheConfig,
   )
 
-  if (!organization) {
-    notFound()
-  }
-
   return {
     title: `${organization.name}`, // " | Polar is added by the template"
-    description:
-      organization.bio ||
-      `${organization.name} on Polar`,
+    description: organization.bio || `${organization.name} on Polar`,
     openGraph: {
       title: `${organization.name} on Polar`,
       description: `${organization.name} on Polar`,
@@ -103,15 +97,11 @@ export default async function Page({
   let listIssueFunding: ListResourceIssueFunding | undefined
   let donations: ListResourcePublicDonation | undefined
 
-  const organization = await getOrganizationBySlug(
+  const organization = await getOrganizationBySlugOrNotFound(
     api,
     params.organization,
     cacheConfig,
   )
-
-  if (!organization) {
-    notFound()
-  }
 
   try {
     const [

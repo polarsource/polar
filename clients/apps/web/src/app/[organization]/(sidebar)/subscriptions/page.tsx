@@ -1,5 +1,5 @@
 import { getServerSideAPI } from '@/utils/api/serverside'
-import { getOrganizationBySlug } from '@/utils/organization'
+import { getOrganizationBySlugOrNotFound } from '@/utils/organization'
 import { ListResourceProduct } from '@polar-sh/sdk'
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
@@ -17,23 +17,17 @@ export async function generateMetadata({
   params: { organization: string }
 }): Promise<Metadata> {
   const api = getServerSideAPI()
-  const organization = await getOrganizationBySlug(
+  const organization = await getOrganizationBySlugOrNotFound(
     api,
     params.organization,
     cacheConfig,
   )
 
-  if (!organization) {
-    notFound()
-  }
-
   return {
     title: `${organization.name}`, // " | Polar is added by the template"
     openGraph: {
       title: `${organization.name} subscriptions`,
-      description: `Subscribe to ${
-        organization.name
-      }`,
+      description: `Subscribe to ${organization.name}`,
       siteName: 'Polar',
 
       images: [
@@ -55,9 +49,7 @@ export async function generateMetadata({
       ],
       card: 'summary_large_image',
       title: `${organization.name} subscriptions`,
-      description: `Subscribe to ${
-        organization.name
-      }`,
+      description: `Subscribe to ${organization.name}`,
     },
   }
 }
@@ -75,15 +67,11 @@ export default async function Page({
   }
 
   const api = getServerSideAPI()
-  const organization = await getOrganizationBySlug(
+  const organization = await getOrganizationBySlugOrNotFound(
     api,
     params.organization,
     pageCache,
   )
-
-  if (!organization) {
-    notFound()
-  }
 
   let products: ListResourceProduct | undefined
 

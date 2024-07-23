@@ -4,7 +4,7 @@ import { BrandingMenu } from '@/components/Layout/Public/BrandingMenu'
 import { OrganizationPublicPageNav } from '@/components/Organization/OrganizationPublicPageNav'
 import { OrganizationPublicSidebar } from '@/components/Organization/OrganizationPublicSidebar'
 import { getServerSideAPI } from '@/utils/api/serverside'
-import { getOrganizationBySlug } from '@/utils/organization'
+import { getOrganizationBySlugOrNotFound } from '@/utils/organization'
 import {
   ListResourceOrganization,
   ListResourceOrganizationCustomer,
@@ -35,16 +35,16 @@ export default async function Layout({
   let userOrganizations: ListResourceOrganization | undefined
   let products: ListResourceProduct | undefined
 
-  const organization = await getOrganizationBySlug(api, params.organization, {
-    next: {
-      revalidate: 30,
-      tags: [`organization:${params.organization}`],
+  const organization = await getOrganizationBySlugOrNotFound(
+    api,
+    params.organization,
+    {
+      next: {
+        revalidate: 30,
+        tags: [`organization:${params.organization}`],
+      },
     },
-  })
-
-  if (!organization) {
-    notFound()
-  }
+  )
 
   try {
     const [

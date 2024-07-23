@@ -1,6 +1,6 @@
 import { getServerSideAPI } from '@/utils/api/serverside'
 import { fromISODate, toISODate } from '@/utils/metrics'
-import { getOrganizationBySlug } from '@/utils/organization'
+import { getOrganizationBySlugOrNotFound } from '@/utils/organization'
 import { Interval, MetricPeriod, ProductPriceType } from '@polar-sh/sdk'
 import {
   addDays,
@@ -10,7 +10,7 @@ import {
   startOfMonth,
   subMonths,
 } from 'date-fns'
-import { RedirectType, notFound, redirect } from 'next/navigation'
+import { RedirectType, redirect } from 'next/navigation'
 import ClientPage from './ClientPage'
 
 export default async function Page({
@@ -28,11 +28,10 @@ export default async function Page({
   }
 }) {
   const api = getServerSideAPI()
-  const organization = await getOrganizationBySlug(api, params.organization)
-
-  if (!organization) {
-    notFound()
-  }
+  const organization = await getOrganizationBySlugOrNotFound(
+    api,
+    params.organization,
+  )
 
   const defaultInterval = Interval.MONTH
   const today = new Date()

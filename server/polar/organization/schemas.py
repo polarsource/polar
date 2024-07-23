@@ -16,6 +16,7 @@ from polar.config import settings
 from polar.currency.schemas import CurrencyAmount
 from polar.kit.schemas import (
     EmptyStrToNoneValidator,
+    HttpUrlToStr,
     MergeJSONSchema,
     Schema,
     SelectorWidget,
@@ -123,10 +124,13 @@ class OrganizationCreate(Schema):
     slug: Annotated[
         str, StringConstraints(to_lower=True), AfterValidator(validate_slug)
     ]
-    avatar_url: HttpUrl | None = None
+    avatar_url: HttpUrlToStr | None = None
 
 
 class OrganizationUpdate(Schema):
+    name: str | None = None
+    avatar_url: HttpUrlToStr | None = None
+
     default_upfront_split_to_contributors: int | None = Field(
         default=None, ge=0.0, le=100.0
     )

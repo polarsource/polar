@@ -25,8 +25,9 @@ class Organization(RecordModel):
     __tablename__ = "organizations"
     __table_args__ = (UniqueConstraint("slug"),)
 
+    name: Mapped[str] = mapped_column(String, nullable=False, index=True)
     slug: Mapped[str] = mapped_column(CIText(), nullable=False, unique=True)
-    avatar_url: Mapped[str] = mapped_column(String, nullable=False)
+    avatar_url: Mapped[str | None] = mapped_column(String, nullable=True)
 
     account_id: Mapped[UUID | None] = mapped_column(
         PostgresUUID,
@@ -128,7 +129,6 @@ class Organization(RecordModel):
 
     # Org description or user bio
     bio: Mapped[str | None] = mapped_column(String, nullable=True, default=None)
-    pretty_name: Mapped[str | None] = mapped_column(String, nullable=True, default=None)
     company: Mapped[str | None] = mapped_column(String, nullable=True, default=None)
     blog: Mapped[str | None] = mapped_column(String, nullable=True, default=None)
     location: Mapped[str | None] = mapped_column(String, nullable=True, default=None)

@@ -25,7 +25,7 @@ class Pledger(Schema):
     def from_pledge(cls, p: PledgeModel) -> Self | None:
         if p.on_behalf_of_organization:
             return cls(
-                name=p.on_behalf_of_organization.pretty_name
+                name=p.on_behalf_of_organization.name
                 or p.on_behalf_of_organization.slug,
                 github_username=p.on_behalf_of_organization.slug,
                 avatar_url=p.on_behalf_of_organization.avatar_url,
@@ -40,7 +40,7 @@ class Pledger(Schema):
 
         if p.by_organization:
             return cls(
-                name=p.by_organization.pretty_name or p.by_organization.slug,
+                name=p.by_organization.name or p.by_organization.slug,
                 github_username=p.by_organization.slug,
                 avatar_url=p.by_organization.avatar_url,
             )

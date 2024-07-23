@@ -97,7 +97,7 @@ async def articles_send_to_user(
             if article.user.email:
                 email_headers["Reply-To"] = f"{from_name} <{article.user.email}>"
         else:
-            from_name = article.organization.pretty_name or article.organization.slug
+            from_name = article.organization.name or article.organization.slug
             if article.organization.email:
                 email_headers["Reply-To"] = (
                     f"{from_name} <{article.organization.email}>"

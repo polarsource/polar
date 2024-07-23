@@ -1,6 +1,7 @@
 import { githubRepoUrl } from '@/utils/github'
 import { formatStarsNumber } from '@/utils/stars'
 import { Organization, type Repository } from '@polar-sh/sdk'
+import Avatar from 'polarkit/components/ui/atoms/avatar'
 import GrayCard from '../Cards/GrayCard'
 
 const prettyURL = (url: string): string => {
@@ -26,10 +27,10 @@ const RepositoryCard = ({
     <>
       <GrayCard className="px-8 text-center">
         <div className="flex flex-row items-center justify-center space-x-2">
-          <img
-            className="h-8 w-8 rounded-full bg-white"
-            src={organization.avatar_url}
-            alt=""
+          <Avatar
+            name={organization.name}
+            avatar_url={organization.avatar_url}
+            className="h-8 w-8"
           />
           <h2 className="text-lg font-normal">{repository.name}</h2>
         </div>

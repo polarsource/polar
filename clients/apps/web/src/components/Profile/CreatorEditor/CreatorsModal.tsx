@@ -152,9 +152,9 @@ const CreatorRow = ({
         <Avatar
           className="h-8 w-8"
           avatar_url={creator.avatar_url}
-          name={creator.slug}
+          name={creator.name}
         />
-        <span>{creator.slug}</span>
+        <span>{creator.name}</span>
       </div>
       <Button
         className="h-6 w-6"
@@ -195,9 +195,9 @@ const SubscriptionOrganization = ({
         <Avatar
           className="h-8 w-8"
           avatar_url={organization.avatar_url}
-          name={organization.slug}
+          name={organization.name}
         />
-        <span>{organization.slug}</span>
+        <span>{organization.name}</span>
       </div>
       <div className="flex flex-row items-center gap-x-4">
         <ProductPill product={subscriptionTier} />

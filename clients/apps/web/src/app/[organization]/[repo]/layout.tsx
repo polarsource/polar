@@ -80,7 +80,7 @@ export default async function Layout({
               <Avatar
                 className="h-8 w-8"
                 avatar_url={organization.avatar_url}
-                name={organization.slug}
+                name={organization.name}
               />
             </Link>
             <h1 className="flex flex-row items-baseline gap-x-4 text-2xl !font-normal">
@@ -88,7 +88,7 @@ export default async function Layout({
                 className="dark:text-polar-600 text-gray-400 transition-colors hover:text-blue-500 dark:hover:text-blue-400"
                 href={organizationPageLink(organization)}
               >
-                {organization.slug}
+                {organization.name}
               </Link>
               <span className="dark:text-polar-600 text-gray-400">/</span>
               <Link

@@ -62,7 +62,7 @@ export const CheckoutSuccess = (props: {
           <Card className="w-full md:w-1/2">
             <CardHeader>
               <CardTitle className="text-xl font-medium">
-                Thank you for supporting {organization.slug}!
+                Thank you for supporting {organization.name}!
               </CardTitle>
               <p className="text-muted-foreground text-sm">
                 You&apos;re now eligible for the benefits of {product.name}.
@@ -86,7 +86,7 @@ export const CheckoutSuccess = (props: {
             <CardFooter className="flex justify-center">
               {currentUser && (
                 <Link className="grow" href={`/${organization.slug}`}>
-                  <Button className="w-full">Go to {organization.slug}</Button>
+                  <Button className="w-full">Go to {organization.name}</Button>
                 </Link>
               )}
               {!currentUser && (

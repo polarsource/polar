@@ -15,7 +15,7 @@ const PostPaywall = (props: {
       <Avatar
         className="h-12 w-12"
         avatar_url={organization.avatar_url}
-        name={organization.pretty_name || organization.slug}
+        name={organization.name}
       />
       <h2 className="text-center text-xl font-medium">
         This post is for premium subscribers only.
@@ -24,7 +24,7 @@ const PostPaywall = (props: {
         {organization.bio
           ? organization.bio
           : `Support ${
-              organization.pretty_name || organization.slug
+              organization.name
             } by subscribing to their work and get access to exclusive content.`}
       </p>
       <Link href={`/${organization.slug}/subscriptions`}>

@@ -69,7 +69,7 @@ export const ProjectCard = ({
               repositoryOrganization.id !== organization.id ? (
                 <span className="flex flex-row items-baseline gap-x-1">
                   <span className="dark:text-polar-500 text-gray-500">
-                    {repositoryOrganization.slug}
+                    {repositoryOrganization.name}
                   </span>
                   <span className="dark:text-polar-500 text-gray-500">/</span>
                   <span>{repository.name}</span>

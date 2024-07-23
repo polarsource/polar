@@ -50,11 +50,9 @@ export const ProductCard = ({
             <Avatar
               className="h-6 w-6"
               avatar_url={organization.avatar_url}
-              name={organization.slug}
+              name={organization.name}
             />
-            <span className="text-xs">
-              {organization.pretty_name ?? organization.slug}
-            </span>
+            <span className="text-xs">{organization.name}</span>
           </div>
         )}
         <div className="flex flex-col gap-y-2">

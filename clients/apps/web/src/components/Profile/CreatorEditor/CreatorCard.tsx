@@ -47,17 +47,15 @@ export const CreatorCard = ({
           <Avatar
             className="h-10 w-10"
             avatar_url={organization.avatar_url}
-            name={organization.slug}
+            name={organization.name}
           />
           <div className="flex flex-col">
             <h3 className="text-gray-950 dark:text-white">
-              {organization.pretty_name || organization.slug}
+              {organization.name}
             </h3>
-            {organization.pretty_name && (
-              <h3 className="text-sm text-blue-500 dark:text-blue-400">
-                @{organization.slug}
-              </h3>
-            )}
+            <h3 className="text-sm text-blue-500 dark:text-blue-400">
+              @{organization.slug}
+            </h3>
           </div>
           {!disabled && (
             <span

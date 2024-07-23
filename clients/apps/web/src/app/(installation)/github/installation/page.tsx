@@ -148,9 +148,9 @@ export default function Page() {
                 <Avatar
                   className="h-8 w-8"
                   avatar_url={organization.avatar_url}
-                  name={organization.slug}
+                  name={organization.name}
                 />
-                {organization.slug}
+                {organization.name}
               </div>
             ))}
           </div>

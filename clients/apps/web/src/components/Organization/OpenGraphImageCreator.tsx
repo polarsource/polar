@@ -62,7 +62,7 @@ const OpenGraphImageArticle = ({
           whiteSpace: 'nowrap',
         }}
       >
-        {organization.slug}
+        {organization.name}
       </div>
       <LogoIcon size={72} />
     </div>

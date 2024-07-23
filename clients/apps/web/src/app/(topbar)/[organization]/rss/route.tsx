@@ -46,7 +46,7 @@ export async function GET(
   )
 
   const feed = new RSS({
-    title: organization.pretty_name || organization.slug,
+    title: organization.name,
     feed_url: `https://polar.sh/${organization.slug}/rss`,
     site_url: organizationPageLink(organization),
     generator: 'polar.sh',

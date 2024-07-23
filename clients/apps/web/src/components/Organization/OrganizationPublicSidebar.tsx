@@ -78,22 +78,20 @@ export const OrganizationPublicSidebar = ({
     <div className="flex h-full w-full flex-col items-start gap-y-6 md:max-w-[18rem]">
       <div className="flex w-full flex-row items-center gap-x-4 gap-y-6 md:flex-col md:items-start md:gap-x-0">
         <Avatar
-          className="h-16 w-16 md:mb-6 md:h-32 md:w-32 lg:h-60 lg:w-60"
-          name={organization.slug}
+          className="h-16 w-16 text-6xl md:mb-6 md:h-32 md:w-32 lg:h-60 lg:w-60"
+          name={organization.name}
           avatar_url={organization.avatar_url}
         />
         <div className="flex flex-col md:gap-y-2">
           <h1 className="text-xl text-gray-800 md:text-2xl dark:text-white">
-            {organization.pretty_name ?? organization.slug}
+            {organization.name}
           </h1>
-          {organization.pretty_name && (
-            <Link
-              className="text-blue-500 hover:text-blue-400 md:text-lg dark:text-blue-400 dark:hover:text-blue-300"
-              href={`/${organization.slug}`}
-            >
-              @{organization.slug}
-            </Link>
-          )}
+          <Link
+            className="text-blue-500 hover:text-blue-400 md:text-lg dark:text-blue-400 dark:hover:text-blue-300"
+            href={`/${organization.slug}`}
+          >
+            @{organization.slug}
+          </Link>
         </div>
       </div>
       <div
@@ -234,7 +232,7 @@ const RssModal = ({
     <>
       <ModalHeader className="px-8 py-4" hide={hide}>
         <h3 className="text-lg font-medium text-gray-950 dark:text-white">
-          Subscribe to {organization.pretty_name || organization.slug} via RSS
+          Subscribe to {organization.name} via RSS
         </h3>
       </ModalHeader>
       <div className="p-8">

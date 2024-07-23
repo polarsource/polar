@@ -126,7 +126,7 @@ export async function generateMetadata({
         'application/rss+xml': [
           {
             title: `${
-              article.organization.pretty_name || article.organization.slug
+              article.organization.name
             }`,
             url: `https://polar.sh/${article.organization.slug}/rss`,
           },

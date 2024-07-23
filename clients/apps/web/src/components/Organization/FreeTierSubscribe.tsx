@@ -211,7 +211,7 @@ export const AnonymousFreeTierSubscribe = ({
                 <CheckoutCelebration />
                 <p className="text-muted-foreground text-center">Thank you!</p>
                 <h2 className="text-center text-lg">
-                  You&apos;re now subscribed to {organization.slug}
+                  You&apos;re now subscribed to {organization.name}
                 </h2>
                 <Button
                   type="button"

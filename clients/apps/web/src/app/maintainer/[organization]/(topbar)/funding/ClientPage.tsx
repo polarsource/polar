@@ -49,7 +49,7 @@ export default function ClientPage() {
           <span className="text-6xl">
             <HowToVoteOutlined fontSize="inherit" />
           </span>
-          <h2 className="text-lg">{org.slug} has not funded any issues yet</h2>
+          <h2 className="text-lg">{org.name} has not funded any issues yet</h2>
         </div>
       ) : null}
 

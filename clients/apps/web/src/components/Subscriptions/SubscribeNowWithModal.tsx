@@ -109,9 +109,7 @@ const SubscribeNowWithModal = ({
               {children ? (
                 <>{children}</>
               ) : (
-                <>
-                  Subscribe to {organization.pretty_name || organization.slug}
-                </>
+                <>Subscribe to {organization.name}</>
               )}
             </>
           </Button>
@@ -260,7 +258,7 @@ const AnonymousSubscribeModalContent = ({
           <CheckoutCelebration />
           <p className="text-muted-foreground text-center">Thank you!</p>
           <h2 className="text-center text-lg">
-            You&apos;re now subscribed to {organization.slug}
+            You&apos;re now subscribed to {organization.name}
           </h2>
           <Button
             type="button"
@@ -291,7 +289,7 @@ const AnonymousSubscribeModalContent = ({
     <>
       <ModalHeader hide={hide}>
         <h3 className="text-center text-lg font-medium text-gray-950 dark:text-white ">
-          Subscribe to {organization.pretty_name || organization.slug}
+          Subscribe to {organization.name}
         </h3>
       </ModalHeader>
       <div className="flex flex-col gap-y-2 p-8">

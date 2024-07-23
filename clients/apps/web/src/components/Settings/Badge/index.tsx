@@ -284,7 +284,7 @@ const BadgeSetup = ({
               onUpdateFundingGoal={async () => {}}
               showUpdateButton={false}
               showAmountRaised={settings.show_amount}
-              orgName={org.slug}
+              orgName={org.name}
               onChangeMessage={(value: string) => {
                 setSettings((prev) => {
                   return {

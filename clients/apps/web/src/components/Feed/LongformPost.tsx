@@ -133,17 +133,17 @@ const UpsellNonSubscriber = ({ article }: { article: RenderArticle }) => (
       <Avatar
         className="h-12 w-12"
         avatar_url={article.organization.avatar_url}
-        name={article.organization.pretty_name || article.organization.slug}
+        name={article.organization.name}
       />
       <h2 className="text-center text-xl font-medium">
         Subscribe to{' '}
-        {article.organization.pretty_name || article.organization.slug}
+        {article.organization.name}
       </h2>
       <p className="dark:text-polar-300 text-center text-gray-500">
         {article.organization?.bio
           ? article.organization?.bio
           : `Support ${
-              article.organization.pretty_name || article.organization.slug
+              article.organization.name
             } by subscribing to their work and get access to exclusive content.`}
       </p>
 
@@ -167,17 +167,17 @@ const UpsellFreeSubscriberToPaid = ({
       <Avatar
         className="h-12 w-12"
         avatar_url={article.organization.avatar_url}
-        name={article.organization.pretty_name || article.organization.slug}
+        name={article.organization.name}
       />
       <h2 className="text-xl font-medium">
         Upgrade your subscription to{' '}
-        {article.organization.pretty_name || article.organization.slug}
+        {article.organization.name}
       </h2>
       <p className="dark:text-polar-300 text-center text-gray-500">
         {article.organization?.bio
           ? article.organization?.bio
           : `Support ${
-              article.organization.pretty_name || article.organization.slug
+              article.organization.name
             } by subscribing to their work and get access to exclusive content.`}
       </p>
       <Link href={organizationPageLink(article.organization, 'subscriptions')}>

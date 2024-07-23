@@ -106,8 +106,8 @@ const OrganizationSelect = ({
               {canSelectOrganizations.map((o) => (
                 <SelectItem value={o.id} key={o.id}>
                   <div className="flex items-center space-x-2">
-                    <Avatar avatar_url={o.avatar_url} name={o.slug} />
-                    <span>{o.pretty_name || o.slug}</span>
+                    <Avatar avatar_url={o.avatar_url} name={o.name} />
+                    <span>{o.name}</span>
                   </div>
                 </SelectItem>
               ))}
@@ -127,9 +127,8 @@ const OrganizationSelect = ({
 
           {attributePledgeTo && (
             <div className="dark:text-polar-500 mt-2 text-xs text-gray-400">
-              By pledging on behalf of{' '}
-              {attributePledgeTo.pretty_name || attributePledgeTo.slug}, you
-              confirm are authorized to do so on their behalf.
+              By pledging on behalf of {attributePledgeTo.name}, you confirm are
+              authorized to do so on their behalf.
             </div>
           )}
         </div>

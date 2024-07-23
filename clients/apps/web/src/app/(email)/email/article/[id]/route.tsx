@@ -327,7 +327,7 @@ const renderArticle = async (
                   target="_blank"
                   className="!underline underline-offset-1"
                 >
-                  {post.organization.pretty_name || post.organization.slug}
+                  {post.organization.name}
                 </a>
                 . Thanks!
               </center>

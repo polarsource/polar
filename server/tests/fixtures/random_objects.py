@@ -44,6 +44,20 @@ def rstr(prefix: str) -> str:
     return prefix + "".join(random.choices(string.ascii_uppercase + string.digits, k=6))
 
 
+async def create_organization(
+    save_fixture: SaveFixture, name_prefix: str = "testorg", **kwargs: Any
+) -> Organization:
+    name = rstr(name_prefix)
+    organization = Organization(
+        name=name,
+        slug=name,
+        avatar_url="https://avatars.githubusercontent.com/u/105373340?s=200&v=4",
+        **kwargs,
+    )
+    await save_fixture(organization)
+    return organization
+
+
 @pytest_asyncio.fixture(scope="function")
 async def organization(save_fixture: SaveFixture) -> Organization:
     return await create_organization(save_fixture)
@@ -61,32 +75,12 @@ async def second_organization(save_fixture: SaveFixture) -> Organization:
 
 @pytest_asyncio.fixture()
 async def organization_blocked(save_fixture: SaveFixture) -> Organization:
-    organization = Organization(
-        slug=rstr("testorg"),
-        avatar_url="https://avatars.githubusercontent.com/u/105373340?s=200&v=4",
-        blocked_at=utc_now(),
-    )
-    await save_fixture(organization)
-    return organization
-
-
-async def create_organization(save_fixture: SaveFixture) -> Organization:
-    organization = Organization(
-        slug=rstr("testorg"),
-        avatar_url="https://avatars.githubusercontent.com/u/105373340?s=200&v=4",
-    )
-    await save_fixture(organization)
-    return organization
+    return await create_organization(save_fixture, blocked_at=utc_now())
 
 
 @pytest_asyncio.fixture(scope="function")
 async def pledging_organization(save_fixture: SaveFixture) -> Organization:
-    organization = Organization(
-        slug=rstr("pledging_org"),
-        avatar_url="https://avatars.githubusercontent.com/u/105373340?s=200&v=4",
-    )
-    await save_fixture(organization)
-    return organization
+    return await create_organization(save_fixture, name_prefix="pledging_org")
 
 
 async def create_external_organization(

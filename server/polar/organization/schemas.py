@@ -1,9 +1,16 @@
 from collections.abc import Sequence
 from enum import StrEnum
-from typing import Annotated
-from uuid import UUID
+from typing import Annotated, Self
 
-from pydantic import UUID4, Field, HttpUrl
+from pydantic import (
+    UUID4,
+    AfterValidator,
+    Field,
+    HttpUrl,
+    StringConstraints,
+    model_validator,
+)
+from slugify import slugify
 
 from polar.config import settings
 from polar.currency.schemas import CurrencyAmount
@@ -68,12 +75,12 @@ class OrganizationProfileSettings(Schema):
 
 # Public API
 class Organization(Schema):
-    id: UUID
+    id: OrganizationID
+    name: str
     slug: str
-    avatar_url: str
+    avatar_url: str | None = None
 
     bio: str | None = None
-    pretty_name: str | None = None
     company: str | None = None
     blog: str | None = None
     location: str | None = None
@@ -102,6 +109,23 @@ class Organization(Schema):
     )
 
 
+def validate_slug(value: str) -> str:
+    slugified = slugify(value)
+    if slugified != value:
+        raise ValueError(
+            "The slug can only contain ASCII letters, numbers and hyphens."
+        )
+    return value
+
+
+class OrganizationCreate(Schema):
+    name: str
+    slug: Annotated[
+        str, StringConstraints(to_lower=True), AfterValidator(validate_slug)
+    ]
+    avatar_url: HttpUrl | None = None
+
+
 class OrganizationUpdate(Schema):
     default_upfront_split_to_contributors: int | None = Field(
         default=None, ge=0.0, le=100.0
@@ -123,6 +147,29 @@ class OrganizationUpdate(Schema):
 
     profile_settings: OrganizationProfileSettings | None = None
     feature_settings: OrganizationFeatureSettings | None = None
+
+    @model_validator(mode="after")
+    def check_spending_limits(self) -> Self:
+        if (
+            self.per_user_monthly_spending_limit is not None
+            and self.total_monthly_spending_limit is None
+        ):
+            raise ValueError(
+                "per_user_monthly_spending_limit requires "
+                "total_monthly_spending_limit to be set"
+            )
+
+        if (
+            self.per_user_monthly_spending_limit is not None
+            and self.total_monthly_spending_limit is not None
+            and self.per_user_monthly_spending_limit > self.total_monthly_spending_limit
+        ):
+            raise ValueError(
+                "per_user_monthly_spending_limit must be less than or equal "
+                "to total_monthly_spending_limit"
+            )
+
+        return self
 
 
 class OrganizationSetAccount(Schema):
@@ -154,14 +201,14 @@ class OrganizationCustomer(Schema):
 
 # Internal model
 class RepositoryBadgeSettingsUpdate(Schema):
-    id: UUID
+    id: UUID4
     badge_auto_embed: bool
     retroactive: bool
 
 
 # Internal model
 class RepositoryBadgeSettingsRead(Schema):
-    id: UUID
+    id: UUID4
     avatar_url: str | None = None
     name: str
     synced_issues: int

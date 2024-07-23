@@ -12,7 +12,7 @@ from sqlalchemy.orm import aliased, contains_eager
 from polar.account.service import account as account_service
 from polar.auth.models import Anonymous, AuthSubject, is_organization, is_user
 from polar.authz.service import AccessType, Authz
-from polar.exceptions import BadRequest, NotPermitted, PolarError
+from polar.exceptions import NotPermitted, PolarError, PolarRequestValidationError
 from polar.integrations.loops.service import loops as loops_service
 from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.services import ResourceServiceReader
@@ -34,7 +34,7 @@ from polar.webhook.service import webhook as webhook_service
 from polar.worker import enqueue_job
 
 from .auth import OrganizationsWrite
-from .schemas import OrganizationCustomerType, OrganizationUpdate
+from .schemas import OrganizationCreate, OrganizationCustomerType, OrganizationUpdate
 from .sorting import SortProperty
 
 log = structlog.get_logger()
@@ -122,6 +122,31 @@ class OrganizationService(ResourceServiceReader[Organization]):
         result = await session.execute(statement)
         return result.scalar_one_or_none()
 
+    async def create(
+        self,
+        session: AsyncSession,
+        create_schema: OrganizationCreate,
+        auth_subject: AuthSubject[User],
+    ) -> Organization:
+        existing_slug = await self.get_by(session, slug=create_schema.slug)
+        if existing_slug is not None:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "loc": ("body", "slug"),
+                        "msg": "An organization with this slug already exists.",
+                        "type": "value_error",
+                        "input": create_schema.slug,
+                    }
+                ]
+            )
+
+        organization = Organization(**create_schema.model_dump())
+        session.add(organization)
+        await self.add_user(session, organization, auth_subject.subject)
+
+        return organization
+
     async def update(
         self,
         session: AsyncSession,
@@ -134,24 +159,6 @@ class OrganizationService(ResourceServiceReader[Organization]):
 
         if not await authz.can(subject, AccessType.write, organization):
             raise NotPermitted()
-
-        if (
-            update_schema.per_user_monthly_spending_limit
-            and not organization.total_monthly_spending_limit
-        ):
-            raise BadRequest(
-                "per_user_monthly_spending_limit requires total_monthly_spending_limit to be set"
-            )
-
-        if (
-            update_schema.per_user_monthly_spending_limit is not None
-            and organization.total_monthly_spending_limit is not None
-            and update_schema.per_user_monthly_spending_limit
-            > organization.total_monthly_spending_limit
-        ):
-            raise BadRequest(
-                "per_user_monthly_spending_limit can not be higher than total_monthly_spending_limit"
-            )
 
         if organization.onboarded_at is None:
             organization.onboarded_at = datetime.now(UTC)
@@ -243,8 +250,7 @@ class OrganizationService(ResourceServiceReader[Organization]):
                 user_id=user.id, organization_id=organization.id
             )
             session.add(relation)
-            await nested.commit()
-            await session.commit()
+            await session.flush()
             log.info(
                 "organization.add_user.created",
                 user_id=user.id,
@@ -259,8 +265,7 @@ class OrganizationService(ResourceServiceReader[Organization]):
                 organization_id=organization.id,
                 user_id=user.id,
             )
-            await nested.rollback()
-
+            await session.rollback()
             # Update
             stmt = (
                 sql.Update(UserOrganization)
@@ -273,7 +278,7 @@ class OrganizationService(ResourceServiceReader[Organization]):
                 )
             )
             await session.execute(stmt)
-            await session.commit()
+            await session.flush()
         finally:
             await loops_service.organization_installed(session, user=user)
 

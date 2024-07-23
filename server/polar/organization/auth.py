@@ -43,3 +43,13 @@ OrganizationsWrite = Annotated[
         )
     ),
 ]
+
+OrganizationsCreate = Annotated[
+    AuthSubject[User],
+    Depends(
+        Authenticator(
+            required_scopes={Scope.web_default, Scope.organizations_write},
+            allowed_subjects={User},
+        )
+    ),
+]

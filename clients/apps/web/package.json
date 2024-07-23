@@ -92,6 +92,7 @@
     "satori": "^0.10.11",
     "schema-dts": "^1.1.2",
     "shiki": "^1.9.0",
+    "slugify": "^1.6.6",
     "tailwind-merge": "^1.14.0",
     "tailwindcss-radix": "^2.8.0",
     "zustand": "^4.3.3"

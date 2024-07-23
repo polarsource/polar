@@ -150,18 +150,11 @@ async def repositories_changed(
             else event.repositories_removed
         )
 
-        org = await get_or_create_org_from_installation(
+        await get_or_create_org_from_installation(
             session,
             event.installation,
             removed,
         )
-
-        # Sync permission for the installing user
-        sender = await service.github_user.get_user_by_github_id(
-            session, event.sender.id
-        )
-        if sender:
-            await service.github_user.sync_github_orgs(session, locker, user=sender)
 
 
 @github_rate_limit_retry

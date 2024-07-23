@@ -11,7 +11,7 @@ export const useRedirectToGitHubInstallation = (
   const redirect = useCallback(() => {
     store.setGitHubInstallation({ organizationId: organization.id })
     window.location.href = CONFIG.GITHUB_INSTALLATION_URL
-  }, [store])
+  }, [store, organization])
 
   return redirect
 }

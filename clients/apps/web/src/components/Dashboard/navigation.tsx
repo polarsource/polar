@@ -250,6 +250,10 @@ const maintainerRoutesList = (org: Organization): Route[] => [
         title: 'Badge',
         link: `/maintainer/${org.slug}/issues/badge`,
       },
+      {
+        title: 'Organizations',
+        link: `/maintainer/${org.slug}/issues/organizations`,
+      },
     ],
   },
   {

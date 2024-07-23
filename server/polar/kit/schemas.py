@@ -12,6 +12,8 @@ from pydantic import (
     Field,
     GetCoreSchemaHandler,
     GetJsonSchemaHandler,
+    HttpUrl,
+    PlainSerializer,
 )
 from pydantic.json_schema import JsonSchemaValue
 from pydantic_core import PydanticCustomError, core_schema
@@ -57,6 +59,8 @@ def _validate_email_dns(email: str) -> str:
 
 
 EmailStrDNS = Annotated[EmailStr, AfterValidator(_validate_email_dns)]
+
+HttpUrlToStr = Annotated[HttpUrl, PlainSerializer(lambda v: str(v), return_type=str)]
 
 
 @dataclasses.dataclass(slots=True)

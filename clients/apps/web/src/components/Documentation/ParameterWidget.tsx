@@ -39,7 +39,14 @@ const useSelectorWidgetQuery = (
     queryKey: ['docs_selector_widget', { ...widgetSchema, organization_id }],
     queryFn: () => {
       const params = new URLSearchParams()
-      organization_id.forEach((id) => params.append('organization_id', id))
+      // Special treatment for organizations widget itself: only show organizations the user is a member of
+      if (widgetSchema.resourceRoot === '/v1/organizations') {
+        params.append('is_member', 'true')
+        // Otherwise, filter the resource by organization_id
+      } else {
+        organization_id.forEach((id) => params.append('organization_id', id))
+      }
+
       return fetch(getServerURL(`${widgetSchema.resourceRoot}/?${params}`), {
         method: 'GET',
         credentials: 'include',

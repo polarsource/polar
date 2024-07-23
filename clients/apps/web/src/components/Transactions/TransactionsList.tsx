@@ -85,22 +85,19 @@ const TransactionMeta: React.FC<TransactionMetaProps> = ({ transaction }) => {
         >
           <Avatar
             className="h-6 w-6"
-            name={transactionMeta.organization.slug}
+            name={transactionMeta.organization.name}
             avatar_url={transactionMeta.organization.avatar_url}
           />
         </Link>
       )}
       {transactionMeta.externalOrganization && (
-        <Link
-          className="hidden flex-shrink-0 md:block"
-          href={`/${transactionMeta.externalOrganization.name}`}
-        >
+        <div className="hidden flex-shrink-0 md:block">
           <Avatar
             className="h-6 w-6"
             name={transactionMeta.externalOrganization.name}
             avatar_url={transactionMeta.externalOrganization.avatar_url}
           />
-        </Link>
+        </div>
       )}
 
       <div className="flex flex-row gap-2">
@@ -113,7 +110,7 @@ const TransactionMeta: React.FC<TransactionMetaProps> = ({ transaction }) => {
                 <div>
                   <Link
                     className=" text-blue-500 dark:text-blue-400"
-                    href={`/${transactionMeta.organization?.slug}/subscriptions`}
+                    href={`/${transactionMeta.organization?.slug}/products/${transactionMeta.meta.product.id}`}
                   >
                     <ProductPill
                       product={transactionMeta.meta.product}

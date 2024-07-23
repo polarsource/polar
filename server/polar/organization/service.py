@@ -145,6 +145,8 @@ class OrganizationService(ResourceServiceReader[Organization]):
         session.add(organization)
         await self.add_user(session, organization, auth_subject.subject)
 
+        enqueue_job("organization.created", organization_id=organization.id)
+
         return organization
 
     async def update(

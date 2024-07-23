@@ -1,5 +1,6 @@
 import pytest
 from pydantic import ValidationError
+from pytest_mock import MockerFixture
 
 from polar.auth.models import AuthSubject
 from polar.exceptions import PolarRequestValidationError
@@ -44,8 +45,14 @@ class TestCreate:
     @pytest.mark.auth
     @pytest.mark.parametrize("slug", ["polar-software-inc", "slug-with-dashes"])
     async def test_valid(
-        self, slug: str, auth_subject: AuthSubject[User], session: AsyncSession
+        self,
+        slug: str,
+        mocker: MockerFixture,
+        auth_subject: AuthSubject[User],
+        session: AsyncSession,
     ) -> None:
+        enqueue_job_mock = mocker.patch("polar.organization.service.enqueue_job")
+
         organization = await organization_service.create(
             session,
             OrganizationCreate(name="My New Organization", slug=slug),
@@ -59,3 +66,7 @@ class TestCreate:
             session, auth_subject.subject.id, organization.id
         )
         assert user_organization is not None
+
+        enqueue_job_mock.assert_called_once_with(
+            "organization.created", organization_id=organization.id
+        )

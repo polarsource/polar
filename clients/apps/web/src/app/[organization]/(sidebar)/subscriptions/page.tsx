@@ -28,11 +28,11 @@ export async function generateMetadata({
   }
 
   return {
-    title: `${organization.pretty_name || organization.slug}`, // " | Polar is added by the template"
+    title: `${organization.name}`, // " | Polar is added by the template"
     openGraph: {
-      title: `${organization.pretty_name || organization.slug} subscriptions`,
+      title: `${organization.name} subscriptions`,
       description: `Subscribe to ${
-        organization.pretty_name || organization.slug
+        organization.name
       }`,
       siteName: 'Polar',
 
@@ -50,13 +50,13 @@ export async function generateMetadata({
           url: `https://polar.sh/og?org=${organization.slug}`,
           width: 1200,
           height: 630,
-          alt: `${organization.pretty_name || organization.slug} subscriptions`,
+          alt: `${organization.name} subscriptions`,
         },
       ],
       card: 'summary_large_image',
-      title: `${organization.pretty_name || organization.slug} subscriptions`,
+      title: `${organization.name} subscriptions`,
       description: `Subscribe to ${
-        organization.pretty_name || organization.slug
+        organization.name
       }`,
     },
   }

@@ -38,7 +38,7 @@ const DashboardProfileDropdown = ({ className = '' }) => {
 
   const current = currentOrg
     ? ({
-        name: currentOrg.slug,
+        name: currentOrg.name,
         avatar_url: currentOrg.avatar_url,
       } as const)
     : ({
@@ -77,7 +77,7 @@ const DashboardProfileDropdown = ({ className = '' }) => {
                     key={org.id}
                   >
                     <ListItem current={currentOrg?.id === org.id}>
-                      <Profile name={org.slug} avatar_url={org.avatar_url} />
+                      <Profile name={org.name} avatar_url={org.avatar_url} />
                     </ListItem>
                   </Link>
                 ))}

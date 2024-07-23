@@ -96,7 +96,7 @@ export const CoverEditor = ({
         {imagePreviewSrc && (
           <Image
             className="aspect-video h-full w-full object-cover"
-            alt={`${organization.slug}'s banner image`}
+            alt={`${organization.name}'s banner image`}
             src={imagePreviewSrc}
             width={960}
             height={320}

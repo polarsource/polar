@@ -32,10 +32,10 @@ export async function generateMetadata({
   }
 
   return {
-    title: `${organization.slug}`, // " | Polar is added by the template"
+    title: `${organization.name}`, // " | Polar is added by the template"
     openGraph: {
-      title: `${organization.slug} seeks funding for issues`,
-      description: `${organization.slug} seeks funding for issues on Polar`,
+      title: `${organization.name} seeks funding for issues`,
+      description: `${organization.name} seeks funding for issues on Polar`,
       siteName: 'Polar',
 
       images: [
@@ -52,12 +52,12 @@ export async function generateMetadata({
           url: `https://polar.sh/og?org=${organization.slug}`,
           width: 1200,
           height: 630,
-          alt: `${organization.slug} seeks funding for issues`,
+          alt: `${organization.name} seeks funding for issues`,
         },
       ],
       card: 'summary_large_image',
-      title: `${organization.slug} seeks funding for issues`,
-      description: `${organization.slug} seeks funding for issues on Polar`,
+      title: `${organization.name} seeks funding for issues`,
+      description: `${organization.name} seeks funding for issues on Polar`,
     },
   }
 }

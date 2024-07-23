@@ -28,10 +28,10 @@ export async function generateMetadata({
   }
 
   return {
-    title: `${organization.pretty_name || organization.slug}`, // " | Polar is added by the template"
+    title: `${organization.name}`, // " | Polar is added by the template"
     openGraph: {
-      title: `${organization.pretty_name || organization.slug} on Polar`,
-      description: `${organization.pretty_name || organization.slug} on Polar`,
+      title: `${organization.name} on Polar`,
+      description: `${organization.name} on Polar`,
       siteName: 'Polar',
 
       images: [
@@ -48,19 +48,19 @@ export async function generateMetadata({
           url: `https://polar.sh/og?org=${organization.slug}`,
           width: 1200,
           height: 630,
-          alt: `${organization.pretty_name || organization.slug} on Polar`,
+          alt: `${organization.name} on Polar`,
         },
       ],
       card: 'summary_large_image',
-      title: `${organization.pretty_name || organization.slug} on Polar`,
-      description: `${organization.pretty_name || organization.slug} on Polar`,
+      title: `${organization.name} on Polar`,
+      description: `${organization.name} on Polar`,
     },
 
     alternates: {
       types: {
         'application/rss+xml': [
           {
-            title: `${organization.pretty_name || organization.slug}`,
+            title: `${organization.name}`,
             url: `https://polar.sh/${organization.slug}/rss`,
           },
         ],

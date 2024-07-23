@@ -139,7 +139,7 @@ const ClientPage = () => {
             ...localArticle,
             organization: org,
             byline: {
-              name: org.slug,
+              name: org.name,
               avatar_url: org.avatar_url,
             },
             slug: 'preview',

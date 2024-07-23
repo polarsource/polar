@@ -168,7 +168,7 @@ const ClientPage = ({
                   <Avatar
                     className="h-12 w-12"
                     avatar_url={organization.avatar_url}
-                    name={organization.slug}
+                    name={organization.name}
                   />
                   <span className="flex flex-row flex-wrap gap-2">
                     <Link
@@ -195,7 +195,7 @@ const ClientPage = ({
                       className="truncate text-right"
                       href={organizationPageLink(organization)}
                     >
-                      {repository.organization.pretty_name}
+                      {repository.organization.name}
                     </Link>
                   </div>
                   <div className="flex flex-row justify-between gap-x-4">

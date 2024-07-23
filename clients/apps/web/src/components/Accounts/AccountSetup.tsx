@@ -119,7 +119,7 @@ export const AccountSetup: React.FC<AccoutSetupProps> = ({
             {organization && (
               <p>
                 You don&apos;t have a payout account setup for{' '}
-                <span className="font-medium">{organization.slug}</span>.
+                <span className="font-medium">{organization.name}</span>.
               </p>
             )}
             {!organization && (

@@ -18,7 +18,7 @@ type Story = StoryObj<typeof OpenGraphImageFunding>
 
 export const Default: Story = {
   args: {
-    org_name: org.slug,
+    org_name: org.name,
     issue_count: 15,
     avatar: org.avatar_url,
     issues: [issue, issue],
@@ -34,7 +34,7 @@ export const Default: Story = {
 
 export const IssueToday: Story = {
   args: {
-    org_name: org.slug,
+    org_name: org.name,
     issue_count: 15,
     avatar: org.avatar_url,
     issues: [
@@ -62,7 +62,7 @@ export const IssueToday: Story = {
 
 export const IssueLongTitle: Story = {
   args: {
-    org_name: org.slug,
+    org_name: org.name,
     issue_count: 15,
     avatar: org.avatar_url,
     issues: [
@@ -85,7 +85,7 @@ export const IssueLongTitle: Story = {
 
 export const Repository: Story = {
   args: {
-    org_name: org.slug,
+    org_name: org.name,
     repo_name: 'foobar',
     issue_count: 15,
     avatar: org.avatar_url,
@@ -109,7 +109,7 @@ export const Repository: Story = {
 
 export const RepositoryLongName: Story = {
   args: {
-    org_name: org.slug,
+    org_name: org.name,
     repo_name: 'lorem-ipsum-dorlor-sit-amet-this-is-a-long-name',
     issue_count: 15,
     avatar: org.avatar_url,
@@ -133,7 +133,7 @@ export const RepositoryLongName: Story = {
 
 export const OneIssue: Story = {
   args: {
-    org_name: org.slug,
+    org_name: org.name,
     issue_count: 1,
     avatar: org.avatar_url,
     issues: [issue],
@@ -157,7 +157,7 @@ export const OneIssue: Story = {
 
 export const NoIssues: Story = {
   args: {
-    org_name: org.slug,
+    org_name: org.name,
     issue_count: 0,
     avatar: org.avatar_url,
     issues: [],
@@ -181,7 +181,7 @@ export const NoIssues: Story = {
 
 export const LargeIssue: Story = {
   args: {
-    org_name: org.slug,
+    org_name: org.name,
     issue_count: 0,
     avatar: org.avatar_url,
     issues: [issue],
@@ -206,7 +206,7 @@ export const LargeIssue: Story = {
 
 export const LargeIssueNoReactions: Story = {
   args: {
-    org_name: org.slug,
+    org_name: org.name,
     issue_count: 0,
     avatar: org.avatar_url,
     issues: [
@@ -239,7 +239,7 @@ export const LargeIssueNoReactions: Story = {
 
 export const LargeIssueFundingGoal: Story = {
   args: {
-    org_name: org.slug,
+    org_name: org.name,
     issue_count: 0,
     avatar: org.avatar_url,
     issues: [

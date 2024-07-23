@@ -1,6 +1,7 @@
 import { UserIcon } from '@heroicons/react/24/outline'
 import { Organization } from '@polar-sh/sdk'
 import { Switch } from 'polarkit/components/ui/atoms'
+import Avatar from 'polarkit/components/ui/atoms/avatar'
 import Input from 'polarkit/components/ui/atoms/input'
 import { Banner } from 'polarkit/components/ui/molecules'
 import { useMemo, useRef, useState } from 'react'
@@ -142,11 +143,12 @@ const PublicRewardsSetting = (props: {
 
             <div className="flex items-center justify-between">
               <div className="dark:text-polar-100 flex items-center gap-2 text-sm">
-                <img
-                  src={props.org.avatar_url}
-                  className="h-6 w-6 rounded-full"
+                <Avatar
+                  name={props.org.name}
+                  avatar_url={props.org.avatar_url}
+                  className="h-6 w-6"
                 />
-                <div>{props.org.pretty_name || props.org.slug}</div>
+                <div>{props.org.name}</div>
                 <div className="dark:text-polar-400 text-gray-500">
                   Reviews, feedback & maintenance. Reward yourself too.
                 </div>

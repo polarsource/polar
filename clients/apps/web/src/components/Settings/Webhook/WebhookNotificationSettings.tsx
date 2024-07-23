@@ -92,7 +92,7 @@ const WebhookNotificationSettings = (props: { org: Organization }) => {
         ) : (
           <ShadowListGroup.Item>
             <p className="dark:text-polar-400 text-sm text-gray-500">
-              {props.org.slug} doesn&apos;t have any webhooks yet
+              {props.org.name} doesn&apos;t have any webhooks yet
             </p>
           </ShadowListGroup.Item>
         )}

@@ -228,7 +228,7 @@ const VisibilityModalContent = ({
               id={ArticleVisibility.PRIVATE}
             />
             <Label htmlFor={ArticleVisibility.PRIVATE}>
-              Members of {article.organization.slug}
+              Members of {article.organization.name}
             </Label>
           </div>
           <div className="flex items-center space-x-2">

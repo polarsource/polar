@@ -46,10 +46,10 @@ export function addHours(date: Date, hours: number) {
 
 export const org: Organization = {
   id: 'xxxabc',
+  name: 'Pydantic',
   slug: 'pydantic',
   avatar_url: 'https://avatars.githubusercontent.com/u/110818415?s=48&v=4',
   pledge_minimum_amount: 2000,
-  pretty_name: 'Pydantic',
   pledge_badge_show_amount: true,
   profile_settings: {},
   donations_enabled: false,
@@ -342,7 +342,7 @@ export const article: Article = {
   organization: {
     ...org,
     slug: 'polarsource',
-    pretty_name: 'Polar',
+    name: 'Polar',
   },
   title: 'Build SaaS with Polar using our API, Webhooks & OAuth',
   body: `![Hero](https://7vk6rcnylug0u6hg.public.blob.vercel-storage.com/Frame%20543-jakaw4OY2P90MQRnqVzbrmv9cJbtfe.jpg)

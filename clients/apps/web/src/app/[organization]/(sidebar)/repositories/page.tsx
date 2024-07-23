@@ -30,10 +30,10 @@ export async function generateMetadata({
     title: `${organization.slug}`, // " | Polar is added by the template"
     openGraph: {
       title: `${
-        organization.pretty_name || organization.slug
+        organization.name
       } all repositories`,
       description: `${
-        organization.pretty_name || organization.slug
+        organization.name
       } all repositories`,
       siteName: 'Polar',
 
@@ -52,16 +52,16 @@ export async function generateMetadata({
           width: 1200,
           height: 630,
           alt: `${
-            organization.pretty_name || organization.slug
+            organization.name
           } all repositories`,
         },
       ],
       card: 'summary_large_image',
       title: `${
-        organization.pretty_name || organization.slug
+        organization.name
       } all repositories`,
       description: `${
-        organization.pretty_name || organization.slug
+        organization.name
       } all repositories`,
     },
   }

@@ -69,7 +69,7 @@ export const Status = (props: {
         {currentUser ? (
           <div className=" my-8 flex w-full justify-center">
             <Link href={organizationPageLink(props.organization)}>
-              <Button>Continue to {props.organization.slug}</Button>
+              <Button>Continue to {props.organization.name}</Button>
             </Link>
           </div>
         ) : null}

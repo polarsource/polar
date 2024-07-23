@@ -127,10 +127,6 @@ const Issues = ({
     }
   }, [search])
 
-  if (!org || !org.slug) {
-    return <></>
-  }
-
   return (
     <OrganizationIssues
       filters={filters}

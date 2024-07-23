@@ -54,13 +54,13 @@ export default function ClientPage({
           <Avatar
             className="h-16 w-16"
             avatar_url={organization.avatar_url}
-            name={organization.slug}
+            name={organization.name}
           />
         </Link>
         <div className="flex flex-col items-center gap-y-2">
           <h3 className="text-2xl">Thank you for your subscription</h3>
           <p className="dark:text-polar-500 text-lg text-gray-500">
-            Consider subscribing to a paid tier to support {organization.slug}
+            Consider subscribing to a paid tier to support {organization.name}
           </p>
         </div>
       </div>

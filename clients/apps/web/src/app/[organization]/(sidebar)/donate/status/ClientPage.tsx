@@ -62,14 +62,13 @@ const ClientPage = ({
           <Card className="w-full md:w-1/2">
             <CardHeader>
               <CardTitle className="text-center text-xl font-medium">
-                Thank you for donating to{' '}
-                {organization.pretty_name || organization.slug}!
+                Thank you for donating to {organization.name}!
               </CardTitle>
             </CardHeader>
             <CardFooter className="flex justify-center">
               {currentUser ? (
                 <Link className="grow" href={`/${organization.slug}`}>
-                  <Button className="w-full">Go to {organization.slug}</Button>
+                  <Button className="w-full">Go to {organization.name}</Button>
                 </Link>
               ) : (
                 <div className="flex flex-col gap-4">

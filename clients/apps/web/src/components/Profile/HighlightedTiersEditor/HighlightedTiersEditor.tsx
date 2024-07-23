@@ -96,7 +96,7 @@ export const HighlightedTiersEditor = ({
             </Link>
           </div>
           <p className="dark:text-polar-500 text-sm text-gray-500">
-            Support {organization.slug} with a subscription & receive unique
+            Support {organization.name} with a subscription & receive unique
             benefits in return
           </p>
         </div>

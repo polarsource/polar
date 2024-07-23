@@ -274,7 +274,7 @@ export async function GET(req: NextRequest) {
     }
 
     return await renderFundingOG(
-      orgData.slug,
+      orgData.name,
       repoData,
       total_issue_count,
       orgData.avatar_url,

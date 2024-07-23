@@ -79,8 +79,7 @@ const BasePaywall = (props: {
             <LinkRenderer
               href={`/${props.article.organization.slug}/subscriptions`}
             >
-              {props.article.organization.pretty_name ||
-                props.article.organization.slug}
+              {props.article.organization.name}
             </LinkRenderer>{' '}
             to get access to it.
           </p>

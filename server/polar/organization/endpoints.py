@@ -25,7 +25,7 @@ from polar.user_organization.service import (
     user_organization as user_organization_service,
 )
 
-from . import auth
+from . import auth, sorting
 from .schemas import (
     Organization as OrganizationSchema,
 )
@@ -59,6 +59,7 @@ OrganizationNotFound = {
 async def list(
     auth_subject: auth.AnonymousOrganizationsRead,
     pagination: PaginationParamsQuery,
+    sorting: sorting.ListSorting,
     slug: str | None = Query(None, description="Filter by slug."),
     is_member: bool | None = Query(
         None,
@@ -77,6 +78,7 @@ async def list(
         slug=slug,
         is_member=is_member,
         pagination=pagination,
+        sorting=sorting,
     )
 
     return ListResource.from_paginated_results(

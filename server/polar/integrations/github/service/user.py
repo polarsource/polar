@@ -2,7 +2,7 @@ from typing import Any
 
 import structlog
 
-from polar.enums import Platforms, UserSignupType
+from polar.enums import UserSignupType
 from polar.exceptions import PolarError
 from polar.integrations.github.client import GitHub, TokenAuthStrategy
 from polar.integrations.loops.service import loops as loops_service
@@ -10,7 +10,6 @@ from polar.kit.extensions.sqlalchemy import sql
 from polar.locker import Locker
 from polar.models import OAuthAccount, User
 from polar.models.user import OAuthPlatform
-from polar.organization.service import organization
 from polar.postgres import AsyncSession
 from polar.posthog import posthog
 from polar.user.oauth_service import oauth_account_service
@@ -225,24 +224,7 @@ class GithubUserService(UserService):
             authenticated=authenticated,
         )
 
-        org_count = await self._run_sync_github_orgs(
-            session,
-            locker,
-            user=user,
-            github_user=authenticated,
-        )
-
-        posthog.user_event(
-            user,
-            "user",
-            event_name,
-            "done",
-            {
-                "$set": {
-                    "org_count": org_count,
-                },
-            },
-        )
+        posthog.user_event(user, "user", event_name, "done")
 
         if signup:
             await loops_service.user_signup(user, signup_type, gitHubConnected=True)
@@ -359,121 +341,6 @@ class GithubUserService(UserService):
         posthog.user_event(user, "user", "github_oauth_link_existing_user", "done")
 
         return user
-
-    async def sync_github_orgs(
-        self, session: AsyncSession, locker: Locker, *, user: User
-    ) -> None:
-        user_client = await github.get_user_client(session, locker, user)
-        github_user = await self.fetch_authenticated_user(client=user_client)
-        await self._run_sync_github_orgs(
-            session,
-            locker,
-            user=user,
-            github_user=github_user,
-        )
-
-    async def _run_sync_github_orgs(
-        self,
-        session: AsyncSession,
-        locker: Locker,
-        *,
-        user: User,
-        github_user: GithubUser,
-    ) -> int:
-        org_count = 0
-
-        installations = await self.fetch_user_accessible_installations(
-            session, locker, user
-        )
-        log.info(
-            "sync_github_orgs.installations",
-            user_id=user.id,
-            installation_ids=[i.id for i in installations],
-        )
-        gh_oauth = await oauth_account_service.get_by_platform_and_user_id(
-            session, OAuthPlatform.github, user.id
-        )
-        if not gh_oauth:
-            log.error("sync_github_orgs.no_platform_oauth_found", user_id=user.id)
-            return org_count
-
-        for i in installations:
-            if not i.account:
-                continue
-
-            if isinstance(i.account, types.Enterprise):
-                log.error("sync_github_orgs.github_enterprise_not_supported")
-                continue
-
-            raise NotImplementedError("TODO ORG DECOUPLING")
-            org = await organization.get_by_platform(
-                session, Platforms.github, i.account.id
-            )
-            if not org:
-                log.error("sync_github_orgs.org_not_found", id=i.id)
-                continue
-
-            # If installed on personal account, always admin
-            if i.account.id == int(gh_oauth.account_id):
-                log.info(
-                    "sync_github_orgs.add_admin",
-                    org_id=org.id,
-                    user_id=user.id,
-                )
-
-                # Add as admin in Polar (or upgrade existing memeber to admin)
-                await organization.add_user(session, org, user)
-                org_count += 1
-                continue
-
-            if i.target_type == "Organization":
-                # If installed on github org, check access
-                try:
-                    client = github.get_app_installation_client(i.id)
-                    membership = await client.rest.orgs.async_get_membership_for_user(
-                        i.account.login,
-                        github_user.login,
-                    )
-
-                    data = membership.parsed_data
-
-                    if data.role == "admin" and data.state == "active":
-                        log.info(
-                            "sync_github_orgs.add_admin",
-                            org_id=org.id,
-                            user_id=user.id,
-                        )
-
-                        # Add as admin in Polar (or upgrade existing member to admin)
-                        await organization.add_user(session, org, user)
-                        org_count += 1
-
-                    elif data.state == "active":
-                        log.info(
-                            "sync_github_orgs.add_non_admin",
-                            org_id=org.id,
-                            user_id=user.id,
-                        )
-
-                        # Add as admin in Polar
-                        await organization.add_user(session, org, user)
-                        org_count += 1
-                    else:
-                        log.info(
-                            "sync_github_orgs.skip_install",
-                            org_id=org.id,
-                            user_id=user.id,
-                        )
-
-                except Exception as e:
-                    log.error(
-                        "sync_github_orgs.failed",
-                        err=e,
-                        org_id=org.id,
-                        user_id=user.id,
-                    )
-
-        return org_count
 
     async def fetch_authenticated_user(
         self, *, client: GitHub[TokenAuthStrategy]

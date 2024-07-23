@@ -73,7 +73,7 @@ const ClientPage = ({
     return updateOrganizationMutation
       .mutateAsync({
         id: organization.id,
-        settings: {
+        body: {
           profile_settings: setting,
         },
       })

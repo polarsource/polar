@@ -113,7 +113,7 @@ const ClientPage = () => {
     await updateOrganization
       .mutateAsync({
         id: org.id,
-        settings: {
+        body: {
           feature_settings: {
             articles_enabled: true,
           },

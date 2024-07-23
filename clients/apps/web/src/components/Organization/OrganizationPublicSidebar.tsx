@@ -58,7 +58,7 @@ export const OrganizationPublicSidebar = ({
     return updateOrganizationMutation
       .mutateAsync({
         id: organization.id,
-        settings: {
+        body: {
           profile_settings: setting,
         },
       })

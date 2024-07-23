@@ -4,8 +4,8 @@ import {
   Organization,
   OrganizationBadgeSettingsUpdate,
   OrganizationCreate,
-  OrganizationsApiListRequest,
   OrganizationUpdate,
+  OrganizationsApiListRequest,
 } from '@polar-sh/sdk'
 import { UseMutationResult, useMutation, useQuery } from '@tanstack/react-query'
 import { defaultRetry } from './retry'
@@ -92,7 +92,10 @@ const updateOrgsCache = (result: Organization) => {
   )
 }
 
-export const useListOrganizations = (params: OrganizationsApiListRequest, enabled: boolean = true) =>
+export const useListOrganizations = (
+  params: OrganizationsApiListRequest,
+  enabled: boolean = true,
+) =>
   useQuery({
     queryKey: ['organizations', params],
     queryFn: () => api.organizations.list(params),
@@ -115,10 +118,10 @@ export const useCreateOrganization = () =>
 
 export const useUpdateOrganization = () =>
   useMutation({
-    mutationFn: (variables: { id: string; settings: OrganizationUpdate }) => {
+    mutationFn: (variables: { id: string; body: OrganizationUpdate }) => {
       return api.organizations.update({
         id: variables.id,
-        body: variables.settings,
+        body: variables.body,
       })
     },
     onSuccess: (result, variables, _ctx) => {

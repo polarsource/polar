@@ -41,7 +41,7 @@ export const ProjectsEditor = ({
     updateOrganizationMutation
       .mutateAsync({
         id: organization.id,
-        settings: {
+        body: {
           profile_settings: {
             featured_projects: newRepos.map((repo) => repo.id),
           },

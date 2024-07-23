@@ -252,7 +252,7 @@ const BadgeSetup = ({
 
     await updateOrg.mutateAsync({
       id: org.id,
-      settings: {
+      body: {
         default_upfront_split_to_contributors: value,
       },
     })

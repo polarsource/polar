@@ -1,6 +1,7 @@
 'use client'
 
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
+import OrganizationAppearanceSettings from '@/components/Settings/OrganizationAppearanceSettings'
 import { Section, SectionDescription } from '@/components/Settings/Section'
 import WebhookNotificationSettings from '@/components/Settings/Webhook/WebhookNotificationSettings'
 import WebhookSettings from '@/components/Settings/Webhook/WebhookSettings'
@@ -13,6 +14,13 @@ export default function ClientPage() {
   return (
     <DashboardBody>
       <div className="dark:divide-polar-700 divide-y divide-gray-200">
+        <Section>
+          <SectionDescription
+            title="Appearance"
+            description="Configure how your organization appears to the public"
+          />
+          <OrganizationAppearanceSettings organization={org} />
+        </Section>
         <Section>
           <SectionDescription
             title="Discord + Slack Notifications"

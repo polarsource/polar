@@ -3,6 +3,7 @@
 import revalidate from '@/app/actions'
 import { useAuth } from '@/hooks'
 import { useUpdateOrganization } from '@/hooks/queries'
+import { useExternalOrganizations } from '@/hooks/queries/externalOrganizations'
 import { api } from '@/utils/api'
 import { CONFIG } from '@/utils/config'
 import { RssIcon } from '@heroicons/react/20/solid'
@@ -11,6 +12,7 @@ import {
   ListResourceOrganizationCustomer,
   Organization,
   OrganizationProfileSettings,
+  Platforms,
   Product,
 } from '@polar-sh/sdk'
 import Link from 'next/link'
@@ -53,6 +55,12 @@ export const OrganizationPublicSidebar = ({
   const isOrgMember = userOrganizations.some((o) => o.id === organization.id)
 
   const updateOrganizationMutation = useUpdateOrganization()
+  const externalGitHubOrganizations = useExternalOrganizations({
+    organizationId: organization.id,
+    platform: Platforms.GITHUB,
+    limit: 1,
+    sorting: ['created_at'],
+  })
 
   const updateProfile = (setting: OrganizationProfileSettings) => {
     return updateOrganizationMutation
@@ -116,9 +124,16 @@ export const OrganizationPublicSidebar = ({
             maxLength={160}
           />
           <div className="flex flex-row flex-wrap items-center gap-3 text-lg">
-            <SocialLink href={`https://github.com/${organization.slug}`}>
-              <GitHubIcon width={20} height={20} />
-            </SocialLink>
+            {externalGitHubOrganizations.data?.items?.map(
+              (externalOrganization) => (
+                <SocialLink
+                  key={externalOrganization.id}
+                  href={`https://github.com/${externalOrganization.name}`}
+                >
+                  <GitHubIcon width={20} height={20} />
+                </SocialLink>
+              ),
+            )}
             {organization.twitter_username && (
               <SocialLink
                 href={`https://twitter.com/${organization.twitter_username}`}

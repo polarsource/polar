@@ -49,8 +49,9 @@ class TransactionPledge(TimestampedSchema):
 
 class TransactionOrganization(TimestampedSchema):
     id: UUID4
+    name: str
     slug: str
-    avatar_url: str
+    avatar_url: str | None = None
 
 
 class TransactionDonation(TimestampedSchema):

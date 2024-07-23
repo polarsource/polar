@@ -32,6 +32,20 @@ export const Default: Story = {
   },
 }
 
+export const OrganizationNoAvatar: Story = {
+  args: {
+    org_name: org.name,
+    issues: [],
+  },
+  render: (args) => {
+    return (
+      <div className="absolute">
+        <OpenGraphImageFunding {...args} />
+      </div>
+    )
+  },
+}
+
 export const IssueToday: Story = {
   args: {
     org_name: org.name,

@@ -5,7 +5,7 @@ const OpenGraphImageFunding = (props: {
   org_name: string
   repo_name?: string
   issue_count: number
-  avatar: string
+  avatar?: string
   issues: Issue[]
   largeIssue: boolean
 }) => {
@@ -82,17 +82,19 @@ const OpenGraphImageFunding = (props: {
               justifyContent: 'center',
             }}
           >
-            <img
-              src={props.avatar}
-              height={48}
-              width={48}
-              style={{
-                height: 48,
-                width: 48,
-                borderRadius: 48,
-                flexShrink: 0,
-              }}
-            />
+            {props.avatar && (
+              <img
+                src={props.avatar}
+                height={48}
+                width={48}
+                style={{
+                  height: 48,
+                  width: 48,
+                  borderRadius: 48,
+                  flexShrink: 0,
+                }}
+              />
+            )}
             <div
               style={{
                 fontWeight: 'bold',

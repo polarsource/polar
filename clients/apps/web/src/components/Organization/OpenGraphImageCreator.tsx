@@ -11,7 +11,7 @@ const generatePostOGFallbackPath = (slug: string, maxInt: number) => {
 
 const imageBaseURL = 'https://polar.sh/assets/posts/og'
 
-const OpenGraphImageArticle = ({
+const OpenGraphImageCreator = ({
   organization,
 }: {
   organization: Organization
@@ -44,17 +44,19 @@ const OpenGraphImageArticle = ({
         textWrap: 'balance',
       }}
     >
-      <img
-        src={organization.avatar_url}
-        height={160}
-        width={160}
-        style={{
-          height: 160,
-          width: 160,
-          borderRadius: 160,
-          flexShrink: 0,
-        }}
-      />
+      {organization.avatar_url && (
+        <img
+          src={organization.avatar_url}
+          height={160}
+          width={160}
+          style={{
+            height: 160,
+            width: 160,
+            borderRadius: 160,
+            flexShrink: 0,
+          }}
+        />
+      )}
       <div
         style={{
           fontWeight: 500,
@@ -69,4 +71,4 @@ const OpenGraphImageArticle = ({
   )
 }
 
-export default OpenGraphImageArticle
+export default OpenGraphImageCreator

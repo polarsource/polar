@@ -22,7 +22,7 @@ const renderFundingOG = async (
   org_name: string,
   repository: Repository | undefined,
   issue_count: number,
-  avatar: string,
+  avatar: string | undefined,
   issues: Issue[],
   largeIssue: boolean,
 ) => {
@@ -125,23 +125,21 @@ const renderArticleOG = async (article: Article) => {
 }
 
 const listIssues = async (
-  org: string,
-  repo: string | null,
+  org: Organization,
+  repo: Repository | undefined,
 ): Promise<ListResourceIssue> => {
   const params = new URLSearchParams()
   params.set('platform', 'github')
-  params.set('organization_name', org)
+  params.set('organization_id', org.id)
   if (repo) {
-    params.set('repository_name', repo)
+    params.set('repository_name', repo.name)
   }
-  params.set('have_badge', 'true')
-  params.set('sort', 'funding_goal_desc_and_most_positive_reactions')
-  return await fetch(
-    `${getServerURL()}/v1/issues/search?${params.toString()}`,
-    {
-      method: 'GET',
-    },
-  ).then((response) => {
+  params.set('is_badged', 'true')
+  params.append('sorting', '-funding_goal')
+  params.append('sorting', '-positive_reactions')
+  return await fetch(`${getServerURL()}/v1/issues/?${params.toString()}`, {
+    method: 'GET',
+  }).then((response) => {
     if (!response.ok) {
       throw new Error(`Unexpected ${response.status} status code`)
     }
@@ -266,7 +264,7 @@ export async function GET(req: NextRequest) {
       issues = [issueData]
       largeIssue = true
     } else {
-      const res = await listIssues(org, repo)
+      const res = await listIssues(orgData, repoData)
       if (res.items) {
         issues = res.items
         total_issue_count = res.pagination.total_count

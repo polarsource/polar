@@ -67,7 +67,7 @@ export default function ClientPage({
     await updateOrganization
       .mutateAsync({
         id: organization.id,
-        settings: {
+        body: {
           donations_enabled: true,
         },
       })

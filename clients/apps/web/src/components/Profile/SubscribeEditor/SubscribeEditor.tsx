@@ -126,7 +126,7 @@ const SubscribeSettings = ({
       .mutateAsync(
         {
           id: organization.id,
-          settings: {
+          body: {
             profile_settings: {
               subscribe: settings,
             },

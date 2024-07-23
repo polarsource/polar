@@ -69,7 +69,7 @@ export default function ClientPage({
       updateOrganization
         .mutateAsync({
           id: organization.id,
-          settings: {
+          body: {
             feature_settings,
             donations_enabled,
           },

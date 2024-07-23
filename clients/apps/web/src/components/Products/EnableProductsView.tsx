@@ -25,7 +25,7 @@ export const EnableProductsView = ({
     await updateOrganization
       .mutateAsync({
         id: organization.id,
-        settings: {
+        body: {
           feature_settings: {
             subscriptions_enabled: true,
           },

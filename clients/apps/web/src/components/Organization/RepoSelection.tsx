@@ -3,7 +3,7 @@
 import { useOutsideClick } from '@/utils/useOutsideClick'
 import { Repository } from '@polar-sh/sdk'
 import { Command } from 'cmdk'
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { Item, Left, SelectedBox, Text } from '../Dropdown'
 
@@ -18,6 +18,11 @@ export function RepoSelection(props: {
   const [value, setValue] = React.useState('')
   const inputRef = React.useRef<HTMLInputElement | null>(null)
   const listRef = React.useRef(null)
+
+  const hasSeveralOrganizations = useMemo(
+    () => new Set(props.repositories.map((r) => r.organization.id)).size > 1,
+    [props.repositories],
+  )
 
   const [open, setOpen] = React.useState(false)
 
@@ -79,6 +84,7 @@ export function RepoSelection(props: {
           classNames={props.selectedClassNames}
           repository={props.value}
           onClick={() => setOpen(true)}
+          displayOrganization={hasSeveralOrganizations}
         />
       )}
       {!props.value && (
@@ -127,12 +133,15 @@ export function RepoSelection(props: {
                 {sortedRepositories &&
                   sortedRepositories.map((r) => (
                     <Item
-                      value={`${r.name}`}
+                      value={`${hasSeveralOrganizations ? `${r.organization.name}/` : ''}${r.name}`}
                       key={r.id}
                       onSelect={() => onSelectRepo(r)}
                     >
                       <Left>
-                        <Text>{r.name}</Text>
+                        <Text>
+                          {hasSeveralOrganizations && `${r.organization.name}/`}
+                          {r.name}
+                        </Text>
                       </Left>
                     </Item>
                   ))}
@@ -151,10 +160,12 @@ const SelectedRepository = ({
   repository,
   onClick,
   classNames,
+  displayOrganization,
 }: {
   repository: Repository
   onClick: () => void
   classNames: string
+  displayOrganization?: boolean
 }) => {
   return (
     <SelectedBox onClick={onClick} classNames={classNames}>
@@ -162,6 +173,7 @@ const SelectedRepository = ({
         <RepoIcon />
         <div className="flex items-center space-x-1 overflow-hidden ">
           <span className="dark:text-polar-200 overflow-hidden text-ellipsis whitespace-nowrap text-gray-900">
+            {displayOrganization && `${repository.organization.name}/`}
             {repository.name}
           </span>
         </div>

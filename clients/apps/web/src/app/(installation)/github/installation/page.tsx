@@ -25,10 +25,14 @@ export default function Page() {
   const installationId = search?.get('installation_id')
   const setupAction = search?.get('setup_action')
   const { gitHubInstallation } = useStore()
-  const [organizationId, setOrganizationId] = useState<string | undefined>(
-    gitHubInstallation.organizationId,
-  )
+  const [organizationId, setOrganizationId] = useState<string | undefined>()
   const organizations = useListMemberOrganizations(organizationId === undefined)
+
+  useEffect(() => {
+    if (gitHubInstallation.organizationId) {
+      setOrganizationId(gitHubInstallation.organizationId)
+    }
+  }, [gitHubInstallation.organizationId])
 
   const router = useRouter()
   const pathname = usePathname()

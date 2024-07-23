@@ -1,11 +1,10 @@
-import { useAuth } from '@/hooks'
 import { useRedirectToGitHubInstallation } from '@/hooks/github'
 import { useListMemberOrganizations } from '@/hooks/queries'
 import { ExclamationCircleIcon } from '@heroicons/react/20/solid'
 import { ArrowForwardOutlined } from '@mui/icons-material'
 import { Organization, UserSignupType } from '@polar-sh/sdk'
 import Link from 'next/link'
-import { usePathname, useRouter } from 'next/navigation'
+import { usePathname } from 'next/navigation'
 import Button from 'polarkit/components/ui/atoms/button'
 import { Banner } from 'polarkit/components/ui/molecules'
 import { PropsWithChildren } from 'react'
@@ -29,24 +28,17 @@ export const GitHubAuthUpsell = () => {
 }
 
 export const MaintainerUpsell = () => {
-  const { currentUser } = useAuth()
-  const router = useRouter()
-
-  const upgrade = async () => {
-    alert('CREATE ORG!')
-    // TODO: Find a way to refresh the page using router.refresh() without keeping stale data
-    router.push(`/maintainer/${currentUser?.username}/overview`)
-  }
-
   return (
     <Upsell
       title="Become a creator"
       description="Build, engage & convert your own community of free- and paid subscribers."
     >
-      <Button size="sm" className="-z-1 self-start" onClick={upgrade}>
-        <span>Get Started</span>
-        <ArrowForwardOutlined className="ml-2" fontSize="inherit" />
-      </Button>
+      <Link href="/maintainer/create">
+        <Button size="sm" className="-z-1 self-start" type="button">
+          <span>Get Started</span>
+          <ArrowForwardOutlined className="ml-2" fontSize="inherit" />
+        </Button>
+      </Link>
     </Upsell>
   )
 }

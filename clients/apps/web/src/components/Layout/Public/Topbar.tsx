@@ -10,9 +10,8 @@ import {
   UserSignupType,
 } from '@polar-sh/sdk'
 import Link from 'next/link'
-import { usePathname, useRouter } from 'next/navigation'
+import { usePathname } from 'next/navigation'
 import Button from 'polarkit/components/ui/atoms/button'
-import { useCallback } from 'react'
 
 import { BrandingMenu } from './BrandingMenu'
 import TopbarRight from './TopbarRight'
@@ -30,16 +29,9 @@ const Topbar = ({
   const { currentUser: clientCurrentUser } = useAuth()
   const currentUser = authenticatedUser ?? clientCurrentUser
 
-  const router = useRouter()
-
   const hasOrgs = Boolean(userOrganizations && userOrganizations.length > 0)
 
   const creatorPath = `/maintainer/${userOrganizations?.[0]?.slug}/overview`
-
-  const upgradeToMaintainer = useCallback(async () => {
-    alert('CREATE ORG!')
-    router.push(`/maintainer/${currentUser?.username}/overview`)
-  }, [currentUser, router])
 
   const githubAccount = currentUser?.oauth_accounts.find(
     (o) => o.platform === Platforms.GITHUB,
@@ -54,39 +46,38 @@ const Topbar = ({
       return null
     }
 
-    if (shouldShowGitHubAuthUpsell) {
-      return (
-        <GithubLoginButton
-          className="border-none bg-blue-500 text-white hover:bg-blue-400 dark:bg-blue-500 dark:text-white dark:hover:bg-blue-400 dark:hover:text-white"
-          text="Connect with GitHub"
-          returnTo={returnTo}
-          userSignupType={UserSignupType.BACKER}
-        />
-      )
-    }
-
-    if (hasOrgs) {
-      return (
-        <Link href={creatorPath}>
-          <Button>
-            <div className="flex flex-row items-center gap-x-2">
-              <span className="whitespace-nowrap text-xs">
-                Creator Dashboard
-              </span>
-              <ArrowForwardOutlined fontSize="inherit" />
-            </div>
-          </Button>
-        </Link>
-      )
-    }
-
     return (
-      <Button onClick={upgradeToMaintainer}>
-        <div className="flex flex-row items-center gap-x-2">
-          <span className="whitespace-nowrap text-xs">Become a Creator</span>
-          <ArrowForwardOutlined fontSize="inherit" />
-        </div>
-      </Button>
+      <>
+        {shouldShowGitHubAuthUpsell && (
+          <GithubLoginButton
+            text="Connect with GitHub"
+            returnTo={returnTo}
+            userSignupType={UserSignupType.BACKER}
+          />
+        )}
+        {!hasOrgs && (
+          <Link href="/maintainer/create">
+            <Button type="button" className="space-x-2 p-2 px-4 text-sm">
+              <div className="flex flex-row items-center gap-x-2">
+                <span className="whitespace-nowrap">Become a Creator</span>
+                <ArrowForwardOutlined fontSize="inherit" />
+              </div>
+            </Button>
+          </Link>
+        )}
+        {hasOrgs && (
+          <Link href={creatorPath}>
+            <Button>
+              <div className="flex flex-row items-center gap-x-2">
+                <span className="whitespace-nowrap text-xs">
+                  Creator Dashboard
+                </span>
+                <ArrowForwardOutlined fontSize="inherit" />
+              </div>
+            </Button>
+          </Link>
+        )}
+      </>
     )
   }
 

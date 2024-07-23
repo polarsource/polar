@@ -66,7 +66,8 @@ const OrganizationAppearanceSettings: React.FC<
               </FormControl>
               <FormMessage />
               <FormDescription>
-                Changing the name won't affect your organization's URL.
+                Changing the name won&apos;t affect your organization&apos;s
+                URL.
               </FormDescription>
             </FormItem>
           )}

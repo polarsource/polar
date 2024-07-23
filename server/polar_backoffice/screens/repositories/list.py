@@ -1,7 +1,7 @@
 import webbrowser
 
 from sqlalchemy import Select, select
-from sqlalchemy.orm import contains_eager
+from sqlalchemy.orm import aliased, contains_eager
 from textual import work
 from textual.app import ComposeResult
 from textual.screen import Screen
@@ -9,7 +9,7 @@ from textual.widgets import DataTable, Footer
 
 from polar.config import settings
 from polar.issue.service import issue as issue_service
-from polar.models import Organization, Repository
+from polar.models import ExternalOrganization, Organization, Repository
 from polar.worker import enqueue_job, flush_enqueued_jobs
 
 from ...db import sessionmaker
@@ -39,7 +39,13 @@ class RepositoriesListScreen(Screen[None]):
         self._set_sub_title()
 
         table = self.query_one(DataTable)
-        table.add_columns("Name", "Organization", "Platform", "Badge label")
+        table.add_columns(
+            "Name",
+            "External Organization",
+            "Polar Organization",
+            "Platform",
+            "Badge label",
+        )
         self.get_repositories()
 
     def action_refresh(self) -> None:
@@ -70,9 +76,10 @@ class RepositoriesListScreen(Screen[None]):
             return
 
         repository = self.repositories[row_key]
-        organization = repository.organization
+        external_organization = repository.organization
+        organization = external_organization.safe_organization
         webbrowser.open_new_tab(
-            f"{settings.FRONTEND_BASE_URL}/{organization.name}/{repository.name}"
+            f"{settings.FRONTEND_BASE_URL}/{organization.slug}/{repository.name}"
         )
 
     def action_rebadge_issues(self) -> None:
@@ -115,10 +122,12 @@ class RepositoriesListScreen(Screen[None]):
             statement = self._get_statement()
             stream = await session.stream_scalars(statement)
             async for repository in stream.unique():
-                organization = repository.organization
+                external_organization = repository.organization
+                organization = external_organization.safe_organization
                 table.add_row(
                     repository.name,
-                    organization.name,
+                    external_organization.name,
+                    organization.slug,
                     repository.platform,
                     repository.pledge_badge_label,
                     key=str(repository.id),
@@ -155,17 +164,26 @@ class RepositoriesListScreen(Screen[None]):
         self.sub_title = "Repositories"
 
     def _get_statement(self) -> Select[tuple[Repository]]:
+        OrganizationJoin = aliased(Organization)
         statement = (
             (select(Repository))
             .join(Repository.organization)
+            .join(
+                OrganizationJoin,
+                ExternalOrganization.organization_id == OrganizationJoin.id,
+            )
             .where(
                 Repository.is_fork.is_(False),
                 Repository.is_archived.is_(False),
                 Repository.is_disabled.is_(False),
-                Organization.installation_id.is_not(None),
+                ExternalOrganization.organization_id.isnot(None),
             )
-            .order_by(Organization.slug, Repository.name)
-            .options(contains_eager(Repository.organization))
+            .order_by(ExternalOrganization.name, Repository.name)
+            .options(
+                contains_eager(Repository.organization).contains_eager(
+                    ExternalOrganization.organization.of_type(OrganizationJoin)
+                )
+            )
         )
 
         if self.search_query:
@@ -174,7 +192,7 @@ class RepositoriesListScreen(Screen[None]):
             for clause in clauses:
                 if clause.startswith("org:"):
                     statement = statement.where(
-                        Organization.slug.ilike(f"%{clause[len("org:"):]}%")
+                        OrganizationJoin.slug.ilike(f"%{clause[len("org:"):]}%")
                     )
                 else:
                     fuzzy_clauses.append(clause)

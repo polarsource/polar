@@ -1,14 +1,11 @@
 from collections.abc import Sequence
 from uuid import UUID
 
-import structlog
 from sqlalchemy.orm import joinedload
 
 from polar.kit.utils import utc_now
 from polar.models import UserOrganization
 from polar.postgres import AsyncSession, sql
-
-log = structlog.get_logger()
 
 
 class UserOrganizationervice:

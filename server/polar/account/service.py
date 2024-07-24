@@ -4,7 +4,6 @@ from collections.abc import Sequence
 from uuid import UUID
 
 import stripe as stripe_lib
-import structlog
 from sqlalchemy import Select, and_, select
 from sqlalchemy.orm import joinedload
 
@@ -27,8 +26,6 @@ from polar.transaction.service.transaction import transaction as transaction_ser
 from polar.worker import enqueue_job
 
 from .schemas import AccountCreate, AccountLink, AccountUpdate
-
-log = structlog.get_logger()
 
 
 class AccountServiceError(PolarError):

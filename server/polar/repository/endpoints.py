@@ -1,4 +1,3 @@
-import structlog
 from fastapi import Depends, Query
 
 from polar.authz.service import AccessType, Authz
@@ -26,8 +25,6 @@ from .schemas import (
     RepositoryUpdate,
 )
 from .service import repository as repository_service
-
-log = structlog.get_logger()
 
 router = APIRouter(prefix="/repositories", tags=["repositories", APITag.documented])
 

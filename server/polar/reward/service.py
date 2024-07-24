@@ -1,7 +1,6 @@
 from collections.abc import Sequence
 from uuid import UUID
 
-import structlog
 from sqlalchemy import and_, select
 from sqlalchemy.orm import joinedload
 
@@ -14,8 +13,6 @@ from polar.models.pledge_transaction import PledgeTransaction, PledgeTransaction
 from polar.models.repository import Repository
 from polar.models.user import User
 from polar.postgres import AsyncSession, sql
-
-log = structlog.get_logger()
 
 
 class RewardService:

@@ -1,7 +1,6 @@
 from typing import Any
 from uuid import UUID
 
-import structlog
 from fastapi import Depends, HTTPException
 
 from polar.auth.dependencies import AdminUser
@@ -38,8 +37,6 @@ from .schemas import (
 router = APIRouter(
     tags=["backoffice"], prefix="/backoffice", include_in_schema=IN_DEVELOPMENT_ONLY
 )
-
-log = structlog.get_logger()
 
 
 @router.get("/pledges", response_model=list[BackofficePledge])
@@ -205,12 +202,6 @@ async def manage_badge(
     auth_subject: AdminUser,
     session: AsyncSession = Depends(get_db_session),
 ) -> BackofficeBadgeResponse:
-    log.info(
-        "backoffice.badge",
-        badge=badge.model_dump(mode="json"),
-        admin=auth_subject.subject.email,
-    )
-
     external_org = await external_organization_service.get_by_name(
         session, Platforms.github, badge.org_slug
     )

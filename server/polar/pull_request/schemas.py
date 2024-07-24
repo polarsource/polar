@@ -2,16 +2,12 @@ from datetime import datetime
 from typing import Self
 from uuid import UUID
 
-import structlog
-
 from polar.integrations.github import types
 from polar.issue.schemas import Author, IssueAndPullRequestBase
 from polar.kit.schemas import Schema
 from polar.models import ExternalOrganization, Repository
 from polar.models.pull_request import PullRequest as PullRequestModel
 from polar.types import JSONAny
-
-log = structlog.get_logger()
 
 
 # Public API

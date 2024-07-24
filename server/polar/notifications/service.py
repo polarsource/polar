@@ -1,7 +1,6 @@
 from collections.abc import Sequence
 from uuid import UUID
 
-import structlog
 from pydantic import BaseModel, TypeAdapter
 from sqlalchemy import desc
 
@@ -18,8 +17,6 @@ from polar.user_organization.service import (
     user_organization as user_organization_service,
 )
 from polar.worker import enqueue_job
-
-log = structlog.get_logger()
 
 
 class PartialNotification(BaseModel):

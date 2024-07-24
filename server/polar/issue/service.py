@@ -6,7 +6,6 @@ from datetime import timedelta
 from typing import Any
 from uuid import UUID
 
-import structlog
 from sqlalchemy import (
     ColumnElement,
     Integer,
@@ -48,8 +47,6 @@ from polar.postgres import AsyncSession, sql
 
 from .schemas import IssueCreate, IssueUpdate
 from .sorting import SortProperty
-
-log = structlog.get_logger()
 
 
 class IssueService(ResourceService[Issue, IssueCreate, IssueUpdate]):

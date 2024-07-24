@@ -1,6 +1,5 @@
 from typing import Annotated, TypeAlias
 
-import structlog
 from fastapi import Depends, Path, Query
 from pydantic import UUID4
 
@@ -26,8 +25,6 @@ from .schemas import (
 )
 from .service import FileNotFound
 from .service import file as file_service
-
-log = structlog.get_logger()
 
 router = APIRouter(prefix="/files", tags=["files", APITag.documented])
 

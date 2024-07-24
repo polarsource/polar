@@ -6,7 +6,6 @@ from datetime import datetime
 from operator import and_, or_
 from uuid import UUID
 
-import structlog
 from discord_webhook import AsyncDiscordWebhook, DiscordEmbed
 from slugify import slugify
 from sqlalchemy import Select, desc, false, func, nullsfirst, select, true, update
@@ -36,8 +35,6 @@ from polar.user.service.user import user as user_service
 from polar.worker import enqueue_job
 
 from .schemas import ArticleCreate, ArticlePreview, ArticleUpdate
-
-log = structlog.get_logger()
 
 
 def polar_slugify(input: str) -> str:

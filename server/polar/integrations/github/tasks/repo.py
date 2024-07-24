@@ -1,7 +1,5 @@
 from uuid import UUID
 
-import structlog
-
 from polar.integrations.github import service
 from polar.worker import (
     AsyncSessionMaker,
@@ -13,8 +11,6 @@ from polar.worker import (
 )
 
 from .utils import get_external_organization_and_repo, github_rate_limit_retry
-
-log = structlog.get_logger()
 
 
 @task("github.repo.sync.repositories")

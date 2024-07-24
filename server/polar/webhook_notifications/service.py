@@ -1,15 +1,11 @@
 from collections.abc import Sequence
 from uuid import UUID
 
-import structlog
-
 from polar.kit.utils import utc_now
 from polar.models.webhook_notifications import WebhookNotification
 from polar.postgres import AsyncSession, sql
 
 from .schemas import WebhookIntegrationCreate, WebhookIntegrationUpdate
-
-log = structlog.get_logger()
 
 
 class WebhookNotificationService:

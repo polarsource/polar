@@ -1,6 +1,5 @@
 from typing import Annotated
 
-import structlog
 from fastapi import Depends, Path, Query
 from pydantic import UUID4
 
@@ -17,8 +16,6 @@ from .schemas import WebhookDelivery as WebhookDeliverySchema
 from .schemas import WebhookEndpoint as WebhookEndpointSchema
 from .schemas import WebhookEndpointCreate, WebhookEndpointUpdate
 from .service import webhook as webhook_service
-
-log = structlog.get_logger()
 
 router = APIRouter(prefix="/webhooks", tags=["webhooks"])
 

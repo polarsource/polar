@@ -1,4 +1,3 @@
-import structlog
 from fastapi import Depends, Query
 from fastapi.responses import RedirectResponse
 
@@ -13,8 +12,6 @@ from polar.routing import APIRouter
 from .. import auth
 from ..schemas.downloadables import DownloadableRead
 from ..service.downloadables import downloadable as downloadable_service
-
-log = structlog.get_logger()
 
 router = APIRouter(prefix="/downloadables", tags=[APITag.documented, APITag.featured])
 

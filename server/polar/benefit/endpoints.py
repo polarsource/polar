@@ -1,4 +1,3 @@
-import structlog
 from fastapi import Body, Depends, Query
 from pydantic import UUID4
 
@@ -25,8 +24,6 @@ from .schemas import (
 )
 from .service.benefit import benefit as benefit_service
 from .service.benefit_grant import benefit_grant as benefit_grant_service
-
-log = structlog.get_logger()
 
 router = APIRouter(prefix="/benefits", tags=["benefits", APITag.documented])
 

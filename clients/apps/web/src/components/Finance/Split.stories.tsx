@@ -40,6 +40,7 @@ export const Default: Story = {
     issue: issue,
     shares: [
       {
+        id: '123',
         username: 'zegl',
       },
     ],
@@ -53,9 +54,11 @@ export const TwoUsers: Story = {
     ...Default.args,
     shares: [
       {
+        id: '123',
         username: 'zegl',
       },
       {
+        id: '456',
         username: 'birkjernstrom',
       },
     ],
@@ -67,12 +70,15 @@ export const ThreeUsers: Story = {
     ...Default.args,
     shares: [
       {
+        id: '123',
         username: 'zegl',
       },
       {
+        id: '456',
         username: 'birkjernstrom',
       },
       {
+        id: '789',
         username: 'petterheterjag',
       },
     ],
@@ -84,14 +90,17 @@ export const AdjustedSplit: Story = {
     ...Default.args,
     shares: [
       {
+        id: '123',
         username: 'zegl',
         share_thousands: 400,
         raw_value: '40',
       },
       {
+        id: '456',
         username: 'birkjernstrom',
       },
       {
+        id: '789',
         username: 'petterheterjag',
       },
     ],
@@ -103,11 +112,13 @@ export const MissingPercentages: Story = {
     ...Default.args,
     shares: [
       {
+        id: '123',
         username: 'zegl',
         share_thousands: 100,
         raw_value: '10',
       },
       {
+        id: '456',
         username: 'birkjernstrom',
         share_thousands: 100,
         raw_value: '10',
@@ -121,11 +132,13 @@ export const TooManyPercentages: Story = {
     ...Default.args,
     shares: [
       {
+        id: '123',
         username: 'zegl',
         share_thousands: 800,
         raw_value: '80',
       },
       {
+        id: '456',
         username: 'birkjernstrom',
         share_thousands: 805,
         raw_value: '80.5',
@@ -140,12 +153,15 @@ export const UpfrontSplit: Story = {
     issue: { ...issue, upfront_split_to_contributors: 90 },
     shares: [
       {
+        id: '123',
         username: 'zegl',
       },
       {
+        id: '456',
         username: 'birkjernstrom',
       },
       {
+        id: '789',
         username: 'petterheterjag',
       },
     ],

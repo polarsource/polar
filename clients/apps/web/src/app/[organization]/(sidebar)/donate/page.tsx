@@ -121,7 +121,10 @@ export default async function Page({
   }
 
   // If issue and issue does not match org
-  if (issue && issue.repository.organization.id !== organization.id) {
+  if (
+    issue &&
+    issue.repository.organization.organization_id !== organization.id
+  ) {
     notFound()
   }
 

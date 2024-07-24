@@ -22,19 +22,19 @@ class ExternalOrganizationService(ResourceServiceReader[ExternalOrganization]):
         session: AsyncSession,
         auth_subject: AuthSubject[Anonymous | User | Organization],
         *,
-        name: str | None = None,
-        platform: Platforms | None = None,
+        platform: Sequence[Platforms] | None = None,
+        name: Sequence[str] | None = None,
         organization_id: Sequence[uuid.UUID] | None = None,
         pagination: PaginationParams,
         sorting: list[Sorting[SortProperty]] = [(SortProperty.created_at, True)],
     ) -> tuple[Sequence[ExternalOrganization], int]:
         statement = self._get_readable_external_organization_statement(auth_subject)
 
-        if name is not None:
-            statement = statement.where(ExternalOrganization.name == name)
-
         if platform is not None:
-            statement = statement.where(ExternalOrganization.platform == platform)
+            statement = statement.where(ExternalOrganization.platform.in_(platform))
+
+        if name is not None:
+            statement = statement.where(ExternalOrganization.name.in_(name))
 
         if organization_id is not None:
             statement = statement.where(

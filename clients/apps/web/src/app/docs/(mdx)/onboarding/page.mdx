@@ -7,21 +7,25 @@ import { UserSignupType } from '@polar-sh/sdk'
 Let's get you up and running with Polar in only a few minutes.
 
 ## Create an account
+
 Signup & login on Polar is made super easy with GitHub Login (OAuth).
 
-<GithubLoginButton
-  className="text-white mb-8"
-  size="small"
-  text="Continue with GitHub"
-  userSignupType={UserSignupType.MAINTAINER}
-  returnTo="/maintainer"
-/>
+<div className="not-prose">
+  <GithubLoginButton
+    className="mb-8 text-white"
+    size="small"
+    text="Continue with GitHub"
+    userSignupType={UserSignupType.MAINTAINER}
+    returnTo="/maintainer"
+  />
+</div>
 
 - By continuing you agree to our [Terms of Service](/legal/terms) and [Privacy Policy](/legal/privacy)
 - You'll be redirected to login with GitHub (next step)
 
 <BrowserCallout type="NOTE">
-  In the future, we'll support standalone accounts without GitHub too - discussed in [#3608](https://github.com/orgs/polarsource/discussions/3608)
+  Don't want to connect with GitHub? You can also [sign up using your
+  email](https://polar.sh/login).
 </BrowserCallout>
 
 ### Grant GitHub Permissions
@@ -29,7 +33,6 @@ Signup & login on Polar is made super easy with GitHub Login (OAuth).
 Polar uses your GitHub Login to:
 
 - Create a matching, public, profile for you on Polar (avatar, username, bio etc)
-- Setup your Polar page: `https://polar.sh/<username>`
 - Request read-only access to your primary GitHub email addresses so we can communicate with you, e.g send funding, subscription and order notifications and product updates.
 
 ![Screenshot of GitHub OAuth with Polar](./gh-auth.light.jpg)
@@ -45,9 +48,21 @@ performed by you via Polar for an explicit, clear & desired outcome by you.
 
 </BrowserCallout>
 
-## Onboarding
+## Create your organization
 
-Once you've signed up, you'll be taken through a quick onboarding page intended to focus the Polar experience for your use case.
+Once you've signed up, you'll be taken to a page to create your **organization**. On Polar, an organization is the space where you'll create and manage your products, receive donations from your supporters and more.
+
+The first step is to give it a name.
+
+![Create Organization on Polar](./create-organization.light.png)
+![Create Organization on Polar](./create-organization.dark.png)
+
+<BrowserCallout type="NOTE">
+  Our system will assign you a unique *slug* (like `unicorn-dev`) that you won't
+  be able to change. However , you'll be able to change the display name later.
+</BrowserCallout>
+
+Then, you'll be taken through a quick onboarding page intended to focus the Polar experience for your use case.
 
 ![Screenshot of Polar Onboarding](./onboarding.light.jpg)
 ![Screenshot of Polar Onboarding](./onboarding.dark.jpg)
@@ -59,6 +74,7 @@ Once you've signed up, you'll be taken through a quick onboarding page intended 
 Welcome to the Polar community - we're thrilled to have you onboard!
 
 **Next Steps:**
+
 - Explore the dashboard
 - [Connect GitHub organizations (Optional)](/docs/github/install)
 - [Add official Polar funding link on GitHub](/docs/github/funding-yaml)
@@ -68,5 +84,6 @@ Welcome to the Polar community - we're thrilled to have you onboard!
 - [Start a newsletter](/docs/newsletters)
 
 **Shape the future with us**
+
 - [Join our Discord](https://discord.gg/BZw96tszTX)
 - [Give our GitHub repo a star](https://github.com/polarsource/polar) and join the discussions

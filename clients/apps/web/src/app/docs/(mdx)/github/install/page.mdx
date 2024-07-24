@@ -2,28 +2,27 @@ import BrowserCallout from '@/components/Feed/Markdown/Callout/BrowserCallout'
 
 # Connect GitHub organizations
 
-It's super easy to connect additional organizations and their repositories.
+Polar is able to integrate with GitHub to sync your repositories and issues, in particular to enable [issue funding](/docs/issue-funding).
 
-1. Click on your profile in the dashboard
-2. Click `Add GitHub Organization`
-3. You'll be redirected to GitHub to install the Polar GitHub app for desired organizations and repositories
+## First installation
 
-![Screenshot of adding GitHub Organization](add-org.light.png)
-![Screenshot of adding GitHub Organization](add-org.dark.png)
+To do so, you can click on `Install GitHub App` on the sidebar.
+
+![Start GitHub Installation](install-github.light.png)
+![Start GitHub Installation](install-github.dark.png)
+
+### Select a GitHub organization
+
+You'll be taken to GitHub where you'll be asked to select the organization you want to install.
+
 ![Screenshot of choosing GitHub Organization](gh-choose-org.png)
-
-<BrowserCallout type="NOTE">
-**Want to add more repositories to an existing organization?**
-
-You can add them in your GitHub App settings for Polar. You can click `Add GitHub Organization` on Polar again and upon choosing the same organization (`Configure`) it will redirect you to that view.
-</BrowserCallout>
-
 
 ### Install repositories
 
 ![Screenshot of choosing GitHub Installation](gh-install.png)
 
 What does Polar use repository access for?
+
 - You want to enable crowdfunding behind issues
 - You want to showcase & promote them on your Polar page
 - You want to sell access to Private GitHub Repo(s). However, this feature uses a separate opt-in app installation with additional permissions.
@@ -32,6 +31,7 @@ What does Polar use repository access for?
 **Do I have to install repositories?**
 
 Yes, GitHub's App installation flow requires granting access to at least one (1) repository to work.
+
 </BrowserCallout>
 
 #### All Repositories
@@ -55,20 +55,19 @@ private repositories to try Polar with.
 
 #### Select Repositories
 
-- You choose *exactly* which repositories Polar should have access to
+- You choose _exactly_ which repositories Polar should have access to
 - **Pros:** Complete control. Gradual expansion. Great starting point.
 - **Cons:** You need to manually add repositories.
-
 
 <BrowserCallout type="NOTE">
 **You can add/remove repositories at any time**
 
 You can change repository access in your GitHub
 settings for the Polar app at any time.
+
 </BrowserCallout>
 
-
-### Required permissions & usage
+#### Required permissions & usage
 
 **Read access to metadata**
 
@@ -91,3 +90,14 @@ Polar funding badge directly within selected issues (at the bottom of their
 description). We need to be able to write to issues in order to achieve this. Of
 course, we only embed the badge based on your settings and desired issues to
 badge.
+
+## Manage installation and connect more organizations
+
+You can manage your installed GitHub organizations from `Issues` > `Organizations`.
+
+![Manage GitHub Organizations](manage-github-organizations.light.png)
+![Manage GitHub Organizations](manage-github-organizations.dark.png)
+
+Click on `Manage installation` to get back to GitHub and add or remove repositories enabled on Polar.
+
+You can link **more than one** GitHub organization to your Polar organization. To add another, click on `Link new organization`. You'll be taken through the same process described above.

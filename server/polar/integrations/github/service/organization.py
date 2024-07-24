@@ -37,6 +37,7 @@ class GithubOrganizationService(ExternalOrganizationService):
         stmt = sql.select(ExternalOrganization).where(
             ExternalOrganization.deleted_at.is_(None),
             ExternalOrganization.installation_id.is_not(None),
+            ExternalOrganization.installation_suspended_at.is_(None),
         )
         res = await session.execute(stmt)
         return res.scalars().all()

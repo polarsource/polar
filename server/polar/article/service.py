@@ -54,6 +54,7 @@ class ArticleService(ResourceServiceReader[Article]):
         organization_id: Sequence[UUID] | None = None,
         slug: str | None = None,
         visibility: Sequence[ArticleVisibility] | None = None,
+        is_subscribed: bool | None = None,
         is_published: bool | None = None,
         is_pinned: bool | None = None,
         pagination: PaginationParams,
@@ -72,6 +73,25 @@ class ArticleService(ResourceServiceReader[Article]):
 
         if visibility is not None:
             statement = statement.where(Article.visibility.in_(visibility))
+
+        if is_subscribed is not None:
+            if is_user(auth_subject):
+                if is_subscribed:
+                    statement = statement.where(
+                        or_(
+                            ArticlesSubscription.user_id == auth_subject.subject.id,
+                            UserOrganization.user_id == auth_subject.subject.id,
+                        ),
+                    )
+                else:
+                    statement = statement.where(
+                        and_(
+                            ArticlesSubscription.user_id.is_(None),
+                            UserOrganization.user_id.is_(None),
+                        ),
+                    )
+            else:
+                statement = statement.where(false() if is_subscribed else true())
 
         if is_published is not None:
             if is_published:

@@ -45,6 +45,9 @@ async def list(
     visibility: MultipleQueryFilter[ArticleVisibility] | None = Query(
         None, title="ArticleVisibility Filter", description="Filter by visibility."
     ),
+    is_subscribed: bool | None = Query(
+        None, description="Filter by subscription status."
+    ),
     is_published: bool | None = Query(None, description="Filter by published status."),
     is_pinned: bool | None = Query(None, description="Filter by pinned status."),
     session: AsyncSession = Depends(get_db_session),
@@ -57,6 +60,7 @@ async def list(
         organization_id=organization_id,
         slug=slug,
         visibility=visibility,
+        is_subscribed=is_subscribed,
         is_published=is_published,
         is_pinned=is_pinned,
         pagination=pagination,

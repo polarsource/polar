@@ -1177,8 +1177,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Anonymous",
-                    "User"
+                    "User",
+                    "Anonymous"
                 ]
             }
         },
@@ -4128,8 +4128,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Anonymous",
-                    "User"
+                    "User",
+                    "Anonymous"
                 ]
             }
         },
@@ -4183,8 +4183,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Anonymous",
-                    "User"
+                    "User",
+                    "Anonymous"
                 ]
             }
         },
@@ -4290,8 +4290,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Anonymous",
-                    "User"
+                    "User",
+                    "Anonymous"
                 ]
             }
         },
@@ -4381,7 +4381,8 @@
             "get": {
                 "tags": [
                     "external_organizations",
-                    "documented"
+                    "documented",
+                    "issue_funding"
                 ],
                 "summary": "List External Organizations",
                 "description": "List external organizations.",
@@ -4398,24 +4399,6 @@
                 ],
                 "parameters": [
                     {
-                        "name": "name",
-                        "in": "query",
-                        "required": false,
-                        "schema": {
-                            "anyOf": [
-                                {
-                                    "type": "string"
-                                },
-                                {
-                                    "type": "null"
-                                }
-                            ],
-                            "description": "Filter by name.",
-                            "title": "Name"
-                        },
-                        "description": "Filter by name."
-                    },
-                    {
                         "name": "platform",
                         "in": "query",
                         "required": false,
@@ -4425,13 +4408,43 @@
                                     "$ref": "#/components/schemas/Platforms"
                                 },
                                 {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/Platforms"
+                                    }
+                                },
+                                {
                                     "type": "null"
                                 }
                             ],
-                            "description": "Filter by platform.",
-                            "title": "Platform"
+                            "title": "Platform Filter",
+                            "description": "Filter by platform."
                         },
                         "description": "Filter by platform."
+                    },
+                    {
+                        "name": "name",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "string"
+                                    }
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "RepositoryName Filter",
+                            "description": "Filter by name."
+                        },
+                        "description": "Filter by name."
                     },
                     {
                         "name": "organization_id",
@@ -4552,9 +4565,9 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Anonymous",
+                    "User",
                     "Organization",
-                    "User"
+                    "Anonymous"
                 ]
             }
         },
@@ -4562,7 +4575,8 @@
             "get": {
                 "tags": [
                     "repositories",
-                    "documented"
+                    "documented",
+                    "issue_funding"
                 ],
                 "summary": "List Repositories",
                 "description": "List repositories.",
@@ -4570,8 +4584,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "repositories:read",
-                            "repositories:write"
+                            "repositories:write",
+                            "repositories:read"
                         ]
                     },
                     {
@@ -4790,9 +4804,9 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Anonymous",
+                    "User",
                     "Organization",
-                    "User"
+                    "Anonymous"
                 ]
             }
         },
@@ -4800,7 +4814,8 @@
             "get": {
                 "tags": [
                     "repositories",
-                    "documented"
+                    "documented",
+                    "issue_funding"
                 ],
                 "summary": "Get Repository",
                 "description": "Get a repository by ID.",
@@ -4808,8 +4823,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "repositories:read",
-                            "repositories:write"
+                            "repositories:write",
+                            "repositories:read"
                         ]
                     },
                     {
@@ -4867,15 +4882,16 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Anonymous",
+                    "User",
                     "Organization",
-                    "User"
+                    "Anonymous"
                 ]
             },
             "patch": {
                 "tags": [
                     "repositories",
-                    "documented"
+                    "documented",
+                    "issue_funding"
                 ],
                 "summary": "Update Repository",
                 "description": "Update a repository.",
@@ -4961,8 +4977,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -5119,8 +5135,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Anonymous",
-                    "User"
+                    "User",
+                    "Anonymous"
                 ]
             }
         },
@@ -5440,8 +5456,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Anonymous",
-                    "User"
+                    "User",
+                    "Anonymous"
                 ]
             }
         },
@@ -5749,8 +5765,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "issues:read",
-                            "issues:write"
+                            "issues:write",
+                            "issues:read"
                         ]
                     },
                     {
@@ -6000,9 +6016,9 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Anonymous",
+                    "User",
                     "Organization",
-                    "User"
+                    "Anonymous"
                 ]
             }
         },
@@ -6067,8 +6083,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Anonymous",
-                    "User"
+                    "User",
+                    "Anonymous"
                 ]
             }
         },
@@ -6120,8 +6136,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Anonymous",
-                    "User"
+                    "User",
+                    "Anonymous"
                 ]
             }
         },
@@ -6208,8 +6224,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Anonymous",
-                    "User"
+                    "User",
+                    "Anonymous"
                 ]
             },
             "post": {
@@ -6722,8 +6738,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Anonymous",
-                    "User"
+                    "User",
+                    "Anonymous"
                 ]
             }
         },
@@ -6778,8 +6794,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Anonymous",
-                    "User"
+                    "User",
+                    "Anonymous"
                 ]
             }
         },
@@ -6944,8 +6960,8 @@
                     }
                 ],
                 "x-polar-allowed-subjects": [
-                    "Anonymous",
-                    "User"
+                    "User",
+                    "Anonymous"
                 ]
             }
         },
@@ -7117,8 +7133,8 @@
                     }
                 ],
                 "x-polar-allowed-subjects": [
-                    "Anonymous",
-                    "User"
+                    "User",
+                    "Anonymous"
                 ]
             }
         },
@@ -7181,8 +7197,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Anonymous",
-                    "User"
+                    "User",
+                    "Anonymous"
                 ]
             }
         },
@@ -7253,7 +7269,8 @@
             "get": {
                 "tags": [
                     "organizations",
-                    "documented"
+                    "documented",
+                    "featured"
                 ],
                 "summary": "List Organizations",
                 "description": "List organizations.",
@@ -7261,8 +7278,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "organizations:write",
-                            "organizations:read"
+                            "organizations:read",
+                            "organizations:write"
                         ]
                     },
                     {
@@ -7301,10 +7318,10 @@
                                     "type": "null"
                                 }
                             ],
-                            "description": "Filter by membership.If `true`, only organizations the user is a member of are returned.If `false`, only organizations the user is not a member of are returned.",
+                            "description": "Filter by membership. If `true`, only organizations the user is a member of are returned. If `false`, only organizations the user is not a member of are returned.",
                             "title": "Is Member"
                         },
-                        "description": "Filter by membership.If `true`, only organizations the user is a member of are returned.If `false`, only organizations the user is not a member of are returned."
+                        "description": "Filter by membership. If `true`, only organizations the user is a member of are returned. If `false`, only organizations the user is not a member of are returned."
                     },
                     {
                         "name": "page",
@@ -7387,14 +7404,15 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             },
             "post": {
                 "tags": [
                     "organizations",
-                    "documented"
+                    "documented",
+                    "featured"
                 ],
                 "summary": "Create Organization",
                 "description": "Create an organization.",
@@ -7450,7 +7468,8 @@
             "get": {
                 "tags": [
                     "organizations",
-                    "documented"
+                    "documented",
+                    "featured"
                 ],
                 "summary": "Get Organization",
                 "description": "Get an organization by ID.",
@@ -7458,8 +7477,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "organizations:write",
-                            "organizations:read"
+                            "organizations:read",
+                            "organizations:write"
                         ]
                     },
                     {
@@ -7517,14 +7536,15 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             },
             "patch": {
                 "tags": [
                     "organizations",
-                    "documented"
+                    "documented",
+                    "featured"
                 ],
                 "summary": "Update Organization",
                 "description": "Update an organization.",
@@ -7610,8 +7630,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -7627,8 +7647,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "organizations:write",
-                            "organizations:read"
+                            "organizations:read",
+                            "organizations:write"
                         ]
                     },
                     {
@@ -7664,10 +7684,10 @@
                             },
                             "description": "Filter by the type of purchase the customer made.",
                             "default": [
-                                "order",
                                 "paid_subscription",
-                                "free_subscription",
-                                "donation"
+                                "order",
+                                "donation",
+                                "free_subscription"
                             ],
                             "title": "Customer Types"
                         },
@@ -7733,16 +7753,15 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
         "/v1/organizations/{id}/account": {
             "get": {
                 "tags": [
-                    "organizations",
-                    "documented"
+                    "organizations"
                 ],
                 "summary": "Get Organization Account",
                 "description": "Get the account for an organization.",
@@ -7818,14 +7837,13 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             },
             "patch": {
                 "tags": [
-                    "organizations",
-                    "documented"
+                    "organizations"
                 ],
                 "summary": "Set Organization Account",
                 "description": "Set the account for an organization.",
@@ -7911,20 +7929,19 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
         "/v1/organizations/{id}/members": {
             "get": {
                 "tags": [
-                    "organizations",
-                    "documented"
+                    "organizations"
                 ],
-                "summary": "List members in an organization",
-                "description": "List members of an organization. Requires authentication.",
-                "operationId": "list_members",
+                "summary": "Members",
+                "description": "List members in an organization.",
+                "operationId": "members",
                 "security": [
                     {
                         "OpenIdConnect": [
@@ -7977,19 +7994,18 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
         "/v1/organizations/{id}/stripe_customer_portal": {
             "post": {
                 "tags": [
-                    "organizations",
-                    "documented"
+                    "organizations"
                 ],
                 "summary": "Create Stripe Customer Portal",
-                "description": "Start a new Stripe Customer session for a organization.",
+                "description": "Create a new Stripe Customer session for a organization.",
                 "operationId": "create_stripe_customer_portal",
                 "security": [
                     {
@@ -8036,18 +8052,18 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
         "/v1/organizations/{id}/badge_settings": {
             "get": {
                 "tags": [
-                    "organizations",
-                    "documented"
+                    "organizations"
                 ],
-                "summary": "Get badge settings (Internal API)",
+                "summary": "Get Badge Settings",
+                "description": "Get badge settings for an organization.",
                 "operationId": "get_badge_settings",
                 "security": [
                     {
@@ -8094,16 +8110,16 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             },
             "post": {
                 "tags": [
-                    "organizations",
-                    "documented"
+                    "organizations"
                 ],
-                "summary": "Update badge settings (Internal API)",
+                "summary": "Update Badge Settings",
+                "description": "Update badge settings for an organization.",
                 "operationId": "update_badge_settings",
                 "security": [
                     {
@@ -8160,8 +8176,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -8396,8 +8412,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             },
             "post": {
@@ -8451,8 +8467,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -8508,8 +8524,8 @@
                     }
                 ],
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -8594,8 +8610,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -8804,9 +8820,9 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Anonymous",
+                    "User",
                     "Organization",
-                    "User"
+                    "Anonymous"
                 ]
             },
             "post": {
@@ -8861,8 +8877,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -8937,9 +8953,9 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Anonymous",
+                    "User",
                     "Organization",
-                    "User"
+                    "Anonymous"
                 ]
             },
             "patch": {
@@ -9032,8 +9048,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             },
             "delete": {
@@ -9109,8 +9125,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -9175,8 +9191,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -9269,8 +9285,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -9356,8 +9372,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -10751,8 +10767,8 @@
                     }
                 ],
                 "x-polar-allowed-subjects": [
-                    "Anonymous",
-                    "User"
+                    "User",
+                    "Anonymous"
                 ]
             }
         },
@@ -10815,8 +10831,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Anonymous",
-                    "User"
+                    "User",
+                    "Anonymous"
                 ]
             }
         },
@@ -11187,8 +11203,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Anonymous",
-                    "User"
+                    "User",
+                    "Anonymous"
                 ]
             },
             "put": {
@@ -11249,8 +11265,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Anonymous",
-                    "User"
+                    "User",
+                    "Anonymous"
                 ]
             },
             "delete": {
@@ -11301,8 +11317,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Anonymous",
-                    "User"
+                    "User",
+                    "Anonymous"
                 ]
             }
         },
@@ -11350,8 +11366,8 @@
                     }
                 ],
                 "x-polar-allowed-subjects": [
-                    "Anonymous",
-                    "User"
+                    "User",
+                    "Anonymous"
                 ]
             }
         },
@@ -11871,8 +11887,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             },
             "post": {
@@ -11973,8 +11989,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -12069,8 +12085,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             },
             "patch": {
@@ -12202,8 +12218,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             },
             "delete": {
@@ -12278,8 +12294,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -12435,8 +12451,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -12451,8 +12467,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "webhooks:write",
-                            "webhooks:read"
+                            "webhooks:read",
+                            "webhooks:write"
                         ]
                     },
                     {
@@ -12554,8 +12570,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             },
             "post": {
@@ -12608,8 +12624,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -12624,8 +12640,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "webhooks:write",
-                            "webhooks:read"
+                            "webhooks:read",
+                            "webhooks:write"
                         ]
                     },
                     {
@@ -12679,8 +12695,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             },
             "patch": {
@@ -12767,8 +12783,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             },
             "delete": {
@@ -12838,8 +12854,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -12854,8 +12870,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "webhooks:write",
-                            "webhooks:read"
+                            "webhooks:read",
+                            "webhooks:write"
                         ]
                     },
                     {
@@ -12932,8 +12948,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -13000,8 +13016,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -13018,8 +13034,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "products:write",
-                            "products:read"
+                            "products:read",
+                            "products:write"
                         ]
                     },
                     {
@@ -13213,9 +13229,9 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Anonymous",
+                    "User",
                     "Organization",
-                    "User"
+                    "Anonymous"
                 ]
             },
             "post": {
@@ -13278,8 +13294,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -13296,8 +13312,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "products:write",
-                            "products:read"
+                            "products:read",
+                            "products:write"
                         ]
                     },
                     {
@@ -13355,9 +13371,9 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Anonymous",
+                    "User",
                     "Organization",
-                    "User"
+                    "Anonymous"
                 ]
             },
             "patch": {
@@ -13450,8 +13466,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -13546,8 +13562,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -13784,8 +13800,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -13855,8 +13871,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -13926,8 +13942,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -13982,8 +13998,8 @@
                     }
                 ],
                 "x-polar-allowed-subjects": [
-                    "Anonymous",
-                    "User"
+                    "User",
+                    "Anonymous"
                 ]
             }
         },
@@ -14147,8 +14163,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             },
             "post": {
@@ -14217,8 +14233,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -14303,8 +14319,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -14389,8 +14405,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             },
             "delete": {
@@ -14459,8 +14475,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -14648,8 +14664,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -14685,8 +14701,8 @@
                     }
                 ],
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         }
@@ -31108,6 +31124,10 @@
         {
             "name": "featured",
             "description": "Endpoints featured in the Polar API documentation for their interest in common use-cases."
+        },
+        {
+            "name": "issue_funding",
+            "description": "Endpoints related to issue funding and rewards in the Polar API."
         }
     ]
 }

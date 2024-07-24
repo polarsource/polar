@@ -3319,13 +3319,13 @@ full = ["httpx (>=0.22.0)", "itsdangerous", "jinja2", "python-multipart (>=0.0.7
 
 [[package]]
 name = "stripe"
-version = "9.12.0"
+version = "10.4.0"
 description = "Python bindings for the Stripe API"
 optional = false
 python-versions = ">=3.6"
 files = [
-    {file = "stripe-9.12.0-py2.py3-none-any.whl", hash = "sha256:14dd20ef1e6386a52e1f7aea07701fc6a80223706d72e3509e4966adb599e138"},
-    {file = "stripe-9.12.0.tar.gz", hash = "sha256:cbc526abd0f001c920c323ba7c40cce3dee1647d920e9dbecae3488f37367524"},
+    {file = "stripe-10.4.0-py2.py3-none-any.whl", hash = "sha256:b37ca0d23fabb4bc3533761051b5b27187819e346c7550007d3be25ae2272780"},
+    {file = "stripe-10.4.0.tar.gz", hash = "sha256:59155dbd5916227c9dedebafaebe92b950dd32f05ddba615b3bc52479a977070"},
 ]
 
 [package.dependencies]
@@ -4057,4 +4057,4 @@ test = ["big-O", "importlib-resources", "jaraco.functools", "jaraco.itertools", 
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.12"
-content-hash = "8cb1ba1a81ca08ae591fb0f28e18bb8ff54d78d32c19df5e91a7be8bf5c56fc7"
+content-hash = "c0bb946295acd0248d4f2a460ee108836a89faedbd432c4dd2b19dadb0c11a11"

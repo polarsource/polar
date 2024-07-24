@@ -2,11 +2,10 @@ from enum import StrEnum
 from typing import TYPE_CHECKING
 from uuid import UUID
 
-from sqlalchemy import ForeignKey, Integer, String
+from sqlalchemy import ForeignKey, Integer, String, Uuid
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.kit.db.models import RecordModel
-from polar.kit.extensions.sqlalchemy import PostgresUUID
 
 if TYPE_CHECKING:
     from polar.models import (
@@ -233,7 +232,7 @@ class Transaction(RecordModel):
     """ID of the fee's balance transaction in the payment processor system."""
 
     account_id: Mapped[UUID | None] = mapped_column(
-        PostgresUUID,
+        Uuid,
         ForeignKey("accounts.id", ondelete="set null"),
         nullable=True,
         index=True,
@@ -249,7 +248,7 @@ class Transaction(RecordModel):
         return relationship("Account", lazy="raise")
 
     payment_user_id: Mapped[UUID | None] = mapped_column(
-        PostgresUUID,
+        Uuid,
         ForeignKey("users.id", ondelete="set null"),
         nullable=True,
         index=True,
@@ -261,7 +260,7 @@ class Transaction(RecordModel):
         return relationship("User", lazy="raise")
 
     payment_organization_id: Mapped[UUID | None] = mapped_column(
-        PostgresUUID,
+        Uuid,
         ForeignKey("organizations.id", ondelete="set null"),
         nullable=True,
         index=True,
@@ -273,7 +272,7 @@ class Transaction(RecordModel):
         return relationship("Organization", lazy="raise")
 
     pledge_id: Mapped[UUID | None] = mapped_column(
-        PostgresUUID,
+        Uuid,
         ForeignKey("pledges.id", ondelete="set null"),
         nullable=True,
         index=True,
@@ -285,7 +284,7 @@ class Transaction(RecordModel):
         return relationship("Pledge", lazy="raise")
 
     donation_id: Mapped[UUID | None] = mapped_column(
-        PostgresUUID,
+        Uuid,
         ForeignKey("donations.id", ondelete="set null"),
         nullable=True,
         index=True,
@@ -297,7 +296,7 @@ class Transaction(RecordModel):
         return relationship("Donation", lazy="raise")
 
     order_id: Mapped[UUID | None] = mapped_column(
-        PostgresUUID,
+        Uuid,
         ForeignKey("orders.id", ondelete="set null"),
         nullable=True,
         index=True,
@@ -309,7 +308,7 @@ class Transaction(RecordModel):
         return relationship("Order", lazy="raise")
 
     issue_reward_id: Mapped[UUID | None] = mapped_column(
-        PostgresUUID,
+        Uuid,
         ForeignKey("issue_rewards.id", ondelete="set null"),
         nullable=True,
         index=True,
@@ -321,7 +320,7 @@ class Transaction(RecordModel):
         return relationship("IssueReward", lazy="raise")
 
     payment_transaction_id: Mapped[UUID | None] = mapped_column(
-        PostgresUUID,
+        Uuid,
         ForeignKey("transactions.id", ondelete="set null"),
         nullable=True,
         index=True,
@@ -353,7 +352,7 @@ class Transaction(RecordModel):
         )
 
     balance_reversal_transaction_id: Mapped[UUID | None] = mapped_column(
-        PostgresUUID,
+        Uuid,
         ForeignKey("transactions.id", ondelete="set null"),
         nullable=True,
         index=True,
@@ -385,7 +384,7 @@ class Transaction(RecordModel):
         )
 
     payout_transaction_id: Mapped[UUID | None] = mapped_column(
-        PostgresUUID,
+        Uuid,
         ForeignKey("transactions.id", ondelete="set null"),
         nullable=True,
         index=True,
@@ -417,7 +416,7 @@ class Transaction(RecordModel):
         )
 
     incurred_by_transaction_id: Mapped[UUID | None] = mapped_column(
-        PostgresUUID,
+        Uuid,
         ForeignKey("transactions.id", ondelete="set null"),
         nullable=True,
         index=True,

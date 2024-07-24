@@ -9,11 +9,11 @@ from sqlalchemy import (
     Integer,
     String,
     UniqueConstraint,
+    Uuid,
 )
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.kit.db.models import RecordModel
-from polar.kit.extensions.sqlalchemy import PostgresUUID
 from polar.kit.extensions.sqlalchemy.types import StringEnum
 from polar.models.organization import Organization
 from polar.models.user import User
@@ -51,7 +51,7 @@ class Article(RecordModel):
     )
 
     user_id: Mapped[UUID | None] = mapped_column(
-        PostgresUUID, ForeignKey("users.id"), nullable=True
+        Uuid, ForeignKey("users.id"), nullable=True
     )
 
     @declared_attr
@@ -59,7 +59,7 @@ class Article(RecordModel):
         return relationship(User, lazy="raise")
 
     organization_id: Mapped[UUID] = mapped_column(
-        PostgresUUID, ForeignKey("organizations.id"), nullable=False
+        Uuid, ForeignKey("organizations.id"), nullable=False
     )
 
     @declared_attr

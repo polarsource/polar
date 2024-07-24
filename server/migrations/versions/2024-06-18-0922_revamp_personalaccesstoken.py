@@ -14,7 +14,6 @@ from polar.auth.service import AuthService
 from polar.config import settings
 from polar.kit import jwt
 from polar.kit.crypto import get_token_hash
-from polar.kit.extensions.sqlalchemy import PostgresUUID
 
 # revision identifiers, used by Alembic.
 revision = "8e40457497a3"

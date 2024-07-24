@@ -1,11 +1,10 @@
 from typing import TYPE_CHECKING
 from uuid import UUID
 
-from sqlalchemy import ForeignKey, Integer, String
+from sqlalchemy import ForeignKey, Integer, String, Uuid
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.kit.db.models import RecordModel
-from polar.kit.extensions.sqlalchemy import PostgresUUID
 
 if TYPE_CHECKING:
     from polar.models import User
@@ -15,7 +14,7 @@ class AdvertisementCampaign(RecordModel):
     __tablename__ = "advertisement_campaigns"
 
     user_id: Mapped[UUID] = mapped_column(
-        PostgresUUID,
+        Uuid,
         ForeignKey("users.id"),
         nullable=False,
     )

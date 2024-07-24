@@ -1,12 +1,11 @@
 from datetime import datetime
 from uuid import UUID
 
-from sqlalchemy import TIMESTAMP, ForeignKey, String, Text
+from sqlalchemy import TIMESTAMP, ForeignKey, String, Text, Uuid
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.auth.scope import Scope, scope_to_set
 from polar.kit.db.models.base import RecordModel
-from polar.kit.extensions.sqlalchemy import PostgresUUID
 from polar.models.user import User
 
 
@@ -23,9 +22,7 @@ class PersonalAccessToken(RecordModel):
         TIMESTAMP(timezone=True), nullable=True, default=None
     )
 
-    user_id: Mapped[UUID] = mapped_column(
-        PostgresUUID, ForeignKey("users.id"), nullable=False
-    )
+    user_id: Mapped[UUID] = mapped_column(Uuid, ForeignKey("users.id"), nullable=False)
 
     @declared_attr
     def user(cls) -> Mapped[User]:

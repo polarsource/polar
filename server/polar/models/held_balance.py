@@ -1,11 +1,10 @@
 from typing import TYPE_CHECKING
 from uuid import UUID
 
-from sqlalchemy import ForeignKey, Integer
+from sqlalchemy import ForeignKey, Integer, Uuid
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.kit.db.models import RecordModel
-from polar.kit.extensions.sqlalchemy import PostgresUUID
 
 if TYPE_CHECKING:
     from polar.models import (
@@ -31,7 +30,7 @@ class HeldBalance(RecordModel):
     __tablename__ = "held_balances"
 
     organization_id: Mapped[UUID | None] = mapped_column(
-        PostgresUUID,
+        Uuid,
         ForeignKey("organizations.id", ondelete="cascade"),
         nullable=True,
         index=True,
@@ -42,7 +41,7 @@ class HeldBalance(RecordModel):
     """
 
     account_id: Mapped[UUID | None] = mapped_column(
-        PostgresUUID,
+        Uuid,
         ForeignKey("accounts.id", ondelete="cascade"),
         nullable=True,
         index=True,
@@ -61,7 +60,7 @@ class HeldBalance(RecordModel):
         return relationship("Account", lazy="raise")
 
     payment_transaction_id: Mapped[UUID] = mapped_column(
-        PostgresUUID,
+        Uuid,
         ForeignKey("transactions.id", ondelete="cascade"),
         nullable=False,
         index=True,
@@ -77,7 +76,7 @@ class HeldBalance(RecordModel):
     """Amount in cents to balance."""
 
     pledge_id: Mapped[UUID | None] = mapped_column(
-        PostgresUUID,
+        Uuid,
         ForeignKey("pledges.id", ondelete="set null"),
         nullable=True,
         index=True,
@@ -89,7 +88,7 @@ class HeldBalance(RecordModel):
         return relationship("Pledge", lazy="raise")
 
     order_id: Mapped[UUID | None] = mapped_column(
-        PostgresUUID,
+        Uuid,
         ForeignKey("orders.id", ondelete="set null"),
         nullable=True,
         index=True,
@@ -101,7 +100,7 @@ class HeldBalance(RecordModel):
         return relationship("Order", lazy="raise")
 
     issue_reward_id: Mapped[UUID | None] = mapped_column(
-        PostgresUUID,
+        Uuid,
         ForeignKey("issue_rewards.id", ondelete="set null"),
         nullable=True,
         index=True,
@@ -113,7 +112,7 @@ class HeldBalance(RecordModel):
         return relationship("IssueReward", lazy="raise")
 
     donation_id: Mapped[UUID | None] = mapped_column(
-        PostgresUUID,
+        Uuid,
         ForeignKey("donations.id", ondelete="set null"),
         nullable=True,
         index=True,

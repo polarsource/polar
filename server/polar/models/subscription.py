@@ -9,13 +9,13 @@ from sqlalchemy import (
     ColumnElement,
     ForeignKey,
     String,
+    Uuid,
     type_coerce,
 )
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.kit.db.models import RecordModel
-from polar.kit.extensions.sqlalchemy import PostgresUUID
 
 if TYPE_CHECKING:
     from polar.models import BenefitGrant, Product, ProductPrice, User
@@ -54,7 +54,7 @@ class Subscription(RecordModel):
     )
 
     user_id: Mapped[UUID] = mapped_column(
-        PostgresUUID,
+        Uuid,
         ForeignKey("users.id", ondelete="cascade"),
         nullable=False,
         index=True,
@@ -65,7 +65,7 @@ class Subscription(RecordModel):
         return relationship("User", lazy="raise")
 
     product_id: Mapped[UUID] = mapped_column(
-        PostgresUUID,
+        Uuid,
         ForeignKey("products.id", ondelete="cascade"),
         nullable=False,
         index=True,

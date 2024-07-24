@@ -1,10 +1,9 @@
 from datetime import datetime
 from uuid import UUID
 
-from sqlalchemy import TIMESTAMP, MetaData, inspect
+from sqlalchemy import TIMESTAMP, MetaData, Uuid, inspect
 from sqlalchemy.orm import DeclarativeBase, Mapped, MappedColumn, mapped_column
 
-from polar.kit.extensions.sqlalchemy import PostgresUUID
 from polar.kit.utils import generate_uuid, utc_now
 
 my_metadata = MetaData(
@@ -49,7 +48,7 @@ class RecordModel(TimestampedModel):
     __abstract__ = True
 
     id: MappedColumn[UUID] = mapped_column(
-        PostgresUUID, primary_key=True, default=generate_uuid
+        Uuid, primary_key=True, default=generate_uuid
     )
 
     def __eq__(self, __value: object) -> bool:

@@ -12,7 +12,6 @@ from alembic import op
 from sqlalchemy.dialects import postgresql
 
 # Polar Custom Imports
-from polar.kit.extensions.sqlalchemy import PostgresUUID
 
 # revision identifiers, used by Alembic.
 revision = "4fb5c2b88e8c"

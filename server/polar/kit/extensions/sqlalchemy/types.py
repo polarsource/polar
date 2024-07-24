@@ -1,6 +1,5 @@
-import uuid
 from enum import Enum
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any
 
 import sqlalchemy as sa
 from sqlalchemy.dialects.postgresql import UUID
@@ -13,22 +12,6 @@ if TYPE_CHECKING:  # pragma: no cover
 else:
     GUIDTypeDecorator = _TypeDecorator
     TypeDecorator = _TypeDecorator
-
-# See https://github.com/dropbox/sqlalchemy-stubs/issues/94
-PostgresUUID = cast(
-    "sa.types.TypeEngine[uuid.UUID]",
-    UUID(as_uuid=True),
-)
-
-
-class GUID(GUIDTypeDecorator):
-    """Legacy - use PostgresUUID instead.
-
-    Keeping this since old migrations reference it.
-    """
-
-    impl = UUID
-    cache_ok = True
 
 
 class EnumType(TypeDecorator):

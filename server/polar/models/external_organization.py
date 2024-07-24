@@ -11,6 +11,7 @@ from sqlalchemy import (
     Integer,
     String,
     UniqueConstraint,
+    Uuid,
 )
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
@@ -18,7 +19,7 @@ from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 from polar.enums import Platforms
 from polar.exceptions import PolarError
 from polar.kit.db.models import RecordModel
-from polar.kit.extensions.sqlalchemy import PostgresUUID, StringEnum
+from polar.kit.extensions.sqlalchemy import StringEnum
 
 if TYPE_CHECKING:
     from polar.models.organization import Organization
@@ -45,7 +46,7 @@ class ExternalOrganization(RecordModel):
     )
 
     organization_id: Mapped[UUID | None] = mapped_column(
-        PostgresUUID,
+        Uuid,
         ForeignKey("organizations.id", ondelete="set null"),
         nullable=True,
     )
@@ -83,7 +84,7 @@ class ExternalOrganization(RecordModel):
 
     # This column is unused
     installation_suspender: Mapped[UUID | None] = mapped_column(
-        PostgresUUID, nullable=True, default=None
+        Uuid, nullable=True, default=None
     )
 
     installation_permissions: Mapped[dict[str, str] | None] = mapped_column(

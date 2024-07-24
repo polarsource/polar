@@ -2,11 +2,10 @@ from decimal import Decimal
 from typing import TYPE_CHECKING
 from uuid import UUID
 
-from sqlalchemy import BigInteger, ForeignKey, String, UniqueConstraint
+from sqlalchemy import BigInteger, ForeignKey, String, UniqueConstraint, Uuid
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.kit.db.models import RecordModel
-from polar.kit.extensions.sqlalchemy import PostgresUUID
 from polar.models.organization import Organization
 from polar.models.user import User
 
@@ -25,7 +24,7 @@ class IssueReward(RecordModel):
     )
 
     issue_id: Mapped[UUID] = mapped_column(
-        PostgresUUID, ForeignKey("issues.id"), nullable=False
+        Uuid, ForeignKey("issues.id"), nullable=False
     )
 
     # 10% == 100
@@ -36,11 +35,11 @@ class IssueReward(RecordModel):
     )
 
     organization_id: Mapped[UUID | None] = mapped_column(
-        PostgresUUID, ForeignKey("organizations.id"), nullable=True, default=None
+        Uuid, ForeignKey("organizations.id"), nullable=True, default=None
     )
 
     user_id: Mapped[UUID | None] = mapped_column(
-        PostgresUUID, ForeignKey("users.id"), nullable=True, default=None
+        Uuid, ForeignKey("users.id"), nullable=True, default=None
     )
 
     @declared_attr

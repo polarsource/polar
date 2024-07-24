@@ -13,7 +13,7 @@ from sqlalchemy.dialects import postgresql
 from sqlalchemy_utils.types.ts_vector import TSVectorType
 
 from polar.enums import Platforms
-from polar.kit.extensions.sqlalchemy import PostgresUUID, StringEnum
+from polar.kit.extensions.sqlalchemy import StringEnum
 from polar.models import Account, Issue
 from polar.models.article import ArticleByline, ArticleVisibility
 from polar.models.issue_reference import ReferenceType

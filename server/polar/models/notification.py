@@ -1,11 +1,10 @@
 from uuid import UUID
 
-from sqlalchemy import ForeignKey, Index, String
+from sqlalchemy import ForeignKey, Index, String, Uuid
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
 from polar.kit.db.models import RecordModel
-from polar.kit.extensions.sqlalchemy import PostgresUUID
 from polar.types import JSONDict
 
 
@@ -18,25 +17,21 @@ class Notification(RecordModel):
         ),
     )
 
-    user_id: Mapped[UUID] = mapped_column(PostgresUUID, nullable=True)
+    user_id: Mapped[UUID] = mapped_column(Uuid, nullable=True)
     email_addr: Mapped[str] = mapped_column(String, nullable=True)
 
-    organization_id: Mapped[UUID] = mapped_column(
-        PostgresUUID, nullable=True, default=None
-    )
+    organization_id: Mapped[UUID] = mapped_column(Uuid, nullable=True, default=None)
 
     type: Mapped[str] = mapped_column(String, nullable=False)
 
-    issue_id: Mapped[UUID] = mapped_column(
-        PostgresUUID, ForeignKey("issues.id"), nullable=True
-    )
+    issue_id: Mapped[UUID] = mapped_column(Uuid, ForeignKey("issues.id"), nullable=True)
 
     pledge_id: Mapped[UUID] = mapped_column(
-        PostgresUUID, ForeignKey("pledges.id"), nullable=True
+        Uuid, ForeignKey("pledges.id"), nullable=True
     )
 
     pull_request_id: Mapped[UUID] = mapped_column(
-        PostgresUUID, ForeignKey("pull_requests.id"), nullable=True
+        Uuid, ForeignKey("pull_requests.id"), nullable=True
     )
 
     payload: Mapped[JSONDict | None] = mapped_column(JSONB, nullable=True, default=dict)

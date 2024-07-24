@@ -1,10 +1,9 @@
 from uuid import UUID
 
-from sqlalchemy import Boolean, ForeignKey, Integer, String
+from sqlalchemy import Boolean, ForeignKey, Integer, String, Uuid
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.kit.db.models.base import RecordModel
-from polar.kit.extensions.sqlalchemy.types import PostgresUUID
 from polar.models.webhook_endpoint import WebhookEndpoint
 
 
@@ -12,7 +11,7 @@ class WebhookEvent(RecordModel):
     __tablename__ = "webhook_events"
 
     webhook_endpoint_id: Mapped[UUID] = mapped_column(
-        PostgresUUID,
+        Uuid,
         ForeignKey("webhook_endpoints.id", ondelete="CASCADE"),
         nullable=False,
         index=True,

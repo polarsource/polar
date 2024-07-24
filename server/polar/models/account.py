@@ -2,14 +2,14 @@ from enum import Enum
 from typing import TYPE_CHECKING, Any
 from uuid import UUID
 
-from sqlalchemy import Boolean, ForeignKey, Integer, String
+from sqlalchemy import Boolean, ForeignKey, Integer, String, Uuid
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.config import settings
 from polar.enums import AccountType
 from polar.kit.db.models import RecordModel
-from polar.kit.extensions.sqlalchemy import PostgresUUID, StringEnum
+from polar.kit.extensions.sqlalchemy import StringEnum
 
 if TYPE_CHECKING:
     from .organization import Organization
@@ -27,9 +27,7 @@ class Account(RecordModel):
 
     account_type: Mapped[AccountType] = mapped_column(String(255), nullable=False)
 
-    admin_id: Mapped[UUID] = mapped_column(
-        PostgresUUID, ForeignKey("users.id", use_alter=True)
-    )
+    admin_id: Mapped[UUID] = mapped_column(Uuid, ForeignKey("users.id", use_alter=True))
 
     stripe_id: Mapped[str | None] = mapped_column(
         String(100), nullable=True, default=None

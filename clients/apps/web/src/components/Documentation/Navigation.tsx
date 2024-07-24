@@ -28,7 +28,8 @@ import {
   HttpMethod,
   getAPISections,
   isFeaturedEndpoint,
-  isNotFeaturedEndpoint,
+  isIssueFundingEndpoint,
+  isOtherEndpoint,
 } from './openapi'
 
 const NavigationSection = ({
@@ -414,7 +415,13 @@ export const APINavigation = ({
       />
       <APIReferenceSections
         openAPISchema={openAPISchema}
-        filter={isNotFeaturedEndpoint}
+        filter={isIssueFundingEndpoint}
+        title="Issue Funding Endpoints"
+        activeOperationId={activeOperationId}
+      />
+      <APIReferenceSections
+        openAPISchema={openAPISchema}
+        filter={isOtherEndpoint}
         title="Other Endpoints"
         activeOperationId={activeOperationId}
       />

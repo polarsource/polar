@@ -21,15 +21,14 @@ export const useListMemberOrganizations = (enabled: boolean = true) =>
     enabled,
   })
 
-export const useListOrganizationMembers = (id?: string) =>
+export const useListOrganizationMembers = (id: string) =>
   useQuery({
     queryKey: ['organizationMembers', id],
     queryFn: () =>
-      api.organizations.listMembers({
-        id: id || '',
+      api.organizations.members({
+        id,
       }),
     retry: defaultRetry,
-    enabled: !!id,
   })
 
 export const useOrganizationBadgeSettings = (id?: string) =>

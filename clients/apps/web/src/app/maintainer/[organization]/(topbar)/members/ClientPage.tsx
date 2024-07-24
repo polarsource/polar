@@ -18,7 +18,7 @@ import { useContext } from 'react'
 export default function ClientPage() {
   const { organization: org } = useContext(MaintainerOrganizationContext)
 
-  const members = useListOrganizationMembers(org?.id)
+  const members = useListOrganizationMembers(org.id)
 
   const mems = members.data?.items || []
   const sortedMembers = mems.sort((a, b) => a.name.localeCompare(b.name))

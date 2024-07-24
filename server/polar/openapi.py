@@ -31,6 +31,7 @@ class APITag(StrEnum):
 
     documented = "documented"
     featured = "featured"
+    issue_funding = "issue_funding"
 
     @classmethod
     def metadata(cls) -> list[OpenAPITag]:
@@ -46,6 +47,12 @@ class APITag(StrEnum):
                 "description": (
                     "Endpoints featured in the Polar API documentation "
                     "for their interest in common use-cases."
+                ),
+            },
+            {
+                "name": cls.issue_funding,
+                "description": (
+                    "Endpoints related to issue funding and rewards in the Polar API."
                 ),
             },
         ]

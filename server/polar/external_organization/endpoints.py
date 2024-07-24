@@ -14,7 +14,8 @@ from .schemas import ExternalOrganization
 from .service import external_organization as external_organization_service
 
 router = APIRouter(
-    prefix="/external_organizations", tags=["external_organizations", APITag.documented]
+    prefix="/external_organizations",
+    tags=["external_organizations", APITag.documented, APITag.issue_funding],
 )
 
 ExternalOrganizationNotFound = {
@@ -32,8 +33,12 @@ async def list(
     auth_subject: auth.ExternalOrganizationsReadOrAnonymous,
     pagination: PaginationParamsQuery,
     sorting: sorting.ListSorting,
-    name: str | None = Query(None, description="Filter by name."),
-    platform: Platforms | None = Query(None, description="Filter by platform."),
+    platform: MultipleQueryFilter[Platforms] | None = Query(
+        None, title="Platform Filter", description="Filter by platform."
+    ),
+    name: MultipleQueryFilter[str] | None = Query(
+        None, title="RepositoryName Filter", description="Filter by name."
+    ),
     organization_id: MultipleQueryFilter[OrganizationID] | None = Query(
         None, title="OrganizationID Filter", description="Filter by organization ID."
     ),
@@ -43,8 +48,8 @@ async def list(
     results, count = await external_organization_service.list(
         session,
         auth_subject,
-        name=name,
         platform=platform,
+        name=name,
         organization_id=organization_id,
         pagination=pagination,
         sorting=sorting,

@@ -26,7 +26,10 @@ from .schemas import (
 )
 from .service import repository as repository_service
 
-router = APIRouter(prefix="/repositories", tags=["repositories", APITag.documented])
+router = APIRouter(
+    prefix="/repositories",
+    tags=["repositories", APITag.documented, APITag.issue_funding],
+)
 
 RepositoryNotFound = {
     "description": "Repository not found.",

@@ -60,15 +60,15 @@ export interface OrganizationsApiListRequest {
     sorting?: Array<string>;
 }
 
-export interface OrganizationsApiListMembersRequest {
-    id: string | null;
-}
-
 export interface OrganizationsApiListOrganizationCustomersRequest {
     id: string;
     customerTypes?: Set<OrganizationCustomerType>;
     page?: number;
     limit?: number;
+}
+
+export interface OrganizationsApiMembersRequest {
+    id: string | null;
 }
 
 export interface OrganizationsApiSetAccountRequest {
@@ -138,7 +138,7 @@ export class OrganizationsApi extends runtime.BaseAPI {
     }
 
     /**
-     * Start a new Stripe Customer session for a organization.
+     * Create a new Stripe Customer session for a organization.
      * Create Stripe Customer Portal
      */
     async createStripeCustomerPortalRaw(requestParameters: OrganizationsApiCreateStripeCustomerPortalRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<OrganizationStripePortalSession>> {
@@ -172,7 +172,7 @@ export class OrganizationsApi extends runtime.BaseAPI {
     }
 
     /**
-     * Start a new Stripe Customer session for a organization.
+     * Create a new Stripe Customer session for a organization.
      * Create Stripe Customer Portal
      */
     async createStripeCustomerPortal(requestParameters: OrganizationsApiCreateStripeCustomerPortalRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<OrganizationStripePortalSession> {
@@ -267,7 +267,8 @@ export class OrganizationsApi extends runtime.BaseAPI {
     }
 
     /**
-     * Get badge settings (Internal API)
+     * Get badge settings for an organization.
+     * Get Badge Settings
      */
     async getBadgeSettingsRaw(requestParameters: OrganizationsApiGetBadgeSettingsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<OrganizationBadgeSettingsRead>> {
         if (requestParameters['id'] == null) {
@@ -300,7 +301,8 @@ export class OrganizationsApi extends runtime.BaseAPI {
     }
 
     /**
-     * Get badge settings (Internal API)
+     * Get badge settings for an organization.
+     * Get Badge Settings
      */
     async getBadgeSettings(requestParameters: OrganizationsApiGetBadgeSettingsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<OrganizationBadgeSettingsRead> {
         const response = await this.getBadgeSettingsRaw(requestParameters, initOverrides);
@@ -364,49 +366,6 @@ export class OrganizationsApi extends runtime.BaseAPI {
     }
 
     /**
-     * List members of an organization. Requires authentication.
-     * List members in an organization
-     */
-    async listMembersRaw(requestParameters: OrganizationsApiListMembersRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListResourceOrganizationMember>> {
-        if (requestParameters['id'] == null) {
-            throw new runtime.RequiredError(
-                'id',
-                'Required parameter "id" was null or undefined when calling listMembers().'
-            );
-        }
-
-        const queryParameters: any = {};
-
-        const headerParameters: runtime.HTTPHeaders = {};
-
-        if (this.configuration && this.configuration.accessToken) {
-            const token = this.configuration.accessToken;
-            const tokenString = await token("HTTPBearer", []);
-
-            if (tokenString) {
-                headerParameters["Authorization"] = `Bearer ${tokenString}`;
-            }
-        }
-        const response = await this.request({
-            path: `/v1/organizations/{id}/members`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
-            method: 'GET',
-            headers: headerParameters,
-            query: queryParameters,
-        }, initOverrides);
-
-        return new runtime.JSONApiResponse(response);
-    }
-
-    /**
-     * List members of an organization. Requires authentication.
-     * List members in an organization
-     */
-    async listMembers(requestParameters: OrganizationsApiListMembersRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ListResourceOrganizationMember> {
-        const response = await this.listMembersRaw(requestParameters, initOverrides);
-        return await response.value();
-    }
-
-    /**
      * List organization customers.
      * List Organization Customers
      */
@@ -458,6 +417,49 @@ export class OrganizationsApi extends runtime.BaseAPI {
      */
     async listOrganizationCustomers(requestParameters: OrganizationsApiListOrganizationCustomersRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ListResourceOrganizationCustomer> {
         const response = await this.listOrganizationCustomersRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
+     * List members in an organization.
+     * Members
+     */
+    async membersRaw(requestParameters: OrganizationsApiMembersRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListResourceOrganizationMember>> {
+        if (requestParameters['id'] == null) {
+            throw new runtime.RequiredError(
+                'id',
+                'Required parameter "id" was null or undefined when calling members().'
+            );
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("HTTPBearer", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+        const response = await this.request({
+            path: `/v1/organizations/{id}/members`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
+            method: 'GET',
+            headers: headerParameters,
+            query: queryParameters,
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse(response);
+    }
+
+    /**
+     * List members in an organization.
+     * Members
+     */
+    async members(requestParameters: OrganizationsApiMembersRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ListResourceOrganizationMember> {
+        const response = await this.membersRaw(requestParameters, initOverrides);
         return await response.value();
     }
 
@@ -568,7 +570,8 @@ export class OrganizationsApi extends runtime.BaseAPI {
     }
 
     /**
-     * Update badge settings (Internal API)
+     * Update badge settings for an organization.
+     * Update Badge Settings
      */
     async updateBadgeSettingsRaw(requestParameters: OrganizationsApiUpdateBadgeSettingsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Organization>> {
         if (requestParameters['id'] == null) {
@@ -611,7 +614,8 @@ export class OrganizationsApi extends runtime.BaseAPI {
     }
 
     /**
-     * Update badge settings (Internal API)
+     * Update badge settings for an organization.
+     * Update Badge Settings
      */
     async updateBadgeSettings(requestParameters: OrganizationsApiUpdateBadgeSettingsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Organization> {
         const response = await this.updateBadgeSettingsRaw(requestParameters, initOverrides);

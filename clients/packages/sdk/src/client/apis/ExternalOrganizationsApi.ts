@@ -18,12 +18,13 @@ import type {
   HTTPValidationError,
   ListResourceExternalOrganization,
   OrganizationIDFilter,
-  Platforms,
+  PlatformFilter,
+  RepositoryNameFilter,
 } from '../models/index';
 
 export interface ExternalOrganizationsApiListRequest {
-    name?: string;
-    platform?: Platforms;
+    platform?: PlatformFilter;
+    name?: RepositoryNameFilter;
     organizationId?: OrganizationIDFilter;
     page?: number;
     limit?: number;
@@ -42,12 +43,12 @@ export class ExternalOrganizationsApi extends runtime.BaseAPI {
     async listRaw(requestParameters: ExternalOrganizationsApiListRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListResourceExternalOrganization>> {
         const queryParameters: any = {};
 
-        if (requestParameters['name'] != null) {
-            queryParameters['name'] = requestParameters['name'];
-        }
-
         if (requestParameters['platform'] != null) {
             queryParameters['platform'] = requestParameters['platform'];
+        }
+
+        if (requestParameters['name'] != null) {
+            queryParameters['name'] = requestParameters['name'];
         }
 
         if (requestParameters['organizationId'] != null) {

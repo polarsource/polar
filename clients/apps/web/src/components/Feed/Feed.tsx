@@ -10,7 +10,7 @@ import { Post as PostComponent } from './Posts/Post'
 
 export const Feed = () => {
   const [ref, inView] = useInView()
-  const articles = useListArticles()
+  const articles = useListArticles({ isPublished: true, isSubscribed: true })
 
   // Connect to eventstream and listen for events that may update the feed
   useUserSSE()

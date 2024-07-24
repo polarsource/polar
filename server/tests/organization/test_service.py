@@ -17,7 +17,9 @@ from polar.user_organization.service import (
 @pytest.mark.skip_db_asserts
 class TestCreate:
     @pytest.mark.auth
-    @pytest.mark.parametrize("slug", ["Polar Software Inc 🌀", "slug/with/slashes"])
+    @pytest.mark.parametrize(
+        "slug", ["", "a", "ab", "Polar Software Inc 🌀", "slug/with/slashes"]
+    )
     async def test_slug_validation(
         self, slug: str, auth_subject: AuthSubject[User], session: AsyncSession
     ) -> None:

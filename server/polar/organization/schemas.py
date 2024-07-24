@@ -120,15 +120,19 @@ def validate_slug(value: str) -> str:
 
 
 class OrganizationCreate(Schema):
-    name: str
+    name: Annotated[str, StringConstraints(min_length=3)]
     slug: Annotated[
-        str, StringConstraints(to_lower=True), AfterValidator(validate_slug)
+        str,
+        StringConstraints(to_lower=True, min_length=3),
+        AfterValidator(validate_slug),
     ]
     avatar_url: HttpUrlToStr | None = None
 
 
 class OrganizationUpdate(Schema):
-    name: str | None = None
+    name: Annotated[
+        str | None, StringConstraints(min_length=3), EmptyStrToNoneValidator
+    ] = None
     avatar_url: HttpUrlToStr | None = None
 
     default_upfront_split_to_contributors: int | None = Field(

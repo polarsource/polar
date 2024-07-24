@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import structlog
 from sqlalchemy import desc
 from sqlalchemy.orm import (
     joinedload,
@@ -12,8 +11,6 @@ from polar.models.issue import Issue
 from polar.models.pledge import Pledge, PledgeState
 from polar.models.repository import Repository
 from polar.postgres import AsyncSession
-
-log = structlog.get_logger()
 
 
 class BackofficePledgeService:

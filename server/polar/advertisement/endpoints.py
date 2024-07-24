@@ -1,6 +1,5 @@
 from typing import Annotated
 
-import structlog
 from fastapi import Depends, Path, Query
 from pydantic import UUID4
 
@@ -18,8 +17,6 @@ from polar.routing import APIRouter
 from .schemas import AdvertisementCampaign, AdvertisementCampaignListResource
 from .service import SortProperty
 from .service import advertisement_campaign as advertisement_campaign_service
-
-log = structlog.get_logger()
 
 router = APIRouter(prefix="/advertisements", tags=["advertisements", APITag.documented])
 

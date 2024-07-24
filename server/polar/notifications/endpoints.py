@@ -1,4 +1,3 @@
-import structlog
 from fastapi import Depends
 
 from polar.auth.dependencies import WebUser
@@ -10,9 +9,6 @@ from .schemas import NotificationsList, NotificationsMarkRead
 from .service import notifications
 
 router = APIRouter(tags=["notifications"], include_in_schema=IN_DEVELOPMENT_ONLY)
-
-
-log = structlog.get_logger()
 
 
 @router.get("/notifications", response_model=NotificationsList)

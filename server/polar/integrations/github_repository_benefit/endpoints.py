@@ -1,6 +1,5 @@
 from typing import Any
 
-import structlog
 from fastapi import Depends, Request, Response
 from fastapi.responses import RedirectResponse
 from httpx_oauth.integrations.fastapi import OAuth2AuthorizeCallback
@@ -25,8 +24,6 @@ from polar.postgres import AsyncSession, get_db_session
 from polar.routing import APIRouter
 
 from .service import github_oauth_client, github_repository_benefit_user_service
-
-log = structlog.get_logger()
 
 router = APIRouter(
     prefix="/integrations/github_repository_benefit",

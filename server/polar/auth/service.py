@@ -1,6 +1,5 @@
 from datetime import datetime
 
-import structlog
 from fastapi import Request, Response
 from fastapi.responses import RedirectResponse
 
@@ -12,8 +11,6 @@ from polar.kit.schemas import Schema
 from polar.models import User
 from polar.postgres import AsyncSession
 from polar.user.service.user import user as user_service
-
-log = structlog.get_logger()
 
 
 class LogoutResponse(Schema):

@@ -1,10 +1,7 @@
 from collections.abc import Callable
 from pathlib import Path
 
-import structlog
 from jinja2 import BaseLoader, Environment, TemplateNotFound
-
-log = structlog.get_logger()
 
 
 class PolarLoader(BaseLoader):

@@ -1,4 +1,3 @@
-import structlog
 from fastapi import Depends
 from pydantic import UUID4
 
@@ -15,8 +14,6 @@ from .schemas import (
     PersonalAccessTokenCreateResponse,
 )
 from .service import personal_access_token as personal_access_token_service
-
-log = structlog.get_logger()
 
 router = APIRouter(
     prefix="/personal_access_tokens",

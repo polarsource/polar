@@ -1,4 +1,3 @@
-import structlog
 from fastapi import Depends
 
 from polar.openapi import APITag
@@ -8,8 +7,6 @@ from polar.routing import APIRouter
 from . import auth
 from .schemas import Checkout, CheckoutCreate
 from .service import checkout as checkout_service
-
-log = structlog.get_logger()
 
 router = APIRouter(
     prefix="/checkouts", tags=["checkouts", APITag.documented, APITag.featured]

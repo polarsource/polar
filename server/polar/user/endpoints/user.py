@@ -1,4 +1,3 @@
-import structlog
 from fastapi import Depends
 
 from polar.auth.dependencies import Authenticator, WebUser
@@ -13,8 +12,6 @@ from polar.routing import APIRouter
 from polar.user.service.user import user as user_service
 
 from ..schemas.user import UserRead, UserScopes, UserSetAccount, UserStripePortalSession
-
-log = structlog.get_logger()
 
 router = APIRouter(include_in_schema=IN_DEVELOPMENT_ONLY)
 

@@ -2,7 +2,6 @@ import datetime
 from typing import Literal
 from uuid import UUID
 
-import structlog
 from fastapi import Depends, Query
 
 from polar.article.service import article_service
@@ -23,8 +22,6 @@ from .schemas import (
     TrafficStatistics,
 )
 from .service import traffic_service
-
-log = structlog.get_logger()
 
 router = APIRouter(prefix="", tags=["traffic"], include_in_schema=IN_DEVELOPMENT_ONLY)
 

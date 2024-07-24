@@ -1,4 +1,3 @@
-import structlog
 from fastapi import Depends
 
 from polar.auth.dependencies import WebUser
@@ -9,8 +8,6 @@ from polar.postgres import AsyncSession, get_db_session
 from polar.routing import APIRouter
 
 from .schemas import PaymentMethod
-
-log = structlog.get_logger()
 
 router = APIRouter(tags=["payment_methods"], include_in_schema=IN_DEVELOPMENT_ONLY)
 

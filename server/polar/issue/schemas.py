@@ -5,7 +5,6 @@ from enum import Enum
 from typing import Any, Literal, Self, cast
 from uuid import UUID
 
-import structlog
 from pydantic import ConfigDict, Field, HttpUrl
 
 from polar.currency.schemas import CurrencyAmount
@@ -32,8 +31,6 @@ from polar.models.issue_reference import (
 from polar.models.repository import Repository as RepositoryModel
 from polar.repository.schemas import Repository
 from polar.types import JSONAny
-
-log = structlog.get_logger()
 
 
 # Public API

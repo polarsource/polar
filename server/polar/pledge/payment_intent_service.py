@@ -3,7 +3,6 @@ from __future__ import annotations
 from typing import cast
 
 import stripe as stripe_lib
-import structlog
 from sqlalchemy.orm import joinedload
 
 from polar.exceptions import NotPermitted, PolarError, ResourceNotFound
@@ -27,8 +26,6 @@ from .schemas import (
     PledgeStripePaymentIntentUpdate,
 )
 from .service import pledge as pledge_service
-
-log = structlog.get_logger()
 
 
 class PaymentIntentService:

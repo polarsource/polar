@@ -1,8 +1,6 @@
 from collections.abc import Sequence
 from uuid import UUID
 
-import structlog
-
 from polar.enums import Platforms
 from polar.kit.services import ResourceService
 from polar.models.issue import Issue
@@ -11,8 +9,6 @@ from polar.models.pull_request import PullRequest
 from polar.postgres import AsyncSession, sql
 
 from .schemas import FullPullRequestCreate, MinimalPullRequestCreate, PullRequestUpdate
-
-log = structlog.get_logger()
 
 
 class PullRequestService(

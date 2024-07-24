@@ -618,6 +618,7 @@ polar.${namespace}
 enum APITags {
   documented = 'documented',
   featured = 'featured',
+  issue_funding = 'issue_funding',
 }
 
 export interface APISection {
@@ -641,9 +642,18 @@ export const isFeaturedEndpoint = (
   return endpoint.tags.includes(APITags.featured)
 }
 
-export const isNotFeaturedEndpoint = (
+export const isIssueFundingEndpoint = (
   endpoint: OpenAPIV3_1.OperationObject,
-): boolean => !isFeaturedEndpoint(endpoint)
+): boolean => {
+  if (!endpoint.tags) {
+    return false
+  }
+  return endpoint.tags.includes(APITags.issue_funding)
+}
+
+export const isOtherEndpoint = (
+  endpoint: OpenAPIV3_1.OperationObject,
+): boolean => !isFeaturedEndpoint(endpoint) && !isIssueFundingEndpoint(endpoint)
 
 export const getAPISections = (
   schema: OpenAPIV3_1.Document,

@@ -52,6 +52,7 @@ export interface ArticlesApiListRequest {
     organizationId?: OrganizationIDFilter;
     slug?: string;
     visibility?: ArticleVisibilityFilter;
+    isSubscribed?: boolean;
     isPublished?: boolean;
     isPinned?: boolean;
     page?: number;
@@ -304,6 +305,10 @@ export class ArticlesApi extends runtime.BaseAPI {
 
         if (requestParameters['visibility'] != null) {
             queryParameters['visibility'] = requestParameters['visibility'];
+        }
+
+        if (requestParameters['isSubscribed'] != null) {
+            queryParameters['is_subscribed'] = requestParameters['isSubscribed'];
         }
 
         if (requestParameters['isPublished'] != null) {

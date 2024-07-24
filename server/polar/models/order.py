@@ -1,11 +1,10 @@
 from typing import TYPE_CHECKING
 from uuid import UUID
 
-from sqlalchemy import ForeignKey, Integer, String
+from sqlalchemy import ForeignKey, Integer, String, Uuid
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.kit.db.models import RecordModel
-from polar.kit.extensions.sqlalchemy import PostgresUUID
 
 if TYPE_CHECKING:
     from polar.models import Product, ProductPrice, Subscription, User
@@ -20,7 +19,7 @@ class Order(RecordModel):
     stripe_invoice_id: Mapped[str | None] = mapped_column(String, nullable=True)
 
     user_id: Mapped[UUID] = mapped_column(
-        PostgresUUID,
+        Uuid,
         ForeignKey("users.id"),
         nullable=False,
     )
@@ -30,7 +29,7 @@ class Order(RecordModel):
         return relationship("User", lazy="raise")
 
     product_id: Mapped[UUID] = mapped_column(
-        PostgresUUID,
+        Uuid,
         ForeignKey("products.id"),
         nullable=False,
     )
@@ -40,7 +39,7 @@ class Order(RecordModel):
         return relationship("Product", lazy="raise")
 
     product_price_id: Mapped[UUID] = mapped_column(
-        PostgresUUID,
+        Uuid,
         ForeignKey("product_prices.id"),
         nullable=False,
     )
@@ -50,7 +49,7 @@ class Order(RecordModel):
         return relationship("ProductPrice", lazy="raise")
 
     subscription_id: Mapped[UUID | None] = mapped_column(
-        PostgresUUID,
+        Uuid,
         ForeignKey("subscriptions.id"),
         nullable=True,
     )

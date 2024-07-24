@@ -6,11 +6,11 @@ from sqlalchemy import (
     Boolean,
     ForeignKey,
     UniqueConstraint,
+    Uuid,
 )
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.kit.db.models import RecordModel
-from polar.kit.extensions.sqlalchemy import PostgresUUID
 
 from .organization import Organization
 from .user import User
@@ -25,7 +25,7 @@ class ArticlesSubscription(RecordModel):
     )
 
     organization_id: Mapped[UUID] = mapped_column(
-        PostgresUUID, ForeignKey("organizations.id"), nullable=False, index=True
+        Uuid, ForeignKey("organizations.id"), nullable=False, index=True
     )
 
     emails_unsubscribed_at: Mapped[datetime | None] = mapped_column(
@@ -37,7 +37,7 @@ class ArticlesSubscription(RecordModel):
         return relationship(Organization, lazy="raise")
 
     user_id: Mapped[UUID] = mapped_column(
-        PostgresUUID,
+        Uuid,
         ForeignKey("users.id", ondelete="cascade"),
         nullable=False,
         index=True,

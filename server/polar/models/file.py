@@ -9,6 +9,7 @@ from sqlalchemy import (
     ForeignKey,
     Integer,
     String,
+    Uuid,
 )
 from sqlalchemy.orm import (
     Mapped,
@@ -18,7 +19,6 @@ from sqlalchemy.orm import (
 )
 
 from polar.kit.db.models import RecordModel
-from polar.kit.extensions.sqlalchemy import PostgresUUID
 
 if TYPE_CHECKING:
     from polar.models import (
@@ -35,7 +35,7 @@ class File(RecordModel):
     __tablename__ = "files"
 
     organization_id: Mapped[UUID] = mapped_column(
-        PostgresUUID,
+        Uuid,
         ForeignKey("organizations.id", ondelete="cascade"),
         nullable=False,
         index=True,

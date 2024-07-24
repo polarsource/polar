@@ -2,13 +2,12 @@ from enum import StrEnum
 from typing import TYPE_CHECKING, Literal, TypedDict
 from uuid import UUID
 
-from sqlalchemy import Boolean, ForeignKey, String, Text
+from sqlalchemy import Boolean, ForeignKey, String, Text, Uuid
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.exceptions import PolarError
 from polar.kit.db.models import RecordModel
-from polar.kit.extensions.sqlalchemy import PostgresUUID
 
 if TYPE_CHECKING:
     from polar.models import BenefitGrant, Organization
@@ -95,7 +94,7 @@ class Benefit(RecordModel):
     )
 
     organization_id: Mapped[UUID] = mapped_column(
-        PostgresUUID, ForeignKey("organizations.id", ondelete="cascade"), nullable=False
+        Uuid, ForeignKey("organizations.id", ondelete="cascade"), nullable=False
     )
     organization: Mapped["Organization"] = relationship("Organization", lazy="raise")
 

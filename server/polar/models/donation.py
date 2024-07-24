@@ -4,11 +4,11 @@ from sqlalchemy import (
     BigInteger,
     ForeignKey,
     String,
+    Uuid,
 )
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.kit.db.models import RecordModel
-from polar.kit.extensions.sqlalchemy import PostgresUUID
 from polar.models.issue import Issue
 from polar.models.organization import Organization
 from polar.models.user import User
@@ -18,7 +18,7 @@ class Donation(RecordModel):
     __tablename__ = "donations"
 
     to_organization_id: Mapped[UUID] = mapped_column(
-        PostgresUUID, ForeignKey("organizations.id"), nullable=False
+        Uuid, ForeignKey("organizations.id"), nullable=False
     )
 
     @declared_attr
@@ -53,7 +53,7 @@ class Donation(RecordModel):
     #
     # They determine who paid for this pledge (or who's going to pay for it).
     by_user_id: Mapped[UUID | None] = mapped_column(
-        PostgresUUID,
+        Uuid,
         ForeignKey("users.id"),
         nullable=True,
         index=True,
@@ -69,7 +69,7 @@ class Donation(RecordModel):
         )
 
     by_organization_id: Mapped[UUID | None] = mapped_column(
-        PostgresUUID,
+        Uuid,
         ForeignKey("organizations.id"),
         nullable=True,
         index=True,
@@ -90,7 +90,7 @@ class Donation(RecordModel):
     #
     # on_behalf_of_organization_id can not be set when by_organization_id is set.
     on_behalf_of_organization_id: Mapped[UUID | None] = mapped_column(
-        PostgresUUID,
+        Uuid,
         ForeignKey("organizations.id"),
         nullable=True,
         index=True,
@@ -110,7 +110,7 @@ class Donation(RecordModel):
     #
     # If by_organization_id is set, this is the user that pressed the "Pledge" button.
     created_by_user_id: Mapped[UUID | None] = mapped_column(
-        PostgresUUID,
+        Uuid,
         ForeignKey("users.id"),
         nullable=True,
         default=None,
@@ -130,7 +130,7 @@ class Donation(RecordModel):
         return None
 
     issue_id: Mapped[UUID | None] = mapped_column(
-        PostgresUUID,
+        Uuid,
         ForeignKey("issues.id"),
         nullable=True,
         default=None,

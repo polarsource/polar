@@ -8,6 +8,7 @@ from sqlalchemy import (
     ColumnElement,
     ForeignKey,
     UniqueConstraint,
+    Uuid,
     and_,
     type_coerce,
 )
@@ -23,7 +24,6 @@ from sqlalchemy.orm import (
 )
 
 from polar.kit.db.models import RecordModel
-from polar.kit.extensions.sqlalchemy import PostgresUUID
 
 if TYPE_CHECKING:
     from polar.models import Benefit, Order, Subscription, User
@@ -87,7 +87,7 @@ class BenefitGrant(RecordModel):
     )
 
     user_id: Mapped[UUID] = mapped_column(
-        PostgresUUID,
+        Uuid,
         ForeignKey("users.id", ondelete="cascade"),
         nullable=False,
         index=True,
@@ -98,7 +98,7 @@ class BenefitGrant(RecordModel):
         return relationship("User", lazy="raise")
 
     benefit_id: Mapped[UUID] = mapped_column(
-        PostgresUUID,
+        Uuid,
         ForeignKey("benefits.id", ondelete="cascade"),
         nullable=False,
         index=True,
@@ -109,7 +109,7 @@ class BenefitGrant(RecordModel):
         return relationship("Benefit", lazy="raise", back_populates="grants")
 
     subscription_id: Mapped[UUID | None] = mapped_column(
-        PostgresUUID,
+        Uuid,
         ForeignKey("subscriptions.id", ondelete="cascade"),
         nullable=True,
         index=True,
@@ -120,7 +120,7 @@ class BenefitGrant(RecordModel):
         return relationship("Subscription", lazy="raise", back_populates="grants")
 
     order_id: Mapped[UUID | None] = mapped_column(
-        PostgresUUID,
+        Uuid,
         ForeignKey("orders.id", ondelete="cascade"),
         nullable=True,
         index=True,

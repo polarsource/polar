@@ -1,10 +1,9 @@
 from uuid import UUID
 
-from sqlalchemy import ForeignKey
+from sqlalchemy import ForeignKey, Uuid
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.kit.db.models import TimestampedModel
-from polar.kit.extensions.sqlalchemy import PostgresUUID
 from polar.models.issue import Issue
 
 
@@ -12,22 +11,22 @@ class IssueDependency(TimestampedModel):
     __tablename__ = "issue_dependencies"
 
     organization_id: Mapped[UUID] = mapped_column(
-        PostgresUUID, ForeignKey("external_organizations.id"), nullable=False
+        Uuid, ForeignKey("external_organizations.id"), nullable=False
     )
 
     repository_id: Mapped[UUID] = mapped_column(
-        PostgresUUID, ForeignKey("repositories.id"), nullable=False
+        Uuid, ForeignKey("repositories.id"), nullable=False
     )
 
     dependent_issue_id: Mapped[UUID] = mapped_column(
-        PostgresUUID,
+        Uuid,
         ForeignKey("issues.id"),
         primary_key=True,
         nullable=False,
     )
 
     dependency_issue_id: Mapped[UUID] = mapped_column(
-        PostgresUUID,
+        Uuid,
         ForeignKey("issues.id"),
         primary_key=True,
         nullable=False,

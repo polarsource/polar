@@ -2,11 +2,9 @@ from enum import StrEnum
 from typing import TYPE_CHECKING, Literal, TypeGuard
 from uuid import UUID
 
-from sqlalchemy import ForeignKey, String
+from sqlalchemy import ForeignKey, String, Uuid
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
-
-from polar.kit.extensions.sqlalchemy import PostgresUUID
 
 if TYPE_CHECKING:
     from polar.models import Organization, User
@@ -33,10 +31,10 @@ def is_sub_organization(
 class SubTypeModelMixin:
     sub_type: Mapped[SubType] = mapped_column(String, nullable=False)
     user_id: Mapped[UUID | None] = mapped_column(
-        PostgresUUID, ForeignKey("users.id", ondelete="cascade"), nullable=True
+        Uuid, ForeignKey("users.id", ondelete="cascade"), nullable=True
     )
     organization_id: Mapped[UUID | None] = mapped_column(
-        PostgresUUID, ForeignKey("organizations.id", ondelete="cascade"), nullable=True
+        Uuid, ForeignKey("organizations.id", ondelete="cascade"), nullable=True
     )
 
     @declared_attr

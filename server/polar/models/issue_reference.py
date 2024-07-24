@@ -1,12 +1,11 @@
 import enum
 from uuid import UUID
 
-from sqlalchemy import ForeignKey, String
+from sqlalchemy import ForeignKey, String, Uuid
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.kit.db.models import TimestampedModel
-from polar.kit.extensions.sqlalchemy import PostgresUUID
 from polar.kit.extensions.sqlalchemy.types import StringEnum
 from polar.kit.schemas import Schema
 from polar.models.pull_request import PullRequest
@@ -55,7 +54,7 @@ class IssueReference(TimestampedModel):
     __tablename__ = "issue_references"
 
     issue_id: Mapped[UUID] = mapped_column(
-        PostgresUUID,
+        Uuid,
         ForeignKey("issues.id"),
         nullable=False,
         primary_key=True,
@@ -75,7 +74,7 @@ class IssueReference(TimestampedModel):
 
     # Either pull_request_id or external_source will be set
     pull_request_id: Mapped[UUID | None] = mapped_column(
-        PostgresUUID,
+        Uuid,
         ForeignKey("pull_requests.id"),
         nullable=True,
         default=None,

@@ -10,6 +10,7 @@ from sqlalchemy import (
     ForeignKey,
     Index,
     String,
+    Uuid,
     and_,
     or_,
     type_coerce,
@@ -18,7 +19,6 @@ from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.kit.db.models import RecordModel
-from polar.kit.extensions.sqlalchemy import PostgresUUID
 from polar.kit.utils import utc_now
 
 from .external_organization import ExternalOrganization
@@ -142,13 +142,13 @@ class Pledge(RecordModel):
     __table_args__ = (Index("idx_issue_id_state", "issue_id", "state"),)
 
     issue_id: Mapped[UUID] = mapped_column(
-        PostgresUUID, ForeignKey("issues.id"), nullable=False, index=True
+        Uuid, ForeignKey("issues.id"), nullable=False, index=True
     )
     repository_id: Mapped[UUID] = mapped_column(
-        PostgresUUID, ForeignKey("repositories.id"), nullable=False
+        Uuid, ForeignKey("repositories.id"), nullable=False
     )
     organization_id: Mapped[UUID] = mapped_column(
-        PostgresUUID, ForeignKey("external_organizations.id"), nullable=False
+        Uuid, ForeignKey("external_organizations.id"), nullable=False
     )
 
     # Stripe Payment Intents (may or may not have been paid)
@@ -200,7 +200,7 @@ class Pledge(RecordModel):
         String, nullable=True, default=None
     )
     disputed_by_user_id: Mapped[UUID | None] = mapped_column(
-        PostgresUUID,
+        Uuid,
         ForeignKey("users.id"),
         nullable=True,
         default=None,
@@ -216,7 +216,7 @@ class Pledge(RecordModel):
     #
     # They determine who paid for this pledge (or who's going to pay for it).
     by_user_id: Mapped[UUID | None] = mapped_column(
-        PostgresUUID,
+        Uuid,
         ForeignKey("users.id"),
         nullable=True,
         index=True,
@@ -224,7 +224,7 @@ class Pledge(RecordModel):
     )
 
     by_organization_id: Mapped[UUID | None] = mapped_column(
-        PostgresUUID,
+        Uuid,
         ForeignKey("organizations.id"),
         nullable=True,
         index=True,
@@ -237,7 +237,7 @@ class Pledge(RecordModel):
     #
     # on_behalf_of_organization_id can not be set when by_organization_id is set.
     on_behalf_of_organization_id: Mapped[UUID | None] = mapped_column(
-        PostgresUUID,
+        Uuid,
         ForeignKey("organizations.id"),
         nullable=True,
         index=True,
@@ -249,7 +249,7 @@ class Pledge(RecordModel):
     #
     # If by_organization_id is set, this is the user that pressed the "Pledge" button.
     created_by_user_id: Mapped[UUID | None] = mapped_column(
-        PostgresUUID,
+        Uuid,
         ForeignKey("users.id"),
         nullable=True,
         default=None,

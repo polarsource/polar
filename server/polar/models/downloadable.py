@@ -8,11 +8,11 @@ from sqlalchemy import (
     Integer,
     String,
     UniqueConstraint,
+    Uuid,
 )
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.kit.db.models import RecordModel
-from polar.kit.extensions.sqlalchemy import PostgresUUID
 
 from .benefit import Benefit
 from .file import File
@@ -29,7 +29,7 @@ class Downloadable(RecordModel):
     __table_args__ = (UniqueConstraint("user_id", "file_id", "benefit_id"),)
 
     file_id: Mapped[UUID] = mapped_column(
-        PostgresUUID, ForeignKey("files.id"), nullable=False, index=True
+        Uuid, ForeignKey("files.id"), nullable=False, index=True
     )
 
     @declared_attr
@@ -39,7 +39,7 @@ class Downloadable(RecordModel):
     status: Mapped[DownloadableStatus] = mapped_column(String, nullable=False)
 
     user_id: Mapped[UUID] = mapped_column(
-        PostgresUUID,
+        Uuid,
         ForeignKey("users.id", ondelete="cascade"),
         nullable=False,
         index=True,
@@ -50,7 +50,7 @@ class Downloadable(RecordModel):
         return relationship("User", lazy="raise")
 
     benefit_id: Mapped[UUID] = mapped_column(
-        PostgresUUID,
+        Uuid,
         ForeignKey("benefits.id", ondelete="cascade"),
         nullable=False,
         index=True,

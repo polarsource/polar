@@ -15,6 +15,7 @@ from sqlalchemy import (
     String,
     Text,
     UniqueConstraint,
+    Uuid,
     type_coerce,
 )
 from sqlalchemy.dialects.postgresql import JSONB
@@ -30,7 +31,7 @@ from sqlalchemy_utils.types.ts_vector import TSVectorType
 
 from polar.enums import Platforms
 from polar.kit.db.models import RecordModel
-from polar.kit.extensions.sqlalchemy import PostgresUUID, StringEnum
+from polar.kit.extensions.sqlalchemy import StringEnum
 from polar.types import JSONAny
 
 if TYPE_CHECKING:  # pragma: no cover
@@ -51,7 +52,7 @@ class IssueFields:
     @declared_attr
     def organization_id(cls) -> MappedColumn[UUID]:
         return mapped_column(
-            PostgresUUID,
+            Uuid,
             ForeignKey("external_organizations.id"),
             nullable=False,
             index=True,
@@ -64,7 +65,7 @@ class IssueFields:
     @declared_attr
     def repository_id(cls) -> "MappedColumn[UUID]":
         return mapped_column(
-            PostgresUUID,
+            Uuid,
             ForeignKey("repositories.id"),
             nullable=False,
             index=True,
@@ -252,7 +253,7 @@ class Issue(IssueFields, RecordModel):
     )
 
     confirmed_solved_by: Mapped[UUID | None] = mapped_column(
-        PostgresUUID,
+        Uuid,
         ForeignKey("users.id"),
         nullable=True,
     )

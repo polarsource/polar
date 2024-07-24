@@ -1,10 +1,9 @@
 from uuid import UUID
 
-from sqlalchemy import ForeignKey, String, Text, UniqueConstraint
+from sqlalchemy import ForeignKey, String, Text, UniqueConstraint, Uuid
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.kit.db.models import RecordModel
-from polar.kit.extensions.sqlalchemy import PostgresUUID
 from polar.models.organization import Organization
 from polar.models.user import User
 
@@ -19,13 +18,13 @@ class OAuth2Grant(RecordModel):
     client_id: Mapped[str] = mapped_column(String(48), nullable=False, index=True)
     scope: Mapped[str] = mapped_column(Text, default="", nullable=False)
     user_id: Mapped[UUID | None] = mapped_column(
-        PostgresUUID,
+        Uuid,
         ForeignKey("users.id", ondelete="cascade"),
         nullable=True,
         index=True,
     )
     organization_id: Mapped[UUID | None] = mapped_column(
-        PostgresUUID,
+        Uuid,
         ForeignKey("organizations.id", ondelete="cascade"),
         nullable=True,
         index=True,

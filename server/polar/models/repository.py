@@ -13,6 +13,7 @@ from sqlalchemy import (
     String,
     Text,
     UniqueConstraint,
+    Uuid,
 )
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
@@ -20,7 +21,7 @@ from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 from polar.config import settings
 from polar.enums import Platforms
 from polar.kit.db.models import RecordModel
-from polar.kit.extensions.sqlalchemy import PostgresUUID, StringEnum
+from polar.kit.extensions.sqlalchemy import StringEnum
 
 from .external_organization import ExternalOrganization
 
@@ -36,7 +37,7 @@ class Repository(RecordModel):
     platform: Mapped[Platforms] = mapped_column(StringEnum(Platforms), nullable=False)
     external_id: Mapped[int] = mapped_column(BigInteger, nullable=False, unique=True)
     organization_id: Mapped[UUID] = mapped_column(
-        PostgresUUID, ForeignKey("external_organizations.id"), nullable=False
+        Uuid, ForeignKey("external_organizations.id"), nullable=False
     )
 
     @declared_attr

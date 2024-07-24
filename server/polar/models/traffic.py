@@ -1,12 +1,11 @@
 import datetime
 from uuid import UUID
 
-from sqlalchemy import DATE, ForeignKey, Index, Integer, String, UniqueConstraint
+from sqlalchemy import DATE, ForeignKey, Index, Integer, String, UniqueConstraint, Uuid
 from sqlalchemy.ext.compiler import compiles
 from sqlalchemy.orm import Mapped, mapped_column
 
 from polar.kit.db.models.base import Model
-from polar.kit.extensions.sqlalchemy import PostgresUUID
 from polar.kit.utils import generate_uuid
 
 UniqueConstraint.argument_for("postgresql", "nulls_not_distinct", None)
@@ -41,16 +40,14 @@ class Traffic(Model):
         Index("idx_organization_id_date", "organization_id", "date"),
     )
 
-    id: Mapped[UUID] = mapped_column(
-        PostgresUUID, primary_key=True, default=generate_uuid
-    )
+    id: Mapped[UUID] = mapped_column(Uuid, primary_key=True, default=generate_uuid)
 
     article_id: Mapped[UUID | None] = mapped_column(
-        PostgresUUID, ForeignKey("articles.id"), nullable=True
+        Uuid, ForeignKey("articles.id"), nullable=True
     )
 
     organization_id: Mapped[UUID | None] = mapped_column(
-        PostgresUUID, ForeignKey("organizations.id"), nullable=True
+        Uuid, ForeignKey("organizations.id"), nullable=True
     )
 
     date: Mapped[datetime.date] = mapped_column(DATE, nullable=False)

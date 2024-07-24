@@ -3,13 +3,21 @@ from typing import TYPE_CHECKING, cast
 from uuid import UUID
 
 from citext import CIText
-from sqlalchemy import Boolean, ColumnElement, ForeignKey, Index, String, Text, select
+from sqlalchemy import (
+    Boolean,
+    ColumnElement,
+    ForeignKey,
+    Index,
+    String,
+    Text,
+    Uuid,
+    select,
+)
 from sqlalchemy.ext.associationproxy import AssociationProxy, association_proxy
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.kit.db.models import RecordModel
-from polar.kit.extensions.sqlalchemy import PostgresUUID
 from polar.models.benefit import BenefitArticles, BenefitType
 from polar.models.product_price import ProductPriceType
 
@@ -48,7 +56,7 @@ class Product(RecordModel):
     )
 
     organization_id: Mapped[UUID] = mapped_column(
-        PostgresUUID,
+        Uuid,
         ForeignKey("organizations.id", ondelete="cascade"),
         nullable=False,
     )

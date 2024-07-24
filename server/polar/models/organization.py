@@ -10,13 +10,13 @@ from sqlalchemy import (
     Integer,
     String,
     UniqueConstraint,
+    Uuid,
 )
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.config import settings
 from polar.kit.db.models import RecordModel
-from polar.kit.extensions.sqlalchemy.types import PostgresUUID
 
 from .account import Account
 
@@ -30,7 +30,7 @@ class Organization(RecordModel):
     avatar_url: Mapped[str | None] = mapped_column(String, nullable=True)
 
     account_id: Mapped[UUID | None] = mapped_column(
-        PostgresUUID,
+        Uuid,
         ForeignKey("accounts.id", ondelete="set null"),
         nullable=True,
     )

@@ -3,12 +3,20 @@ from datetime import datetime
 from enum import StrEnum
 from uuid import UUID
 
-from sqlalchemy import TIMESTAMP, Boolean, Column, ForeignKey, Integer, String, func
+from sqlalchemy import (
+    TIMESTAMP,
+    Boolean,
+    Column,
+    ForeignKey,
+    Integer,
+    String,
+    Uuid,
+    func,
+)
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 from sqlalchemy.schema import Index, UniqueConstraint
 
 from polar.kit.db.models import RecordModel
-from polar.kit.extensions.sqlalchemy import PostgresUUID
 
 from .account import Account
 
@@ -47,7 +55,7 @@ class OAuthAccount(RecordModel):
     account_username: Mapped[str | None] = mapped_column(String(320), nullable=True)
 
     user_id: Mapped[UUID] = mapped_column(
-        PostgresUUID,
+        Uuid,
         ForeignKey("users.id", ondelete="cascade"),
         nullable=False,
     )
@@ -85,7 +93,7 @@ class User(RecordModel):
     )
 
     account_id: Mapped[UUID | None] = mapped_column(
-        PostgresUUID,
+        Uuid,
         ForeignKey("accounts.id", ondelete="set null"),
         nullable=True,
     )

@@ -2,12 +2,19 @@ from enum import StrEnum
 from typing import TYPE_CHECKING, Literal, cast
 from uuid import UUID
 
-from sqlalchemy import Boolean, ColumnElement, ForeignKey, Integer, String, type_coerce
+from sqlalchemy import (
+    Boolean,
+    ColumnElement,
+    ForeignKey,
+    Integer,
+    String,
+    Uuid,
+    type_coerce,
+)
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.kit.db.models import RecordModel
-from polar.kit.extensions.sqlalchemy import PostgresUUID
 
 if TYPE_CHECKING:
     from polar.models import Product, Subscription
@@ -43,7 +50,7 @@ class ProductPrice(RecordModel):
     stripe_price_id: Mapped[str] = mapped_column(String, nullable=False)
 
     product_id: Mapped[UUID] = mapped_column(
-        PostgresUUID,
+        Uuid,
         ForeignKey("products.id", ondelete="cascade"),
         nullable=False,
     )

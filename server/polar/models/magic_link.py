@@ -1,12 +1,11 @@
 from datetime import datetime, timedelta
 from uuid import UUID
 
-from sqlalchemy import TIMESTAMP, ForeignKey, String
+from sqlalchemy import TIMESTAMP, ForeignKey, String, Uuid
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.config import settings
 from polar.kit.db.models import RecordModel
-from polar.kit.extensions.sqlalchemy import PostgresUUID
 from polar.kit.utils import utc_now
 from polar.models.user import User
 
@@ -25,7 +24,7 @@ class MagicLink(RecordModel):
 
     user_email: Mapped[str] = mapped_column(String, nullable=False)
     user_id: Mapped[UUID | None] = mapped_column(
-        PostgresUUID,
+        Uuid,
         ForeignKey("users.id", ondelete="cascade"),
         nullable=True,
     )

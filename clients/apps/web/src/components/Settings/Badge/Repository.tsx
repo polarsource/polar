@@ -1,7 +1,6 @@
 import IssueLabel from '@/components/Issues/IssueLabel'
 import { type RepositoryBadgeSettingsRead } from '@polar-sh/sdk'
 import { motion } from 'framer-motion'
-import Image from 'next/image'
 import { twMerge } from 'tailwind-merge'
 
 const ProgressText = ({
@@ -141,7 +140,7 @@ export const BadgeRepository = ({
     >
       <div className="my-auto flex basis-3/6 flex-row items-center">
         {repo.avatar_url && (
-          <Image
+          <img
             alt={`Avatar of ${repo.name}`}
             className="h-6 w-6 rounded-full bg-white"
             src={repo.avatar_url}

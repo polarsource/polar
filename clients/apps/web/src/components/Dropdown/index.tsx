@@ -1,6 +1,5 @@
 import { ChevronUpDownIcon } from '@heroicons/react/24/outline'
 import { Command } from 'cmdk'
-import Image from 'next/image'
 import React from 'react'
 import { twMerge } from 'tailwind-merge'
 
@@ -23,19 +22,6 @@ export const Item = ({
         {children}
       </div>
     </Command.Item>
-  )
-}
-
-export const Avatar = (props: { url: string }) => {
-  const { url } = props
-  return (
-    <Image
-      src={url}
-      alt="Avatar"
-      height={200}
-      width={200}
-      className="h-5 w-5 rounded-full bg-white"
-    />
   )
 }
 

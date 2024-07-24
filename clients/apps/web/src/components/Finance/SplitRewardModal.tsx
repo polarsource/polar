@@ -53,9 +53,9 @@ const SplitRewardModal = (props: { issueId: string; onClose: () => void }) => {
       .filter((s) => s.share_thousands !== undefined && s.share_thousands > 0)
       .map((s) => {
         // reward to self org
-        if (s.username === selfOrg.name) {
+        if (s.id === organization?.id) {
           return {
-            organization_id: selfOrg.id,
+            organization_id: s.id,
             share_thousands: s.share_thousands || 0,
           }
         }
@@ -84,19 +84,16 @@ const SplitRewardModal = (props: { issueId: string; onClose: () => void }) => {
     }
   }
 
-  const selfOrgContributors: Contributor[] =
-    pledges.data?.items &&
-    pledges.data?.items.length > 0 &&
-    pledges.data?.items[0].issue.repository.organization
-      ? [
-          {
-            username: pledges.data?.items[0].issue.repository.organization.name,
-            avatar_url:
-              pledges.data?.items[0].issue.repository.organization.avatar_url,
-            is_maintainer_org: true,
-          },
-        ]
-      : []
+  const selfOrgContributors: Contributor[] = organization
+    ? [
+        {
+          id: organization.id,
+          username: organization.name,
+          avatar_url: organization.avatar_url,
+          is_maintainer_org: true,
+        },
+      ]
+    : []
 
   const pullRequestContributors: Contributor[] = pulls.data?.items
     ? pulls.data.items
@@ -104,6 +101,7 @@ const SplitRewardModal = (props: { issueId: string; onClose: () => void }) => {
         .filter((a): a is Author => !!a)
         .map((a) => {
           return {
+            id: a.id.toString(),
             username: a.login,
             avatar_url: a.avatar_url,
             is_suggested_from_contributions: true,
@@ -118,6 +116,7 @@ const SplitRewardModal = (props: { issueId: string; onClose: () => void }) => {
 
   const tmpShares: Share[] = contributors.map((c) => {
     return {
+      id: c.id,
       username: c.username,
     }
   })

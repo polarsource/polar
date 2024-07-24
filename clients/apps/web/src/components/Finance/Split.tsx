@@ -12,6 +12,7 @@ import PublicRewardPill from '../Issues/PublicRewardPill'
 import { ModalHeader } from '../Modal'
 
 export type Share = {
+  id: string
   username: string
   share_thousands?: number
   raw_value?: string
@@ -25,6 +26,7 @@ const zeroIfNanOrInfinite = (value: number): number => {
 }
 
 export interface Contributor {
+  id: string
   username: string
   avatar_url?: string
   is_suggested_from_contributions?: boolean
@@ -117,6 +119,7 @@ const Split = (props: {
         const est_amount = zeroIfNanOrInfinite(pledgeSumToSplit * percent)
 
         return {
+          id: user?.id,
           username: user?.username,
           avatar_url: user?.avatar_url,
           is_fixed: isFixed(s.share_thousands),
@@ -128,7 +131,8 @@ const Split = (props: {
             !!user?.is_suggested_from_contributions,
         }
       })
-      .filter((s) => s.username) as Array<{
+      .filter((s) => s.id && s.username) as Array<{
+      id: string
       username: string
       avatar_url: string
       is_fixed: boolean
@@ -138,7 +142,7 @@ const Split = (props: {
       share_thousands: number
       is_suggested_from_contributions: boolean
     }>
-  }, [shares, contributors, pledgeSumToSplit])
+  }, [shares, contributors, pledgeSumToSplit, upfrontSplit])
 
   const sumSharesThousands = useMemo(
     () =>
@@ -183,6 +187,7 @@ const Split = (props: {
     setIsLoading(true)
     const res = computedShares.map((s) => {
       return {
+        id: s.id,
         username: s.username,
         share_thousands: s.share_thousands,
       }
@@ -207,12 +212,15 @@ const Split = (props: {
 
       // Add to shares if not exists
       if (!shares.find((s) => s.username === lookup.username)) {
-        setShares((prev) => [...prev, { username: lookup.username }])
+        setShares((prev) => [
+          ...prev,
+          { id: lookup.username, username: lookup.username },
+        ])
       }
 
       // Add to contributors if not exists
       if (!contributors.find((c) => c.username === lookup.username)) {
-        setContributors((prev) => [...prev, lookup])
+        setContributors((prev) => [...prev, { ...lookup, id: lookup.username }])
       }
 
       setSearchGithubUsername('')

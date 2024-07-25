@@ -1,15 +1,11 @@
-import DashboardLayout, {
-  DashboardBody,
-} from '@/components/Layout/DashboardLayout'
+import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import DashboardTopbar from '@/components/Navigation/DashboardTopbar'
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   return (
     <>
-      <DashboardLayout>
-        <DashboardTopbar useOrgFromURL={false} />
-        <DashboardBody>{children}</DashboardBody>
-      </DashboardLayout>
+      <DashboardTopbar />
+      <DashboardBody>{children}</DashboardBody>
     </>
   )
 }

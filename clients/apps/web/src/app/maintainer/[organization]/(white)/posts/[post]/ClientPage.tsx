@@ -167,7 +167,7 @@ const ClientPage = () => {
 
   return (
     <Tabs className="flex flex-col" value={tab} onValueChange={onTabChange}>
-      <DashboardTopbar title="Edit Post" marginBottom={false} useOrgFromURL>
+      <DashboardTopbar title="Edit Post" marginBottom={false}>
         <div className="flex flex-row items-center gap-x-2">
           <span className="dark:text-polar-500 px-4 text-sm text-gray-500">
             {isPublished ? 'Published' : 'Unpublished'}

@@ -25,7 +25,6 @@ from polar.notifications.service import (
 from polar.notifications.service import (
     notifications as notification_service,
 )
-from polar.organization.service import organization as organization_service
 from polar.pledge.hooks import (
     PledgeHook,
 )
@@ -112,26 +111,32 @@ async def pledge_created_webhook_alerts(hook: PledgeHook) -> None:
     session = hook.session
     pledge = hook.pledge
 
-    webhooks = await webhook_notifications_service.search(
-        session, organization_id=pledge.organization_id
+    external_organization = await external_organization_service.get_linked(
+        session, pledge.organization_id
     )
-
-    issue = await issue_service.get(session, pledge.issue_id)
-    if not issue:
+    if external_organization is None:
         return
 
-    org = await organization_service.get(session, pledge.organization_id)
-    if not org:
+    organization = external_organization.safe_organization
+
+    issue = await issue_service.get(session, pledge.issue_id)
+    if issue is None:
         return
 
     repo = await repository_service.get(session, pledge.repository_id)
-    if not repo:
+    if repo is None:
         return
 
+    webhooks = await webhook_notifications_service.search(
+        session, organization_id=organization.id
+    )
+
     _pledge_amount = pledge.amount / 100
-    _issue_polar_url = f"https://polar.sh/{org.slug}/{repo.name}/issues/{issue.number}"
+    _issue_polar_url = (
+        f"https://polar.sh/{organization.slug}/{repo.name}/issues/{issue.number}"
+    )
     _issue_github_url = (
-        f"https://github.com/{org.slug}/{repo.name}/issues/{issue.number}"
+        f"https://github.com/{organization.slug}/{repo.name}/issues/{issue.number}"
     )
 
     description = (
@@ -184,7 +189,7 @@ async def pledge_created_webhook_alerts(hook: PledgeHook) -> None:
                         "accessory": {
                             "type": "button",
                             "text": {"type": "plain_text", "text": "Open"},
-                            "url": f"https://polar.sh/{org.slug}/{repo.name}/issues/{issue.number}",
+                            "url": f"https://polar.sh/{organization.slug}/{repo.name}/issues/{issue.number}",
                         },
                     },
                 ],

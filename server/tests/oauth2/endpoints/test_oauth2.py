@@ -1,18 +1,13 @@
-from typing import Literal, cast
+from typing import cast
 
 import pytest
 import pytest_asyncio
-from authlib.oauth2.rfc7636 import create_s256_code_challenge
 from httpx import AsyncClient
 
-from polar.config import settings
-from polar.kit.crypto import get_token_hash
 from polar.kit.db.postgres import Session
 from polar.models import (
-    OAuth2AuthorizationCode,
     OAuth2Client,
     OAuth2Grant,
-    OAuth2Token,
     Organization,
     User,
     UserOrganization,
@@ -22,13 +17,15 @@ from polar.oauth2.sub_type import SubType
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 
+from ..conftest import create_oauth2_authorization_code, create_oauth2_token
+
 
 @pytest_asyncio.fixture
 async def oauth2_client(save_fixture: SaveFixture, user: User) -> OAuth2Client:
     oauth2_client = OAuth2Client(
         client_id="polar_ci_123",
         client_secret="polar_cs_123",
-        registration_access_token="polar_rat_123",
+        registration_access_token="polar_crt_123",
         user=user,
     )
     oauth2_client.set_client_metadata(
@@ -50,7 +47,7 @@ async def public_oauth2_client(save_fixture: SaveFixture, user: User) -> OAuth2C
     oauth2_client = OAuth2Client(
         client_id="polar_ci_123",
         client_secret="polar_cs_123",
-        registration_access_token="polar_rat_123",
+        registration_access_token="polar_crt_123",
         user=user,
     )
     oauth2_client.set_client_metadata(
@@ -83,72 +80,6 @@ async def create_oauth2_grant(
     )
     await save_fixture(oauth2_grant)
     return oauth2_grant
-
-
-async def create_oauth2_authorization_code(
-    save_fixture: SaveFixture,
-    *,
-    client: OAuth2Client,
-    code: str,
-    scopes: list[str],
-    redirect_uri: str,
-    user: User | None = None,
-    organization: Organization | None = None,
-    code_verifier: str | None = None,
-    code_challenge_method: Literal["plain", "S256"] | None = None,
-) -> OAuth2AuthorizationCode:
-    authorization_code = OAuth2AuthorizationCode(
-        code=get_token_hash(code, secret=settings.SECRET),
-        client_id=client.client_id,
-        scope=" ".join(scopes),
-        redirect_uri=redirect_uri,
-    )
-    if code_challenge_method is not None:
-        assert code_verifier is not None, "code_verifier must be provided"
-        authorization_code.code_challenge_method = code_challenge_method  # pyright: ignore
-        authorization_code.code_challenge = cast(  # pyright: ignore
-            str,
-            (
-                create_s256_code_challenge(code_verifier)
-                if code_challenge_method == "S256"
-                else code_verifier
-            ),
-        )
-    if user is not None:
-        authorization_code.user_id = user.id
-        authorization_code.sub_type = SubType.user
-    if organization is not None:
-        authorization_code.organization_id = organization.id
-        authorization_code.sub_type = SubType.organization
-    await save_fixture(authorization_code)
-    return authorization_code
-
-
-async def create_oauth2_token(
-    save_fixture: SaveFixture,
-    *,
-    client: OAuth2Client,
-    access_token: str,
-    refresh_token: str,
-    scopes: list[str],
-    user: User | None = None,
-    organization: Organization | None = None,
-) -> OAuth2Token:
-    token = OAuth2Token(
-        client_id=client.client_id,
-        token_type="bearer",
-        access_token=get_token_hash(access_token, secret=settings.SECRET),
-        refresh_token=get_token_hash(refresh_token, secret=settings.SECRET),
-        scope=" ".join(scopes),
-    )
-    if user is not None:
-        token.user_id = user.id
-        token.sub_type = SubType.user
-    if organization is not None:
-        token.organization_id = organization.id
-        token.sub_type = SubType.organization
-    await save_fixture(token)
-    return token
 
 
 @pytest.mark.asyncio

@@ -1,8 +1,12 @@
+import datetime
 from collections.abc import Sequence
 
 from sqlalchemy import select
+from sqlalchemy.orm import joinedload
 
 from polar.auth.models import AuthSubject
+from polar.email.renderer import get_email_renderer
+from polar.email.sender import get_email_sender
 from polar.enums import TokenType
 from polar.exceptions import PolarError
 from polar.kit.crypto import generate_token
@@ -35,10 +39,25 @@ class OAuth2ClientService(ResourceServiceReader[OAuth2Client]):
         )
         return await paginate(session, statement, pagination=pagination)
 
+    async def get_by_client_id(
+        self, session: AsyncSession, client_id: str
+    ) -> OAuth2Client | None:
+        statement = select(OAuth2Client).where(
+            OAuth2Client.client_id == client_id, OAuth2Client.deleted_at.is_(None)
+        )
+        result = await session.execute(statement)
+        return result.scalar_one_or_none()
+
     async def revoke_leaked(
-        self, session: AsyncSession, token: str, token_type: TokenType
+        self,
+        session: AsyncSession,
+        token: str,
+        token_type: TokenType,
+        *,
+        notifier: str,
+        url: str | None = None,
     ) -> bool:
-        statement = select(OAuth2Client)
+        statement = select(OAuth2Client).options(joinedload(OAuth2Client.user))
 
         if token_type == TokenType.client_secret:
             statement = statement.where(OAuth2Client.client_secret == token)
@@ -48,21 +67,50 @@ class OAuth2ClientService(ResourceServiceReader[OAuth2Client]):
             raise ValueError(f"Unsupported token type: {token_type}")
 
         result = await session.execute(statement)
-        client = result.scalar_one_or_none()
+        client = result.unique().scalar_one_or_none()
 
-        if client is not None:
-            if token_type == TokenType.client_secret:
-                client.client_secret = generate_token(prefix=CLIENT_SECRET_PREFIX)  # type: ignore
-            elif token_type == TokenType.client_registration_token:
-                client.registration_access_token = generate_token(
-                    prefix=CLIENT_REGISTRATION_TOKEN_PREFIX
-                )
-            session.add(client)
+        if client is None:
+            return False
 
-            # TODO: notify user
-            return True
+        subject: str
+        if token_type == TokenType.client_secret:
+            client.client_secret = generate_token(prefix=CLIENT_SECRET_PREFIX)  # pyright: ignore
+            subject = (
+                "Security Notice - Your Polar OAuth2 Client Secret has been leaked"
+            )
+        elif token_type == TokenType.client_registration_token:
+            client.registration_access_token = generate_token(
+                prefix=CLIENT_REGISTRATION_TOKEN_PREFIX
+            )
+            subject = (
+                "Security Notice - "
+                "Your Polar OAuth2 Client Registration Token has been leaked"
+            )
+        session.add(client)
 
-        return False
+        email_renderer = get_email_renderer({"oauth2": "polar.oauth2"})
+        email_sender = get_email_sender()
+
+        subject, body = email_renderer.render_from_template(
+            subject,
+            "oauth2/leaked_client.html",
+            {
+                "token_type": token_type,
+                "client_name": client.client_name,
+                "notifier": notifier,
+                "url": url,
+                "current_year": datetime.datetime.now().year,
+            },
+        )
+
+        email_sender.send_to_user(
+            to_email_addr=client.user.email,
+            subject=subject,
+            html_content=body,
+            from_email_addr="noreply@notifications.polar.sh",
+        )
+
+        return True
 
 
 oauth2_client = OAuth2ClientService(OAuth2Client)

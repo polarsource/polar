@@ -7,7 +7,7 @@ from fastapi import (
     HTTPException,
     Request,
 )
-from fastapi.responses import RedirectResponse
+from fastapi.responses import JSONResponse, RedirectResponse
 from githubkit.exception import RequestFailed
 from httpx_oauth.clients.github import GitHubOAuth2
 from httpx_oauth.integrations.fastapi import OAuth2AuthorizeCallback
@@ -52,6 +52,7 @@ from .schemas import (
     OrganizationCheckPermissionsInput,
 )
 from .service.organization import github_organization
+from .service.secret_scanning import secret_scanning as secret_scanning_service
 from .service.user import GithubUserServiceError, github_user
 
 log = structlog.get_logger()
@@ -285,6 +286,7 @@ async def check_organization_permissions(
         raise NotPermitted()
 
     app_client = github.get_app_client()
+    app_client.rest.meta.get
     try:
         await app_client.rest.apps.async_create_installation_access_token(
             external_organization.installation_id,
@@ -453,3 +455,17 @@ async def webhook(request: Request) -> WebhookResponse:
     # Should be 403 Forbidden, but...
     # Throwing unsophisticated hackers/scrapers/bots off the scent
     raise HTTPException(status_code=404)
+
+
+@router.post("/secret-scanning")
+async def secret_scanning(
+    request: Request,
+    session: AsyncSession = Depends(get_db_session),
+) -> JSONResponse:
+    payload = (await request.body()).decode()
+    key_identifier = request.headers["Github-Public-Key-Identifier"]
+    signature = request.headers["Github-Public-Key-Signature"]
+    await secret_scanning_service.verify_signature(payload, signature, key_identifier)
+
+    response_data = await secret_scanning_service.handle_alert(session, payload)
+    return JSONResponse(content=response_data)

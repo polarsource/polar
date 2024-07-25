@@ -91,6 +91,19 @@ class PersonalAccessTokenService(ResourceServiceReader[PersonalAccessToken]):
         )
         await session.execute(statement)
 
+    async def revoke_leaked(self, session: AsyncSession, token: str) -> bool:
+        personal_access_token = await self.get_by_token(session, token)
+
+        if personal_access_token is not None:
+            personal_access_token.set_deleted_at()
+            session.add(personal_access_token)
+
+            # Notify the user that their token was revoked
+
+            return True
+
+        return False
+
     def _get_readable_order_statement(
         self, auth_subject: AuthSubject[User]
     ) -> Select[tuple[PersonalAccessToken]]:

@@ -165,7 +165,7 @@ export const EditProductPage = ({
 
   return (
     <>
-      <DashboardTopbar title="Edit Product" useOrgFromURL hideSubNav />
+      <DashboardTopbar title="Edit Product" hideSubNav />
       <DashboardBody className="flex flex-col">
         <div className="flex w-full max-w-xl flex-col gap-y-12">
           <div className="flex flex-col gap-y-8">

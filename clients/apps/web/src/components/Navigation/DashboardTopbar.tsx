@@ -48,7 +48,6 @@ const DashboardTopbar = ({
   hideSubNav = false,
 }: PropsWithChildren<{
   title?: string
-  useOrgFromURL: boolean
   marginBottom?: boolean
   hideSubNav?: boolean
 }>) => {

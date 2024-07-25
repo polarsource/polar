@@ -148,7 +148,7 @@ export const CreateProductPage = ({ organization }: CreateProductPageProps) => {
 
   return (
     <>
-      <DashboardTopbar title="Create Product" useOrgFromURL hideSubNav />
+      <DashboardTopbar title="Create Product" hideSubNav />
       <DashboardBody className="flex flex-col pb-24">
         <div className="flex w-full max-w-xl flex-col gap-y-16">
           <div className="flex flex-col gap-y-4">

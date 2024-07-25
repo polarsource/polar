@@ -21,3 +21,12 @@ class AccountType(StrEnum):
             AccountType.stripe: "Stripe",
             AccountType.open_collective: "Open Collective",
         }[v]
+
+
+class TokenType(StrEnum):
+    client_secret = "client_secret"
+    client_registration_token = "client_registration_token"
+    authorization_code = "authorization_code"
+    access_token = "access_token"
+    refresh_token = "refresh_token"
+    personal_access_token = "personal_access_token"

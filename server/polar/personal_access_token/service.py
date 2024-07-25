@@ -7,6 +7,7 @@ from sqlalchemy.orm import joinedload
 
 from polar.auth.models import AuthSubject
 from polar.config import settings
+from polar.enums import TokenType
 from polar.kit.crypto import generate_token_hash_pair, get_token_hash
 from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.services import ResourceServiceReader
@@ -91,14 +92,16 @@ class PersonalAccessTokenService(ResourceServiceReader[PersonalAccessToken]):
         )
         await session.execute(statement)
 
-    async def revoke_leaked(self, session: AsyncSession, token: str) -> bool:
+    async def revoke_leaked(
+        self, session: AsyncSession, token: str, token_type: TokenType
+    ) -> bool:
         personal_access_token = await self.get_by_token(session, token)
 
         if personal_access_token is not None:
             personal_access_token.set_deleted_at()
             session.add(personal_access_token)
 
-            # Notify the user that their token was revoked
+            # TODO: notify user
 
             return True
 

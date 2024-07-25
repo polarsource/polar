@@ -1,6 +1,5 @@
 import base64
 import json
-from enum import StrEnum
 from typing import Literal, Protocol, TypedDict
 
 from cryptography.exceptions import InvalidSignature as CryptographyInvalidSignature
@@ -8,7 +7,13 @@ from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives.serialization import load_pem_public_key
 
+from polar.enums import TokenType
 from polar.exceptions import PolarError
+from polar.oauth2.service.oauth2_authorization_code import (
+    oauth2_authorization_code as oauth2_authorization_code_service,
+)
+from polar.oauth2.service.oauth2_client import oauth2_client as oauth2_client_service
+from polar.oauth2.service.oauth2_token import oauth2_token as oauth2_token_service
 from polar.personal_access_token.service import (
     personal_access_token as personal_access_token_service,
 )
@@ -27,15 +32,6 @@ class GitHubSecretScanningPublicKeyList(TypedDict):
     public_keys: list[GitHubSecretScanningPublicKey]
 
 
-class TokenType(StrEnum):
-    client_secret = "client_secret"
-    client_registration_token = "client_registration_token"
-    authorization_code = "authorization_code"
-    access_token = "access_token"
-    refresh_token = "refresh_token"
-    personal_access_token = "personal_access_token"
-
-
 class GitHubSecretScanningToken(TypedDict):
     token: str
     type: TokenType
@@ -50,10 +46,17 @@ class GitHubSecretScanningTokenResult(TypedDict):
 
 
 class RevokedLeakedProtocol(Protocol):
-    async def revoke_leaked(self, session: AsyncSession, token: str) -> bool: ...
+    async def revoke_leaked(
+        self, session: AsyncSession, token: str, token_type: TokenType
+    ) -> bool: ...
 
 
 TOKEN_TYPE_SERVICE_MAP: dict[TokenType, RevokedLeakedProtocol] = {
+    TokenType.client_secret: oauth2_client_service,
+    TokenType.client_registration_token: oauth2_client_service,
+    TokenType.authorization_code: oauth2_authorization_code_service,
+    TokenType.access_token: oauth2_token_service,
+    TokenType.refresh_token: oauth2_token_service,
     TokenType.personal_access_token: personal_access_token_service,
 }
 
@@ -119,7 +122,7 @@ class GitHubSecretScanningService:
     ) -> GitHubSecretScanningTokenResult:
         service = TOKEN_TYPE_SERVICE_MAP[match["type"]]
 
-        leaked = await service.revoke_leaked(session, match["token"])
+        leaked = await service.revoke_leaked(session, match["token"], match["type"])
 
         return {
             "token_raw": match["token"],

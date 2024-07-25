@@ -47,7 +47,13 @@ class GitHubSecretScanningTokenResult(TypedDict):
 
 class RevokedLeakedProtocol(Protocol):
     async def revoke_leaked(
-        self, session: AsyncSession, token: str, token_type: TokenType
+        self,
+        session: AsyncSession,
+        token: str,
+        token_type: TokenType,
+        *,
+        notifier: str,
+        url: str | None,
     ) -> bool: ...
 
 
@@ -122,7 +128,9 @@ class GitHubSecretScanningService:
     ) -> GitHubSecretScanningTokenResult:
         service = TOKEN_TYPE_SERVICE_MAP[match["type"]]
 
-        leaked = await service.revoke_leaked(session, match["token"], match["type"])
+        leaked = await service.revoke_leaked(
+            session, match["token"], match["type"], notifier="github", url=match["url"]
+        )
 
         return {
             "token_raw": match["token"],

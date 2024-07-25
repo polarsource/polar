@@ -7,6 +7,8 @@ from sqlalchemy.orm import joinedload
 
 from polar.auth.models import AuthSubject
 from polar.config import settings
+from polar.email.renderer import get_email_renderer
+from polar.email.sender import get_email_sender
 from polar.enums import TokenType
 from polar.kit.crypto import generate_token_hash_pair, get_token_hash
 from polar.kit.pagination import PaginationParams, paginate
@@ -93,19 +95,46 @@ class PersonalAccessTokenService(ResourceServiceReader[PersonalAccessToken]):
         await session.execute(statement)
 
     async def revoke_leaked(
-        self, session: AsyncSession, token: str, token_type: TokenType
+        self,
+        session: AsyncSession,
+        token: str,
+        token_type: TokenType,
+        *,
+        notifier: str,
+        url: str | None = None,
     ) -> bool:
         personal_access_token = await self.get_by_token(session, token)
 
-        if personal_access_token is not None:
-            personal_access_token.set_deleted_at()
-            session.add(personal_access_token)
+        if personal_access_token is None:
+            return False
 
-            # TODO: notify user
+        personal_access_token.set_deleted_at()
+        session.add(personal_access_token)
 
-            return True
+        email_renderer = get_email_renderer(
+            {"personal_access_token": "polar.personal_access_token"}
+        )
+        email_sender = get_email_sender()
 
-        return False
+        subject, body = email_renderer.render_from_template(
+            "Security Notice - Your Polar Personal Access Token has been leaked",
+            "personal_access_token/leaked_token.html",
+            {
+                "personal_access_token": personal_access_token.comment,
+                "notifier": notifier,
+                "url": url,
+                "current_year": datetime.now().year,
+            },
+        )
+
+        email_sender.send_to_user(
+            to_email_addr=personal_access_token.user.email,
+            subject=subject,
+            html_content=body,
+            from_email_addr="noreply@notifications.polar.sh",
+        )
+
+        return True
 
     def _get_readable_order_statement(
         self, auth_subject: AuthSubject[User]

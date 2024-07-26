@@ -3,6 +3,8 @@ import '../styles/globals.scss'
 import { UserContextProvider } from '@/providers/auth'
 import { getServerSideAPI } from '@/utils/api/serverside'
 import { getAuthenticatedUser, getUserOrganizations } from '@/utils/user'
+import { Organization, UserRead } from '@polar-sh/sdk'
+import { PHASE_PRODUCTION_BUILD } from 'next/constants'
 import localFont from 'next/font/local'
 import { Metadata } from 'next/types'
 import { twMerge } from 'tailwind-merge'
@@ -52,8 +54,20 @@ export default async function RootLayout({
   children: React.ReactNode
 }) {
   const api = getServerSideAPI()
-  const authenticatedUser = await getAuthenticatedUser(api)
-  const userOrganizations = await getUserOrganizations(api)
+
+  let authenticatedUser: UserRead | undefined = undefined
+  let userOrganizations: Organization[] = []
+
+  try {
+    authenticatedUser = await getAuthenticatedUser(api)
+    userOrganizations = await getUserOrganizations(api)
+  } catch (e) {
+    // Silently swallow errors during build, typically when rendering static pages
+    // eslint-disable-next-line turbo/no-undeclared-env-vars
+    if (process.env.NEXT_PHASE !== PHASE_PRODUCTION_BUILD) {
+      throw e
+    }
+  }
 
   return (
     <html lang="en" suppressHydrationWarning>

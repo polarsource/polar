@@ -2,6 +2,7 @@ import '../styles/globals.scss'
 
 import { UserContextProvider } from '@/providers/auth'
 import { getServerSideAPI } from '@/utils/api/serverside'
+import { getAuthenticatedUser } from '@/utils/user'
 import localFont from 'next/font/local'
 import { Metadata } from 'next/types'
 import { twMerge } from 'tailwind-merge'
@@ -51,12 +52,7 @@ export default async function RootLayout({
   children: React.ReactNode
 }) {
   const api = getServerSideAPI()
-  const authenticatedUser = await api.users
-    .getAuthenticated({ cache: 'no-store' })
-    .catch(() => {
-      // Handle unauthenticated
-      return undefined
-    })
+  const authenticatedUser = await getAuthenticatedUser(api)
 
   return (
     <html lang="en" suppressHydrationWarning>

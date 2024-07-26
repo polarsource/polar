@@ -11,7 +11,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { PolarTimeAgo } from 'polarkit/components/ui/atoms'
 import Button from 'polarkit/components/ui/atoms/button'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useState } from 'react'
 import GrayCard from '../Cards/GrayCard'
 
 export const Status = (props: {
@@ -20,18 +20,8 @@ export const Status = (props: {
   email: string | undefined
 }) => {
   const pledge = props.pledge
-  const { currentUser, reloadUser } = useAuth()
-  const didReloadUser = useRef(false)
+  const { currentUser } = useAuth()
   const router = useRouter()
-
-  useEffect(() => {
-    if (currentUser && !didReloadUser.current) {
-      didReloadUser.current = true
-      // reload user object after successful pledging
-      // this us used to grant the user access to polar (alpha/beta) without an invite code
-      reloadUser()
-    }
-  }, [currentUser, reloadUser])
 
   const email = props.email
   const [emailSigninLoading, setEmailSigninLoading] = useState(false)

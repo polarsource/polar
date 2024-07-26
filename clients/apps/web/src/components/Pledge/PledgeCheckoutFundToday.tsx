@@ -68,7 +68,7 @@ const PledgeCheckoutFundToday = ({
   const [errorMessage, setErrorMessage] = useState<string>('')
   const [isSyncing, setSyncing] = useState(false)
 
-  const { currentUser, reloadUser } = useAuth()
+  const { currentUser } = useAuth()
 
   const savedPaymentMethods = useListPaymentMethods()
 
@@ -278,12 +278,6 @@ const PledgeCheckoutFundToday = ({
   const router = useRouter()
 
   const onStripePaymentSuccess = async (paymentIntent: PaymentIntent) => {
-    // If logged in, reload the user!
-    // This pledge might have allowed them to use polar
-    if (currentUser) {
-      await reloadUser()
-    }
-
     if (!paymentIntent) {
       throw new Error('got payment success but no pledge')
     }

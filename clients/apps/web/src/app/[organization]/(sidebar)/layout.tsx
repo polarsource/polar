@@ -5,12 +5,12 @@ import { OrganizationPublicPageNav } from '@/components/Organization/Organizatio
 import { OrganizationPublicSidebar } from '@/components/Organization/OrganizationPublicSidebar'
 import { getServerSideAPI } from '@/utils/api/serverside'
 import { getOrganizationBySlugOrNotFound } from '@/utils/organization'
+import { getAuthenticatedUser } from '@/utils/user'
 import {
   ListResourceOrganization,
   ListResourceOrganizationCustomer,
   ListResourceProduct,
   OrganizationCustomerType,
-  UserRead,
 } from '@polar-sh/sdk'
 import { notFound } from 'next/navigation'
 import React from 'react'
@@ -30,11 +30,11 @@ export default async function Layout({
 }) {
   const api = getServerSideAPI()
 
-  let authenticatedUser: UserRead | undefined
   let organizationCustomers: ListResourceOrganizationCustomer | undefined
   let userOrganizations: ListResourceOrganization | undefined
   let products: ListResourceProduct | undefined
 
+  const authenticatedUser = await getAuthenticatedUser(api)
   const organization = await getOrganizationBySlugOrNotFound(
     api,
     params.organization,
@@ -47,15 +47,7 @@ export default async function Layout({
   )
 
   try {
-    const [
-      loadAuthenticatedUser,
-      loadUserOrganizations,
-      loadSubscriptionTiers,
-    ] = await Promise.all([
-      api.users.getAuthenticated({ cache: 'no-store' }).catch(() => {
-        // Handle unauthenticated
-        return undefined
-      }),
+    const [loadUserOrganizations, loadSubscriptionTiers] = await Promise.all([
       // No caching, as we're expecting immediate updates to the response if the user converts to a maintainer
       api.organizations
         .list({ isMember: true }, { cache: 'no-store' })
@@ -78,7 +70,6 @@ export default async function Layout({
       ,
     ])
 
-    authenticatedUser = loadAuthenticatedUser
     userOrganizations = loadUserOrganizations
     products = loadSubscriptionTiers
   } catch (e) {

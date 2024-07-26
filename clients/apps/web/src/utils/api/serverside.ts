@@ -1,8 +1,9 @@
 import { Configuration, HTTPHeaders, PolarAPI } from '@polar-sh/sdk'
 import { cookies } from 'next/headers'
+import { cache } from 'react'
 import { getServerURL } from '.'
 
-export const getServerSideAPI = (token?: string): PolarAPI => {
+const _getServerSideAPI = (token?: string): PolarAPI => {
   let headers: HTTPHeaders | undefined
 
   if (token) {
@@ -32,3 +33,6 @@ export const getServerSideAPI = (token?: string): PolarAPI => {
     }),
   )
 }
+
+// Memoize the API instance for the duration of the request
+export const getServerSideAPI = cache(_getServerSideAPI)

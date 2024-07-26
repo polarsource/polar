@@ -8,20 +8,15 @@ import {
 import PurchaseSidebar from '@/components/Purchases/PurchasesSidebar'
 import { useAuth, useGitHubAccount } from '@/hooks'
 import { useListMemberOrganizations, useProducts } from '@/hooks/queries'
-import { PropsWithChildren, useEffect } from 'react'
+import { PropsWithChildren } from 'react'
 
 export default function Layout({ children }: PropsWithChildren) {
-  const { authenticated, reloadUser } = useAuth()
+  const { authenticated } = useAuth()
   const organizations = useListMemberOrganizations()
   const products = useProducts(
     organizations.data?.items?.map((o) => o.id) || [],
   )
   const githubAccount = useGitHubAccount()
-
-  // Reload user on page load to make sure that the github oauth data is up to date
-  useEffect(() => {
-    reloadUser()
-  }, [])
 
   const shouldShowMaintainerUpsell =
     authenticated &&

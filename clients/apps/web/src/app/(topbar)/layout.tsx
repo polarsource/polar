@@ -1,7 +1,8 @@
 import Topbar from '@/components/Layout/Public/Topbar'
 import PublicLayout from '@/components/Layout/PublicLayout'
 import { getServerSideAPI } from '@/utils/api/serverside'
-import { ListResourceOrganization, UserRead } from '@polar-sh/sdk'
+import { getAuthenticatedUser } from '@/utils/user'
+import { ListResourceOrganization } from '@polar-sh/sdk'
 import { notFound } from 'next/navigation'
 
 export default async function Layout({
@@ -10,24 +11,16 @@ export default async function Layout({
   children: React.ReactNode
 }) {
   const api = getServerSideAPI()
-  let authenticatedUser: UserRead | undefined
+  const authenticatedUser = await getAuthenticatedUser(api)
   let userOrganizations: ListResourceOrganization | undefined
 
   try {
-    const [loadAuthenticatedUser, loadUserOrganizations] = await Promise.all([
-      api.users.getAuthenticated({ cache: 'no-store' }).catch(() => {
+    const loadUserOrganizations = await api.organizations
+      .list({ isMember: true }, { cache: 'no-store' })
+      .catch(() => {
         // Handle unauthenticated
         return undefined
-      }),
-      // No caching, as we're expecting immediate updates to the response if the user converts to a maintainer
-      api.organizations
-        .list({ isMember: true }, { cache: 'no-store' })
-        .catch(() => {
-          // Handle unauthenticated
-          return undefined
-        }),
-    ])
-    authenticatedUser = loadAuthenticatedUser
+      })
     userOrganizations = loadUserOrganizations
   } catch (e) {
     notFound()

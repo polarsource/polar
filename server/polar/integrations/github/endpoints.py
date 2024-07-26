@@ -4,6 +4,7 @@ import structlog
 from fastapi import (
     APIRouter,
     Depends,
+    Header,
     HTTPException,
     Request,
 )
@@ -460,12 +461,14 @@ async def webhook(request: Request) -> WebhookResponse:
 @router.post("/secret-scanning")
 async def secret_scanning(
     request: Request,
+    github_public_key_identifier: str = Header(),
+    github_public_key_signature: str = Header(),
     session: AsyncSession = Depends(get_db_session),
 ) -> JSONResponse:
     payload = (await request.body()).decode()
-    key_identifier = request.headers["Github-Public-Key-Identifier"]
-    signature = request.headers["Github-Public-Key-Signature"]
-    await secret_scanning_service.verify_signature(payload, signature, key_identifier)
+    await secret_scanning_service.verify_signature(
+        payload, github_public_key_signature, github_public_key_identifier
+    )
 
     response_data = await secret_scanning_service.handle_alert(session, payload)
     return JSONResponse(content=response_data)

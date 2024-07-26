@@ -392,6 +392,9 @@ export const SupportNavigation = () => {
       <NavigationItem href="/docs/support/faq#supported-platforms-countries--currencies">
         Supported Countries & Currencies
       </NavigationItem>
+      <NavigationItem href="/docs/support/faq#security">
+        Security
+      </NavigationItem>
     </div>
   )
 }

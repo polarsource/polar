@@ -2,7 +2,7 @@ import '../styles/globals.scss'
 
 import { UserContextProvider } from '@/providers/auth'
 import { getServerSideAPI } from '@/utils/api/serverside'
-import { getAuthenticatedUser } from '@/utils/user'
+import { getAuthenticatedUser, getUserOrganizations } from '@/utils/user'
 import localFont from 'next/font/local'
 import { Metadata } from 'next/types'
 import { twMerge } from 'tailwind-merge'
@@ -53,6 +53,7 @@ export default async function RootLayout({
 }) {
   const api = getServerSideAPI()
   const authenticatedUser = await getAuthenticatedUser(api)
+  const userOrganizations = await getUserOrganizations(api)
 
   return (
     <html lang="en" suppressHydrationWarning>
@@ -72,7 +73,10 @@ export default async function RootLayout({
           inter.className,
         )}
       >
-        <UserContextProvider user={authenticatedUser}>
+        <UserContextProvider
+          user={authenticatedUser}
+          userOrganizations={userOrganizations}
+        >
           <PolarPostHogProvider>
             <PolarThemeProvider>
               <PolarToploaderProvider>

@@ -2,6 +2,7 @@ import { shouldBeOnboarded } from '@/hooks/onboarding'
 import { MaintainerOrganizationContextProvider } from '@/providers/maintainerOrganization'
 import { getServerSideAPI } from '@/utils/api/serverside'
 import { getOrganizationBySlugOrNotFound } from '@/utils/organization'
+import { getUserOrganizations } from '@/utils/user'
 import { Metadata } from 'next'
 import { notFound, redirect } from 'next/navigation'
 import React from 'react'
@@ -48,15 +49,12 @@ export default async function Layout({
     return redirect(`/maintainer/${organization.slug}/onboarding`)
   }
 
-  const userOrganizations = await api.organizations.list(
-    { isMember: true },
-    { cache: 'no-store' },
-  )
+  const userOrganizations = await getUserOrganizations(api)
 
   return (
     <MaintainerOrganizationContextProvider
       organization={organization}
-      organizations={userOrganizations.items || []}
+      organizations={userOrganizations}
     >
       {children}
     </MaintainerOrganizationContextProvider>

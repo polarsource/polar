@@ -1,7 +1,7 @@
 'use client'
 
-import { useListMemberOrganizations } from '@/hooks/queries'
 import type { Organization } from '@polar-sh/sdk'
+import { useAuth } from './auth'
 import { useExternalOrganizations } from './queries/externalOrganizations'
 
 export const useHasLinkedExternalOrganizations = (
@@ -17,6 +17,6 @@ export const useHasLinkedExternalOrganizations = (
 }
 
 export const useIsOrganizationMember = (org?: Organization) => {
-  const listOrganizationsQuery = useListMemberOrganizations()
-  return listOrganizationsQuery.data?.items?.some((o) => o.id === org?.id)
+  const { userOrganizations } = useAuth()
+  return userOrganizations.some((o) => o.id === org?.id)
 }

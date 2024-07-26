@@ -5,9 +5,8 @@ import { OrganizationPublicPageNav } from '@/components/Organization/Organizatio
 import { OrganizationPublicSidebar } from '@/components/Organization/OrganizationPublicSidebar'
 import { getServerSideAPI } from '@/utils/api/serverside'
 import { getOrganizationBySlugOrNotFound } from '@/utils/organization'
-import { getAuthenticatedUser } from '@/utils/user'
+import { getAuthenticatedUser, getUserOrganizations } from '@/utils/user'
 import {
-  ListResourceOrganization,
   ListResourceOrganizationCustomer,
   ListResourceProduct,
   OrganizationCustomerType,
@@ -31,7 +30,6 @@ export default async function Layout({
   const api = getServerSideAPI()
 
   let organizationCustomers: ListResourceOrganizationCustomer | undefined
-  let userOrganizations: ListResourceOrganization | undefined
   let products: ListResourceProduct | undefined
 
   const authenticatedUser = await getAuthenticatedUser(api)
@@ -45,32 +43,21 @@ export default async function Layout({
       },
     },
   )
+  const userOrganizations = await getUserOrganizations(api)
 
   try {
-    const [loadUserOrganizations, loadSubscriptionTiers] = await Promise.all([
-      // No caching, as we're expecting immediate updates to the response if the user converts to a maintainer
-      api.organizations
-        .list({ isMember: true }, { cache: 'no-store' })
-        .catch(() => {
-          // Handle unauthenticated
-          return undefined
-        }),
-      api.products
-        .list(
-          {
-            organizationId: organization.id,
-            isRecurring: true,
-          },
-          cacheConfig,
-        )
-        .catch(() => {
-          // Handle unauthenticated
-          return undefined
-        }),
-      ,
-    ])
-
-    userOrganizations = loadUserOrganizations
+    const loadSubscriptionTiers = await api.products
+      .list(
+        {
+          organizationId: organization.id,
+          isRecurring: true,
+        },
+        cacheConfig,
+      )
+      .catch(() => {
+        // Handle unauthenticated
+        return undefined
+      })
     products = loadSubscriptionTiers
   } catch (e) {
     notFound()
@@ -107,14 +94,14 @@ export default async function Layout({
           </a>
           <PolarMenu
             authenticatedUser={authenticatedUser}
-            userOrganizations={userOrganizations?.items ?? []}
+            userOrganizations={userOrganizations}
           />
         </div>
         <div className="relative flex w-fit flex-shrink-0 flex-col justify-between py-8 md:sticky md:top-0 md:py-16">
           <OrganizationPublicSidebar
             organizationCustomers={organizationCustomers}
             organization={organization}
-            userOrganizations={userOrganizations?.items ?? []}
+            userOrganizations={userOrganizations}
             products={products?.items ?? []}
           />
         </div>
@@ -131,7 +118,7 @@ export default async function Layout({
             <div className="ml-auto hidden flex-row md:flex">
               <PolarMenu
                 authenticatedUser={authenticatedUser}
-                userOrganizations={userOrganizations?.items ?? []}
+                userOrganizations={userOrganizations}
               />
             </div>
           </div>

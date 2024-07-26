@@ -1,19 +1,24 @@
 import { AuthContext } from '@/providers/auth'
 import { api } from '@/utils/api'
 import { CONFIG } from '@/utils/config'
-import { UserRead } from '@polar-sh/sdk'
+import { Organization, UserRead } from '@polar-sh/sdk'
 import * as Sentry from '@sentry/nextjs'
 import posthog from 'posthog-js'
-import { useCallback, useContext, useEffect, useState } from 'react'
+import { useCallback, useContext, useEffect } from 'react'
 
 export const useAuth = (): {
   authenticated: boolean
   currentUser: UserRead | undefined
   reloadUser: () => Promise<undefined>
+  userOrganizations: Organization[]
+  setUserOrganizations: (organizations: Organization[]) => void
 } => {
-  const authCtx = useContext(AuthContext)
-
-  const [currentUser, setCurrentUser] = useState(authCtx.user)
+  const {
+    user: currentUser,
+    setUser: setCurrentUser,
+    userOrganizations,
+    setUserOrganizations,
+  } = useContext(AuthContext)
 
   const reloadUser = async (): Promise<undefined> => {
     try {
@@ -46,9 +51,11 @@ export const useAuth = (): {
   }, [currentUser])
 
   return {
-    currentUser: authCtx.user,
-    authenticated: authCtx.user !== undefined,
+    currentUser,
+    authenticated: currentUser !== undefined,
     reloadUser,
+    userOrganizations,
+    setUserOrganizations,
   }
 }
 

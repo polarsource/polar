@@ -5,8 +5,8 @@ import CheckoutButton from '@/components/Products/CheckoutButton'
 import SubscriptionTierCard from '@/components/Subscriptions/SubscriptionTierCard'
 import SubscriptionTierRecurringIntervalSwitch from '@/components/Subscriptions/SubscriptionTierRecurringIntervalSwitch'
 import { hasRecurringInterval } from '@/components/Subscriptions/utils'
+import { useAuth } from '@/hooks'
 import { useRecurringInterval } from '@/hooks/products'
-import { useListMemberOrganizations } from '@/hooks/queries'
 import { organizationPageLink } from '@/utils/nav'
 import { useTrafficRecordPageView } from '@/utils/traffic'
 import { Organization, Product } from '@polar-sh/sdk'
@@ -23,13 +23,13 @@ const ClientPage: React.FC<OrganizationSubscriptionsPublicPageProps> = ({
   organization,
 }) => {
   useTrafficRecordPageView({ organization })
+  const { userOrganizations: orgs } = useAuth()
 
-  const orgs = useListMemberOrganizations()
   const [recurringInterval, setRecurringInterval, hasBothIntervals] =
     useRecurringInterval(products)
 
   const shouldRenderSubscribeButton = useMemo(
-    () => !orgs.data?.items?.map((o) => o.id).includes(organization.id),
+    () => !orgs.map((o) => o.id).includes(organization.id),
     [organization, orgs],
   )
   const showFreeTier = organization.profile_settings?.subscribe?.promote ?? true

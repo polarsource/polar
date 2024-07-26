@@ -5,7 +5,7 @@ import GithubLoginButton from '@/components/Auth/GithubLoginButton'
 import LoadingScreen, {
   LoadingScreenError,
 } from '@/components/Dashboard/LoadingScreen'
-import { useListMemberOrganizations } from '@/hooks/queries'
+import { useAuth } from '@/hooks'
 import { useStore } from '@/store'
 import { api } from '@/utils/api'
 import {
@@ -24,9 +24,9 @@ export default function Page() {
   const search = useSearchParams()
   const installationId = search?.get('installation_id')
   const setupAction = search?.get('setup_action')
-  const { gitHubInstallation } = useStore()
+  const { gitHubInstallation, clearGitHubInstallation } = useStore()
   const [organizationId, setOrganizationId] = useState<string | undefined>()
-  const organizations = useListMemberOrganizations(organizationId === undefined)
+  const { userOrganizations: organizations } = useAuth()
 
   useEffect(() => {
     if (gitHubInstallation.organizationId) {
@@ -78,6 +78,9 @@ export default function Page() {
             revalidate(`repositories:${organization.id}`),
           ])
           setInstalled(organization)
+
+          clearGitHubInstallation()
+
           // redirect
           router.replace(`/maintainer/${organization.slug}/initialize`)
         })
@@ -143,7 +146,7 @@ export default function Page() {
             organization:
           </div>
           <div className="flex w-full flex-col gap-2">
-            {organizations.data?.items?.map((organization) => (
+            {organizations.map((organization) => (
               <div
                 key={organization.id}
                 className="hover:bg-polar-600 flex w-full cursor-pointer flex-row items-center gap-2 rounded-md border px-4 py-3 text-sm transition-colors"

@@ -8,11 +8,11 @@ import { getServerSideAPI } from '@/utils/api/serverside'
 import { CONFIG } from '@/utils/config'
 import { organizationPageLink } from '@/utils/nav'
 import { resolveRepositoryPath } from '@/utils/repository'
+import { getUserOrganizations } from '@/utils/user'
 import {
   ArticleVisibility,
   ListResourceArticle,
   ListResourceIssueFunding,
-  ListResourceOrganization,
   ListResourceProduct,
   Organization,
 } from '@polar-sh/sdk'
@@ -114,15 +114,16 @@ export default async function Page({
     redirect(organizationPageLink(organization, repository.name))
   }
 
+  const userOrganizations = await getUserOrganizations(api)
+
   const filters = buildFundingFilters(urlSearchFromObj(searchParams))
 
   let issuesFunding: ListResourceIssueFunding | undefined
-  let userOrganizations: ListResourceOrganization | undefined
   let products: ListResourceProduct | undefined
   let posts: ListResourceArticle | undefined
 
   try {
-    ;[issuesFunding, userOrganizations, products, posts] = await Promise.all([
+    ;[issuesFunding, products, posts] = await Promise.all([
       api.funding.search(
         {
           organizationId: organization.id,
@@ -136,17 +137,6 @@ export default async function Page({
         },
         cacheConfig,
       ),
-      api.organizations
-        .list(
-          {
-            isMember: true,
-          },
-          cacheConfig,
-        )
-        .catch(() => {
-          // Handle unauthenticated
-          return undefined
-        }),
       api.products.list(
         {
           organizationId: organization.id,
@@ -207,7 +197,7 @@ export default async function Page({
       issuesFunding={issuesFunding}
       featuredOrganizations={featuredOrganizations}
       products={products?.items ?? []}
-      userOrganizations={userOrganizations?.items ?? []}
+      userOrganizations={userOrganizations}
       links={links}
       posts={posts?.items ?? []}
     />

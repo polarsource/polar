@@ -32,7 +32,7 @@ export const Default: Story = {
 
   render: (args) => {
     return (
-      <UserContextProvider user={undefined}>
+      <UserContextProvider user={undefined} userOrganizations={[]}>
         <PolarQueryClientProvider>
           <PublicLayout showUpsellFooter={true}>
             <ClientPage {...args} />

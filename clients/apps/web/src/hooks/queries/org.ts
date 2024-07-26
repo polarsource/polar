@@ -10,17 +10,6 @@ import {
 import { UseMutationResult, useMutation, useQuery } from '@tanstack/react-query'
 import { defaultRetry } from './retry'
 
-export const useListMemberOrganizations = (enabled: boolean = true) =>
-  useQuery({
-    queryKey: ['user', 'organizations'],
-    queryFn: () =>
-      api.organizations.list({
-        isMember: true,
-      }),
-    retry: defaultRetry,
-    enabled,
-  })
-
 export const useListOrganizationMembers = (id: string) =>
   useQuery({
     queryKey: ['organizationMembers', id],

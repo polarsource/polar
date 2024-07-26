@@ -29,7 +29,7 @@ export const Default: Story = {
     padding: 'p-0 m-0',
   },
   render: (args) => (
-    <UserContextProvider user={undefined}>
+    <UserContextProvider user={undefined} userOrganizations={[]}>
       <PolarQueryClientProvider>
         <DashboardLayout {...args}>
           <DashboardBody>
@@ -60,7 +60,7 @@ export const Header: Story = {
   },
   render: (args) => {
     return (
-      <UserContextProvider user={undefined}>
+      <UserContextProvider user={undefined} userOrganizations={[]}>
         <PolarQueryClientProvider>
           <DashboardLayout {...args}>
             <DashboardHeader>
@@ -84,7 +84,7 @@ export const RepoPicker: Story = {
   },
   render: (args) => {
     return (
-      <UserContextProvider user={undefined}>
+      <UserContextProvider user={undefined} userOrganizations={[]}>
         <PolarQueryClientProvider>
           <DashboardLayout {...args}>
             <DashboardHeader>

@@ -8,7 +8,6 @@ Polar has no fixed, monthly, fees. We only earn when you do by taking a 5% reven
 
 Stripe transaction- and payout fees apply in addition. _We're covering this up until March 31st, 2024._
 
-
 ## Issue Funding
 
 ### Can any issue be funded?
@@ -64,10 +63,11 @@ You can then easily embed badges across issues in one of the following ways:
   Polar we'll shortly thereafter embed the badge.
 
 <BrowserCallout type="NOTE">
-This updates the issue and thereby the modified_at timestamp of it on
-GitHub. However, default sorting on GitHub is by created_at so it's unaffected.
-We also update issues in reverse chronological order if you badge all historic issues at once.
-Thereby retaining the same sorting even with updated modified_at timestamps.
+  This updates the issue and thereby the modified_at timestamp of it on GitHub.
+  However, default sorting on GitHub is by created_at so it's unaffected. We
+  also update issues in reverse chronological order if you badge all historic
+  issues at once. Thereby retaining the same sorting even with updated
+  modified_at timestamps.
 </BrowserCallout>
 
 ---
@@ -161,10 +161,9 @@ Finally, in case you're seeking to reward contributors, we'll prompt you to
 notify them in a comment on the issue. We'll automatically generate a suggested
 comment you can review & post easily from our dashboard as part of this process.
 
-
 <BrowserCallout type="NOTE">
-We'll attempt to notify them otherwise. However, we think you deserve the
-credit & opportunity to do so first.
+  We'll attempt to notify them otherwise. However, we think you deserve the
+  credit & opportunity to do so first.
 </BrowserCallout>
 
 ---
@@ -183,7 +182,6 @@ public directory of such rewards/bounties. Since such directories have historica
 attracted the wrong incentives, poor contributions and added overhead. Instead
 of rewarding your community. [Read
 more](https://blog.polar.sh/introducing-rewards/) about this design choice.
-
 
 ---
 
@@ -242,6 +240,7 @@ Stripe will convert it into the applicable currency of the account.
 ---
 
 ### Which countries are supported?
+
 Polar is built on Stripe Connect and currently supports the following list of
 countries:
 
@@ -276,3 +275,15 @@ countries:
 - Sweden
 - United Kingdom
 - United States
+
+## Security
+
+### Why did I receive an email about one of my token being leaked?
+
+To protect your data and ensure the security of Polar, we've several mechanisms in place to automatically revoke tokens that may have been leaked publicly on the web.
+
+In particular, we're part of the [GitHub Secret Scanning Program](https://docs.github.com/en/code-security/secret-scanning/about-secret-scanning). If GitHub systems detect a Polar token in a code repository or public discussion, our systems are notified and the tokens are immediately revoked.
+
+If you received an email about one of your token being leaked, it means that we were notified of such situation. The email contains the details about the nature of the token and the source of the leak.
+
+In the future, it's crucial that you remain extra cautious about not leaking your tokens publicly online. You can read more about the good practices to manage secrets in the [OWASP Secrets Management Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Secrets_Management_Cheat_Sheet.html).

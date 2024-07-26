@@ -2,6 +2,7 @@ from collections.abc import Sequence
 from datetime import datetime
 from uuid import UUID
 
+import structlog
 from sqlalchemy import Select, select, update
 from sqlalchemy.orm import joinedload
 
@@ -14,10 +15,13 @@ from polar.kit.crypto import generate_token_hash_pair, get_token_hash
 from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.services import ResourceServiceReader
 from polar.kit.utils import utc_now
+from polar.logging import Logger
 from polar.models import PersonalAccessToken, User
 from polar.postgres import AsyncSession
 
 from .schemas import PersonalAccessTokenCreate
+
+log: Logger = structlog.get_logger()
 
 TOKEN_PREFIX = "polar_pat_"
 
@@ -136,6 +140,13 @@ class PersonalAccessTokenService(ResourceServiceReader[PersonalAccessToken]):
             subject=subject,
             html_content=body,
             from_email_addr="noreply@notifications.polar.sh",
+        )
+
+        log.info(
+            "Revoke leaked personal access token",
+            id=personal_access_token.id,
+            notifier=notifier,
+            url=url,
         )
 
         return True

@@ -2,6 +2,7 @@ import datetime
 import time
 from typing import cast
 
+import structlog
 from sqlalchemy import select
 from sqlalchemy.orm import joinedload
 
@@ -12,6 +13,7 @@ from polar.enums import TokenType
 from polar.exceptions import PolarError
 from polar.kit.crypto import get_token_hash
 from polar.kit.services import ResourceServiceReader
+from polar.logging import Logger
 from polar.models import OAuth2Token, User
 from polar.models.organization import Organization
 from polar.postgres import AsyncSession
@@ -20,6 +22,8 @@ from polar.user_organization.service import (
 )
 
 from .oauth2_client import oauth2_client as oauth2_client_service
+
+log: Logger = structlog.get_logger()
 
 
 class OAuth2TokenError(PolarError): ...
@@ -111,6 +115,14 @@ class OAuth2TokenService(ResourceServiceReader[OAuth2Token]):
                 html_content=body,
                 from_email_addr="noreply@notifications.polar.sh",
             )
+
+        log.info(
+            "Revoke leaked access token and refresh token",
+            id=oauth2_token.id,
+            token_type=token_type,
+            notifier=notifier,
+            url=url,
+        )
 
         return True
 

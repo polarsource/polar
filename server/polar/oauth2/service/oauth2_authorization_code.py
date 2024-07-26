@@ -1,11 +1,15 @@
+import structlog
 from sqlalchemy import select
 
 from polar.config import settings
 from polar.enums import TokenType
 from polar.kit.crypto import get_token_hash
 from polar.kit.services import ResourceServiceReader
+from polar.logging import Logger
 from polar.models import OAuth2AuthorizationCode
 from polar.postgres import AsyncSession
+
+log: Logger = structlog.get_logger()
 
 
 class OAuth2AuthorizationCodeService(ResourceServiceReader[OAuth2AuthorizationCode]):
@@ -31,6 +35,14 @@ class OAuth2AuthorizationCodeService(ResourceServiceReader[OAuth2AuthorizationCo
 
         authorization_code.set_deleted_at()
         session.add(authorization_code)
+
+        log.info(
+            "Revoke leaked authorization code",
+            id=authorization_code.id,
+            notifier=notifier,
+            url=url,
+        )
+
         return True
 
 

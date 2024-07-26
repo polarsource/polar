@@ -37,7 +37,8 @@ class PersonalAccessTokenService(ResourceServiceReader[PersonalAccessToken]):
         self, session: AsyncSession, auth_subject: AuthSubject[User], id: UUID
     ) -> PersonalAccessToken | None:
         statement = self._get_readable_order_statement(auth_subject).where(
-            PersonalAccessToken.id == id
+            PersonalAccessToken.id == id,
+            PersonalAccessToken.deleted_at.is_(None),
         )
         result = await session.execute(statement)
         return result.scalar_one_or_none()
@@ -48,7 +49,10 @@ class PersonalAccessTokenService(ResourceServiceReader[PersonalAccessToken]):
         token_hash = get_token_hash(token, secret=settings.SECRET)
         statement = (
             select(PersonalAccessToken)
-            .where(PersonalAccessToken.token == token_hash)
+            .where(
+                PersonalAccessToken.token == token_hash,
+                PersonalAccessToken.deleted_at.is_(None),
+            )
             .options(joinedload(PersonalAccessToken.user))
         )
         if not expired:

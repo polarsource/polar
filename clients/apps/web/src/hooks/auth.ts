@@ -11,7 +11,7 @@ export const useAuth = (): {
   currentUser: UserRead | undefined
   reloadUser: () => Promise<undefined>
   userOrganizations: Organization[]
-  setUserOrganizations: (organizations: Organization[]) => void
+  setUserOrganizations: React.Dispatch<React.SetStateAction<Organization[]>>
 } => {
   const {
     user: currentUser,

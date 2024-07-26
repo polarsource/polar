@@ -73,7 +73,8 @@ export default function Page() {
           // As the Organization page & its data is fetched on the server, we need to revalidate the cache
           // to avoid stale data.
           await Promise.all([
-            revalidate(`organization:${organization.id}`),
+            revalidate(`organizations:${organization.id}`),
+            revalidate(`organizations:${organization.slug}`),
             revalidate(`funding:${organization.id}`),
             revalidate(`repositories:${organization.id}`),
           ])

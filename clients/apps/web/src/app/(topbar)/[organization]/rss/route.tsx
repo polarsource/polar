@@ -26,11 +26,7 @@ export async function GET(
     req.nextUrl.searchParams.get('auth') || undefined,
   )
 
-  const organization = await getOrganizationBySlug(
-    api,
-    params.organization,
-    cacheConfig,
-  )
+  const organization = await getOrganizationBySlug(api, params.organization)
 
   if (!organization) {
     return new NextResponse(null, { status: 404 })

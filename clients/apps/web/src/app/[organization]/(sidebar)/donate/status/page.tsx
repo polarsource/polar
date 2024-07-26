@@ -3,10 +3,6 @@ import { getOrganizationBySlugOrNotFound } from '@/utils/organization'
 import { Metadata } from 'next'
 import ClientPage from './ClientPage'
 
-const cacheConfig = {
-  cache: 'no-store',
-} as const
-
 export async function generateMetadata({
   params,
 }: {
@@ -16,7 +12,6 @@ export async function generateMetadata({
   const organization = await getOrganizationBySlugOrNotFound(
     api,
     params.organization,
-    cacheConfig,
   )
 
   return {
@@ -62,7 +57,6 @@ export default async function Page({
   const organization = await getOrganizationBySlugOrNotFound(
     api,
     params.organization,
-    cacheConfig,
   )
 
   const email =

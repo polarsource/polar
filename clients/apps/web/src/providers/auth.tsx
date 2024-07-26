@@ -6,8 +6,8 @@ import React from 'react'
 export type AuthContextValue = {
   user?: UserRead
   userOrganizations: Organization[]
-  setUser: (user: UserRead) => void
-  setUserOrganizations: (organizations: Organization[]) => void
+  setUser: React.Dispatch<React.SetStateAction<UserRead>>
+  setUserOrganizations: React.Dispatch<React.SetStateAction<Organization[]>>
 }
 
 const stub = (): never => {
@@ -31,9 +31,15 @@ export const UserContextProvider = ({
   const [user, setUser] = React.useState<UserRead | undefined>(_user)
   const [userOrganizations, setUserOrganizations] =
     React.useState<Organization[]>(_userOrganizations)
+
   return (
     <AuthContext.Provider
-      value={{ user, setUser, userOrganizations, setUserOrganizations }}
+      value={{
+        user,
+        setUser: setUser as React.Dispatch<React.SetStateAction<UserRead>>,
+        userOrganizations,
+        setUserOrganizations,
+      }}
     >
       {children}
     </AuthContext.Provider>

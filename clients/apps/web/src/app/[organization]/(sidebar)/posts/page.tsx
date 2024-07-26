@@ -20,7 +20,6 @@ export async function generateMetadata({
   const organization = await getOrganizationBySlugOrNotFound(
     api,
     params.organization,
-    cacheConfig,
   )
 
   return {
@@ -74,7 +73,6 @@ export default async function Page({
   const organization = await getOrganizationBySlugOrNotFound(
     api,
     params.organization,
-    cacheConfig,
   )
 
   let pinnedArticles: ListResourceArticle | undefined

@@ -12,6 +12,7 @@ import {
   VolunteerActivismOutlined,
 } from '@mui/icons-material'
 import { Organization } from '@polar-sh/sdk'
+import { useRouter } from 'next/navigation'
 import Button from 'polarkit/components/ui/atoms/button'
 import {
   Card,
@@ -34,6 +35,7 @@ export default function ClientPage({
 }: {
   organization: Organization
 }) {
+  const router = useRouter()
   const [featuresUpdated, setFeaturesUpdated] = useState<boolean>(false)
   const [features, setFeatures] = useState<FeatureKey[]>([])
   const updateOrganization = useUpdateOrganization()
@@ -51,7 +53,7 @@ export default function ClientPage({
   )
 
   const initializeFeatures = useCallback(
-    (features: FeatureKey[]) => {
+    async (features: FeatureKey[]) => {
       if (!organization) return
 
       const featuresRecord: FeatureMap = features.reduce(
@@ -66,22 +68,20 @@ export default function ClientPage({
 
       setFeaturesUpdated(true)
 
-      updateOrganization
-        .mutateAsync({
+      try {
+        await updateOrganization.mutateAsync({
           id: organization.id,
           body: {
             feature_settings,
             donations_enabled,
           },
         })
-        .then(() => {
-          location.reload()
-        })
-        .catch(() => {
-          setFeaturesUpdated(false)
-        })
+        router.push(`/maintainer/${organization.slug}`)
+      } catch (error) {
+        setFeaturesUpdated(false)
+      }
     },
-    [organization, updateOrganization],
+    [organization, updateOrganization, router],
   )
 
   return (

@@ -36,12 +36,6 @@ export default async function Layout({
   const organization = await getOrganizationBySlugOrNotFound(
     api,
     params.organization,
-    {
-      next: {
-        revalidate: 30,
-        tags: [`organization:${params.organization}`],
-      },
-    },
   )
   const userOrganizations = await getUserOrganizations(api)
 

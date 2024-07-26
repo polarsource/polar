@@ -2,12 +2,6 @@ import { getServerSideAPI } from '@/utils/api/serverside'
 import { getOrganizationBySlugOrNotFound } from '@/utils/organization'
 import React from 'react'
 
-const cacheConfig = {
-  next: {
-    revalidate: 30, // 30 seconds
-  },
-}
-
 export default async function Layout({
   params,
   children,
@@ -16,7 +10,7 @@ export default async function Layout({
   children: React.ReactNode
 }) {
   const api = getServerSideAPI()
-  await getOrganizationBySlugOrNotFound(api, params.organization, cacheConfig)
+  await getOrganizationBySlugOrNotFound(api, params.organization)
 
   return (
     <div className="flex flex-col">

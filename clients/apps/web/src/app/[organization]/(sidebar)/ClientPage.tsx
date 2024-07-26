@@ -1,6 +1,5 @@
 'use client'
 
-import revalidate from '@/app/actions'
 import { Post as PostComponent } from '@/components/Feed/Posts/Post'
 import { PublicPagePostWizard } from '@/components/Onboarding/Creator/PostWizard'
 import { OrganizationIssueSummaryList } from '@/components/Organization/OrganizationIssueSummaryList'
@@ -70,14 +69,12 @@ const ClientPage = ({
   const updateOrganization = (
     setting: Partial<OrganizationProfileSettings>,
   ) => {
-    return updateOrganizationMutation
-      .mutateAsync({
-        id: organization.id,
-        body: {
-          profile_settings: setting,
-        },
-      })
-      .then(() => revalidate(`organization:${organization.slug}`))
+    return updateOrganizationMutation.mutateAsync({
+      id: organization.id,
+      body: {
+        profile_settings: setting,
+      },
+    })
   }
 
   const updateFeaturedCreators = (organizations: Organization[]) => {

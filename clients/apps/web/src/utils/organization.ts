@@ -1,17 +1,21 @@
-import { InitOverrideFunction, Organization, PolarAPI } from '@polar-sh/sdk'
+import { Organization, PolarAPI } from '@polar-sh/sdk'
 import { notFound } from 'next/navigation'
 import { cache } from 'react'
 
 const _getOrganizationBySlug = async (
   api: PolarAPI,
   slug: string,
-  initOverrides?: RequestInit | InitOverrideFunction,
 ): Promise<Organization | undefined> => {
   const data = await api.organizations.list(
     {
       slug,
     },
-    initOverrides,
+    {
+      next: {
+        tags: [`organizations:${slug}`],
+        revalidate: 600,
+      },
+    },
   )
   return data.items?.[0]
 }
@@ -22,9 +26,8 @@ export const getOrganizationBySlug = cache(_getOrganizationBySlug)
 export const getOrganizationBySlugOrNotFound = async (
   api: PolarAPI,
   slug: string,
-  initOverrides?: RequestInit | InitOverrideFunction,
 ): Promise<Organization> => {
-  const organization = await getOrganizationBySlug(api, slug, initOverrides)
+  const organization = await getOrganizationBySlug(api, slug)
   if (!organization) {
     notFound()
   }
@@ -34,13 +37,17 @@ export const getOrganizationBySlugOrNotFound = async (
 const _getOrganizationById = async (
   api: PolarAPI,
   id: string,
-  initOverrides?: RequestInit | InitOverrideFunction,
 ): Promise<Organization> => {
   return await api.organizations.get(
     {
       id,
     },
-    initOverrides,
+    {
+      next: {
+        tags: [`organizations:${id}`],
+        revalidate: 600,
+      },
+    },
   )
 }
 

@@ -5,6 +5,7 @@ import { ArrowBackOutlined } from '@mui/icons-material'
 import { BrowserServerRender } from '@/components/Feed/Markdown/Render/BrowserServerRender'
 import { getHighlighter } from '@/components/SyntaxHighlighterShiki/SyntaxHighlighterServer'
 import { getServerSideAPI } from '@/utils/api/serverside'
+import { getAuthenticatedUser } from '@/utils/user'
 import { Article, BenefitPublicInner, Product } from '@polar-sh/sdk'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
@@ -18,11 +19,8 @@ interface PostPageProps {
 export default async function Page({ article, products }: PostPageProps) {
   const api = getServerSideAPI()
   // Check if the user is the author of the article
-  let isAuthor = false
-  try {
-    const user = await api.users.getAuthenticated()
-    isAuthor = article.user_id === user.id
-  } catch (err) {}
+  const user = await getAuthenticatedUser(api)
+  const isAuthor = user !== undefined && article.user_id === user.id
 
   // Check if the user is subscriber
   let isSubscriber = false

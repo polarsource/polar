@@ -3,7 +3,6 @@ import {
   ArticleVisibility,
   ListResourceArticle,
   ListResourceIssueFunding,
-  ListResourceOrganization,
   ListResourceProduct,
   ListResourcePublicDonation,
   ListResourceRepository,
@@ -18,6 +17,7 @@ import { externalURL } from '@/components/Organization'
 import { Link } from '@/components/Profile/LinksEditor/LinksEditor'
 import { CONFIG } from '@/utils/config'
 import { getOrganizationBySlugOrNotFound } from '@/utils/organization'
+import { getUserOrganizations } from '@/utils/user'
 import { OgObject } from 'open-graph-scraper-lite/dist/lib/types'
 import { ProfilePage as JSONLDProfilePage, WithContext } from 'schema-dts'
 
@@ -93,7 +93,6 @@ export default async function Page({
   let articles: ListResourceArticle | undefined
   let products: ListResourceProduct | undefined
   let repositories: ListResourceRepository | undefined
-  let listUserOrganizations: ListResourceOrganization | undefined
   let listIssueFunding: ListResourceIssueFunding | undefined
   let donations: ListResourcePublicDonation | undefined
 
@@ -102,6 +101,7 @@ export default async function Page({
     params.organization,
     cacheConfig,
   )
+  const userOrganizations = await getUserOrganizations(api)
 
   try {
     const [
@@ -109,7 +109,6 @@ export default async function Page({
       loadPinnedArticles,
       loadProducts,
       loadRepositories,
-      loadListUserOrganizations,
       loadListIssueFunding,
       loadDonations,
     ] = await Promise.all([
@@ -173,17 +172,6 @@ export default async function Page({
           },
         },
       ),
-      api.organizations
-        .list(
-          {
-            isMember: true,
-          },
-          cacheConfig,
-        )
-        .catch(() => {
-          // Handle unauthenticated
-          return undefined
-        }),
       api.funding.search(
         {
           organizationId: organization.id,
@@ -224,7 +212,6 @@ export default async function Page({
     pinnedArticles = loadPinnedArticles
     products = loadProducts
     repositories = loadRepositories
-    listUserOrganizations = loadListUserOrganizations
     listIssueFunding = loadListIssueFunding
     donations = loadDonations
   } catch (e) {
@@ -341,7 +328,7 @@ export default async function Page({
         featuredProjects={featuredProjects}
         featuredOrganizations={featuredOrganizations}
         products={products?.items ?? []}
-        userOrganizations={listUserOrganizations?.items ?? []}
+        userOrganizations={userOrganizations}
         issues={listIssueFunding?.items ?? []}
         links={links}
         donations={donations?.items ?? []}

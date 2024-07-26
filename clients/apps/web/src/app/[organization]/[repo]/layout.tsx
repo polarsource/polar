@@ -4,8 +4,7 @@ import { BrandingMenu } from '@/components/Layout/Public/BrandingMenu'
 import { getServerSideAPI } from '@/utils/api/serverside'
 import { organizationPageLink } from '@/utils/nav'
 import { resolveRepositoryPath } from '@/utils/repository'
-import { getAuthenticatedUser } from '@/utils/user'
-import { Organization } from '@polar-sh/sdk'
+import { getAuthenticatedUser, getUserOrganizations } from '@/utils/user'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import Avatar from 'polarkit/components/ui/atoms/avatar'
@@ -39,19 +38,7 @@ export default async function Layout({
   const [repository, organization] = resolvedRepositoryOrganization
 
   const authenticatedUser = await getAuthenticatedUser(api)
-  let userOrganizations: Organization[] | undefined
-
-  try {
-    const loadUserOrganizations = await api.organizations
-      .list({ isMember: true }, { cache: 'no-store' })
-      .catch(() => {
-        // Handle unauthenticated
-        return undefined
-      })
-    userOrganizations = loadUserOrganizations?.items ?? []
-  } catch (e) {
-    notFound()
-  }
+  const userOrganizations = await getUserOrganizations(api)
 
   return (
     <div className="flex flex-col">
@@ -62,7 +49,7 @@ export default async function Layout({
           </a>
           <PolarMenu
             authenticatedUser={authenticatedUser}
-            userOrganizations={userOrganizations ?? []}
+            userOrganizations={userOrganizations}
           />
         </div>
         <div className="jusitfy-between flex w-full flex-row items-center gap-x-10">

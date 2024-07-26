@@ -1,10 +1,7 @@
 import { getServerSideAPI } from '@/utils/api/serverside'
 import { getOrganizationBySlugOrNotFound } from '@/utils/organization'
-import {
-  Issue,
-  ListResourceOrganization,
-  ListResourceProduct,
-} from '@polar-sh/sdk'
+import { getUserOrganizations } from '@/utils/user'
+import { Issue, ListResourceProduct } from '@polar-sh/sdk'
 import { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import ClientPage from './ClientPage'
@@ -72,48 +69,34 @@ export default async function Page({
     params.organization,
     cacheConfig,
   )
+  const userOrganizations = await getUserOrganizations(api)
 
-  let listUserOrganizations: ListResourceOrganization | undefined
   let products: ListResourceProduct | undefined
   let issue: Issue | undefined
 
   try {
-    const [loadListUserOrganizations, loadSubscriptionTiers, loadIssue] =
-      await Promise.all([
-        api.organizations
-          .list(
-            {
-              isMember: true,
-            },
-            cacheConfig,
-          )
-          .catch(() => {
-            // Handle unauthenticated
-            return undefined
-          }),
-
-        api.products.list(
-          {
-            organizationId: organization.id,
-            isArchived: false,
-            isRecurring: true,
+    const [loadSubscriptionTiers, loadIssue] = await Promise.all([
+      api.products.list(
+        {
+          organizationId: organization.id,
+          isArchived: false,
+          isRecurring: true,
+        },
+        {
+          ...cacheConfig,
+          next: {
+            ...cacheConfig.next,
+            tags: [`products:${organization.id}:recurring`],
           },
-          {
-            ...cacheConfig,
-            next: {
-              ...cacheConfig.next,
-              tags: [`products:${organization.id}:recurring`],
-            },
-          },
-        ),
+        },
+      ),
 
-        // Optional Issue Loading
-        issue_id
-          ? api.issues.get({ id: issue_id }, cacheConfig)
-          : Promise.resolve(undefined),
-      ])
+      // Optional Issue Loading
+      issue_id
+        ? api.issues.get({ id: issue_id }, cacheConfig)
+        : Promise.resolve(undefined),
+    ])
 
-    listUserOrganizations = loadListUserOrganizations
     products = loadSubscriptionTiers
     issue = loadIssue
   } catch (e) {
@@ -131,7 +114,7 @@ export default async function Page({
   return (
     <ClientPage
       organization={organization}
-      userOrganizations={listUserOrganizations?.items ?? []}
+      userOrganizations={userOrganizations}
       products={products?.items ?? []}
       defaultAmount={parseInt(amount ?? '2000')}
       issue={issue}

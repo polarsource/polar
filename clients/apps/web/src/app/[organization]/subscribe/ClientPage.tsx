@@ -5,8 +5,8 @@ import CheckoutButton from '@/components/Products/CheckoutButton'
 import SubscriptionTierCard from '@/components/Subscriptions/SubscriptionTierCard'
 import SubscriptionTierRecurringIntervalSwitch from '@/components/Subscriptions/SubscriptionTierRecurringIntervalSwitch'
 import { hasRecurringInterval } from '@/components/Subscriptions/utils'
+import { useAuth } from '@/hooks'
 import { useRecurringInterval } from '@/hooks/products'
-import { useListMemberOrganizations } from '@/hooks/queries'
 import { organizationPageLink } from '@/utils/nav'
 import { ListResourceProduct, Organization } from '@polar-sh/sdk'
 import Link from 'next/link'
@@ -23,11 +23,10 @@ export default function ClientPage({
   products: ListResourceProduct
 }) {
   const [selectedTierIndex, selectTierIndex] = useState(0)
-
-  const orgs = useListMemberOrganizations()
+  const { userOrganizations: orgs } = useAuth()
 
   const shouldRenderSubscribeButton = useMemo(
-    () => !orgs.data?.items?.map((o) => o.id).includes(organization.id),
+    () => !orgs.map((o) => o.id).includes(organization.id),
     [organization, orgs],
   )
 

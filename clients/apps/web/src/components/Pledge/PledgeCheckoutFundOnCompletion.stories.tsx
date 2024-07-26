@@ -16,7 +16,7 @@ const meta: Meta<typeof PledgeCheckoutFundOnCompletion> = {
     },
   },
   render: (args) => (
-    <UserContextProvider user={undefined}>
+    <UserContextProvider user={undefined} userOrganizations={[]}>
       <div className="max-w-[400px]">
         <PledgeCheckoutFundOnCompletion {...args} />
       </div>

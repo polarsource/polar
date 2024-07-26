@@ -1,5 +1,5 @@
+import { useAuth } from '@/hooks'
 import { useRedirectToGitHubInstallation } from '@/hooks/github'
-import { useListMemberOrganizations } from '@/hooks/queries'
 import { ExclamationCircleIcon } from '@heroicons/react/20/solid'
 import { ArrowForwardOutlined } from '@mui/icons-material'
 import { Organization, UserSignupType } from '@polar-sh/sdk'
@@ -44,8 +44,8 @@ export const MaintainerUpsell = () => {
 }
 
 export const SetupProductsUpsell = () => {
-  const organizations = useListMemberOrganizations()
-  const firstOrg = organizations.data?.items?.[0]
+  const { userOrganizations: organizations } = useAuth()
+  const firstOrg = organizations[0]
 
   if (!firstOrg) {
     return null

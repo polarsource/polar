@@ -23,7 +23,7 @@ export const createGitHubInstallationSlice: StateCreator<
   },
   clearGitHubInstallation: () => {
     set({
-      gitHubInstallation: undefined,
+      gitHubInstallation: { organizationId: undefined },
     })
   },
 })

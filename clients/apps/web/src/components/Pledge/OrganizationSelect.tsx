@@ -1,5 +1,4 @@
 import { useAuth } from '@/hooks'
-import { useListMemberOrganizations } from '@/hooks/queries'
 import { Organization } from '@polar-sh/sdk'
 import Avatar from 'polarkit/components/ui/atoms/avatar'
 import {
@@ -24,15 +23,13 @@ const OrganizationSelect = ({
   defaultToFirstOrganization?: boolean
   organizationFilter?: (o: Organization) => boolean
 }) => {
-  const { currentUser } = useAuth()
+  const { currentUser, userOrganizations: organizations } = useAuth()
 
   const [attributePledgeTo, setAttributePledgeTo] = useState<
     Organization | undefined
   >(undefined)
 
-  const organizations = useListMemberOrganizations()
-
-  const canSelectOrganizations = (organizations.data?.items || [])
+  const canSelectOrganizations = organizations
     .filter((o) => o.slug !== currentUser?.username)
     .filter((o) => {
       if (organizationFilter) {

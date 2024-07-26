@@ -1,4 +1,3 @@
-import revalidate from '@/app/actions'
 import { useUpdateOrganization } from '@/hooks/queries'
 import { organizationPageLink } from '@/utils/nav'
 import { DndContext, DragOverlay, closestCenter } from '@dnd-kit/core'
@@ -38,16 +37,14 @@ export const ProjectsEditor = ({
     handleDragCancel,
     updateItems,
   } = useDraggableEditorCallbacks(featuredRepositories, (newRepos) =>
-    updateOrganizationMutation
-      .mutateAsync({
-        id: organization.id,
-        body: {
-          profile_settings: {
-            featured_projects: newRepos.map((repo) => repo.id),
-          },
+    updateOrganizationMutation.mutateAsync({
+      id: organization.id,
+      body: {
+        profile_settings: {
+          featured_projects: newRepos.map((repo) => repo.id),
         },
-      })
-      .then(() => revalidate(`organization:${organization.slug}`)),
+      },
+    }),
   )
 
   const EditorEmptyState = () => {

@@ -1,6 +1,5 @@
 'use client'
 
-import revalidate from '@/app/actions'
 import { useAuth } from '@/hooks'
 import { useUpdateOrganization } from '@/hooks/queries'
 import { useExternalOrganizations } from '@/hooks/queries/externalOrganizations'
@@ -63,14 +62,12 @@ export const OrganizationPublicSidebar = ({
   })
 
   const updateProfile = (setting: OrganizationProfileSettings) => {
-    return updateOrganizationMutation
-      .mutateAsync({
-        id: organization.id,
-        body: {
-          profile_settings: setting,
-        },
-      })
-      .then(() => revalidate(`organization:${organization.slug}`))
+    return updateOrganizationMutation.mutateAsync({
+      id: organization.id,
+      body: {
+        profile_settings: setting,
+      },
+    })
   }
 
   const updateDescription = (description: string) => {

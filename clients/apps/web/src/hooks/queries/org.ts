@@ -1,6 +1,6 @@
+import revalidate from '@/app/actions'
 import { api, queryClient } from '@/utils/api'
 import {
-  ListResourceOrganization,
   Organization,
   OrganizationBadgeSettingsUpdate,
   OrganizationCreate,
@@ -54,32 +54,6 @@ export const useUpdateOrganizationBadgeSettings: () => UseMutationResult<
     },
   })
 
-const updateOrgsCache = (result: Organization) => {
-  queryClient.setQueriesData<ListResourceOrganization>(
-    {
-      queryKey: ['user', 'organizations'],
-    },
-    (data) => {
-      if (!data) {
-        return data
-      }
-
-      return {
-        ...data,
-        items: data.items?.map((i) => {
-          if (i.id === result.id) {
-            return {
-              ...i,
-              issue: result,
-            }
-          }
-          return { ...i }
-        }),
-      }
-    },
-  )
-}
-
 export const useListOrganizations = (
   params: OrganizationsApiListRequest,
   enabled: boolean = true,
@@ -96,11 +70,12 @@ export const useCreateOrganization = () =>
     mutationFn: (body: OrganizationCreate) => {
       return api.organizations.create({ body })
     },
-    onSuccess: (result, _variables, _ctx) => {
-      updateOrgsCache(result)
+    onSuccess: async (result, _variables, _ctx) => {
       queryClient.invalidateQueries({
-        queryKey: ['user', 'organizations'],
+        queryKey: ['organizations', result.id],
       })
+      await revalidate(`organizations:${result.id}`)
+      await revalidate(`organizations:${result.slug}`)
     },
   })
 
@@ -112,33 +87,13 @@ export const useUpdateOrganization = () =>
         body: variables.body,
       })
     },
-    onSuccess: (result, variables, _ctx) => {
-      updateOrgsCache(result)
-
+    onSuccess: async (result, _variables, _ctx) => {
       queryClient.invalidateQueries({
-        queryKey: ['organizations', variables.id],
+        queryKey: ['organizations', result.id],
       })
-
-      queryClient.invalidateQueries({
-        queryKey: ['organization', 'slug', result.slug],
-      })
-
-      queryClient.invalidateQueries({
-        queryKey: ['user', 'organizations'],
-      })
+      await revalidate(`organizations:${result.id}`)
+      await revalidate(`organizations:${result.slug}`)
     },
-  })
-
-export const useOrganizationBySlug = (
-  slug: string | undefined,
-  enabled: boolean = true,
-) =>
-  useQuery({
-    queryKey: ['organization', 'slug', slug],
-    queryFn: () =>
-      api.organizations.list({ slug, limit: 1 }).then((r) => r.items?.[0]),
-    retry: defaultRetry,
-    enabled,
   })
 
 export const useOrganization = (id: string, enabled: boolean = true) =>

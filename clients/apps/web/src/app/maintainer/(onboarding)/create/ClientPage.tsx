@@ -1,5 +1,7 @@
 'use client'
 
+import revalidate from '@/app/actions'
+import { useAuth } from '@/hooks'
 import { useCreateOrganization, useListOrganizations } from '@/hooks/queries'
 import { setValidationErrors } from '@/utils/api/errors'
 import { FormControl } from '@mui/material'
@@ -18,6 +20,7 @@ import { useForm } from 'react-hook-form'
 import slugify from 'slugify'
 
 export default function ClientPage() {
+  const { currentUser, setUserOrganizations } = useAuth()
   const router = useRouter()
   const form = useForm<{ name: string; slug: string }>()
   const {
@@ -68,6 +71,12 @@ export default function ClientPage() {
         ...data,
         slug: slug as string,
       })
+
+      await revalidate(`organizations:${organization.id}`)
+      await revalidate(`organizations:${organization.slug}`)
+      await revalidate(`users:${currentUser?.id}:organizations`)
+      setUserOrganizations((orgs) => [...orgs, organization])
+
       router.push(`/maintainer/${organization.slug}`)
     } catch (e) {
       if (e instanceof ResponseError) {

@@ -21,7 +21,6 @@ const getArticle = async (
   const organization = await getOrganizationBySlugOrNotFound(
     api,
     organizationName,
-    cacheConfig,
   )
 
   try {

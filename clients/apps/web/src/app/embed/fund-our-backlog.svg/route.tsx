@@ -6,20 +6,12 @@ const { default: satori } = require('satori')
 
 export const runtime = 'edge'
 
-const cacheConfig = {
-  next: { revalidate: 60 },
-}
-
 const getData = async (
   api: PolarAPI,
   organizationSlug: string,
   repositoryName: string | undefined,
 ): Promise<ListResourceIssue> => {
-  const organization = await getOrganizationBySlug(
-    api,
-    organizationSlug,
-    cacheConfig,
-  )
+  const organization = await getOrganizationBySlug(api, organizationSlug)
 
   if (!organization) {
     throw new Error('Organization not found')

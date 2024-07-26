@@ -1,7 +1,7 @@
 import { Organization, PolarAPI, ResponseError, UserRead } from '@polar-sh/sdk'
 import { cache } from 'react'
 
-export const _getAuthenticatedUser = async (
+const _getAuthenticatedUser = async (
   api: PolarAPI,
 ): Promise<UserRead | undefined> => {
   try {
@@ -18,14 +18,23 @@ export const _getAuthenticatedUser = async (
 // ...but tell React to memoize it for the duration of the request
 export const getAuthenticatedUser = cache(_getAuthenticatedUser)
 
-export const _getUserOrganizations = async (
+const _getUserOrganizations = async (
   api: PolarAPI,
 ): Promise<Organization[]> => {
+  const user = await getAuthenticatedUser(api)
+  if (!user) {
+    return []
+  }
+
   try {
-    // Don't cache it on Next.js edge cache...
     const result = await api.organizations.list(
       { isMember: true },
-      { cache: 'no-cache' },
+      {
+        next: {
+          tags: [`users:${user.id}:organizations`],
+          revalidate: 600,
+        },
+      },
     )
     return result.items || []
   } catch (e) {

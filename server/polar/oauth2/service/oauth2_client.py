@@ -1,6 +1,7 @@
 import datetime
 from collections.abc import Sequence
 
+import structlog
 from sqlalchemy import select
 from sqlalchemy.orm import joinedload
 
@@ -12,10 +13,13 @@ from polar.exceptions import PolarError
 from polar.kit.crypto import generate_token
 from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.services import ResourceServiceReader
+from polar.logging import Logger
 from polar.models import OAuth2Client, User
 from polar.postgres import AsyncSession
 
 from ..constants import CLIENT_REGISTRATION_TOKEN_PREFIX, CLIENT_SECRET_PREFIX
+
+log: Logger = structlog.get_logger()
 
 
 class OAuth2ClientError(PolarError): ...
@@ -108,6 +112,14 @@ class OAuth2ClientService(ResourceServiceReader[OAuth2Client]):
             subject=subject,
             html_content=body,
             from_email_addr="noreply@notifications.polar.sh",
+        )
+
+        log.info(
+            "Revoke leaked OAuth2 client",
+            id=client.id,
+            token_type=token_type,
+            notifier=notifier,
+            url=url,
         )
 
         return True

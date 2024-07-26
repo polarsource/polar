@@ -4,7 +4,7 @@ import { getServerSideAPI } from '@/utils/api/serverside'
 import { getOrganizationBySlugOrNotFound } from '@/utils/organization'
 import { getUserOrganizations } from '@/utils/user'
 import { Metadata } from 'next'
-import { notFound, redirect } from 'next/navigation'
+import { redirect } from 'next/navigation'
 import React from 'react'
 
 export async function generateMetadata({
@@ -12,8 +12,9 @@ export async function generateMetadata({
 }: {
   params: { organization: string }
 }): Promise<Metadata> {
+  const api = getServerSideAPI()
   const organization = await getOrganizationBySlugOrNotFound(
-    getServerSideAPI(),
+    api,
     params.organization,
   )
   return {
@@ -32,24 +33,19 @@ export default async function Layout({
   children: React.ReactNode
 }) {
   const api = getServerSideAPI()
-  const organizationsListResult = await api.organizations.list(
-    {
-      slug: params.organization,
-      isMember: true,
-    },
-    { cache: 'no-store' },
+  const organization = await getOrganizationBySlugOrNotFound(
+    api,
+    params.organization,
   )
-  const organization = organizationsListResult.items?.[0]
+  const userOrganizations = await getUserOrganizations(api)
 
-  if (!organization) {
-    notFound()
+  if (!userOrganizations.some((org) => org.id === organization.id)) {
+    return redirect('/maintainer')
   }
 
   if (shouldBeOnboarded(organization)) {
     return redirect(`/maintainer/${organization.slug}/onboarding`)
   }
-
-  const userOrganizations = await getUserOrganizations(api)
 
   return (
     <MaintainerOrganizationContextProvider

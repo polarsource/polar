@@ -1,4 +1,5 @@
 import base64
+import binascii
 import json
 from typing import Literal, Protocol, TypedDict
 
@@ -19,7 +20,7 @@ from polar.personal_access_token.service import (
 )
 from polar.postgres import AsyncSession
 
-from ..client import get_app_client
+from ..client import GitHub
 
 
 class GitHubSecretScanningPublicKey(TypedDict):
@@ -74,7 +75,7 @@ class PublicKeyNotFound(GitHubSecretScanningError):
     def __init__(self, key_identifier: str) -> None:
         self.key_identifier = key_identifier
         message = f"Public key with key_identifier {key_identifier} not found."
-        super().__init__(message)
+        super().__init__(message, 400)
 
 
 class InvalidPublicKey(GitHubSecretScanningError):
@@ -103,14 +104,13 @@ class GitHubSecretScanningService:
         if not isinstance(public_key, ec.EllipticCurvePublicKey):
             raise InvalidPublicKey(key_identifier, raw_public_key)
 
-        signature_bytes = base64.b64decode(signature)
-
         try:
+            signature_bytes = base64.b64decode(signature)
             public_key.verify(
                 signature_bytes, payload.encode(), ec.ECDSA(hashes.SHA256())
             )
             return True
-        except CryptographyInvalidSignature as e:
+        except (binascii.Error, CryptographyInvalidSignature) as e:
             raise InvalidSignature(payload, signature, key_identifier) from e
 
     async def handle_alert(
@@ -139,7 +139,7 @@ class GitHubSecretScanningService:
         }
 
     async def _get_public_key(self, key_identifier: str) -> str:
-        client = get_app_client()
+        client = GitHub()
         response = await client.arequest("GET", "/meta/public_keys/secret_scanning")
 
         data: GitHubSecretScanningPublicKeyList = response.json()

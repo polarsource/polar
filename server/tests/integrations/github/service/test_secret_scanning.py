@@ -30,6 +30,16 @@ class TestVerifySignature:
         mocker.patch.object(
             secret_scanning_service, "_get_public_key", return_value=public_key_pem
         )
+
+        with pytest.raises(InvalidSignature):
+            await secret_scanning_service.verify_signature(
+                "payload", "signature", "KID"
+            )
+
+    async def test_not_matching_signature(self, mocker: MockerFixture) -> None:
+        mocker.patch.object(
+            secret_scanning_service, "_get_public_key", return_value=public_key_pem
+        )
         payload = "[]"
         signature = generate_signature(payload, private_key)
 

@@ -4,6 +4,7 @@ import { UserContextProvider } from '@/providers/auth'
 import { getServerSideAPI } from '@/utils/api/serverside'
 import { getAuthenticatedUser, getUserOrganizations } from '@/utils/user'
 import { Organization, UserRead } from '@polar-sh/sdk'
+import { SpeedInsights } from '@vercel/speed-insights/next'
 import { PHASE_PRODUCTION_BUILD } from 'next/constants'
 import localFont from 'next/font/local'
 import { Metadata } from 'next/types'
@@ -101,6 +102,7 @@ export default async function RootLayout({
             </PolarThemeProvider>
           </PolarPostHogProvider>
         </UserContextProvider>
+        <SpeedInsights />
       </body>
     </html>
   )

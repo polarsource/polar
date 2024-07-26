@@ -1,7 +1,8 @@
 import { InitOverrideFunction, Organization, PolarAPI } from '@polar-sh/sdk'
 import { notFound } from 'next/navigation'
+import { cache } from 'react'
 
-export const getOrganizationBySlug = async (
+const _getOrganizationBySlug = async (
   api: PolarAPI,
   slug: string,
   initOverrides?: RequestInit | InitOverrideFunction,
@@ -15,6 +16,9 @@ export const getOrganizationBySlug = async (
   return data.items?.[0]
 }
 
+// Tell React to memoize it for the duration of the request
+export const getOrganizationBySlug = cache(_getOrganizationBySlug)
+
 export const getOrganizationBySlugOrNotFound = async (
   api: PolarAPI,
   slug: string,
@@ -27,7 +31,7 @@ export const getOrganizationBySlugOrNotFound = async (
   return organization
 }
 
-export const getOrganizationById = async (
+const _getOrganizationById = async (
   api: PolarAPI,
   id: string,
   initOverrides?: RequestInit | InitOverrideFunction,
@@ -39,3 +43,6 @@ export const getOrganizationById = async (
     initOverrides,
   )
 }
+
+// Tell React to memoize it for the duration of the request
+export const getOrganizationById = cache(_getOrganizationById)

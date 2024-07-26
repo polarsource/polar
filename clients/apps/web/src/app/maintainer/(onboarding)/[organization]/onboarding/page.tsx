@@ -10,8 +10,9 @@ export async function generateMetadata({
 }: {
   params: { organization: string }
 }): Promise<Metadata> {
+  const api = getServerSideAPI()
   const organization = await getOrganizationBySlugOrNotFound(
-    getServerSideAPI(),
+    api,
     params.organization,
   )
   return {

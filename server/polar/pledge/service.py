@@ -3,6 +3,7 @@ from __future__ import annotations
 import datetime
 from collections.abc import Awaitable, Callable, Sequence
 from datetime import timedelta
+from json import JSONDecodeError
 from typing import Any
 from uuid import UUID
 
@@ -399,7 +400,10 @@ class PledgeService(ResourceServiceReader[Pledge]):
         )
 
         webhook.add_embed(embed)
-        await webhook.execute()
+        try:
+            await webhook.execute()
+        except JSONDecodeError as e:
+            log.error("discord.webhook.error", error=e)
 
     async def send_maintainer_pending_notification(
         self, session: AsyncSession, issue_id: UUID

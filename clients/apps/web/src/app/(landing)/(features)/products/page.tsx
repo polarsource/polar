@@ -3,12 +3,8 @@ import { FeatureSection } from '@/components/Landing/FeatureSection'
 import { PageContent } from '@/components/Landing/LandingPage'
 import { Section } from '@/components/Landing/Section'
 import { Circles } from '@/components/Landing/molecules/Circles'
-import { MOCKED_PRODUCTS } from '@/components/Landing/utils'
-import { ProductCard } from '@/components/Products/ProductCard'
-import SubscriptionTierCard from '@/components/Subscriptions/SubscriptionTierCard'
-import { Product, UserSignupType } from '@polar-sh/sdk'
+import { UserSignupType } from '@polar-sh/sdk'
 import Link from 'next/link'
-import { Separator } from 'polarkit/components/ui/separator'
 
 const PAGE_TITLE = 'Products & Subscriptions'
 const PAGE_DESCRIPTION =
@@ -54,13 +50,6 @@ export default function Page() {
             </p>
           </div>
         </div>
-        <div className="relative grid grid-cols-1 gap-4 md:w-1/2 md:grid-cols-2">
-          <ProductCard product={MOCKED_PRODUCTS[3] as Product} />
-          <SubscriptionTierCard
-            className="dark:bg-polar-950 w-full max-w-[280px]"
-            subscriptionTier={MOCKED_PRODUCTS[1]}
-          />
-        </div>
       </Section>
       <Section
         className="md:py-24"
@@ -72,7 +61,7 @@ export default function Page() {
             srcSet="assets/landing/subscriptions/subscriptions_dark.png"
           />
           <img
-            className="border-gray-75 dark:border-polar-700 rounded-4xl border shadow-2xl"
+            className="border-gray-75 dark:border-polar-700 rounded-4xl shadow-3xl border"
             alt="Products & Subscriptions"
             src="/assets/landing/subscriptions/subscriptions.png"
           />
@@ -92,8 +81,6 @@ export default function Page() {
         }}
       />
 
-      <Separator />
-
       <FeatureSection
         wrapperClassName="bg-gray-50 dark:bg-polar-900"
         title="One-time Purchases"
@@ -109,8 +96,6 @@ export default function Page() {
         }}
         direction="row-reverse"
       />
-
-      <Separator />
 
       <PageContent />
     </>

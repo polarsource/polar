@@ -2,7 +2,7 @@ import revalidate from '@/app/actions'
 import { Modal } from '@/components/Modal'
 import { useModal } from '@/components/Modal/useModal'
 import { useUpdateOrganization } from '@/hooks/queries'
-import { CloseOutlined, SettingsOutlined } from '@mui/icons-material'
+import { CloseOutlined } from '@mui/icons-material'
 import {
   ListResourceOrganizationCustomer,
   Organization,
@@ -64,9 +64,9 @@ export const SubscribeEditor = ({
           upsellSubscriptions
         />
       ) : null}
-      <div className="flex flex-row items-center gap-x-4">
+      <div className="flex flex-col gap-y-4">
         {showCount && (
-          <>
+          <div className="flex flex-row items-center gap-x-4">
             <div className="flex w-fit flex-shrink-0 flex-row items-center md:hidden lg:flex">
               {customerList.items?.map((user, i, array) => (
                 <Avatar
@@ -93,14 +93,9 @@ export const SubscribeEditor = ({
                   : 'Subscribers'}
               </span>
             </p>
-          </>
+          </div>
         )}
-        {isOrgMember && (
-          <SubscribeSettings
-            organization={organization}
-            showTip={!customerCount}
-          />
-        )}
+        {isOrgMember && <SubscribeSettings organization={organization} />}
       </div>
     </div>
   )
@@ -108,10 +103,8 @@ export const SubscribeEditor = ({
 
 const SubscribeSettings = ({
   organization,
-  showTip,
 }: {
   organization: Organization
-  showTip: boolean
 }) => {
   const updateOrganizationMutation = useUpdateOrganization()
   const { isShown: isModalShown, hide: hideModal, show: showModal } = useModal()
@@ -145,11 +138,10 @@ const SubscribeSettings = ({
   return (
     <>
       <a
-        className="flex cursor-pointer flex-row items-center gap-x-2 text-sm text-gray-600 dark:text-gray-400"
+        className="flex cursor-pointer flex-row items-center gap-x-2 text-xs text-blue-500 dark:text-blue-400"
         onClick={showModal}
       >
-        <SettingsOutlined fontSize="small" className="mr-2" />
-        {showTip && <span>Subscription promotion</span>}
+        <span>Manage Subscription Promotion</span>
       </a>
       <Modal
         className="lg:max-w-md"
@@ -184,6 +176,7 @@ const SubscribeSettingsModal = ({
     setIsSaving(true)
     saveSettings(() => {
       setIsSaving(false)
+      hideModal()
     })
   }
 

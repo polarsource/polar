@@ -30,7 +30,7 @@ export const SubscribersWidget = ({ className }: SubscribersWidgetProps) => {
   const maxPeriod =
     subscriberMetrics.data?.periods.reduce(
       (acc, curr) =>
-        curr.active_subscriptions > acc ? curr.monthly_recurring_revenue : acc,
+        curr.active_subscriptions > acc ? curr.active_subscriptions : acc,
       0,
     ) ?? 0
 

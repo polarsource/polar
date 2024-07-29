@@ -84,17 +84,20 @@ export const OrdersWidget = ({ className }: OrdersWidgetProps) => {
     >
       {(orders.data?.items?.length ?? 0) > 0 ? (
         <div className="relative h-full">
-          {orders.data?.items?.reverse().map((order, index) => (
-            <div
-              key={order.id}
-              className={twMerge(
-                stackingClassNames[index],
-                'rounded-4xl dark:bg-polar-900 dark:border-polar-800 peer absolute w-full border border-gray-100 bg-white transition-all duration-300 hover:z-10 hover:scale-100 hover:shadow-2xl peer-hover:opacity-0',
-              )}
-            >
-              <OrderCard order={order} />
-            </div>
-          ))}
+          {orders.data?.items
+            ?.slice()
+            .reverse()
+            .map((order, index) => (
+              <div
+                key={order.id}
+                className={twMerge(
+                  stackingClassNames[index],
+                  'rounded-4xl dark:bg-polar-900 dark:border-polar-800 peer absolute w-full border border-gray-100 bg-white transition-all duration-300 hover:z-10 hover:scale-100 hover:shadow-2xl peer-hover:opacity-0',
+                )}
+              >
+                <OrderCard order={order} />
+              </div>
+            ))}
         </div>
       ) : (
         <Card className="dark:text-polar-500 flex h-full flex-col items-center justify-center gap-y-6 p-6 text-gray-400 ring-1 ring-gray-100 dark:ring-transparent">

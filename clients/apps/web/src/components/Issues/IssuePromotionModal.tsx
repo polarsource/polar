@@ -151,7 +151,7 @@ export const AddBadgeButton = (props: { issue: Issue }) => {
         {isBadged && (
           <>
             <BadgedCheckmarkIcon />
-            <span>Badged</span>
+            <span>Edit Badge</span>
           </>
         )}
         {!isBadged && (

@@ -3,6 +3,7 @@ import { setValidationErrors } from '@/utils/api/errors'
 import { Organization, ResponseError, ValidationError } from '@polar-sh/sdk'
 import Avatar from 'polarkit/components/ui/atoms/avatar'
 import Button from 'polarkit/components/ui/atoms/button'
+import Input from 'polarkit/components/ui/atoms/input'
 import {
   Form,
   FormControl,
@@ -11,7 +12,6 @@ import {
   FormItem,
   FormMessage,
 } from 'polarkit/components/ui/form'
-import { Input } from 'polarkit/components/ui/input'
 import React from 'react'
 import { useForm } from 'react-hook-form'
 

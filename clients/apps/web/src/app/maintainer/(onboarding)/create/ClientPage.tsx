@@ -8,13 +8,15 @@ import { FormControl } from '@mui/material'
 import { ResponseError, ValidationError } from '@polar-sh/sdk'
 import { useRouter } from 'next/navigation'
 import Button from 'polarkit/components/ui/atoms/button'
+import Input from 'polarkit/components/ui/atoms/input'
+import ShadowBox from 'polarkit/components/ui/atoms/shadowbox'
 import {
   Form,
   FormField,
   FormItem,
+  FormLabel,
   FormMessage,
 } from 'polarkit/components/ui/form'
-import { Input } from 'polarkit/components/ui/input'
 import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import slugify from 'slugify'
@@ -93,78 +95,75 @@ export default function ClientPage() {
 
   return (
     <div className="flex max-w-4xl flex-col gap-12 py-12">
-      <div className="flex flex-col items-center gap-4">
-        <h1 className="text-2xl font-semibold">Let&apos;s get started</h1>
-        <p className="dark:text-polar-400 text-center text-gray-600">
+      <div className="flex flex-col items-center gap-8">
+        <h1 className="text-3xl font-semibold">Let&apos;s get started</h1>
+        <p className="dark:text-polar-400 text-center text-lg text-gray-600">
           To start monetizing on Polar, you need to create an organization.
-          It&apos;s a space to create and manage your products, receive
-          donations from your supporters and more.
         </p>
       </div>
-      <Form {...form}>
-        <form
-          onSubmit={handleSubmit(onSubmit)}
-          className="flex flex-col items-center justify-center gap-y-6"
-        >
-          <FormField
-            control={control}
-            name="name"
-            rules={{
-              required: 'This field is required',
-            }}
-            render={({ field }) => (
-              <FormItem className="w-3/4">
-                <FormControl className="w-full">
-                  <Input
-                    className="p-6 text-center text-2xl"
-                    placeholder="Name of your organization"
-                    {...field}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          {(slug || editedSlug) && (
-            <p className="dark:text-polar-400 text-lg text-gray-600">
-              Your URL will be: https://polar.sh/
-              <FormField
-                control={control}
-                name="slug"
-                rules={{
-                  required: 'This field is required',
-                }}
-                render={({ field }) => (
-                  <>
-                    <input
-                      type="text"
-                      {...field}
-                      size={slug?.length || 1}
-                      className="m-0 rounded-md border-0 bg-transparent p-0 text-blue-500 underline decoration-dotted hover:text-blue-400 dark:text-blue-400 dark:hover:text-blue-300"
-                      onFocus={() => setEditedSlug(true)}
-                    />
-                    <FormMessage />
-                  </>
-                )}
-              />
-            </p>
-          )}
-          {errors.root && (
-            <p className="text-destructive-foreground text-sm">
-              {errors.root.message}
-            </p>
-          )}
-          <Button
-            type="submit"
-            className="w-3/4"
-            size="lg"
-            disabled={Object.keys(errors).length > 0}
-            loading={createOrganization.isPending}
+      <ShadowBox>
+        <Form {...form}>
+          <form
+            onSubmit={handleSubmit(onSubmit)}
+            className="flex w-full flex-col gap-y-6"
           >
-            Create my organization
-          </Button>
-        </form>
-      </Form>
+            <FormField
+              control={control}
+              name="name"
+              rules={{
+                required: 'This field is required',
+              }}
+              render={({ field }) => (
+                <FormItem className="w-full">
+                  <FormLabel>Organization Name</FormLabel>
+                  <FormControl className="w-full">
+                    <Input {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {(slug || editedSlug) && (
+              <p className="dark:text-polar-400 w-full text-sm text-gray-600">
+                https://polar.sh/
+                <FormField
+                  control={control}
+                  name="slug"
+                  rules={{
+                    required: 'This field is required',
+                  }}
+                  render={({ field }) => (
+                    <>
+                      <input
+                        type="text"
+                        {...field}
+                        size={slug?.length || 1}
+                        className="dark:bg-polar-700 ml-1 rounded-md border-0 bg-gray-100 px-2 py-1 text-sm text-black focus:outline-none focus:ring-0 dark:text-white"
+                        onFocus={() => setEditedSlug(true)}
+                      />
+                    </>
+                  )}
+                />
+              </p>
+            )}
+            {errors.root && (
+              <p className="text-destructive-foreground text-sm">
+                {errors.root.message}
+              </p>
+            )}
+
+            <Button
+              className="self-start"
+              type="submit"
+              disabled={Object.keys(errors).length > 0}
+              loading={createOrganization.isPending}
+            >
+              Create
+            </Button>
+          </form>
+        </Form>
+      </ShadowBox>
     </div>
   )
 }

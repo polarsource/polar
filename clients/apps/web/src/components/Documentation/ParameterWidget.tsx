@@ -8,6 +8,7 @@ import debounce from 'lodash.debounce'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { OpenAPIV3_1 } from 'openapi-types'
 import Button from 'polarkit/components/ui/atoms/button'
+import Input from 'polarkit/components/ui/atoms/input'
 import {
   Select,
   SelectContent,
@@ -17,7 +18,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from 'polarkit/components/ui/atoms/select'
-import { Input } from 'polarkit/components/ui/input'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   SchemaObjectWithSelectorWidget,

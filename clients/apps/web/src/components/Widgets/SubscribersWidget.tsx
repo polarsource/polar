@@ -1,6 +1,5 @@
 import { useMetrics } from '@/hooks/queries'
 import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
-import { getCentsInDollarString } from '@polarkit/lib/money'
 import { Card, CardFooter, CardHeader } from 'polarkit/components/ui/atoms/card'
 import {
   Tooltip,
@@ -11,30 +10,27 @@ import {
 import { useContext } from 'react'
 import { twMerge } from 'tailwind-merge'
 
-export interface MRRWidgetProps {
+export interface SubscribersWidgetProps {
   className?: string
 }
 
-export const MRRWidget = ({ className }: MRRWidgetProps) => {
+export const SubscribersWidget = ({ className }: SubscribersWidgetProps) => {
   const { organization: org } = useContext(MaintainerOrganizationContext)
 
   const startDate = new Date()
   startDate.setFullYear(startDate.getFullYear() - 1)
 
-  const revenueMetrics = useMetrics({
+  const subscriberMetrics = useMetrics({
     organizationId: org.id,
     interval: 'month',
     startDate,
     endDate: new Date(),
-    productPriceType: 'recurring',
   })
 
   const maxPeriod =
-    revenueMetrics.data?.periods.reduce(
+    subscriberMetrics.data?.periods.reduce(
       (acc, curr) =>
-        curr.monthly_recurring_revenue > acc
-          ? curr.monthly_recurring_revenue
-          : acc,
+        curr.active_subscriptions > acc ? curr.monthly_recurring_revenue : acc,
       0,
     ) ?? 0
 
@@ -47,7 +43,9 @@ export const MRRWidget = ({ className }: MRRWidgetProps) => {
     >
       <CardHeader className="flex flex-col gap-y-2">
         <div className="flex flex-row items-center justify-between">
-          <span className="dark:text-polar-500 text-gray-400">MRR</span>
+          <span className="dark:text-polar-500 text-gray-400">
+            Active Subscriptions
+          </span>
           <span className="dark:text-polar-500 text-gray-400">
             {new Date().toLocaleDateString('en-US', {
               month: 'long',
@@ -56,24 +54,22 @@ export const MRRWidget = ({ className }: MRRWidgetProps) => {
           </span>
         </div>
         <h2 className="text-xl">
-          $
-          {getCentsInDollarString(
-            revenueMetrics.data?.periods[
-              revenueMetrics.data?.periods.length - 1
-            ].monthly_recurring_revenue ?? 0,
-            false,
-          )}
+          {
+            subscriberMetrics.data?.periods[
+              subscriberMetrics.data?.periods.length - 1
+            ].active_subscriptions
+          }
         </h2>
       </CardHeader>
       <TooltipProvider>
         <CardFooter className="flex h-full flex-row items-end justify-between">
-          {revenueMetrics.data?.periods.map((period, i) => {
+          {subscriberMetrics.data?.periods.map((period, i) => {
             const activeClass =
-              i === revenueMetrics.data.periods.length - 1
+              i === subscriberMetrics.data.periods.length - 1
                 ? 'bg-blue-400 dark:bg-blue-400'
                 : 'hover:bg-blue-100 dark:hover:bg-blue-900'
 
-            const tooltipContent = `$${getCentsInDollarString(period.monthly_recurring_revenue, false)} in ${period.timestamp.toLocaleDateString(
+            const tooltipContent = `${period.active_subscriptions} in ${period.timestamp.toLocaleDateString(
               'en-US',
               {
                 month: 'long',
@@ -86,7 +82,7 @@ export const MRRWidget = ({ className }: MRRWidgetProps) => {
                 <TooltipTrigger
                   style={{
                     height: `${Math.max(
-                      (period.monthly_recurring_revenue / maxPeriod) * 100 || 0,
+                      (period.active_subscriptions / maxPeriod) * 100 || 0,
                       8,
                     )}%`,
                   }}

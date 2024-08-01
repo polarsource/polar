@@ -45,9 +45,6 @@ const DashboardNavigation = () => {
                 ) : undefined}
                 <span className="text-sm font-medium">{n.title}</span>
               </span>
-              {'postIcon' in n && n.postIcon ? (
-                <span>{n.postIcon}</span>
-              ) : undefined}
             </Link>
           </div>
         ))}

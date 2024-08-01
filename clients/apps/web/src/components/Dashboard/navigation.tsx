@@ -29,7 +29,6 @@ export type Route = {
   readonly id: string
   readonly title: string
   readonly icon?: React.ReactElement
-  readonly postIcon?: React.ReactElement
   readonly link: string
   readonly if: boolean | undefined
   readonly subs?: SubRoute[]
@@ -154,12 +153,13 @@ export const usePersonalFinanceSubRoutes = (): SubRouteWithActive[] => {
 
 // internals below
 
+const shopRoutesList = (org: Organization): Route[] => []
+
 const maintainerRoutesList = (org: Organization): Route[] => [
   {
     id: 'overview',
     title: 'Overview',
     icon: <SpaceDashboardOutlined className="h-5 w-5" fontSize="inherit" />,
-    postIcon: undefined,
     link: `/maintainer/${org.slug}/overview`,
     if: true,
   },
@@ -167,7 +167,6 @@ const maintainerRoutesList = (org: Organization): Route[] => [
     id: 'newsletter',
     title: 'Newsletter',
     icon: <StickyNote2Outlined className="h-5 w-5" fontSize="inherit" />,
-    postIcon: undefined,
     link: `/maintainer/${org.slug}/posts`,
     checkIsActive: (currentRoute: string): boolean => {
       return currentRoute.startsWith(`/maintainer/${org.slug}/posts`)
@@ -178,7 +177,6 @@ const maintainerRoutesList = (org: Organization): Route[] => [
     id: 'products',
     title: 'Products',
     icon: <DiamondOutlined className="h-5 w-5" fontSize="inherit" />,
-    postIcon: undefined,
     link: `/maintainer/${org.slug}/products/overview`,
     checkIsActive: (currentRoute: string): boolean => {
       return currentRoute.startsWith(`/maintainer/${org.slug}/products`)
@@ -199,7 +197,6 @@ const maintainerRoutesList = (org: Organization): Route[] => [
     id: 'org-sales',
     title: 'Sales',
     icon: <ShoppingCartOutlined className="h-5 w-5" fontSize="inherit" />,
-    postIcon: undefined,
     link: `/maintainer/${org.slug}/sales/overview`,
     checkIsActive: (currentRoute: string): boolean => {
       return currentRoute.startsWith(`/maintainer/${org.slug}/sales`)
@@ -224,7 +221,6 @@ const maintainerRoutesList = (org: Organization): Route[] => [
     id: 'donations',
     title: 'Donations',
     icon: <VolunteerActivismOutlined className="h-5 w-5" fontSize="inherit" />,
-    postIcon: undefined,
     link: `/maintainer/${org.slug}/donations/overview`,
     checkIsActive: (currentRoute: string): boolean => {
       return currentRoute.startsWith(`/maintainer/${org.slug}/donations`)
@@ -235,7 +231,6 @@ const maintainerRoutesList = (org: Organization): Route[] => [
     id: 'org-issues',
     title: 'Issues',
     icon: <HowToVoteOutlined className="h-5 w-5" fontSize="inherit" />,
-    postIcon: undefined,
     link: `/maintainer/${org.slug}/issues/overview`,
     checkIsActive: (currentRoute: string): boolean => {
       return currentRoute.startsWith(`/maintainer/${org.slug}/issues`)
@@ -261,7 +256,6 @@ const maintainerRoutesList = (org: Organization): Route[] => [
     title: 'Funding',
     link: `/maintainer/${org.slug}/funding`,
     icon: <FavoriteBorderOutlined className="h-5 w-5" fontSize="inherit" />,
-    postIcon: undefined,
     if: true,
     subs: undefined,
   },
@@ -269,7 +263,6 @@ const maintainerRoutesList = (org: Organization): Route[] => [
     id: 'promote',
     title: 'Promote',
     icon: <WifiTetheringOutlined fontSize="inherit" />,
-    postIcon: undefined,
     link: `/maintainer/${org.slug}/promote`,
     if: true,
     subs: undefined,
@@ -278,7 +271,6 @@ const maintainerRoutesList = (org: Organization): Route[] => [
     id: 'webhooks',
     title: 'Webhooks',
     icon: <Webhook fontSize="inherit" />,
-    postIcon: undefined,
     link: `/maintainer/${org.slug}/webhooks`,
     if: false,
     checkIsActive: (currentRoute: string): boolean => {
@@ -295,7 +287,6 @@ const backerRoutesList = (): Route[] => [
     title: 'Feed',
     link: `/feed`,
     icon: <AllInclusiveOutlined className="h-5 w-5" fontSize="inherit" />,
-    postIcon: undefined,
     if: true,
     subs: undefined,
   },
@@ -304,7 +295,6 @@ const backerRoutesList = (): Route[] => [
     title: 'Purchases',
     link: `/purchases`,
     icon: <DiamondOutlined className="h-5 w-5" fontSize="inherit" />,
-    postIcon: undefined,
     if: true,
     subs: undefined,
   },
@@ -313,7 +303,6 @@ const backerRoutesList = (): Route[] => [
     title: 'Funded Issues',
     link: `/funding`,
     icon: <HowToVoteOutlined className="h-5 w-5" fontSize="inherit" />,
-    postIcon: undefined,
     if: true,
     subs: undefined,
   },
@@ -322,7 +311,6 @@ const backerRoutesList = (): Route[] => [
     title: 'Finance',
     link: `/finance`,
     icon: <AttachMoneyOutlined className="h-5 w-5" fontSize="inherit" />,
-    postIcon: undefined,
     if: true,
     subs: personalFinanceSubRoutesList(),
   },
@@ -331,7 +319,6 @@ const backerRoutesList = (): Route[] => [
     title: 'Settings',
     link: `/settings`,
     icon: <TuneOutlined className="h-5 w-5" fontSize="inherit" />,
-    postIcon: undefined,
     if: true,
     subs: undefined,
   },
@@ -395,7 +382,11 @@ const dashboardRoutesList = (org: Organization): Route[] => [
   },
 ]
 
-export const metaRoutes: Route[] = [
+export type MetaRoute = Route & {
+  postIcon?: React.ReactElement
+}
+
+export const metaRoutes: MetaRoute[] = [
   {
     id: 'blog',
     title: 'Blog',
@@ -434,7 +425,7 @@ export const metaRoutes: Route[] = [
   },
 ]
 
-export const unauthenticatedRoutes: Route[] = [
+export const unauthenticatedRoutes: MetaRoute[] = [
   {
     id: 'polar',
     title: 'Polar',

@@ -456,7 +456,7 @@ export const Controls = ({
   const router = useRouter()
 
   const redirectToOrgDashboard = () => {
-    router.push(`/maintainer/${org.slug}/home`)
+    router.push(`/maintainer/${org.slug}`)
   }
 
   const isRetroactiveApplicable = (

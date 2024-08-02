@@ -319,7 +319,7 @@ const nextConfig = {
       },
       {
         source: '/maintainer/:organization/overview',
-        destination: '/maintainer/:organization/home',
+        destination: '/maintainer/:organization',
         permanent: false,
       },
       {

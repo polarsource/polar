@@ -83,7 +83,7 @@ export default function ClientPage() {
                 className="flex w-full flex-row items-center justify-between"
                 href={`/purchases/subscriptions/${order.id}`}
               >
-                <ListItem className="w-full">
+                <ListItem className="dark:hover:bg-polar-800 dark:bg-polar-900 w-full bg-white">
                   <SubscriptionItem subscription={order} />
                 </ListItem>
               </Link>

@@ -147,4 +147,4 @@ class Organization(RecordModel):
 
     @property
     def account_url(self) -> str:
-        return f"{settings.FRONTEND_BASE_URL}/maintainer/{self.slug}/finance/account"
+        return f"{settings.FRONTEND_BASE_URL}/dashboard/{self.slug}/finance/account"

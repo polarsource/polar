@@ -93,7 +93,7 @@ We'll notify you about the next steps when {{issue_org_name}}/{{issue_repo_name}
 
 {% if not maintainer_has_stripe_account -%}
 <br><br>Create a Stripe account with Polar today to avoid any delay with future transfers.<br>
-<a href="https://polar.sh/maintainer/{{issue_org_name}}/finance">polar.sh/maintainer/{{issue_org_name}}/finance</a>
+<a href="https://polar.sh/dashboard/{{issue_org_name}}/finance">polar.sh/dashboard/{{issue_org_name}}/finance</a>
 {% endif -%}
 """  # noqa: E501
 
@@ -124,11 +124,11 @@ class MaintainerPledgeConfirmationPendingNotificationPayload(NotificationPayload
 
 Your backers have pledged ${{pledge_amount}} behind <a href="{{issue_url}}">{{issue_org_name}}/{{issue_repo_name}}#{{issue_number}}</a> which which has now been closed.<br><br>
 
-Before you can receive the money, please verify that the issue is completed on <a href="https://polar.sh/maintainer/{{issue_org_name}}/issues">your Polar dashboard</a>.<br><br>
+Before you can receive the money, please verify that the issue is completed on <a href="https://polar.sh/dashboard/{{issue_org_name}}/issues">your Polar dashboard</a>.<br><br>
 
 {% if not maintainer_has_stripe_account %}
 Create a Stripe account with Polar today to ensure we can transfer the funds directly once the review period is completed.<br>
-<a href="https://polar.sh/maintainer/{{issue_org_name}}/finance">polar.sh/maintainer/{{issue_org_name}}/finance</a>
+<a href="https://polar.sh/dashboard/{{issue_org_name}}/finance">polar.sh/dashboard/{{issue_org_name}}/finance</a>
 {% endif %}
 """  # noqa: E501
 
@@ -158,7 +158,7 @@ class MaintainerPledgedIssueConfirmationPendingNotificationPayload(
 
 Your backers funded <a href="{{issue_url}}">{{issue_org_name}}/{{issue_repo_name}}#{{issue_number}}</a> with ${{pledge_amount_sum}}, which has now been closed.<br><br>
 
-Before you can receive your share, please verify that the issue is completed on <a href="https://polar.sh/maintainer/{{issue_org_name}}/issues">your Polar dashboard</a>.
+Before you can receive your share, please verify that the issue is completed on <a href="https://polar.sh/dashboard/{{issue_org_name}}/issues">your Polar dashboard</a>.
 When you're verifying the issue, you can also decide to split the rewards with other contributors.
 <br><br>
 
@@ -168,7 +168,7 @@ For backers that are paying by invoice on completion, we'll transfer the money a
 
 {% if not maintainer_has_account %}
 Create a Stripe account with Polar today to ensure we can transfer the funds directly once the review period is completed.<br>
-<a href="https://polar.sh/maintainer/{{issue_org_name}}/finance">polar.sh/maintainer/{{issue_org_name}}/finance</a>
+<a href="https://polar.sh/dashboard/{{issue_org_name}}/finance">polar.sh/dashboard/{{issue_org_name}}/finance</a>
 {% endif %}
 """  # noqa: E501
 
@@ -203,7 +203,7 @@ We&apos;ve notified the backers and unless we receive any disputes within the ne
 
 {% if not maintainer_has_stripe_account %}
 Create a Stripe account with Polar today to ensure we can transfer the funds directly once the review period is completed.<br>
-<a href="https://polar.sh/maintainer/{{issue_org_name}}/finance">polar.sh/maintainer/{{issue_org_name}}/finance</a>
+<a href="https://polar.sh/dashboard/{{issue_org_name}}/finance">polar.sh/dashboard/{{issue_org_name}}/finance</a>
 {% endif %}
 """  # noqa: E501
 
@@ -236,13 +236,13 @@ We've now notified all of your backers, and will soon start paying out the rewar
 
 If the backer have paid upfront, we'll transfer the money to you as soon as the 7 day dispute window is over. For backers that are paying by invoice on completion, we'll transfer the money as soon as the invoice has been paid.<br><br>
 
-You can track the payment status over on <a href="https://polar.sh/maintainer/{{issue_org_name}}/finance">your "Finance" page on Polar</a>.<br<br>
+You can track the payment status over on <a href="https://polar.sh/dashboard/{{issue_org_name}}/finance">your "Finance" page on Polar</a>.<br<br>
 
 If you have any questions, please reach out to us and we'll help you.<br><br>
 
 {% if not maintainer_has_account %}
 Create a Stripe account with Polar today to ensure we can transfer the funds as soon as possible.<br>
-<a href="https://polar.sh/maintainer/{{issue_org_name}}/finance">polar.sh/maintainer/{{issue_org_name}}/finance</a>
+<a href="https://polar.sh/dashboard/{{issue_org_name}}/finance">polar.sh/dashboard/{{issue_org_name}}/finance</a>
 {% endif %}
 """  # noqa: E501
 
@@ -546,9 +546,9 @@ class MaintainerDonationReceivedNotificationPayload(NotificationPayloadBase):
     def body(self) -> str:
         return """Hi,<br><br>
 
-Great news! {{organization_name}} just received a ${{donation_amount}} <a href="https://polar.sh/maintainer/{{organization_name}}/donations/overview">donation</a>.
+Great news! {{organization_name}} just received a ${{donation_amount}} <a href="https://polar.sh/dashboard/{{organization_name}}/donations/overview">donation</a>.
 
-It's already available on your <a href="https://polar.sh/maintainer/{{organization_name}}/finance/incoming">Polar Balance</a>.
+It's already available on your <a href="https://polar.sh/dashboard/{{organization_name}}/finance/incoming">Polar Balance</a>.
 """  # noqa: E501
 
 

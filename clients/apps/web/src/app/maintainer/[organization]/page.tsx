@@ -13,5 +13,5 @@ export default async function Page({
     params.organization,
   )
 
-  return redirect(`/maintainer/${organization.slug}/overview`)
+  return redirect(`/maintainer/${organization.slug}/home`)
 }

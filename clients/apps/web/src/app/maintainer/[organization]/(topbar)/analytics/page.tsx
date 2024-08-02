@@ -46,7 +46,7 @@ export default async function Page({
       interval: defaultInterval,
     })
     redirect(
-      `/maintainer/${organization.slug}/sales/overview?${urlSearchParams}`,
+      `/maintainer/${organization.slug}/analytics?${urlSearchParams}`,
       RedirectType.replace,
     )
   }
@@ -69,7 +69,7 @@ export default async function Page({
       end_date: toISODate(min([endDate, maxDate])),
     })
     redirect(
-      `/maintainer/${organization.slug}/sales/overview?${urlSearchParams}`,
+      `/maintainer/${organization.slug}/analytics?${urlSearchParams}`,
       RedirectType.replace,
     )
   }

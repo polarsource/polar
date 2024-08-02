@@ -99,10 +99,10 @@ const DashboardSidebar = () => {
           onScroll={handleScroll}
         >
           <div className="flex flex-col gap-y-12">
+            <MaintainerNavigation />
             {currentOrg && !hasLinkedExternalOrganizations && (
               <GitHubAppUpsell organization={currentOrg} />
             )}
-            <MaintainerNavigation />
           </div>
           <div className="flex flex-col">
             <div className="flex px-8">

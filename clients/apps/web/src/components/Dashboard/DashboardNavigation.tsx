@@ -6,7 +6,6 @@ import { useContext } from 'react'
 import { NavigationContainer } from './NavigationContainer'
 import {
   useAccountRoutes,
-  useCommerceRoutes,
   useCommunityRoutes,
   useFundingRoutes,
   useGeneralRoutes,
@@ -17,7 +16,6 @@ const MaintainerNavigation = () => {
   const org = orgContext?.organization
 
   const generalRoutesList = useGeneralRoutes(org)
-  const commerceRoutes = useCommerceRoutes(org)
   const fundingRoutes = useFundingRoutes(org)
   const communityRoutes = useCommunityRoutes(org)
   const accountRoutes = useAccountRoutes(org)
@@ -29,7 +27,6 @@ const MaintainerNavigation = () => {
   return (
     <div className="flex flex-col gap-y-10">
       <NavigationContainer routes={generalRoutesList} />
-      <NavigationContainer title="Commerce" routes={commerceRoutes} />
       <NavigationContainer title="Funding" routes={fundingRoutes} />
       <NavigationContainer
         title="Community"

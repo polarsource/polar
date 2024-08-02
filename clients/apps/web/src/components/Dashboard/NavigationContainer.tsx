@@ -4,8 +4,8 @@ import { twMerge } from 'tailwind-merge'
 import { RouteWithActive } from './navigation'
 
 export interface NavigationContainerProps {
-  title: string
   routes: RouteWithActive[]
+  title?: string
   dummyRoutes?: {
     title: string
     icon: React.ReactElement
@@ -19,14 +19,16 @@ export const NavigationContainer = ({
 }: NavigationContainerProps) => {
   return (
     <div className="mx-8 flex flex-col gap-y-4">
-      <span
-        className="dark:text-polar-500 text-xxs uppercase tracking-widest text-gray-400"
-        style={{
-          fontFeatureSettings: `'ss02'`,
-        }}
-      >
-        {title}
-      </span>
+      {title && (
+        <span
+          className="dark:text-polar-500 text-xxs uppercase tracking-widest text-gray-400"
+          style={{
+            fontFeatureSettings: `'ss02'`,
+          }}
+        >
+          {title}
+        </span>
+      )}
       <div className="flex flex-col gap-y-3">
         <div className="flex flex-col gap-y-3">
           {routes.map((route) => {

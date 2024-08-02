@@ -20,7 +20,7 @@ const PolarMenu = ({
 
   const hasOrgs = Boolean(userOrganizations && userOrganizations.length > 0)
 
-  const creatorPath = `${CONFIG.FRONTEND_BASE_URL}/maintainer/${userOrganizations?.[0]?.slug}/overview`
+  const creatorPath = `${CONFIG.FRONTEND_BASE_URL}/maintainer/${userOrganizations?.[0]?.slug}/home`
 
   return (
     <div className="flex h-9 flex-row items-center gap-x-6">

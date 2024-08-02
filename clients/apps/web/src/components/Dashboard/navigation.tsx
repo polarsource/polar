@@ -12,6 +12,7 @@ import {
   ShoppingBagOutlined,
   SpaceDashboardOutlined,
   SpokeOutlined,
+  TrendingUp,
   TuneOutlined,
   Webhook,
   WifiTetheringOutlined,
@@ -98,11 +99,18 @@ export const useDashboardRoutes = (
   return useResolveRoutes(dashboardRoutesList, org, allowAll)
 }
 
-export const useShopRoutes = (
+export const useGeneralRoutes = (
   org: Organization,
   allowAll?: boolean,
 ): RouteWithActive[] => {
-  return useResolveRoutes(shopRoutesList, org, allowAll)
+  return useResolveRoutes(generalRoutesList, org, allowAll)
+}
+
+export const useCommerceRoutes = (
+  org: Organization,
+  allowAll?: boolean,
+): RouteWithActive[] => {
+  return useResolveRoutes(commerceRoutesList, org, allowAll)
 }
 
 export const useFundingRoutes = (
@@ -140,14 +148,17 @@ export const usePersonalFinanceSubRoutes = (): SubRouteWithActive[] => {
 
 // internals below
 
-const shopRoutesList = (org: Organization): Route[] => [
+const generalRoutesList = (org: Organization): Route[] => [
   {
-    id: 'overview',
-    title: 'Overview',
+    id: 'home',
+    title: 'Home',
     icon: <SpaceDashboardOutlined fontSize="inherit" />,
-    link: `/maintainer/${org.slug}/overview`,
+    link: `/maintainer/${org.slug}/home`,
     if: true,
   },
+]
+
+const commerceRoutesList = (org: Organization): Route[] => [
   {
     id: 'products',
     title: 'Products',
@@ -172,25 +183,28 @@ const shopRoutesList = (org: Organization): Route[] => [
     id: 'org-sales',
     title: 'Sales',
     icon: <ShoppingBagOutlined fontSize="inherit" />,
-    link: `/maintainer/${org.slug}/sales/overview`,
+    link: `/maintainer/${org.slug}/sales`,
     checkIsActive: (currentRoute: string): boolean => {
       return currentRoute.startsWith(`/maintainer/${org.slug}/sales`)
     },
     if: true,
     subs: [
       {
-        title: 'Overview',
-        link: `/maintainer/${org.slug}/sales/overview`,
-      },
-      {
         title: 'Orders',
-        link: `/maintainer/${org.slug}/sales/orders`,
+        link: `/maintainer/${org.slug}/sales`,
       },
       {
         title: 'Subscriptions',
         link: `/maintainer/${org.slug}/sales/subscriptions`,
       },
     ],
+  },
+  {
+    id: 'analytics',
+    title: 'Analytics',
+    icon: <TrendingUp fontSize="inherit" />,
+    link: `/maintainer/${org.slug}/analytics`,
+    if: true,
   },
 ]
 
@@ -253,7 +267,8 @@ const communityRoutesList = (org: Organization): Route[] => [
 ]
 
 const dashboardRoutesList = (org: Organization): Route[] => [
-  ...shopRoutesList(org),
+  ...generalRoutesList(org),
+  ...commerceRoutesList(org),
   ...fundingRoutesList(org),
   ...communityRoutesList(org),
   ...accountRoutesList(org),

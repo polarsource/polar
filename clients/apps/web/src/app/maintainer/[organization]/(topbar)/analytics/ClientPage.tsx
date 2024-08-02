@@ -93,7 +93,7 @@ export default function ClientPage({
         productId,
         productPriceType,
       )
-      router.push(`/maintainer/${organization.slug}/sales/overview?${params}`)
+      router.push(`/maintainer/${organization.slug}/analytics?${params}`)
     },
     [
       router,
@@ -115,7 +115,7 @@ export default function ClientPage({
         productId,
         productPriceType,
       )
-      router.push(`/maintainer/${organization.slug}/sales/overview?${params}`)
+      router.push(`/maintainer/${organization.slug}/analytics?${params}`)
     },
     [router, organization, interval, focus, productId, productPriceType],
   )
@@ -140,7 +140,7 @@ export default function ClientPage({
           ? value.productPriceType
           : undefined,
       )
-      router.push(`/maintainer/${organization.slug}/sales/overview?${params}`)
+      router.push(`/maintainer/${organization.slug}/analytics?${params}`)
     },
     [router, organization, interval, startDate, endDate, focus],
   )
@@ -154,7 +154,7 @@ export default function ClientPage({
         productId,
         productPriceType,
       )
-      router.push(`/maintainer/${organization.slug}/sales/overview?${params}`)
+      router.push(`/maintainer/${organization.slug}/analytics?${params}`)
     },
     [
       router,

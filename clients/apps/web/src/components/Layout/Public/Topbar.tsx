@@ -31,7 +31,7 @@ const Topbar = ({
 
   const hasOrgs = Boolean(userOrganizations && userOrganizations.length > 0)
 
-  const creatorPath = `/maintainer/${userOrganizations?.[0]?.slug}/overview`
+  const creatorPath = `/maintainer/${userOrganizations?.[0]?.slug}/home`
 
   const githubAccount = currentUser?.oauth_accounts.find(
     (o) => o.platform === Platforms.GITHUB,

@@ -1,18 +1,18 @@
 import { Organization } from '@polar-sh/sdk'
 
-import { shouldBeOnboarded } from '@/hooks/onboarding'
 import { ArrowUpRightIcon } from '@heroicons/react/20/solid'
 import {
   AllInclusiveOutlined,
   AttachMoneyOutlined,
+  DataUsageOutlined,
   DiamondOutlined,
-  FavoriteBorderOutlined,
-  HowToVoteOutlined,
-  ShoppingCartOutlined,
+  DraftsOutlined,
+  HiveOutlined,
+  HowToVote,
+  ShoppingBagOutlined,
   SpaceDashboardOutlined,
-  StickyNote2Outlined,
+  SpokeOutlined,
   TuneOutlined,
-  VolunteerActivismOutlined,
   Webhook,
   WifiTetheringOutlined,
 } from '@mui/icons-material'
@@ -77,66 +77,53 @@ const applyIsActive = (path: string): ((r: Route) => RouteWithActive) => {
   }
 }
 
-export const useMaintainerRoutes = (
-  org?: Organization,
+const useResolveRoutes = (
+  routesResolver: (org: Organization) => Route[],
+  org: Organization,
   allowAll?: boolean,
 ): RouteWithActive[] => {
   const path = usePathname()
 
-  const r = useMemo(() => {
-    if (!org) {
-      return []
-    }
-
-    return maintainerRoutesList(org)
+  return useMemo(() => {
+    return routesResolver(org)
       .filter((o) => allowAll || o.if)
       .map(applyIsActive(path))
-  }, [org, path, allowAll])
-
-  return r
-}
-
-export const useMaintainerDisabledRoutes = (
-  org?: Organization,
-): RouteWithActive[] => {
-  const path = usePathname()
-
-  const r = useMemo(() => {
-    if (!org) {
-      return []
-    }
-
-    return maintainerRoutesList(org)
-      .filter((o) => {
-        switch (o.id) {
-          case 'org-issues':
-          case 'newsletter':
-          case 'products':
-          case 'donations':
-            return true
-          default:
-            return false
-        }
-      })
-      .filter((o) => !o.if)
-      .map(applyIsActive(path))
-  }, [org, path])
-
-  return r
+  }, [org, path, allowAll, routesResolver])
 }
 
 export const useDashboardRoutes = (
-  org: Organization | undefined,
+  org: Organization,
+  allowAll?: boolean,
 ): RouteWithActive[] => {
-  const path = usePathname()
+  return useResolveRoutes(dashboardRoutesList, org, allowAll)
+}
 
-  if (!org || shouldBeOnboarded(org)) {
-    return []
-  }
+export const useShopRoutes = (
+  org: Organization,
+  allowAll?: boolean,
+): RouteWithActive[] => {
+  return useResolveRoutes(shopRoutesList, org, allowAll)
+}
 
-  return dashboardRoutesList(org)
-    .filter((o) => o.if)
-    .map(applyIsActive(path))
+export const useFundingRoutes = (
+  org: Organization,
+  allowAll?: boolean,
+): RouteWithActive[] => {
+  return useResolveRoutes(fundingRoutesList, org, allowAll)
+}
+
+export const useCommunityRoutes = (
+  org: Organization,
+  allowAll?: boolean,
+): RouteWithActive[] => {
+  return useResolveRoutes(communityRoutesList, org, allowAll)
+}
+
+export const useAccountRoutes = (
+  org: Organization,
+  allowAll?: boolean,
+): RouteWithActive[] => {
+  return useResolveRoutes(accountRoutesList, org, allowAll)
 }
 
 export const useBackerRoutes = (): RouteWithActive[] => {
@@ -153,35 +140,23 @@ export const usePersonalFinanceSubRoutes = (): SubRouteWithActive[] => {
 
 // internals below
 
-const shopRoutesList = (org: Organization): Route[] => []
-
-const maintainerRoutesList = (org: Organization): Route[] => [
+const shopRoutesList = (org: Organization): Route[] => [
   {
     id: 'overview',
     title: 'Overview',
-    icon: <SpaceDashboardOutlined className="h-5 w-5" fontSize="inherit" />,
+    icon: <SpaceDashboardOutlined fontSize="inherit" />,
     link: `/maintainer/${org.slug}/overview`,
     if: true,
   },
   {
-    id: 'newsletter',
-    title: 'Newsletter',
-    icon: <StickyNote2Outlined className="h-5 w-5" fontSize="inherit" />,
-    link: `/maintainer/${org.slug}/posts`,
-    checkIsActive: (currentRoute: string): boolean => {
-      return currentRoute.startsWith(`/maintainer/${org.slug}/posts`)
-    },
-    if: org.feature_settings?.articles_enabled,
-  },
-  {
     id: 'products',
     title: 'Products',
-    icon: <DiamondOutlined className="h-5 w-5" fontSize="inherit" />,
+    icon: <HiveOutlined fontSize="inherit" />,
     link: `/maintainer/${org.slug}/products/overview`,
     checkIsActive: (currentRoute: string): boolean => {
       return currentRoute.startsWith(`/maintainer/${org.slug}/products`)
     },
-    if: org.feature_settings?.subscriptions_enabled,
+    if: true,
     subs: [
       {
         title: 'Overview',
@@ -196,12 +171,12 @@ const maintainerRoutesList = (org: Organization): Route[] => [
   {
     id: 'org-sales',
     title: 'Sales',
-    icon: <ShoppingCartOutlined className="h-5 w-5" fontSize="inherit" />,
+    icon: <ShoppingBagOutlined fontSize="inherit" />,
     link: `/maintainer/${org.slug}/sales/overview`,
     checkIsActive: (currentRoute: string): boolean => {
       return currentRoute.startsWith(`/maintainer/${org.slug}/sales`)
     },
-    if: org.feature_settings?.subscriptions_enabled,
+    if: true,
     subs: [
       {
         title: 'Overview',
@@ -217,25 +192,18 @@ const maintainerRoutesList = (org: Organization): Route[] => [
       },
     ],
   },
-  {
-    id: 'donations',
-    title: 'Donations',
-    icon: <VolunteerActivismOutlined className="h-5 w-5" fontSize="inherit" />,
-    link: `/maintainer/${org.slug}/donations/overview`,
-    checkIsActive: (currentRoute: string): boolean => {
-      return currentRoute.startsWith(`/maintainer/${org.slug}/donations`)
-    },
-    if: org.donations_enabled,
-  },
+]
+
+const fundingRoutesList = (org: Organization): Route[] => [
   {
     id: 'org-issues',
     title: 'Issues',
-    icon: <HowToVoteOutlined className="h-5 w-5" fontSize="inherit" />,
+    icon: <DataUsageOutlined fontSize="inherit" />,
     link: `/maintainer/${org.slug}/issues/overview`,
     checkIsActive: (currentRoute: string): boolean => {
       return currentRoute.startsWith(`/maintainer/${org.slug}/issues`)
     },
-    if: org.feature_settings?.issue_funding_enabled,
+    if: true,
     subs: [
       {
         title: 'Overview',
@@ -252,12 +220,14 @@ const maintainerRoutesList = (org: Organization): Route[] => [
     ],
   },
   {
-    id: 'funding',
-    title: 'Funding',
-    link: `/maintainer/${org.slug}/funding`,
-    icon: <FavoriteBorderOutlined className="h-5 w-5" fontSize="inherit" />,
+    id: 'donations',
+    title: 'Donations',
+    icon: <SpokeOutlined fontSize="inherit" />,
+    link: `/maintainer/${org.slug}/donations/overview`,
+    checkIsActive: (currentRoute: string): boolean => {
+      return currentRoute.startsWith(`/maintainer/${org.slug}/donations`)
+    },
     if: true,
-    subs: undefined,
   },
   {
     id: 'promote',
@@ -267,18 +237,26 @@ const maintainerRoutesList = (org: Organization): Route[] => [
     if: true,
     subs: undefined,
   },
+]
+
+const communityRoutesList = (org: Organization): Route[] => [
   {
-    id: 'webhooks',
-    title: 'Webhooks',
-    icon: <Webhook fontSize="inherit" />,
-    link: `/maintainer/${org.slug}/webhooks`,
-    if: false,
+    id: 'newsletter',
+    title: 'Newsletter',
+    icon: <DraftsOutlined fontSize="inherit" />,
+    link: `/maintainer/${org.slug}/posts`,
     checkIsActive: (currentRoute: string): boolean => {
-      return currentRoute.startsWith(
-        `/maintainer/${org.slug}/settings/webhooks`,
-      )
+      return currentRoute.startsWith(`/maintainer/${org.slug}/posts`)
     },
+    if: true,
   },
+]
+
+const dashboardRoutesList = (org: Organization): Route[] => [
+  ...shopRoutesList(org),
+  ...fundingRoutesList(org),
+  ...communityRoutesList(org),
+  ...accountRoutesList(org),
 ]
 
 const backerRoutesList = (): Route[] => [
@@ -302,7 +280,7 @@ const backerRoutesList = (): Route[] => [
     id: 'funding',
     title: 'Funded Issues',
     link: `/funding`,
-    icon: <HowToVoteOutlined className="h-5 w-5" fontSize="inherit" />,
+    icon: <HowToVote className="h-5 w-5" fontSize="inherit" />,
     if: true,
     subs: undefined,
   },
@@ -363,7 +341,7 @@ const orgFinanceSubRoutesList = (org: Organization): SubRoute[] => [
   },
 ]
 
-const dashboardRoutesList = (org: Organization): Route[] => [
+const accountRoutesList = (org: Organization): Route[] => [
   {
     id: 'finance',
     title: 'Finance',
@@ -379,6 +357,18 @@ const dashboardRoutesList = (org: Organization): Route[] => [
     icon: <TuneOutlined className="h-5 w-5" fontSize="inherit" />,
     if: true,
     subs: undefined,
+  },
+  {
+    id: 'webhooks',
+    title: 'Webhooks',
+    icon: <Webhook fontSize="inherit" />,
+    link: `/maintainer/${org.slug}/webhooks`,
+    if: false,
+    checkIsActive: (currentRoute: string): boolean => {
+      return currentRoute.startsWith(
+        `/maintainer/${org.slug}/settings/webhooks`,
+      )
+    },
   },
 ]
 

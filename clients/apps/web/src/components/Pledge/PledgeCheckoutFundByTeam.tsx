@@ -69,7 +69,7 @@ const PledgeCheckoutFundByTeam = ({
         },
       })
 
-      router.push(`/maintainer/${selectedOrg.slug}/funding`)
+      router.push(`/maintainer/${selectedOrg.slug}`)
     } catch (e) {
       const detail = await toDetailError(e)
       if (detail) {

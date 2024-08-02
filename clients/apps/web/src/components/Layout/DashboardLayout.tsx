@@ -21,12 +21,11 @@ import {
 } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { CommandPaletteTrigger } from '../CommandPalette/CommandPaletteTrigger'
-import DashboardNavigation from '../Dashboard/DashboardNavigation'
+import MaintainerNavigation from '../Dashboard/DashboardNavigation'
 import { DashboardProvider, useDashboard } from '../Dashboard/DashboardProvider'
-import DisabledMaintainerNavigation from '../Dashboard/DisabledMaintainerNavigation'
-import MaintainerNavigation from '../Dashboard/MaintainerNavigation'
 import MaintainerRepoSelection from '../Dashboard/MaintainerRepoSelection'
 import MetaNavigation from '../Dashboard/MetaNavigation'
+import GitHubIcon from '../Icons/GitHubIcon'
 import DashboardProfileDropdown from '../Navigation/DashboardProfileDropdown'
 import { BrandingMenu } from './Public/BrandingMenu'
 
@@ -34,12 +33,17 @@ const GitHubAppUpsell = ({ organization }: { organization: Organization }) => {
   const redirectToGitHubInstallation =
     useRedirectToGitHubInstallation(organization)
   return (
-    <div className="dark:from-polar-800 dark:to-polar-800 m-6 flex flex-row gap-y-8 rounded-2xl bg-gradient-to-r from-blue-200 to-blue-400 p-4 text-white">
+    <div className="dark:from-polar-800 dark:to-polar-800 mx-6 flex flex-row gap-y-8 rounded-3xl bg-gradient-to-r from-blue-200 to-blue-400 p-6 text-white">
       <div className="flex w-full flex-col gap-y-4">
+        <GitHubIcon width={30} />
         <h3 className="leading-normal [text-wrap:balance]">
-          Import your repositories & enable crowdfunding for issues
+          Import repositories & enable crowdfunding for issues
         </h3>
-        <Button size="sm" onClick={redirectToGitHubInstallation}>
+        <Button
+          className="self-start"
+          size="sm"
+          onClick={redirectToGitHubInstallation}
+        >
           <div className="flex flex-row items-center gap-2">
             <span>Install GitHub App</span>
           </div>
@@ -91,16 +95,14 @@ const DashboardSidebar = () => {
         </div>
 
         <div
-          className="flex w-full flex-grow flex-col gap-y-8 md:h-full md:justify-between md:overflow-y-auto"
+          className="flex w-full flex-grow flex-col gap-y-12 py-8 md:h-full md:justify-between md:overflow-y-auto"
           onScroll={handleScroll}
         >
-          <div>
+          <div className="flex flex-col gap-y-12">
             {currentOrg && !hasLinkedExternalOrganizations && (
               <GitHubAppUpsell organization={currentOrg} />
             )}
             <MaintainerNavigation />
-            <DashboardNavigation />
-            <DisabledMaintainerNavigation />
           </div>
           <div className="flex flex-col">
             <div className="flex px-8">

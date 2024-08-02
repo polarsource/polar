@@ -1,19 +1,14 @@
 import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
 import { useContext } from 'react'
-import {
-  useDashboardRoutes,
-  useMaintainerRoutes,
-} from '../Dashboard/navigation'
+import { useDashboardRoutes } from '../Dashboard/navigation'
 
 export const useRoute = () => {
   const orgContext = useContext(MaintainerOrganizationContext)
   const org = orgContext?.organization
 
-  const maintainerRoutes = useMaintainerRoutes(org, true)
-  const dashboardRoutes = useDashboardRoutes(org)
+  const dashboardRoutes = useDashboardRoutes(org, true)
 
-  const routes = [...maintainerRoutes, ...dashboardRoutes]
-  const currentRoute = routes.find((r) => r.isActive)
+  const currentRoute = dashboardRoutes.find((r) => r.isActive)
 
   return currentRoute
 }

@@ -1,56 +1,41 @@
-import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
-import Link from 'next/link'
-import { useContext } from 'react'
-import { twMerge } from 'tailwind-merge'
-import { useDashboardRoutes } from './navigation'
+'use client'
 
-const DashboardNavigation = () => {
+import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
+import { Face } from '@mui/icons-material'
+import { useContext } from 'react'
+import { NavigationContainer } from './NavigationContainer'
+import {
+  useAccountRoutes,
+  useCommunityRoutes,
+  useFundingRoutes,
+  useShopRoutes,
+} from './navigation'
+
+const MaintainerNavigation = () => {
   const orgContext = useContext(MaintainerOrganizationContext)
   const org = orgContext?.organization
-  const navs = useDashboardRoutes(org)
 
-  if (!org || navs.length === 0) {
+  const shopRoutes = useShopRoutes(org)
+  const fundingRoutes = useFundingRoutes(org)
+  const communityRoutes = useCommunityRoutes(org)
+  const accountRoutes = useAccountRoutes(org)
+
+  if (!org) {
     return <></>
   }
 
   return (
-    <>
-      <div className="flex w-full flex-row items-center gap-x-2 px-7 pt-2">
-        <div className="dark:text-polar-400 px-3 py-1 text-[10px] font-medium uppercase tracking-widest text-gray-500">
-          Account
-        </div>
-      </div>
-      <div className="flex flex-col gap-2 px-4 py-3">
-        {navs.map((n) => (
-          <div key={n.link} className="flex flex-col gap-4">
-            <Link
-              className={twMerge(
-                'flex items-center justify-between gap-x-3 rounded-lg border border-transparent px-4 transition-colors',
-                n.isActive
-                  ? 'text-blue-500 dark:text-blue-400'
-                  : 'dark:text-polar-500 dark:hover:text-polar-200 text-gray-700 hover:text-blue-500',
-              )}
-              href={n.link}
-            >
-              <span className="flex flex-row items-center gap-x-3">
-                {'icon' in n && n.icon ? (
-                  <span
-                    className={twMerge(
-                      'flex h-8 w-8 flex-col items-center justify-center rounded-full bg-transparent text-[18px]',
-                      n.isActive ? 'dark:text-blue-400' : 'bg-transparent',
-                    )}
-                  >
-                    {n.icon}
-                  </span>
-                ) : undefined}
-                <span className="text-sm font-medium">{n.title}</span>
-              </span>
-            </Link>
-          </div>
-        ))}
-      </div>
-    </>
+    <div className="flex flex-col gap-y-10">
+      <NavigationContainer title="Commerce" routes={shopRoutes} />
+      <NavigationContainer title="Funding" routes={fundingRoutes} />
+      <NavigationContainer
+        title="Community"
+        routes={communityRoutes}
+        dummyRoutes={[{ title: 'Audience', icon: <Face fontSize="inherit" /> }]}
+      />
+      <NavigationContainer title="Account" routes={accountRoutes} />
+    </div>
   )
 }
 
-export default DashboardNavigation
+export default MaintainerNavigation

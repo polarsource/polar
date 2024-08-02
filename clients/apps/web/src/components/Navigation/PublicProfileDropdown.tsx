@@ -10,7 +10,7 @@ import Avatar from 'polarkit/components/ui/atoms/avatar'
 import { Separator } from 'polarkit/components/ui/separator'
 import { useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
-import { useBackerRoutes, useDashboardRoutes } from '../Dashboard/navigation'
+import { useBackerRoutes } from '../Dashboard/navigation'
 import { LinkItem, ListItem, Profile, TextItem } from './Navigation'
 
 const PublicProfileDropdown = ({
@@ -41,7 +41,6 @@ const PublicProfileDropdown = ({
 
   const backerRoutes = useBackerRoutes()
   const filteredBackerRoutes = showAllBackerRoutes ? backerRoutes : []
-  const personalRoutes = useDashboardRoutes(undefined)
 
   if (!loggedUser) {
     return <></>
@@ -89,18 +88,6 @@ const PublicProfileDropdown = ({
                   <span className="mx-2 text-sm">{n.title}</span>
                 </LinkItem>
               ))}
-
-              {personalRoutes.map((n) => {
-                return (
-                  <LinkItem
-                    href={`${CONFIG.FRONTEND_BASE_URL}${n.link}`}
-                    icon={n.icon}
-                    key={n.link}
-                  >
-                    <span className="mx-2 text-sm">{n.title}</span>
-                  </LinkItem>
-                )
-              })}
 
               <Separator className="my-2" />
 

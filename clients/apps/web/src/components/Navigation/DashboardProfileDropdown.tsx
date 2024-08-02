@@ -66,7 +66,7 @@ const DashboardProfileDropdown = ({ className = '' }) => {
               <div className="mb-2 flex flex-col">
                 {orgs.map((org) => (
                   <Link
-                    href={`/maintainer/${org.slug}/home`}
+                    href={`/maintainer/${org.slug}`}
                     className="w-full"
                     key={org.id}
                   >

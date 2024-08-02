@@ -146,7 +146,9 @@ const generalRoutesList = (org: Organization): Route[] => [
     id: 'home',
     title: 'Home',
     icon: <SpaceDashboardOutlined fontSize="inherit" />,
-    link: `/maintainer/${org.slug}/home`,
+    link: `/maintainer/${org.slug}`,
+    checkIsActive: (currentRoute: string) =>
+      currentRoute === `/maintainer/${org.slug}`,
     if: true,
   },
   {

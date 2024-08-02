@@ -76,6 +76,12 @@ const ClientPage = ({ organization }: { organization: Organization }) => {
             {benefits?.items?.map((benefit) => (
               <ListItem
                 key={benefit.id}
+                className={twMerge(
+                  'dark:hover:bg-polar-800',
+                  selectedBenefit?.id === benefit.id
+                    ? 'dark:bg-polar-800 bg-gray-50'
+                    : 'dark:bg-polar-900 bg-white',
+                )}
                 selected={selectedBenefit?.id === benefit.id}
                 onSelect={() => setSelectedBenefit(benefit)}
               >
@@ -350,6 +356,7 @@ const RecommendedBenefits = ({
       <List>
         {!hasDiscord && (
           <ListItem
+            className="dark:hover:bg-polar-800 dark:bg-polar-900 bg-white"
             onSelect={() => {
               setCreateModalDefaultValues({
                 description: 'Invite to community Discord server',
@@ -366,6 +373,7 @@ const RecommendedBenefits = ({
 
         {!hasAds && (
           <ListItem
+            className="dark:hover:bg-polar-800 dark:bg-polar-900 bg-white"
             onSelect={() => {
               setCreateModalDefaultValues({
                 description: 'Logo in README',

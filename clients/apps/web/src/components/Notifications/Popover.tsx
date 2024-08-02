@@ -638,7 +638,7 @@ const MaintainerNewPaidSubscription = ({
           <>
             {payload.subscriber_name} is now subscribing to{' '}
             <InternalLink
-              href={`/maintainer/${payload.tier_organization_name}/sales/subscriptions`}
+              href={`/dashboard/${payload.tier_organization_name}/sales/subscriptions`}
             >
               <>{payload.tier_name}</>
             </InternalLink>{' '}
@@ -665,7 +665,7 @@ const MaintainerNewProductSale = ({
           <>
             {payload.customer_name} just purchased{' '}
             <InternalLink
-              href={`/maintainer/${payload.organization_name}/sales/orders`}
+              href={`/dashboard/${payload.organization_name}/sales/orders`}
             >
               <>{payload.product_name}</>
             </InternalLink>{' '}
@@ -748,7 +748,7 @@ const MaintainerDonationReceived = ({
           <>
             {payload.organization_name} received a ${payload.donation_amount}{' '}
             <InternalLink
-              href={`/maintainer/${payload.organization_name}/donations/overview`}
+              href={`/dashboard/${payload.organization_name}/donations/overview`}
             >
               <>donation</>
             </InternalLink>

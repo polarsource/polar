@@ -46,7 +46,7 @@ export const AccountWidget = ({ className }: AccountWidgetProps) => {
         <h2 className="text-2xl">
           ${getCentsInDollarString(summary?.balance.amount ?? 0, false)}
         </h2>
-        <Link href={`/maintainer/${org.slug}/finance`}>
+        <Link href={`/dashboard/${org.slug}/finance`}>
           <Button variant={canWithdraw ? 'default' : 'secondary'}>
             {canWithdraw ? 'Withdraw' : 'View Transactions'}
           </Button>

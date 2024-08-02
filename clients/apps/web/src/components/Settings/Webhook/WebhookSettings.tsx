@@ -102,7 +102,7 @@ const Endpoint = ({
         </div>
         <div className="dark:text-polar-400 flex flex-shrink-0 flex-row items-center gap-x-4 space-x-4 text-gray-500">
           <Link
-            href={`/maintainer/${organization.slug}/settings/webhooks/endpoints/${endpoint.id}`}
+            href={`/dashboard/${organization.slug}/settings/webhooks/endpoints/${endpoint.id}`}
           >
             <Button asChild variant="secondary">
               Details

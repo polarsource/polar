@@ -66,7 +66,7 @@ const DashboardProfileDropdown = ({ className = '' }) => {
               <div className="mb-2 flex flex-col">
                 {orgs.map((org) => (
                   <Link
-                    href={`/maintainer/${org.slug}`}
+                    href={`/dashboard/${org.slug}`}
                     className="w-full"
                     key={org.id}
                   >
@@ -79,7 +79,7 @@ const DashboardProfileDropdown = ({ className = '' }) => {
             ) : null}
 
             <LinkItem
-              href="/maintainer/create"
+              href="/dashboard/create"
               icon={
                 <AddOutlined
                   fontSize="small"

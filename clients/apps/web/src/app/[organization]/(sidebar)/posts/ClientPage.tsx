@@ -92,7 +92,7 @@ const ClientPage = ({
                       </p>
                       <Link
                         className="mt-6"
-                        href={`/maintainer/${organization.slug}/posts/new`}
+                        href={`/dashboard/${organization.slug}/posts/new`}
                       >
                         <Button>Write a Post</Button>
                       </Link>

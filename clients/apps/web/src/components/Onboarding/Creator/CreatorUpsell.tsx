@@ -82,7 +82,7 @@ export const useUpsellSteps = () => {
         title: 'Write your first post',
         description:
           'Start building a community & newsletter by writing your first post – your hello world on Polar',
-        href: `/maintainer/${currentOrg.slug}/posts/new`,
+        href: `/dashboard/${currentOrg.slug}/posts/new`,
         onboardingKey: 'postCreated',
         onDismiss: handleDismiss,
       })
@@ -101,7 +101,7 @@ export const useUpsellSteps = () => {
         title: 'Setup paid subscriptions & membership benefits',
         description:
           'Offer built-in benefits like premium posts, Discord invites, sponsor ads & private GitHub repository access',
-        href: `/maintainer/${currentOrg.slug}/products/overview`,
+        href: `/dashboard/${currentOrg.slug}/products/overview`,
         onboardingKey: 'subscriptionTierCreated',
         onDismiss: handleDismiss,
       })
@@ -114,7 +114,7 @@ export const useUpsellSteps = () => {
         ),
         title: 'Add Polar to your FUNDING.yml',
         description: `Add 'polar: ${currentOrg.slug}' to your FUNDING.yml to link your Polar page with your GitHub repository`,
-        href: `/maintainer/${currentOrg.slug}/promote`,
+        href: `/dashboard/${currentOrg.slug}/promote`,
         onboardingKey: 'fundingInYaml',
         onDismiss: handleDismiss,
       })

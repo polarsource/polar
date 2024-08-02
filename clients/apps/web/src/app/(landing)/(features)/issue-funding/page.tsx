@@ -45,7 +45,7 @@ export default function Page() {
               size="large"
               text="Continue with GitHub"
               userSignupType={UserSignupType.MAINTAINER}
-              returnTo="/maintainer"
+              returnTo="/dashboard"
             />
             <p className="dark:text-polar-500 text-xs leading-normal text-gray-400">
               By using Polar you agree to our{' '}

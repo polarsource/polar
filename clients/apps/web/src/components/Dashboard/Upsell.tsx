@@ -33,7 +33,7 @@ export const MaintainerUpsell = () => {
       title="Become a creator"
       description="Build, engage & convert your own community of free- and paid subscribers."
     >
-      <Link href="/maintainer/create">
+      <Link href="/dashboard/create">
         <Button size="sm" className="-z-1 self-start" type="button">
           <span>Get Started</span>
           <ArrowForwardOutlined className="ml-2" fontSize="inherit" />
@@ -56,7 +56,7 @@ export const SetupProductsUpsell = () => {
       title="Create & Promote Products"
       description="Monetize your projects by selling digital products, subscriptions, and services to your community."
     >
-      <Link href={`/maintainer/${firstOrg.slug}/products/overview`}>
+      <Link href={`/dashboard/${firstOrg.slug}/products/overview`}>
         <Button size="sm" className="-z-1">
           <span>Get Started</span>
           <ArrowForwardOutlined className="ml-2" fontSize="inherit" />

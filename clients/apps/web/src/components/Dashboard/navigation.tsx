@@ -106,13 +106,6 @@ export const useGeneralRoutes = (
   return useResolveRoutes(generalRoutesList, org, allowAll)
 }
 
-export const useCommerceRoutes = (
-  org: Organization,
-  allowAll?: boolean,
-): RouteWithActive[] => {
-  return useResolveRoutes(commerceRoutesList, org, allowAll)
-}
-
 export const useFundingRoutes = (
   org: Organization,
   allowAll?: boolean,
@@ -156,9 +149,6 @@ const generalRoutesList = (org: Organization): Route[] => [
     link: `/maintainer/${org.slug}/home`,
     if: true,
   },
-]
-
-const commerceRoutesList = (org: Organization): Route[] => [
   {
     id: 'products',
     title: 'Products',
@@ -268,7 +258,6 @@ const communityRoutesList = (org: Organization): Route[] => [
 
 const dashboardRoutesList = (org: Organization): Route[] => [
   ...generalRoutesList(org),
-  ...commerceRoutesList(org),
   ...fundingRoutesList(org),
   ...communityRoutesList(org),
   ...accountRoutesList(org),

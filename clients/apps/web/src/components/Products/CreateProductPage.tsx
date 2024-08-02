@@ -92,7 +92,7 @@ export const CreateProductPage = ({ organization }: CreateProductPageProps) => {
         revalidate(`products:${organization.id}:recurring`)
         revalidate(`products:${organization.id}:one_time`)
 
-        router.push(`/maintainer/${organization.slug}/products/overview`)
+        router.push(`/dashboard/${organization.slug}/products/overview`)
       } catch (e) {
         if (e instanceof ResponseError) {
           const body = await e.response.json()

@@ -29,7 +29,7 @@ export const API = () => {
             className="self-start"
             text="Continue with GitHub"
             userSignupType={UserSignupType.MAINTAINER}
-            returnTo="/maintainer"
+            returnTo="/dashboard"
           />
           <Link href="/docs/api">
             <Button size="lg" variant="ghost">

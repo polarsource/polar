@@ -131,7 +131,7 @@ const OrganizationAccountBanner: React.FC<{ organization: Organization }> = ({
 }) => {
   const { data: account, isLoading: organizationAccountIsLoading } =
     useOrganizationAccount(organization?.id)
-  const setupLink = `/maintainer/${organization.slug}/finance/account`
+  const setupLink = `/dashboard/${organization.slug}/finance/account`
 
   if (organizationAccountIsLoading) {
     return null

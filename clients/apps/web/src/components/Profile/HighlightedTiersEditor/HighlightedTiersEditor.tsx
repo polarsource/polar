@@ -211,7 +211,7 @@ const HighlightedTiersEditorAuthenticatedEmptyState = ({
             >
               Setup Suggested Tier
             </Button>
-            <Link href={`/maintainer/${organization.slug}/products/new`}>
+            <Link href={`/dashboard/${organization.slug}/products/new`}>
               <Button variant="ghost" fullWidth size="sm">
                 Create Custom
               </Button>

@@ -19,7 +19,7 @@ export const LastPitch = () => {
             text="Signup with GitHub"
             size="large"
             userSignupType={UserSignupType.MAINTAINER}
-            returnTo="/maintainer"
+            returnTo="/dashboard"
           />
         </div>
       </div>

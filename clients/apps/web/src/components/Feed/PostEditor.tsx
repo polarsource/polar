@@ -267,7 +267,7 @@ const Sidebar = () => {
                     <p className="dark:text-polar-400 text-sm text-gray-600">
                       Setup your first ad{' '}
                       <Link
-                        href={`/maintainer/${org.slug}/products/benefits`}
+                        href={`/dashboard/${org.slug}/products/benefits`}
                         className="text-blue-500 hover:text-blue-400 dark:text-blue-400 dark:hover:text-blue-300"
                       >
                         subscription benefit

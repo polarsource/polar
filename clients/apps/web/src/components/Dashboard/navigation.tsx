@@ -146,28 +146,28 @@ const generalRoutesList = (org: Organization): Route[] => [
     id: 'home',
     title: 'Home',
     icon: <SpaceDashboardOutlined fontSize="inherit" />,
-    link: `/maintainer/${org.slug}`,
+    link: `/dashboard/${org.slug}`,
     checkIsActive: (currentRoute: string) =>
-      currentRoute === `/maintainer/${org.slug}`,
+      currentRoute === `/dashboard/${org.slug}`,
     if: true,
   },
   {
     id: 'products',
     title: 'Products',
     icon: <HiveOutlined fontSize="inherit" />,
-    link: `/maintainer/${org.slug}/products/overview`,
+    link: `/dashboard/${org.slug}/products/overview`,
     checkIsActive: (currentRoute: string): boolean => {
-      return currentRoute.startsWith(`/maintainer/${org.slug}/products`)
+      return currentRoute.startsWith(`/dashboard/${org.slug}/products`)
     },
     if: true,
     subs: [
       {
         title: 'Overview',
-        link: `/maintainer/${org.slug}/products/overview`,
+        link: `/dashboard/${org.slug}/products/overview`,
       },
       {
         title: 'Benefits',
-        link: `/maintainer/${org.slug}/products/benefits`,
+        link: `/dashboard/${org.slug}/products/benefits`,
       },
     ],
   },
@@ -175,19 +175,19 @@ const generalRoutesList = (org: Organization): Route[] => [
     id: 'org-sales',
     title: 'Sales',
     icon: <ShoppingBagOutlined fontSize="inherit" />,
-    link: `/maintainer/${org.slug}/sales`,
+    link: `/dashboard/${org.slug}/sales`,
     checkIsActive: (currentRoute: string): boolean => {
-      return currentRoute.startsWith(`/maintainer/${org.slug}/sales`)
+      return currentRoute.startsWith(`/dashboard/${org.slug}/sales`)
     },
     if: true,
     subs: [
       {
         title: 'Orders',
-        link: `/maintainer/${org.slug}/sales`,
+        link: `/dashboard/${org.slug}/sales`,
       },
       {
         title: 'Subscriptions',
-        link: `/maintainer/${org.slug}/sales/subscriptions`,
+        link: `/dashboard/${org.slug}/sales/subscriptions`,
       },
     ],
   },
@@ -195,7 +195,7 @@ const generalRoutesList = (org: Organization): Route[] => [
     id: 'analytics',
     title: 'Analytics',
     icon: <TrendingUp fontSize="inherit" />,
-    link: `/maintainer/${org.slug}/analytics`,
+    link: `/dashboard/${org.slug}/analytics`,
     if: true,
   },
 ]
@@ -205,23 +205,23 @@ const fundingRoutesList = (org: Organization): Route[] => [
     id: 'org-issues',
     title: 'Issues',
     icon: <DataUsageOutlined fontSize="inherit" />,
-    link: `/maintainer/${org.slug}/issues/overview`,
+    link: `/dashboard/${org.slug}/issues/overview`,
     checkIsActive: (currentRoute: string): boolean => {
-      return currentRoute.startsWith(`/maintainer/${org.slug}/issues`)
+      return currentRoute.startsWith(`/dashboard/${org.slug}/issues`)
     },
     if: true,
     subs: [
       {
         title: 'Overview',
-        link: `/maintainer/${org.slug}/issues/overview`,
+        link: `/dashboard/${org.slug}/issues/overview`,
       },
       {
         title: 'Badge',
-        link: `/maintainer/${org.slug}/issues/badge`,
+        link: `/dashboard/${org.slug}/issues/badge`,
       },
       {
         title: 'Organizations',
-        link: `/maintainer/${org.slug}/issues/organizations`,
+        link: `/dashboard/${org.slug}/issues/organizations`,
       },
     ],
   },
@@ -229,9 +229,9 @@ const fundingRoutesList = (org: Organization): Route[] => [
     id: 'donations',
     title: 'Donations',
     icon: <SpokeOutlined fontSize="inherit" />,
-    link: `/maintainer/${org.slug}/donations/overview`,
+    link: `/dashboard/${org.slug}/donations/overview`,
     checkIsActive: (currentRoute: string): boolean => {
-      return currentRoute.startsWith(`/maintainer/${org.slug}/donations`)
+      return currentRoute.startsWith(`/dashboard/${org.slug}/donations`)
     },
     if: true,
   },
@@ -239,7 +239,7 @@ const fundingRoutesList = (org: Organization): Route[] => [
     id: 'promote',
     title: 'Promote',
     icon: <WifiTetheringOutlined fontSize="inherit" />,
-    link: `/maintainer/${org.slug}/promote`,
+    link: `/dashboard/${org.slug}/promote`,
     if: true,
     subs: undefined,
   },
@@ -250,9 +250,9 @@ const communityRoutesList = (org: Organization): Route[] => [
     id: 'newsletter',
     title: 'Newsletter',
     icon: <DraftsOutlined fontSize="inherit" />,
-    link: `/maintainer/${org.slug}/posts`,
+    link: `/dashboard/${org.slug}/posts`,
     checkIsActive: (currentRoute: string): boolean => {
-      return currentRoute.startsWith(`/maintainer/${org.slug}/posts`)
+      return currentRoute.startsWith(`/dashboard/${org.slug}/posts`)
     },
     if: true,
   },
@@ -330,20 +330,20 @@ const personalFinanceSubRoutesList = (): SubRoute[] => [
 const orgFinanceSubRoutesList = (org: Organization): SubRoute[] => [
   {
     title: 'Incoming',
-    link: `/maintainer/${org.slug}/finance/incoming`,
+    link: `/dashboard/${org.slug}/finance/incoming`,
   },
   {
     title: 'Outgoing',
-    link: `/maintainer/${org.slug}/finance/outgoing`,
+    link: `/dashboard/${org.slug}/finance/outgoing`,
   },
   {
     title: 'Issue Funding',
-    link: `/maintainer/${org.slug}/finance/issue-funding`,
+    link: `/dashboard/${org.slug}/finance/issue-funding`,
   },
 
   {
     title: 'Payout Account',
-    link: `/maintainer/${org.slug}/finance/account`,
+    link: `/dashboard/${org.slug}/finance/account`,
   },
 ]
 
@@ -351,7 +351,7 @@ const accountRoutesList = (org: Organization): Route[] => [
   {
     id: 'finance',
     title: 'Finance',
-    link: `/maintainer/${org.slug}/finance`,
+    link: `/dashboard/${org.slug}/finance`,
     icon: <AttachMoneyOutlined className="h-5 w-5" fontSize="inherit" />,
     if: true,
     subs: orgFinanceSubRoutesList(org),
@@ -359,7 +359,7 @@ const accountRoutesList = (org: Organization): Route[] => [
   {
     id: 'settings',
     title: 'Settings',
-    link: `/maintainer/${org.slug}/settings`,
+    link: `/dashboard/${org.slug}/settings`,
     icon: <TuneOutlined className="h-5 w-5" fontSize="inherit" />,
     if: true,
     subs: undefined,
@@ -368,12 +368,10 @@ const accountRoutesList = (org: Organization): Route[] => [
     id: 'webhooks',
     title: 'Webhooks',
     icon: <Webhook fontSize="inherit" />,
-    link: `/maintainer/${org.slug}/webhooks`,
+    link: `/dashboard/${org.slug}/webhooks`,
     if: false,
     checkIsActive: (currentRoute: string): boolean => {
-      return currentRoute.startsWith(
-        `/maintainer/${org.slug}/settings/webhooks`,
-      )
+      return currentRoute.startsWith(`/dashboard/${org.slug}/settings/webhooks`)
     },
   },
 ]

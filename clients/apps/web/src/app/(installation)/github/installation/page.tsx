@@ -42,7 +42,7 @@ export default function Page() {
   const [showLogin, setShowLogin] = useState(false)
 
   const redirectToDashboard = () => {
-    router.push('/maintainer')
+    router.push('/dashboard')
     return
   }
 
@@ -83,7 +83,7 @@ export default function Page() {
           clearGitHubInstallation()
 
           // redirect
-          router.replace(`/maintainer/${organization.slug}/initialize`)
+          router.replace(`/dashboard/${organization.slug}/initialize`)
         })
         .catch(async (err) => {
           if (signal.aborted) {

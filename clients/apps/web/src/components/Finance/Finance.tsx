@@ -77,14 +77,14 @@ const Finance = (props: {
           title="Current pledges"
           amount={currentPledgesAmount}
           active={props.tab === 'current'}
-          href={`/maintainer/${org.slug}/finance/issue-funding`}
+          href={`/dashboard/${org.slug}/finance/issue-funding`}
         />
 
         <HeaderPill
           title="Rewarded to contributors"
           amount={rewardedToContributorsAmount}
           active={props.tab === 'contributors'}
-          href={`/maintainer/${org.slug}/finance/issue-funding/contributors`}
+          href={`/dashboard/${org.slug}/finance/issue-funding/contributors`}
         />
       </div>
 

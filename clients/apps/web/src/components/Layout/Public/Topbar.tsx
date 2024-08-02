@@ -31,7 +31,7 @@ const Topbar = ({
 
   const hasOrgs = Boolean(userOrganizations && userOrganizations.length > 0)
 
-  const creatorPath = `/maintainer/${userOrganizations?.[0]?.slug}`
+  const creatorPath = `/dashboard/${userOrganizations?.[0]?.slug}`
 
   const githubAccount = currentUser?.oauth_accounts.find(
     (o) => o.platform === Platforms.GITHUB,
@@ -56,7 +56,7 @@ const Topbar = ({
           />
         )}
         {!hasOrgs && (
-          <Link href="/maintainer/create">
+          <Link href="/dashboard/create">
             <Button type="button" className="space-x-2 p-2 px-4 text-sm">
               <div className="flex flex-row items-center gap-x-2">
                 <span className="whitespace-nowrap">Become a Creator</span>

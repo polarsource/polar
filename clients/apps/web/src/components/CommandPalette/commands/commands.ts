@@ -95,7 +95,7 @@ const organizationSpecificCommands: Command[] = [
       if (organization) {
         hidePalette()
 
-        router.push(`/maintainer/${organization.slug}/posts/new`)
+        router.push(`/dashboard/${organization.slug}/posts/new`)
       }
     },
   },

@@ -34,7 +34,7 @@ export const SetupSubscriptions = () => {
             Create a few subscription tiers to offer your followers and
             supporters
           </p>
-          <Link href={`/maintainer/${org.slug}/products/new`}>
+          <Link href={`/dashboard/${org.slug}/products/new`}>
             <Button>
               <span>Create Tier</span>
               <ArrowForwardOutlined className="ml-2" fontSize="inherit" />

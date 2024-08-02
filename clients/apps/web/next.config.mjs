@@ -232,8 +232,8 @@ const nextConfig = {
 
       // Redirect /maintainer to polar.sh if on a different domain name
       {
-        source: '/maintainer/:path*',
-        destination: `https://${defaultFrontendHostname}/maintainer/:path*`,
+        source: '/dashboard/:path*',
+        destination: `https://${defaultFrontendHostname}/dashboard/:path*`,
         missing: [
           {
             type: 'host',
@@ -259,32 +259,12 @@ const nextConfig = {
           ]
         : []),
 
-      {
-        source: '/dashboard',
-        destination: '/login',
-        permanent: false,
-      },
+
 
       {
-        source: '/dashboard/settings/extension',
-        destination: '/settings/extension',
-        permanent: false,
-      },
-
-      {
-        source: '/dashboard/personal',
-        destination: '/feed',
-        permanent: false,
-      },
-      {
-        source: '/dashboard/:org(.*)/:repo(.*)',
-        destination: '/maintainer/:org/issues?repo=:repo',
-        permanent: false,
-      },
-      {
-        source: '/dashboard/:org(.*)',
-        destination: '/maintainer/:org/posts',
-        permanent: false,
+        source: '/maintainer/:path(.*)',
+        destination: '/dashboard/:path(.*)',
+        permanent: false
       },
       {
         source: '/dependencies(.*)',
@@ -298,7 +278,7 @@ const nextConfig = {
       },
       {
         source: '/issues(.*)',
-        destination: '/maintainer',
+        destination: '/dashboard',
         permanent: false,
         has: [
           {
@@ -309,7 +289,7 @@ const nextConfig = {
       },
       {
         source: '/promote(.*)',
-        destination: '/maintainer',
+        destination: '/dashboard',
         permanent: false,
       },
       {
@@ -318,33 +298,33 @@ const nextConfig = {
         permanent: false,
       },
       {
-        source: '/maintainer/:organization/overview',
-        destination: '/maintainer/:organization',
+        source: '/dashboard/:organization/overview',
+        destination: '/dashboard/:organization',
         permanent: false,
       },
       {
-        source: '/maintainer/:organization/issues',
-        destination: '/maintainer/:organization/issues/overview',
+        source: '/dashboard/:organization/issues',
+        destination: '/dashboard/:organization/issues/overview',
         permanent: false,
       },
       {
-        source: '/maintainer/:organization/promote/issues',
-        destination: '/maintainer/:organization/issues/badge',
+        source: '/dashboard/:organization/promote/issues',
+        destination: '/dashboard/:organization/issues/badge',
         permanent: false,
       },
       {
-        source: '/maintainer/:organization/issues/promote',
-        destination: '/maintainer/:organization/issues/badge',
+        source: '/dashboard/:organization/issues/promote',
+        destination: '/dashboard/:organization/issues/badge',
         permanent: false,
       },
       {
-        source: '/maintainer/:organization/finance',
-        destination: '/maintainer/:organization/finance/incoming',
+        source: '/dashboard/:organization/finance',
+        destination: '/dashboard/:organization/finance/incoming',
         permanent: false,
       },
       {
-        source: '/maintainer/:organization/subscriptions',
-        destination: '/maintainer/:organization/subscriptions/overview',
+        source: '/dashboard/:organization/subscriptions',
+        destination: '/dashboard/:organization/subscriptions/overview',
         permanent: false,
       },
 

@@ -52,7 +52,7 @@ export const AccountSetup: React.FC<AccoutSetupProps> = ({
       id: account.id,
       returnPath: !organization
         ? '/finance/account'
-        : `/maintainer/${organization.slug}/finance/account`,
+        : `/dashboard/${organization.slug}/finance/account`,
     })
     window.location.href = link.url
   }

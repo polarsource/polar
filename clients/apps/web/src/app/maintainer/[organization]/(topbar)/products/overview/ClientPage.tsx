@@ -13,20 +13,10 @@ import Link from 'next/link'
 import { Pill } from 'polarkit/components/ui/atoms'
 import Button from 'polarkit/components/ui/atoms/button'
 import { List, ListItem } from 'polarkit/components/ui/atoms/list'
-import { useCallback, useContext } from 'react'
+import { useContext } from 'react'
 
 export default function ClientPage() {
   const { organization: org } = useContext(MaintainerOrganizationContext)
-
-  const sortProducts = useCallback((a: Product, b: Product) => {
-    if (a.is_recurring && !b.is_recurring) {
-      return -1
-    }
-    if (!a.is_recurring && b.is_recurring) {
-      return 1
-    }
-    return 0
-  }, [])
 
   const subscriptions = useProducts(org.id, {
     isRecurring: true,
@@ -53,17 +43,17 @@ export default function ClientPage() {
             </Link>
           </div>
         </div>
-        <List>
-          {subscriptions.data?.items
-            ?.sort(sortProducts)
-            .map((product) => (
+        {(subscriptions.data?.items?.length ?? 0) > 0 && (
+          <List>
+            {subscriptions.data?.items?.map((product) => (
               <ProductListItem
                 key={product.id}
                 organization={org}
                 product={product}
               />
             ))}
-        </List>
+          </List>
+        )}
       </div>
 
       <div className="flex flex-col gap-y-8">
@@ -77,17 +67,17 @@ export default function ClientPage() {
             </Link>
           </div>
         </div>
-        <List>
-          {oneTime.data?.items
-            ?.sort(sortProducts)
-            .map((product) => (
+        {(oneTime.data?.items?.length ?? 0) > 0 && (
+          <List>
+            {oneTime.data?.items?.map((product) => (
               <ProductListItem
                 key={product.id}
                 organization={org}
                 product={product}
               />
             ))}
-        </List>
+          </List>
+        )}
       </div>
     </DashboardBody>
   )

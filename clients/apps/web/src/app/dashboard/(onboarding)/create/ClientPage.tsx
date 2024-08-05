@@ -2,10 +2,21 @@
 
 import revalidate from '@/app/actions'
 import { useAuth } from '@/hooks'
-import { useCreateOrganization, useListOrganizations } from '@/hooks/queries'
+import {
+  useCreateOrganization,
+  useListOrganizations,
+  useUpdateOrganization,
+} from '@/hooks/queries'
 import { setValidationErrors } from '@/utils/api/errors'
+import {
+  CheckOutlined,
+  DataUsageOutlined,
+  DraftsOutlined,
+  HiveOutlined,
+  SpokeOutlined,
+} from '@mui/icons-material'
 import { FormControl } from '@mui/material'
-import { ResponseError, ValidationError } from '@polar-sh/sdk'
+import { Organization, ResponseError, ValidationError } from '@polar-sh/sdk'
 import { useRouter } from 'next/navigation'
 import Button from 'polarkit/components/ui/atoms/button'
 import Input from 'polarkit/components/ui/atoms/input'
@@ -17,9 +28,10 @@ import {
   FormLabel,
   FormMessage,
 } from 'polarkit/components/ui/form'
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import slugify from 'slugify'
+import { twMerge } from 'tailwind-merge'
 
 export default function ClientPage() {
   const { currentUser, setUserOrganizations } = useAuth()
@@ -35,6 +47,13 @@ export default function ClientPage() {
     formState: { errors },
   } = form
   const createOrganization = useCreateOrganization()
+  const updateOrganization = useUpdateOrganization()
+  const [features, setFeatures] = useState<FeatureKey[]>([
+    'articles_enabled',
+    'donations_enabled',
+    'issue_funding_enabled',
+    'subscriptions_enabled',
+  ])
   const [editedSlug, setEditedSlug] = useState(false)
 
   const name = watch('name')
@@ -79,6 +98,7 @@ export default function ClientPage() {
       await revalidate(`users:${currentUser?.id}:organizations`)
       setUserOrganizations((orgs) => [...orgs, organization])
 
+      await initializeFeatures(features, organization)
       router.push(`/dashboard/${organization.slug}`)
     } catch (e) {
       if (e instanceof ResponseError) {
@@ -93,20 +113,44 @@ export default function ClientPage() {
     }
   }
 
+  const initializeFeatures = useCallback(
+    async (features: FeatureKey[], organization: Organization) => {
+      const featuresRecord: FeatureMap = features.reduce(
+        (acc, feature) => ({
+          ...acc,
+          [feature]: true,
+        }),
+        {},
+      )
+
+      const { donations_enabled, ...feature_settings } = featuresRecord
+
+      await updateOrganization.mutateAsync({
+        id: organization.id,
+        body: {
+          feature_settings,
+          donations_enabled,
+        },
+      })
+    },
+    [updateOrganization],
+  )
+
   return (
-    <div className="flex max-w-4xl flex-col gap-12 py-12">
-      <div className="flex flex-col items-center gap-8">
+    <div className="flex w-full max-w-3xl flex-col gap-12 py-12">
+      <div className="flex flex-col items-center gap-y-6">
         <h1 className="text-3xl font-semibold">Let&apos;s get started</h1>
         <p className="dark:text-polar-400 text-center text-lg text-gray-600">
           To start monetizing on Polar, you need to create an organization.
         </p>
       </div>
-      <ShadowBox>
-        <Form {...form}>
-          <form
-            onSubmit={handleSubmit(onSubmit)}
-            className="flex w-full flex-col gap-y-6"
-          >
+
+      <Form {...form}>
+        <form
+          onSubmit={handleSubmit(onSubmit)}
+          className="flex w-full flex-col gap-y-12"
+        >
+          <ShadowBox className="flex w-full flex-col gap-y-6">
             <FormField
               control={control}
               name="name"
@@ -152,18 +196,155 @@ export default function ClientPage() {
                 {errors.root.message}
               </p>
             )}
+          </ShadowBox>
 
-            <Button
-              className="self-start"
-              type="submit"
-              disabled={Object.keys(errors).length > 0}
-              loading={createOrganization.isPending}
-            >
-              Create
-            </Button>
-          </form>
-        </Form>
-      </ShadowBox>
+          <FeatureOnboarding features={features} onChange={setFeatures} />
+
+          <Button
+            className="self-start"
+            type="submit"
+            size="lg"
+            disabled={Object.keys(errors).length > 0}
+            loading={createOrganization.isPending}
+          >
+            Create
+          </Button>
+        </form>
+      </Form>
+    </div>
+  )
+}
+
+interface FeatureOnboardingProps {
+  features: FeatureKey[]
+  onChange: (callback: (features: FeatureKey[]) => FeatureKey[]) => void
+}
+
+const FeatureOnboarding = ({ features, onChange }: FeatureOnboardingProps) => {
+  const toggleFeature = useCallback(
+    (feature: FeatureKey) => () => {
+      onChange((prev) => {
+        if (prev.includes(feature)) {
+          return prev.filter((f) => f !== feature)
+        }
+        return [...prev, feature]
+      })
+    },
+    [onChange],
+  )
+
+  return (
+    <div className="flex flex-col gap-y-6">
+      <div className="flex flex-col gap-y-2">
+        <h3 className="text-lg font-medium">Features</h3>
+        <p className="dark:text-polar-500 text-sm text-gray-500">
+          Select which features you would like to use. Don&apos;t worry - you
+          can enable them at any time.
+        </p>
+      </div>
+      <div className="flex flex-col gap-y-2">
+        <FeatureItem
+          id="subscriptions_enabled"
+          name="Products"
+          description="Offer benefits to your supporters via recurring or one-time purchases"
+          active={features.includes('subscriptions_enabled')}
+          icon={<HiveOutlined fontSize="inherit" />}
+          onClick={toggleFeature}
+        />
+        <FeatureItem
+          id="donations_enabled"
+          name="Donations"
+          description="Allow your supporters to say thanks with a donation"
+          active={features.includes('donations_enabled')}
+          icon={<SpokeOutlined fontSize="inherit" />}
+          onClick={toggleFeature}
+        />
+        <FeatureItem
+          id="issue_funding_enabled"
+          name="Issue Funding"
+          description="Enable crowdfunding by allowing pledges to your GitHub issues"
+          active={features.includes('issue_funding_enabled')}
+          icon={<DataUsageOutlined fontSize="inherit" />}
+          onClick={toggleFeature}
+        />
+        <FeatureItem
+          id="articles_enabled"
+          name="Newsletter"
+          description="Reach your supporters with a newsletter by writing about your projects"
+          active={features.includes('articles_enabled')}
+          icon={<DraftsOutlined fontSize="inherit" />}
+          onClick={toggleFeature}
+        />
+      </div>
+    </div>
+  )
+}
+
+type FeatureKey =
+  | 'articles_enabled'
+  | 'donations_enabled'
+  | 'subscriptions_enabled'
+  | 'issue_funding_enabled'
+
+type FeatureMap = Partial<Record<FeatureKey, true>>
+
+interface FeatureItemProps {
+  id: FeatureKey
+  name: string
+  description: string
+  active: boolean
+  icon: JSX.Element
+  onClick: (key: FeatureKey) => () => void
+}
+
+const FeatureItem = ({
+  id,
+  name,
+  description,
+  active,
+  icon,
+  onClick,
+}: FeatureItemProps) => {
+  return (
+    <div
+      className={twMerge(
+        'dark:bg-polar-900 dark:hover:bg-polar-800 flex select-none flex-row items-center justify-between gap-4 rounded-2xl bg-gray-100 px-6 py-4 transition-colors hover:cursor-pointer hover:bg-gray-50',
+        active ? 'dark:bg-polar-800 bg-white' : '',
+      )}
+      onClick={onClick(id)}
+    >
+      <div
+        className={twMerge(
+          'flex flex-row items-baseline gap-x-4',
+          active
+            ? 'text-black dark:text-white'
+            : 'dark:text-polar-500 text-gray-500',
+        )}
+      >
+        <span
+          className={twMerge(
+            'text-xl',
+            active && 'text-blue-500 dark:text-blue-400',
+          )}
+        >
+          {icon}
+        </span>
+        <div className="flex flex-col">
+          <span className={twMerge(active && 'font-medium')}>{name}</span>
+          <p className="dark:text-polar-500 text-sm text-gray-500">
+            {description}
+          </p>
+        </div>
+      </div>
+      {active && (
+        <Button
+          className="h-6 w-6"
+          size="icon"
+          variant={active ? 'default' : 'secondary'}
+        >
+          <CheckOutlined fontSize="inherit" />
+        </Button>
+      )}
     </div>
   )
 }

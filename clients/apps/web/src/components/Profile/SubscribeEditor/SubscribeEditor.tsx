@@ -53,7 +53,7 @@ export const SubscribeEditor = ({
     (tier) => tier.type === SubscriptionTierType.FREE,
   )
   const customerCount = customerList?.items?.length ?? 0
-  const showCount = customerList && customerCount && settings.show_count
+  const showCount = customerList && customerCount > 0 && settings.show_count
 
   return (
     <div className="flex w-full flex-col gap-y-6">

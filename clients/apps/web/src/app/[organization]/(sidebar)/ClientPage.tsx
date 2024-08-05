@@ -1,7 +1,6 @@
 'use client'
 
 import { Post as PostComponent } from '@/components/Feed/Posts/Post'
-import { PublicPagePostWizard } from '@/components/Onboarding/Creator/PostWizard'
 import { OrganizationIssueSummaryList } from '@/components/Organization/OrganizationIssueSummaryList'
 import { CreatorsEditor } from '@/components/Profile/CreatorEditor/CreatorsEditor'
 import { HighlightedTiersEditor } from '@/components/Profile/HighlightedTiersEditor/HighlightedTiersEditor'
@@ -15,7 +14,7 @@ import { useRedirectToGitHubInstallation } from '@/hooks/github'
 import { useUpdateOrganization } from '@/hooks/queries'
 import { organizationPageLink } from '@/utils/nav'
 import { useTrafficRecordPageView } from '@/utils/traffic'
-import { GitHub, StickyNote2Outlined } from '@mui/icons-material'
+import { DraftsOutlined, GitHub } from '@mui/icons-material'
 import {
   Article,
   IssueFunding,
@@ -91,16 +90,16 @@ const ClientPage = ({
 
   const PostsEmptyState = () => {
     return isOrgMember ? (
-      <div className="flex flex-col gap-y-6">
-        <p className="dark:text-polar-500 text-gray-500">
+      <div className="dark:text-polar-500 flex flex-col items-center gap-y-4 pt-16 text-gray-600">
+        <DraftsOutlined fontSize="large" />
+        <p className="text-center">
           Build out an audience by writing posts and share it with your
           subscribers
         </p>
-        <PublicPagePostWizard organization={organization} />
       </div>
     ) : (
       <div className="dark:text-polar-400 flex h-full w-full flex-col items-center gap-y-4 pt-16 text-gray-600">
-        <StickyNote2Outlined fontSize="large" />
+        <DraftsOutlined fontSize="large" />
         <div className="flex w-full flex-col items-center gap-y-2 px-12 text-center">
           <h3 className="p-2 text-lg font-medium">
             {organization.name} is typing...
@@ -234,10 +233,14 @@ const GitHubAppUpsell = ({ organization }: { organization: Organization }) => {
   return (
     <div className="dark:from-polar-700 dark:to-polar-800 dark:border-polar-700 rounded-4xl flex flex-row gap-y-8 bg-gradient-to-r from-blue-200 to-blue-500 p-8 text-white dark:border">
       <div className="flex w-full flex-col gap-y-8">
-        <h3 className="text-4xl leading-normal [text-wrap:balance]">
+        <h3 className="text-3xl leading-normal [text-wrap:balance]">
           Highlight your projects & enable crowdfunding for issues
         </h3>
-        <Button size="lg" onClick={redirectToGitHubInstallation}>
+        <Button
+          className="self-start"
+          size="lg"
+          onClick={redirectToGitHubInstallation}
+        >
           <div className="flex flex-row items-center gap-2">
             <GitHub fontSize="small" />
             <span>Install the Polar GitHub App</span>

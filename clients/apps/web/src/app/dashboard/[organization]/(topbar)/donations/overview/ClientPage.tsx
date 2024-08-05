@@ -8,7 +8,7 @@ import {
   DataTablePaginationState,
   DataTableSortingState,
 } from '@/utils/datatable'
-import { VolunteerActivismOutlined } from '@mui/icons-material'
+import { SpokeOutlined } from '@mui/icons-material'
 import { Donation, Organization } from '@polar-sh/sdk'
 import { useRouter } from 'next/navigation'
 import { FormattedDateTime } from 'polarkit/components/ui/atoms'
@@ -84,7 +84,7 @@ export default function ClientPage({
       <EmptyLayout>
         <div className="dark:text-polar-200 flex flex-col items-center justify-center space-y-10 py-32 text-gray-600">
           <span className="text-6xl text-blue-400">
-            <VolunteerActivismOutlined fontSize="inherit" />
+            <SpokeOutlined fontSize="inherit" />
           </span>
           <div className="flex flex-col items-center gap-4 text-center">
             <h2 className="text-2xl font-medium text-gray-950 dark:text-white">
@@ -124,7 +124,7 @@ export default function ClientPage({
         ) : (
           <div className="dark:text-polar-200 flex flex-col items-center justify-center space-y-10 py-32 text-gray-600">
             <span className="text-6xl text-blue-400">
-              <VolunteerActivismOutlined fontSize="inherit" />
+              <SpokeOutlined fontSize="inherit" />
             </span>
             <h2 className="text-lg">You haven&apos;t received any donations</h2>
           </div>

@@ -1,4 +1,3 @@
-import { shouldBeOnboarded } from '@/hooks/onboarding'
 import { MaintainerOrganizationContextProvider } from '@/providers/maintainerOrganization'
 import { getServerSideAPI } from '@/utils/api/serverside'
 import { getOrganizationBySlugOrNotFound } from '@/utils/organization'
@@ -41,10 +40,6 @@ export default async function Layout({
 
   if (!userOrganizations.some((org) => org.id === organization.id)) {
     return redirect('/dashboard')
-  }
-
-  if (shouldBeOnboarded(organization)) {
-    return redirect(`/dashboard/${organization.slug}/onboarding`)
   }
 
   return (

@@ -73,7 +73,7 @@ const Benefits = () => {
             <FileDownloadOutlined className="text-4xl" fontSize="inherit" />
           }
           title="File Downloads"
-          description="From e-books, source code to executibles - any file is supported up to 10GB/each."
+          description="From e-books, source code to executables - any file is supported up to 10GB/each."
         />
         <BenefitCard
           className="border-b"

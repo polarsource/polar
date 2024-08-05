@@ -20,8 +20,8 @@ import {
   AddOutlined,
   ArrowForward,
   ArrowForwardOutlined,
+  DraftsOutlined,
   LanguageOutlined,
-  StickyNote2Outlined,
 } from '@mui/icons-material'
 import { Article } from '@polar-sh/sdk'
 import Link from 'next/link'
@@ -132,7 +132,7 @@ const ClientPage = () => {
       <EmptyLayout>
         <div className="dark:text-polar-200 flex flex-col items-center justify-center space-y-10 py-32 text-gray-600">
           <span className="text-6xl text-blue-400">
-            <StickyNote2Outlined fontSize="inherit" />
+            <DraftsOutlined fontSize="inherit" />
           </span>
           <div className="flex flex-col items-center gap-4 text-center">
             <h2 className="text-2xl font-medium text-gray-950 dark:text-white">
@@ -182,10 +182,10 @@ const ClientPage = () => {
 
               {showNoPostsYet ? (
                 <div className="dark:text-polar-500 flex h-full flex-col items-center gap-y-4 pt-32 text-gray-500">
-                  <StickyNote2Outlined fontSize="large" />
+                  <DraftsOutlined fontSize="large" />
                   <div className="flex flex-col items-center gap-y-2">
                     <h3 className="p-2 text-lg font-medium">No posts yet</h3>
-                    <p className="dark:text-polar-600 min-w-0 truncate text-gray-300">
+                    <p className="dark:text-polar-500 min-w-0 truncate text-gray-500">
                       Create your first post to start engaging with your
                       subscribers
                     </p>

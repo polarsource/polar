@@ -45,18 +45,26 @@ const Footer = ({
               <FooterLink href="https://api.polar.sh/v1/integrations/github/authorize?return_to=%2Fmaintainer&user_signup_type=maintainer">
                 Create an Account
               </FooterLink>
-              <FooterLink href="/issue-funding">Issue Funding</FooterLink>
-              <FooterLink href="/products">Products & Subscriptions</FooterLink>
-              <FooterLink href="/donations">Donations</FooterLink>
-              <FooterLink href="/docs/newsletters">Newsletters</FooterLink>
+              <FooterLink href="https://polar.sh/issue-funding">
+                Issue Funding
+              </FooterLink>
+              <FooterLink href="https://polar.sh/products">
+                Products & Subscriptions
+              </FooterLink>
+              <FooterLink href="https://polar.sh/donations">
+                Donations
+              </FooterLink>
+              <FooterLink href="https://docs.polar.sh/newsletters">
+                Newsletters
+              </FooterLink>
             </div>
           </div>
           <div className="flex flex-col gap-y-4">
             <h3 className="text-base dark:text-white">Company</h3>
             <div className="flex flex-col gap-y-2">
-              <FooterLink href="/careers">Careers</FooterLink>
+              <FooterLink href="https://polar.sh/careers">Careers</FooterLink>
               <FooterLink href="https://blog.polar.sh">Blog</FooterLink>
-              <FooterLink href="/assets/brand/polar_brand.zip">
+              <FooterLink href="https://polar.sh/assets/brand/polar_brand.zip">
                 Brand Assets
               </FooterLink>
               <FooterLink href="https://polarsource.github.io/legal/terms.pdf">
@@ -82,8 +90,10 @@ const Footer = ({
           <div className="flex flex-col gap-y-4">
             <h3 className="text-base dark:text-white">Support</h3>
             <div className="flex flex-col gap-y-2">
-              <FooterLink href="/docs">Docs</FooterLink>
-              <FooterLink href="/docs/faq/for-maintainers">FAQ</FooterLink>
+              <FooterLink href="https://docs.polar.sh">Docs</FooterLink>
+              <FooterLink href="https://docs.polar.sh/support/faq">
+                FAQ
+              </FooterLink>
               <FooterLink href="mailto:support@polar.sh">Contact</FooterLink>
             </div>
           </div>

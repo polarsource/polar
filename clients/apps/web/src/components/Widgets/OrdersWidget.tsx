@@ -92,7 +92,7 @@ export const OrdersWidget = ({ className }: OrdersWidgetProps) => {
                 key={order.id}
                 className={twMerge(
                   stackingClassNames[index],
-                  'rounded-4xl dark:bg-polar-900 dark:border-polar-800 peer absolute w-full border border-gray-100 bg-white transition-all duration-300 hover:z-10 hover:scale-100 hover:shadow-2xl peer-hover:opacity-0',
+                  'rounded-4xl dark:bg-polar-900 dark:border-polar-800 shadow-3xl peer absolute w-full border border-transparent bg-white transition-all duration-300 hover:z-10 hover:scale-100 hover:shadow-2xl peer-hover:opacity-0',
                 )}
               >
                 <OrderCard order={order} />

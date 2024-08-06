@@ -61,7 +61,7 @@ babel = "^2.15.0"
 halo = "^0.0.31"
 
 [tool.poetry.group.dev.dependencies]
-mypy = "^1.6.0"
+mypy = "^1.11.1"
 pytest = "<9"
 pytest-sugar = "^1.0.0"
 typer = "^0.12.0"

@@ -35,12 +35,7 @@ export const RevenueWidget = ({ className }: RevenueWidgetProps) => {
     ) ?? 0
 
   return (
-    <Card
-      className={twMerge(
-        'flex h-80 flex-col justify-between ring-1 ring-gray-100 dark:ring-transparent',
-        className,
-      )}
-    >
+    <Card className={twMerge('flex h-80 flex-col justify-between', className)}>
       <CardHeader className="flex flex-col gap-y-2">
         <div className="flex flex-row items-center justify-between">
           <span className="dark:text-polar-500 text-gray-400">Revenue</span>

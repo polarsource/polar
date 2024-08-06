@@ -100,7 +100,7 @@ export const OrdersWidget = ({ className }: OrdersWidgetProps) => {
             ))}
         </div>
       ) : (
-        <Card className="dark:text-polar-500 flex h-full flex-col items-center justify-center gap-y-6 p-6 text-gray-400 ring-1 ring-gray-100 dark:ring-transparent">
+        <Card className="dark:text-polar-500 flex h-full flex-col items-center justify-center gap-y-6 p-6 text-gray-400">
           <ShoppingCartOutlined
             className="dark:text-polar-600 text-gray-200"
             fontSize="large"

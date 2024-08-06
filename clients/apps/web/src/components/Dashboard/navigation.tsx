@@ -120,11 +120,11 @@ export const useCommunityRoutes = (
   return useResolveRoutes(communityRoutesList, org, allowAll)
 }
 
-export const useAccountRoutes = (
+export const useOrganizationRoutes = (
   org: Organization,
   allowAll?: boolean,
 ): RouteWithActive[] => {
-  return useResolveRoutes(accountRoutesList, org, allowAll)
+  return useResolveRoutes(organizationRoutesList, org, allowAll)
 }
 
 export const useBackerRoutes = (): RouteWithActive[] => {
@@ -262,7 +262,7 @@ const dashboardRoutesList = (org: Organization): Route[] => [
   ...generalRoutesList(org),
   ...fundingRoutesList(org),
   ...communityRoutesList(org),
-  ...accountRoutesList(org),
+  ...organizationRoutesList(org),
 ]
 
 const backerRoutesList = (): Route[] => [
@@ -347,7 +347,7 @@ const orgFinanceSubRoutesList = (org: Organization): SubRoute[] => [
   },
 ]
 
-const accountRoutesList = (org: Organization): Route[] => [
+const organizationRoutesList = (org: Organization): Route[] => [
   {
     id: 'finance',
     title: 'Finance',

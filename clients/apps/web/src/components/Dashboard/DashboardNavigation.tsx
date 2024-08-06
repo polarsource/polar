@@ -5,10 +5,10 @@ import { Face } from '@mui/icons-material'
 import { useContext } from 'react'
 import { NavigationContainer } from './NavigationContainer'
 import {
-  useAccountRoutes,
   useCommunityRoutes,
   useFundingRoutes,
   useGeneralRoutes,
+  useOrganizationRoutes,
 } from './navigation'
 
 const MaintainerNavigation = () => {
@@ -18,7 +18,7 @@ const MaintainerNavigation = () => {
   const generalRoutesList = useGeneralRoutes(org)
   const fundingRoutes = useFundingRoutes(org)
   const communityRoutes = useCommunityRoutes(org)
-  const accountRoutes = useAccountRoutes(org)
+  const organizationRoutes = useOrganizationRoutes(org)
 
   if (!org) {
     return <></>
@@ -33,7 +33,7 @@ const MaintainerNavigation = () => {
         routes={communityRoutes}
         dummyRoutes={[{ title: 'Audience', icon: <Face fontSize="inherit" /> }]}
       />
-      <NavigationContainer title="Account" routes={accountRoutes} />
+      <NavigationContainer title="Organization" routes={organizationRoutes} />
     </div>
   )
 }

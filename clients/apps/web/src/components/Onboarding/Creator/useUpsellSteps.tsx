@@ -1,5 +1,4 @@
 import {
-  useListAccounts,
   useListArticles,
   useOrganizationAccount,
   useProducts,
@@ -9,7 +8,7 @@ import {
 import { useOrders } from '@/hooks/queries/orders'
 import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
 import {
-  ListResourceAccount,
+  Account,
   ListResourceArticle,
   ListResourceDonation,
   ListResourceOrder,
@@ -43,7 +42,7 @@ const shouldUpsellFirstOrder = (
 ) => {
   if (!org.feature_settings?.subscriptions_enabled) return false
 
-  return orders?.pagination.total_count === 0
+  return orders?.pagination.total_count === 0 ?? true
 }
 
 const shouldUpsellFirstPost = (
@@ -52,15 +51,15 @@ const shouldUpsellFirstPost = (
 ) => {
   if (!org.feature_settings?.articles_enabled) return false
 
-  return articles?.pages[0].pagination.total_count === 0
+  return articles?.pages[0].pagination.total_count === 0 ?? true
 }
 
-const shouldUpsellPayoutConnection = (accounts?: ListResourceAccount) => {
-  return accounts?.pagination.total_count === 0
+const shouldUpsellPayoutConnection = (account?: Account) => {
+  return !account
 }
 
 const shouldUpsellPayout = (payouts?: ListResourceTransaction) => {
-  return payouts?.pagination.total_count === 0
+  return payouts?.pagination.total_count === 0 ?? true
 }
 
 const shouldUpsellDonation = (
@@ -69,7 +68,7 @@ const shouldUpsellDonation = (
 ) => {
   if (!org.donations_enabled) return false
 
-  return donations?.pagination.total_count === 0
+  return donations?.pagination.total_count === 0 ?? true
 }
 
 export const useUpsellSteps = () => {
@@ -84,7 +83,6 @@ export const useUpsellSteps = () => {
     isPublished: true,
     limit: 1,
   })
-  const { data: accounts, isLoading: accountsLoading } = useListAccounts()
   const { data: payouts, isLoading: payoutsLoading } = useSearchTransactions({
     accountId: account?.id,
     type: 'payout',
@@ -99,7 +97,6 @@ export const useUpsellSteps = () => {
     ordersLoading ||
     tiersLoading ||
     articlesLoading ||
-    accountsLoading ||
     payoutsLoading ||
     donationsLoading ||
     orgAccountLoading
@@ -142,7 +139,7 @@ export const useUpsellSteps = () => {
       description:
         'Let us know which Stripe or Open Collective account we should make payouts to',
       href: `/dashboard/${currentOrg.slug}/finance/account`,
-      done: !shouldUpsellPayoutConnection(accounts),
+      done: !shouldUpsellPayoutConnection(account),
     })
 
     steps.push({
@@ -150,7 +147,7 @@ export const useUpsellSteps = () => {
       description: 'Time to get paid!',
       href: `/dashboard/${currentOrg.slug}/finance`,
       done:
-        !shouldUpsellPayoutConnection(accounts) && !shouldUpsellPayout(payouts),
+        !shouldUpsellPayoutConnection(account) && !shouldUpsellPayout(payouts),
     })
 
     steps.push({
@@ -169,7 +166,7 @@ export const useUpsellSteps = () => {
     })
 
     return steps
-  }, [currentOrg, posts, orders, products, accounts, payouts, donations])
+  }, [currentOrg, posts, orders, products, account, payouts, donations])
 
   if (isLoading) {
     return []

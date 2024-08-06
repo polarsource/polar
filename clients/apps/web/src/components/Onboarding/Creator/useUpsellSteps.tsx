@@ -159,7 +159,7 @@ export const useUpsellSteps = () => {
       title: 'Receive your first donation',
       description:
         'Donations without any strings attached are worth celebrating',
-      href: `/dashboard/${currentOrg.slug}/posts/new`,
+      href: `/dashboard/${currentOrg.slug}/donations/overview`,
       done: !shouldUpsellDonation(currentOrg, donations),
     })
 

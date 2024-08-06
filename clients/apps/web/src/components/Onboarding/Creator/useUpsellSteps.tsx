@@ -1,6 +1,7 @@
 import {
   useListAccounts,
   useListArticles,
+  useOrganizationAccount,
   useProducts,
   useSearchDonations,
   useSearchTransactions,
@@ -73,32 +74,35 @@ const shouldUpsellDonation = (
 
 export const useUpsellSteps = () => {
   const { organization: currentOrg } = useContext(MaintainerOrganizationContext)
+  const { data: account, isLoading: orgAccountLoading } =
+    useOrganizationAccount(currentOrg.id)
 
-  const { data: products, isPending: tiersPending } = useProducts(currentOrg.id)
-  const { data: orders, isPending: ordersPending } = useOrders(currentOrg.id)
-  const { data: posts, isPending: articlesPending } = useListArticles({
+  const { data: products, isLoading: tiersLoading } = useProducts(currentOrg.id)
+  const { data: orders, isLoading: ordersLoading } = useOrders(currentOrg.id)
+  const { data: posts, isLoading: articlesLoading } = useListArticles({
     organizationId: currentOrg.id,
     isPublished: true,
     limit: 1,
   })
-  const { data: accounts, isPending: accountsPending } = useListAccounts()
-  const { data: payouts, isPending: payoutsPending } = useSearchTransactions({
-    paymentOrganizationId: currentOrg.id,
+  const { data: accounts, isLoading: accountsLoading } = useListAccounts()
+  const { data: payouts, isLoading: payoutsLoading } = useSearchTransactions({
+    accountId: account?.id,
     type: 'payout',
   })
-  const { data: donations, isPending: donationsPending } = useSearchDonations({
+  const { data: donations, isLoading: donationsLoading } = useSearchDonations({
     toOrganizationId: currentOrg.id,
     page: 1,
     limit: 1,
   })
 
   const isLoading =
-    ordersPending ||
-    tiersPending ||
-    articlesPending ||
-    accountsPending ||
-    payoutsPending ||
-    donationsPending
+    ordersLoading ||
+    tiersLoading ||
+    articlesLoading ||
+    accountsLoading ||
+    payoutsLoading ||
+    donationsLoading ||
+    orgAccountLoading
 
   const steps = useMemo(() => {
     const steps: Omit<UpsellStepProps, 'index'>[] = []
@@ -145,7 +149,8 @@ export const useUpsellSteps = () => {
       title: 'Withdraw funds to your Payout Account',
       description: 'Time to get paid!',
       href: `/dashboard/${currentOrg.slug}/finance`,
-      done: !shouldUpsellPayout(payouts),
+      done:
+        !shouldUpsellPayoutConnection(accounts) && !shouldUpsellPayout(payouts),
     })
 
     steps.push({

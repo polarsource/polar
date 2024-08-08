@@ -7,7 +7,7 @@ export default async function Page() {
   const userOrganizations = await getUserOrganizations(api)
 
   if (userOrganizations.length === 0) {
-    redirect('/dashboard/create')
+    redirect('/feed')
   }
 
   redirect(`/dashboard/${userOrganizations[0].slug}`)

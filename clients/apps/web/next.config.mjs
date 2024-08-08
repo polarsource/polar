@@ -197,7 +197,7 @@ const nextConfig = {
       // Logged-in user redirections
       {
         source: '/',
-        destination: '/feed',
+        destination: '/dashboard',
         has: [
           {
             type: 'cookie',

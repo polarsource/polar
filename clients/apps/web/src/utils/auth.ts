@@ -21,7 +21,7 @@ export const getGitHubAuthorizeURL = (
   if (params.userSignupType !== undefined) {
     searchParams.set('user_signup_type', params.userSignupType)
   }
-  return `${getServerURL()}/v1/integrations/github/authorize?${searchParams}`
+  return `${getServerURL()}/v1/users/login/github/authorize?${searchParams}`
 }
 
 export const getGitHubOrganizationInstallationURL = (

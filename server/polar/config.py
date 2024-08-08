@@ -50,7 +50,7 @@ class Settings(BaseSettings):
     # Update to ngrok domain or similar in case you want
     # working Github badges in development.
     FRONTEND_BASE_URL: str = "http://127.0.0.1:3000"
-    FRONTEND_DEFAULT_RETURN_PATH: str = "/feed"
+    FRONTEND_DEFAULT_RETURN_PATH: str = "/"
 
     # Auth cookie
     AUTH_COOKIE_KEY: str = "polar_session"

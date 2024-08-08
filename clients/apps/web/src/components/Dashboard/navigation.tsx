@@ -155,7 +155,7 @@ const generalRoutesList = (org: Organization): Route[] => [
     id: 'products',
     title: 'Products',
     icon: <HiveOutlined fontSize="inherit" />,
-    link: `/dashboard/${org.slug}/products/overview`,
+    link: `/dashboard/${org.slug}/products`,
     checkIsActive: (currentRoute: string): boolean => {
       return currentRoute.startsWith(`/dashboard/${org.slug}/products`)
     },
@@ -163,7 +163,7 @@ const generalRoutesList = (org: Organization): Route[] => [
     subs: [
       {
         title: 'Overview',
-        link: `/dashboard/${org.slug}/products/overview`,
+        link: `/dashboard/${org.slug}/products`,
       },
       {
         title: 'Benefits',

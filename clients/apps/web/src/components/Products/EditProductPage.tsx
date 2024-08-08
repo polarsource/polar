@@ -83,7 +83,7 @@ export const EditProductPage = ({
         revalidate(`products:${organization.id}:recurring`)
         revalidate(`products:${organization.id}:one_time`)
 
-        router.push(`/dashboard/${organization.slug}/products/overview`)
+        router.push(`/dashboard/${organization.slug}/products`)
       } catch (e) {
         if (e instanceof ResponseError) {
           const body = await e.response.json()
@@ -160,7 +160,7 @@ export const EditProductPage = ({
     revalidate(`products:${organization.id}:recurring`)
     revalidate(`products:${organization.id}:one_time`)
 
-    router.push(`/dashboard/${organization.slug}/products/overview`)
+    router.push(`/dashboard/${organization.slug}/products`)
   }, [product, updateProduct, organization, router])
 
   return (

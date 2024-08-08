@@ -56,7 +56,7 @@ export const SetupProductsUpsell = () => {
       title="Create & Promote Products"
       description="Monetize your projects by selling digital products, subscriptions, and services to your community."
     >
-      <Link href={`/dashboard/${firstOrg.slug}/products/overview`}>
+      <Link href={`/dashboard/${firstOrg.slug}/products`}>
         <Button size="sm" className="-z-1">
           <span>Get Started</span>
           <ArrowForwardOutlined className="ml-2" fontSize="inherit" />

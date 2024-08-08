@@ -122,7 +122,7 @@ export const useUpsellSteps = () => {
       title: 'Setup products & subscriptions',
       description:
         'Sell benefits like Digital downloads, Discord invites & Private GitHub repository access',
-      href: `/dashboard/${currentOrg.slug}/products/overview`,
+      href: `/dashboard/${currentOrg.slug}/products`,
       done: !shouldUpsellCreateProduct(currentOrg, products),
     })
 

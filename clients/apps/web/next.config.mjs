@@ -259,12 +259,15 @@ const nextConfig = {
           ]
         : []),
 
-
-
+      {
+        source: '/maintainer',
+        destination: '/dashboard',
+        permanent: true,
+      },
       {
         source: '/maintainer/:path(.*)',
         destination: '/dashboard/:path(.*)',
-        permanent: false
+        permanent: true,
       },
       {
         source: '/dependencies(.*)',

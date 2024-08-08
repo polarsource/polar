@@ -114,7 +114,7 @@ export const HighlightedTiersModal = ({
 
                 <Link
                   className="flex flex-row items-center gap-2 px-7 py-2 text-sm text-blue-500 dark:text-blue-400"
-                  href={`/dashboard/${organization.slug}/products/overview`}
+                  href={`/dashboard/${organization.slug}/products`}
                 >
                   <AddOutlined fontSize="small" />
                   <span>Create New</span>
@@ -146,7 +146,7 @@ export const HighlightedTiersModal = ({
                 ))}
                 <Link
                   className="flex flex-row items-center gap-2 px-7 py-2 text-sm text-blue-500 dark:text-blue-400"
-                  href={`/dashboard/${organization.slug}/products/overview`}
+                  href={`/dashboard/${organization.slug}/products`}
                 >
                   <AddOutlined fontSize="small" />
                   <span>Create New</span>
@@ -155,7 +155,7 @@ export const HighlightedTiersModal = ({
             </Select>
           </div>
           <div className="mt-8 flex flex-col">
-            <Link href={`/dashboard/${organization.slug}/products/overview`}>
+            <Link href={`/dashboard/${organization.slug}/products`}>
               <Button size="sm">Manage Tiers</Button>
             </Link>
           </div>

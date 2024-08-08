@@ -303,7 +303,12 @@ const nextConfig = {
       {
         source: '/dashboard/:organization/overview',
         destination: '/dashboard/:organization',
-        permanent: false,
+        permanent: true,
+      },
+      {
+        source: '/dashboard/:organization/products/overview',
+        destination: '/dashboard/:organization/products',
+        permanent: true,
       },
       {
         source: '/dashboard/:organization/issues',
@@ -323,11 +328,6 @@ const nextConfig = {
       {
         source: '/dashboard/:organization/finance',
         destination: '/dashboard/:organization/finance/incoming',
-        permanent: false,
-      },
-      {
-        source: '/dashboard/:organization/subscriptions',
-        destination: '/dashboard/:organization/subscriptions/overview',
         permanent: false,
       },
 

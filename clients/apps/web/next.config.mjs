@@ -173,7 +173,7 @@ const nextConfig = {
 
       {
         source:
-          '/:rootPath(feed|for-you|posts|purchases|funding|rewards|settings|backoffice|maintainer|finance):subPath(/?.*)',
+          '/:rootPath(dashboard|feed|for-you|posts|purchases|funding|rewards|settings|backoffice|maintainer|finance):subPath(/?.*)',
         destination: '/login?return_to=/:rootPath:subPath',
         missing: [
           {

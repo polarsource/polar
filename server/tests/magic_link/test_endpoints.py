@@ -79,7 +79,7 @@ async def test_authenticate_already_authenticated(
     )
 
     assert response.status_code == 303
-    assert response.headers["Location"].startswith(f"{settings.FRONTEND_BASE_URL}/feed")
+    assert response.headers["Location"].startswith(f"{settings.FRONTEND_BASE_URL}/")
 
     magic_link_service_mock.assert_not_called()
 
@@ -98,7 +98,7 @@ async def test_authenticate_valid_token(
     )
 
     assert response.status_code == 303
-    assert response.headers["Location"].startswith(f"{settings.FRONTEND_BASE_URL}/feed")
+    assert response.headers["Location"].startswith(f"{settings.FRONTEND_BASE_URL}/")
 
     assert settings.AUTH_COOKIE_KEY in response.cookies
 

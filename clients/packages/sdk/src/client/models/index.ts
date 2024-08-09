@@ -2375,7 +2375,7 @@ export interface BenefitBase {
  * 
  * @export
  */
-export type BenefitCreate = { type: 'ads' } & BenefitAdsCreate | { type: 'custom' } & BenefitCustomCreate | { type: 'discord' } & BenefitDiscordCreate | { type: 'downloadables' } & BenefitDownloadablesCreate | { type: 'github_repository' } & BenefitGitHubRepositoryCreate;
+export type BenefitCreate = { type: 'ads' } & BenefitAdsCreate | { type: 'custom' } & BenefitCustomCreate | { type: 'discord' } & BenefitDiscordCreate | { type: 'downloadables' } & BenefitDownloadablesCreate | { type: 'github_repository' } & BenefitGitHubRepositoryCreate | { type: 'license_keys' } & BenefitLicenseKeysCreate;
 /**
  * A benefit of type `custom`.
  * 
@@ -3703,6 +3703,371 @@ export type BenefitIDFilter1 = Array<string> | string;
 /**
  * 
  * @export
+ * @interface BenefitLicenseKeys
+ */
+export interface BenefitLicenseKeys {
+    /**
+     * Creation timestamp of the object.
+     * @type {string}
+     * @memberof BenefitLicenseKeys
+     */
+    created_at: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitLicenseKeys
+     */
+    modified_at?: string;
+    /**
+     * The ID of the benefit.
+     * @type {string}
+     * @memberof BenefitLicenseKeys
+     */
+    id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitLicenseKeys
+     */
+    type: BenefitLicenseKeysTypeEnum;
+    /**
+     * The description of the benefit.
+     * @type {string}
+     * @memberof BenefitLicenseKeys
+     */
+    description: string;
+    /**
+     * Whether the benefit is selectable when creating a product.
+     * @type {boolean}
+     * @memberof BenefitLicenseKeys
+     */
+    selectable: boolean;
+    /**
+     * Whether the benefit is deletable.
+     * @type {boolean}
+     * @memberof BenefitLicenseKeys
+     */
+    deletable: boolean;
+    /**
+     * The ID of the organization owning the benefit.
+     * @type {string}
+     * @memberof BenefitLicenseKeys
+     */
+    organization_id: string;
+    /**
+     * 
+     * @type {BenefitLicenseKeysProperties}
+     * @memberof BenefitLicenseKeys
+     */
+    properties: BenefitLicenseKeysProperties;
+}
+
+
+/**
+ * @export
+ */
+export const BenefitLicenseKeysTypeEnum = {
+    LICENSE_KEYS: 'license_keys'
+} as const;
+export type BenefitLicenseKeysTypeEnum = typeof BenefitLicenseKeysTypeEnum[keyof typeof BenefitLicenseKeysTypeEnum];
+
+/**
+ * 
+ * @export
+ * @interface BenefitLicenseKeysCreate
+ */
+export interface BenefitLicenseKeysCreate {
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitLicenseKeysCreate
+     */
+    type: BenefitLicenseKeysCreateTypeEnum;
+    /**
+     * The description of the benefit. Will be displayed on products having this benefit.
+     * @type {string}
+     * @memberof BenefitLicenseKeysCreate
+     */
+    description: string;
+    /**
+     * The organization ID.
+     * @type {string}
+     * @memberof BenefitLicenseKeysCreate
+     */
+    organization_id?: string;
+    /**
+     * 
+     * @type {BenefitLicenseKeysCreateProperties}
+     * @memberof BenefitLicenseKeysCreate
+     */
+    properties: BenefitLicenseKeysCreateProperties;
+}
+
+
+/**
+ * @export
+ */
+export const BenefitLicenseKeysCreateTypeEnum = {
+    LICENSE_KEYS: 'license_keys'
+} as const;
+export type BenefitLicenseKeysCreateTypeEnum = typeof BenefitLicenseKeysCreateTypeEnum[keyof typeof BenefitLicenseKeysCreateTypeEnum];
+
+/**
+ * 
+ * @export
+ * @interface BenefitLicenseKeysCreateProperties
+ */
+export interface BenefitLicenseKeysCreateProperties {
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitLicenseKeysCreateProperties
+     */
+    prefix?: string;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof BenefitLicenseKeysCreateProperties
+     */
+    expires?: boolean;
+    /**
+     * 
+     * @type {number}
+     * @memberof BenefitLicenseKeysCreateProperties
+     */
+    ttl?: number;
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitLicenseKeysCreateProperties
+     */
+    timeframe?: BenefitLicenseKeysCreatePropertiesTimeframeEnum;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof BenefitLicenseKeysCreateProperties
+     */
+    limited?: boolean;
+    /**
+     * 
+     * @type {number}
+     * @memberof BenefitLicenseKeysCreateProperties
+     */
+    activation_limit?: number;
+}
+
+
+/**
+ * @export
+ */
+export const BenefitLicenseKeysCreatePropertiesTimeframeEnum = {
+    YEAR: 'year',
+    MONTH: 'month',
+    DAY: 'day'
+} as const;
+export type BenefitLicenseKeysCreatePropertiesTimeframeEnum = typeof BenefitLicenseKeysCreatePropertiesTimeframeEnum[keyof typeof BenefitLicenseKeysCreatePropertiesTimeframeEnum];
+
+/**
+ * 
+ * @export
+ * @interface BenefitLicenseKeysProperties
+ */
+export interface BenefitLicenseKeysProperties {
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitLicenseKeysProperties
+     */
+    prefix: string | null;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof BenefitLicenseKeysProperties
+     */
+    expires: boolean;
+    /**
+     * 
+     * @type {number}
+     * @memberof BenefitLicenseKeysProperties
+     */
+    ttl: number | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitLicenseKeysProperties
+     */
+    timeframe: BenefitLicenseKeysPropertiesTimeframeEnum | null;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof BenefitLicenseKeysProperties
+     */
+    limited: boolean;
+    /**
+     * 
+     * @type {number}
+     * @memberof BenefitLicenseKeysProperties
+     */
+    activation_limit: number | null;
+}
+
+
+/**
+ * @export
+ */
+export const BenefitLicenseKeysPropertiesTimeframeEnum = {
+    YEAR: 'year',
+    MONTH: 'month',
+    DAY: 'day'
+} as const;
+export type BenefitLicenseKeysPropertiesTimeframeEnum = typeof BenefitLicenseKeysPropertiesTimeframeEnum[keyof typeof BenefitLicenseKeysPropertiesTimeframeEnum];
+
+/**
+ * 
+ * @export
+ * @interface BenefitLicenseKeysSubscriber
+ */
+export interface BenefitLicenseKeysSubscriber {
+    /**
+     * Creation timestamp of the object.
+     * @type {string}
+     * @memberof BenefitLicenseKeysSubscriber
+     */
+    created_at: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitLicenseKeysSubscriber
+     */
+    modified_at?: string;
+    /**
+     * The ID of the benefit.
+     * @type {string}
+     * @memberof BenefitLicenseKeysSubscriber
+     */
+    id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitLicenseKeysSubscriber
+     */
+    type: BenefitLicenseKeysSubscriberTypeEnum;
+    /**
+     * The description of the benefit.
+     * @type {string}
+     * @memberof BenefitLicenseKeysSubscriber
+     */
+    description: string;
+    /**
+     * Whether the benefit is selectable when creating a product.
+     * @type {boolean}
+     * @memberof BenefitLicenseKeysSubscriber
+     */
+    selectable: boolean;
+    /**
+     * Whether the benefit is deletable.
+     * @type {boolean}
+     * @memberof BenefitLicenseKeysSubscriber
+     */
+    deletable: boolean;
+    /**
+     * The ID of the organization owning the benefit.
+     * @type {string}
+     * @memberof BenefitLicenseKeysSubscriber
+     */
+    organization_id: string;
+    /**
+     * 
+     * @type {BenefitLicenseKeysSubscriberProperties}
+     * @memberof BenefitLicenseKeysSubscriber
+     */
+    properties: BenefitLicenseKeysSubscriberProperties;
+}
+
+
+/**
+ * @export
+ */
+export const BenefitLicenseKeysSubscriberTypeEnum = {
+    LICENSE_KEYS: 'license_keys'
+} as const;
+export type BenefitLicenseKeysSubscriberTypeEnum = typeof BenefitLicenseKeysSubscriberTypeEnum[keyof typeof BenefitLicenseKeysSubscriberTypeEnum];
+
+/**
+ * 
+ * @export
+ * @interface BenefitLicenseKeysSubscriberProperties
+ */
+export interface BenefitLicenseKeysSubscriberProperties {
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitLicenseKeysSubscriberProperties
+     */
+    key: string;
+    /**
+     * 
+     * @type {number}
+     * @memberof BenefitLicenseKeysSubscriberProperties
+     */
+    activations: number;
+    /**
+     * 
+     * @type {number}
+     * @memberof BenefitLicenseKeysSubscriberProperties
+     */
+    activation_limit: number | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitLicenseKeysSubscriberProperties
+     */
+    last_activated_at: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitLicenseKeysSubscriberProperties
+     */
+    expires_at: string | null;
+}
+/**
+ * 
+ * @export
+ * @interface BenefitLicenseKeysUpdate
+ */
+export interface BenefitLicenseKeysUpdate {
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitLicenseKeysUpdate
+     */
+    description?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitLicenseKeysUpdate
+     */
+    type: BenefitLicenseKeysUpdateTypeEnum;
+    /**
+     * 
+     * @type {BenefitLicenseKeysCreateProperties}
+     * @memberof BenefitLicenseKeysUpdate
+     */
+    properties?: BenefitLicenseKeysCreateProperties;
+}
+
+
+/**
+ * @export
+ */
+export const BenefitLicenseKeysUpdateTypeEnum = {
+    LICENSE_KEYS: 'license_keys'
+} as const;
+export type BenefitLicenseKeysUpdateTypeEnum = typeof BenefitLicenseKeysUpdateTypeEnum[keyof typeof BenefitLicenseKeysUpdateTypeEnum];
+
+/**
+ * 
+ * @export
  * @interface BenefitPreconditionErrorNotification
  */
 export interface BenefitPreconditionErrorNotification {
@@ -3807,7 +4172,8 @@ export const BenefitType = {
     ADS: 'ads',
     DISCORD: 'discord',
     GITHUB_REPOSITORY: 'github_repository',
-    DOWNLOADABLES: 'downloadables'
+    DOWNLOADABLES: 'downloadables',
+    LICENSE_KEYS: 'license_keys'
 } as const;
 export type BenefitType = typeof BenefitType[keyof typeof BenefitType];
 
@@ -3822,7 +4188,7 @@ export type BenefitTypeFilter = Array<BenefitType> | BenefitType;
  * @type BenefitUpdate
  * @export
  */
-export type BenefitUpdate = BenefitAdsUpdate | BenefitArticlesUpdate | BenefitCustomUpdate | BenefitDiscordUpdate | BenefitDownloadablesUpdate | BenefitGitHubRepositoryUpdate;
+export type BenefitUpdate = BenefitAdsUpdate | BenefitArticlesUpdate | BenefitCustomUpdate | BenefitDiscordUpdate | BenefitDownloadablesUpdate | BenefitGitHubRepositoryUpdate | BenefitLicenseKeysUpdate;
 
 /**
  * 
@@ -4016,7 +4382,7 @@ export interface CurrencyAmount {
  * @type Data
  * @export
  */
-export type Data = BenefitAds | BenefitArticles | BenefitCustom | BenefitDiscord | BenefitDownloadables | BenefitGitHubRepository;
+export type Data = BenefitAds | BenefitArticles | BenefitCustom | BenefitDiscord | BenefitDownloadables | BenefitGitHubRepository | BenefitLicenseKeys;
 
 /**
  * 
@@ -5709,7 +6075,7 @@ export interface IssueUpdateBadgeMessage {
  * @type ItemsInner
  * @export
  */
-export type ItemsInner = BenefitAds | BenefitArticles | BenefitCustom | BenefitDiscord | BenefitDownloadables | BenefitGitHubRepository;
+export type ItemsInner = BenefitAds | BenefitArticles | BenefitCustom | BenefitDiscord | BenefitDownloadables | BenefitGitHubRepository | BenefitLicenseKeys;
 
 /**
  * 
@@ -5766,19 +6132,19 @@ export interface ListResourceAccount {
 /**
  * 
  * @export
- * @interface ListResourceAnnotatedUnionBenefitArticlesSubscriberBenefitAdsSubscriberBenefitDiscordSubscriberBenefitCustomSubscriberBenefitGitHubRepositorySubscriberBenefitDownloadablesSubscriberDiscriminatorMergeJSONSchema
+ * @interface ListResourceAnnotatedUnionBenefitArticlesSubscriberBenefitAdsSubscriberBenefitDiscordSubscriberBenefitCustomSubscriberBenefitGitHubRepositorySubscriberBenefitDownloadablesSubscriberBenefitLicenseKeysSubscriberDiscriminatorMergeJSONSchema
  */
-export interface ListResourceAnnotatedUnionBenefitArticlesSubscriberBenefitAdsSubscriberBenefitDiscordSubscriberBenefitCustomSubscriberBenefitGitHubRepositorySubscriberBenefitDownloadablesSubscriberDiscriminatorMergeJSONSchema {
+export interface ListResourceAnnotatedUnionBenefitArticlesSubscriberBenefitAdsSubscriberBenefitDiscordSubscriberBenefitCustomSubscriberBenefitGitHubRepositorySubscriberBenefitDownloadablesSubscriberBenefitLicenseKeysSubscriberDiscriminatorMergeJSONSchema {
     /**
      * 
      * @type {Array<UserBenefit>}
-     * @memberof ListResourceAnnotatedUnionBenefitArticlesSubscriberBenefitAdsSubscriberBenefitDiscordSubscriberBenefitCustomSubscriberBenefitGitHubRepositorySubscriberBenefitDownloadablesSubscriberDiscriminatorMergeJSONSchema
+     * @memberof ListResourceAnnotatedUnionBenefitArticlesSubscriberBenefitAdsSubscriberBenefitDiscordSubscriberBenefitCustomSubscriberBenefitGitHubRepositorySubscriberBenefitDownloadablesSubscriberBenefitLicenseKeysSubscriberDiscriminatorMergeJSONSchema
      */
     items?: Array<UserBenefit>;
     /**
      * 
      * @type {Pagination}
-     * @memberof ListResourceAnnotatedUnionBenefitArticlesSubscriberBenefitAdsSubscriberBenefitDiscordSubscriberBenefitCustomSubscriberBenefitGitHubRepositorySubscriberBenefitDownloadablesSubscriberDiscriminatorMergeJSONSchema
+     * @memberof ListResourceAnnotatedUnionBenefitArticlesSubscriberBenefitAdsSubscriberBenefitDiscordSubscriberBenefitCustomSubscriberBenefitGitHubRepositorySubscriberBenefitDownloadablesSubscriberBenefitLicenseKeysSubscriberDiscriminatorMergeJSONSchema
      */
     pagination: Pagination;
 }
@@ -6260,19 +6626,19 @@ export interface ListResourceTransaction {
 /**
  * 
  * @export
- * @interface ListResourceUnionBenefitArticlesBenefitAdsBenefitCustomBenefitDiscordBenefitGitHubRepositoryBenefitDownloadables
+ * @interface ListResourceUnionBenefitArticlesBenefitAdsBenefitCustomBenefitDiscordBenefitGitHubRepositoryBenefitDownloadablesBenefitLicenseKeys
  */
-export interface ListResourceUnionBenefitArticlesBenefitAdsBenefitCustomBenefitDiscordBenefitGitHubRepositoryBenefitDownloadables {
+export interface ListResourceUnionBenefitArticlesBenefitAdsBenefitCustomBenefitDiscordBenefitGitHubRepositoryBenefitDownloadablesBenefitLicenseKeys {
     /**
      * 
      * @type {Array<ItemsInner>}
-     * @memberof ListResourceUnionBenefitArticlesBenefitAdsBenefitCustomBenefitDiscordBenefitGitHubRepositoryBenefitDownloadables
+     * @memberof ListResourceUnionBenefitArticlesBenefitAdsBenefitCustomBenefitDiscordBenefitGitHubRepositoryBenefitDownloadablesBenefitLicenseKeys
      */
     items?: Array<ItemsInner>;
     /**
      * 
      * @type {Pagination}
-     * @memberof ListResourceUnionBenefitArticlesBenefitAdsBenefitCustomBenefitDiscordBenefitGitHubRepositoryBenefitDownloadables
+     * @memberof ListResourceUnionBenefitArticlesBenefitAdsBenefitCustomBenefitDiscordBenefitGitHubRepositoryBenefitDownloadablesBenefitLicenseKeys
      */
     pagination: Pagination;
 }
@@ -10990,19 +11356,19 @@ export type ResourceNotFoundTypeEnum = typeof ResourceNotFoundTypeEnum[keyof typ
  * @type ResponseBenefitsCreate
  * @export
  */
-export type ResponseBenefitsCreate = BenefitAds | BenefitArticles | BenefitCustom | BenefitDiscord | BenefitDownloadables | BenefitGitHubRepository;
+export type ResponseBenefitsCreate = BenefitAds | BenefitArticles | BenefitCustom | BenefitDiscord | BenefitDownloadables | BenefitGitHubRepository | BenefitLicenseKeys;
 
 /**
  * @type ResponseBenefitsGet
  * @export
  */
-export type ResponseBenefitsGet = BenefitAds | BenefitArticles | BenefitCustom | BenefitDiscord | BenefitDownloadables | BenefitGitHubRepository;
+export type ResponseBenefitsGet = BenefitAds | BenefitArticles | BenefitCustom | BenefitDiscord | BenefitDownloadables | BenefitGitHubRepository | BenefitLicenseKeys;
 
 /**
  * @type ResponseBenefitsUpdate
  * @export
  */
-export type ResponseBenefitsUpdate = BenefitAds | BenefitArticles | BenefitCustom | BenefitDiscord | BenefitDownloadables | BenefitGitHubRepository;
+export type ResponseBenefitsUpdate = BenefitAds | BenefitArticles | BenefitCustom | BenefitDiscord | BenefitDownloadables | BenefitGitHubRepository | BenefitLicenseKeys;
 
 /**
  * @type ResponseFilesUpdate
@@ -11033,7 +11399,7 @@ export type ResponseOauth2Userinfo = UserInfoOrganization | UserInfoUser;
  * 
  * @export
  */
-export type ResponseUsersGetBenefit = { type: 'ads' } & BenefitAdsSubscriber | { type: 'articles' } & BenefitArticlesSubscriber | { type: 'custom' } & BenefitCustomSubscriber | { type: 'discord' } & BenefitDiscordSubscriber | { type: 'downloadables' } & BenefitDownloadablesSubscriber | { type: 'github_repository' } & BenefitGitHubRepositorySubscriber;
+export type ResponseUsersGetBenefit = { type: 'ads' } & BenefitAdsSubscriber | { type: 'articles' } & BenefitArticlesSubscriber | { type: 'custom' } & BenefitCustomSubscriber | { type: 'discord' } & BenefitDiscordSubscriber | { type: 'downloadables' } & BenefitDownloadablesSubscriber | { type: 'github_repository' } & BenefitGitHubRepositorySubscriber | { type: 'license_keys' } & BenefitLicenseKeysSubscriber;
 /**
  * 
  * @export
@@ -13032,7 +13398,7 @@ export interface UserBase {
  * 
  * @export
  */
-export type UserBenefit = { type: 'ads' } & BenefitAdsSubscriber | { type: 'articles' } & BenefitArticlesSubscriber | { type: 'custom' } & BenefitCustomSubscriber | { type: 'discord' } & BenefitDiscordSubscriber | { type: 'downloadables' } & BenefitDownloadablesSubscriber | { type: 'github_repository' } & BenefitGitHubRepositorySubscriber;
+export type UserBenefit = { type: 'ads' } & BenefitAdsSubscriber | { type: 'articles' } & BenefitArticlesSubscriber | { type: 'custom' } & BenefitCustomSubscriber | { type: 'discord' } & BenefitDiscordSubscriber | { type: 'downloadables' } & BenefitDownloadablesSubscriber | { type: 'github_repository' } & BenefitGitHubRepositorySubscriber | { type: 'license_keys' } & BenefitLicenseKeysSubscriber;
 /**
  * 
  * @export

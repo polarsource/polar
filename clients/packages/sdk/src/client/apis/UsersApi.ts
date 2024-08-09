@@ -21,7 +21,7 @@ import type {
   BenefitTypeFilter,
   FreeSubscriptionUpgrade,
   HTTPValidationError,
-  ListResourceAnnotatedUnionBenefitArticlesSubscriberBenefitAdsSubscriberBenefitDiscordSubscriberBenefitCustomSubscriberBenefitGitHubRepositorySubscriberBenefitDownloadablesSubscriberDiscriminatorMergeJSONSchema,
+  ListResourceAnnotatedUnionBenefitArticlesSubscriberBenefitAdsSubscriberBenefitDiscordSubscriberBenefitCustomSubscriberBenefitGitHubRepositorySubscriberBenefitDownloadablesSubscriberBenefitLicenseKeysSubscriberDiscriminatorMergeJSONSchema,
   ListResourceDownloadableRead,
   ListResourceUserAdvertisementCampaign,
   ListResourceUserOrder,
@@ -777,7 +777,7 @@ export class UsersApi extends runtime.BaseAPI {
      * List my granted benefits.
      * List Benefits
      */
-    async listBenefitsRaw(requestParameters: UsersApiListBenefitsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListResourceAnnotatedUnionBenefitArticlesSubscriberBenefitAdsSubscriberBenefitDiscordSubscriberBenefitCustomSubscriberBenefitGitHubRepositorySubscriberBenefitDownloadablesSubscriberDiscriminatorMergeJSONSchema>> {
+    async listBenefitsRaw(requestParameters: UsersApiListBenefitsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListResourceAnnotatedUnionBenefitArticlesSubscriberBenefitAdsSubscriberBenefitDiscordSubscriberBenefitCustomSubscriberBenefitGitHubRepositorySubscriberBenefitDownloadablesSubscriberBenefitLicenseKeysSubscriberDiscriminatorMergeJSONSchema>> {
         const queryParameters: any = {};
 
         if (requestParameters['type'] != null) {
@@ -832,7 +832,7 @@ export class UsersApi extends runtime.BaseAPI {
      * List my granted benefits.
      * List Benefits
      */
-    async listBenefits(requestParameters: UsersApiListBenefitsRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ListResourceAnnotatedUnionBenefitArticlesSubscriberBenefitAdsSubscriberBenefitDiscordSubscriberBenefitCustomSubscriberBenefitGitHubRepositorySubscriberBenefitDownloadablesSubscriberDiscriminatorMergeJSONSchema> {
+    async listBenefits(requestParameters: UsersApiListBenefitsRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ListResourceAnnotatedUnionBenefitArticlesSubscriberBenefitAdsSubscriberBenefitDiscordSubscriberBenefitCustomSubscriberBenefitGitHubRepositorySubscriberBenefitDownloadablesSubscriberBenefitLicenseKeysSubscriberDiscriminatorMergeJSONSchema> {
         const response = await this.listBenefitsRaw(requestParameters, initOverrides);
         return await response.value();
     }

@@ -251,6 +251,39 @@ class BenefitDownloadablesSubscriberProperties(Schema):
         return dict(active_files=actives)
 
 
+## License Keys
+
+
+class BenefitLicenseKeysCreateProperties(Schema):
+    prefix: str | None = None
+
+    expires: bool = False
+    ttl: int | None = None
+    timeframe: Literal["year", "month", "day"] | None = None
+
+    limited: bool = False
+    activation_limit: int | None = None
+
+
+class BenefitLicenseKeysProperties(Schema):
+    prefix: str | None
+
+    expires: bool
+    ttl: int | None
+    timeframe: Literal["year", "month", "day"] | None
+
+    limited: bool
+    activation_limit: int | None
+
+
+class BenefitLicenseKeysSubscriberProperties(Schema):
+    key: str
+    activations: int
+    activation_limit: int | None
+    last_activated_at: datetime | None
+    expires_at: datetime | None
+
+
 # BenefitCreate
 
 IsTaxApplicable = Annotated[bool, Field(description="Whether the benefit is taxable.")]
@@ -306,12 +339,18 @@ class BenefitDownloadablesCreate(BenefitCreateBase):
     properties: BenefitDownloadablesCreateProperties
 
 
+class BenefitLicenseKeysCreate(BenefitCreateBase):
+    type: Literal[BenefitType.license_keys]
+    properties: BenefitLicenseKeysCreateProperties
+
+
 BenefitCreate = (
     BenefitCustomCreate
     | BenefitAdsCreate
     | BenefitDiscordCreate
     | BenefitGitHubRepositoryCreate
     | BenefitDownloadablesCreate
+    | BenefitLicenseKeysCreate
 )
 
 
@@ -361,6 +400,11 @@ class BenefitDownloadablesUpdate(BenefitUpdateBase):
     properties: BenefitDownloadablesCreateProperties | None = None
 
 
+class BenefitLicenseKeysUpdate(BenefitUpdateBase):
+    type: Literal[BenefitType.license_keys]
+    properties: BenefitLicenseKeysCreateProperties | None = None
+
+
 BenefitUpdate = (
     BenefitArticlesUpdate
     | BenefitAdsUpdate
@@ -368,6 +412,7 @@ BenefitUpdate = (
     | BenefitDiscordUpdate
     | BenefitGitHubRepositoryUpdate
     | BenefitDownloadablesUpdate
+    | BenefitLicenseKeysUpdate
 )
 
 
@@ -448,6 +493,11 @@ class BenefitDownloadables(BenefitBase):
     properties: BenefitDownloadablesProperties
 
 
+class BenefitLicenseKeys(BenefitBase):
+    type: Literal[BenefitType.license_keys]
+    properties: BenefitLicenseKeysProperties
+
+
 Benefit = (
     BenefitArticles
     | BenefitAds
@@ -455,6 +505,7 @@ Benefit = (
     | BenefitDiscord
     | BenefitGitHubRepository
     | BenefitDownloadables
+    | BenefitLicenseKeys
 )
 
 benefit_schema_map: dict[BenefitType, type[Benefit]] = {
@@ -464,6 +515,7 @@ benefit_schema_map: dict[BenefitType, type[Benefit]] = {
     BenefitType.custom: BenefitCustom,
     BenefitType.github_repository: BenefitGitHubRepository,
     BenefitType.downloadables: BenefitDownloadables,
+    BenefitType.license_keys: BenefitLicenseKeys,
 }
 
 
@@ -559,6 +611,11 @@ class BenefitDownloadablesSubscriber(BenefitBase):
     properties: BenefitDownloadablesSubscriberProperties
 
 
+class BenefitLicenseKeysSubscriber(BenefitBase):
+    type: Literal[BenefitType.license_keys]
+    properties: BenefitLicenseKeysSubscriberProperties
+
+
 # Properties that are available to subscribers only
 BenefitSubscriber = Annotated[
     BenefitArticlesSubscriber
@@ -566,7 +623,8 @@ BenefitSubscriber = Annotated[
     | BenefitDiscordSubscriber
     | BenefitCustomSubscriber
     | BenefitGitHubRepositorySubscriber
-    | BenefitDownloadablesSubscriber,
+    | BenefitDownloadablesSubscriber
+    | BenefitLicenseKeysSubscriber,
     Discriminator("type"),
 ]
 

@@ -27,6 +27,7 @@ class BenefitType(StrEnum):
     discord = "discord"
     github_repository = "github_repository"
     downloadables = "downloadables"
+    license_keys = "license_keys"
 
     def is_tax_applicable(self) -> bool:
         try:
@@ -35,6 +36,7 @@ class BenefitType(StrEnum):
                 BenefitType.discord: True,
                 BenefitType.github_repository: True,
                 BenefitType.downloadables: True,
+                BenefitType.license_keys: True,
             }
             return _is_tax_applicable_map[self]
         except KeyError as e:
@@ -77,6 +79,17 @@ class BenefitGitHubRepositoryProperties(BenefitProperties):
 class BenefitDownloadablesProperties(BenefitProperties):
     archived: dict[UUID, bool]
     files: list[UUID]
+
+
+class BenefitLicenseKeysProperties(BenefitProperties):
+    prefix: str | None
+
+    expires: bool
+    ttl: int | None
+    timeframe: Literal["year", "month", "day"] | None
+
+    limited: bool
+    activation_limit: int | None
 
 
 class Benefit(RecordModel):
@@ -169,5 +182,16 @@ class BenefitDownloadables(Benefit):
 
     __mapper_args__ = {
         "polymorphic_identity": BenefitType.downloadables,
+        "polymorphic_load": "inline",
+    }
+
+
+class BenefitLicenseKeys(Benefit):
+    properties: Mapped[BenefitLicenseKeysProperties] = mapped_column(
+        use_existing_column=True
+    )
+
+    __mapper_args__ = {
+        "polymorphic_identity": BenefitType.license_keys,
         "polymorphic_load": "inline",
     }

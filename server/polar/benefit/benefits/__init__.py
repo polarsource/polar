@@ -20,6 +20,7 @@ from .custom import BenefitCustomService
 from .discord import BenefitDiscordService
 from .downloadables import BenefitDownloadablesService
 from .github_repository import BenefitGitHubRepositoryService
+from .license_keys import BenefitLicenseKeysService
 
 _SERVICE_CLASS_MAP: dict[
     BenefitType,
@@ -31,6 +32,7 @@ _SERVICE_CLASS_MAP: dict[
     BenefitType.discord: BenefitDiscordService,
     BenefitType.github_repository: BenefitGitHubRepositoryService,
     BenefitType.downloadables: BenefitDownloadablesService,
+    BenefitType.license_keys: BenefitLicenseKeysService,
 }
 
 

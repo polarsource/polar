@@ -2,6 +2,7 @@ import {
   CheckOutlined,
   FileDownloadOutlined,
   GitHub,
+  KeyOutlined,
   StickyNote2Outlined,
   WebOutlined,
 } from '@mui/icons-material'
@@ -27,6 +28,8 @@ export const resolveBenefitIcon = (
       return <GitHub className={cn} fontSize={fontSize} />
     case BenefitType.DOWNLOADABLES:
       return <FileDownloadOutlined className={cn} fontSize={fontSize} />
+    case BenefitType.LICENSE_KEYS:
+      return <KeyOutlined className={cn} fontSize={fontSize} />
     default:
       return <CheckOutlined className={cn} fontSize={fontSize} />
   }
@@ -44,6 +47,8 @@ export const resolveBenefitTypeDisplayName = (type: BenefitType) => {
       return 'GitHub Repository Access'
     case BenefitType.DOWNLOADABLES:
       return 'Downloadable Files'
+    case BenefitType.LICENSE_KEYS:
+      return 'License Keys'
     default:
       return 'Custom'
   }
@@ -83,6 +88,7 @@ export const benefitsDisplayNames: {
   [BenefitType.DISCORD]: 'Discord Invite',
   [BenefitType.GITHUB_REPOSITORY]: 'GitHub Repository Access',
   [BenefitType.DOWNLOADABLES]: 'File Downloads',
+  [BenefitType.LICENSE_KEYS]: 'License Keys',
 }
 
 const isArticleBenefit = (

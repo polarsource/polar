@@ -35,6 +35,7 @@ import React, { useMemo } from 'react'
 import { useFormContext } from 'react-hook-form'
 import { DownloadablesBenefitForm } from './Downloadables/BenefitForm'
 import { GitHubRepositoryBenefitForm } from './GitHubRepositoryBenefitForm'
+import { LicenseKeysBenefitForm } from './LicenseKeys/BenefitForm'
 import { benefitsDisplayNames } from './utils'
 
 export const NewBenefitForm = ({
@@ -116,6 +117,9 @@ export const BenefitForm = ({
       )}
       {type === 'downloadables' && (
         <DownloadablesBenefitForm organization={organization} update={update} />
+      )}
+      {type === 'license_keys' && (
+        <LicenseKeysBenefitForm organization={organization} update={update} />
       )}
     </>
   )

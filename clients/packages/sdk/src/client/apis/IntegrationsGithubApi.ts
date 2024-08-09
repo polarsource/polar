@@ -61,6 +61,11 @@ export interface IntegrationsGithubApiRedirectToOrganizationInstallationRequest 
     returnTo?: string;
 }
 
+export interface IntegrationsGithubApiSecretScanningRequest {
+    githubPublicKeyIdentifier: string;
+    githubPublicKeySignature: string;
+}
+
 /**
  * 
  */
@@ -395,6 +400,58 @@ export class IntegrationsGithubApi extends runtime.BaseAPI {
      */
     async redirectToOrganizationInstallation(requestParameters: IntegrationsGithubApiRedirectToOrganizationInstallationRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<any> {
         const response = await this.redirectToOrganizationInstallationRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
+     * Secret Scanning
+     */
+    async secretScanningRaw(requestParameters: IntegrationsGithubApiSecretScanningRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<any>> {
+        if (requestParameters['githubPublicKeyIdentifier'] == null) {
+            throw new runtime.RequiredError(
+                'githubPublicKeyIdentifier',
+                'Required parameter "githubPublicKeyIdentifier" was null or undefined when calling secretScanning().'
+            );
+        }
+
+        if (requestParameters['githubPublicKeySignature'] == null) {
+            throw new runtime.RequiredError(
+                'githubPublicKeySignature',
+                'Required parameter "githubPublicKeySignature" was null or undefined when calling secretScanning().'
+            );
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        if (requestParameters['githubPublicKeyIdentifier'] != null) {
+            headerParameters['github-public-key-identifier'] = String(requestParameters['githubPublicKeyIdentifier']);
+        }
+
+        if (requestParameters['githubPublicKeySignature'] != null) {
+            headerParameters['github-public-key-signature'] = String(requestParameters['githubPublicKeySignature']);
+        }
+
+        const response = await this.request({
+            path: `/v1/integrations/github/secret-scanning`,
+            method: 'POST',
+            headers: headerParameters,
+            query: queryParameters,
+        }, initOverrides);
+
+        if (this.isJsonMime(response.headers.get('content-type'))) {
+            return new runtime.JSONApiResponse<any>(response);
+        } else {
+            return new runtime.TextApiResponse(response) as any;
+        }
+    }
+
+    /**
+     * Secret Scanning
+     */
+    async secretScanning(requestParameters: IntegrationsGithubApiSecretScanningRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<any> {
+        const response = await this.secretScanningRaw(requestParameters, initOverrides);
         return await response.value();
     }
 

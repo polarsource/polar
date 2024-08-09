@@ -362,7 +362,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/ListResource_Annotated_Union_BenefitArticlesSubscriber__BenefitAdsSubscriber__BenefitDiscordSubscriber__BenefitCustomSubscriber__BenefitGitHubRepositorySubscriber__BenefitDownloadablesSubscriber___Discriminator__MergeJSONSchema__"
+                                    "$ref": "#/components/schemas/ListResource_Annotated_Union_BenefitArticlesSubscriber__BenefitAdsSubscriber__BenefitDiscordSubscriber__BenefitCustomSubscriber__BenefitGitHubRepositorySubscriber__BenefitDownloadablesSubscriber__BenefitLicenseKeysSubscriber___Discriminator__MergeJSONSchema__"
                                 }
                             }
                         }
@@ -460,6 +460,9 @@
                                         },
                                         {
                                             "$ref": "#/components/schemas/BenefitDownloadablesSubscriber"
+                                        },
+                                        {
+                                            "$ref": "#/components/schemas/BenefitLicenseKeysSubscriber"
                                         }
                                     ],
                                     "discriminator": {
@@ -470,7 +473,8 @@
                                             "discord": "#/components/schemas/BenefitDiscordSubscriber",
                                             "custom": "#/components/schemas/BenefitCustomSubscriber",
                                             "github_repository": "#/components/schemas/BenefitGitHubRepositorySubscriber",
-                                            "downloadables": "#/components/schemas/BenefitDownloadablesSubscriber"
+                                            "downloadables": "#/components/schemas/BenefitDownloadablesSubscriber",
+                                            "license_keys": "#/components/schemas/BenefitLicenseKeysSubscriber"
                                         }
                                     },
                                     "title": "Response Users:Benefits:Get"
@@ -4805,8 +4809,8 @@
                 "security": [
                     {
                         "oidc": [
-                            "repositories:write",
-                            "repositories:read"
+                            "repositories:read",
+                            "repositories:write"
                         ]
                     },
                     {
@@ -5054,8 +5058,8 @@
                 "security": [
                     {
                         "oidc": [
-                            "repositories:write",
-                            "repositories:read"
+                            "repositories:read",
+                            "repositories:write"
                         ]
                     },
                     {
@@ -8157,10 +8161,10 @@
                             },
                             "description": "Filter by the type of purchase the customer made.",
                             "default": [
-                                "donation",
                                 "order",
                                 "free_subscription",
-                                "paid_subscription"
+                                "paid_subscription",
+                                "donation"
                             ],
                             "title": "Customer Types"
                         },
@@ -12286,7 +12290,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/ListResource_Union_BenefitArticles__BenefitAds__BenefitCustom__BenefitDiscord__BenefitGitHubRepository__BenefitDownloadables__"
+                                    "$ref": "#/components/schemas/ListResource_Union_BenefitArticles__BenefitAds__BenefitCustom__BenefitDiscord__BenefitGitHubRepository__BenefitDownloadables__BenefitLicenseKeys__"
                                 }
                             }
                         }
@@ -12365,6 +12369,9 @@
                                     },
                                     {
                                         "$ref": "#/components/schemas/BenefitDownloadablesCreate"
+                                    },
+                                    {
+                                        "$ref": "#/components/schemas/BenefitLicenseKeysCreate"
                                     }
                                 ],
                                 "discriminator": {
@@ -12374,7 +12381,8 @@
                                         "ads": "#/components/schemas/BenefitAdsCreate",
                                         "discord": "#/components/schemas/BenefitDiscordCreate",
                                         "github_repository": "#/components/schemas/BenefitGitHubRepositoryCreate",
-                                        "downloadables": "#/components/schemas/BenefitDownloadablesCreate"
+                                        "downloadables": "#/components/schemas/BenefitDownloadablesCreate",
+                                        "license_keys": "#/components/schemas/BenefitLicenseKeysCreate"
                                     }
                                 },
                                 "title": "Benefit Create"
@@ -12406,6 +12414,9 @@
                                         },
                                         {
                                             "$ref": "#/components/schemas/BenefitDownloadables"
+                                        },
+                                        {
+                                            "$ref": "#/components/schemas/BenefitLicenseKeys"
                                         }
                                     ],
                                     "title": "Response Benefits:Create"
@@ -12493,6 +12504,9 @@
                                         },
                                         {
                                             "$ref": "#/components/schemas/BenefitDownloadables"
+                                        },
+                                        {
+                                            "$ref": "#/components/schemas/BenefitLicenseKeys"
                                         }
                                     ],
                                     "title": "Response Benefits:Get"
@@ -12586,6 +12600,9 @@
                                     },
                                     {
                                         "$ref": "#/components/schemas/BenefitDownloadablesUpdate"
+                                    },
+                                    {
+                                        "$ref": "#/components/schemas/BenefitLicenseKeysUpdate"
                                     }
                                 ],
                                 "title": "Benefit Update"
@@ -12617,6 +12634,9 @@
                                         },
                                         {
                                             "$ref": "#/components/schemas/BenefitDownloadables"
+                                        },
+                                        {
+                                            "$ref": "#/components/schemas/BenefitLicenseKeys"
                                         }
                                     ],
                                     "title": "Response Benefits:Update"
@@ -19396,6 +19416,435 @@
                 "title": "BenefitGrantProperties",
                 "description": "Properties for a benefit grant."
             },
+            "BenefitLicenseKeys": {
+                "properties": {
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "title": "Created At",
+                        "description": "Creation timestamp of the object."
+                    },
+                    "modified_at": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "date-time"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Modified At",
+                        "description": "Last modification timestamp of the object."
+                    },
+                    "id": {
+                        "type": "string",
+                        "format": "uuid4",
+                        "title": "Id",
+                        "description": "The ID of the benefit."
+                    },
+                    "type": {
+                        "type": "string",
+                        "enum": [
+                            "license_keys"
+                        ],
+                        "const": "license_keys",
+                        "title": "Type"
+                    },
+                    "description": {
+                        "type": "string",
+                        "title": "Description",
+                        "description": "The description of the benefit."
+                    },
+                    "selectable": {
+                        "type": "boolean",
+                        "title": "Selectable",
+                        "description": "Whether the benefit is selectable when creating a product."
+                    },
+                    "deletable": {
+                        "type": "boolean",
+                        "title": "Deletable",
+                        "description": "Whether the benefit is deletable."
+                    },
+                    "organization_id": {
+                        "type": "string",
+                        "format": "uuid4",
+                        "title": "Organization Id",
+                        "description": "The ID of the organization owning the benefit."
+                    },
+                    "properties": {
+                        "$ref": "#/components/schemas/BenefitLicenseKeysProperties"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "created_at",
+                    "modified_at",
+                    "id",
+                    "type",
+                    "description",
+                    "selectable",
+                    "deletable",
+                    "organization_id",
+                    "properties"
+                ],
+                "title": "BenefitLicenseKeys"
+            },
+            "BenefitLicenseKeysCreate": {
+                "properties": {
+                    "type": {
+                        "type": "string",
+                        "enum": [
+                            "license_keys"
+                        ],
+                        "const": "license_keys",
+                        "title": "Type"
+                    },
+                    "description": {
+                        "type": "string",
+                        "maxLength": 42,
+                        "minLength": 3,
+                        "title": "Description",
+                        "description": "The description of the benefit. Will be displayed on products having this benefit."
+                    },
+                    "organization_id": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "uuid4",
+                                "description": "The organization ID.",
+                                "x-polar-selector-widget": {
+                                    "displayProperty": "name",
+                                    "resourceName": "Organization",
+                                    "resourceRoot": "/v1/organizations"
+                                }
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Organization Id",
+                        "description": "The ID of the organization owning the benefit. **Required unless you use an organization token.**"
+                    },
+                    "properties": {
+                        "$ref": "#/components/schemas/BenefitLicenseKeysCreateProperties"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "type",
+                    "description",
+                    "properties"
+                ],
+                "title": "BenefitLicenseKeysCreate"
+            },
+            "BenefitLicenseKeysCreateProperties": {
+                "properties": {
+                    "prefix": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Prefix"
+                    },
+                    "expires": {
+                        "type": "boolean",
+                        "title": "Expires",
+                        "default": false
+                    },
+                    "ttl": {
+                        "anyOf": [
+                            {
+                                "type": "integer"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Ttl"
+                    },
+                    "timeframe": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "enum": [
+                                    "year",
+                                    "month",
+                                    "day"
+                                ]
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Timeframe"
+                    },
+                    "limited": {
+                        "type": "boolean",
+                        "title": "Limited",
+                        "default": false
+                    },
+                    "activation_limit": {
+                        "anyOf": [
+                            {
+                                "type": "integer"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Activation Limit"
+                    }
+                },
+                "type": "object",
+                "title": "BenefitLicenseKeysCreateProperties"
+            },
+            "BenefitLicenseKeysProperties": {
+                "properties": {
+                    "prefix": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Prefix"
+                    },
+                    "expires": {
+                        "type": "boolean",
+                        "title": "Expires"
+                    },
+                    "ttl": {
+                        "anyOf": [
+                            {
+                                "type": "integer"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Ttl"
+                    },
+                    "timeframe": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "enum": [
+                                    "year",
+                                    "month",
+                                    "day"
+                                ]
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Timeframe"
+                    },
+                    "limited": {
+                        "type": "boolean",
+                        "title": "Limited"
+                    },
+                    "activation_limit": {
+                        "anyOf": [
+                            {
+                                "type": "integer"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Activation Limit"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "prefix",
+                    "expires",
+                    "ttl",
+                    "timeframe",
+                    "limited",
+                    "activation_limit"
+                ],
+                "title": "BenefitLicenseKeysProperties"
+            },
+            "BenefitLicenseKeysSubscriber": {
+                "properties": {
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "title": "Created At",
+                        "description": "Creation timestamp of the object."
+                    },
+                    "modified_at": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "date-time"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Modified At",
+                        "description": "Last modification timestamp of the object."
+                    },
+                    "id": {
+                        "type": "string",
+                        "format": "uuid4",
+                        "title": "Id",
+                        "description": "The ID of the benefit."
+                    },
+                    "type": {
+                        "type": "string",
+                        "enum": [
+                            "license_keys"
+                        ],
+                        "const": "license_keys",
+                        "title": "Type"
+                    },
+                    "description": {
+                        "type": "string",
+                        "title": "Description",
+                        "description": "The description of the benefit."
+                    },
+                    "selectable": {
+                        "type": "boolean",
+                        "title": "Selectable",
+                        "description": "Whether the benefit is selectable when creating a product."
+                    },
+                    "deletable": {
+                        "type": "boolean",
+                        "title": "Deletable",
+                        "description": "Whether the benefit is deletable."
+                    },
+                    "organization_id": {
+                        "type": "string",
+                        "format": "uuid4",
+                        "title": "Organization Id",
+                        "description": "The ID of the organization owning the benefit."
+                    },
+                    "properties": {
+                        "$ref": "#/components/schemas/BenefitLicenseKeysSubscriberProperties"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "created_at",
+                    "modified_at",
+                    "id",
+                    "type",
+                    "description",
+                    "selectable",
+                    "deletable",
+                    "organization_id",
+                    "properties"
+                ],
+                "title": "BenefitLicenseKeysSubscriber"
+            },
+            "BenefitLicenseKeysSubscriberProperties": {
+                "properties": {
+                    "key": {
+                        "type": "string",
+                        "title": "Key"
+                    },
+                    "activations": {
+                        "type": "integer",
+                        "title": "Activations"
+                    },
+                    "activation_limit": {
+                        "anyOf": [
+                            {
+                                "type": "integer"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Activation Limit"
+                    },
+                    "last_activated_at": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "date-time"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Last Activated At"
+                    },
+                    "expires_at": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "date-time"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Expires At"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "key",
+                    "activations",
+                    "activation_limit",
+                    "last_activated_at",
+                    "expires_at"
+                ],
+                "title": "BenefitLicenseKeysSubscriberProperties"
+            },
+            "BenefitLicenseKeysUpdate": {
+                "properties": {
+                    "description": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "maxLength": 42,
+                                "minLength": 3
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Description",
+                        "description": "The description of the benefit. Will be displayed on products having this benefit."
+                    },
+                    "type": {
+                        "type": "string",
+                        "enum": [
+                            "license_keys"
+                        ],
+                        "const": "license_keys",
+                        "title": "Type"
+                    },
+                    "properties": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/components/schemas/BenefitLicenseKeysCreateProperties"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ]
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "type"
+                ],
+                "title": "BenefitLicenseKeysUpdate"
+            },
             "BenefitPreconditionErrorNotification": {
                 "properties": {
                     "id": {
@@ -19480,7 +19929,8 @@
                     "ads",
                     "discord",
                     "github_repository",
-                    "downloadables"
+                    "downloadables",
+                    "license_keys"
                 ],
                 "title": "BenefitType"
             },
@@ -21542,7 +21992,7 @@
                 ],
                 "title": "ListResource[Account]"
             },
-            "ListResource_Annotated_Union_BenefitArticlesSubscriber__BenefitAdsSubscriber__BenefitDiscordSubscriber__BenefitCustomSubscriber__BenefitGitHubRepositorySubscriber__BenefitDownloadablesSubscriber___Discriminator__MergeJSONSchema__": {
+            "ListResource_Annotated_Union_BenefitArticlesSubscriber__BenefitAdsSubscriber__BenefitDiscordSubscriber__BenefitCustomSubscriber__BenefitGitHubRepositorySubscriber__BenefitDownloadablesSubscriber__BenefitLicenseKeysSubscriber___Discriminator__MergeJSONSchema__": {
                 "properties": {
                     "items": {
                         "items": {
@@ -21564,6 +22014,9 @@
                                 },
                                 {
                                     "$ref": "#/components/schemas/BenefitDownloadablesSubscriber"
+                                },
+                                {
+                                    "$ref": "#/components/schemas/BenefitLicenseKeysSubscriber"
                                 }
                             ],
                             "title": "UserBenefit",
@@ -21575,7 +22028,8 @@
                                     "custom": "#/components/schemas/BenefitCustomSubscriber",
                                     "discord": "#/components/schemas/BenefitDiscordSubscriber",
                                     "downloadables": "#/components/schemas/BenefitDownloadablesSubscriber",
-                                    "github_repository": "#/components/schemas/BenefitGitHubRepositorySubscriber"
+                                    "github_repository": "#/components/schemas/BenefitGitHubRepositorySubscriber",
+                                    "license_keys": "#/components/schemas/BenefitLicenseKeysSubscriber"
                                 }
                             }
                         },
@@ -21591,7 +22045,7 @@
                     "items",
                     "pagination"
                 ],
-                "title": "ListResource[Annotated[Union[BenefitArticlesSubscriber, BenefitAdsSubscriber, BenefitDiscordSubscriber, BenefitCustomSubscriber, BenefitGitHubRepositorySubscriber, BenefitDownloadablesSubscriber], Discriminator, MergeJSONSchema]]"
+                "title": "ListResource[Annotated[Union[BenefitArticlesSubscriber, BenefitAdsSubscriber, BenefitDiscordSubscriber, BenefitCustomSubscriber, BenefitGitHubRepositorySubscriber, BenefitDownloadablesSubscriber, BenefitLicenseKeysSubscriber], Discriminator, MergeJSONSchema]]"
             },
             "ListResource_Annotated_Union_DownloadableFileRead__ProductMediaFileRead__OrganizationAvatarFileRead___Discriminator__MergeJSONSchema__": {
                 "properties": {
@@ -22112,7 +22566,7 @@
                 ],
                 "title": "ListResource[Transaction]"
             },
-            "ListResource_Union_BenefitArticles__BenefitAds__BenefitCustom__BenefitDiscord__BenefitGitHubRepository__BenefitDownloadables__": {
+            "ListResource_Union_BenefitArticles__BenefitAds__BenefitCustom__BenefitDiscord__BenefitGitHubRepository__BenefitDownloadables__BenefitLicenseKeys__": {
                 "properties": {
                     "items": {
                         "items": {
@@ -22134,6 +22588,9 @@
                                 },
                                 {
                                     "$ref": "#/components/schemas/BenefitDownloadables"
+                                },
+                                {
+                                    "$ref": "#/components/schemas/BenefitLicenseKeys"
                                 }
                             ]
                         },
@@ -22149,7 +22606,7 @@
                     "items",
                     "pagination"
                 ],
-                "title": "ListResource[Union[BenefitArticles, BenefitAds, BenefitCustom, BenefitDiscord, BenefitGitHubRepository, BenefitDownloadables]]"
+                "title": "ListResource[Union[BenefitArticles, BenefitAds, BenefitCustom, BenefitDiscord, BenefitGitHubRepository, BenefitDownloadables, BenefitLicenseKeys]]"
             },
             "ListResource_UserAdvertisementCampaign_": {
                 "properties": {
@@ -30483,6 +30940,9 @@
                             },
                             {
                                 "$ref": "#/components/schemas/BenefitDownloadables"
+                            },
+                            {
+                                "$ref": "#/components/schemas/BenefitLicenseKeys"
                             }
                         ],
                         "title": "Data"
@@ -30525,6 +30985,9 @@
                             },
                             {
                                 "$ref": "#/components/schemas/BenefitDownloadables"
+                            },
+                            {
+                                "$ref": "#/components/schemas/BenefitLicenseKeys"
                             }
                         ],
                         "title": "Data"

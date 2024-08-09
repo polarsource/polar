@@ -20,7 +20,7 @@ import type {
   BenefitUpdate,
   HTTPValidationError,
   ListResourceBenefitGrant,
-  ListResourceUnionBenefitArticlesBenefitAdsBenefitCustomBenefitDiscordBenefitGitHubRepositoryBenefitDownloadables,
+  ListResourceUnionBenefitArticlesBenefitAdsBenefitCustomBenefitDiscordBenefitGitHubRepositoryBenefitDownloadablesBenefitLicenseKeys,
   NotPermitted,
   OrganizationIDFilter,
   ResourceNotFound,
@@ -265,7 +265,7 @@ export class BenefitsApi extends runtime.BaseAPI {
      * List benefits.
      * List Benefits
      */
-    async listRaw(requestParameters: BenefitsApiListRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListResourceUnionBenefitArticlesBenefitAdsBenefitCustomBenefitDiscordBenefitGitHubRepositoryBenefitDownloadables>> {
+    async listRaw(requestParameters: BenefitsApiListRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListResourceUnionBenefitArticlesBenefitAdsBenefitCustomBenefitDiscordBenefitGitHubRepositoryBenefitDownloadablesBenefitLicenseKeys>> {
         const queryParameters: any = {};
 
         if (requestParameters['organizationId'] != null) {
@@ -308,7 +308,7 @@ export class BenefitsApi extends runtime.BaseAPI {
      * List benefits.
      * List Benefits
      */
-    async list(requestParameters: BenefitsApiListRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ListResourceUnionBenefitArticlesBenefitAdsBenefitCustomBenefitDiscordBenefitGitHubRepositoryBenefitDownloadables> {
+    async list(requestParameters: BenefitsApiListRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ListResourceUnionBenefitArticlesBenefitAdsBenefitCustomBenefitDiscordBenefitGitHubRepositoryBenefitDownloadablesBenefitLicenseKeys> {
         const response = await this.listRaw(requestParameters, initOverrides);
         return await response.value();
     }

@@ -16,6 +16,7 @@ from .issue import Issue
 from .issue_dependency import IssueDependency
 from .issue_reference import IssueReference
 from .issue_reward import IssueReward
+from .license_key import LicenseKey
 from .magic_link import MagicLink
 from .notification import Notification
 from .oauth2_authorization_code import OAuth2AuthorizationCode
@@ -62,6 +63,7 @@ __all__ = [
     "IssueDependency",
     "IssueReference",
     "IssueReward",
+    "LicenseKey",
     "MagicLink",
     "Notification",
     "OAuth2AuthorizationCode",

@@ -8,6 +8,7 @@ from polar.auth.models import AuthSubject
 from polar.logging import Logger
 from polar.models import Organization, User
 from polar.models.benefit import BenefitLicenseKeys, BenefitLicenseKeysProperties
+from polar.user.service.license_key import license_key as license_key_service
 
 from .base import (
     BenefitServiceProtocol,
@@ -28,8 +29,12 @@ class BenefitLicenseKeysService(
         update: bool = False,
         attempt: int = 1,
     ) -> dict[str, Any]:
-        ret: dict[str, Any] = {}
-        return ret
+        await license_key_service.user_grant(
+            self.session,
+            user=user,
+            benefit=benefit,
+        )
+        return {}
 
     async def revoke(
         self,
@@ -39,6 +44,7 @@ class BenefitLicenseKeysService(
         *,
         attempt: int = 1,
     ) -> dict[str, Any]:
+        revoked = await license_key_service.user_revoke()
         return {}
 
     async def requires_update(

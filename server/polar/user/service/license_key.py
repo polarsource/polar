@@ -4,7 +4,7 @@ from polar.kit.services import ResourceService
 from polar.models import User
 from polar.models.benefit import BenefitLicenseKeys
 from polar.models.license_key import LicenseKey
-from polar.postgres import AsyncSession
+from polar.postgres import AsyncSession, sql
 
 from ..schemas.license_key import (
     LicenseKeyCreate,
@@ -35,7 +35,26 @@ class LicenseKeyService(
         await session.flush()
         return key
 
-    async def revoke_for_user() -> None: ...
+    async def user_revoke(
+        self,
+        session: AsyncSession,
+        user: User,
+        benefit: BenefitLicenseKeys,
+    ) -> list[LicenseKey]:
+        query = sql.select(LicenseKey).filter_by(user_id=user.id, benefit_id=benefit.id)
+        res = await session.execute(query)
+        keys = res.scalars().all()
+        if not keys:
+            return []
+
+        ret = []
+        for key in keys:
+            key.mark_revoked()
+            session.add(key)
+            ret.append(key)
+
+        await session.flush()
+        return ret
 
 
 license_key = LicenseKeyService(LicenseKey)

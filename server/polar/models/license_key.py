@@ -21,8 +21,8 @@ from .user import User
 
 
 class LicenseKeyStatus(StrEnum):
-    enabled = "enabled"
-    disabled = "disabled"
+    granted = "granted"
+    revoked = "revoked"
 
 
 class LicenseKey(RecordModel):
@@ -53,7 +53,7 @@ class LicenseKey(RecordModel):
     key: Mapped[str] = mapped_column(String, nullable=False)
 
     status: Mapped[LicenseKeyStatus] = mapped_column(
-        String, nullable=False, default=LicenseKeyStatus.enabled
+        String, nullable=False, default=LicenseKeyStatus.granted
     )
 
     activations: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
@@ -99,7 +99,7 @@ class LicenseKey(RecordModel):
         user_id: UUID,
         benefit_id: UUID,
         prefix: str | None = None,
-        status: LicenseKeyStatus = LicenseKeyStatus.enabled,
+        status: LicenseKeyStatus = LicenseKeyStatus.granted,
         activation_limit: int | None = None,
         expires: bool = False,
         ttl: int | None = None,
@@ -121,3 +121,7 @@ class LicenseKey(RecordModel):
             activation_limit=activation_limit,
             expires_at=expiration
         )
+
+    def mark_revoked(self) -> None:
+        self.status = LicenseKeyStatus.revoked
+

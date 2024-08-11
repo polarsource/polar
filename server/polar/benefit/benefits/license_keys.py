@@ -29,12 +29,14 @@ class BenefitLicenseKeysService(
         update: bool = False,
         attempt: int = 1,
     ) -> dict[str, Any]:
-        await license_key_service.user_grant(
+        key = await license_key_service.user_grant(
             self.session,
             user=user,
             benefit=benefit,
         )
-        return {}
+        return {
+            "license_key_id": key.id,
+        }
 
     async def revoke(
         self,
@@ -44,7 +46,11 @@ class BenefitLicenseKeysService(
         *,
         attempt: int = 1,
     ) -> dict[str, Any]:
-        revoked = await license_key_service.user_revoke()
+        revoked = await license_key_service.user_revoke(
+            self.session,
+            user=user,
+            benefit=benefit,
+        )
         return {}
 
     async def requires_update(
@@ -52,7 +58,15 @@ class BenefitLicenseKeysService(
         benefit: BenefitLicenseKeys,
         previous_properties: BenefitLicenseKeysProperties,
     ) -> bool:
-        return False
+        c = benefit.properties
+        pre = previous_properties
+        ret = (
+            c.get("expires", None) != pre.get("expires", None)
+            or c.get("activation_limit", None) != pre.get("activation_limit", None)
+            or c.get("ttl", None) != pre.get("ttl", None)
+            or c.get("timeframe", None) != pre.get("timeframe", None)
+        )
+        return ret
 
     async def validate_properties(
         self, auth_subject: AuthSubject[User | Organization], properties: dict[str, Any]

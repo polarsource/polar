@@ -1,3 +1,4 @@
+from typing import Any
 from unittest.mock import AsyncMock
 
 import pytest
@@ -43,6 +44,7 @@ def construct_stripe_invoice(
     tax: int = 2000,
     charge_id: str = "CHARGE_ID",
     subscription_id: str | None = "SUBSCRIPTION_ID",
+    subscription_details: dict[str, Any] | None = None,
     customer_id: str = "CUSTOMER_ID",
     lines: list[tuple[str, bool]] = [("PRICE_ID", False)],
     metadata: dict[str, str] = {},
@@ -56,6 +58,7 @@ def construct_stripe_invoice(
             "currency": "usd",
             "charge": charge_id,
             "subscription": subscription_id,
+            "subscription_details": subscription_details,
             "customer": customer_id,
             "lines": {
                 "data": [
@@ -211,7 +214,6 @@ class TestCreateOrderFromStripe:
         "lines",
         (
             [],
-            [("PRICE_1", True), ("PRICE_2", True)],
             [("PRICE_1", False), ("PRICE_2", False)],
         ),
     )
@@ -286,6 +288,37 @@ class TestCreateOrderFromStripe:
                 ("PRICE_2", True),
                 (product.prices[0].stripe_price_id, False),
             ],
+        )
+
+        payment_transaction = await create_transaction(
+            save_fixture, type=TransactionType.payment
+        )
+        payment_transaction.charge_id = "CHARGE_ID"
+        await save_fixture(payment_transaction)
+
+        order = await order_service.create_order_from_stripe(session, invoice=invoice)
+
+        assert order.amount == invoice.total - (invoice.tax or 0)
+        assert order.user.id == subscription.user_id
+        assert order.product == product
+        assert order.product_price == product.prices[0]
+        assert order.subscription == subscription
+        assert order.user.stripe_customer_id == invoice.customer
+
+    async def test_subscription_only_proration(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        subscription: Subscription,
+        product: Product,
+    ) -> None:
+        invoice = construct_stripe_invoice(
+            subscription_id=subscription.stripe_subscription_id,
+            lines=[
+                ("PRICE_1", True),
+                ("PRICE_2", True),
+            ],
+            subscription_details={"metadata": {"price_id": str(product.prices[0].id)}},
         )
 
         payment_transaction = await create_transaction(

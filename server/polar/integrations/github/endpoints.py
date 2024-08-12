@@ -458,7 +458,7 @@ async def webhook(request: Request) -> WebhookResponse:
     raise HTTPException(status_code=404)
 
 
-@router.post("/secret-scanning")
+@router.post("/secret-scanning", include_in_schema=False)
 async def secret_scanning(
     request: Request,
     github_public_key_identifier: str = Header(),

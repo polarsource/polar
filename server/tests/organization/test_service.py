@@ -5,7 +5,7 @@ from pytest_mock import MockerFixture
 from polar.auth.models import AuthSubject
 from polar.exceptions import PolarRequestValidationError
 from polar.models import Organization, User
-from polar.organization.schemas import OrganizationCreate
+from polar.organization.schemas import OrganizationCreate, OrganizationFeatureSettings
 from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession
 from polar.user_organization.service import (
@@ -63,6 +63,8 @@ class TestCreate:
 
         assert organization.name == "My New Organization"
         assert organization.slug == slug
+        assert organization.feature_settings == {}
+        assert organization.donations_enabled is False
 
         user_organization = await user_organization_service.get_by_user_and_org(
             session, auth_subject.subject.id, organization.id
@@ -72,3 +74,31 @@ class TestCreate:
         enqueue_job_mock.assert_called_once_with(
             "organization.created", organization_id=organization.id
         )
+
+    @pytest.mark.auth
+    async def test_valid_with_feature_settings(
+        self, auth_subject: AuthSubject[User], session: AsyncSession
+    ) -> None:
+        organization = await organization_service.create(
+            session,
+            OrganizationCreate(
+                name="My New Organization",
+                slug="my-new-organization",
+                feature_settings=OrganizationFeatureSettings(
+                    subscriptions_enabled=True,
+                    issue_funding_enabled=False,
+                    articles_enabled=False,
+                ),
+                donations_enabled=True,
+            ),
+            auth_subject,
+        )
+
+        assert organization.name == "My New Organization"
+
+        assert organization.feature_settings == {
+            "subscriptions_enabled": True,
+            "issue_funding_enabled": False,
+            "articles_enabled": False,
+        }
+        assert organization.donations_enabled is True

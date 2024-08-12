@@ -127,6 +127,8 @@ class OrganizationCreate(Schema):
         AfterValidator(validate_slug),
     ]
     avatar_url: HttpUrlToStr | None = None
+    donations_enabled: bool = False
+    feature_settings: OrganizationFeatureSettings | None = None
 
 
 class OrganizationUpdate(Schema):

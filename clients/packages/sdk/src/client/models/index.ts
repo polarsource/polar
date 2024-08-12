@@ -8716,6 +8716,18 @@ export interface OrganizationCreate {
      * @memberof OrganizationCreate
      */
     avatar_url?: string;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof OrganizationCreate
+     */
+    donations_enabled?: boolean;
+    /**
+     * 
+     * @type {OrganizationFeatureSettings}
+     * @memberof OrganizationCreate
+     */
+    feature_settings?: OrganizationFeatureSettings;
 }
 /**
  * 

@@ -141,7 +141,7 @@ class OrganizationService(ResourceServiceReader[Organization]):
                 ]
             )
 
-        organization = Organization(**create_schema.model_dump())
+        organization = Organization(**create_schema.model_dump(exclude_unset=True))
         session.add(organization)
         await self.add_user(session, organization, auth_subject.subject)
 

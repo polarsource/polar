@@ -10,7 +10,8 @@ from polar.exceptions import PolarError
 from polar.integrations.loops.service import loops as loops_service
 from polar.kit.services import ResourceService
 from polar.logging import Logger
-from polar.models import User
+from polar.models import OAuthAccount, User
+from polar.models.user import OAuthPlatform
 from polar.postgres import AsyncSession, sql
 from polar.posthog import posthog
 from polar.worker import enqueue_job
@@ -64,6 +65,23 @@ class UserService(ResourceService[User, UserCreate, UserUpdate]):
         )
         res = await session.execute(query)
         return res.scalars().unique().one_or_none()
+
+    async def get_by_oauth_account(
+        self, session: AsyncSession, platform: OAuthPlatform, account_id: str
+    ) -> User | None:
+        statement = (
+            sql.select(User)
+            .join(User.oauth_accounts)
+            .where(
+                User.deleted_at.is_(None),
+                User.blocked_at.is_(None),
+                OAuthAccount.deleted_at.is_(None),
+                OAuthAccount.platform == platform,
+                OAuthAccount.account_id == account_id,
+            )
+        )
+        result = await session.execute(statement)
+        return result.unique().scalar_one_or_none()
 
     async def get_by_email_or_signup(
         self,

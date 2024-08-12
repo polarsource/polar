@@ -18,6 +18,7 @@ from polar.integrations.github.endpoints import router as github_router
 from polar.integrations.github_repository_benefit.endpoints import (
     router as github_repository_benefit_router,
 )
+from polar.integrations.google.endpoints import router as google_router
 from polar.integrations.stripe.endpoints import router as stripe_router
 from polar.issue.endpoints import router as issue_router
 from polar.magic_link.endpoints import router as magic_link_router
@@ -117,3 +118,5 @@ router.include_router(checkout_router)
 router.include_router(files_router)
 # /metrics
 router.include_router(metrics_router)
+# /integrations/google
+router.include_router(google_router)

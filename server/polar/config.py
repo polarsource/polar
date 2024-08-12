@@ -98,6 +98,10 @@ class Settings(BaseSettings):
         "268435459"  # Manage Roles, Kick Members, Create Instant Invite
     )
 
+    # Google
+    GOOGLE_CLIENT_ID: str = ""
+    GOOGLE_CLIENT_SECRET: str = ""
+
     # Stripe
     STRIPE_SECRET_KEY: str = ""
     # Stripe webhook secrets

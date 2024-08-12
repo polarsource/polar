@@ -106,7 +106,7 @@ class BenefitDiscordProperties(Schema):
     guild_id: str = Field(..., description="The ID of the Discord server.")
     role_id: str = Field(..., description="The ID of the Discord role to grant.")
 
-    @computed_field  # type: ignore[misc]
+    @computed_field  # type: ignore[prop-decorator]
     @property
     def guild_token(self) -> str:
         return jwt.encode(

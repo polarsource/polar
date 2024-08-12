@@ -32,7 +32,9 @@ const ConnectedApp: React.FC<ConnectedAppProps> = ({
         <div className="dark:text-polar-400 text-sm text-gray-500">
           {subtitle}
         </div>
-        {error && <div className='text-sm text-destructive-foreground'>{error}</div>}
+        {error && (
+          <div className="text-destructive-foreground text-sm">{error}</div>
+        )}
       </div>
       <div>{action}</div>
     </div>
@@ -58,7 +60,7 @@ const DiscordConnectedApp: React.FC<DiscordConnectedAppProps> = ({
     <ConnectedApp
       icon={
         <svg
-          className="h-8 w-8"
+          className="h-6 w-6"
           fill="currentColor"
           viewBox="0 0 256 199"
           preserveAspectRatio="xMidYMid"

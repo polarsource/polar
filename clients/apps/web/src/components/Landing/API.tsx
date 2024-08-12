@@ -1,7 +1,6 @@
-import { UserSignupType } from '@polar-sh/sdk'
 import Link from 'next/link'
 import Button from 'polarkit/components/ui/atoms/button'
-import GithubLoginButton from '../Auth/GithubLoginButton'
+import GetStartedButton from '../Auth/GetStartedButton'
 import { Section } from './Section'
 import { APIFirst } from './molecules/APIFirst'
 import { Circles } from './molecules/Circles'
@@ -25,12 +24,7 @@ export const API = () => {
           sites, apps and services.
         </p>
         <div className="flex flex-col gap-4 md:flex-row md:items-center">
-          <GithubLoginButton
-            className="self-start"
-            text="Continue with GitHub"
-            userSignupType={UserSignupType.MAINTAINER}
-            returnTo="/dashboard"
-          />
+          <GetStartedButton />
           <Link href="/docs/api">
             <Button size="lg" variant="ghost">
               Explore the Polar API (Beta)

@@ -1,13 +1,13 @@
 'use client'
 
-import GithubLoginButton from '@/components/Auth/GithubLoginButton'
 import PublicProfileDropdown from '@/components/Navigation/PublicProfileDropdown'
 import { useLoginLink } from '@/hooks/login'
 import { CONFIG } from '@/utils/config'
 import { ArrowForwardOutlined } from '@mui/icons-material'
-import { Organization, UserRead, UserSignupType } from '@polar-sh/sdk'
+import { Organization, UserRead } from '@polar-sh/sdk'
 import Link from 'next/link'
 import Button from 'polarkit/components/ui/atoms/button'
+import GetStartedButton from '../Auth/GetStartedButton'
 
 const PolarMenu = ({
   authenticatedUser,
@@ -46,7 +46,7 @@ const PolarMenu = ({
         </div>
       ) : (
         <>
-          <CreateWithPolar returnTo={'/me'} />
+          <GetStartedButton className="px-2 py-4 text-sm" />
           <Link
             href={loginLink}
             className="text-sm text-blue-500 hover:text-blue-400 dark:text-blue-400 dark:hover:text-blue-300"
@@ -56,16 +56,6 @@ const PolarMenu = ({
         </>
       )}
     </div>
-  )
-}
-
-const CreateWithPolar = ({ returnTo }: { returnTo: string }) => {
-  return (
-    <GithubLoginButton
-      text="Create with Polar"
-      returnTo={returnTo}
-      userSignupType={UserSignupType.MAINTAINER}
-    />
   )
 }
 

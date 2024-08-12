@@ -21,16 +21,16 @@ export default function Page() {
           </Section>
 
           <Section>
+            <SectionDescription title="Payment methods" />
+            <PaymentMethodSettings />
+          </Section>
+
+          <Section>
             <SectionDescription
               title="Connected Apps"
               description="Manage connection to apps"
             />
             <ConnectedAppSettings />
-          </Section>
-
-          <Section>
-            <SectionDescription title="Payment methods" />
-            <PaymentMethodSettings />
           </Section>
 
           <Section>

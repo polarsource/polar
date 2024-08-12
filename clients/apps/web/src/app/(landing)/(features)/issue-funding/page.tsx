@@ -1,9 +1,8 @@
-import GithubLoginButton from '@/components/Auth/GithubLoginButton'
+import GetStartedButton from '@/components/Auth/GetStartedButton'
 import { FeatureSection } from '@/components/Landing/FeatureSection'
 import { PageContent } from '@/components/Landing/LandingPage'
 import { Section } from '@/components/Landing/Section'
 import { Circles } from '@/components/Landing/molecules/Circles'
-import { UserSignupType } from '@polar-sh/sdk'
 import Link from 'next/link'
 import { Separator } from 'polarkit/components/ui/separator'
 
@@ -40,13 +39,7 @@ export default function Page() {
             {PAGE_DESCRIPTION}
           </p>
           <div className="flex flex-col gap-y-8">
-            <GithubLoginButton
-              className="self-start"
-              size="large"
-              text="Continue with GitHub"
-              userSignupType={UserSignupType.MAINTAINER}
-              returnTo="/dashboard"
-            />
+            <GetStartedButton />
             <p className="dark:text-polar-500 text-xs leading-normal text-gray-400">
               By using Polar you agree to our{' '}
               <Link

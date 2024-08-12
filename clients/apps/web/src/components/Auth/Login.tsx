@@ -1,6 +1,7 @@
 import { LabeledSeparator } from 'polarkit/components/ui/atoms'
 import GithubLoginButton from '../Auth/GithubLoginButton'
 import MagicLinkLoginForm from '../Auth/MagicLinkLoginForm'
+import GoogleLoginButton from './GoogleLoginButton'
 
 const Login = ({ returnTo }: { returnTo?: string }) => {
   return (
@@ -27,6 +28,7 @@ const Login = ({ returnTo }: { returnTo?: string }) => {
                 view: 'Login Page',
               }}
             />
+            <GoogleLoginButton returnTo={returnTo} />
             <LabeledSeparator label="Or" />
             <MagicLinkLoginForm returnTo={returnTo} />
           </div>

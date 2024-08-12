@@ -1,5 +1,4 @@
-import { UserSignupType } from '@polar-sh/sdk'
-import GithubLoginButton from '../Auth/GithubLoginButton'
+import GetStartedButton from '../Auth/GetStartedButton'
 import { Section } from './Section'
 
 export const LastPitch = () => {
@@ -15,12 +14,7 @@ export const LastPitch = () => {
           </p>
         </div>
         <div className="md: flex flex-col gap-4 md:flex-row">
-          <GithubLoginButton
-            text="Signup with GitHub"
-            size="large"
-            userSignupType={UserSignupType.MAINTAINER}
-            returnTo="/dashboard"
-          />
+          <GetStartedButton />
         </div>
       </div>
     </Section>

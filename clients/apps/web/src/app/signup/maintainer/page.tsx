@@ -1,10 +1,5 @@
-import MaintainerSignup from '@/components/Auth/MaintainerSignup'
-import { Metadata } from 'next'
-
-export const metadata: Metadata = {
-  title: 'Signup to Polar',
-}
+import { redirect } from 'next/navigation'
 
 export default function Page() {
-  return <MaintainerSignup />
+  redirect('/login?return_to=/dashboard')
 }

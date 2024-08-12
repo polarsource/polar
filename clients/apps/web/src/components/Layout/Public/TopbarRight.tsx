@@ -1,6 +1,6 @@
 'use client'
 
-import GithubLoginButton from '@/components/Auth/GithubLoginButton'
+import GetStartedButton from '@/components/Auth/GetStartedButton'
 import PublicProfileDropdown from '@/components/Navigation/PublicProfileDropdown'
 import Popover from '@/components/Notifications/Popover'
 import { UserRead } from '@polar-sh/sdk'
@@ -14,7 +14,6 @@ const TopbarRight = ({
 }) => {
   const pathname = usePathname()
   const loginReturnTo = pathname ?? '/feed'
-  const createWithPolarReturnTo = '/me'
 
   return (
     <>
@@ -31,12 +30,7 @@ const TopbarRight = ({
         </div>
       ) : (
         <>
-          <GithubLoginButton
-            text="Create with Polar"
-            returnTo={createWithPolarReturnTo}
-            className="hidden bg-blue-500 text-white md:flex dark:bg-blue-500 dark:text-white"
-          />
-
+          <GetStartedButton className="px-2 py-4 text-sm" />
           <Link
             href={`/login?return_to=${loginReturnTo}`}
             className="text-sm text-blue-500 hover:text-blue-400 dark:text-blue-400 dark:hover:text-blue-300"

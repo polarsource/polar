@@ -13,6 +13,7 @@ apis/FundingApi.ts
 apis/IntegrationsDiscordApi.ts
 apis/IntegrationsGithubApi.ts
 apis/IntegrationsGithubRepositoryBenefitApi.ts
+apis/IntegrationsGoogleApi.ts
 apis/IssuesApi.ts
 apis/MagicLinkApi.ts
 apis/MetricsApi.ts

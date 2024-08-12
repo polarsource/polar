@@ -15,6 +15,7 @@ export * from './FundingApi';
 export * from './IntegrationsDiscordApi';
 export * from './IntegrationsGithubApi';
 export * from './IntegrationsGithubRepositoryBenefitApi';
+export * from './IntegrationsGoogleApi';
 export * from './IssuesApi';
 export * from './MagicLinkApi';
 export * from './MetricsApi';

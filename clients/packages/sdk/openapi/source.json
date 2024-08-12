@@ -1177,8 +1177,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Anonymous"
+                    "Anonymous",
+                    "User"
                 ]
             }
         },
@@ -4128,8 +4128,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Anonymous"
+                    "Anonymous",
+                    "User"
                 ]
             }
         },
@@ -4183,8 +4183,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Anonymous"
+                    "Anonymous",
+                    "User"
                 ]
             }
         },
@@ -4290,8 +4290,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Anonymous"
+                    "Anonymous",
+                    "User"
                 ]
             }
         },
@@ -4565,9 +4565,9 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
+                    "Anonymous",
                     "Organization",
-                    "Anonymous"
+                    "User"
                 ]
             }
         },
@@ -4804,9 +4804,9 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
+                    "Anonymous",
                     "Organization",
-                    "Anonymous"
+                    "User"
                 ]
             }
         },
@@ -4882,9 +4882,9 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
+                    "Anonymous",
                     "Organization",
-                    "Anonymous"
+                    "User"
                 ]
             },
             "patch": {
@@ -4977,8 +4977,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -5135,8 +5135,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Anonymous"
+                    "Anonymous",
+                    "User"
                 ]
             }
         },
@@ -5456,8 +5456,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Anonymous"
+                    "Anonymous",
+                    "User"
                 ]
             }
         },
@@ -5765,8 +5765,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "issues:write",
-                            "issues:read"
+                            "issues:read",
+                            "issues:write"
                         ]
                     },
                     {
@@ -6016,9 +6016,9 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
+                    "Anonymous",
                     "Organization",
-                    "Anonymous"
+                    "User"
                 ]
             }
         },
@@ -6083,8 +6083,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Anonymous"
+                    "Anonymous",
+                    "User"
                 ]
             }
         },
@@ -6136,8 +6136,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Anonymous"
+                    "Anonymous",
+                    "User"
                 ]
             }
         },
@@ -6224,8 +6224,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Anonymous"
+                    "Anonymous",
+                    "User"
                 ]
             },
             "post": {
@@ -6738,8 +6738,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Anonymous"
+                    "Anonymous",
+                    "User"
                 ]
             }
         },
@@ -6794,8 +6794,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Anonymous"
+                    "Anonymous",
+                    "User"
                 ]
             }
         },
@@ -6960,8 +6960,8 @@
                     }
                 ],
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Anonymous"
+                    "Anonymous",
+                    "User"
                 ]
             }
         },
@@ -7133,8 +7133,8 @@
                     }
                 ],
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Anonymous"
+                    "Anonymous",
+                    "User"
                 ]
             }
         },
@@ -7197,8 +7197,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Anonymous"
+                    "Anonymous",
+                    "User"
                 ]
             }
         },
@@ -7278,8 +7278,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "organizations:write",
-                            "organizations:read"
+                            "organizations:read",
+                            "organizations:write"
                         ]
                     },
                     {
@@ -7404,8 +7404,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             },
             "post": {
@@ -7477,8 +7477,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "organizations:write",
-                            "organizations:read"
+                            "organizations:read",
+                            "organizations:write"
                         ]
                     },
                     {
@@ -7536,8 +7536,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             },
             "patch": {
@@ -7630,8 +7630,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -7647,8 +7647,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "organizations:write",
-                            "organizations:read"
+                            "organizations:read",
+                            "organizations:write"
                         ]
                     },
                     {
@@ -7684,10 +7684,10 @@
                             },
                             "description": "Filter by the type of purchase the customer made.",
                             "default": [
-                                "order",
+                                "free_subscription",
                                 "donation",
-                                "paid_subscription",
-                                "free_subscription"
+                                "order",
+                                "paid_subscription"
                             ],
                             "title": "Customer Types"
                         },
@@ -7753,8 +7753,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -7837,8 +7837,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             },
             "patch": {
@@ -7929,8 +7929,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -7994,8 +7994,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -8052,8 +8052,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -8110,8 +8110,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             },
             "post": {
@@ -8176,8 +8176,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -8193,8 +8193,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "subscriptions:write",
-                            "subscriptions:read"
+                            "subscriptions:read",
+                            "subscriptions:write"
                         ]
                     },
                     {
@@ -8412,8 +8412,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             },
             "post": {
@@ -8467,8 +8467,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -8524,8 +8524,8 @@
                     }
                 ],
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -8541,8 +8541,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "subscriptions:write",
-                            "subscriptions:read"
+                            "subscriptions:read",
+                            "subscriptions:write"
                         ]
                     },
                     {
@@ -8610,8 +8610,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -8820,9 +8820,9 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
+                    "Anonymous",
                     "Organization",
-                    "Anonymous"
+                    "User"
                 ]
             },
             "post": {
@@ -8877,8 +8877,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -8953,9 +8953,9 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
+                    "Anonymous",
                     "Organization",
-                    "Anonymous"
+                    "User"
                 ]
             },
             "patch": {
@@ -9048,8 +9048,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             },
             "delete": {
@@ -9125,8 +9125,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -9191,8 +9191,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -9285,8 +9285,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -9372,8 +9372,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -10767,8 +10767,8 @@
                     }
                 ],
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Anonymous"
+                    "Anonymous",
+                    "User"
                 ]
             }
         },
@@ -10831,8 +10831,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Anonymous"
+                    "Anonymous",
+                    "User"
                 ]
             }
         },
@@ -11203,8 +11203,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Anonymous"
+                    "Anonymous",
+                    "User"
                 ]
             },
             "put": {
@@ -11265,8 +11265,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Anonymous"
+                    "Anonymous",
+                    "User"
                 ]
             },
             "delete": {
@@ -11317,8 +11317,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Anonymous"
+                    "Anonymous",
+                    "User"
                 ]
             }
         },
@@ -11366,8 +11366,8 @@
                     }
                 ],
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Anonymous"
+                    "Anonymous",
+                    "User"
                 ]
             }
         },
@@ -11766,8 +11766,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "benefits:write",
-                            "benefits:read"
+                            "benefits:read",
+                            "benefits:write"
                         ]
                     },
                     {
@@ -11887,8 +11887,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             },
             "post": {
@@ -11989,8 +11989,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -12006,8 +12006,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "benefits:write",
-                            "benefits:read"
+                            "benefits:read",
+                            "benefits:write"
                         ]
                     },
                     {
@@ -12085,8 +12085,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             },
             "patch": {
@@ -12218,8 +12218,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             },
             "delete": {
@@ -12294,8 +12294,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -12311,8 +12311,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "benefits:write",
-                            "benefits:read"
+                            "benefits:read",
+                            "benefits:write"
                         ]
                     },
                     {
@@ -12451,8 +12451,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -12570,8 +12570,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             },
             "post": {
@@ -12624,8 +12624,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -12695,8 +12695,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             },
             "patch": {
@@ -12783,8 +12783,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             },
             "delete": {
@@ -12854,8 +12854,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -12948,8 +12948,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -13016,8 +13016,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -13229,9 +13229,9 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
+                    "Anonymous",
                     "Organization",
-                    "Anonymous"
+                    "User"
                 ]
             },
             "post": {
@@ -13294,8 +13294,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -13371,9 +13371,9 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
+                    "Anonymous",
                     "Organization",
-                    "Anonymous"
+                    "User"
                 ]
             },
             "patch": {
@@ -13466,8 +13466,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -13562,8 +13562,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -13800,8 +13800,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -13871,8 +13871,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -13942,8 +13942,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -13998,8 +13998,8 @@
                     }
                 ],
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Anonymous"
+                    "Anonymous",
+                    "User"
                 ]
             }
         },
@@ -14163,8 +14163,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             },
             "post": {
@@ -14233,8 +14233,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -14319,8 +14319,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -14405,8 +14405,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             },
             "delete": {
@@ -14475,8 +14475,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -14664,8 +14664,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -14701,8 +14701,190 @@
                     }
                 ],
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
+                ]
+            }
+        },
+        "/v1/integrations/google/authorize": {
+            "get": {
+                "tags": [
+                    "integrations_google"
+                ],
+                "summary": "Integrations.Google.Authorize",
+                "operationId": "integrations_google:integrations.google.authorize",
+                "security": [
+                    {
+                        "OpenIdConnect": []
+                    },
+                    {
+                        "HTTPBearer": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "user_signup_type",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "$ref": "#/components/schemas/UserSignupType"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "User Signup Type"
+                        }
+                    },
+                    {
+                        "name": "return_to",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "Return To"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                },
+                "x-polar-allowed-subjects": [
+                    "Anonymous",
+                    "User"
+                ]
+            }
+        },
+        "/v1/integrations/google/callback": {
+            "get": {
+                "tags": [
+                    "integrations_google"
+                ],
+                "summary": "Integrations.Google.Callback",
+                "operationId": "integrations_google:integrations.google.callback",
+                "security": [
+                    {
+                        "OpenIdConnect": []
+                    },
+                    {
+                        "HTTPBearer": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "code",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "Code"
+                        }
+                    },
+                    {
+                        "name": "code_verifier",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "Code Verifier"
+                        }
+                    },
+                    {
+                        "name": "state",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "State"
+                        }
+                    },
+                    {
+                        "name": "error",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "Error"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                },
+                "x-polar-allowed-subjects": [
+                    "Anonymous",
+                    "User"
                 ]
             }
         }
@@ -24321,7 +24503,8 @@
                 "enum": [
                     "github",
                     "github_repository_benefit",
-                    "discord"
+                    "discord",
+                    "google"
                 ],
                 "title": "OAuthPlatform"
             },

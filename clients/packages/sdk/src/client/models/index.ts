@@ -8185,7 +8185,8 @@ export interface OAuthAccountRead {
 export const OAuthPlatform = {
     GITHUB: 'github',
     GITHUB_REPOSITORY_BENEFIT: 'github_repository_benefit',
-    DISCORD: 'discord'
+    DISCORD: 'discord',
+    GOOGLE: 'google'
 } as const;
 export type OAuthPlatform = typeof OAuthPlatform[keyof typeof OAuthPlatform];
 

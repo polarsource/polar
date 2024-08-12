@@ -2,11 +2,7 @@
 
 import revalidate from '@/app/actions'
 import { useAuth } from '@/hooks'
-import {
-  useCreateOrganization,
-  useListOrganizations,
-  useUpdateOrganization,
-} from '@/hooks/queries'
+import { useCreateOrganization, useListOrganizations } from '@/hooks/queries'
 import { setValidationErrors } from '@/utils/api/errors'
 import {
   CheckOutlined,
@@ -16,7 +12,7 @@ import {
   SpokeOutlined,
 } from '@mui/icons-material'
 import { FormControl } from '@mui/material'
-import { Organization, ResponseError, ValidationError } from '@polar-sh/sdk'
+import { ResponseError, ValidationError } from '@polar-sh/sdk'
 import { useRouter } from 'next/navigation'
 import Button from 'polarkit/components/ui/atoms/button'
 import Input from 'polarkit/components/ui/atoms/input'
@@ -47,7 +43,6 @@ export default function ClientPage() {
     formState: { errors },
   } = form
   const createOrganization = useCreateOrganization()
-  const updateOrganization = useUpdateOrganization()
   const [features, setFeatures] = useState<FeatureKey[]>([
     'articles_enabled',
     'donations_enabled',
@@ -88,17 +83,26 @@ export default function ClientPage() {
 
   const onSubmit = async (data: { name: string; slug: string }) => {
     try {
+      const featuresRecord: FeatureMap = features.reduce(
+        (acc, feature) => ({
+          ...acc,
+          [feature]: true,
+        }),
+        {},
+      )
+      const { donations_enabled, ...feature_settings } = featuresRecord
+
       const organization = await createOrganization.mutateAsync({
         ...data,
         slug: slug as string,
+        feature_settings,
+        donations_enabled,
       })
 
       await revalidate(`organizations:${organization.id}`)
       await revalidate(`organizations:${organization.slug}`)
       await revalidate(`users:${currentUser?.id}:organizations`)
       setUserOrganizations((orgs) => [...orgs, organization])
-
-      await initializeFeatures(features, organization)
       router.push(`/dashboard/${organization.slug}`)
     } catch (e) {
       if (e instanceof ResponseError) {
@@ -112,29 +116,6 @@ export default function ClientPage() {
       }
     }
   }
-
-  const initializeFeatures = useCallback(
-    async (features: FeatureKey[], organization: Organization) => {
-      const featuresRecord: FeatureMap = features.reduce(
-        (acc, feature) => ({
-          ...acc,
-          [feature]: true,
-        }),
-        {},
-      )
-
-      const { donations_enabled, ...feature_settings } = featuresRecord
-
-      await updateOrganization.mutateAsync({
-        id: organization.id,
-        body: {
-          feature_settings,
-          donations_enabled,
-        },
-      })
-    },
-    [updateOrganization],
-  )
 
   return (
     <div className="flex w-full max-w-3xl flex-col gap-12 py-12">

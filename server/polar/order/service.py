@@ -231,7 +231,11 @@ class OrderService(ResourceServiceReader[Order]):
                 invoice.subscription_details is None
                 or invoice.subscription_details.metadata is None
                 or (
-                    (price_id := invoice.subscription_details.metadata.get("price_id"))
+                    (
+                        price_id := invoice.subscription_details.metadata.get(
+                            "product_price_id"
+                        )
+                    )
                     is None
                 )
             ):

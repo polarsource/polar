@@ -318,7 +318,9 @@ class TestCreateOrderFromStripe:
                 ("PRICE_1", True),
                 ("PRICE_2", True),
             ],
-            subscription_details={"metadata": {"price_id": str(product.prices[0].id)}},
+            subscription_details={
+                "metadata": {"product_price_id": str(product.prices[0].id)}
+            },
         )
 
         payment_transaction = await create_transaction(

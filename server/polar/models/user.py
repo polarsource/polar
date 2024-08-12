@@ -26,6 +26,7 @@ class OAuthPlatform(StrEnum):
     github = "github"
     github_repository_benefit = "github_repository_benefit"
     discord = "discord"
+    google = "google"
 
 
 class OAuthAccount(RecordModel):

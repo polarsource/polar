@@ -39,10 +39,11 @@ def _uvicorn_should_exit() -> bool:
         for task in asyncio.all_tasks():
             coroutine = task.get_coro()
             frame = coroutine.cr_frame
-            args = frame.f_locals
-            if self := args.get("self"):
-                if isinstance(self, Server):
-                    return self.should_exit
+            if frame is not None:
+                args = frame.f_locals
+                if self := args.get("self"):
+                    if isinstance(self, Server):
+                        return self.should_exit
     except RuntimeError:
         pass
     return False

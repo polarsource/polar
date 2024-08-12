@@ -69,7 +69,7 @@ class ProductMediaFileRead(FileReadBase):
 
     service: Literal[FileServiceTypes.product_media]
 
-    @computed_field  # type: ignore[misc]
+    @computed_field  # type: ignore[prop-decorator]
     @property
     def public_url(self) -> str:
         return S3_SERVICES[FileServiceTypes.product_media].get_public_url(self.path)

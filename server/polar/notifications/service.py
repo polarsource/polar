@@ -139,7 +139,9 @@ class NotificationsService:
             return
 
     def parse_payload(self, n: Notification) -> NotificationPayload:
-        NotificationTypeAdapter = TypeAdapter(NotificationSchema)
+        NotificationTypeAdapter: TypeAdapter[NotificationSchema] = TypeAdapter(
+            NotificationSchema
+        )
         notification = NotificationTypeAdapter.validate_python(n)
         return notification.payload
 

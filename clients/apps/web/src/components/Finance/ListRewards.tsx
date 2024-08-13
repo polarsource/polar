@@ -5,7 +5,10 @@ import Icon from '@/components/Icons/Icon'
 import { githubIssueLink } from '@/utils/github'
 import { dateOrString } from '@/utils/time'
 import { PledgeState, PledgeType, Reward, RewardState } from '@polar-sh/sdk'
-import { getCentsInDollarString } from 'polarkit/lib/money'
+import {
+  formatCurrencyAndAmount,
+  getCentsInDollarString,
+} from 'polarkit/lib/money'
 
 export type Column = 'PAID_OUT_DATE' | 'RECEIVER' | 'BACKER' | 'PAYMENT_STATUS'
 
@@ -201,7 +204,10 @@ const List = (props: {
                   <br />
                   <span className="dark:text-polar-300 text-gray-400">
                     (of $
-                    {getCentsInDollarString(t.pledge.amount.amount, true, true)}
+                    {formatCurrencyAndAmount(
+                      t.pledge.amount,
+                      t.pledge.currency,
+                    )}
                     )
                   </span>
                 </td>

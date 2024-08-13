@@ -3,7 +3,7 @@
 import { CONFIG } from '@/utils/config'
 import { CheckCircleIcon } from '@heroicons/react/24/outline'
 import { FavoriteBorderOutlined } from '@mui/icons-material'
-import { Issue, IssueStateEnum, Label } from '@polar-sh/sdk'
+import { Issue, Label, State } from '@polar-sh/sdk'
 import Link from 'next/link'
 import { PolarTimeAgo } from 'polarkit/components/ui/atoms'
 import Button from 'polarkit/components/ui/atoms/button'
@@ -38,7 +38,7 @@ const IssueSummary: React.FC<IssueSummaryProps> = ({
     repository,
   } = issue
   const { organization } = repository
-  const isOpen = state === IssueStateEnum.OPEN
+  const isOpen = state === State.OPEN
 
   const createdAt = new Date(issue_created_at)
   const closedAt = issue_closed_at ? new Date(issue_closed_at) : undefined

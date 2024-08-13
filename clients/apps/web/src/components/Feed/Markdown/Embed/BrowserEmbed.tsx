@@ -3,7 +3,7 @@
 import IssueListItem from '@/components/Issues/IssueListItem'
 import { api } from '@/utils/api'
 import { FavoriteBorderOutlined } from '@mui/icons-material'
-import { Issue } from '@polar-sh/sdk'
+import { Issue, State } from '@polar-sh/sdk'
 import Link from 'next/link'
 import Button from 'polarkit/components/ui/atoms/button'
 import { useEffect, useState } from 'react'
@@ -59,7 +59,7 @@ const EmbedIssue = (props: { src: string }) => {
     title: `${m[1] || ''}/${m[2]}#${m[3]}`,
     platform: 'github',
     number: parseInt(m[3]),
-    state: 'OPEN',
+    state: State.OPEN,
     issue_created_at: '',
     needs_confirmation_solved: false,
     funding: {},

@@ -26,7 +26,10 @@ import {
 } from 'polarkit/components/ui/atoms/tabs'
 import TextArea from 'polarkit/components/ui/atoms/textarea'
 import { Banner } from 'polarkit/components/ui/molecules'
-import { getCentsInDollarString } from 'polarkit/lib/money'
+import {
+  formatCurrencyAndAmount,
+  getCentsInDollarString,
+} from 'polarkit/lib/money'
 import { posthog } from 'posthog-js'
 import { ChangeEvent, useMemo, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -578,7 +581,7 @@ const RewardsTab = (props: { issue: Issue; user: UserRead }) => {
 
   const selfSeededAmount = (issuePledges.data?.items || [])
     .filter((p) => p.authed_can_admin_sender)
-    .map((p) => p.amount.amount)
+    .map((p) => p.amount)
     .reduce((a, b) => a + b, 0)
 
   type Timeout = ReturnType<typeof setTimeout>
@@ -651,7 +654,10 @@ const RewardsTab = (props: { issue: Issue; user: UserRead }) => {
         <Banner color="blue">
           Amazing! You have seeded the reward with a{' '}
           <strong>
-            ${getCentsInDollarString(createdSeedPledge.amount.amount)}
+            {formatCurrencyAndAmount(
+              createdSeedPledge.amount,
+              createdSeedPledge.currency,
+            )}
           </strong>{' '}
           pledge - to be paid on completion.
         </Banner>

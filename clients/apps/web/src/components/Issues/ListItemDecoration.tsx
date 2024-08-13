@@ -8,7 +8,10 @@ import {
   PledgesTypeSummaries,
   Reward,
 } from '@polar-sh/sdk'
-import { getCentsInDollarString } from 'polarkit/lib/money'
+import {
+  formatCurrencyAndAmount,
+  getCentsInDollarString,
+} from 'polarkit/lib/money'
 import { twMerge } from 'tailwind-merge'
 import IssuePledge from './IssuePledge'
 import IssueReference from './IssueReference'
@@ -117,7 +120,7 @@ const IssueListItemDecoration = ({
     if (typeof pledge.amount === 'number') {
       return pledge.amount
     }
-    return pledge.amount.amount
+    return pledge.amount
   }
 
   const haveReferences = references && references.length > 0
@@ -203,7 +206,7 @@ const IssueListItemDecoration = ({
                   <span className="text-sm text-gray-500">
                     You&apos;ve disputed your pledge{' '}
                     {disputeBoxShowAmount && (
-                      <>(${getCentsInDollarString(p.amount.amount)})</>
+                      <>({formatCurrencyAndAmount(p.amount, p.currency)})</>
                     )}
                   </span>
                 )}
@@ -212,7 +215,7 @@ const IssueListItemDecoration = ({
                   <span className="text-sm text-gray-500">
                     {p.pledger?.name} disputed their pledge{' '}
                     {disputeBoxShowAmount && (
-                      <>(${getCentsInDollarString(p.amount.amount)})</>
+                      <>({formatCurrencyAndAmount(p.amount, p.currency)})</>
                     )}
                   </span>
                 )}

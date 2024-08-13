@@ -7,7 +7,10 @@ import {
 } from '@/hooks/queries'
 import { ArrowTopRightOnSquareIcon } from '@heroicons/react/20/solid'
 import Button from 'polarkit/components/ui/atoms/button'
-import { getCentsInDollarString } from 'polarkit/lib/money'
+import {
+  formatCurrencyAndAmount,
+  getCentsInDollarString,
+} from 'polarkit/lib/money'
 import { twMerge } from 'tailwind-merge'
 
 export default function Page({ params }: { params: { id: string } }) {
@@ -66,8 +69,8 @@ export default function Page({ params }: { params: { id: string } }) {
             <div>
               ${getCentsInDollarString(r.amount.amount, true, true)}{' '}
               <span className="text-gray-500">
-                (of $
-                {getCentsInDollarString(r.pledge.amount.amount, true, true)})
+                (of{' '}
+                {formatCurrencyAndAmount(r.pledge.amount, r.pledge.currency)})
               </span>{' '}
               to
             </div>

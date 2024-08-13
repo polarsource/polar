@@ -15,7 +15,10 @@ import {
 import { BackofficeReward, PledgeState, PledgeType } from '@polar-sh/sdk'
 import Link from 'next/link'
 import Button from 'polarkit/components/ui/atoms/button'
-import { getCentsInDollarString } from 'polarkit/lib/money'
+import {
+  formatCurrencyAndAmount,
+  getCentsInDollarString,
+} from 'polarkit/lib/money'
 import { Fragment, useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
 
@@ -147,10 +150,9 @@ const Pledges = () => {
                       <ArrowLeftIcon className="h-4 w-4 text-green-600" />
                       <div>
                         $
-                        {getCentsInDollarString(
-                          p[0].pledge.amount.amount,
-                          true,
-                          true,
+                        {formatCurrencyAndAmount(
+                          p[0].pledge.amount,
+                          p[0].pledge.currency,
                         )}{' '}
                         from{' '}
                       </div>

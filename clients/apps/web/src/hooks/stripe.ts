@@ -2,7 +2,7 @@ import { useToast } from '@/components/Toast/use-toast'
 import { useStore } from '@/store'
 import { api } from '@/utils/api'
 import { Pledge, PledgeState } from '@polar-sh/sdk'
-import { getCentsInDollarString } from 'polarkit/lib/money'
+import { formatCurrencyAndAmount } from 'polarkit/lib/money'
 import { useEffect, useState } from 'react'
 
 export const useToastLatestPledged = (
@@ -42,9 +42,9 @@ export const useToastLatestPledged = (
         }
 
         const issueName = `${pledge.issue.repository.organization.name}/${pledge.issue.repository.name}#${pledge.issue.number}`
-        const amount = getCentsInDollarString(pledge.amount.amount)
+        const amount = formatCurrencyAndAmount(pledge.amount, pledge.currency)
         toast({
-          title: `You successfully pledged $${amount}`,
+          title: `You successfully pledged ${amount}`,
           description: `Thanks for backing ${issueName}`,
         })
         setPledge(pledge)

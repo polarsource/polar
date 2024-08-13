@@ -122,7 +122,7 @@ async def issue(
             detail="Issue not found",
         )
 
-    return Issue.from_db(i)
+    return Issue.model_validate(i)
 
 
 async def get_pledge(session: AsyncSession, pledge_id: UUID) -> BackofficePledge:

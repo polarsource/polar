@@ -65,7 +65,7 @@ class IssueFunding(Schema):
         )
 
         return cls(
-            issue=Issue.from_db(issue),
+            issue=Issue.model_validate(issue),
             funding_goal=CurrencyAmount(currency="USD", amount=issue.funding_goal)
             if issue.funding_goal
             else None,

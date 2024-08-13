@@ -7,7 +7,6 @@ from polar import locker
 from polar.auth.dependencies import WebUser, WebUserOrAnonymous
 from polar.auth.models import Subject, is_user
 from polar.authz.service import AccessType, Authz
-from polar.currency.schemas import CurrencyAmount
 from polar.exceptions import BadRequest, ResourceNotFound, Unauthorized
 from polar.issue.service import issue as issue_service
 from polar.kit.pagination import ListResource, Pagination
@@ -288,7 +287,7 @@ async def spending(
     res = await pledge_service.sum_pledges_period(
         session, organization_id, user_id=auth_subject.subject.id
     )
-    return PledgeSpending(amount=CurrencyAmount(currency="USD", amount=res))
+    return PledgeSpending(amount=res, currency="usd")
 
 
 @router.get(
@@ -367,6 +366,7 @@ async def create_pay_on_completion(
         session=session,
         issue_id=create.issue_id,
         amount=create.amount,
+        currency=create.currency,
         by_user=auth_subject.subject if is_user_pledge else None,
         on_behalf_of_organization_id=create.on_behalf_of_organization_id
         if is_user_pledge

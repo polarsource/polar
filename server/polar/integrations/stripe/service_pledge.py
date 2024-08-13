@@ -26,6 +26,7 @@ class PledgeStripeService:
     def create_anonymous_intent(
         self,
         amount: int,
+        currency: str,
         pledge_issue: Issue,
         pledge_issue_org: ExternalOrganization,
         pledge_issue_repo: Repository,
@@ -39,7 +40,7 @@ class PledgeStripeService:
         )
         return stripe_lib.PaymentIntent.create(
             amount=amount,
-            currency="USD",
+            currency=currency,
             metadata=metadata.model_dump(exclude_none=True),
             receipt_email=anonymous_email,
             description=f"Pledge to {pledge_issue_org.name}/{pledge_issue_repo.name}#{pledge_issue.number}",  # noqa: E501
@@ -49,6 +50,7 @@ class PledgeStripeService:
         self,
         session: AsyncSession,
         amount: int,
+        currency: str,
         pledge_issue: Issue,
         pledge_issue_org: ExternalOrganization,
         pledge_issue_repo: Repository,
@@ -72,7 +74,7 @@ class PledgeStripeService:
 
         return stripe_lib.PaymentIntent.create(
             amount=amount,
-            currency="USD",
+            currency=currency,
             customer=customer.id,
             metadata=metadata.model_dump(exclude_none=True),
             receipt_email=user.email,

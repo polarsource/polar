@@ -29,7 +29,9 @@ from sqlalchemy.orm import (
 )
 from sqlalchemy_utils.types.ts_vector import TSVectorType
 
+from polar.currency.schemas import CurrencyAmount
 from polar.enums import Platforms
+from polar.funding.funding_schema import Funding
 from polar.kit.db.models import RecordModel
 from polar.kit.extensions.sqlalchemy import StringEnum
 from polar.types import JSONAny
@@ -294,3 +296,12 @@ class Issue(IssueFields, RecordModel):
     @property
     def reference_key(self) -> str:
         return f"{self.organization.name}/{self.repository.name}#{self.number}"
+
+    @property
+    def funding(self) -> Funding:
+        return Funding(
+            funding_goal=CurrencyAmount(currency="usd", amount=self.funding_goal)
+            if self.funding_goal
+            else None,
+            pledges_sum=CurrencyAmount(currency="usd", amount=self.pledged_amount_sum),
+        )

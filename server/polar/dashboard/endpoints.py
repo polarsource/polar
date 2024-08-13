@@ -280,7 +280,7 @@ async def dashboard(
         Entry(
             id=i.id,
             type="issue",
-            attributes=IssueSchema.from_db(i),
+            attributes=IssueSchema.model_validate(i),
             rewards=issue_rewards.get(i.id, None),
             pledges_summary=issue_pledge_summaries.get(i.id, None),
             references=issue_references.get(i.id, None),

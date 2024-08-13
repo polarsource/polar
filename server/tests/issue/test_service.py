@@ -203,6 +203,7 @@ async def test_list_by_repository_type_and_status_dependencies_pledge(
         repository_id=third_party_repo.id,
         organization_id=third_party_org.id,
         amount=2000,
+        currency="usd",
         fee=200,
         state=PledgeState.created,
     )
@@ -215,6 +216,7 @@ async def test_list_by_repository_type_and_status_dependencies_pledge(
         repository_id=third_party_repo.id,
         organization_id=third_party_org.id,
         amount=2100,
+        currency="usd",
         fee=200,
         state=PledgeState.created,
     )
@@ -227,6 +229,7 @@ async def test_list_by_repository_type_and_status_dependencies_pledge(
         repository_id=third_party_repo.id,
         organization_id=third_party_org.id,
         amount=2100,
+        currency="usd",
         fee=200,
         state=PledgeState.created,
         by_user_id=user.id,
@@ -239,6 +242,7 @@ async def test_list_by_repository_type_and_status_dependencies_pledge(
         repository_id=third_party_repo.id,
         organization_id=third_party_org.id,
         amount=2100,
+        currency="usd",
         fee=200,
         state=PledgeState.created,
         by_organization_id=organization.id,
@@ -317,6 +321,7 @@ async def test_list_by_repository_type_and_status_dependencies_pledge_state(
             repository_id=third_party_repo.id,
             organization_id=third_party_org.id,
             amount=2000,
+            currency="usd",
             fee=200,
             state=state,
         )

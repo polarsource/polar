@@ -270,6 +270,7 @@ async def test_search_pledge_by_issue_id(
         repository_id=repository_linked.id,
         organization_id=external_organization_linked.id,
         amount=50000,
+        currency="usd",
         fee=50,
         state=PledgeState.created,
     )
@@ -282,6 +283,7 @@ async def test_search_pledge_by_issue_id(
         repository_id=repository_linked.id,
         organization_id=external_organization_linked.id,
         amount=50000,
+        currency="usd",
         fee=50,
         state=PledgeState.created,
     )
@@ -593,7 +595,7 @@ async def test_spending(
     )
 
     assert spending.status_code == 200
-    assert spending.json()["amount"]["amount"] == 6000
+    assert spending.json()["amount"] == 6000
 
 
 @pytest.mark.asyncio
@@ -607,4 +609,4 @@ async def test_spending_zero(organization: Organization, client: AsyncClient) ->
     )
 
     assert spending.status_code == 200
-    assert spending.json()["amount"]["amount"] == 0
+    assert spending.json()["amount"] == 0

@@ -28,6 +28,7 @@ async def test_pledge(
         organization_id=external_organization.id,
         email=email,
         amount=int(test_amount),
+        currency="usd",
         fee=0,
     )
     await save_fixture(created)

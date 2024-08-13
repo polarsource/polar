@@ -1,12 +1,11 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Literal, Self
+from typing import Annotated, Literal, Self
 from uuid import UUID
 
 from pydantic import Field, model_validator
 
-from polar.currency.schemas import CurrencyAmount
 from polar.funding.funding_schema import Funding
 from polar.issue.schemas import Issue
 from polar.kit.schemas import Schema
@@ -68,7 +67,8 @@ class Pledger(Schema):
 class Pledge(Schema):
     id: UUID = Field(description="Pledge ID")
     created_at: datetime = Field(description="When the pledge was created")
-    amount: CurrencyAmount = Field(description="Amount pledged towards the issue")
+    amount: int = Field(description="Amount pledged towards the issue")
+    currency: str
     state: PledgeState = Field(description="Current state of the pledge")
     type: PledgeType = Field(description="Type of pledge")
 
@@ -118,7 +118,8 @@ class Pledge(Schema):
         return Pledge(
             id=o.id,
             created_at=o.created_at,
-            amount=CurrencyAmount(currency="USD", amount=o.amount),
+            amount=o.amount,
+            currency=o.currency,
             state=PledgeState.from_str(o.state),
             type=PledgeType.from_str(o.type),
             #
@@ -130,7 +131,7 @@ class Pledge(Schema):
             if include_receiver_admin_fields
             else None,
             #
-            issue=Issue.from_db(o.issue),
+            issue=Issue.model_validate(o.issue),
             pledger=Pledger.from_pledge(o),
             #
             hosted_invoice_url=o.invoice_hosted_url
@@ -161,13 +162,23 @@ class PledgePledgesSummary(Schema):
 
 
 class PledgeSpending(Schema):
-    amount: CurrencyAmount
+    amount: int
+    currency: str
 
 
 # Internal APIs below
 
 # Ref: https://stripe.com/docs/api/payment_intents/object#payment_intent_object-amount
 MAXIMUM_AMOUNT = 99999999
+
+PledgeCurrency = Annotated[
+    str,
+    Field(
+        default="usd",
+        pattern="usd",
+        description="The currency. Currently, only `usd` is supported.",
+    ),
+]
 
 
 class CreatePledgeFromPaymentIntent(Schema):
@@ -177,6 +188,7 @@ class CreatePledgeFromPaymentIntent(Schema):
 class CreatePledgePayLater(Schema):
     issue_id: UUID
     amount: int = Field(gt=0, le=MAXIMUM_AMOUNT)
+    currency: PledgeCurrency
     on_behalf_of_organization_id: UUID | None = Field(
         None,
         description="The organization to give credit to. The pledge will be paid by the authenticated user.",
@@ -200,6 +212,7 @@ class PledgeStripePaymentIntentCreate(Schema):
     issue_id: UUID
     email: str
     amount: int = Field(gt=0, le=MAXIMUM_AMOUNT)
+    currency: PledgeCurrency
     setup_future_usage: Literal["on_session"] | None = Field(
         None, description="If the payment method should be saved for future usage."
     )
@@ -212,6 +225,7 @@ class PledgeStripePaymentIntentCreate(Schema):
 class PledgeStripePaymentIntentUpdate(Schema):
     email: str
     amount: int = Field(gt=0, le=MAXIMUM_AMOUNT)
+    currency: PledgeCurrency
     setup_future_usage: Literal["on_session"] | None = Field(
         None, description="If the payment method should be saved for future usage."
     )
@@ -224,6 +238,7 @@ class PledgeStripePaymentIntentUpdate(Schema):
 class PledgeStripePaymentIntentMutationResponse(Schema):
     payment_intent_id: str
     amount: int
+    currency: str
     fee: int
     amount_including_fee: int
     client_secret: str | None = None

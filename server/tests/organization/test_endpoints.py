@@ -648,22 +648,3 @@ async def test_donations_enabled(
     )
     assert response.status_code == 200
     assert response.json()["donations_enabled"] is False
-
-
-@pytest.mark.asyncio
-@pytest.mark.auth
-async def test_public_donation_timestamps(
-    organization: Organization,
-    client: AsyncClient,
-    user_organization: UserOrganization,  # makes User a member of Organization
-    session: AsyncSession,
-) -> None:
-    # then
-    session.expunge_all()
-
-    response = await client.patch(
-        f"/v1/organizations/{organization.id}",
-        json={"public_donation_timestamps": True},
-    )
-    assert response.status_code == 200
-    assert response.json()["public_donation_timestamps"] is True

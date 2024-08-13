@@ -20,7 +20,6 @@ from sqlalchemy.orm import joinedload
 
 from polar.account.service import account as account_service
 from polar.config import settings
-from polar.currency.schemas import CurrencyAmount
 from polar.donation.schemas import DonationStatisticsPeriod
 from polar.held_balance.service import held_balance as held_balance_service
 from polar.integrations.stripe.schemas import (
@@ -140,7 +139,8 @@ class DonationService:
         by_organization: Organization | None,
         on_behalf_of_organization: Organization | None,
         to_organization: Organization,
-        amount: CurrencyAmount,
+        amount: int,
+        currency: str,
         receipt_email: str,
         message: str | None,
         issue_id: UUID | None,
@@ -174,6 +174,7 @@ class DonationService:
         return await stripe_service.create_payment_intent(
             session=session,
             amount=amount,
+            currency=currency,
             metadata=metadata,
             receipt_email=receipt_email,
             description=f"Donation to {to_organization.slug}",
@@ -188,7 +189,8 @@ class DonationService:
         by_user: User | None,
         by_organization: Organization | None,
         on_behalf_of_organization: Organization | None,
-        amount: CurrencyAmount,
+        amount: int,
+        currency: str,
         receipt_email: str,
         setup_future_usage: Literal["off_session", "on_session"] | None = None,
         message: str | None,
@@ -213,6 +215,7 @@ class DonationService:
             session=session,
             id=payment_intent_id,
             amount=amount,
+            currency=currency,
             metadata=metadata,
             receipt_email=receipt_email,
             customer=customer,
@@ -249,6 +252,7 @@ class DonationService:
             payment_id=payload.id,
             charge_id=payload.latest_charge,
             amount=payload.amount,
+            currency=payload.currency,
             amount_received=payload.amount_received,
             email=payload.receipt_email,
             message=metadata.donation_message,

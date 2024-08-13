@@ -6,7 +6,6 @@ import stripe as stripe_lib
 
 from polar.account.schemas import AccountCreate
 from polar.config import settings
-from polar.currency.schemas import CurrencyAmount
 from polar.exceptions import InternalServerError, PolarError
 from polar.integrations.stripe.schemas import (
     DonationPaymentIntentMetadata,
@@ -47,7 +46,8 @@ class StripeService:
         self,
         session: AsyncSession,
         *,
-        amount: CurrencyAmount,
+        amount: int,
+        currency: str,
         metadata: PledgePaymentIntentMetadata
         | DonationPaymentIntentMetadata
         | None = None,
@@ -56,8 +56,8 @@ class StripeService:
         customer: User | Organization | None = None,
     ) -> stripe_lib.PaymentIntent:
         params: stripe_lib.PaymentIntent.CreateParams = {
-            "amount": amount.amount,
-            "currency": amount.currency,
+            "amount": amount,
+            "currency": currency,
             "receipt_email": receipt_email,
             "description": description,
         }
@@ -78,7 +78,8 @@ class StripeService:
         session: AsyncSession,
         id: str,
         *,
-        amount: CurrencyAmount,
+        amount: int,
+        currency: str,
         metadata: PledgePaymentIntentMetadata
         | DonationPaymentIntentMetadata
         | None = None,
@@ -88,8 +89,8 @@ class StripeService:
         setup_future_usage: Literal["off_session", "on_session"] | None = None,
     ) -> stripe_lib.PaymentIntent:
         params: stripe_lib.PaymentIntent.ModifyParams = {
-            "amount": amount.amount,
-            "currency": amount.currency,
+            "amount": amount,
+            "currency": currency,
         }
 
         if receipt_email is not None:

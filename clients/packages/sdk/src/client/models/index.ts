@@ -1709,10 +1709,16 @@ export interface BackofficePledge {
     created_at: string;
     /**
      * Amount pledged towards the issue
-     * @type {CurrencyAmount}
+     * @type {number}
      * @memberof BackofficePledge
      */
-    amount: CurrencyAmount;
+    amount: number;
+    /**
+     * 
+     * @type {string}
+     * @memberof BackofficePledge
+     */
+    currency: string;
     /**
      * Current state of the pledge
      * @type {PledgeState}
@@ -3981,6 +3987,12 @@ export interface CreatePledgePayLater {
      */
     amount: number;
     /**
+     * The currency. Currently, only `usd` is supported.
+     * @type {string}
+     * @memberof CreatePledgePayLater
+     */
+    currency?: string;
+    /**
      * 
      * @type {string}
      * @memberof CreatePledgePayLater
@@ -4130,10 +4142,10 @@ export interface Donation {
     email: string;
     /**
      * 
-     * @type {DonationIssue}
+     * @type {Issue}
      * @memberof Donation
      */
-    issue?: DonationIssue;
+    issue?: Issue;
 }
 /**
  * 
@@ -4200,55 +4212,6 @@ export const DonationCreateStripePaymentIntentSetupFutureUsageEnum = {
 } as const;
 export type DonationCreateStripePaymentIntentSetupFutureUsageEnum = typeof DonationCreateStripePaymentIntentSetupFutureUsageEnum[keyof typeof DonationCreateStripePaymentIntentSetupFutureUsageEnum];
 
-/**
- * 
- * @export
- * @interface DonationIssue
- */
-export interface DonationIssue {
-    /**
-     * Creation timestamp of the object.
-     * @type {string}
-     * @memberof DonationIssue
-     */
-    created_at: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof DonationIssue
-     */
-    modified_at?: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof DonationIssue
-     */
-    id: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof DonationIssue
-     */
-    title: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof DonationIssue
-     */
-    repository_id: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof DonationIssue
-     */
-    organization_id: string;
-    /**
-     * 
-     * @type {Repository}
-     * @memberof DonationIssue
-     */
-    repository: Repository;
-}
 /**
  * 
  * @export
@@ -5538,10 +5501,10 @@ export interface Issue {
     reactions?: Reactions;
     /**
      * 
-     * @type {string}
+     * @type {State}
      * @memberof Issue
      */
-    state: IssueStateEnum;
+    state: State;
     /**
      * 
      * @type {string}
@@ -5603,17 +5566,6 @@ export interface Issue {
      */
     badge_custom_content?: string;
 }
-
-
-/**
- * @export
- */
-export const IssueStateEnum = {
-    OPEN: 'OPEN',
-    CLOSED: 'CLOSED'
-} as const;
-export type IssueStateEnum = typeof IssueStateEnum[keyof typeof IssueStateEnum];
-
 /**
  * 
  * @export
@@ -9340,10 +9292,16 @@ export interface Pledge {
     created_at: string;
     /**
      * Amount pledged towards the issue
-     * @type {CurrencyAmount}
+     * @type {number}
      * @memberof Pledge
      */
-    amount: CurrencyAmount;
+    amount: number;
+    /**
+     * 
+     * @type {string}
+     * @memberof Pledge
+     */
+    currency: string;
     /**
      * Current state of the pledge
      * @type {PledgeState}
@@ -9451,10 +9409,16 @@ export interface PledgeRewardTransfer {
 export interface PledgeSpending {
     /**
      * 
-     * @type {CurrencyAmount}
+     * @type {number}
      * @memberof PledgeSpending
      */
-    amount: CurrencyAmount;
+    amount: number;
+    /**
+     * 
+     * @type {string}
+     * @memberof PledgeSpending
+     */
+    currency: string;
 }
 
 /**
@@ -9496,6 +9460,12 @@ export interface PledgeStripePaymentIntentCreate {
      * @memberof PledgeStripePaymentIntentCreate
      */
     amount: number;
+    /**
+     * The currency. Currently, only `usd` is supported.
+     * @type {string}
+     * @memberof PledgeStripePaymentIntentCreate
+     */
+    currency?: string;
     /**
      * 
      * @type {string}
@@ -9539,6 +9509,12 @@ export interface PledgeStripePaymentIntentMutationResponse {
     amount: number;
     /**
      * 
+     * @type {string}
+     * @memberof PledgeStripePaymentIntentMutationResponse
+     */
+    currency: string;
+    /**
+     * 
      * @type {number}
      * @memberof PledgeStripePaymentIntentMutationResponse
      */
@@ -9574,6 +9550,12 @@ export interface PledgeStripePaymentIntentUpdate {
      * @memberof PledgeStripePaymentIntentUpdate
      */
     amount: number;
+    /**
+     * The currency. Currently, only `usd` is supported.
+     * @type {string}
+     * @memberof PledgeStripePaymentIntentUpdate
+     */
+    currency?: string;
     /**
      * 
      * @type {string}
@@ -11475,6 +11457,17 @@ export const Scope = {
     USERADVERTISEMENT_CAMPAIGNSWRITE: 'user:advertisement_campaigns:write'
 } as const;
 export type Scope = typeof Scope[keyof typeof Scope];
+
+
+/**
+ * 
+ * @export
+ */
+export const State = {
+    OPEN: 'open',
+    CLOSED: 'closed'
+} as const;
+export type State = typeof State[keyof typeof State];
 
 
 /**

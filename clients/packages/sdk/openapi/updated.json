@@ -4565,8 +4565,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
                     "Organization",
+                    "User",
                     "Anonymous"
                 ]
             }
@@ -4584,8 +4584,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "repositories:read",
-                            "repositories:write"
+                            "repositories:write",
+                            "repositories:read"
                         ]
                     },
                     {
@@ -4804,8 +4804,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
                     "Organization",
+                    "User",
                     "Anonymous"
                 ]
             }
@@ -4823,8 +4823,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "repositories:read",
-                            "repositories:write"
+                            "repositories:write",
+                            "repositories:read"
                         ]
                     },
                     {
@@ -4882,8 +4882,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
                     "Organization",
+                    "User",
                     "Anonymous"
                 ]
             },
@@ -4977,8 +4977,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -5765,8 +5765,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "issues:write",
-                            "issues:read"
+                            "issues:read",
+                            "issues:write"
                         ]
                     },
                     {
@@ -6016,8 +6016,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
                     "Organization",
+                    "User",
                     "Anonymous"
                 ]
             }
@@ -7404,8 +7404,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             },
             "post": {
@@ -7536,8 +7536,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             },
             "patch": {
@@ -7630,8 +7630,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -7684,10 +7684,10 @@
                             },
                             "description": "Filter by the type of purchase the customer made.",
                             "default": [
-                                "free_subscription",
-                                "order",
                                 "paid_subscription",
-                                "donation"
+                                "donation",
+                                "order",
+                                "free_subscription"
                             ],
                             "title": "Customer Types"
                         },
@@ -7753,8 +7753,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -7837,8 +7837,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             },
             "patch": {
@@ -7929,8 +7929,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -7994,8 +7994,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -8052,8 +8052,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -8110,8 +8110,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             },
             "post": {
@@ -8176,8 +8176,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -8412,8 +8412,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             },
             "post": {
@@ -8467,8 +8467,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -8524,8 +8524,8 @@
                     }
                 ],
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -8610,8 +8610,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -8820,8 +8820,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
                     "Organization",
+                    "User",
                     "Anonymous"
                 ]
             },
@@ -8877,8 +8877,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -8953,8 +8953,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
                     "Organization",
+                    "User",
                     "Anonymous"
                 ]
             },
@@ -9048,8 +9048,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             },
             "delete": {
@@ -9125,8 +9125,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -9191,8 +9191,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -9285,8 +9285,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -9372,8 +9372,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -11887,8 +11887,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             },
             "post": {
@@ -11989,8 +11989,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -12085,8 +12085,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             },
             "patch": {
@@ -12218,8 +12218,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             },
             "delete": {
@@ -12294,8 +12294,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -12451,8 +12451,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -12570,8 +12570,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             },
             "post": {
@@ -12624,8 +12624,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -12695,8 +12695,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             },
             "patch": {
@@ -12783,8 +12783,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             },
             "delete": {
@@ -12854,8 +12854,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -12948,8 +12948,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -13016,8 +13016,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -13229,8 +13229,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
                     "Organization",
+                    "User",
                     "Anonymous"
                 ]
             },
@@ -13294,8 +13294,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -13371,8 +13371,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
                     "Organization",
+                    "User",
                     "Anonymous"
                 ]
             },
@@ -13466,8 +13466,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -13562,8 +13562,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -13800,8 +13800,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -13871,8 +13871,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -13942,8 +13942,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -14163,8 +14163,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             },
             "post": {
@@ -14233,8 +14233,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -14319,8 +14319,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -14405,8 +14405,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             },
             "delete": {
@@ -14475,8 +14475,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -14664,8 +14664,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -14701,8 +14701,8 @@
                     }
                 ],
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -16455,12 +16455,13 @@
                         "description": "When the pledge was created"
                     },
                     "amount": {
-                        "allOf": [
-                            {
-                                "$ref": "#/components/schemas/CurrencyAmount"
-                            }
-                        ],
+                        "type": "integer",
+                        "title": "Amount",
                         "description": "Amount pledged towards the issue"
+                    },
+                    "currency": {
+                        "type": "string",
+                        "title": "Currency"
                     },
                     "state": {
                         "allOf": [
@@ -16621,6 +16622,7 @@
                     "id",
                     "created_at",
                     "amount",
+                    "currency",
                     "state",
                     "type",
                     "issue"
@@ -19040,6 +19042,13 @@
                         "maximum": 99999999,
                         "exclusiveMinimum": 0,
                         "title": "Amount"
+                    },
+                    "currency": {
+                        "type": "string",
+                        "pattern": "usd",
+                        "title": "Currency",
+                        "description": "The currency. Currently, only `usd` is supported.",
+                        "default": "usd"
                     },
                     "on_behalf_of_organization_id": {
                         "anyOf": [
@@ -24612,12 +24621,18 @@
             "PledgeSpending": {
                 "properties": {
                     "amount": {
-                        "$ref": "#/components/schemas/CurrencyAmount"
+                        "type": "integer",
+                        "title": "Amount"
+                    },
+                    "currency": {
+                        "type": "string",
+                        "title": "Currency"
                     }
                 },
                 "type": "object",
                 "required": [
-                    "amount"
+                    "amount",
+                    "currency"
                 ],
                 "title": "PledgeSpending"
             },
@@ -24650,6 +24665,13 @@
                         "maximum": 99999999,
                         "exclusiveMinimum": 0,
                         "title": "Amount"
+                    },
+                    "currency": {
+                        "type": "string",
+                        "pattern": "usd",
+                        "title": "Currency",
+                        "description": "The currency. Currently, only `usd` is supported.",
+                        "default": "usd"
                     },
                     "setup_future_usage": {
                         "anyOf": [
@@ -24699,6 +24721,10 @@
                         "type": "integer",
                         "title": "Amount"
                     },
+                    "currency": {
+                        "type": "string",
+                        "title": "Currency"
+                    },
                     "fee": {
                         "type": "integer",
                         "title": "Fee"
@@ -24723,6 +24749,7 @@
                 "required": [
                     "payment_intent_id",
                     "amount",
+                    "currency",
                     "fee",
                     "amount_including_fee"
                 ],
@@ -24739,6 +24766,13 @@
                         "maximum": 99999999,
                         "exclusiveMinimum": 0,
                         "title": "Amount"
+                    },
+                    "currency": {
+                        "type": "string",
+                        "pattern": "usd",
+                        "title": "Currency",
+                        "description": "The currency. Currently, only `usd` is supported.",
+                        "default": "usd"
                     },
                     "setup_future_usage": {
                         "anyOf": [
@@ -26586,6 +26620,14 @@
                     "webhooks:read": "Read webhooks",
                     "webhooks:write": "Create or modify webhooks"
                 }
+            },
+            "State": {
+                "type": "string",
+                "enum": [
+                    "open",
+                    "closed"
+                ],
+                "title": "State"
             },
             "Status": {
                 "type": "string",
@@ -30267,7 +30309,7 @@
                     "issue": {
                         "anyOf": [
                             {
-                                "$ref": "#/components/schemas/DonationIssue"
+                                "$ref": "#/components/schemas/Issue"
                             },
                             {
                                 "type": "null"
@@ -30285,61 +30327,6 @@
                     "email"
                 ],
                 "title": "Donation"
-            },
-            "DonationIssue": {
-                "properties": {
-                    "created_at": {
-                        "type": "string",
-                        "format": "date-time",
-                        "title": "Created At",
-                        "description": "Creation timestamp of the object."
-                    },
-                    "modified_at": {
-                        "anyOf": [
-                            {
-                                "type": "string",
-                                "format": "date-time"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Modified At",
-                        "description": "Last modification timestamp of the object."
-                    },
-                    "id": {
-                        "type": "string",
-                        "format": "uuid4",
-                        "title": "Id"
-                    },
-                    "title": {
-                        "type": "string",
-                        "title": "Title"
-                    },
-                    "repository_id": {
-                        "type": "string",
-                        "format": "uuid4",
-                        "title": "Repository Id"
-                    },
-                    "organization_id": {
-                        "type": "string",
-                        "format": "uuid4",
-                        "title": "Organization Id"
-                    },
-                    "repository": {
-                        "$ref": "#/components/schemas/Repository"
-                    }
-                },
-                "type": "object",
-                "required": [
-                    "created_at",
-                    "id",
-                    "title",
-                    "repository_id",
-                    "organization_id",
-                    "repository"
-                ],
-                "title": "DonationIssue"
             },
             "Issue": {
                 "properties": {
@@ -30436,12 +30423,7 @@
                         "description": "GitHub reactions"
                     },
                     "state": {
-                        "type": "string",
-                        "enum": [
-                            "OPEN",
-                            "CLOSED"
-                        ],
-                        "title": "State"
+                        "$ref": "#/components/schemas/State"
                     },
                     "issue_closed_at": {
                         "anyOf": [
@@ -30719,12 +30701,13 @@
                         "description": "When the pledge was created"
                     },
                     "amount": {
-                        "allOf": [
-                            {
-                                "$ref": "#/components/schemas/CurrencyAmount"
-                            }
-                        ],
+                        "type": "integer",
+                        "title": "Amount",
                         "description": "Amount pledged towards the issue"
+                    },
+                    "currency": {
+                        "type": "string",
+                        "title": "Currency"
                     },
                     "state": {
                         "allOf": [
@@ -30828,6 +30811,7 @@
                     "id",
                     "created_at",
                     "amount",
+                    "currency",
                     "state",
                     "type",
                     "issue"

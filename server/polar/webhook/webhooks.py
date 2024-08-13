@@ -1,6 +1,10 @@
-from typing import Annotated, Literal, Union
+import inspect
+import typing
+from inspect import Parameter, Signature
+from typing import Annotated, Any, Literal, Union, get_args
 
 from fastapi import FastAPI
+from makefun import with_signature
 from pydantic import Discriminator, TypeAdapter
 
 from polar.benefit.schemas import Benefit as BenefitSchema
@@ -31,141 +35,81 @@ WebhookTypeObject = Union[  # noqa: UP007
     tuple[Literal[WebhookEventType.benefit_updated], Benefit],
 ]
 
-app = FastAPI()
+
+class BaseWebhookPayload(Schema):
+    type: WebhookEventType
+    data: Schema
 
 
-class WebhookSubscriptionCreatedPayload(Schema):
+class WebhookSubscriptionCreatedPayload(BaseWebhookPayload):
+    """Sent when a new subscription is created."""
+
     type: Literal[WebhookEventType.subscription_created]
     data: SubscriptionSchema
 
 
-@app.webhooks.post(
-    WebhookEventType.subscription_created.value,
-    description="Sent when a new subscription is created.",
-)
-async def subscription_created(body: WebhookSubscriptionCreatedPayload) -> None:
-    return None
+class WebhookSubscriptionUpdatedPayload(BaseWebhookPayload):
+    """
+    Sent when a new subscription is updated. This event fires if the subscription is cancelled, both immediately and if the subscription is cancelled at the end of the current period."""
 
-
-class WebhookSubscriptionUpdatedPayload(Schema):
     type: Literal[WebhookEventType.subscription_updated]
     data: SubscriptionSchema
 
 
-@app.webhooks.post(
-    WebhookEventType.subscription_updated.value,
-    description="Sent when a new subscription is updated. This event fires if the subscription is cancelled, both immediately and if the subscription is cancelled at the end of the current period.",
-)
-async def subscription_updated(body: WebhookSubscriptionUpdatedPayload) -> None:
-    return None
+class WebhookProductCreatedPayload(BaseWebhookPayload):
+    """Sent when a new product is created."""
 
-
-class WebhookProductCreatedPayload(Schema):
     type: Literal[WebhookEventType.product_created]
     data: ProductSchema
 
 
-@app.webhooks.post(
-    WebhookEventType.product_created.value,
-    description="Sent when a new product is created.",
-)
-async def product_created(
-    body: WebhookProductCreatedPayload,
-) -> None:
-    return None
+class WebhookProductUpdatedPayload(BaseWebhookPayload):
+    """Sent when a product is updated."""
 
-
-class WebhookProductUpdatedPayload(Schema):
     type: Literal[WebhookEventType.product_updated]
     data: ProductSchema
 
 
-@app.webhooks.post(
-    WebhookEventType.product_updated.value,
-    description="Sent when a product is updated.",
-)
-async def product_updated(
-    body: WebhookProductUpdatedPayload,
-) -> None:
-    return None
+class WebhookPledgeCreatedPayload(BaseWebhookPayload):
+    """Sent when a new pledge is created. Note that this does mean that the pledge has been paid yet."""
 
-
-class WebhookPledgeCreatedPayload(Schema):
     type: Literal[WebhookEventType.pledge_created]
     data: PledgeSchema
 
 
-@app.webhooks.post(
-    WebhookEventType.pledge_created.value,
-    description="Sent when a new pledge is created. Note that this does mean that the pledge has been paid yet.",
-)
-async def pledge_created(body: WebhookPledgeCreatedPayload) -> None:
-    return None
+class WebhookPledgeUpdatedPayload(BaseWebhookPayload):
+    """Sent when a pledge is updated."""
 
-
-class WebhookPledgeUpdatedPayload(Schema):
     type: Literal[WebhookEventType.pledge_updated]
     data: PledgeSchema
 
 
-@app.webhooks.post(
-    WebhookEventType.pledge_updated.value,
-    description="Sent when a pledge is updated.",
-)
-async def pledge_updated(body: WebhookPledgeUpdatedPayload) -> None:
-    return None
+class WebhookDonationCreatedPayload(BaseWebhookPayload):
+    """Sent when a new donation is created."""
 
-
-class WebhookDonationCreatedPayload(Schema):
     type: Literal[WebhookEventType.donation_created]
     data: DonationSchema
 
 
-@app.webhooks.post(
-    WebhookEventType.donation_created.value,
-    description="Sent when a new donation is created.",
-)
-async def donation_created(body: WebhookDonationCreatedPayload) -> None:
-    return None
+class WebhookOrganizationUpdatedPayload(BaseWebhookPayload):
+    """Sent when a organization is updated."""
 
-
-class WebhookOrganizationUpdatedPayload(Schema):
     type: Literal[WebhookEventType.organization_updated]
     data: OrganizationSchema
 
 
-@app.webhooks.post(
-    WebhookEventType.organization_updated.value,
-    description="Sent when a organization is updated.",
-)
-async def organization_updated(body: WebhookOrganizationUpdatedPayload) -> None:
-    return None
+class WebhookBenefitCreatedPayload(BaseWebhookPayload):
+    """Sent when a new benefit is created."""
 
-
-class WebhookBenefitCreatedPayload(Schema):
     type: Literal[WebhookEventType.benefit_created]
     data: BenefitSchema
 
 
-@app.webhooks.post(
-    WebhookEventType.benefit_created.value,
-    description="Sent when a new benefit is created.",
-)
-async def benefit_created(body: WebhookBenefitCreatedPayload) -> None:
-    return None
+class WebhookBenefitUpdatedPayload(BaseWebhookPayload):
+    """Sent when a benefit is updated."""
 
-
-class WebhookBenefitUpdatedPayload(Schema):
     type: Literal[WebhookEventType.benefit_updated]
     data: BenefitSchema
-
-
-@app.webhooks.post(
-    WebhookEventType.benefit_updated.value,
-    description="Sent when a benefit is updated.",
-)
-async def benefit_updated(body: WebhookBenefitUpdatedPayload) -> None:
-    return None
 
 
 WebhookPayload = Annotated[
@@ -182,3 +126,38 @@ WebhookPayload = Annotated[
     Discriminator(discriminator="type"),
 ]
 WebhookPayloadTypeAdapter: TypeAdapter[WebhookPayload] = TypeAdapter(WebhookPayload)
+
+
+def _document_webhooks(app: FastAPI) -> None:
+    def _endpoint(body: Any) -> None: ...
+
+    webhooks_schemas: tuple[type[BaseWebhookPayload]] = typing.get_args(
+        typing.get_args(WebhookPayload)[0]
+    )
+    for webhook_schema in webhooks_schemas:
+        signature = Signature(
+            [
+                Parameter(
+                    name="body",
+                    kind=Parameter.POSITIONAL_OR_KEYWORD,
+                    annotation=webhook_schema,
+                )
+            ]
+        )
+
+        event_type_annotation = webhook_schema.model_fields["type"].annotation
+        event_type: WebhookEventType = get_args(event_type_annotation)[0]
+
+        endpoint = with_signature(signature)(_endpoint)
+
+        app.webhooks.add_api_route(
+            event_type,
+            endpoint,
+            methods=["POST"],
+            summary=event_type,
+            description=inspect.getdoc(webhook_schema),
+        )
+
+
+app = FastAPI()
+_document_webhooks(app)

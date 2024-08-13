@@ -7,41 +7,22 @@ from sqlalchemy.orm import contains_eager, joinedload
 
 from polar.auth.models import AuthSubject, is_organization, is_user
 from polar.authz.service import AccessType, Authz
-from polar.benefit.schemas import benefit_schema_map
-from polar.donation.schemas import Donation as DonationSchema
 from polar.exceptions import NotPermitted, PolarRequestValidationError, ResourceNotFound
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.utils import utc_now
-from polar.models.benefit import Benefit
-from polar.models.donation import Donation
 from polar.models.organization import Organization
-from polar.models.pledge import Pledge
 from polar.models.user import User
 from polar.models.user_organization import UserOrganization
 from polar.models.webhook_delivery import WebhookDelivery
 from polar.models.webhook_endpoint import WebhookEndpoint, WebhookEventType
 from polar.models.webhook_event import WebhookEvent
 from polar.organization.resolver import get_payload_organization
-from polar.organization.schemas import Organization as OrganizationSchema
-from polar.pledge.schemas import Pledge as PledgeSchema
-from polar.product.schemas import Product as ProductSchema
-from polar.subscription.schemas import Subscription as SubscriptionSchema
 from polar.webhook.schemas import WebhookEndpointCreate, WebhookEndpointUpdate
 from polar.worker import enqueue_job
 
 from .webhooks import (
-    WebhookBenefitCreatedPayload,
-    WebhookBenefitUpdatedPayload,
-    WebhookDonationCreatedPayload,
-    WebhookOrganizationUpdatedPayload,
-    WebhookPayload,
-    WebhookPledgeCreatedPayload,
-    WebhookPledgeUpdatedPayload,
-    WebhookProductCreatedPayload,
-    WebhookProductUpdatedPayload,
-    WebhookSubscriptionCreatedPayload,
-    WebhookSubscriptionUpdatedPayload,
+    WebhookPayloadTypeAdapter,
     WebhookTypeObject,
 )
 
@@ -238,106 +219,23 @@ class WebhookService:
         return res.scalars().unique().one_or_none()
 
     async def send(
-        self,
-        session: AsyncSession,
-        target: Organization | User,
-        we: WebhookTypeObject,
+        self, session: AsyncSession, target: Organization | User, we: WebhookTypeObject
     ) -> None:
-        payload: WebhookPayload | None = None
+        event, data = we
 
-        match we[0]:
-            case WebhookEventType.subscription_created:
-                payload = WebhookSubscriptionCreatedPayload(
-                    type=we[0],
-                    data=SubscriptionSchema.model_validate(we[1]),
-                )
-            case WebhookEventType.subscription_updated:
-                payload = WebhookSubscriptionUpdatedPayload(
-                    type=we[0],
-                    data=SubscriptionSchema.model_validate(we[1]),
-                )
-            case WebhookEventType.product_created:
-                payload = WebhookProductCreatedPayload(
-                    type=we[0],
-                    data=ProductSchema.model_validate(we[1]),
-                )
-            case WebhookEventType.product_updated:
-                payload = WebhookProductUpdatedPayload(
-                    type=we[0],
-                    data=ProductSchema.model_validate(we[1]),
-                )
-            case WebhookEventType.pledge_created:
-                # mypy is not able to deduce this by itself
-                if isinstance(we[1], Pledge):
-                    payload = WebhookPledgeCreatedPayload(
-                        type=we[0],
-                        data=PledgeSchema.from_db(
-                            we[1],
-                            include_receiver_admin_fields=True,
-                            include_sender_admin_fields=False,
-                            include_sender_fields=False,
-                        ),
-                    )
-            case WebhookEventType.pledge_updated:
-                # mypy is not able to deduce this by itself
-                if isinstance(we[1], Pledge):
-                    payload = WebhookPledgeUpdatedPayload(
-                        type=we[0],
-                        data=PledgeSchema.from_db(
-                            we[1],
-                            include_receiver_admin_fields=True,
-                            include_sender_admin_fields=False,
-                            include_sender_fields=False,
-                        ),
-                    )
-            case WebhookEventType.donation_created:
-                # mypy is not able to deduce this by itself
-                if isinstance(we[1], Donation):
-                    payload = WebhookDonationCreatedPayload(
-                        type=we[0],
-                        data=DonationSchema.from_db(we[1]),
-                    )
-            case WebhookEventType.organization_updated:
-                # mypy is not able to deduce this by itself
-                if isinstance(we[1], Organization):
-                    payload = WebhookOrganizationUpdatedPayload(
-                        type=we[0],
-                        data=OrganizationSchema.model_validate(we[1]),
-                    )
-            case WebhookEventType.benefit_created:
-                # mypy is not able to deduce this by itself
-                if isinstance(we[1], Benefit):
-                    t = benefit_schema_map[we[1].type]
-                    payload = WebhookBenefitCreatedPayload(
-                        type=we[0],
-                        data=t.model_validate(we[1]),
-                    )
-            case WebhookEventType.benefit_updated:
-                # mypy is not able to deduce this by itself
-                if isinstance(we[1], Benefit):
-                    t = benefit_schema_map[we[1].type]
-                    payload = WebhookBenefitUpdatedPayload(
-                        type=we[0],
-                        data=t.model_validate(we[1]),
-                    )
-            case x:
-                assert_never(x)  # asserts that the match is exhaustive
-
-        if payload is None:
-            raise Exception("no payload")
+        payload = WebhookPayloadTypeAdapter.validate_python(
+            {"type": event, "data": data}
+        )
 
         for e in await self._get_event_target_endpoints(
-            session, event=we[0], target=target
+            session, event=event, target=target
         ):
-            event = WebhookEvent(
+            event_type = WebhookEvent(
                 webhook_endpoint_id=e.id, payload=payload.model_dump_json()
             )
-            session.add(event)
+            session.add(event_type)
             await session.flush()
-
-            enqueue_job("webhook_event.send", webhook_event_id=event.id)
-
-        return
+            enqueue_job("webhook_event.send", webhook_event_id=event_type.id)
 
     def _get_readable_endpoints_statement(
         self, auth_subject: AuthSubject[User | Organization]

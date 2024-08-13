@@ -50,7 +50,7 @@ const Split = (props: {
   }, [props.contributors])
 
   const pledgeSum = props.pledges
-    .map((p) => p.amount.amount)
+    .map((p) => p.amount)
     .reduce((a, b) => a + b, 0)
 
   const polarShare = pledgeSum * 0.05

@@ -5,7 +5,7 @@ import RefundIcon from '@/components/Icons/RefundIcon'
 import { githubIssueLink } from '@/utils/github'
 import { dateOrString } from '@/utils/time'
 import { Pledge, PledgeState, PledgeType } from '@polar-sh/sdk'
-import { getCentsInDollarString } from 'polarkit/lib/money'
+import { formatCurrencyAndAmount } from 'polarkit/lib/money'
 
 export type Column = 'ESTIMATED_PAYOUT_DATE' | 'REFUNDED_DATE'
 
@@ -163,7 +163,7 @@ const List = (props: {
 
                 <td className="whitespace-nowrap py-3 pr-3 text-sm">
                   <div className="dark:text-polar-400 text-right text-gray-500">
-                    ${getCentsInDollarString(t.amount.amount, true, true)}
+                    {formatCurrencyAndAmount(t.amount, t.currency)}
                   </div>
                 </td>
               </tr>

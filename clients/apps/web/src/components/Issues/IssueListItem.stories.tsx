@@ -30,7 +30,8 @@ const pledges: Pledge[] = [
     id: 'xx',
     created_at: new Date('2023-10-17').toISOString(),
     issue: issue,
-    amount: { currency: 'USD', amount: 1234 },
+    amount: 1234,
+    currency: 'usd',
     state: PledgeState.CREATED,
     type: PledgeType.UPFRONT,
     pledger: {
@@ -436,31 +437,37 @@ export const PledgeDisputableMultiple: Story = {
     pledges: [
       {
         ...pledgeDisputedByOther[0],
-        amount: { currency: 'USD', amount: 1000 },
+        amount: 1000,
+        currency: 'usd',
       },
       {
         ...pledgeDisputedByOther[0],
-        amount: { currency: 'USD', amount: 2000 },
+        amount: 2000,
+        currency: 'usd',
       },
-      { ...pledgeDisputable[0], amount: { currency: 'USD', amount: 3500 } },
+      { ...pledgeDisputable[0], amount: 3500, currency: 'usd' },
       {
         ...pledgeDisputableYesterday[0],
-        amount: { currency: 'USD', amount: 2200 },
+        amount: 2200,
+        currency: 'usd',
       },
       {
         ...pledgeDisputableYesterday[0],
-        amount: { currency: 'USD', amount: 10000 },
+        amount: 10000,
+        currency: 'usd',
       },
       {
         ...pledgeDisputableToday[0],
-        amount: { currency: 'USD', amount: 3800 },
+        amount: 3800,
+        currency: 'usd',
       },
       {
         ...pledgeDisputableToday[0],
-        amount: { currency: 'USD', amount: 3500 },
+        amount: 3500,
+        currency: 'usd',
       },
-      { ...pledgeDisputed[0], amount: { currency: 'USD', amount: 3500 } },
-      { ...pledgeDisputable[0], amount: { currency: 'USD', amount: 8300 } },
+      { ...pledgeDisputed[0], amount: 3500, currency: 'usd' },
+      { ...pledgeDisputable[0], amount: 8300, currency: 'usd' },
     ],
   },
 }

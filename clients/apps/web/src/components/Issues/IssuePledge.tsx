@@ -13,7 +13,7 @@ import {
 } from '@polar-sh/sdk'
 import { FormattedDateTime } from 'polarkit/components/ui/atoms'
 import Avatar from 'polarkit/components/ui/atoms/avatar'
-import { getCentsInDollarString } from 'polarkit/lib/money'
+import { formatCurrencyAndAmount } from 'polarkit/lib/money'
 import { useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
 import FundingPill from './FundingPill'
@@ -43,7 +43,7 @@ const IssuePledge = (props: Props) => {
 
   const totalPledgeAmount = Math.max(
     issue.funding.pledges_sum?.amount ?? 0,
-    pledges.reduce((a, b) => a + b.amount.amount, 0),
+    pledges.reduce((a, b) => a + b.amount, 0),
   )
 
   const confirmable = useMemo(() => {
@@ -132,9 +132,9 @@ const IssuePledge = (props: Props) => {
             avatar_url={p.pledger?.avatar_url}
           />
           <div className="flex-1">
-            {p.pledger?.name} {pledgeVerb(p)} $
-            {getCentsInDollarString(p.amount.amount, false, true)} to this issue
-            on <FormattedDateTime datetime={p.created_at} dateStyle="long" />
+            {p.pledger?.name} {pledgeVerb(p)}{' '}
+            {formatCurrencyAndAmount(p.amount, p.currency)} to this issue on{' '}
+            <FormattedDateTime datetime={p.created_at} dateStyle="long" />
           </div>
 
           <div className="flex items-center gap-4">

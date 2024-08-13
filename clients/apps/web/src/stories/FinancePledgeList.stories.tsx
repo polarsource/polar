@@ -17,7 +17,8 @@ export default meta
 const pledge: Pledge = {
   id: 'xx',
   created_at: new Date('2023-06-29').toISOString(),
-  amount: { currency: 'USD', amount: 12300 },
+  amount: 12300,
+  currency: 'usd',
   state: PledgeState.CREATED,
   type: PledgeType.UPFRONT,
   scheduled_payout_at: undefined,

@@ -45,7 +45,7 @@ const Finance = (props: {
 
   const currentPledgesAmount = currentPledges
     .filter((pr) => !refundedStates.includes(pr.state))
-    .map((pr) => pr.amount.amount)
+    .map((pr) => pr.amount)
     .reduce((a, b) => a + b, 0)
 
   const rewardsToSelfOrg = rewards.filter(

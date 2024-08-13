@@ -3,11 +3,11 @@ import { getServerSideAPI } from '@/utils/api/serverside'
 import { resolveIssuePath } from '@/utils/issue'
 import {
   Issue,
-  IssueStateEnum,
   Organization,
   PledgePledgesSummary,
   Pledger,
   PolarAPI,
+  State,
 } from '@polar-sh/sdk'
 const { default: satori } = require('satori')
 
@@ -89,7 +89,7 @@ const renderBadge = async (data: Data, isDarkmode: boolean) => {
       upfront_split_to_contributors={upfront_split_to_contributors}
       orgName={issue.repository.organization.name}
       issueIsClosed={
-        Boolean(issue.issue_closed_at) || issue.state === IssueStateEnum.CLOSED
+        Boolean(issue.issue_closed_at) || issue.state === State.CLOSED
       }
       donationsEnabled={organization.donations_enabled}
     />,

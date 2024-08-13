@@ -5,7 +5,7 @@ import { ArrowTopRightOnSquareIcon } from '@heroicons/react/20/solid'
 import { BackofficePledge } from '@polar-sh/sdk'
 import Link from 'next/link'
 import Button from 'polarkit/components/ui/atoms/button'
-import { getCentsInDollarString } from 'polarkit/lib/money'
+import { formatCurrencyAndAmount } from 'polarkit/lib/money'
 import { useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
 
@@ -76,7 +76,7 @@ const Pledges = () => {
               <div className="flex flex-col" key={p.id}>
                 <div className="flex items-center gap-2">
                   <div>
-                    ${getCentsInDollarString(p.amount.amount, true, true)} from{' '}
+                    {formatCurrencyAndAmount(p.amount, p.currency)} from{' '}
                   </div>
                   {p.pledger?.avatar_url && (
                     <img className="h-6 w-6" src={p.pledger.avatar_url} />

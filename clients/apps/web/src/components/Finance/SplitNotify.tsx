@@ -32,7 +32,7 @@ const SplitNotify = (props: {
   onCancel: () => void
 }) => {
   const totalPledgedAmount = props.pledges
-    .map((p) => p.amount.amount)
+    .map((p) => p.amount)
     .reduce((a, b) => a + b, 0)
 
   const concatUsernames = prettyUsernames(props.splits)

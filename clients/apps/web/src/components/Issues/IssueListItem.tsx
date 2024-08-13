@@ -13,7 +13,7 @@ import {
 } from '@polar-sh/sdk'
 import Button from 'polarkit/components/ui/atoms/button'
 import TextArea from 'polarkit/components/ui/atoms/textarea'
-import { getCentsInDollarString } from 'polarkit/lib/money'
+import { formatCurrencyAndAmount } from 'polarkit/lib/money'
 import { ChangeEvent, useState } from 'react'
 import SplitRewardModal from '../Finance/SplitRewardModal'
 import { useModal } from '../Modal/useModal'
@@ -198,7 +198,7 @@ const DisputeModal = (props: { pledge: Pledge }) => {
               Amount
             </td>
             <td className="whitespace-nowrap py-2 pl-4 pr-3 text-sm text-gray-500 sm:pl-0">
-              ${getCentsInDollarString(pledge.amount.amount)}
+              {formatCurrencyAndAmount(pledge.amount, pledge.currency)}
             </td>
           </tr>
           <tr>

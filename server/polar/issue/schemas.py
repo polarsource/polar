@@ -2,10 +2,10 @@ from __future__ import annotations
 
 from datetime import datetime
 from enum import Enum
-from typing import Any, Literal, Self, cast
+from typing import Annotated, Any, Self
 from uuid import UUID
 
-from pydantic import ConfigDict, Field, HttpUrl
+from pydantic import BeforeValidator, ConfigDict, Field, HttpUrl
 
 from polar.currency.schemas import CurrencyAmount
 from polar.enums import Platforms
@@ -66,6 +66,20 @@ class Assignee(Schema):
 
 
 # Public API
+def labels_validator(labels: Any | None) -> list[Label]:
+    if labels is None:
+        return []
+
+    return [
+        Label(name=label["name"], color=label["color"])
+        for label in labels
+        if "name" in label and "color" in label
+    ]
+
+
+Labels = Annotated[list[Label], BeforeValidator(labels_validator)]
+
+
 class Issue(Schema):
     id: UUID
     platform: Platforms = Field(description="Issue platform (currently always GitHub)")
@@ -75,13 +89,13 @@ class Issue(Schema):
     comments: int | None = Field(
         None, description="Number of GitHub comments made on the issue"
     )
-    labels: list[Label] = []
+    labels: Labels = []
 
     author: Author | None = Field(None, description="GitHub author")
     assignees: list[Assignee] | None = Field(None, description="GitHub assignees")
     reactions: Reactions | None = Field(None, description="GitHub reactions")
 
-    state: Literal["OPEN", "CLOSED"]
+    state: IssueModel.State
 
     issue_closed_at: datetime | None = None
     issue_modified_at: datetime | None = None
@@ -112,49 +126,6 @@ class Issue(Schema):
     badge_custom_content: str | None = Field(
         default=None, description="Optional custom badge SVG promotional content"
     )
-
-    @classmethod
-    def from_db(cls, i: IssueModel) -> Self:
-        funding = Funding(
-            funding_goal=CurrencyAmount(currency="USD", amount=i.funding_goal)
-            if i.funding_goal
-            else None,
-            pledges_sum=CurrencyAmount(currency="USD", amount=i.pledged_amount_sum),
-        )
-
-        labels = (
-            [
-                Label(name=label["name"], color=label["color"])
-                for label in i.labels
-                if "name" in label and "color" in label
-            ]
-            if i.labels and isinstance(i.labels, list)
-            else []
-        )
-
-        return cls(
-            id=i.id,
-            platform=i.platform,
-            number=i.number,
-            title=i.title,
-            body=i.body,
-            comments=i.comments,
-            state="OPEN" if i.state == IssueModel.State.OPEN else "CLOSED",
-            issue_closed_at=i.issue_closed_at,
-            issue_modified_at=i.issue_modified_at,
-            issue_created_at=i.issue_created_at,
-            needs_confirmation_solved=i.needs_confirmation_solved,
-            confirmed_solved_at=i.confirmed_solved_at,
-            author=cast(Author, i.author) if i.author else None,
-            assignees=cast(list[Assignee], i.assignees) if i.assignees else None,
-            reactions=cast(Reactions, i.reactions) if i.reactions else None,
-            funding=funding,
-            repository=Repository.model_validate(i.repository),
-            labels=labels,
-            upfront_split_to_contributors=i.upfront_split_to_contributors,
-            pledge_badge_currently_embedded=i.pledge_badge_currently_embedded,
-            badge_custom_content=i.badge_custom_content,
-        )
 
 
 class UpdateIssue(Schema):

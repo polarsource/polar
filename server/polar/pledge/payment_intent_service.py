@@ -75,6 +75,7 @@ class PaymentIntentService:
         try:
             payment_intent = pledge_stripe_service.create_anonymous_intent(
                 amount=amount_including_fee,
+                currency=intent.currency,
                 pledge_issue=pledge_issue,
                 pledge_issue_org=pledge_issue_org,
                 pledge_issue_repo=pledge_issue_repo,
@@ -86,6 +87,7 @@ class PaymentIntentService:
         return PledgeStripePaymentIntentMutationResponse(
             payment_intent_id=payment_intent.id,
             amount=amount,
+            currency=payment_intent.currency,
             fee=fee,
             amount_including_fee=amount_including_fee,
             client_secret=payment_intent.client_secret,
@@ -109,6 +111,7 @@ class PaymentIntentService:
         payment_intent = await pledge_stripe_service.create_user_intent(
             session=session,
             amount=amount_including_fee,
+            currency=intent.currency,
             pledge_issue=pledge_issue,
             pledge_issue_org=pledge_issue_org,
             pledge_issue_repo=pledge_issue_repo,
@@ -118,6 +121,7 @@ class PaymentIntentService:
         return PledgeStripePaymentIntentMutationResponse(
             payment_intent_id=payment_intent.id,
             amount=amount,
+            currency=payment_intent.currency,
             fee=fee,
             amount_including_fee=amount_including_fee,
             client_secret=payment_intent.client_secret,
@@ -142,6 +146,7 @@ class PaymentIntentService:
         return PledgeStripePaymentIntentMutationResponse(
             payment_intent_id=payment_intent.id,
             amount=updates.amount,
+            currency=payment_intent.currency,
             fee=fee,
             amount_including_fee=amount_including_fee,
             client_secret=payment_intent.client_secret if payment_intent else None,
@@ -207,6 +212,7 @@ class PaymentIntentService:
             to_organization=issue.organization,
             email=email,
             amount=amount,
+            currency=intent["currency"],
             fee=0,
             state=state,
             type=PledgeType.pay_upfront,

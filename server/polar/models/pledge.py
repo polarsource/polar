@@ -171,6 +171,8 @@ class Pledge(RecordModel):
     email: Mapped[str] = mapped_column(String, nullable=True, index=True, default=None)
 
     amount: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    currency: Mapped[str] = mapped_column(String(3), nullable=False)
+
     fee: Mapped[int] = mapped_column(BigInteger, nullable=False)
 
     @property

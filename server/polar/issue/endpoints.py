@@ -20,6 +20,7 @@ from polar.kit.db.postgres import AsyncSessionMaker
 from polar.kit.pagination import ListResource, Pagination, PaginationParamsQuery
 from polar.kit.schemas import MultipleQueryFilter
 from polar.locker import Locker, get_locker
+from polar.models import Issue
 from polar.openapi import IN_DEVELOPMENT_ONLY
 from polar.organization.schemas import OrganizationID
 from polar.pledge.service import pledge as pledge_service
@@ -89,7 +90,7 @@ async def list(
     )
 
     return ListResource.from_paginated_results(
-        [IssueSchema.from_db(result) for result in results],
+        [IssueSchema.model_validate(result) for result in results],
         count,
         pagination,
     )
@@ -109,7 +110,7 @@ async def lookup(
     authz: Authz = Depends(Authz.authz),
     session: AsyncSession = Depends(get_db_session),
     locker: Locker = Depends(get_locker),
-) -> IssueSchema:
+) -> Issue:
     if not external_url:
         raise HTTPException(
             status_code=400,
@@ -157,7 +158,7 @@ async def lookup(
         if not await authz.can(auth_subject.subject, AccessType.read, issue):
             raise Unauthorized()
 
-        return IssueSchema.from_db(issue)
+        return issue
 
     raise ResourceNotFound("Issue not found")
 
@@ -205,7 +206,7 @@ async def for_you(
     issues = [
         i for i in [await issue_service.get_loaded(session, i.id) for i in issues] if i
     ]
-    items = [IssueSchema.from_db(i) for i in issues]
+    items = [IssueSchema.model_validate(i) for i in issues]
 
     # sort
     items.sort(
@@ -260,7 +261,7 @@ async def get(
     auth_subject: WebUserOrAnonymous,
     session: AsyncSession = Depends(get_db_session),
     authz: Authz = Depends(Authz.authz),
-) -> IssueSchema:
+) -> Issue:
     issue = await issue_service.get_loaded(session, id)
 
     if not issue:
@@ -275,7 +276,7 @@ async def get(
             detail="Issue not found",
         )
 
-    return IssueSchema.from_db(issue)
+    return issue
 
 
 @router.post(
@@ -290,7 +291,7 @@ async def update(
     auth_subject: WebUser,
     session: AsyncSession = Depends(get_db_session),
     authz: Authz = Depends(Authz.authz),
-) -> IssueSchema:
+) -> Issue:
     issue = await issue_service.get_loaded(session, id)
 
     if not issue:
@@ -308,7 +309,7 @@ async def update(
     updated = False
 
     if update.funding_goal:
-        if update.funding_goal.currency != "USD":
+        if update.funding_goal.currency != "usd":
             raise HTTPException(
                 status_code=400,
                 detail="Unexpected currency. Currency must be USD.",
@@ -324,7 +325,7 @@ async def update(
     if updated:
         session.add(issue)
 
-    return IssueSchema.from_db(issue)
+    return issue
 
 
 @router.post(
@@ -339,7 +340,7 @@ async def confirm(
     auth_subject: WebUser,
     session: AsyncSession = Depends(get_db_session),
     authz: Authz = Depends(Authz.authz),
-) -> IssueSchema:
+) -> Issue:
     issue = await issue_service.get_loaded(session, id)
     if not issue:
         raise HTTPException(
@@ -393,7 +394,7 @@ async def confirm(
             detail="Issue not found",
         )
 
-    return IssueSchema.from_db(issue)
+    return issue
 
 
 #
@@ -411,7 +412,7 @@ async def add_polar_badge(
     auth_subject: WebUser,
     authz: Authz = Depends(Authz.authz),
     session: AsyncSession = Depends(get_db_session),
-) -> IssueSchema:
+) -> Issue:
     issue = await issue_service.get(session, id)
     if not issue:
         raise ResourceNotFound()
@@ -438,7 +439,7 @@ async def add_polar_badge(
     if not issue_ret:
         raise ResourceNotFound()
 
-    return IssueSchema.from_db(issue_ret)
+    return issue_ret
 
 
 @router.post(
@@ -451,7 +452,7 @@ async def remove_polar_badge(
     auth_subject: WebUser,
     authz: Authz = Depends(Authz.authz),
     session: AsyncSession = Depends(get_db_session),
-) -> IssueSchema:
+) -> Issue:
     issue = await issue_service.get(session, id)
     if not issue:
         raise ResourceNotFound()
@@ -478,7 +479,7 @@ async def remove_polar_badge(
     if not issue_ret:
         raise ResourceNotFound()
 
-    return IssueSchema.from_db(issue_ret)
+    return issue_ret
 
 
 @router.post(
@@ -493,7 +494,7 @@ async def add_issue_comment(
     session: AsyncSession = Depends(get_db_session),
     authz: Authz = Depends(Authz.authz),
     locker: Locker = Depends(get_locker),
-) -> IssueSchema:
+) -> Issue:
     issue = await issue_service.get(session, id)
     if not issue:
         raise ResourceNotFound()
@@ -533,7 +534,7 @@ async def add_issue_comment(
     if not issue_ret:
         raise ResourceNotFound()
 
-    return IssueSchema.from_db(issue_ret)
+    return issue_ret
 
 
 @router.post(
@@ -547,7 +548,7 @@ async def badge_with_message(
     auth_subject: WebUser,
     session: AsyncSession = Depends(get_db_session),
     authz: Authz = Depends(Authz.authz),
-) -> IssueSchema:
+) -> Issue:
     issue = await issue_service.get(session, id)
     if not issue:
         raise ResourceNotFound()
@@ -583,4 +584,4 @@ async def badge_with_message(
     if not issue_ret:
         raise ResourceNotFound()
 
-    return IssueSchema.from_db(issue_ret)
+    return issue_ret

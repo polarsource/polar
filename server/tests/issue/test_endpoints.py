@@ -232,13 +232,13 @@ async def test_update_funding_goal(
     # update value
     response = await client.post(
         f"/v1/issues/{issue_linked.id}",
-        json={"funding_goal": {"currency": "USD", "amount": 12000}},
+        json={"funding_goal": {"currency": "usd", "amount": 12000}},
     )
 
     assert response.status_code == 200
     assert response.json()["id"] == str(issue_linked.id)
     assert response.json()["funding"]["funding_goal"] == {
-        "currency": "USD",
+        "currency": "usd",
         "amount": 12000,
     }
 
@@ -248,7 +248,7 @@ async def test_update_funding_goal(
     assert response.status_code == 200
     assert response.json()["id"] == str(issue_linked.id)
     assert response.json()["funding"]["funding_goal"] == {
-        "currency": "USD",
+        "currency": "usd",
         "amount": 12000,
     }
 

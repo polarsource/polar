@@ -509,6 +509,7 @@ async def test_can_read_pledge(
             pledge = Pledge(
                 issue_id=issue.id,
                 amount=12345,
+                currency="usd",
                 fee=0,
                 repository_id=repo.id,
                 organization_id=external_org.id,
@@ -612,6 +613,7 @@ async def test_can_write_pledge(
             pledge = Pledge(
                 issue_id=issue.id,
                 amount=12345,
+                currency="usd",
                 fee=0,
                 repository_id=repo.id,
                 organization_id=external_org.id,

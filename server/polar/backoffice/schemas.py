@@ -44,6 +44,7 @@ class BackofficePledge(PledgeSchema):
             id=p.id,
             created_at=p.created_at,
             amount=p.amount,
+            currency=p.currency,
             state=p.state,
             type=p.type,
             refunded_at=p.refunded_at,

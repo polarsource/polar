@@ -5,8 +5,8 @@ from typing import Annotated, Literal
 from pydantic import UUID4, Field
 
 from polar.enums import Platforms
+from polar.issue.schemas import Issue
 from polar.kit.schemas import EmailStrDNS, Schema, TimestampedSchema
-from polar.repository.schemas import Repository
 
 # Ref: https://stripe.com/docs/api/payment_intents/object#payment_intent_object-amount
 MAXIMUM_PRICE_AMOUNT = 99999999
@@ -39,14 +39,6 @@ class DonationUser(Schema):
     avatar_url: str | None
 
 
-class DonationIssue(TimestampedSchema):
-    id: UUID4
-    title: str
-    repository_id: UUID4
-    organization_id: UUID4
-    repository: Repository
-
-
 class Donation(TimestampedSchema):
     id: UUID4
     amount: int
@@ -54,7 +46,7 @@ class Donation(TimestampedSchema):
     message: str | None
     donor: DonationOrganization | DonationUser | None = None
     email: str
-    issue: DonationIssue | None = None
+    issue: Issue | None = None
 
 
 class DonationCreateStripePaymentIntent(Schema):

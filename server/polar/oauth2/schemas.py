@@ -85,7 +85,7 @@ class AuthorizeUser(Schema):
 class AuthorizeOrganization(Schema):
     id: UUID4
     slug: str
-    avatar_url: str
+    avatar_url: str | None = None
 
 
 class AuthorizeResponseBase(Schema):

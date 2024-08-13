@@ -4081,6 +4081,18 @@ export interface DiscordGuildRole {
  */
 export interface Donation {
     /**
+     * Creation timestamp of the object.
+     * @type {string}
+     * @memberof Donation
+     */
+    created_at: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof Donation
+     */
+    modified_at?: string;
+    /**
      * 
      * @type {string}
      * @memberof Donation
@@ -4088,10 +4100,16 @@ export interface Donation {
     id: string;
     /**
      * 
-     * @type {CurrencyAmount}
+     * @type {number}
      * @memberof Donation
      */
-    amount: CurrencyAmount;
+    amount: number;
+    /**
+     * 
+     * @type {string}
+     * @memberof Donation
+     */
+    currency: string;
     /**
      * 
      * @type {string}
@@ -4103,7 +4121,7 @@ export interface Donation {
      * @type {Donor}
      * @memberof Donation
      */
-    donor: Donor | null;
+    donor?: Donor;
     /**
      * 
      * @type {string}
@@ -4112,16 +4130,10 @@ export interface Donation {
     email: string;
     /**
      * 
-     * @type {string}
+     * @type {DonationIssue}
      * @memberof Donation
      */
-    created_at: string;
-    /**
-     * 
-     * @type {Issue}
-     * @memberof Donation
-     */
-    issue: Issue | null;
+    issue?: DonationIssue;
 }
 /**
  * 
@@ -4142,11 +4154,17 @@ export interface DonationCreateStripePaymentIntent {
      */
     email: string;
     /**
-     * 
-     * @type {DonationCurrencyAmount}
+     * The amount in cents.
+     * @type {number}
      * @memberof DonationCreateStripePaymentIntent
      */
-    amount: DonationCurrencyAmount;
+    amount: number;
+    /**
+     * The currency. Currently, only `usd` is supported.
+     * @type {string}
+     * @memberof DonationCreateStripePaymentIntent
+     */
+    currency?: string;
     /**
      * 
      * @type {string}
@@ -4185,21 +4203,51 @@ export type DonationCreateStripePaymentIntentSetupFutureUsageEnum = typeof Donat
 /**
  * 
  * @export
- * @interface DonationCurrencyAmount
+ * @interface DonationIssue
  */
-export interface DonationCurrencyAmount {
+export interface DonationIssue {
     /**
-     * Three letter currency code (eg: USD)
+     * Creation timestamp of the object.
      * @type {string}
-     * @memberof DonationCurrencyAmount
+     * @memberof DonationIssue
      */
-    currency: string;
+    created_at: string;
     /**
-     * Amount in the currencies smallest unit (cents if currency is USD)
-     * @type {number}
-     * @memberof DonationCurrencyAmount
+     * 
+     * @type {string}
+     * @memberof DonationIssue
      */
-    amount: number;
+    modified_at?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof DonationIssue
+     */
+    id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof DonationIssue
+     */
+    title: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof DonationIssue
+     */
+    repository_id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof DonationIssue
+     */
+    organization_id: string;
+    /**
+     * 
+     * @type {Repository}
+     * @memberof DonationIssue
+     */
+    repository: Repository;
 }
 /**
  * 
@@ -4290,22 +4338,16 @@ export interface DonationStripePaymentIntentMutationResponse {
     payment_intent_id: string;
     /**
      * 
-     * @type {CurrencyAmount}
+     * @type {number}
      * @memberof DonationStripePaymentIntentMutationResponse
      */
-    amount: CurrencyAmount;
+    amount: number;
     /**
      * 
-     * @type {CurrencyAmount}
+     * @type {string}
      * @memberof DonationStripePaymentIntentMutationResponse
      */
-    fee: CurrencyAmount;
-    /**
-     * 
-     * @type {CurrencyAmount}
-     * @memberof DonationStripePaymentIntentMutationResponse
-     */
-    amount_including_fee: CurrencyAmount;
+    currency: string;
     /**
      * 
      * @type {string}
@@ -4326,11 +4368,17 @@ export interface DonationUpdateStripePaymentIntent {
      */
     email: string;
     /**
-     * 
-     * @type {DonationCurrencyAmount}
+     * The amount in cents.
+     * @type {number}
      * @memberof DonationUpdateStripePaymentIntent
      */
-    amount: DonationCurrencyAmount;
+    amount: number;
+    /**
+     * The currency. Currently, only `usd` is supported.
+     * @type {string}
+     * @memberof DonationUpdateStripePaymentIntent
+     */
+    currency?: string;
     /**
      * 
      * @type {string}
@@ -8575,12 +8623,6 @@ export interface Organization {
      */
     donations_enabled: boolean;
     /**
-     * If this organization should make donation timestamps publicly available
-     * @type {boolean}
-     * @memberof Organization
-     */
-    public_donation_timestamps: boolean;
-    /**
      * 
      * @type {OrganizationProfileSettings}
      * @memberof Organization
@@ -8986,12 +9028,6 @@ export interface OrganizationUpdate {
      * @memberof OrganizationUpdate
      */
     donations_enabled?: boolean;
-    /**
-     * 
-     * @type {boolean}
-     * @memberof OrganizationUpdate
-     */
-    public_donation_timestamps?: boolean;
     /**
      * 
      * @type {OrganizationProfileSettings}
@@ -10468,10 +10504,16 @@ export interface PublicDonation {
     id: string;
     /**
      * 
-     * @type {CurrencyAmount}
+     * @type {number}
      * @memberof PublicDonation
      */
-    amount: CurrencyAmount;
+    amount: number;
+    /**
+     * 
+     * @type {string}
+     * @memberof PublicDonation
+     */
+    currency: string;
     /**
      * 
      * @type {string}
@@ -10484,12 +10526,6 @@ export interface PublicDonation {
      * @memberof PublicDonation
      */
     donor: Donor | null;
-    /**
-     * 
-     * @type {string}
-     * @memberof PublicDonation
-     */
-    created_at: string | null;
 }
 /**
  * 

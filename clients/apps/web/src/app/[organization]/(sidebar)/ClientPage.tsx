@@ -24,6 +24,7 @@ import {
   PublicDonation,
   Repository,
 } from '@polar-sh/sdk'
+import { formatCurrencyAndAmount } from '@polarkit/lib/money'
 import Link from 'next/link'
 import Avatar from 'polarkit/components/ui/atoms/avatar'
 import Button from 'polarkit/components/ui/atoms/button'
@@ -292,21 +293,12 @@ const DonationsFeed = ({ donations }: DonationsFeedProps) => {
             <div className="flex w-full flex-col gap-y-2">
               <h3 className="text-sm">
                 <span className="font-medium">{getDonorName(donation)}</span>
-                {` donated $${donation.amount.amount / 100}`}
+                {` donated ${formatCurrencyAndAmount(donation.amount, donation.currency)}`}
               </h3>
               {donation.message && (
                 <p className="dark:bg-polar-700 rounded-lg bg-gray-100 px-3 py-2 text-sm">
                   {donation.message}
                 </p>
-              )}
-              {donation.created_at && (
-                <span className="dark:text-polar-500 text-xs text-gray-500">
-                  {new Date(donation.created_at).toLocaleDateString('en-US', {
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric',
-                  })}
-                </span>
               )}
             </div>
           </div>

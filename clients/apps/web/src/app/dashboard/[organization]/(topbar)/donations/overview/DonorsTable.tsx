@@ -9,7 +9,7 @@ import {
 } from '@/utils/datatable'
 import { githubIssueLink } from '@/utils/github'
 import { ArrowUpRightIcon } from '@heroicons/react/24/outline'
-import { CurrencyAmount, Donation, Issue, Organization } from '@polar-sh/sdk'
+import { Donation, Issue, Organization } from '@polar-sh/sdk'
 import { useRouter } from 'next/navigation'
 import { FormattedDateTime } from 'polarkit/components/ui/atoms'
 import Avatar from 'polarkit/components/ui/atoms/avatar'
@@ -18,7 +18,7 @@ import {
   DataTableColumnDef,
   DataTableColumnHeader,
 } from 'polarkit/components/ui/atoms/datatable'
-import { getCentsInDollarString } from 'polarkit/lib/money'
+import { formatCurrencyAndAmount } from 'polarkit/lib/money'
 import React from 'react'
 
 interface DonorsTableProps {
@@ -144,9 +144,10 @@ const DonorsTable: React.FC<DonorsTableProps> = ({
       header: ({ column }) => (
         <DataTableColumnHeader column={column} title="Amount" />
       ),
-      cell: (props) => {
-        const amount = props.getValue() as CurrencyAmount
-        return <>${getCentsInDollarString(amount.amount)}</>
+      cell: ({ row: { original: donation } }) => {
+        return (
+          <>{formatCurrencyAndAmount(donation.amount, donation.currency)}</>
+        )
       },
     },
     {

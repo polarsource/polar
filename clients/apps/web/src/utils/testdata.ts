@@ -53,7 +53,6 @@ export const org: Organization = {
   pledge_badge_show_amount: true,
   profile_settings: {},
   donations_enabled: false,
-  public_donation_timestamps: false,
   feature_settings: {},
 }
 

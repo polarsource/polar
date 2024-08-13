@@ -1437,7 +1437,7 @@ export interface AuthorizeOrganization {
      * @type {string}
      * @memberof AuthorizeOrganization
      */
-    avatar_url: string;
+    avatar_url?: string;
 }
 /**
  * 
@@ -13752,7 +13752,7 @@ export interface ValidationError {
     type: string;
 }
 /**
- * 
+ * Sent when a new benefit is created.
  * @export
  * @interface WebhookBenefitCreatedPayload
  */
@@ -13781,7 +13781,7 @@ export const WebhookBenefitCreatedPayloadTypeEnum = {
 export type WebhookBenefitCreatedPayloadTypeEnum = typeof WebhookBenefitCreatedPayloadTypeEnum[keyof typeof WebhookBenefitCreatedPayloadTypeEnum];
 
 /**
- * 
+ * Sent when a benefit is updated.
  * @export
  * @interface WebhookBenefitUpdatedPayload
  */
@@ -13853,7 +13853,7 @@ export interface WebhookDelivery {
     webhook_event: WebhookEvent;
 }
 /**
- * 
+ * Sent when a new donation is created.
  * @export
  * @interface WebhookDonationCreatedPayload
  */
@@ -14152,7 +14152,7 @@ export interface WebhookIntegrationUpdate {
     url: string;
 }
 /**
- * 
+ * Sent when a organization is updated.
  * @export
  * @interface WebhookOrganizationUpdatedPayload
  */
@@ -14181,7 +14181,7 @@ export const WebhookOrganizationUpdatedPayloadTypeEnum = {
 export type WebhookOrganizationUpdatedPayloadTypeEnum = typeof WebhookOrganizationUpdatedPayloadTypeEnum[keyof typeof WebhookOrganizationUpdatedPayloadTypeEnum];
 
 /**
- * 
+ * Sent when a new pledge is created. Note that this does mean that the pledge has been paid yet.
  * @export
  * @interface WebhookPledgeCreatedPayload
  */
@@ -14210,7 +14210,7 @@ export const WebhookPledgeCreatedPayloadTypeEnum = {
 export type WebhookPledgeCreatedPayloadTypeEnum = typeof WebhookPledgeCreatedPayloadTypeEnum[keyof typeof WebhookPledgeCreatedPayloadTypeEnum];
 
 /**
- * 
+ * Sent when a pledge is updated.
  * @export
  * @interface WebhookPledgeUpdatedPayload
  */
@@ -14239,7 +14239,7 @@ export const WebhookPledgeUpdatedPayloadTypeEnum = {
 export type WebhookPledgeUpdatedPayloadTypeEnum = typeof WebhookPledgeUpdatedPayloadTypeEnum[keyof typeof WebhookPledgeUpdatedPayloadTypeEnum];
 
 /**
- * 
+ * Sent when a new product is created.
  * @export
  * @interface WebhookProductCreatedPayload
  */
@@ -14268,7 +14268,7 @@ export const WebhookProductCreatedPayloadTypeEnum = {
 export type WebhookProductCreatedPayloadTypeEnum = typeof WebhookProductCreatedPayloadTypeEnum[keyof typeof WebhookProductCreatedPayloadTypeEnum];
 
 /**
- * 
+ * Sent when a product is updated.
  * @export
  * @interface WebhookProductUpdatedPayload
  */
@@ -14322,7 +14322,7 @@ export interface WebhookResponse {
     job_id?: string;
 }
 /**
- * 
+ * Sent when a new subscription is created.
  * @export
  * @interface WebhookSubscriptionCreatedPayload
  */
@@ -14351,7 +14351,7 @@ export const WebhookSubscriptionCreatedPayloadTypeEnum = {
 export type WebhookSubscriptionCreatedPayloadTypeEnum = typeof WebhookSubscriptionCreatedPayloadTypeEnum[keyof typeof WebhookSubscriptionCreatedPayloadTypeEnum];
 
 /**
- * 
+ * Sent when a new subscription is updated. This event fires if the subscription is cancelled, both immediately and if the subscription is cancelled at the end of the current period.
  * @export
  * @interface WebhookSubscriptionUpdatedPayload
  */

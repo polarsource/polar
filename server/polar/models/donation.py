@@ -44,6 +44,7 @@ class Donation(RecordModel):
     message: Mapped[str | None] = mapped_column(String, nullable=True, default=None)
 
     amount: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    currency: Mapped[str] = mapped_column(String(3), nullable=False)
 
     amount_received: Mapped[int] = mapped_column(
         BigInteger, nullable=False, default=None

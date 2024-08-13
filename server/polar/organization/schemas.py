@@ -97,10 +97,6 @@ class Organization(Schema):
         description="If this organizations accepts donations"
     )
 
-    public_donation_timestamps: bool = Field(
-        description="If this organization should make donation timestamps publicly available"
-    )
-
     profile_settings: OrganizationProfileSettings | None = Field(
         description="Settings for the organization profile"
     )
@@ -153,7 +149,6 @@ class OrganizationUpdate(Schema):
     per_user_monthly_spending_limit: int | None = None
 
     donations_enabled: bool = False
-    public_donation_timestamps: bool = False
 
     profile_settings: OrganizationProfileSettings | None = None
     feature_settings: OrganizationFeatureSettings | None = None

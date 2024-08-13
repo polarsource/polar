@@ -179,9 +179,6 @@ class TestSearch:
         assert (
             "email" not in (json["items"][0])
         )  # email should not be publicly available
-        assert (
-            json["items"][0]["created_at"] is None
-        )  # timestamps are not public by default
         assert json["items"][0]["donor"]
         assert json["items"][0]["donor"]["public_name"]
         assert json["items"][0]["donor"]["avatar_url"] is None
@@ -190,9 +187,6 @@ class TestSearch:
         assert (
             "email" not in (json["items"][1])
         )  # email should not be publicly available
-        assert (
-            json["items"][1]["created_at"] is None
-        )  # timestamps are not public by default
         assert json["items"][1]["donor"]
         assert json["items"][1]["donor"]["public_name"]
         assert json["items"][1]["donor"]["avatar_url"]
@@ -201,28 +195,4 @@ class TestSearch:
         assert (
             "email" not in (json["items"][2])
         )  # email should not be publicly available
-        assert (
-            json["items"][2]["created_at"] is None
-        )  # timestamps are not public by default
         assert json["items"][2]["donor"] is None
-
-        # allow timestamps to be publicly shown
-        organization.public_donation_timestamps = True
-        await save_fixture(organization)
-
-        response = await client.get(
-            "/v1/donations/public/search",
-            params={"organization_id": str(organization.id)},
-        )
-
-        assert response.status_code == 200
-        json = response.json()
-
-        # user without avatar
-        assert json["items"][0]["created_at"] is not None
-
-        # user with avatar
-        assert json["items"][1]["created_at"] is not None
-
-        # anonymous
-        assert json["items"][2]["created_at"] is not None

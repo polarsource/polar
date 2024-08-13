@@ -113,7 +113,6 @@ class Organization(RecordModel):
     donations_enabled: Mapped[bool] = mapped_column(
         Boolean, default=False, nullable=False
     )
-    public_donation_timestamps: Mapped[bool] = mapped_column(Boolean, default=False)
 
     #
     # Feature Flags

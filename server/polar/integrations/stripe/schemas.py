@@ -8,6 +8,7 @@ from polar.kit.schemas import Schema
 class PaymentIntentSuccessWebhook(Schema):
     id: str  # A payment intent id (pi_)
     amount: int
+    currency: str
     amount_received: int
     customer: str | None = None
     invoice: str | None = None  # A invoice ID (in_)

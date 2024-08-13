@@ -7,7 +7,6 @@ from pydantic import UUID4
 from polar.auth.dependencies import WebUser, WebUserOrAnonymous
 from polar.auth.models import is_user
 from polar.authz.service import AccessType, Authz
-from polar.currency.schemas import CurrencyAmount
 from polar.exceptions import BadRequest, ResourceNotFound, Unauthorized
 from polar.issue.service import issue as issue_service
 from polar.kit.pagination import ListResource, PaginationParamsQuery
@@ -66,7 +65,7 @@ async def search_donations(
     )
 
     return ListResource.from_paginated_results(
-        [Donation.from_db(result) for result in results],
+        [Donation.model_validate(result) for result in results],
         count,
         pagination,
     )
@@ -117,6 +116,7 @@ async def create_payment_intent(
     pi = await donation_service.create_payment_intent(
         session=session,
         amount=intent.amount,
+        currency=intent.currency,
         receipt_email=intent.email,
         to_organization=to_organization,
         message=intent.message,
@@ -129,8 +129,7 @@ async def create_payment_intent(
     return DonationStripePaymentIntentMutationResponse(
         payment_intent_id=pi.id,
         amount=intent.amount,
-        fee=CurrencyAmount(currency="USD", amount=0),
-        amount_including_fee=intent.amount,
+        currency=intent.currency,
         client_secret=pi.client_secret,
     )
 
@@ -167,6 +166,7 @@ async def update_payment_intent(
         session=session,
         payment_intent_id=id,
         amount=updates.amount,
+        currency=updates.currency,
         receipt_email=updates.email,
         setup_future_usage=updates.setup_future_usage,
         message=updates.message,
@@ -178,8 +178,7 @@ async def update_payment_intent(
     return DonationStripePaymentIntentMutationResponse(
         payment_intent_id=pi.id,
         amount=updates.amount,
-        fee=CurrencyAmount(currency="USD", amount=0),
-        amount_including_fee=updates.amount,
+        currency=updates.currency,
         client_secret=pi.client_secret,
     )
 
@@ -235,12 +234,7 @@ async def donations_public_search(
     )
 
     return ListResource.from_paginated_results(
-        [
-            PublicDonation.from_db(
-                result, include_created_at=org.public_donation_timestamps
-            )
-            for result in results
-        ],
+        [PublicDonation.model_validate(result) for result in results],
         count,
         pagination,
     )

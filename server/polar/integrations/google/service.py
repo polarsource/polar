@@ -105,10 +105,10 @@ class GoogleService:
             oauth_accounts=[oauth_account],
         )
         session.add(user)
+        await session.flush()
+
         enqueue_job("user.on_after_signup", user_id=user.id)
         await loops_service.user_signup(user, signup_type)
-
-        await session.flush()
 
         return user
 

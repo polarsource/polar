@@ -1,6 +1,7 @@
-from typing import Literal, Union
+from typing import Annotated, Literal, Union
 
 from fastapi import FastAPI
+from pydantic import Discriminator, TypeAdapter
 
 from polar.benefit.schemas import Benefit as BenefitSchema
 from polar.donation.schemas import Donation as DonationSchema
@@ -167,15 +168,17 @@ async def benefit_updated(body: WebhookBenefitUpdatedPayload) -> None:
     return None
 
 
-WebhookPayload = Union[  # noqa: UP007
-    WebhookSubscriptionCreatedPayload,
-    WebhookSubscriptionUpdatedPayload,
-    WebhookProductCreatedPayload,
-    WebhookProductUpdatedPayload,
-    WebhookPledgeCreatedPayload,
-    WebhookPledgeUpdatedPayload,
-    WebhookDonationCreatedPayload,
-    WebhookOrganizationUpdatedPayload,
-    WebhookBenefitCreatedPayload,
-    WebhookBenefitUpdatedPayload,
+WebhookPayload = Annotated[
+    WebhookSubscriptionCreatedPayload
+    | WebhookSubscriptionUpdatedPayload
+    | WebhookProductCreatedPayload
+    | WebhookProductUpdatedPayload
+    | WebhookPledgeCreatedPayload
+    | WebhookPledgeUpdatedPayload
+    | WebhookDonationCreatedPayload
+    | WebhookOrganizationUpdatedPayload
+    | WebhookBenefitCreatedPayload
+    | WebhookBenefitUpdatedPayload,
+    Discriminator(discriminator="type"),
 ]
+WebhookPayloadTypeAdapter: TypeAdapter[WebhookPayload] = TypeAdapter(WebhookPayload)

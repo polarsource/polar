@@ -70,7 +70,8 @@ const Checkout = ({
   const form = useForm<DonationCreateStripePaymentIntent>({
     defaultValues: {
       to_organization_id: organization.id,
-      amount: { amount: defaultAmount, currency: 'USD' },
+      amount: defaultAmount,
+      currency: 'usd',
       email: currentUser?.email ?? undefined,
       issue_id: issue ? issue.id : undefined,
     },
@@ -121,7 +122,7 @@ const Checkout = ({
         return false
       }
 
-      if (formState.amount.amount <= 0) {
+      if (formState.amount <= 0) {
         return false
       }
 
@@ -130,10 +131,8 @@ const Checkout = ({
       }
 
       if (
-        latestFormSyncedState.current.amount.currency !==
-          formState.amount.currency ||
-        latestFormSyncedState.current.amount.amount !==
-          formState.amount.amount ||
+        latestFormSyncedState.current.currency !== formState.currency ||
+        latestFormSyncedState.current.amount !== formState.amount ||
         latestFormSyncedState.current.email !== formState.email ||
         latestFormSyncedState.current.setup_future_usage !==
           formState.setup_future_usage ||
@@ -176,7 +175,7 @@ const Checkout = ({
 
         latestFormSyncedState.current = {
           ...formState,
-          amount: { ...formState.amount },
+          amount: formState.amount,
         }
       } catch (e) {
         if (e instanceof ResponseError) {
@@ -221,7 +220,6 @@ const Checkout = ({
   const onSubmit = () => {}
 
   const amount = watch('amount')
-  const amountAmount = watch('amount.amount')
   const email = watch('email')
   const emailState = form.getFieldState('email')
   const message = watch('message')
@@ -240,7 +238,6 @@ const Checkout = ({
   }, [
     amount,
     email,
-    amountAmount,
     emailState.isTouched,
     message,
     setupFutureUsage,
@@ -294,7 +291,7 @@ const DonationAmount = () => {
     <>
       <FormField
         control={control}
-        name="amount.amount"
+        name="amount"
         rules={{
           required: 'This field is required',
           min: 0,

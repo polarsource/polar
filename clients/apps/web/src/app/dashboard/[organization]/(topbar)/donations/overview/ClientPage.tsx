@@ -19,7 +19,10 @@ import {
   CardContent,
   CardHeader,
 } from 'polarkit/components/ui/atoms/card'
-import { getCentsInDollarString } from 'polarkit/lib/money'
+import {
+  formatCurrencyAndAmount,
+  getCentsInDollarString,
+} from 'polarkit/lib/money'
 import { useState } from 'react'
 import DonorsTable from './DonorsTable'
 
@@ -260,7 +263,9 @@ const DonationActivity = ({ donations }: { donations: Donation[] }) => {
 
             <div className="ml-4 flex  flex-shrink-0  items-center justify-between gap-3">
               <div className="dark:text-polar-950 inline-flex gap-1 whitespace-nowrap rounded-xl bg-green-500 px-3 py-1 text-xs text-white">
-                <div>${getCentsInDollarString(donation.amount.amount)}</div>
+                <div>
+                  {formatCurrencyAndAmount(donation.amount, donation.currency)}
+                </div>
               </div>
             </div>
           </div>

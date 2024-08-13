@@ -122,7 +122,7 @@ async def delete_client(
     )
 
 
-@router.get("/authorize", include_in_schema=IN_DEVELOPMENT_ONLY)
+@router.get("/authorize")
 async def authorize(
     request: Request,
     auth_subject: WebUserOrAnonymous,

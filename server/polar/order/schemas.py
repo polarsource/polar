@@ -1,12 +1,11 @@
 from pydantic import UUID4, Field
 
-from polar.kit.schemas import Schema, TimestampedSchema
+from polar.kit.schemas import IDSchema, Schema, TimestampedSchema
 from polar.product.schemas import ProductBase, ProductPrice
 from polar.subscription.schemas import SubscriptionBase
 
 
-class OrderBase(TimestampedSchema):
-    id: UUID4
+class OrderBase(IDSchema, TimestampedSchema):
     amount: int
     tax_amount: int
     currency: str

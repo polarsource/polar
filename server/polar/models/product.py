@@ -67,7 +67,6 @@ class Product(RecordModel):
 
     @declared_attr
     def all_prices(cls) -> Mapped[list["ProductPrice"]]:
-        # Prices are almost always needed, so eager loading makes sense
         return relationship("ProductPrice", lazy="raise", back_populates="product")
 
     @declared_attr

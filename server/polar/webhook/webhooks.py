@@ -16,6 +16,7 @@ from polar.kit.schemas import IDSchema, Schema
 from polar.models import (
     Benefit,
     Donation,
+    Order,
     Organization,
     Pledge,
     Product,
@@ -23,6 +24,7 @@ from polar.models import (
     User,
 )
 from polar.models.webhook_endpoint import WebhookEventType, WebhookFormat
+from polar.order.schemas import Order as OrderSchema
 from polar.organization.schemas import Organization as OrganizationSchema
 from polar.pledge.schemas import Pledge as PledgeSchema
 from polar.product.schemas import Product as ProductSchema
@@ -32,7 +34,8 @@ from .discord import DiscordEmbedField, DiscordPayload, get_branded_discord_embe
 from .slack import SlackPayload, SlackText, get_branded_slack_payload
 
 WebhookTypeObject = (
-    tuple[Literal[WebhookEventType.subscription_created], Subscription]
+    tuple[Literal[WebhookEventType.order_created], Order]
+    | tuple[Literal[WebhookEventType.subscription_created], Subscription]
     | tuple[Literal[WebhookEventType.subscription_updated], Subscription]
     | tuple[Literal[WebhookEventType.product_created], Product]
     | tuple[Literal[WebhookEventType.product_updated], Product]
@@ -128,6 +131,80 @@ class BaseWebhookPayload(Schema):
                         "text": {
                             "type": "mrkdwn",
                             "text": self.type,
+                        },
+                        "fields": fields,
+                    }
+                ],
+            }
+        )
+
+        return json.dumps(payload)
+
+
+class WebhookOrderCreatedPayload(BaseWebhookPayload):
+    """
+    Sent when a new order is created.
+
+    **Discord & Slack support:** Full
+    """
+
+    type: Literal[WebhookEventType.order_created]
+    data: OrderSchema
+
+    def get_discord_payload(self, target: User | Organization) -> str:
+        if isinstance(target, User):
+            raise UnsupportedTarget(target, self.__class__, WebhookFormat.discord)
+
+        price = self.data.product_price
+        price_display = price.get_display_price()
+
+        fields: list[DiscordEmbedField] = [
+            {"name": "Product", "value": self.data.product.name},
+            {"name": "Price", "value": price_display},
+            {"name": "Customer", "value": self.data.user.email},
+        ]
+        if self.data.subscription is not None:
+            fields.append({"name": "Subscription", "value": "Yes"})
+
+        payload: DiscordPayload = {
+            "content": "New Order",
+            "embeds": [
+                get_branded_discord_embed(
+                    {
+                        "title": "New Order",
+                        "description": f"New order has been made to {target.name}.",
+                        "fields": fields,
+                    }
+                )
+            ],
+        }
+
+        return json.dumps(payload)
+
+    def get_slack_payload(self, target: User | Organization) -> str:
+        if isinstance(target, User):
+            raise UnsupportedTarget(target, self.__class__, WebhookFormat.slack)
+
+        price = self.data.product_price
+        price_display = price.get_display_price()
+
+        fields: list[SlackText] = [
+            {"type": "mrkdwn", "text": f"*Product*\n{self.data.product.name}"},
+            {"type": "mrkdwn", "text": f"*Price*\n{price_display}"},
+            {"type": "mrkdwn", "text": f"*Customer*\n{self.data.user.email}"},
+        ]
+        if self.data.subscription is not None:
+            fields.append({"type": "mrkdwn", "text": "*Subscription*\nYes"})
+
+        payload: SlackPayload = get_branded_slack_payload(
+            {
+                "text": "New Order",
+                "blocks": [
+                    {
+                        "type": "section",
+                        "text": {
+                            "type": "mrkdwn",
+                            "text": f"New order has been made to {target.name}.",
                         },
                         "fields": fields,
                     }
@@ -510,7 +587,8 @@ class WebhookBenefitUpdatedPayload(BaseWebhookPayload):
 
 
 WebhookPayload = Annotated[
-    WebhookSubscriptionCreatedPayload
+    WebhookOrderCreatedPayload
+    | WebhookSubscriptionCreatedPayload
     | WebhookSubscriptionUpdatedPayload
     | WebhookProductCreatedPayload
     | WebhookProductUpdatedPayload

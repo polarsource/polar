@@ -32,7 +32,6 @@ apis/SubscriptionsApi.ts
 apis/TrafficApi.ts
 apis/TransactionsApi.ts
 apis/UsersApi.ts
-apis/WebhookNotificationsApi.ts
 apis/WebhooksApi.ts
 apis/index.ts
 models/index.ts

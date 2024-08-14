@@ -33,7 +33,6 @@ import {
   TrafficApi,
   TransactionsApi,
   UsersApi,
-  WebhookNotificationsApi,
   WebhooksApi,
 } from '.'
 
@@ -70,7 +69,6 @@ export class PolarAPI {
   public readonly traffic: TrafficApi
   public readonly transactions: TransactionsApi
   public readonly users: UsersApi
-  public readonly webhookNotifications: WebhookNotificationsApi
   public readonly webhooks: WebhooksApi
   public readonly files: FilesApi
 
@@ -108,7 +106,6 @@ export class PolarAPI {
     this.traffic = new TrafficApi(config)
     this.transactions = new TransactionsApi(config)
     this.users = new UsersApi(config)
-    this.webhookNotifications = new WebhookNotificationsApi(config)
     this.webhooks = new WebhooksApi(config)
     this.files = new FilesApi(config)
   }

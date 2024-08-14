@@ -5765,8 +5765,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "issues:read",
-                            "issues:write"
+                            "issues:write",
+                            "issues:read"
                         ]
                     },
                     {
@@ -7684,10 +7684,10 @@
                             },
                             "description": "Filter by the type of purchase the customer made.",
                             "default": [
-                                "free_subscription",
                                 "donation",
                                 "order",
-                                "paid_subscription"
+                                "paid_subscription",
+                                "free_subscription"
                             ],
                             "title": "Customer Types"
                         },
@@ -9857,250 +9857,6 @@
                 ]
             }
         },
-        "/v1/webhook_notifications/search": {
-            "get": {
-                "tags": [
-                    "webhook_notifications"
-                ],
-                "summary": "Search webhook notification integrations",
-                "description": "Search webhook notification integrations.",
-                "operationId": "webhook_notifications:search",
-                "security": [
-                    {
-                        "OpenIdConnect": []
-                    },
-                    {
-                        "HTTPBearer": []
-                    }
-                ],
-                "parameters": [
-                    {
-                        "name": "organization_id",
-                        "in": "query",
-                        "required": true,
-                        "schema": {
-                            "type": "string",
-                            "format": "uuid4",
-                            "description": "The organization ID.",
-                            "x-polar-selector-widget": {
-                                "resourceRoot": "/v1/organizations",
-                                "resourceName": "Organization",
-                                "displayProperty": "name"
-                            },
-                            "title": "Organization Id"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Successful Response",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/ListResource_WebhookIntegration_"
-                                }
-                            }
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found"
-                    },
-                    "422": {
-                        "description": "Validation Error",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/HTTPValidationError"
-                                }
-                            }
-                        }
-                    }
-                },
-                "x-polar-allowed-subjects": [
-                    "User"
-                ]
-            }
-        },
-        "/v1/webhook_notifications": {
-            "post": {
-                "tags": [
-                    "webhook_notifications"
-                ],
-                "summary": "Create a webhook notification integration",
-                "description": "Create a webhook notification integration.",
-                "operationId": "webhook_notifications:create",
-                "requestBody": {
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "#/components/schemas/WebhookIntegrationCreate"
-                            }
-                        }
-                    },
-                    "required": true
-                },
-                "responses": {
-                    "200": {
-                        "description": "Successful Response",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/WebhookIntegration"
-                                }
-                            }
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found"
-                    },
-                    "422": {
-                        "description": "Validation Error",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/HTTPValidationError"
-                                }
-                            }
-                        }
-                    }
-                },
-                "security": [
-                    {
-                        "OpenIdConnect": []
-                    },
-                    {
-                        "HTTPBearer": []
-                    }
-                ],
-                "x-polar-allowed-subjects": [
-                    "User"
-                ]
-            }
-        },
-        "/v1/webhook_notifications/{id}": {
-            "post": {
-                "tags": [
-                    "webhook_notifications"
-                ],
-                "summary": "Update webhook notification integration",
-                "description": "Update webhook notification integration.",
-                "operationId": "webhook_notifications:update",
-                "security": [
-                    {
-                        "OpenIdConnect": []
-                    },
-                    {
-                        "HTTPBearer": []
-                    }
-                ],
-                "parameters": [
-                    {
-                        "name": "id",
-                        "in": "path",
-                        "required": true,
-                        "schema": {
-                            "type": "string",
-                            "format": "uuid",
-                            "title": "Id"
-                        }
-                    }
-                ],
-                "requestBody": {
-                    "required": true,
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "#/components/schemas/WebhookIntegrationUpdate"
-                            }
-                        }
-                    }
-                },
-                "responses": {
-                    "200": {
-                        "description": "Successful Response",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/WebhookIntegration"
-                                }
-                            }
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found"
-                    },
-                    "422": {
-                        "description": "Validation Error",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/HTTPValidationError"
-                                }
-                            }
-                        }
-                    }
-                },
-                "x-polar-allowed-subjects": [
-                    "User"
-                ]
-            },
-            "delete": {
-                "tags": [
-                    "webhook_notifications"
-                ],
-                "summary": "Delete webhook notification integration",
-                "description": "Delete webhook notification integration.",
-                "operationId": "webhook_notifications:delete",
-                "security": [
-                    {
-                        "OpenIdConnect": []
-                    },
-                    {
-                        "HTTPBearer": []
-                    }
-                ],
-                "parameters": [
-                    {
-                        "name": "id",
-                        "in": "path",
-                        "required": true,
-                        "schema": {
-                            "type": "string",
-                            "format": "uuid",
-                            "title": "Id"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Successful Response",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/WebhookIntegration"
-                                }
-                            }
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found"
-                    },
-                    "422": {
-                        "description": "Validation Error",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/HTTPValidationError"
-                                }
-                            }
-                        }
-                    }
-                },
-                "x-polar-allowed-subjects": [
-                    "User"
-                ]
-            }
-        },
         "/v1/advertisements/": {
             "get": {
                 "tags": [
@@ -11766,8 +11522,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "benefits:write",
-                            "benefits:read"
+                            "benefits:read",
+                            "benefits:write"
                         ]
                     },
                     {
@@ -12006,8 +11762,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "benefits:write",
-                            "benefits:read"
+                            "benefits:read",
+                            "benefits:write"
                         ]
                     },
                     {
@@ -12311,8 +12067,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "benefits:write",
-                            "benefits:read"
+                            "benefits:read",
+                            "benefits:write"
                         ]
                     },
                     {
@@ -13034,8 +12790,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "products:read",
-                            "products:write"
+                            "products:write",
+                            "products:read"
                         ]
                     },
                     {
@@ -13312,8 +13068,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "products:read",
-                            "products:write"
+                            "products:write",
+                            "products:read"
                         ]
                     },
                     {
@@ -16820,17 +16576,30 @@
             },
             "BackofficePledge": {
                 "properties": {
-                    "id": {
-                        "type": "string",
-                        "format": "uuid",
-                        "title": "Id",
-                        "description": "Pledge ID"
-                    },
                     "created_at": {
                         "type": "string",
                         "format": "date-time",
                         "title": "Created At",
-                        "description": "When the pledge was created"
+                        "description": "Creation timestamp of the object."
+                    },
+                    "modified_at": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "date-time"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Modified At",
+                        "description": "Last modification timestamp of the object."
+                    },
+                    "id": {
+                        "type": "string",
+                        "format": "uuid4",
+                        "title": "Id",
+                        "description": "The ID of the object."
                     },
                     "amount": {
                         "type": "integer",
@@ -16997,8 +16766,8 @@
                 },
                 "type": "object",
                 "required": [
-                    "id",
                     "created_at",
+                    "id",
                     "amount",
                     "currency",
                     "state",
@@ -19757,7 +19526,8 @@
                     "id": {
                         "type": "string",
                         "format": "uuid4",
-                        "title": "Id"
+                        "title": "Id",
+                        "description": "The ID of the object."
                     },
                     "amount": {
                         "type": "integer",
@@ -19842,7 +19612,8 @@
                     "id": {
                         "type": "string",
                         "format": "uuid4",
-                        "title": "Id"
+                        "title": "Id",
+                        "description": "The ID of the object."
                     },
                     "amount": {
                         "type": "integer",
@@ -22645,26 +22416,6 @@
                 ],
                 "title": "ListResource[WebhookEndpoint]"
             },
-            "ListResource_WebhookIntegration_": {
-                "properties": {
-                    "items": {
-                        "items": {
-                            "$ref": "#/components/schemas/WebhookIntegration"
-                        },
-                        "type": "array",
-                        "title": "Items",
-                        "default": []
-                    },
-                    "pagination": {
-                        "$ref": "#/components/schemas/Pagination"
-                    }
-                },
-                "type": "object",
-                "required": [
-                    "pagination"
-                ],
-                "title": "ListResource[WebhookIntegration]"
-            },
             "LookupUserRequest": {
                 "properties": {
                     "username": {
@@ -24797,7 +24548,8 @@
                     "id": {
                         "type": "string",
                         "format": "uuid4",
-                        "title": "Id"
+                        "title": "Id",
+                        "description": "The ID of the object."
                     },
                     "status": {
                         "$ref": "#/components/schemas/SubscriptionStatus"
@@ -24930,6 +24682,25 @@
             },
             "Organization-Input": {
                 "properties": {
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "title": "Created At",
+                        "description": "Creation timestamp of the object."
+                    },
+                    "modified_at": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "date-time"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Modified At",
+                        "description": "Last modification timestamp of the object."
+                    },
                     "id": {
                         "type": "string",
                         "format": "uuid4",
@@ -25075,6 +24846,7 @@
                 },
                 "type": "object",
                 "required": [
+                    "created_at",
                     "id",
                     "name",
                     "slug",
@@ -25088,6 +24860,25 @@
             },
             "Organization-Output": {
                 "properties": {
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "title": "Created At",
+                        "description": "Creation timestamp of the object."
+                    },
+                    "modified_at": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "date-time"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Modified At",
+                        "description": "Last modification timestamp of the object."
+                    },
                     "id": {
                         "type": "string",
                         "format": "uuid4",
@@ -25233,6 +25024,7 @@
                 },
                 "type": "object",
                 "required": [
+                    "created_at",
                     "id",
                     "name",
                     "slug",
@@ -26040,17 +25832,30 @@
             },
             "Pledge-Input": {
                 "properties": {
-                    "id": {
-                        "type": "string",
-                        "format": "uuid",
-                        "title": "Id",
-                        "description": "Pledge ID"
-                    },
                     "created_at": {
                         "type": "string",
                         "format": "date-time",
                         "title": "Created At",
-                        "description": "When the pledge was created"
+                        "description": "Creation timestamp of the object."
+                    },
+                    "modified_at": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "date-time"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Modified At",
+                        "description": "Last modification timestamp of the object."
+                    },
+                    "id": {
+                        "type": "string",
+                        "format": "uuid4",
+                        "title": "Id",
+                        "description": "The ID of the object."
                     },
                     "amount": {
                         "type": "integer",
@@ -26160,8 +25965,8 @@
                 },
                 "type": "object",
                 "required": [
-                    "id",
                     "created_at",
+                    "id",
                     "amount",
                     "currency",
                     "state",
@@ -26172,17 +25977,30 @@
             },
             "Pledge-Output": {
                 "properties": {
-                    "id": {
-                        "type": "string",
-                        "format": "uuid",
-                        "title": "Id",
-                        "description": "Pledge ID"
-                    },
                     "created_at": {
                         "type": "string",
                         "format": "date-time",
                         "title": "Created At",
-                        "description": "When the pledge was created"
+                        "description": "Creation timestamp of the object."
+                    },
+                    "modified_at": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "date-time"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Modified At",
+                        "description": "Last modification timestamp of the object."
+                    },
+                    "id": {
+                        "type": "string",
+                        "format": "uuid4",
+                        "title": "Id",
+                        "description": "The ID of the object."
                     },
                     "amount": {
                         "type": "integer",
@@ -26292,8 +26110,8 @@
                 },
                 "type": "object",
                 "required": [
-                    "id",
                     "created_at",
+                    "id",
                     "amount",
                     "currency",
                     "state",
@@ -29139,7 +28957,8 @@
                     "id": {
                         "type": "string",
                         "format": "uuid4",
-                        "title": "Id"
+                        "title": "Id",
+                        "description": "The ID of the object."
                     },
                     "status": {
                         "$ref": "#/components/schemas/SubscriptionStatus"
@@ -29281,7 +29100,8 @@
                     "id": {
                         "type": "string",
                         "format": "uuid4",
-                        "title": "Id"
+                        "title": "Id",
+                        "description": "The ID of the object."
                     },
                     "status": {
                         "$ref": "#/components/schemas/SubscriptionStatus"
@@ -31631,7 +31451,8 @@
                     "id": {
                         "type": "string",
                         "format": "uuid4",
-                        "title": "Id"
+                        "title": "Id",
+                        "description": "The ID of the object."
                     },
                     "status": {
                         "$ref": "#/components/schemas/SubscriptionStatus"
@@ -32394,6 +32215,14 @@
                             "https://webhook.site/cb791d80-f26e-4f8c-be88-6e56054192b0"
                         ]
                     },
+                    "format": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/WebhookFormat"
+                            }
+                        ],
+                        "description": "The format of the webhook payload."
+                    },
                     "user_id": {
                         "anyOf": [
                             {
@@ -32434,6 +32263,7 @@
                     "created_at",
                     "id",
                     "url",
+                    "format",
                     "events"
                 ],
                 "title": "WebhookEndpoint",
@@ -32451,6 +32281,14 @@
                         "examples": [
                             "https://webhook.site/cb791d80-f26e-4f8c-be88-6e56054192b0"
                         ]
+                    },
+                    "format": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/WebhookFormat"
+                            }
+                        ],
+                        "description": "The format of the webhook payload."
                     },
                     "secret": {
                         "type": "string",
@@ -32491,6 +32329,7 @@
                 "type": "object",
                 "required": [
                     "url",
+                    "format",
                     "secret",
                     "events"
                 ],
@@ -32516,6 +32355,21 @@
                             }
                         ],
                         "title": "Url"
+                    },
+                    "format": {
+                        "anyOf": [
+                            {
+                                "allOf": [
+                                    {
+                                        "$ref": "#/components/schemas/WebhookFormat"
+                                    }
+                                ],
+                                "description": "The format of the webhook payload."
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ]
                     },
                     "secret": {
                         "anyOf": [
@@ -32634,86 +32488,14 @@
                 ],
                 "title": "WebhookEventType"
             },
-            "WebhookIntegration": {
-                "properties": {
-                    "id": {
-                        "type": "string",
-                        "format": "uuid",
-                        "title": "Id"
-                    },
-                    "integration": {
-                        "type": "string",
-                        "enum": [
-                            "slack",
-                            "discord"
-                        ],
-                        "title": "Integration"
-                    },
-                    "url": {
-                        "type": "string",
-                        "title": "Url"
-                    },
-                    "organization_id": {
-                        "type": "string",
-                        "format": "uuid",
-                        "title": "Organization Id"
-                    },
-                    "created_at": {
-                        "type": "string",
-                        "format": "date-time",
-                        "title": "Created At"
-                    }
-                },
-                "type": "object",
-                "required": [
-                    "id",
-                    "integration",
-                    "url",
-                    "organization_id",
-                    "created_at"
+            "WebhookFormat": {
+                "type": "string",
+                "enum": [
+                    "raw",
+                    "discord",
+                    "slack"
                 ],
-                "title": "WebhookIntegration"
-            },
-            "WebhookIntegrationCreate": {
-                "properties": {
-                    "integration": {
-                        "type": "string",
-                        "enum": [
-                            "slack",
-                            "discord"
-                        ],
-                        "title": "Integration"
-                    },
-                    "url": {
-                        "type": "string",
-                        "title": "Url"
-                    },
-                    "organization_id": {
-                        "type": "string",
-                        "format": "uuid",
-                        "title": "Organization Id"
-                    }
-                },
-                "type": "object",
-                "required": [
-                    "integration",
-                    "url",
-                    "organization_id"
-                ],
-                "title": "WebhookIntegrationCreate"
-            },
-            "WebhookIntegrationUpdate": {
-                "properties": {
-                    "url": {
-                        "type": "string",
-                        "title": "Url"
-                    }
-                },
-                "type": "object",
-                "required": [
-                    "url"
-                ],
-                "title": "WebhookIntegrationUpdate"
+                "title": "WebhookFormat"
             },
             "WebhookOrganizationUpdatedPayload": {
                 "properties": {

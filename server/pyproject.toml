@@ -50,13 +50,13 @@ makefun = "^1.15.4"
 boto3 = "^1.34.144"
 itsdangerous = "^2.2.0"
 cryptography = "^43.0.0"
+babel = "^2.16.0"
 
 [tool.poetry.group.backoffice]
 optional = true
 
 [tool.poetry.group.backoffice.dependencies]
 textual = "^0.64.0"
-babel = "^2.15.0"
 halo = "^0.0.31"
 
 [tool.poetry.group.dev.dependencies]

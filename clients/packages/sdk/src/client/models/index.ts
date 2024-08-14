@@ -13758,6 +13758,8 @@ export interface ValidationError {
 }
 /**
  * Sent when a new benefit is created.
+ * 
+ * **Discord & Slack support:** Basic
  * @export
  * @interface WebhookBenefitCreatedPayload
  */
@@ -13787,6 +13789,8 @@ export type WebhookBenefitCreatedPayloadTypeEnum = typeof WebhookBenefitCreatedP
 
 /**
  * Sent when a benefit is updated.
+ * 
+ * **Discord & Slack support:** Basic
  * @export
  * @interface WebhookBenefitUpdatedPayload
  */
@@ -13859,6 +13863,8 @@ export interface WebhookDelivery {
 }
 /**
  * Sent when a new donation is created.
+ * 
+ * **Discord & Slack support:** Full
  * @export
  * @interface WebhookDonationCreatedPayload
  */
@@ -14091,6 +14097,8 @@ export type WebhookFormat = typeof WebhookFormat[keyof typeof WebhookFormat];
 
 /**
  * Sent when a organization is updated.
+ * 
+ * **Discord & Slack support:** Basic
  * @export
  * @interface WebhookOrganizationUpdatedPayload
  */
@@ -14120,6 +14128,8 @@ export type WebhookOrganizationUpdatedPayloadTypeEnum = typeof WebhookOrganizati
 
 /**
  * Sent when a new pledge is created. Note that this does mean that the pledge has been paid yet.
+ * 
+ * **Discord & Slack support:** Full
  * @export
  * @interface WebhookPledgeCreatedPayload
  */
@@ -14149,6 +14159,8 @@ export type WebhookPledgeCreatedPayloadTypeEnum = typeof WebhookPledgeCreatedPay
 
 /**
  * Sent when a pledge is updated.
+ * 
+ * **Discord & Slack support:** Basic
  * @export
  * @interface WebhookPledgeUpdatedPayload
  */
@@ -14178,6 +14190,8 @@ export type WebhookPledgeUpdatedPayloadTypeEnum = typeof WebhookPledgeUpdatedPay
 
 /**
  * Sent when a new product is created.
+ * 
+ * **Discord & Slack support:** Basic
  * @export
  * @interface WebhookProductCreatedPayload
  */
@@ -14207,6 +14221,8 @@ export type WebhookProductCreatedPayloadTypeEnum = typeof WebhookProductCreatedP
 
 /**
  * Sent when a product is updated.
+ * 
+ * **Discord & Slack support:** Basic
  * @export
  * @interface WebhookProductUpdatedPayload
  */
@@ -14261,6 +14277,8 @@ export interface WebhookResponse {
 }
 /**
  * Sent when a new subscription is created.
+ * 
+ * **Discord & Slack support:** Full
  * @export
  * @interface WebhookSubscriptionCreatedPayload
  */
@@ -14290,6 +14308,8 @@ export type WebhookSubscriptionCreatedPayloadTypeEnum = typeof WebhookSubscripti
 
 /**
  * Sent when a new subscription is updated. This event fires if the subscription is cancelled, both immediately and if the subscription is cancelled at the end of the current period.
+ * 
+ * **Discord & Slack support:** On cancellation
  * @export
  * @interface WebhookSubscriptionUpdatedPayload
  */

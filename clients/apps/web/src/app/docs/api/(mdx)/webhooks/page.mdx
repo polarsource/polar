@@ -1,8 +1,12 @@
+import BrowserCallout from '@/components/Feed/Markdown/Callout/BrowserCallout'
+
 # Webhooks
 
 Webhooks allow you to build or set up integrations that subscribe to certain Polar events. When one of those events is triggered, we'll send an HTTP POST payload to the webhook's configured URL.
 
 Our implementation follow the [Standard Webhooks](https://www.standardwebhooks.com/) specification.
+
+Out-of-the-box, we also support to send notifications suitable for [Discord](https://support.discord.com/hc/en-us/articles/228383668-Intro-to-Webhooks) or [Slack](https://api.slack.com/messaging/webhooks). This is the purpose of the [Format](#format) parameter.
 
 ## Configuring a Webhook
 
@@ -11,15 +15,35 @@ Head over to your organization's settings page and click on the "Add Endpoint" b
 ![Add Webhook Endpoint](./add_endpoint.light.png)
 ![Add Webhook Endpoint](./add_endpoint.dark.png)
 
+### URL
+
 In the dialog that appears, enter the URL to which the webhook events should be sent.
 
 ![Add URL](./url.light.png)
 ![Add URL](./url.dark.png)
 
+### Format
+
+For standard, custom integrations, leave this parameter on **Raw**. This will send a payload in a JSON format as described in the [Events](/docs/api/webhooks/events) section.
+
+If you wish to send notifications to a Discord or Slack channel, you can select the corresponding format here. Polar will then adapt the payload so properly formatted messages are sent to your channel.
+
+![Select format](./format.light.png)
+![Select format](./format.dark.png)
+
+<BrowserCallout type="TIP">
+  If you paste a Discord or Slack webhook URL, the format will be automatically
+  selected.
+</BrowserCallout>
+
+### Secret
+
 In order to verify that requests are legitimate webhook payload coming from Polar, we cryptographically sign the requests using a secret key. You can set your own or generate a random one.
 
 ![Add Secret](./secret.light.png)
 ![Add Secret](./secret.dark.png)
+
+### Events
 
 Finally, select the events you want to be notified about. You can read more about the available events in the [Events](/docs/api/webhooks/events) section.
 

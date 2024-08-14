@@ -139,7 +139,11 @@ class BaseWebhookPayload(Schema):
 
 
 class WebhookSubscriptionCreatedPayload(BaseWebhookPayload):
-    """Sent when a new subscription is created."""
+    """
+    Sent when a new subscription is created.
+
+    **Discord & Slack support:** Full
+    """
 
     type: Literal[WebhookEventType.subscription_created]
     data: SubscriptionSchema
@@ -210,7 +214,10 @@ class WebhookSubscriptionCreatedPayload(BaseWebhookPayload):
 
 class WebhookSubscriptionUpdatedPayload(BaseWebhookPayload):
     """
-    Sent when a new subscription is updated. This event fires if the subscription is cancelled, both immediately and if the subscription is cancelled at the end of the current period."""
+    Sent when a new subscription is updated. This event fires if the subscription is cancelled, both immediately and if the subscription is cancelled at the end of the current period.
+
+    **Discord & Slack support:** On cancellation
+    """
 
     type: Literal[WebhookEventType.subscription_updated]
     data: SubscriptionSchema
@@ -304,21 +311,33 @@ class WebhookSubscriptionUpdatedPayload(BaseWebhookPayload):
 
 
 class WebhookProductCreatedPayload(BaseWebhookPayload):
-    """Sent when a new product is created."""
+    """
+    Sent when a new product is created.
+
+    **Discord & Slack support:** Basic
+    """
 
     type: Literal[WebhookEventType.product_created]
     data: ProductSchema
 
 
 class WebhookProductUpdatedPayload(BaseWebhookPayload):
-    """Sent when a product is updated."""
+    """
+    Sent when a product is updated.
+
+    **Discord & Slack support:** Basic
+    """
 
     type: Literal[WebhookEventType.product_updated]
     data: ProductSchema
 
 
 class WebhookPledgeCreatedPayload(BaseWebhookPayload):
-    """Sent when a new pledge is created. Note that this does mean that the pledge has been paid yet."""
+    """
+    Sent when a new pledge is created. Note that this does mean that the pledge has been paid yet.
+
+    **Discord & Slack support:** Full
+    """
 
     type: Literal[WebhookEventType.pledge_created]
     data: PledgeSchema
@@ -378,14 +397,22 @@ class WebhookPledgeCreatedPayload(BaseWebhookPayload):
 
 
 class WebhookPledgeUpdatedPayload(BaseWebhookPayload):
-    """Sent when a pledge is updated."""
+    """
+    Sent when a pledge is updated.
+
+    **Discord & Slack support:** Basic
+    """
 
     type: Literal[WebhookEventType.pledge_updated]
     data: PledgeSchema
 
 
 class WebhookDonationCreatedPayload(BaseWebhookPayload):
-    """Sent when a new donation is created."""
+    """
+    Sent when a new donation is created.
+
+    **Discord & Slack support:** Full
+    """
 
     type: Literal[WebhookEventType.donation_created]
     data: DonationSchema
@@ -450,21 +477,33 @@ class WebhookDonationCreatedPayload(BaseWebhookPayload):
 
 
 class WebhookOrganizationUpdatedPayload(BaseWebhookPayload):
-    """Sent when a organization is updated."""
+    """
+    Sent when a organization is updated.
+
+    **Discord & Slack support:** Basic
+    """
 
     type: Literal[WebhookEventType.organization_updated]
     data: OrganizationSchema
 
 
 class WebhookBenefitCreatedPayload(BaseWebhookPayload):
-    """Sent when a new benefit is created."""
+    """
+    Sent when a new benefit is created.
+
+    **Discord & Slack support:** Basic
+    """
 
     type: Literal[WebhookEventType.benefit_created]
     data: BenefitSchema
 
 
 class WebhookBenefitUpdatedPayload(BaseWebhookPayload):
-    """Sent when a benefit is updated."""
+    """
+    Sent when a benefit is updated.
+
+    **Discord & Slack support:** Basic
+    """
 
     type: Literal[WebhookEventType.benefit_updated]
     data: BenefitSchema

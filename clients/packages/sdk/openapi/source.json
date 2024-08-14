@@ -1177,8 +1177,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Anonymous",
-                    "User"
+                    "User",
+                    "Anonymous"
                 ]
             }
         },
@@ -4128,8 +4128,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Anonymous",
-                    "User"
+                    "User",
+                    "Anonymous"
                 ]
             }
         },
@@ -4183,8 +4183,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Anonymous",
-                    "User"
+                    "User",
+                    "Anonymous"
                 ]
             }
         },
@@ -4290,8 +4290,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Anonymous",
-                    "User"
+                    "User",
+                    "Anonymous"
                 ]
             }
         },
@@ -4565,9 +4565,9 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Anonymous",
                     "Organization",
-                    "User"
+                    "User",
+                    "Anonymous"
                 ]
             }
         },
@@ -4804,9 +4804,9 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Anonymous",
                     "Organization",
-                    "User"
+                    "User",
+                    "Anonymous"
                 ]
             }
         },
@@ -4882,9 +4882,9 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Anonymous",
                     "Organization",
-                    "User"
+                    "User",
+                    "Anonymous"
                 ]
             },
             "patch": {
@@ -5135,8 +5135,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Anonymous",
-                    "User"
+                    "User",
+                    "Anonymous"
                 ]
             }
         },
@@ -5456,8 +5456,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Anonymous",
-                    "User"
+                    "User",
+                    "Anonymous"
                 ]
             }
         },
@@ -6016,9 +6016,9 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Anonymous",
                     "Organization",
-                    "User"
+                    "User",
+                    "Anonymous"
                 ]
             }
         },
@@ -6083,8 +6083,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Anonymous",
-                    "User"
+                    "User",
+                    "Anonymous"
                 ]
             }
         },
@@ -6136,8 +6136,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Anonymous",
-                    "User"
+                    "User",
+                    "Anonymous"
                 ]
             }
         },
@@ -6224,8 +6224,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Anonymous",
-                    "User"
+                    "User",
+                    "Anonymous"
                 ]
             },
             "post": {
@@ -6738,8 +6738,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Anonymous",
-                    "User"
+                    "User",
+                    "Anonymous"
                 ]
             }
         },
@@ -6794,8 +6794,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Anonymous",
-                    "User"
+                    "User",
+                    "Anonymous"
                 ]
             }
         },
@@ -6960,8 +6960,8 @@
                     }
                 ],
                 "x-polar-allowed-subjects": [
-                    "Anonymous",
-                    "User"
+                    "User",
+                    "Anonymous"
                 ]
             }
         },
@@ -7133,8 +7133,8 @@
                     }
                 ],
                 "x-polar-allowed-subjects": [
-                    "Anonymous",
-                    "User"
+                    "User",
+                    "Anonymous"
                 ]
             }
         },
@@ -7197,8 +7197,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Anonymous",
-                    "User"
+                    "User",
+                    "Anonymous"
                 ]
             }
         },
@@ -7278,8 +7278,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "organizations:write",
-                            "organizations:read"
+                            "organizations:read",
+                            "organizations:write"
                         ]
                     },
                     {
@@ -7477,8 +7477,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "organizations:write",
-                            "organizations:read"
+                            "organizations:read",
+                            "organizations:write"
                         ]
                     },
                     {
@@ -7647,8 +7647,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "organizations:write",
-                            "organizations:read"
+                            "organizations:read",
+                            "organizations:write"
                         ]
                     },
                     {
@@ -7684,10 +7684,10 @@
                             },
                             "description": "Filter by the type of purchase the customer made.",
                             "default": [
-                                "donation",
-                                "order",
                                 "paid_subscription",
-                                "free_subscription"
+                                "donation",
+                                "free_subscription",
+                                "order"
                             ],
                             "title": "Customer Types"
                         },
@@ -8193,8 +8193,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "subscriptions:read",
-                            "subscriptions:write"
+                            "subscriptions:write",
+                            "subscriptions:read"
                         ]
                     },
                     {
@@ -8541,8 +8541,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "subscriptions:read",
-                            "subscriptions:write"
+                            "subscriptions:write",
+                            "subscriptions:read"
                         ]
                     },
                     {
@@ -8820,9 +8820,9 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Anonymous",
                     "Organization",
-                    "User"
+                    "User",
+                    "Anonymous"
                 ]
             },
             "post": {
@@ -8953,9 +8953,9 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Anonymous",
                     "Organization",
-                    "User"
+                    "User",
+                    "Anonymous"
                 ]
             },
             "patch": {
@@ -10523,8 +10523,8 @@
                     }
                 ],
                 "x-polar-allowed-subjects": [
-                    "Anonymous",
-                    "User"
+                    "User",
+                    "Anonymous"
                 ]
             }
         },
@@ -10587,8 +10587,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Anonymous",
-                    "User"
+                    "User",
+                    "Anonymous"
                 ]
             }
         },
@@ -10959,8 +10959,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Anonymous",
-                    "User"
+                    "User",
+                    "Anonymous"
                 ]
             },
             "put": {
@@ -11021,8 +11021,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Anonymous",
-                    "User"
+                    "User",
+                    "Anonymous"
                 ]
             },
             "delete": {
@@ -11073,8 +11073,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Anonymous",
-                    "User"
+                    "User",
+                    "Anonymous"
                 ]
             }
         },
@@ -11122,8 +11122,8 @@
                     }
                 ],
                 "x-polar-allowed-subjects": [
-                    "Anonymous",
-                    "User"
+                    "User",
+                    "Anonymous"
                 ]
             }
         },
@@ -12790,8 +12790,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "products:write",
-                            "products:read"
+                            "products:read",
+                            "products:write"
                         ]
                     },
                     {
@@ -12985,9 +12985,9 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Anonymous",
                     "Organization",
-                    "User"
+                    "User",
+                    "Anonymous"
                 ]
             },
             "post": {
@@ -13068,8 +13068,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "products:write",
-                            "products:read"
+                            "products:read",
+                            "products:write"
                         ]
                     },
                     {
@@ -13127,9 +13127,9 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Anonymous",
                     "Organization",
-                    "User"
+                    "User",
+                    "Anonymous"
                 ]
             },
             "patch": {
@@ -13754,8 +13754,8 @@
                     }
                 ],
                 "x-polar-allowed-subjects": [
-                    "Anonymous",
-                    "User"
+                    "User",
+                    "Anonymous"
                 ]
             }
         },
@@ -14532,8 +14532,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Anonymous",
-                    "User"
+                    "User",
+                    "Anonymous"
                 ]
             }
         },
@@ -14639,8 +14639,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Anonymous",
-                    "User"
+                    "User",
+                    "Anonymous"
                 ]
             }
         }
@@ -14649,7 +14649,7 @@
         "subscription.created": {
             "post": {
                 "summary": "subscription.created",
-                "description": "Sent when a new subscription is created.",
+                "description": "Sent when a new subscription is created.\n\n**Discord & Slack support:** Full",
                 "operationId": "_endpointsubscription_created_post",
                 "requestBody": {
                     "content": {
@@ -14686,7 +14686,7 @@
         "subscription.updated": {
             "post": {
                 "summary": "subscription.updated",
-                "description": "Sent when a new subscription is updated. This event fires if the subscription is cancelled, both immediately and if the subscription is cancelled at the end of the current period.",
+                "description": "Sent when a new subscription is updated. This event fires if the subscription is cancelled, both immediately and if the subscription is cancelled at the end of the current period.\n\n**Discord & Slack support:** On cancellation",
                 "operationId": "_endpointsubscription_updated_post",
                 "requestBody": {
                     "content": {
@@ -14723,7 +14723,7 @@
         "product.created": {
             "post": {
                 "summary": "product.created",
-                "description": "Sent when a new product is created.",
+                "description": "Sent when a new product is created.\n\n**Discord & Slack support:** Basic",
                 "operationId": "_endpointproduct_created_post",
                 "requestBody": {
                     "content": {
@@ -14760,7 +14760,7 @@
         "product.updated": {
             "post": {
                 "summary": "product.updated",
-                "description": "Sent when a product is updated.",
+                "description": "Sent when a product is updated.\n\n**Discord & Slack support:** Basic",
                 "operationId": "_endpointproduct_updated_post",
                 "requestBody": {
                     "content": {
@@ -14797,7 +14797,7 @@
         "pledge.created": {
             "post": {
                 "summary": "pledge.created",
-                "description": "Sent when a new pledge is created. Note that this does mean that the pledge has been paid yet.",
+                "description": "Sent when a new pledge is created. Note that this does mean that the pledge has been paid yet.\n\n**Discord & Slack support:** Full",
                 "operationId": "_endpointpledge_created_post",
                 "requestBody": {
                     "content": {
@@ -14834,7 +14834,7 @@
         "pledge.updated": {
             "post": {
                 "summary": "pledge.updated",
-                "description": "Sent when a pledge is updated.",
+                "description": "Sent when a pledge is updated.\n\n**Discord & Slack support:** Basic",
                 "operationId": "_endpointpledge_updated_post",
                 "requestBody": {
                     "content": {
@@ -14871,7 +14871,7 @@
         "donation.created": {
             "post": {
                 "summary": "donation.created",
-                "description": "Sent when a new donation is created.",
+                "description": "Sent when a new donation is created.\n\n**Discord & Slack support:** Full",
                 "operationId": "_endpointdonation_created_post",
                 "requestBody": {
                     "content": {
@@ -14908,7 +14908,7 @@
         "organization.updated": {
             "post": {
                 "summary": "organization.updated",
-                "description": "Sent when a organization is updated.",
+                "description": "Sent when a organization is updated.\n\n**Discord & Slack support:** Basic",
                 "operationId": "_endpointorganization_updated_post",
                 "requestBody": {
                     "content": {
@@ -14945,7 +14945,7 @@
         "benefit.created": {
             "post": {
                 "summary": "benefit.created",
-                "description": "Sent when a new benefit is created.",
+                "description": "Sent when a new benefit is created.\n\n**Discord & Slack support:** Basic",
                 "operationId": "_endpointbenefit_created_post",
                 "requestBody": {
                     "content": {
@@ -14982,7 +14982,7 @@
         "benefit.updated": {
             "post": {
                 "summary": "benefit.updated",
-                "description": "Sent when a benefit is updated.",
+                "description": "Sent when a benefit is updated.\n\n**Discord & Slack support:** Basic",
                 "operationId": "_endpointbenefit_updated_post",
                 "requestBody": {
                     "content": {
@@ -32051,7 +32051,7 @@
                     "data"
                 ],
                 "title": "WebhookBenefitCreatedPayload",
-                "description": "Sent when a new benefit is created."
+                "description": "Sent when a new benefit is created.\n\n**Discord & Slack support:** Basic"
             },
             "WebhookBenefitUpdatedPayload": {
                 "properties": {
@@ -32093,7 +32093,7 @@
                     "data"
                 ],
                 "title": "WebhookBenefitUpdatedPayload",
-                "description": "Sent when a benefit is updated."
+                "description": "Sent when a benefit is updated.\n\n**Discord & Slack support:** Basic"
             },
             "WebhookDelivery": {
                 "properties": {
@@ -32178,7 +32178,7 @@
                     "data"
                 ],
                 "title": "WebhookDonationCreatedPayload",
-                "description": "Sent when a new donation is created."
+                "description": "Sent when a new donation is created.\n\n**Discord & Slack support:** Full"
             },
             "WebhookEndpoint": {
                 "properties": {
@@ -32517,7 +32517,7 @@
                     "data"
                 ],
                 "title": "WebhookOrganizationUpdatedPayload",
-                "description": "Sent when a organization is updated."
+                "description": "Sent when a organization is updated.\n\n**Discord & Slack support:** Basic"
             },
             "WebhookPledgeCreatedPayload": {
                 "properties": {
@@ -32539,7 +32539,7 @@
                     "data"
                 ],
                 "title": "WebhookPledgeCreatedPayload",
-                "description": "Sent when a new pledge is created. Note that this does mean that the pledge has been paid yet."
+                "description": "Sent when a new pledge is created. Note that this does mean that the pledge has been paid yet.\n\n**Discord & Slack support:** Full"
             },
             "WebhookPledgeUpdatedPayload": {
                 "properties": {
@@ -32561,7 +32561,7 @@
                     "data"
                 ],
                 "title": "WebhookPledgeUpdatedPayload",
-                "description": "Sent when a pledge is updated."
+                "description": "Sent when a pledge is updated.\n\n**Discord & Slack support:** Basic"
             },
             "WebhookProductCreatedPayload": {
                 "properties": {
@@ -32583,7 +32583,7 @@
                     "data"
                 ],
                 "title": "WebhookProductCreatedPayload",
-                "description": "Sent when a new product is created."
+                "description": "Sent when a new product is created.\n\n**Discord & Slack support:** Basic"
             },
             "WebhookProductUpdatedPayload": {
                 "properties": {
@@ -32605,7 +32605,7 @@
                     "data"
                 ],
                 "title": "WebhookProductUpdatedPayload",
-                "description": "Sent when a product is updated."
+                "description": "Sent when a product is updated.\n\n**Discord & Slack support:** Basic"
             },
             "WebhookResponse": {
                 "properties": {
@@ -32662,7 +32662,7 @@
                     "data"
                 ],
                 "title": "WebhookSubscriptionCreatedPayload",
-                "description": "Sent when a new subscription is created."
+                "description": "Sent when a new subscription is created.\n\n**Discord & Slack support:** Full"
             },
             "WebhookSubscriptionUpdatedPayload": {
                 "properties": {
@@ -32684,7 +32684,7 @@
                     "data"
                 ],
                 "title": "WebhookSubscriptionUpdatedPayload",
-                "description": "Sent when a new subscription is updated. This event fires if the subscription is cancelled, both immediately and if the subscription is cancelled at the end of the current period."
+                "description": "Sent when a new subscription is updated. This event fires if the subscription is cancelled, both immediately and if the subscription is cancelled at the end of the current period.\n\n**Discord & Slack support:** On cancellation"
             }
         },
         "securitySchemes": {

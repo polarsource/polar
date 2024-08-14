@@ -30,6 +30,7 @@ const Webhook = ({
     <>
       <h2 id={event}>{webhook.summary}</h2>
       <Markdown>{webhook.description ?? ''}</Markdown>
+      <p className="font-semibold">Raw format payload</p>
       {bodySchema && (
         <SyntaxHighlighterServer
           highlighter={highlighter}

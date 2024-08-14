@@ -35,6 +35,7 @@ from polar.models import (
 )
 from polar.models.product_price import ProductPriceType
 from polar.models.transaction import TransactionType
+from polar.models.webhook_endpoint import WebhookEventType
 from polar.notifications.notification import (
     MaintainerCreateAccountNotificationPayload,
     MaintainerNewProductSaleNotificationPayload,
@@ -54,6 +55,8 @@ from polar.transaction.service.platform_fee import (
     platform_fee_transaction as platform_fee_transaction_service,
 )
 from polar.user.service.user import user as user_service
+from polar.webhook.service import webhook as webhook_service
+from polar.webhook.webhooks import WebhookTypeObject
 from polar.worker import enqueue_job
 
 
@@ -322,6 +325,8 @@ class OrderService(ResourceServiceReader[Order]):
                 order_id=order.id,
             )
 
+        await self._send_webhook(session, order)
+
         return order
 
     async def send_admin_notification(
@@ -448,6 +453,21 @@ class OrderService(ResourceServiceReader[Order]):
         await platform_fee_transaction_service.create_fees_reversal_balances(
             session, balance_transactions=balance_transactions
         )
+
+    async def _send_webhook(self, session: AsyncSession, order: Order) -> None:
+        await session.refresh(order.product, {"prices"})
+
+        event: WebhookTypeObject = (WebhookEventType.order_created, order)
+
+        # Webhook for customer
+        await webhook_service.send(session, order.user, event)
+
+        # Webhook for organization
+        organization = await organization_service.get(
+            session, order.product.organization_id
+        )
+        assert organization is not None
+        await webhook_service.send(session, organization, event)
 
     def _get_readable_order_statement(
         self, auth_subject: AuthSubject[User | Organization]

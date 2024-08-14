@@ -15,9 +15,10 @@ export const useListWebhooksDeliveries = (variables: {
   page: number
 }): UseQueryResult<ListResourceWebhookDelivery, ResponseError> =>
   useQuery({
-    queryKey: ['webhookDeliveries', 'list', JSON.stringify(variables)],
+    queryKey: ['webhookDeliveries', 'list', { ...variables }],
     queryFn: () =>
       api.webhooks.listWebhookDeliveries({
+        endpointId: variables.webhookEndpointId,
         ...variables,
       }),
     retry: defaultRetry,
@@ -29,7 +30,7 @@ export const useListWebhooksEndpoints = (variables: {
   page: number
 }): UseQueryResult<ListResourceWebhookEndpoint, ResponseError> =>
   useQuery({
-    queryKey: ['webhookEndpoints', 'list', JSON.stringify(variables)],
+    queryKey: ['webhookEndpoints', 'list', { ...variables }],
     queryFn: () =>
       api.webhooks.listWebhookEndpoints({
         ...variables,

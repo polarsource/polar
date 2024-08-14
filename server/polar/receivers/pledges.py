@@ -1,6 +1,5 @@
 import structlog
 from discord_webhook import AsyncDiscordWebhook, DiscordEmbed
-from slack_sdk.webhook import WebhookClient as SlackWebhookClient
 
 from polar.account.service import account as account_service
 from polar.config import settings
@@ -38,7 +37,6 @@ from polar.pledge.schemas import Pledger
 from polar.pledge.service import pledge as pledge_service
 from polar.postgres import AsyncSession
 from polar.repository.service import repository as repository_service
-from polar.webhook_notifications.service import webhook_notifications_service
 
 log = structlog.get_logger()
 
@@ -105,98 +103,6 @@ async def pledge_created_backoffice_discord_alert(hook: PledgeHook) -> None:
 
 
 pledge_created_hook.add(pledge_created_backoffice_discord_alert)
-
-
-async def pledge_created_webhook_alerts(hook: PledgeHook) -> None:
-    session = hook.session
-    pledge = hook.pledge
-
-    external_organization = await external_organization_service.get_linked(
-        session, pledge.organization_id
-    )
-    if external_organization is None:
-        return
-
-    organization = external_organization.safe_organization
-
-    issue = await issue_service.get(session, pledge.issue_id)
-    if issue is None:
-        return
-
-    repo = await repository_service.get(session, pledge.repository_id)
-    if repo is None:
-        return
-
-    webhooks = await webhook_notifications_service.search(
-        session, organization_id=organization.id
-    )
-
-    _pledge_amount = pledge.amount / 100
-    _issue_polar_url = (
-        f"https://polar.sh/{organization.slug}/{repo.name}/issues/{issue.number}"
-    )
-    _issue_github_url = (
-        f"https://github.com/{organization.slug}/{repo.name}/issues/{issue.number}"
-    )
-
-    description = (
-        f"A ${_pledge_amount} pledge has been made towards [{repo.name}#{issue.number}]({_issue_github_url}): "
-        f"\n > `{issue.title}`."
-    )
-
-    for wh in webhooks:
-        if wh.integration == "discord":
-            webhook = AsyncDiscordWebhook(url=wh.url, content="New Pledge Received")
-
-            embed = DiscordEmbed(
-                title="New pledge Received",
-                description=description,
-                color="65280",
-            )
-
-            embed.set_thumbnail(url=settings.THUMBNAIL_URL)
-            embed.set_author(name="Polar.sh", icon_url=settings.FAVICON_URL)
-            embed.add_embed_field(
-                name="Polar.sh",
-                value=f"[View on Polar.sh]({_issue_polar_url})",
-                inline=True,
-            )
-            embed.add_embed_field(
-                name="Issue",
-                value=f"[View on GitHub]({_issue_github_url})",
-                inline=True,
-            )
-            embed.add_embed_field(
-                name="Amount", value=f"${_pledge_amount}", inline=True
-            )
-            embed.set_footer(text="Powered by Polar.sh")
-
-            webhook.add_embed(embed)
-            await webhook.execute()
-            continue
-
-        if wh.integration == "slack":
-            slack_webhook = SlackWebhookClient(wh.url)
-            response = slack_webhook.send(
-                text=description,
-                blocks=[
-                    {
-                        "type": "section",
-                        "text": {
-                            "type": "mrkdwn",
-                            "text": description,
-                        },
-                        "accessory": {
-                            "type": "button",
-                            "text": {"type": "plain_text", "text": "Open"},
-                            "url": f"https://polar.sh/{organization.slug}/{repo.name}/issues/{issue.number}",
-                        },
-                    },
-                ],
-            )
-
-
-pledge_created_hook.add(pledge_created_webhook_alerts)
 
 
 async def pledge_created_issue_pledge_sum(hook: PledgeHook) -> None:

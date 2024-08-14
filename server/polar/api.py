@@ -39,7 +39,6 @@ from polar.traffic.endpoints import router as traffic_router
 from polar.transaction.endpoints import router as transaction_router
 from polar.user.endpoints import router as user_router
 from polar.webhook.endpoints import router as webhook_router
-from polar.webhook_notifications.endpoints import router as webhook_notifications_router
 
 router = APIRouter(prefix="/v1")
 
@@ -92,8 +91,6 @@ router.include_router(subscription_router)
 router.include_router(articles_router)
 # /transactions
 router.include_router(transaction_router)
-# /webhook_notifications
-router.include_router(webhook_notifications_router)
 # /advertisements
 router.include_router(advertisements_router)
 # /traffic

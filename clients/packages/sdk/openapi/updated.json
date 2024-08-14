@@ -4584,8 +4584,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "repositories:write",
-                            "repositories:read"
+                            "repositories:read",
+                            "repositories:write"
                         ]
                     },
                     {
@@ -4823,8 +4823,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "repositories:write",
-                            "repositories:read"
+                            "repositories:read",
+                            "repositories:write"
                         ]
                     },
                     {
@@ -5765,8 +5765,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "issues:write",
-                            "issues:read"
+                            "issues:read",
+                            "issues:write"
                         ]
                     },
                     {
@@ -7684,10 +7684,10 @@
                             },
                             "description": "Filter by the type of purchase the customer made.",
                             "default": [
+                                "order",
                                 "paid_subscription",
-                                "donation",
                                 "free_subscription",
-                                "order"
+                                "donation"
                             ],
                             "title": "Customer Types"
                         },
@@ -8193,8 +8193,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "subscriptions:write",
-                            "subscriptions:read"
+                            "subscriptions:read",
+                            "subscriptions:write"
                         ]
                     },
                     {
@@ -8541,8 +8541,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "subscriptions:write",
-                            "subscriptions:read"
+                            "subscriptions:read",
+                            "subscriptions:write"
                         ]
                     },
                     {
@@ -12223,8 +12223,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "webhooks:write",
-                            "webhooks:read"
+                            "webhooks:read",
+                            "webhooks:write"
                         ]
                     },
                     {
@@ -12396,8 +12396,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "webhooks:write",
-                            "webhooks:read"
+                            "webhooks:read",
+                            "webhooks:write"
                         ]
                     },
                     {
@@ -12626,8 +12626,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "webhooks:write",
-                            "webhooks:read"
+                            "webhooks:read",
+                            "webhooks:write"
                         ]
                     },
                     {
@@ -23158,122 +23158,6 @@
                 ],
                 "title": "OAuthPlatform"
             },
-            "Order": {
-                "properties": {
-                    "created_at": {
-                        "type": "string",
-                        "format": "date-time",
-                        "title": "Created At",
-                        "description": "Creation timestamp of the object."
-                    },
-                    "modified_at": {
-                        "anyOf": [
-                            {
-                                "type": "string",
-                                "format": "date-time"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Modified At",
-                        "description": "Last modification timestamp of the object."
-                    },
-                    "id": {
-                        "type": "string",
-                        "format": "uuid4",
-                        "title": "Id"
-                    },
-                    "amount": {
-                        "type": "integer",
-                        "title": "Amount"
-                    },
-                    "tax_amount": {
-                        "type": "integer",
-                        "title": "Tax Amount"
-                    },
-                    "currency": {
-                        "type": "string",
-                        "title": "Currency"
-                    },
-                    "user_id": {
-                        "type": "string",
-                        "format": "uuid4",
-                        "title": "User Id"
-                    },
-                    "product_id": {
-                        "type": "string",
-                        "format": "uuid4",
-                        "title": "Product Id"
-                    },
-                    "product_price_id": {
-                        "type": "string",
-                        "format": "uuid4",
-                        "title": "Product Price Id"
-                    },
-                    "subscription_id": {
-                        "anyOf": [
-                            {
-                                "type": "string",
-                                "format": "uuid4"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Subscription Id"
-                    },
-                    "user": {
-                        "$ref": "#/components/schemas/OrderUser"
-                    },
-                    "product": {
-                        "$ref": "#/components/schemas/OrderProduct"
-                    },
-                    "product_price": {
-                        "oneOf": [
-                            {
-                                "$ref": "#/components/schemas/ProductPriceRecurring"
-                            },
-                            {
-                                "$ref": "#/components/schemas/ProductPriceOneTime"
-                            }
-                        ],
-                        "title": "Product Price",
-                        "discriminator": {
-                            "propertyName": "type",
-                            "mapping": {
-                                "one_time": "#/components/schemas/ProductPriceOneTime",
-                                "recurring": "#/components/schemas/ProductPriceRecurring"
-                            }
-                        }
-                    },
-                    "subscription": {
-                        "anyOf": [
-                            {
-                                "$ref": "#/components/schemas/OrderSubscription"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ]
-                    }
-                },
-                "type": "object",
-                "required": [
-                    "created_at",
-                    "id",
-                    "amount",
-                    "tax_amount",
-                    "currency",
-                    "user_id",
-                    "product_id",
-                    "product_price_id",
-                    "user",
-                    "product",
-                    "product_price"
-                ],
-                "title": "Order"
-            },
             "OrderInvoice": {
                 "properties": {
                     "url": {
@@ -29659,6 +29543,7 @@
             "WebhookEventType": {
                 "type": "string",
                 "enum": [
+                    "order.created",
                     "subscription.created",
                     "subscription.updated",
                     "product.created",
@@ -29680,6 +29565,28 @@
                     "slack"
                 ],
                 "title": "WebhookFormat"
+            },
+            "WebhookOrderCreatedPayload": {
+                "properties": {
+                    "type": {
+                        "type": "string",
+                        "enum": [
+                            "order.created"
+                        ],
+                        "const": "order.created",
+                        "title": "Type"
+                    },
+                    "data": {
+                        "$ref": "#/components/schemas/Order"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "type",
+                    "data"
+                ],
+                "title": "WebhookOrderCreatedPayload",
+                "description": "Sent when a new order is created.\n\n**Discord & Slack support:** Full"
             },
             "WebhookOrganizationUpdatedPayload": {
                 "properties": {
@@ -30256,6 +30163,123 @@
                     "pledge_badge_currently_embedded"
                 ],
                 "title": "Issue"
+            },
+            "Order": {
+                "properties": {
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "title": "Created At",
+                        "description": "Creation timestamp of the object."
+                    },
+                    "modified_at": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "date-time"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Modified At",
+                        "description": "Last modification timestamp of the object."
+                    },
+                    "id": {
+                        "type": "string",
+                        "format": "uuid4",
+                        "title": "Id",
+                        "description": "The ID of the object."
+                    },
+                    "amount": {
+                        "type": "integer",
+                        "title": "Amount"
+                    },
+                    "tax_amount": {
+                        "type": "integer",
+                        "title": "Tax Amount"
+                    },
+                    "currency": {
+                        "type": "string",
+                        "title": "Currency"
+                    },
+                    "user_id": {
+                        "type": "string",
+                        "format": "uuid4",
+                        "title": "User Id"
+                    },
+                    "product_id": {
+                        "type": "string",
+                        "format": "uuid4",
+                        "title": "Product Id"
+                    },
+                    "product_price_id": {
+                        "type": "string",
+                        "format": "uuid4",
+                        "title": "Product Price Id"
+                    },
+                    "subscription_id": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "uuid4"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Subscription Id"
+                    },
+                    "user": {
+                        "$ref": "#/components/schemas/OrderUser"
+                    },
+                    "product": {
+                        "$ref": "#/components/schemas/OrderProduct"
+                    },
+                    "product_price": {
+                        "oneOf": [
+                            {
+                                "$ref": "#/components/schemas/ProductPriceRecurring"
+                            },
+                            {
+                                "$ref": "#/components/schemas/ProductPriceOneTime"
+                            }
+                        ],
+                        "title": "Product Price",
+                        "discriminator": {
+                            "propertyName": "type",
+                            "mapping": {
+                                "one_time": "#/components/schemas/ProductPriceOneTime",
+                                "recurring": "#/components/schemas/ProductPriceRecurring"
+                            }
+                        }
+                    },
+                    "subscription": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/components/schemas/OrderSubscription"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ]
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "created_at",
+                    "id",
+                    "amount",
+                    "tax_amount",
+                    "currency",
+                    "user_id",
+                    "product_id",
+                    "product_price_id",
+                    "user",
+                    "product",
+                    "product_price"
+                ],
+                "title": "Order"
             },
             "Organization": {
                 "properties": {

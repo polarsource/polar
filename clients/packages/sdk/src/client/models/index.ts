@@ -8196,7 +8196,7 @@ export interface Order {
      */
     modified_at?: string;
     /**
-     * 
+     * The ID of the object.
      * @type {string}
      * @memberof Order
      */
@@ -14070,6 +14070,7 @@ export interface WebhookEvent {
  * @export
  */
 export const WebhookEventType = {
+    ORDER_CREATED: 'order.created',
     SUBSCRIPTION_CREATED: 'subscription.created',
     SUBSCRIPTION_UPDATED: 'subscription.updated',
     PRODUCT_CREATED: 'product.created',
@@ -14094,6 +14095,37 @@ export const WebhookFormat = {
     SLACK: 'slack'
 } as const;
 export type WebhookFormat = typeof WebhookFormat[keyof typeof WebhookFormat];
+
+/**
+ * Sent when a new order is created.
+ * 
+ * **Discord & Slack support:** Full
+ * @export
+ * @interface WebhookOrderCreatedPayload
+ */
+export interface WebhookOrderCreatedPayload {
+    /**
+     * 
+     * @type {string}
+     * @memberof WebhookOrderCreatedPayload
+     */
+    type: WebhookOrderCreatedPayloadTypeEnum;
+    /**
+     * 
+     * @type {Order}
+     * @memberof WebhookOrderCreatedPayload
+     */
+    data: Order;
+}
+
+
+/**
+ * @export
+ */
+export const WebhookOrderCreatedPayloadTypeEnum = {
+    ORDER_CREATED: 'order.created'
+} as const;
+export type WebhookOrderCreatedPayloadTypeEnum = typeof WebhookOrderCreatedPayloadTypeEnum[keyof typeof WebhookOrderCreatedPayloadTypeEnum];
 
 /**
  * Sent when a organization is updated.

@@ -3126,20 +3126,6 @@ files = [
 ]
 
 [[package]]
-name = "slack-sdk"
-version = "3.31.0"
-description = "The Slack API Platform SDK for Python"
-optional = false
-python-versions = ">=3.6"
-files = [
-    {file = "slack_sdk-3.31.0-py2.py3-none-any.whl", hash = "sha256:a120cc461e8ebb7d9175f171dbe0ded37a6878d9f7b96b28e4bad1227399047b"},
-    {file = "slack_sdk-3.31.0.tar.gz", hash = "sha256:740d2f9c49cbfcbd46fca56b4be9d527934c225312aac18fd2c0fca0ef6bc935"},
-]
-
-[package.extras]
-optional = ["SQLAlchemy (>=1.4,<3)", "aiodns (>1.0)", "aiohttp (>=3.7.3,<4)", "boto3 (<=2)", "websocket-client (>=1,<2)", "websockets (>=9.1,<13)"]
-
-[[package]]
 name = "sniffio"
 version = "1.3.1"
 description = "Sniff out which async library your code is running under"
@@ -4100,4 +4086,4 @@ test = ["big-O", "importlib-resources", "jaraco.functools", "jaraco.itertools", 
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.12"
-content-hash = "233eedc6f5617ee6450b58d847c7b03050b05bd170b2cfa8955912eeef4e50cd"
+content-hash = "62d4fb22b55382f3600da0224753673b073a59956091fa7b48e6fd5ac4fc86c9"

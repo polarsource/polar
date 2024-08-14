@@ -42,7 +42,6 @@ from .user_organization import UserOrganization
 from .webhook_delivery import WebhookDelivery
 from .webhook_endpoint import WebhookEndpoint
 from .webhook_event import WebhookEvent
-from .webhook_notifications import WebhookNotification
 
 __all__ = [
     "Model",
@@ -90,5 +89,4 @@ __all__ = [
     "WebhookDelivery",
     "WebhookEndpoint",
     "WebhookEvent",
-    "WebhookNotification",
 ]

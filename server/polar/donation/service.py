@@ -6,7 +6,6 @@ from uuid import UUID
 
 import stripe as stripe_lib
 from discord_webhook import AsyncDiscordWebhook, DiscordEmbed
-from slack_sdk.webhook import WebhookClient as SlackWebhookClient
 from sqlalchemy import (
     ColumnExpressionArgument,
     UnaryExpression,
@@ -56,7 +55,6 @@ from polar.transaction.service.platform_fee import (
 )
 from polar.user.service.user import user as user_service
 from polar.webhook.service import webhook as webhook_service
-from polar.webhook_notifications.service import webhook_notifications_service
 
 
 class SearchSortProperty(StrEnum):
@@ -263,9 +261,9 @@ class DonationService:
         )
 
         session.add(d)
+        await session.flush()
 
         await self.backoffice_discord_notification(session, d)
-        await self.user_webhook_notifications(session, d)
         await self.send_webhook(session, d)
 
         return None
@@ -432,62 +430,6 @@ class DonationService:
 
         webhook.add_embed(embed)
         await webhook.execute()
-
-    async def user_webhook_notifications(
-        self, session: AsyncSession, donation: Donation
-    ) -> None:
-        webhooks = await webhook_notifications_service.search(
-            session, organization_id=donation.to_organization_id
-        )
-        to_org = await organization_service.get(session, donation.to_organization_id)
-        if not to_org:
-            return
-
-        _donation_amount = donation.amount_received / 100
-        description = f"A ${_donation_amount} donation has been made to {to_org.slug}\n\n> {donation.message or "No message"}"
-
-        for wh in webhooks:
-            if wh.integration == "discord":
-                webhook = AsyncDiscordWebhook(
-                    url=wh.url, content="New Donation Received"
-                )
-
-                embed = DiscordEmbed(
-                    title="New Donation Received",
-                    description=description,
-                    color="65280",
-                )
-
-                embed.set_thumbnail(url=settings.THUMBNAIL_URL)
-                embed.set_author(name="Polar.sh", icon_url=settings.FAVICON_URL)
-                embed.add_embed_field(
-                    name="Amount", value=f"${_donation_amount}", inline=True
-                )
-                embed.set_footer(text="Powered by Polar.sh")
-
-                webhook.add_embed(embed)
-                await webhook.execute()
-                continue
-
-            if wh.integration == "slack":
-                slack_webhook = SlackWebhookClient(wh.url)
-                response = slack_webhook.send(
-                    text=description,
-                    blocks=[
-                        {
-                            "type": "section",
-                            "text": {
-                                "type": "mrkdwn",
-                                "text": description,
-                            },
-                            "accessory": {
-                                "type": "button",
-                                "text": {"type": "plain_text", "text": "Open"},
-                                "url": f"https://polar.sh/{to_org.slug}",
-                            },
-                        },
-                    ],
-                )
 
     async def send_webhook(self, session: AsyncSession, donation: Donation) -> None:
         full_donation = await self.get_loaded(session, donation.id)

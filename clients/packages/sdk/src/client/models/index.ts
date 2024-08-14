@@ -1696,17 +1696,23 @@ export type BackofficeBadgeResponseActionEnum = typeof BackofficeBadgeResponseAc
  */
 export interface BackofficePledge {
     /**
-     * Pledge ID
-     * @type {string}
-     * @memberof BackofficePledge
-     */
-    id: string;
-    /**
-     * When the pledge was created
+     * Creation timestamp of the object.
      * @type {string}
      * @memberof BackofficePledge
      */
     created_at: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof BackofficePledge
+     */
+    modified_at?: string;
+    /**
+     * The ID of the object.
+     * @type {string}
+     * @memberof BackofficePledge
+     */
+    id: string;
     /**
      * Amount pledged towards the issue
      * @type {number}
@@ -4105,7 +4111,7 @@ export interface Donation {
      */
     modified_at?: string;
     /**
-     * 
+     * The ID of the object.
      * @type {string}
      * @memberof Donation
      */
@@ -6372,25 +6378,6 @@ export interface ListResourceWebhookEndpoint {
     pagination: Pagination;
 }
 /**
- * 
- * @export
- * @interface ListResourceWebhookIntegration
- */
-export interface ListResourceWebhookIntegration {
-    /**
-     * 
-     * @type {Array<WebhookIntegration>}
-     * @memberof ListResourceWebhookIntegration
-     */
-    items?: Array<WebhookIntegration>;
-    /**
-     * 
-     * @type {Pagination}
-     * @memberof ListResourceWebhookIntegration
-     */
-    pagination: Pagination;
-}
-/**
  * @type LocationInner
  * @export
  */
@@ -8387,7 +8374,7 @@ export interface OrderSubscription {
      */
     modified_at?: string;
     /**
-     * 
+     * The ID of the object.
      * @type {string}
      * @memberof OrderSubscription
      */
@@ -8490,6 +8477,18 @@ export interface OrderUser {
  * @interface Organization
  */
 export interface Organization {
+    /**
+     * Creation timestamp of the object.
+     * @type {string}
+     * @memberof Organization
+     */
+    created_at: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof Organization
+     */
+    modified_at?: string;
     /**
      * The organization ID.
      * @type {string}
@@ -9279,17 +9278,23 @@ export type Platforms = typeof Platforms[keyof typeof Platforms];
  */
 export interface Pledge {
     /**
-     * Pledge ID
-     * @type {string}
-     * @memberof Pledge
-     */
-    id: string;
-    /**
-     * When the pledge was created
+     * Creation timestamp of the object.
      * @type {string}
      * @memberof Pledge
      */
     created_at: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof Pledge
+     */
+    modified_at?: string;
+    /**
+     * The ID of the object.
+     * @type {string}
+     * @memberof Pledge
+     */
+    id: string;
     /**
      * Amount pledged towards the issue
      * @type {number}
@@ -11512,7 +11517,7 @@ export interface Subscription {
      */
     modified_at?: string;
     /**
-     * 
+     * The ID of the object.
      * @type {string}
      * @memberof Subscription
      */
@@ -13353,7 +13358,7 @@ export interface UserOrderSubscription {
      */
     modified_at?: string;
     /**
-     * 
+     * The ID of the object.
      * @type {string}
      * @memberof UserOrderSubscription
      */
@@ -13912,6 +13917,12 @@ export interface WebhookEndpoint {
      */
     url: string;
     /**
+     * The format of the webhook payload.
+     * @type {WebhookFormat}
+     * @memberof WebhookEndpoint
+     */
+    format: WebhookFormat;
+    /**
      * 
      * @type {string}
      * @memberof WebhookEndpoint
@@ -13943,6 +13954,12 @@ export interface WebhookEndpointCreate {
      */
     url: string;
     /**
+     * The format of the webhook payload.
+     * @type {WebhookFormat}
+     * @memberof WebhookEndpointCreate
+     */
+    format: WebhookFormat;
+    /**
      * The secret used to sign the webhook events.
      * @type {string}
      * @memberof WebhookEndpointCreate
@@ -13973,6 +13990,12 @@ export interface WebhookEndpointUpdate {
      * @memberof WebhookEndpointUpdate
      */
     url?: string;
+    /**
+     * The format of the webhook payload.
+     * @type {WebhookFormat}
+     * @memberof WebhookEndpointUpdate
+     */
+    format?: WebhookFormat;
     /**
      * The secret used to sign the webhook events.
      * @type {string}
@@ -14054,103 +14077,18 @@ export const WebhookEventType = {
 } as const;
 export type WebhookEventType = typeof WebhookEventType[keyof typeof WebhookEventType];
 
+
 /**
  * 
  * @export
- * @interface WebhookIntegration
  */
-export interface WebhookIntegration {
-    /**
-     * 
-     * @type {string}
-     * @memberof WebhookIntegration
-     */
-    id: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof WebhookIntegration
-     */
-    integration: WebhookIntegrationIntegrationEnum;
-    /**
-     * 
-     * @type {string}
-     * @memberof WebhookIntegration
-     */
-    url: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof WebhookIntegration
-     */
-    organization_id: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof WebhookIntegration
-     */
-    created_at: string;
-}
-
-
-/**
- * @export
- */
-export const WebhookIntegrationIntegrationEnum = {
-    SLACK: 'slack',
-    DISCORD: 'discord'
+export const WebhookFormat = {
+    RAW: 'raw',
+    DISCORD: 'discord',
+    SLACK: 'slack'
 } as const;
-export type WebhookIntegrationIntegrationEnum = typeof WebhookIntegrationIntegrationEnum[keyof typeof WebhookIntegrationIntegrationEnum];
+export type WebhookFormat = typeof WebhookFormat[keyof typeof WebhookFormat];
 
-/**
- * 
- * @export
- * @interface WebhookIntegrationCreate
- */
-export interface WebhookIntegrationCreate {
-    /**
-     * 
-     * @type {string}
-     * @memberof WebhookIntegrationCreate
-     */
-    integration: WebhookIntegrationCreateIntegrationEnum;
-    /**
-     * 
-     * @type {string}
-     * @memberof WebhookIntegrationCreate
-     */
-    url: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof WebhookIntegrationCreate
-     */
-    organization_id: string;
-}
-
-
-/**
- * @export
- */
-export const WebhookIntegrationCreateIntegrationEnum = {
-    SLACK: 'slack',
-    DISCORD: 'discord'
-} as const;
-export type WebhookIntegrationCreateIntegrationEnum = typeof WebhookIntegrationCreateIntegrationEnum[keyof typeof WebhookIntegrationCreateIntegrationEnum];
-
-/**
- * 
- * @export
- * @interface WebhookIntegrationUpdate
- */
-export interface WebhookIntegrationUpdate {
-    /**
-     * 
-     * @type {string}
-     * @memberof WebhookIntegrationUpdate
-     */
-    url: string;
-}
 /**
  * Sent when a organization is updated.
  * @export

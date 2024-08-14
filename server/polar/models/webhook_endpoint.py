@@ -21,11 +21,17 @@ class WebhookEventType(StrEnum):
     donation_created = "donation.created"
 
 
+class WebhookFormat(StrEnum):
+    raw = "raw"
+    discord = "discord"
+    slack = "slack"
+
+
 class WebhookEndpoint(RecordModel):
     __tablename__ = "webhook_endpoints"
 
     url: Mapped[str] = mapped_column(String, nullable=False)
-
+    format: Mapped[WebhookFormat] = mapped_column(String, nullable=False)
     secret: Mapped[str] = mapped_column(String, nullable=False)
 
     organization_id: Mapped[UUID | None] = mapped_column(

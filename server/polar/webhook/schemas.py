@@ -3,7 +3,7 @@ from typing import Annotated
 from pydantic import UUID4, AnyUrl, Field, PlainSerializer, UrlConstraints
 
 from polar.kit.schemas import Schema, TimestampedSchema
-from polar.models.webhook_endpoint import WebhookEventType
+from polar.models.webhook_endpoint import WebhookEventType, WebhookFormat
 from polar.organization.schemas import OrganizationID
 
 HttpsUrl = Annotated[
@@ -22,6 +22,10 @@ EndpointURL = Annotated[
         description="The URL where the webhook events will be sent.",
         examples=["https://webhook.site/cb791d80-f26e-4f8c-be88-6e56054192b0"],
     ),
+]
+EndpointFormat = Annotated[
+    WebhookFormat,
+    Field(description="The format of the webhook payload."),
 ]
 EndpointSecret = Annotated[
     str,
@@ -43,6 +47,7 @@ class WebhookEndpoint(TimestampedSchema):
 
     id: UUID4 = Field(description="The webhook endpoint ID.")
     url: EndpointURL
+    format: EndpointFormat
     user_id: UUID4 | None = Field(
         None, description=("The user ID associated with the webhook endpoint.")
     )
@@ -58,6 +63,7 @@ class WebhookEndpointCreate(Schema):
     """
 
     url: EndpointURL
+    format: EndpointFormat
     secret: EndpointSecret
     events: EndpointEvents
     organization_id: OrganizationID | None = Field(
@@ -75,6 +81,7 @@ class WebhookEndpointUpdate(Schema):
     """
 
     url: EndpointURL | None = None
+    format: EndpointFormat | None = None
     secret: EndpointSecret | None = None
     events: EndpointEvents | None = None
 

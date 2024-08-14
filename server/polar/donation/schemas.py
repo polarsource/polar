@@ -6,7 +6,7 @@ from pydantic import UUID4, Field
 
 from polar.enums import Platforms
 from polar.issue.schemas import Issue
-from polar.kit.schemas import EmailStrDNS, Schema, TimestampedSchema
+from polar.kit.schemas import EmailStrDNS, IDSchema, Schema, TimestampedSchema
 
 # Ref: https://stripe.com/docs/api/payment_intents/object#payment_intent_object-amount
 MAXIMUM_PRICE_AMOUNT = 99999999
@@ -25,22 +25,32 @@ DonationCurrency = Annotated[
 ]
 
 
-class DonationOrganization(Schema):
+class DonorBase(Schema):
+    def get_name(self) -> str:
+        raise NotImplementedError()
+
+
+class DonationOrganization(DonorBase):
     id: UUID4
     platform: Platforms
     name: str
     avatar_url: str
     is_personal: bool
 
+    def get_name(self) -> str:
+        return self.name
 
-class DonationUser(Schema):
+
+class DonationUser(DonorBase):
     id: UUID4
     public_name: str
     avatar_url: str | None
 
+    def get_name(self) -> str:
+        return self.public_name
 
-class Donation(TimestampedSchema):
-    id: UUID4
+
+class Donation(IDSchema, TimestampedSchema):
     amount: int
     currency: str
     message: str | None

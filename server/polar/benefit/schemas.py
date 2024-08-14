@@ -13,7 +13,13 @@ from pydantic import (
 
 from polar.config import settings
 from polar.kit import jwt
-from polar.kit.schemas import MergeJSONSchema, Schema, SelectorWidget, TimestampedSchema
+from polar.kit.schemas import (
+    IDSchema,
+    MergeJSONSchema,
+    Schema,
+    SelectorWidget,
+    TimestampedSchema,
+)
 from polar.models.benefit import BenefitType
 from polar.organization.schemas import OrganizationID
 
@@ -368,7 +374,7 @@ BenefitUpdate = (
 # Benefit
 
 
-class BenefitBase(TimestampedSchema):
+class BenefitBase(IDSchema, TimestampedSchema):
     id: UUID4 = Field(..., description="The ID of the benefit.")
     type: BenefitType = Field(..., description="The type of the benefit.")
     description: str = Field(..., description="The description of the benefit.")

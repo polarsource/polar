@@ -5,6 +5,7 @@ from datetime import datetime
 from typing import Annotated, Any, Literal, TypeVar, cast, get_args, overload
 
 from pydantic import (
+    UUID4,
     AfterValidator,
     BaseModel,
     ConfigDict,
@@ -23,6 +24,10 @@ from .email import EmailNotValidError, validate_email
 
 class Schema(BaseModel):
     model_config = ConfigDict(from_attributes=True)
+
+
+class IDSchema(Schema):
+    id: UUID4 = Field(..., description="The ID of the object.")
 
 
 class TimestampedSchema(Schema):

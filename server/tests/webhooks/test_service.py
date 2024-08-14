@@ -16,6 +16,7 @@ from polar.models import (
     WebhookEndpoint,
     WebhookEvent,
 )
+from polar.models.webhook_endpoint import WebhookFormat
 from polar.postgres import AsyncSession
 from polar.webhook.schemas import HttpsUrl, WebhookEndpointCreate, WebhookEndpointUpdate
 from polar.webhook.service import webhook as webhook_service
@@ -47,7 +48,11 @@ class TestCreateEndpoint:
         user: User,
     ) -> None:
         create_schema = WebhookEndpointCreate(
-            url=webhook_url, secret="SECRET", events=[], organization_id=None
+            url=webhook_url,
+            format=WebhookFormat.raw,
+            secret="SECRET",
+            events=[],
+            organization_id=None,
         )
 
         endpoint = await webhook_service.create_endpoint(
@@ -69,7 +74,11 @@ class TestCreateEndpoint:
         user_organization: UserOrganization,
     ) -> None:
         create_schema = WebhookEndpointCreate(
-            url=webhook_url, secret="SECRET", events=[], organization_id=organization.id
+            url=webhook_url,
+            format=WebhookFormat.raw,
+            secret="SECRET",
+            events=[],
+            organization_id=organization.id,
         )
 
         endpoint = await webhook_service.create_endpoint(
@@ -88,7 +97,11 @@ class TestCreateEndpoint:
         authz: Authz,
     ) -> None:
         create_schema = WebhookEndpointCreate(
-            url=webhook_url, secret="SECRET", events=[], organization_id=uuid.uuid4()
+            url=webhook_url,
+            format=WebhookFormat.raw,
+            secret="SECRET",
+            events=[],
+            organization_id=uuid.uuid4(),
         )
 
         with pytest.raises(PolarRequestValidationError):
@@ -107,7 +120,11 @@ class TestCreateEndpoint:
         organization: Organization,
     ) -> None:
         create_schema = WebhookEndpointCreate(
-            url=webhook_url, secret="SECRET", events=[], organization_id=None
+            url=webhook_url,
+            format=WebhookFormat.raw,
+            secret="SECRET",
+            events=[],
+            organization_id=None,
         )
 
         endpoint = await webhook_service.create_endpoint(

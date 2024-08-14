@@ -10,7 +10,11 @@ from standardwebhooks.webhooks import Webhook as StandardWebhook
 from polar.kit.db.postgres import AsyncSession
 from polar.models.organization import Organization
 from polar.models.subscription import Subscription
-from polar.models.webhook_endpoint import WebhookEndpoint, WebhookEventType
+from polar.models.webhook_endpoint import (
+    WebhookEndpoint,
+    WebhookEventType,
+    WebhookFormat,
+)
 from polar.models.webhook_event import WebhookEvent
 from polar.subscription.service import subscription as subscription_service
 from polar.webhook.service import webhook as webhook_service
@@ -41,6 +45,7 @@ async def test_webhook_send(
 
     endpoint = WebhookEndpoint(
         url="https://example.com/hook",
+        format=WebhookFormat.raw,
         organization_id=organization.id,
         secret="mysecret",
         events=[WebhookEventType.subscription_created],  # subscribe to event
@@ -83,6 +88,7 @@ async def test_webhook_send_not_subscribed_to_event(
 
     endpoint = WebhookEndpoint(
         url="https://example.com/hook",
+        format=WebhookFormat.raw,
         organization_id=organization.id,
         secret="mysecret",
         events=[],  # not subscribing
@@ -121,6 +127,7 @@ async def test_webhook_delivery(
 
     endpoint = WebhookEndpoint(
         url="https://example.com/hook",
+        format=WebhookFormat.raw,
         organization_id=organization.id,
         secret="mysecret",
     )
@@ -157,6 +164,7 @@ async def test_webhook_delivery_500(
 
     endpoint = WebhookEndpoint(
         url="https://example.com/hook",
+        format=WebhookFormat.raw,
         organization_id=organization.id,
         secret="mysecret",
     )
@@ -213,6 +221,7 @@ async def test_webhook_standard_webhooks_compatible(
 
     endpoint = WebhookEndpoint(
         url="https://example.com/hook",
+        format=WebhookFormat.raw,
         organization_id=organization.id,
         secret="mysecret",
     )
@@ -259,6 +268,7 @@ async def test_webhook_standard_webhooks_fails_unexpected_secret(
 
     endpoint = WebhookEndpoint(
         url="https://example.com/hook",
+        format=WebhookFormat.raw,
         organization_id=organization.id,
         secret="not-mysecret",
     )

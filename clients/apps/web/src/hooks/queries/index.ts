@@ -36,7 +36,6 @@ export * from './subscriptions'
 export * from './traffic'
 export * from './transactions'
 export * from './user'
-export * from './webhookNotifications'
 export * from './webhooks'
 
 export const useListRepositories: (

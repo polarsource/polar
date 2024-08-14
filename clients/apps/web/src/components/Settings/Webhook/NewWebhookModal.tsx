@@ -14,7 +14,7 @@ import Link from 'next/link'
 import Button from 'polarkit/components/ui/atoms/button'
 import { Form } from 'polarkit/components/ui/form'
 import { Banner } from 'polarkit/components/ui/molecules'
-import { FieldEvents, FieldSecret, FieldUrl } from './WebhookForm'
+import { FieldEvents, FieldFormat, FieldSecret, FieldUrl } from './WebhookForm'
 
 export default function NewWebhookModal({
   organization,
@@ -75,6 +75,7 @@ export default function NewWebhookModal({
             className="max-w-[700px] space-y-8"
           >
             <FieldUrl />
+            <FieldFormat />
             <FieldSecret isUpdate={false} />
             <FieldEvents />
 

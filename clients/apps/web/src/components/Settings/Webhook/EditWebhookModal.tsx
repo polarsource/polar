@@ -14,6 +14,7 @@ import { ConfirmModal } from '@/components/Modal/ConfirmModal'
 import { useModal } from '@/components/Modal/useModal'
 import {
   FieldEvents,
+  FieldFormat,
   FieldSecret,
   FieldUrl,
 } from '@/components/Settings/Webhook/WebhookForm'
@@ -76,7 +77,14 @@ export default function EditWebhookModal({
     hideDeleteModal()
     hide()
     router.push(`/dashboard/${organization.slug}/settings`)
-  }, [hideDeleteModal, router, endpoint, organization, hide])
+  }, [
+    deleteWebhookEndpoint,
+    hideDeleteModal,
+    router,
+    endpoint,
+    organization,
+    hide,
+  ])
 
   return (
     <DashboardBody>
@@ -91,6 +99,7 @@ export default function EditWebhookModal({
             className="max-w-[700px] space-y-8"
           >
             <FieldUrl />
+            <FieldFormat />
             <FieldSecret isUpdate={true} />
             <FieldEvents />
 

@@ -46,6 +46,7 @@ export function addHours(date: Date, hours: number) {
 
 export const org: Organization = {
   id: 'xxxabc',
+  created_at: new Date('2023-01-01T00:00:00Z').toISOString(),
   name: 'Pydantic',
   slug: 'pydantic',
   avatar_url: 'https://avatars.githubusercontent.com/u/110818415?s=48&v=4',

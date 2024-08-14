@@ -8,7 +8,7 @@ export const Section = ({
   return (
     <div
       id={id}
-      className="mb-8 flex w-full max-w-full flex-col space-y-4 pt-8 xl:flex-row xl:space-x-24 xl:space-y-0"
+      className="mb-8 flex flex-col space-y-4 pt-8 xl:flex-row xl:space-x-24 xl:space-y-0"
     >
       {children}
     </div>

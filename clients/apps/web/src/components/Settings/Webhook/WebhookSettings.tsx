@@ -27,7 +27,7 @@ const WebhookSettings = (props: { org: Organization }) => {
   })
 
   return (
-    <div className="flex w-full flex-col">
+    <>
       <ShadowListGroup>
         {endpoints.data?.items && endpoints.data.items.length > 0 ? (
           endpoints.data?.items?.map((e) => {
@@ -71,7 +71,7 @@ const WebhookSettings = (props: { org: Organization }) => {
           />
         }
       />
-    </div>
+    </>
   )
 }
 
@@ -85,30 +85,21 @@ const Endpoint = ({
   endpoint: WebhookEndpoint
 }) => {
   return (
-    <div className="flex w-full flex-col gap-y-4">
-      <div className="flex flex-row items-center justify-between ">
-        <div className="flex  flex-row overflow-hidden">
-          <div className="flex flex-col gap-y-1 overflow-hidden">
-            <h3 className="text-md mr-4 overflow-hidden text-ellipsis whitespace-nowrap font-mono text-sm">
-              {endpoint.url}
-            </h3>
-            <p className="dark:text-polar-400 text-sm text-gray-500">
-              <FormattedDateTime
-                datetime={endpoint.created_at}
-                dateStyle="long"
-              />
-            </p>
-          </div>
-        </div>
-        <div className="dark:text-polar-400 flex flex-shrink-0 flex-row items-center gap-x-4 space-x-4 text-gray-500">
-          <Link
-            href={`/dashboard/${organization.slug}/settings/webhooks/endpoints/${endpoint.id}`}
-          >
-            <Button asChild variant="secondary">
-              Details
-            </Button>
-          </Link>
-        </div>
+    <div className="flex items-center justify-between overflow-hidden">
+      <div className="flex w-2/3 flex-col gap-y-1">
+        <p className="truncate font-mono text-sm">{endpoint.url}</p>
+        <p className="dark:text-polar-400 text-sm text-gray-500">
+          <FormattedDateTime datetime={endpoint.created_at} dateStyle="long" />
+        </p>
+      </div>
+      <div className="dark:text-polar-400 text-gray-500">
+        <Link
+          href={`/dashboard/${organization.slug}/settings/webhooks/endpoints/${endpoint.id}`}
+        >
+          <Button asChild variant="secondary">
+            Details
+          </Button>
+        </Link>
       </div>
     </div>
   )

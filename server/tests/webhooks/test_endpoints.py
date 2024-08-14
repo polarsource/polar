@@ -62,6 +62,7 @@ class TestCreateWebhookEndpoint:
     async def test_user_missing_scope(self, client: AsyncClient) -> None:
         params = {
             "url": "https://example.com/hook",
+            "format": "raw",
             "secret": "foo",
             "events": [],
         }
@@ -76,6 +77,7 @@ class TestCreateWebhookEndpoint:
     async def test_user_valid(self, client: AsyncClient) -> None:
         params = {
             "url": "https://example.com/hook",
+            "format": "raw",
             "secret": "foo",
             "events": [],
         }
@@ -88,6 +90,7 @@ class TestCreateWebhookEndpoint:
         params = {
             "url": "https://example.com/hook",
             "secret": "foo",
+            "format": "raw",
             "events": [],
         }
         response = await client.post("/v1/webhooks/endpoints", json=params)
@@ -102,6 +105,7 @@ class TestCreateWebhookEndpoint:
     ) -> None:
         params = {
             "url": "https://example.com/hook",
+            "format": "raw",
             "secret": "foo",
             "events": [],
         }

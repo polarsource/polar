@@ -8,7 +8,7 @@ from pydantic import Field, model_validator
 
 from polar.funding.funding_schema import Funding
 from polar.issue.schemas import Issue
-from polar.kit.schemas import Schema
+from polar.kit.schemas import IDSchema, Schema, TimestampedSchema
 from polar.models import Organization, User
 from polar.models.pledge import Pledge as PledgeModel
 from polar.models.pledge import PledgeState, PledgeType
@@ -64,9 +64,7 @@ class Pledger(Schema):
 
 
 # Public API
-class Pledge(Schema):
-    id: UUID = Field(description="Pledge ID")
-    created_at: datetime = Field(description="When the pledge was created")
+class Pledge(IDSchema, TimestampedSchema):
     amount: int = Field(description="Amount pledged towards the issue")
     currency: str
     state: PledgeState = Field(description="Current state of the pledge")
@@ -118,6 +116,7 @@ class Pledge(Schema):
         return Pledge(
             id=o.id,
             created_at=o.created_at,
+            modified_at=o.modified_at,
             amount=o.amount,
             currency=o.currency,
             state=PledgeState.from_str(o.state),

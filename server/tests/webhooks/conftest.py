@@ -7,6 +7,7 @@ from polar.models import (
     WebhookEndpoint,
     WebhookEvent,
 )
+from polar.models.webhook_endpoint import WebhookFormat
 from tests.fixtures.database import SaveFixture
 
 
@@ -16,6 +17,7 @@ async def webhook_endpoint_user(
 ) -> WebhookEndpoint:
     endpoint = WebhookEndpoint(
         url="https://example.com/foo",
+        format=WebhookFormat.raw,
         user_id=user.id,
         secret="foobar",
     )
@@ -44,6 +46,7 @@ async def webhook_endpoint_organization(
 ) -> WebhookEndpoint:
     endpoint = WebhookEndpoint(
         url="https://example.com/foo",
+        format=WebhookFormat.raw,
         organization_id=organization.id,
         secret="foobar",
     )

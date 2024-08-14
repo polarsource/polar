@@ -17,9 +17,11 @@ from polar.currency.schemas import CurrencyAmount
 from polar.kit.schemas import (
     EmptyStrToNoneValidator,
     HttpUrlToStr,
+    IDSchema,
     MergeJSONSchema,
     Schema,
     SelectorWidget,
+    TimestampedSchema,
 )
 
 OrganizationID = Annotated[
@@ -75,7 +77,7 @@ class OrganizationProfileSettings(Schema):
 
 
 # Public API
-class Organization(Schema):
+class Organization(IDSchema, TimestampedSchema):
     id: OrganizationID
     name: str
     slug: str

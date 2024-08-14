@@ -1,7 +1,7 @@
 from collections.abc import Sequence
-from typing import NoReturn
 from uuid import UUID
 
+import structlog
 from sqlalchemy import Select, and_, desc, or_, select, text
 from sqlalchemy.orm import contains_eager, joinedload
 
@@ -11,6 +11,7 @@ from polar.exceptions import NotPermitted, PolarRequestValidationError, Resource
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.utils import utc_now
+from polar.logging import Logger
 from polar.models.organization import Organization
 from polar.models.user import User
 from polar.models.user_organization import UserOrganization
@@ -22,13 +23,13 @@ from polar.webhook.schemas import WebhookEndpointCreate, WebhookEndpointUpdate
 from polar.worker import enqueue_job
 
 from .webhooks import (
+    SkipEvent,
+    UnsupportedTarget,
     WebhookPayloadTypeAdapter,
     WebhookTypeObject,
 )
 
-
-def assert_never(value: NoReturn) -> NoReturn:
-    assert False, f"Unhandled value: {value} ({type(value).__name__})"
+log: Logger = structlog.get_logger()
 
 
 class WebhookService:
@@ -230,12 +231,20 @@ class WebhookService:
         for e in await self._get_event_target_endpoints(
             session, event=event, target=target
         ):
-            event_type = WebhookEvent(
-                webhook_endpoint_id=e.id, payload=payload.model_dump_json()
-            )
-            session.add(event_type)
-            await session.flush()
-            enqueue_job("webhook_event.send", webhook_event_id=event_type.id)
+            try:
+                payload_data = payload.get_payload(e.format, target)
+                event_type = WebhookEvent(
+                    webhook_endpoint_id=e.id, payload=payload_data
+                )
+                session.add(event_type)
+                await session.flush()
+                enqueue_job("webhook_event.send", webhook_event_id=event_type.id)
+            except UnsupportedTarget as e:
+                # Log the error but do not raise to not fail the whole request
+                log.error(e.message)
+                continue
+            except SkipEvent:
+                continue
 
     def _get_readable_endpoints_statement(
         self, auth_subject: AuthSubject[User | Organization]

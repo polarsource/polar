@@ -1,11 +1,13 @@
 from typing import Annotated, Literal
 
+from babel.numbers import format_currency
 from pydantic import UUID4, AfterValidator, Discriminator, Field
 
 from polar.benefit.schemas import BenefitID, BenefitPublic
 from polar.file.schemas import ProductMediaFileRead
 from polar.kit.schemas import (
     EmptyStrToNoneValidator,
+    IDSchema,
     MergeJSONSchema,
     Schema,
     SelectorWidget,
@@ -258,6 +260,9 @@ class ProductPriceRecurring(ProductPriceBase):
         None, description="The recurring interval of the price, if type is `recurring`."
     )
 
+    def get_display_price(self) -> str:
+        return f"{format_currency(self.price_amount / 100, self.price_currency.upper(), locale="en_US")}/{self.recurring_interval}"
+
 
 class ProductPriceOneTime(ProductPriceBase):
     """
@@ -268,13 +273,16 @@ class ProductPriceOneTime(ProductPriceBase):
         description="The type of the price."
     )
 
+    def get_display_price(self) -> str:
+        return f"{format_currency(self.price_amount / 100, self.price_currency.upper(), locale="en_US")}"
+
 
 ProductPrice = Annotated[
     ProductPriceRecurring | ProductPriceOneTime, Discriminator("type")
 ]
 
 
-class ProductBase(TimestampedSchema):
+class ProductBase(IDSchema, TimestampedSchema):
     id: UUID4 = Field(description="The ID of the product.")
     name: str = Field(description="The name of the product.")
     description: str | None = Field(

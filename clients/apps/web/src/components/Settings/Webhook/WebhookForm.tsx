@@ -2,9 +2,17 @@ import {
   WebhookEndpointCreate,
   WebhookEndpointUpdate,
   WebhookEventType,
+  WebhookFormat,
 } from '@polar-sh/sdk'
 import Button from 'polarkit/components/ui/atoms/button'
 import Input from 'polarkit/components/ui/atoms/input'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from 'polarkit/components/ui/atoms/select'
 import { Checkbox } from 'polarkit/components/ui/checkbox'
 import {
   FormControl,
@@ -15,6 +23,7 @@ import {
 } from 'polarkit/components/ui/form'
 
 import Link from 'next/link'
+import { useEffect } from 'react'
 import { useFormContext } from 'react-hook-form'
 
 type CreateOrUpdate = WebhookEndpointCreate | WebhookEndpointUpdate
@@ -45,6 +54,52 @@ export const FieldUrl = () => {
           </div>
           <FormControl>
             <Input {...field} placeholder="https://..." />
+          </FormControl>
+          <FormMessage />
+        </FormItem>
+      )}
+    />
+  )
+}
+
+export const FieldFormat = () => {
+  const { control, watch, setValue } = useFormContext<CreateOrUpdate>()
+
+  const url = watch('url')
+  useEffect(() => {
+    if (!url) {
+      return
+    }
+    if (url.startsWith('https://discord.com/api/webhooks')) {
+      setValue('format', WebhookFormat.DISCORD)
+    } else if (url.startsWith('https://hooks.slack.com/services/')) {
+      setValue('format', WebhookFormat.SLACK)
+    }
+  }, [url, setValue])
+
+  return (
+    <FormField
+      control={control}
+      name="format"
+      rules={{
+        required: 'This field is required',
+      }}
+      render={({ field }) => (
+        <FormItem className="flex flex-col gap-1">
+          <div className="flex flex-row items-center justify-between">
+            <FormLabel>Format</FormLabel>
+          </div>
+          <FormControl>
+            <Select {...field}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select a payload format" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={WebhookFormat.RAW}>Raw</SelectItem>
+                <SelectItem value={WebhookFormat.DISCORD}>Discord</SelectItem>
+                <SelectItem value={WebhookFormat.SLACK}>Slack</SelectItem>
+              </SelectContent>
+            </Select>
           </FormControl>
           <FormMessage />
         </FormItem>

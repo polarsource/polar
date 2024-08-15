@@ -115,28 +115,16 @@ export const Monetization = () => {
     <>
       <div className="flex flex-col items-center gap-y-24 md:gap-y-32">
         <motion.div
-          className="relative flex flex-col gap-y-4"
+          className="relative flex flex-col items-center gap-y-6"
           initial={{ opacity: 0 }}
           whileInView={{ opacity: 1, transition: { duration: 2 } }}
         >
-          <picture>
-            <source
-              media="(prefers-color-scheme: dark)"
-              srcSet={`/assets/landing/overview_dark.png`}
-            />
-            <img
-              className="dark:border-polar-700 rounded-4xl border border-gray-200"
-              srcSet={`/assets/landing/overview.png`}
-            />
-          </picture>
-          <div className="dark:from-polar-950 absolute inset-0 flex flex-col items-center justify-end gap-y-2 bg-gradient-to-t from-white from-25% to-transparent to-80% p-6 text-center md:gap-y-8 md:p-12 dark:to-transparent">
-            <h2 className="text-2xl leading-snug md:text-5xl">
-              From first donation to IPO
-            </h2>
-            <h3 className="dark:text-polar-600 text-xl leading-snug text-gray-300 md:text-4xl">
-              Polar offers features to scale with your needs
-            </h3>
-          </div>
+          <h2 className="text-2xl leading-snug md:text-5xl">
+            From first donation to IPO
+          </h2>
+          <h3 className="dark:text-polar-600 text-xl leading-snug text-gray-300 md:text-4xl">
+            Polar offers features to scale with your needs
+          </h3>
         </motion.div>
         <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
           <FeatureItem

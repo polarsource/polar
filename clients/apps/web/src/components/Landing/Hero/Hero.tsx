@@ -12,7 +12,7 @@ export const Hero = () => {
     >
       <div className="relative z-20 flex w-full flex-col items-center gap-y-12 text-center xl:w-2/3">
         <div className="z-20 flex flex-col items-center gap-y-12">
-          <h1 className="text-5xl leading-snug text-gray-950 md:text-7xl md:leading-tight dark:text-white">
+          <h1 className="text-4xl leading-snug text-gray-950 md:text-7xl md:leading-tight dark:text-white">
             The best monetization platform for developers
           </h1>
           <div className="flex flex-col items-center gap-y-4 xl:w-2/3">

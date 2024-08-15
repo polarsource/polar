@@ -115,7 +115,7 @@ export const Monetization = () => {
     <>
       <div className="flex flex-col items-center gap-y-24 md:gap-y-32">
         <motion.div
-          className="relative flex flex-col items-center gap-y-6"
+          className="relative flex flex-col items-center gap-y-6 text-center"
           initial={{ opacity: 0 }}
           whileInView={{ opacity: 1, transition: { duration: 2 } }}
         >

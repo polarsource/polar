@@ -8,6 +8,7 @@ import {
   DraftsOutlined,
   HiveOutlined,
   HowToVote,
+  LooksOutlined,
   ShoppingBagOutlined,
   SpaceDashboardOutlined,
   SpokeOutlined,
@@ -189,6 +190,13 @@ const generalRoutesList = (org: Organization): Route[] => [
         link: `/dashboard/${org.slug}/sales/subscriptions`,
       },
     ],
+  },
+  {
+    id: 'customize',
+    title: 'Customize',
+    icon: <LooksOutlined fontSize="inherit" />,
+    link: `/dashboard/${org.slug}/customize`,
+    if: true,
   },
   {
     id: 'analytics',

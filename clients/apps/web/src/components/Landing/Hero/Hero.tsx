@@ -62,8 +62,9 @@ export const Hero = () => {
       <video
         src="/assets/landing/polar_ui_2.webm"
         width="100%"
-        className="dark:border-polar-700 rounded-4xl aspect-video border border-gray-200"
+        className="dark:border-polar-700 xl:rounded-4xl aspect-video rounded-2xl border border-gray-200 lg:rounded-3xl"
         autoPlay
+        playsInline
         muted
       />
     </Section>

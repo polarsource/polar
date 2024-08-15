@@ -31,10 +31,6 @@ export const HeroGraphic = () => {
           subscriptionTier={MOCKED_SUBSCRIPTIONS[0]}
         />
         <SubCard
-          className="shadow-3xl scale-90"
-          subscriptionTier={MOCKED_SUBSCRIPTIONS[1]}
-        />
-        <SubCard
           className="shadow-3xl absolute -right-6 z-20"
           subscriptionTier={MOCKED_SUBSCRIPTIONS[2]}
         />

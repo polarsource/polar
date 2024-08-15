@@ -10,13 +10,6 @@ export const Hero = () => {
       className="flex w-full flex-col items-center gap-24 md:py-24"
       wrapperClassName="relative isolate overflow-hidden"
     >
-      <video
-        src="/assets/landing/polar_ui_2.webm"
-        width="100%"
-        className="dark:border-polar-700 rounded-4xl aspect-video border border-gray-200"
-        autoPlay
-        muted
-      />
       <div className="relative z-20 flex w-full flex-col items-center gap-y-12 text-center xl:w-2/3">
         <div className="z-20 flex flex-col items-center gap-y-12">
           <h1 className="text-5xl leading-snug text-gray-950 md:text-7xl md:leading-tight dark:text-white">
@@ -66,6 +59,13 @@ export const Hero = () => {
           <GetStartedButton />
         </div>
       </div>
+      <video
+        src="/assets/landing/polar_ui_2.webm"
+        width="100%"
+        className="dark:border-polar-700 rounded-4xl aspect-video border border-gray-200"
+        autoPlay
+        muted
+      />
     </Section>
   )
 }

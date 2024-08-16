@@ -5,24 +5,19 @@ import {
   ReceiptLongOutlined,
   TrendingUpOutlined,
 } from '@mui/icons-material'
-import { motion } from 'framer-motion'
 import FeatureItem from './molecules/FeatureItem'
 
 export const MerchantOfRecord = () => {
   return (
     <div className="flex flex-col gap-y-24">
-      <motion.div
-        className="relative flex flex-col gap-y-4"
-        initial={{ opacity: 0 }}
-        whileInView={{ opacity: 1, transition: { duration: 2 } }}
-      >
+      <div className="relative flex flex-col gap-y-4">
         <picture>
           <source
             media="(prefers-color-scheme: dark)"
             srcSet={`/assets/landing/metrics_dark.png`}
           />
           <img
-            className="dark:border-polar-700 rounded-4xl border border-gray-200"
+            className="dark:border-polar-700 md:rounded-4xl rounded-2xl border border-gray-200"
             srcSet={`/assets/landing/metrics.png`}
             alt="Metrics dashboard in Polar"
           />
@@ -31,11 +26,11 @@ export const MerchantOfRecord = () => {
           <h2 className="text-2xl leading-snug md:text-5xl">
             Increase sales, not overhead
           </h2>
-          <h3 className="dark:text-polar-600 text-xl leading-snug text-gray-300 md:text-4xl">
+          <h3 className="dark:text-polar-600 text-xl leading-snug text-gray-500 md:text-4xl">
             Polar handles VAT, sales tax and billing so you don&apos;t have to
           </h3>
         </div>
-      </motion.div>
+      </div>
 
       <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
         <FeatureItem

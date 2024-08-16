@@ -45,7 +45,7 @@ const FeatureItem = ({
           ) : (
             <div className="-mr-4 h-10" />
           )}
-          <h3 className="text-lg leading-snug">{title}</h3>
+          <h3 className="text-lg font-medium leading-snug">{title}</h3>
         </CardHeader>
         <CardContent className="flex h-full flex-col gap-y-4 pb-6">
           <p className="dark:text-polar-200 h-full leading-relaxed text-gray-500 transition-colors group-hover:text-black dark:group-hover:text-white">

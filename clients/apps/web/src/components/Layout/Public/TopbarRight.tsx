@@ -30,7 +30,7 @@ const TopbarRight = ({
         </div>
       ) : (
         <>
-          <GetStartedButton className="px-2 py-4 text-sm" />
+          <GetStartedButton size="sm" />
           <Link
             href={`/login?return_to=${loginReturnTo}`}
             className="text-sm text-blue-500 hover:text-blue-400 dark:text-blue-400 dark:hover:text-blue-300"

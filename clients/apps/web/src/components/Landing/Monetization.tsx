@@ -5,11 +5,13 @@ import {
   DiamondOutlined,
   FileDownloadOutlined,
   HiveOutlined,
-  StickyNote2Outlined,
-  TuneOutlined,
-  VerifiedOutlined,
+  Inventory2,
+  Key,
+  Lightbulb,
+  StickyNote2,
+  Tune,
+  Verified,
 } from '@mui/icons-material'
-import { motion } from 'framer-motion'
 import Link from 'next/link'
 import Avatar from 'polarkit/components/ui/atoms/avatar'
 import { twMerge } from 'tailwind-merge'
@@ -24,6 +26,7 @@ interface BenefitCardProps {
   title: string
   description: string
   icon: JSX.Element
+  link?: string
 }
 
 const BenefitCard = ({
@@ -31,18 +34,21 @@ const BenefitCard = ({
   title,
   description,
   icon,
+  link,
 }: BenefitCardProps) => {
   return (
     <Link
-      href="/benefits"
+      href={link ?? '/benefits'}
       className={twMerge(
-        'hover:bg-gray-75 dark:hover:bg-polar-900 dark:bg-polar-950 flex flex-col justify-between gap-y-8 bg-white p-8 transition-colors',
+        'hover:bg-gray-75 dark:hover:bg-polar-900 dark:bg-polar-950 bg-gray-75 flex flex-col justify-between gap-y-8 rounded-3xl p-8 transition-colors',
         className,
       )}
     >
-      <span>{icon}</span>
+      <span className="flex h-10 w-10 flex-col items-center justify-center rounded-full bg-blue-100 text-blue-500 dark:bg-blue-950 dark:text-blue-300">
+        {icon}
+      </span>
       <div className="flex flex-col gap-y-2">
-        <h3>{title}</h3>
+        <h3 className="font-medium">{title}</h3>
         <p className="dark:text-polar-200 text-gray-500">{description}</p>
       </div>
     </Link>
@@ -51,81 +57,88 @@ const BenefitCard = ({
 
 const Benefits = () => {
   return (
-    <>
-      <div className="flex flex-col items-center gap-y-4 text-center md:gap-y-8">
+    <div className="flex flex-col gap-y-16">
+      <div className="flex flex-col gap-y-2 md:gap-y-6">
         <h2 className="text-2xl leading-snug md:text-5xl">
           Powerful & built-in benefits
         </h2>
-        <p className="dark:text-polar-600 text-xl leading-snug text-gray-300 md:text-4xl">
+        <p className="dark:text-polar-500 text-xl leading-snug text-gray-400 md:text-4xl">
           We&apos;re building common developer upsells so you don&apos;t have to
         </p>
       </div>
-      <div className="rounded-4xl grid grid-cols-1 overflow-hidden border md:grid-cols-3">
+      <div className="rounded-4xl grid grid-cols-1 gap-6 overflow-hidden md:grid-cols-3">
         <BenefitCard
-          className="border-b md:border-r"
-          icon={<GitHubIcon width={30} height={30} />}
+          icon={<GitHubIcon width={24} height={24} />}
           title="Private GitHub Repositories"
           description="Automate access to an unlimited amount of private GitHub repositories."
         />
         <BenefitCard
-          className="border-b md:border-r"
           icon={
-            <FileDownloadOutlined className="text-4xl" fontSize="inherit" />
+            <FileDownloadOutlined className="text-2xl" fontSize="inherit" />
           }
           title="File Downloads"
-          description="From e-books, source code to executables - any file is supported up to 10GB/each."
+          description="From e-books, source code to executables - any file up to 10GB/each."
         />
         <BenefitCard
-          className="border-b"
-          icon={<StickyNote2Outlined className="text-4xl" fontSize="inherit" />}
+          icon={<StickyNote2 className="text-2xl" fontSize="inherit" />}
           title="Free & Premium Newsletters"
           description="Write a free, premium or early access newsletter in GitHub flavoured markdown."
         />
         <BenefitCard
-          className="border-b md:border-b-0 md:border-r"
-          icon={<DiscordIcon size={30} />}
+          icon={<DiscordIcon size={24} />}
           title="Discord Invites & Roles"
           description="Give customers exclusive access or premium appearances and permissions."
         />
         <BenefitCard
-          className="border-b md:border-b-0 md:border-r"
-          icon={<VerifiedOutlined className="text-4xl" fontSize="inherit" />}
+          icon={<Verified className="text-2xl" fontSize="inherit" />}
           title="Sponsor Promotion"
           description="Automate README.md logotypes and offer newsletter sponsorship."
         />
         <BenefitCard
-          icon={<TuneOutlined className="text-4xl" fontSize="inherit" />}
+          icon={<Tune className="text-2xl" fontSize="inherit" />}
           title="Custom Benefit"
           description="Create your own and share secret notes, e.g Cal.com link to book consultation."
         />
       </div>
-      <div className="-mt-12 text-center">
-        <p className="dark:bg-polar-800 dark:border-polar-700 dark:text-polar-400 inline-block rounded-full bg-gray-100 px-4 py-2 text-gray-400 dark:border">
-          License keys, private packages & more to come
-        </p>
+      <div className="flex flex-col gap-y-8">
+        <h2 className="text-lg md:text-2xl">Coming soon</h2>
+        <div className="rounded-4xl grid grid-cols-1 gap-6 overflow-hidden md:grid-cols-3">
+          <BenefitCard
+            icon={<Key className="text-2xl" />}
+            title="License Keys"
+            description="Verifiable license keys for your custom usecases."
+          />
+          <BenefitCard
+            icon={<Inventory2 className="text-2xl" fontSize="inherit" />}
+            title="Private Package Registry"
+            description="Gatekeep access to packages for your paying customers."
+          />
+          <BenefitCard
+            icon={<Lightbulb className="text-2xl" fontSize="inherit" />}
+            title="Have ideas?"
+            description="We're constantly trying to improve our benefit offerings."
+            link="https://github.com/polarsource/polar/issues/new"
+          />
+        </div>
       </div>
-    </>
+    </div>
   )
 }
 
 export const Monetization = () => {
-  const circleRadius = 80
+  // const circleRadius = 80
 
   return (
-    <>
-      <div className="flex flex-col items-center gap-y-24 md:gap-y-32">
-        <motion.div
-          className="relative flex flex-col items-center gap-y-6 text-center"
-          initial={{ opacity: 0 }}
-          whileInView={{ opacity: 1, transition: { duration: 2 } }}
-        >
+    <div className="flex flex-col gap-y-24 md:gap-y-32">
+      <div className="flex flex-col gap-y-16">
+        <div className="relative flex flex-col gap-y-2 md:gap-y-6">
           <h2 className="text-2xl leading-snug md:text-5xl">
             From first donation to IPO
           </h2>
-          <h3 className="dark:text-polar-600 text-xl leading-snug text-gray-300 md:text-4xl">
+          <h3 className="dark:text-polar-500 text-xl leading-snug text-gray-400 md:text-4xl">
             Polar offers features to scale with your needs
           </h3>
-        </motion.div>
+        </div>
         <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
           <FeatureItem
             className="md:row-span-2"
@@ -172,14 +185,14 @@ export const Monetization = () => {
             link="#integrations"
           />
         </div>
+      </div>
 
-        <Benefits />
-
-        <div className="flex flex-col items-center gap-y-4 text-center md:gap-y-8">
+      <div className="flex flex-col gap-y-16">
+        <div className="flex flex-col gap-y-2 md:gap-y-6">
           <h2 className="text-2xl leading-snug md:text-5xl">
             Supporting all use cases
           </h2>
-          <p className="dark:text-polar-600 text-xl leading-snug text-gray-300 md:text-4xl">
+          <p className="dark:text-polar-500 text-xl leading-snug text-gray-400 md:text-4xl">
             From sustainable open source, sponsorware to full-fledged SaaS
           </p>
         </div>
@@ -234,46 +247,48 @@ export const Monetization = () => {
             </Link>
           ))}
         </div>
+      </div>
 
-        <Link
-          className="relative hidden h-64 w-64 flex-col items-center justify-center rounded-full md:flex"
-          href="https://polar.sh/polarsource/posts/github-supports-polar-in-funding-yaml"
-        >
-          <GitHubIcon
-            className="text-black dark:text-white"
-            width={60}
-            height={60}
-          />
-          <div className="absolute inset-0 h-full w-full animate-spin fill-black text-xl font-semibold uppercase tracking-wide [animation-duration:32s] dark:fill-white">
-            <svg
-              x="0"
-              y="0"
-              viewBox="0 0 300 300"
-              enableBackground="new 0 0 300 300"
-              xmlSpace="preserve"
-            >
-              <defs>
-                <path
-                  id="circlePath"
-                  d={`
+      <Benefits />
+
+      {/* <Link
+        className="relative hidden h-64 w-64 flex-col items-center justify-center rounded-full md:flex"
+        href="https://polar.sh/polarsource/posts/github-supports-polar-in-funding-yaml"
+      >
+        <GitHubIcon
+          className="text-black dark:text-white"
+          width={60}
+          height={60}
+        />
+        <div className="absolute inset-0 h-full w-full animate-spin fill-black text-xl font-semibold uppercase tracking-wide [animation-duration:32s] dark:fill-white">
+          <svg
+            x="0"
+            y="0"
+            viewBox="0 0 300 300"
+            enableBackground="new 0 0 300 300"
+            xmlSpace="preserve"
+          >
+            <defs>
+              <path
+                id="circlePath"
+                d={`
           M 150, 150
           m -${circleRadius}, 0
           a ${circleRadius},${circleRadius} 0 0,1 ${circleRadius * 2},0
           a ${circleRadius},${circleRadius} 0 0,1 -${circleRadius * 2},0
           `}
-                />
-              </defs>
-              <g>
-                <text fontSize={12}>
-                  <textPath xlinkHref="#circlePath" textLength={80 * 6.1}>
-                    Official Funding Option · Official Funding Option ·
-                  </textPath>
-                </text>
-              </g>
-            </svg>
-          </div>
-        </Link>
-      </div>
-    </>
+              />
+            </defs>
+            <g>
+              <text fontSize={12}>
+                <textPath xlinkHref="#circlePath" textLength={80 * 6.1}>
+                  Official Funding Option · Official Funding Option ·
+                </textPath>
+              </text>
+            </g>
+          </svg>
+        </div>
+      </Link> */}
+    </div>
   )
 }

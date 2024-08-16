@@ -1,29 +1,38 @@
+import { ArrowForwardOutlined } from '@mui/icons-material'
 import Link from 'next/link'
 import Button from 'polarkit/components/ui/atoms/button'
+import { ComponentProps } from 'react'
 import { twMerge } from 'tailwind-merge'
 
-interface GetStartedButtonProps {
+interface GetStartedButtonProps extends ComponentProps<typeof Button> {
   text?: string
   returnTo?: string
-  wrapperClassNames?: string
-  className?: string
 }
 
 const GetStartedButton: React.FC<GetStartedButtonProps> = ({
   text: _text,
   returnTo: _returnTo,
   wrapperClassNames,
-  className,
+  size = 'lg',
+  ...props
 }) => {
-  const text = _text || 'Get Started'
+  const text = _text || 'Start for free'
   const returnTo = _returnTo ? encodeURIComponent(_returnTo) : '/dashboard'
   return (
     <Link href={`/login${returnTo ? `?return_to=${returnTo}` : ''}`}>
       <Button
-        wrapperClassNames={twMerge('space-x-3 p-2.5', wrapperClassNames)}
-        className={twMerge('text-md p-5', className)}
+        wrapperClassNames={twMerge(
+          'flex flex-row items-center gap-x-2',
+          wrapperClassNames,
+        )}
+        size={size}
+        {...props}
       >
-        {text}
+        <div>{text}</div>
+        <ArrowForwardOutlined
+          className={size === 'lg' ? 'text-lg' : 'text-md'}
+          fontSize="inherit"
+        />
       </Button>
     </Link>
   )

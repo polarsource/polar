@@ -46,7 +46,7 @@ const PolarMenu = ({
         </div>
       ) : (
         <>
-          <GetStartedButton className="px-2 py-4 text-sm" />
+          <GetStartedButton size="sm" />
           <Link
             href={loginLink}
             className="text-sm text-blue-500 hover:text-blue-400 dark:text-blue-400 dark:hover:text-blue-300"

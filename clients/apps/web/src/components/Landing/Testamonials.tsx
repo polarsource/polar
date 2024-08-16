@@ -80,8 +80,8 @@ const testamonials = [
 
 export const Testamonials = () => {
   return (
-    <Section className="gap-y-16">
-      <h3 className="text-center text-4xl leading-snug">
+    <Section className="gap-y-16" wrapperClassName="dark:bg-black">
+      <h3 className="text-center text-2xl leading-snug md:text-5xl">
         Serving world-class developers, world-wide
       </h3>
       <div className="dark:border-polar-700 rounded-4xl flex flex-col divide-y overflow-hidden border">

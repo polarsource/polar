@@ -3,6 +3,7 @@
 import GetStartedButton from '@/components/Auth/GetStartedButton'
 import { Section } from '@/components/Landing/Section'
 import Link from 'next/link'
+import Button from 'polarkit/components/ui/atoms/button'
 
 export const Hero = () => {
   return (
@@ -12,7 +13,7 @@ export const Hero = () => {
     >
       <div className="relative z-20 flex w-full flex-col items-center gap-y-12 text-center xl:w-2/3">
         <div className="z-20 flex flex-col items-center gap-y-12">
-          <h1 className="text-4xl leading-snug text-gray-950 md:text-7xl md:leading-tight dark:text-white">
+          <h1 className="text-balance text-4xl leading-snug text-gray-950 md:text-7xl md:leading-tight dark:text-white">
             The best monetization platform for developers
           </h1>
           <div className="flex flex-col items-center gap-y-4 xl:w-2/3">
@@ -41,7 +42,7 @@ export const Hero = () => {
             </p>
           </div>
         </div>
-        <div className="z-20 flex flex-col items-center gap-y-8">
+        <div className="z-20 flex flex-row items-center gap-x-4">
           {/* <div className="dark:bg-polar-800 flex flex-row items-center gap-x-2 rounded-full bg-white py-2 pl-6 pr-2">
             <div className="flex flex-row items-center gap-x-0.5">
               <span>polar.sh/</span>
@@ -57,6 +58,11 @@ export const Hero = () => {
             />
           </div> */}
           <GetStartedButton />
+          <a target="_blank" href="https://github.com/polarsource/polar">
+            <Button size="lg" variant="ghost">
+              Star on GitHub
+            </Button>
+          </a>
         </div>
       </div>
       <video

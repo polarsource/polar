@@ -46,12 +46,6 @@ const LandingPageTopbar = () => {
         size={100}
       />
       <div className="flex flex-row items-center gap-x-4">
-        <a
-          href="https://github.com/polarsource/polar"
-          className="dark:text-polar-200 dark:bg-polar-800 dark:hover:bg-polar-700 transition-color hidden flex-row items-center gap-x-2 rounded-full bg-gray-100 px-4 py-1.5 text-sm hover:bg-gray-200 md:flex"
-        >
-          Star on GitHub
-        </a>
         <Link href="/login">
           <Button>Login</Button>
         </Link>

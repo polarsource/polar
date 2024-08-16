@@ -13,7 +13,7 @@ export const Community = () => {
           srcSet={`/assets/landing/post_dark.png`}
         />
         <img
-          className="dark:border-polar-700 rounded-4xl border border-gray-200"
+          className="dark:border-polar-700 md:rounded-4xl rounded-2xl border border-gray-200"
           srcSet={`/assets/landing/post.png`}
           alt="Post in Polar"
         />
@@ -22,7 +22,7 @@ export const Community = () => {
         <h2 className="text-2xl leading-snug md:text-5xl">
           Grow community alongside transactions
         </h2>
-        <h3 className="dark:text-polar-600 text-xl leading-snug text-gray-300 md:text-4xl">
+        <h3 className="dark:text-polar-600 text-xl leading-snug text-gray-500 md:text-4xl">
           Crucial for successful developer tools. So it&apos;s built-in - for
           free
         </h3>

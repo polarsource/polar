@@ -2898,13 +2898,13 @@ use-chardet-on-py3 = ["chardet (>=3.0.2,<6)"]
 
 [[package]]
 name = "resend"
-version = "2.3.0"
+version = "2.4.0"
 description = "Resend Python SDK"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "resend-2.3.0-py2.py3-none-any.whl", hash = "sha256:438f01c6796a004c2a733350653714e298450ed59b1e07892dbb91f182f370c3"},
-    {file = "resend-2.3.0.tar.gz", hash = "sha256:4cf68c1091f796bc06a33919f7441fe13f81f4cb6b4fa5f6bdd193f6d0a8a743"},
+    {file = "resend-2.4.0-py2.py3-none-any.whl", hash = "sha256:92b674e4877bca9b65c38bb06b5b29a509f2fa878f147b58872afe380738e448"},
+    {file = "resend-2.4.0.tar.gz", hash = "sha256:0f2b06c9afdc5c71f2d2f828dcd6680077b0ef3a3d7420ec37d150857b67a095"},
 ]
 
 [package.dependencies]
@@ -4066,4 +4066,4 @@ test = ["big-O", "importlib-resources", "jaraco.functools", "jaraco.itertools", 
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.12"
-content-hash = "52e0084c835d7e125e25d9ec42fb5426910ec127a542f992c7f634dab1116cf2"
+content-hash = "9905bfa697de0c1a6d0bb14b132d710199fcff3c02261b4373cc39818ccb2467"

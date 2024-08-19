@@ -297,7 +297,7 @@ class Authz:
         #
         # License Key
         #
-        if isinstance(object, LicenseKey) and accessType == AccessType.read:
+        if isinstance(object, LicenseKey):
             if isinstance(subject, User):
                 return subject.id == object.user_id
             if isinstance(subject, Organization):

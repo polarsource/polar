@@ -60,7 +60,7 @@ export const AuthenticatedFreeTierSubscribe = ({
       {isFetched ? (
         <>
           {isSubscribed ? (
-            <Link href="/subscriptions" className="w-full">
+            <Link href="/purchases/subscriptions" className="w-full">
               <Button
                 loading={createFreeSubscription.isPending}
                 fullWidth

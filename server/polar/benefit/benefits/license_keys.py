@@ -35,7 +35,7 @@ class BenefitLicenseKeysService(
             benefit=benefit,
         )
         return {
-            "license_key_id": key.id,
+            "license_key_id": str(key.id),
         }
 
     async def revoke(
@@ -60,12 +60,9 @@ class BenefitLicenseKeysService(
     ) -> bool:
         c = benefit.properties
         pre = previous_properties
-        ret = (
-            c.get("expires", None) != pre.get("expires", None)
-            or c.get("activation_limit", None) != pre.get("activation_limit", None)
-            or c.get("ttl", None) != pre.get("ttl", None)
-            or c.get("timeframe", None) != pre.get("timeframe", None)
-        )
+        ret = c.get("expires", None) != pre.get("expires", None) or c.get(
+            "activations", None
+        ) != pre.get("activations", None)
         return ret
 
     async def validate_properties(

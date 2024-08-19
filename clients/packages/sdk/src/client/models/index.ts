@@ -3755,6 +3755,50 @@ export type BenefitIDFilter1 = Array<string> | string;
 /**
  * 
  * @export
+ * @interface BenefitLicenseKeyActivation
+ */
+export interface BenefitLicenseKeyActivation {
+    /**
+     * 
+     * @type {number}
+     * @memberof BenefitLicenseKeyActivation
+     */
+    limit: number;
+}
+/**
+ * 
+ * @export
+ * @interface BenefitLicenseKeyExpiration
+ */
+export interface BenefitLicenseKeyExpiration {
+    /**
+     * 
+     * @type {number}
+     * @memberof BenefitLicenseKeyExpiration
+     */
+    ttl: number;
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitLicenseKeyExpiration
+     */
+    timeframe: BenefitLicenseKeyExpirationTimeframeEnum;
+}
+
+
+/**
+ * @export
+ */
+export const BenefitLicenseKeyExpirationTimeframeEnum = {
+    YEAR: 'year',
+    MONTH: 'month',
+    DAY: 'day'
+} as const;
+export type BenefitLicenseKeyExpirationTimeframeEnum = typeof BenefitLicenseKeyExpirationTimeframeEnum[keyof typeof BenefitLicenseKeyExpirationTimeframeEnum];
+
+/**
+ * 
+ * @export
  * @interface BenefitLicenseKeys
  */
 export interface BenefitLicenseKeys {
@@ -3878,47 +3922,17 @@ export interface BenefitLicenseKeysCreateProperties {
     prefix?: string | null;
     /**
      * 
-     * @type {boolean}
+     * @type {BenefitLicenseKeyExpiration}
      * @memberof BenefitLicenseKeysCreateProperties
      */
-    expires?: boolean;
+    expires?: BenefitLicenseKeyExpiration | null;
     /**
      * 
-     * @type {number}
+     * @type {BenefitLicenseKeyActivation}
      * @memberof BenefitLicenseKeysCreateProperties
      */
-    ttl?: number | null;
-    /**
-     * 
-     * @type {string}
-     * @memberof BenefitLicenseKeysCreateProperties
-     */
-    timeframe?: BenefitLicenseKeysCreatePropertiesTimeframeEnum | null;
-    /**
-     * 
-     * @type {boolean}
-     * @memberof BenefitLicenseKeysCreateProperties
-     */
-    limited?: boolean;
-    /**
-     * 
-     * @type {number}
-     * @memberof BenefitLicenseKeysCreateProperties
-     */
-    activation_limit?: number | null;
+    activations?: BenefitLicenseKeyActivation | null;
 }
-
-
-/**
- * @export
- */
-export const BenefitLicenseKeysCreatePropertiesTimeframeEnum = {
-    YEAR: 'year',
-    MONTH: 'month',
-    DAY: 'day'
-} as const;
-export type BenefitLicenseKeysCreatePropertiesTimeframeEnum = typeof BenefitLicenseKeysCreatePropertiesTimeframeEnum[keyof typeof BenefitLicenseKeysCreatePropertiesTimeframeEnum];
-
 /**
  * 
  * @export
@@ -3933,47 +3947,17 @@ export interface BenefitLicenseKeysProperties {
     prefix: string | null;
     /**
      * 
-     * @type {boolean}
+     * @type {BenefitLicenseKeyExpiration}
      * @memberof BenefitLicenseKeysProperties
      */
-    expires: boolean;
+    expires: BenefitLicenseKeyExpiration | null;
     /**
      * 
-     * @type {number}
+     * @type {BenefitLicenseKeyActivation}
      * @memberof BenefitLicenseKeysProperties
      */
-    ttl: number | null;
-    /**
-     * 
-     * @type {string}
-     * @memberof BenefitLicenseKeysProperties
-     */
-    timeframe: BenefitLicenseKeysPropertiesTimeframeEnum | null;
-    /**
-     * 
-     * @type {boolean}
-     * @memberof BenefitLicenseKeysProperties
-     */
-    limited: boolean;
-    /**
-     * 
-     * @type {number}
-     * @memberof BenefitLicenseKeysProperties
-     */
-    activation_limit: number | null;
+    activations: BenefitLicenseKeyActivation | null;
 }
-
-
-/**
- * @export
- */
-export const BenefitLicenseKeysPropertiesTimeframeEnum = {
-    YEAR: 'year',
-    MONTH: 'month',
-    DAY: 'day'
-} as const;
-export type BenefitLicenseKeysPropertiesTimeframeEnum = typeof BenefitLicenseKeysPropertiesTimeframeEnum[keyof typeof BenefitLicenseKeysPropertiesTimeframeEnum];
-
 /**
  * 
  * @export
@@ -4068,13 +4052,19 @@ export interface BenefitLicenseKeysSubscriberProperties {
      * @type {number}
      * @memberof BenefitLicenseKeysSubscriberProperties
      */
-    activation_limit: number | null;
+    limit_activations: number | null;
+    /**
+     * 
+     * @type {number}
+     * @memberof BenefitLicenseKeysSubscriberProperties
+     */
+    validations: number;
     /**
      * 
      * @type {string}
      * @memberof BenefitLicenseKeysSubscriberProperties
      */
-    last_activated_at: string | null;
+    last_validated_at: string | null;
     /**
      * 
      * @type {string}
@@ -6200,6 +6190,68 @@ export interface Label {
      */
     color: string;
 }
+/**
+ * 
+ * @export
+ * @interface LicenseKeyRead
+ */
+export interface LicenseKeyRead {
+    /**
+     * 
+     * @type {string}
+     * @memberof LicenseKeyRead
+     */
+    id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof LicenseKeyRead
+     */
+    user_id: string;
+    /**
+     * The benefit ID.
+     * @type {string}
+     * @memberof LicenseKeyRead
+     */
+    benefit_id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof LicenseKeyRead
+     */
+    key: string;
+    /**
+     * 
+     * @type {LicenseKeyStatus}
+     * @memberof LicenseKeyRead
+     */
+    status: LicenseKeyStatus;
+    /**
+     * 
+     * @type {number}
+     * @memberof LicenseKeyRead
+     */
+    limit_activations?: number | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof LicenseKeyRead
+     */
+    expires_at?: string | null;
+}
+
+
+
+/**
+ * 
+ * @export
+ */
+export const LicenseKeyStatus = {
+    GRANTED: 'granted',
+    REVOKED: 'revoked'
+} as const;
+export type LicenseKeyStatus = typeof LicenseKeyStatus[keyof typeof LicenseKeyStatus];
+
 
 /**
  * 

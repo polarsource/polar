@@ -16,7 +16,7 @@ from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 from polar.kit.db.models import RecordModel
 from polar.kit.utils import generate_uuid, utc_now
 
-from .benefit import Benefit
+from .benefit import Benefit, BenefitLicenseKeyActivation, BenefitLicenseKeyExpiration
 from .user import User
 
 
@@ -56,11 +56,11 @@ class LicenseKey(RecordModel):
         String, nullable=False, default=LicenseKeyStatus.granted
     )
 
-    activations: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    limit_activations: Mapped[int | None] = mapped_column(Integer, nullable=True)
 
-    activation_limit: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    validations: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
 
-    last_activated_at: Mapped[datetime | None] = mapped_column(
+    last_validated_at: Mapped[datetime | None] = mapped_column(
         TIMESTAMP(timezone=True),
         nullable=True,
     )
@@ -100,17 +100,19 @@ class LicenseKey(RecordModel):
         benefit_id: UUID,
         prefix: str | None = None,
         status: LicenseKeyStatus = LicenseKeyStatus.granted,
-        activation_limit: int | None = None,
-        expires: bool = False,
-        ttl: int | None = None,
-        timeframe: Literal["year", "month", "day"] | None = None
+        activations: BenefitLicenseKeyActivation | None = None,
+        expires: BenefitLicenseKeyExpiration | None = None,
     ) -> Self:
-        expiration = None
+        expires_at = None
         if expires:
-            if not (ttl and timeframe):
-                raise ValueError()
+            ttl = expires.get("ttl", None)
+            timeframe = expires.get("timeframe", None)
+            if ttl and timeframe:
+                expires_at = cls.generate_expiration_dt(ttl, timeframe)
 
-            expiration = cls.generate_expiration_dt(ttl, timeframe)
+        limit_activations = None
+        if activations:
+            limit_activations = activations.get("limit", None)
 
         key = cls.generate(prefix=prefix)
         return cls(
@@ -118,8 +120,8 @@ class LicenseKey(RecordModel):
             benefit_id=benefit_id,
             key=key,
             status=status,
-            activation_limit=activation_limit,
-            expires_at=expiration
+            limit_activations=limit_activations,
+            expires_at=expires_at
         )
 
     def mark_revoked(self) -> None:

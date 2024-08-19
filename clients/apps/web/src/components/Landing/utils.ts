@@ -197,15 +197,6 @@ export const MOCKED_SUBSCRIPTIONS: Partial<Product>[] = [
     ],
     benefits: [
       {
-        id: '123',
-        description: 'Binary Downloads',
-        type: 'downloadables',
-        created_at: new Date().toDateString(),
-        selectable: false,
-        deletable: false,
-        organization_id: '123',
-      },
-      {
         id: '456',
         description: 'Private GitHub repository',
         type: 'github_repository',
@@ -218,6 +209,15 @@ export const MOCKED_SUBSCRIPTIONS: Partial<Product>[] = [
         id: '789',
         description: 'Discord Invite',
         type: 'discord',
+        created_at: new Date().toDateString(),
+        selectable: false,
+        deletable: false,
+        organization_id: '123',
+      },
+      {
+        id: '123',
+        description: 'Binary Downloads',
+        type: 'downloadables',
         created_at: new Date().toDateString(),
         selectable: false,
         deletable: false,

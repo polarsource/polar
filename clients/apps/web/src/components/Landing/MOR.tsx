@@ -17,12 +17,12 @@ export const MerchantOfRecord = () => {
             srcSet={`/assets/landing/metrics_dark.png`}
           />
           <img
-            className="dark:border-polar-700 md:rounded-4xl rounded-2xl border border-gray-200"
+            className="dark:border-polar-700 md:rounded-4xl hidden rounded-2xl border border-gray-200 md:block"
             srcSet={`/assets/landing/metrics.png`}
             alt="Metrics dashboard in Polar"
           />
         </picture>
-        <div className="dark:from-polar-950 absolute inset-0 flex flex-col items-center justify-end gap-y-2 bg-gradient-to-t from-white from-30% to-transparent p-6 text-center md:gap-y-8 md:p-12 dark:to-transparent">
+        <div className="absolute inset-0 flex flex-col items-center justify-end gap-y-2 bg-gradient-to-t from-white from-30% to-transparent p-6 text-center md:gap-y-8 md:p-12 dark:from-black dark:to-transparent">
           <h2 className="text-2xl leading-snug md:text-5xl">
             Increase sales, not overhead
           </h2>

@@ -17,7 +17,7 @@ export const Section = ({
     <div
       id={id}
       className={twMerge(
-        'relative flex w-full flex-col items-center justify-stretch',
+        'relative flex w-full flex-col items-center justify-stretch dark:bg-black',
         wrapperClassName,
       )}
     >

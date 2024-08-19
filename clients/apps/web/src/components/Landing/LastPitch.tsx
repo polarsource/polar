@@ -3,10 +3,7 @@ import { Section } from './Section'
 
 export const LastPitch = () => {
   return (
-    <Section
-      className="flex flex-col items-center justify-center gap-y-32"
-      wrapperClassName="dark:bg-black"
-    >
+    <Section className="flex flex-col items-center justify-center gap-y-32">
       <div className="flex flex-col items-center gap-y-12 text-center">
         <div className="flex flex-col items-center gap-y-4">
           <h1 className="text-center text-4xl">

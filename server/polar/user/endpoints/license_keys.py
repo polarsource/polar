@@ -1,8 +1,12 @@
 from typing import Annotated
 
 from fastapi import Depends, Path
+from pydantic import (
+    UUID4,
+)
 
 from polar.auth.dependencies import WebUserOrAnonymous
+from polar.exceptions import ResourceNotFound
 from polar.kit.db.postgres import AsyncSession
 from polar.models import LicenseKey
 from polar.openapi import APITag
@@ -16,16 +20,25 @@ router = APIRouter(prefix="/license-keys", tags=[APITag.documented, APITag.featu
 
 LK = Annotated[str, Path(description="The license key")]
 
+LicenseKeyNotFound = {
+    "description": "License key not found.",
+    "model": ResourceNotFound.schema(),
+}
+
 
 @router.get(
-    "/{key}",
+    "/{id}",
     response_model=LicenseKeyRead,
-    # responses={404: OrderNotFound},
+    responses={404: LicenseKeyNotFound},
 )
 async def get(
     auth_subject: WebUserOrAnonymous,
-    key: LK,
+    id: UUID4,
     session: AsyncSession = Depends(get_db_session),
 ) -> LicenseKey:
     """Get a license key."""
-    return await license_key_service.get_or_raise_by_key(session, key=key)
+    lk = await license_key_service.get(session, id)
+    if not lk:
+        raise ResourceNotFound()
+
+    return lk

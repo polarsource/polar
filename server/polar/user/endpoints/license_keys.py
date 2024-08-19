@@ -6,7 +6,8 @@ from pydantic import (
 )
 
 from polar.auth.dependencies import WebUserOrAnonymous
-from polar.exceptions import ResourceNotFound
+from polar.authz.service import AccessType, Authz
+from polar.exceptions import ResourceNotFound, Unauthorized
 from polar.kit.db.postgres import AsyncSession
 from polar.models import LicenseKey
 from polar.openapi import APITag
@@ -14,6 +15,7 @@ from polar.postgres import get_db_session
 from polar.routing import APIRouter
 
 from ..schemas.license_key import LicenseKeyRead
+from .. import auth
 from ..service.license_key import license_key as license_key_service
 
 router = APIRouter(prefix="/license-keys", tags=[APITag.documented, APITag.featured])
@@ -32,13 +34,17 @@ LicenseKeyNotFound = {
     responses={404: LicenseKeyNotFound},
 )
 async def get(
-    auth_subject: WebUserOrAnonymous,
+    auth_subject: auth.LicenseKeysRead,
     id: UUID4,
     session: AsyncSession = Depends(get_db_session),
+    authz: Authz = Depends(Authz.authz),
 ) -> LicenseKey:
     """Get a license key."""
-    lk = await license_key_service.get(session, id)
+    lk = await license_key_service.get_loaded(session, id)
     if not lk:
         raise ResourceNotFound()
+
+    if not await authz.can(auth_subject.subject, AccessType.read, lk):
+        raise Unauthorized()
 
     return lk

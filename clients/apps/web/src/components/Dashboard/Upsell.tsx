@@ -2,30 +2,11 @@ import { useAuth } from '@/hooks'
 import { useRedirectToGitHubInstallation } from '@/hooks/github'
 import { ExclamationCircleIcon } from '@heroicons/react/20/solid'
 import { ArrowForwardOutlined } from '@mui/icons-material'
-import { Organization, UserSignupType } from '@polar-sh/sdk'
+import { Organization } from '@polar-sh/sdk'
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
 import Button from 'polarkit/components/ui/atoms/button'
 import { Banner } from 'polarkit/components/ui/molecules'
 import { PropsWithChildren } from 'react'
-import GithubLoginButton from '../Auth/GithubLoginButton'
-
-export const GitHubAuthUpsell = () => {
-  const pathname = usePathname()
-  return (
-    <Upsell
-      title="Connect with GitHub"
-      description="Unlock more features by connecting your account with GitHub"
-    >
-      <GithubLoginButton
-        className="border-none bg-blue-500 text-white hover:bg-blue-400 dark:bg-blue-500 dark:text-white dark:hover:bg-blue-400 dark:hover:text-white"
-        text="Connect with GitHub"
-        returnTo={pathname || '/feed'}
-        userSignupType={UserSignupType.BACKER}
-      />
-    </Upsell>
-  )
-}
 
 export const MaintainerUpsell = () => {
   return (

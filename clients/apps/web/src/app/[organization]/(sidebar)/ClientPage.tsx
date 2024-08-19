@@ -9,12 +9,10 @@ import {
   LinksEditor,
 } from '@/components/Profile/LinksEditor/LinksEditor'
 import { ProjectsEditor } from '@/components/Profile/ProjectEditor/ProjectsEditor'
-import { useHasLinkedExternalOrganizations } from '@/hooks'
-import { useRedirectToGitHubInstallation } from '@/hooks/github'
 import { useUpdateOrganization } from '@/hooks/queries'
 import { organizationPageLink } from '@/utils/nav'
 import { useTrafficRecordPageView } from '@/utils/traffic'
-import { DraftsOutlined, GitHub } from '@mui/icons-material'
+import { DraftsOutlined } from '@mui/icons-material'
 import {
   Article,
   IssueFunding,
@@ -27,7 +25,6 @@ import {
 import { formatCurrencyAndAmount } from '@polarkit/lib/money'
 import Link from 'next/link'
 import Avatar from 'polarkit/components/ui/atoms/avatar'
-import Button from 'polarkit/components/ui/atoms/button'
 import { ShadowBoxOnMd } from 'polarkit/components/ui/atoms/shadowbox'
 import { useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -61,8 +58,6 @@ const ClientPage = ({
     () => userOrganizations?.some((org) => org.id === organization.id),
     [organization, userOrganizations],
   )
-  const hasLinkedExternalOrganizations =
-    useHasLinkedExternalOrganizations(organization)
 
   const updateOrganizationMutation = useUpdateOrganization()
 
@@ -118,10 +113,6 @@ const ClientPage = ({
     <div className="flex w-full flex-col gap-y-24">
       <div className="flex flex-col gap-24 lg:flex-row lg:gap-16">
         <div className="flex w-full min-w-0 flex-shrink flex-col gap-y-16 md:max-w-xl xl:max-w-3xl">
-          {isOrgMember && !hasLinkedExternalOrganizations && (
-            <GitHubAppUpsell organization={organization} />
-          )}
-
           {organization.feature_settings?.articles_enabled && (
             <div className="flex w-full flex-col gap-y-6">
               <div className="flex flex-col gap-y-2 md:flex-row md:justify-between">
@@ -227,30 +218,6 @@ const ClientPage = ({
 }
 
 export default ClientPage
-
-const GitHubAppUpsell = ({ organization }: { organization: Organization }) => {
-  const redirectToGitHubInstallation =
-    useRedirectToGitHubInstallation(organization)
-  return (
-    <div className="dark:from-polar-700 dark:to-polar-800 dark:border-polar-700 rounded-4xl flex flex-row gap-y-8 bg-gradient-to-r from-blue-200 to-blue-500 p-8 text-white dark:border">
-      <div className="flex w-full flex-col gap-y-8">
-        <h3 className="text-3xl leading-normal [text-wrap:balance]">
-          Highlight your projects & enable crowdfunding for issues
-        </h3>
-        <Button
-          className="self-start"
-          size="lg"
-          onClick={redirectToGitHubInstallation}
-        >
-          <div className="flex flex-row items-center gap-2">
-            <GitHub fontSize="small" />
-            <span>Install the Polar GitHub App</span>
-          </div>
-        </Button>
-      </div>
-    </div>
-  )
-}
 
 interface DonationsFeedProps {
   donations: PublicDonation[]

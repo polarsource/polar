@@ -1,12 +1,12 @@
 'use client'
 
 import LogoIcon from '@/components/Brand/LogoIcon'
-import { useHasLinkedExternalOrganizations } from '@/hooks'
 import { useAuth } from '@/hooks/auth'
-import { useRedirectToGitHubInstallation } from '@/hooks/github'
+import { useProducts } from '@/hooks/queries'
 import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
 import { CloseOutlined, ShortTextOutlined } from '@mui/icons-material'
 import { Organization, Repository } from '@polar-sh/sdk'
+import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import Button from 'polarkit/components/ui/atoms/button'
 import {
@@ -25,29 +25,23 @@ import MaintainerNavigation from '../Dashboard/DashboardNavigation'
 import { DashboardProvider, useDashboard } from '../Dashboard/DashboardProvider'
 import MaintainerRepoSelection from '../Dashboard/MaintainerRepoSelection'
 import MetaNavigation from '../Dashboard/MetaNavigation'
-import GitHubIcon from '../Icons/GitHubIcon'
 import DashboardProfileDropdown from '../Navigation/DashboardProfileDropdown'
 import { BrandingMenu } from './Public/BrandingMenu'
 
-const GitHubAppUpsell = ({ organization }: { organization: Organization }) => {
-  const redirectToGitHubInstallation =
-    useRedirectToGitHubInstallation(organization)
+const ProductsUpsell = ({ organization }: { organization: Organization }) => {
   return (
     <div className="dark:from-polar-800 dark:to-polar-800 mx-6 flex flex-row gap-y-8 rounded-3xl bg-gradient-to-r from-blue-200 to-blue-400 p-6 text-white">
-      <div className="flex w-full flex-col gap-y-4">
-        <GitHubIcon width={30} />
+      <div className="flex w-full flex-col gap-y-6">
         <h3 className="leading-normal [text-wrap:balance]">
-          Import repositories & enable crowdfunding for issues
+          Kickstart your business by selling products
         </h3>
-        <Button
-          className="self-start"
-          size="sm"
-          onClick={redirectToGitHubInstallation}
-        >
-          <div className="flex flex-row items-center gap-2">
-            <span>Install GitHub App</span>
-          </div>
-        </Button>
+        <Link href={`/dashboard/${organization.slug}/products/new`}>
+          <Button className="self-start" size="sm">
+            <div className="flex flex-row items-center gap-2">
+              <span>Create a product</span>
+            </div>
+          </Button>
+        </Link>
       </div>
     </div>
   )
@@ -61,9 +55,6 @@ const DashboardSidebar = () => {
   const currentOrg = orgContext.organization
   const { showCommandPalette } = useDashboard()
 
-  const hasLinkedExternalOrganizations =
-    useHasLinkedExternalOrganizations(currentOrg)
-
   const handleScroll: UIEventHandler<HTMLDivElement> = useCallback((e) => {
     setScrollTop(e.currentTarget.scrollTop)
   }, [])
@@ -73,6 +64,11 @@ const DashboardSidebar = () => {
   const upperScrollClassName = shouldRenderUpperBorder
     ? 'border-b dark:border-b-polar-700 border-b-gray-200'
     : ''
+
+  const products = useProducts(currentOrg.id)
+  const nonFreeProducts = products.data?.items?.filter(
+    (product) => product.type !== 'free',
+  )
 
   if (!currentUser) {
     return <></>
@@ -100,8 +96,8 @@ const DashboardSidebar = () => {
         >
           <div className="flex flex-col gap-y-12">
             <MaintainerNavigation />
-            {currentOrg && !hasLinkedExternalOrganizations && (
-              <GitHubAppUpsell organization={currentOrg} />
+            {currentOrg && (nonFreeProducts?.length ?? 0) < 1 && (
+              <ProductsUpsell organization={currentOrg} />
             )}
           </div>
           <div className="flex flex-col">

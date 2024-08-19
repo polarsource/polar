@@ -38,6 +38,10 @@ def round_stripe(amount: float) -> int:
     return math.ceil(amount) if amount - int(amount) >= 0.5 else math.floor(amount)
 
 
+def get_stripe_international_fee(amount: int) -> int:
+    return round_stripe(amount * 0.015)
+
+
 def get_stripe_subscription_fee(amount: int) -> int:
     return round_stripe(amount * 0.005)
 

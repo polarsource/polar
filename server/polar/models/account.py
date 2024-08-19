@@ -48,17 +48,11 @@ class Account(RecordModel):
     processor_fees_applicable: Mapped[bool] = mapped_column(
         Boolean, nullable=False, default=True
     )
-    _platform_pledge_fee_percent: Mapped[int | None] = mapped_column(
-        Integer,
-        name="platform_pledge_fee_percent",
-        nullable=True,
-        default=None,
+    _platform_fee_percent: Mapped[int | None] = mapped_column(
+        Integer, name="platform_fee_percent", nullable=True, default=None
     )
-    _platform_subscription_fee_percent: Mapped[int | None] = mapped_column(
-        Integer,
-        name="platform_subscription_fee_percent",
-        nullable=True,
-        default=None,
+    _platform_fee_fixed: Mapped[int | None] = mapped_column(
+        Integer, name="platform_fee_fixed", nullable=True, default=None
     )
 
     business_type: Mapped[str | None] = mapped_column(
@@ -114,13 +108,13 @@ class Account(RecordModel):
         return associations_names
 
     @property
-    def platform_pledge_fee_percent(self) -> int:
-        if self._platform_pledge_fee_percent is None:
-            return settings.PLEDGE_FEE_PERCENT
-        return self._platform_pledge_fee_percent
+    def platform_fee(self) -> tuple[int, int]:
+        percent = self._platform_fee_percent
+        if percent is None:
+            percent = settings.PLATFORM_FEE_PERCENT
 
-    @property
-    def platform_subscription_fee_percent(self) -> int:
-        if self._platform_subscription_fee_percent is None:
-            return settings.SUBSCRIPTION_FEE_PERCENT
-        return self._platform_subscription_fee_percent
+        fixed = self._platform_fee_fixed
+        if fixed is None:
+            fixed = settings.PLATFORM_FEE_FIXED
+
+        return percent, fixed

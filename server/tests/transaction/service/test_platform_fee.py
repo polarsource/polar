@@ -1,10 +1,14 @@
 from datetime import UTC, datetime, timedelta
+from unittest.mock import MagicMock
 
 import pytest
 import pytest_asyncio
+import stripe as stripe_lib
+from pytest_mock import MockerFixture
 from sqlalchemy.orm import joinedload
 
 from polar.enums import AccountType
+from polar.integrations.stripe.service import StripeService
 from polar.models import (
     Account,
     IssueReward,
@@ -16,10 +20,7 @@ from polar.models import (
 )
 from polar.models.transaction import PaymentProcessor, PlatformFeeType, TransactionType
 from polar.postgres import AsyncSession
-from polar.transaction.service.platform_fee import (
-    DanglingBalanceTransactions,
-    PayoutAmountTooLow,
-)
+from polar.transaction.service.platform_fee import PayoutAmountTooLow
 from polar.transaction.service.platform_fee import (
     platform_fee_transaction as platform_fee_transaction_service,
 )
@@ -34,6 +35,7 @@ async def create_balance_transactions(
     pledge: Pledge | None = None,
     issue_reward: IssueReward | None = None,
     order: Order | None = None,
+    payment_charge_id: str | None = None,
 ) -> tuple[Transaction, Transaction]:
     payment_transaction = Transaction(
         type=TransactionType.payment,
@@ -46,6 +48,7 @@ async def create_balance_transactions(
         pledge=pledge,
         issue_reward=issue_reward,
         order=order,
+        charge_id=payment_charge_id,
     )
     await save_fixture(payment_transaction)
 
@@ -130,28 +133,6 @@ async def account_processor_fees(
 
 @pytest.mark.asyncio
 class TestCreateFeesReversalBalances:
-    async def test_dangling_balance_transactions(
-        self,
-        session: AsyncSession,
-        save_fixture: SaveFixture,
-        account_processor_fees: Account,
-    ) -> None:
-        balance_transactions = await create_balance_transactions(
-            save_fixture, account=account_processor_fees
-        )
-
-        # then
-        session.expunge_all()
-
-        balance_transactions = await load_balance_transactions(
-            session, balance_transactions
-        )
-
-        with pytest.raises(DanglingBalanceTransactions):
-            await platform_fee_transaction_service.create_fees_reversal_balances(
-                session, balance_transactions=balance_transactions
-            )
-
     async def test_pledge(
         self,
         session: AsyncSession,
@@ -181,36 +162,23 @@ class TestCreateFeesReversalBalances:
             )
         )
 
-        assert len(fees_reversal_balances) == 3
-
-        # Platform fee
-        reversal_outgoing, reversal_incoming = fees_reversal_balances[0]
-
-        assert reversal_outgoing.amount == -500
-        assert reversal_outgoing.account == incoming.account
-        assert reversal_outgoing.platform_fee_type == PlatformFeeType.platform
-        assert reversal_outgoing.incurred_by_transaction == incoming
-
-        assert reversal_incoming.amount == 500
-        assert reversal_incoming.account is None
-        assert reversal_incoming.platform_fee_type == PlatformFeeType.platform
-        assert reversal_incoming.incurred_by_transaction == outgoing
+        assert len(fees_reversal_balances) == 2
 
         # Payment fee
-        reversal_outgoing, reversal_incoming = fees_reversal_balances[1]
+        reversal_outgoing, reversal_incoming = fees_reversal_balances[0]
 
-        assert reversal_outgoing.amount == -500
+        assert reversal_outgoing.amount == -440
         assert reversal_outgoing.account == incoming.account
         assert reversal_outgoing.platform_fee_type == PlatformFeeType.payment
         assert reversal_outgoing.incurred_by_transaction == incoming
 
-        assert reversal_incoming.amount == 500
+        assert reversal_incoming.amount == 440
         assert reversal_incoming.account is None
         assert reversal_incoming.platform_fee_type == PlatformFeeType.payment
         assert reversal_incoming.incurred_by_transaction == outgoing
 
         # Invoice fee
-        reversal_outgoing, reversal_incoming = fees_reversal_balances[2]
+        reversal_outgoing, reversal_incoming = fees_reversal_balances[1]
 
         assert reversal_outgoing.amount == -50
         assert reversal_outgoing.account == incoming.account
@@ -249,31 +217,110 @@ class TestCreateFeesReversalBalances:
             )
         )
 
-        assert len(fees_reversal_balances) == 3
-
-        reversal_outgoing, reversal_incoming = fees_reversal_balances[0]
-
-        assert reversal_outgoing.amount == -500
-        assert reversal_outgoing.account == incoming.account
-        assert reversal_outgoing.platform_fee_type == PlatformFeeType.platform
-        assert reversal_outgoing.incurred_by_transaction == incoming
-
-        assert reversal_incoming.amount == 500
-        assert reversal_incoming.account is None
-        assert reversal_incoming.platform_fee_type == PlatformFeeType.platform
-        assert reversal_incoming.incurred_by_transaction == outgoing
+        assert len(fees_reversal_balances) == 2
 
         # Payment fee
-        reversal_outgoing, reversal_incoming = fees_reversal_balances[1]
+        reversal_outgoing, reversal_incoming = fees_reversal_balances[0]
 
-        assert reversal_outgoing.amount == -500
+        assert reversal_outgoing.amount == -440
         assert reversal_outgoing.account == incoming.account
         assert reversal_outgoing.platform_fee_type == PlatformFeeType.payment
         assert reversal_outgoing.incurred_by_transaction == incoming
 
-        assert reversal_incoming.amount == 500
+        assert reversal_incoming.amount == 440
         assert reversal_incoming.account is None
         assert reversal_incoming.platform_fee_type == PlatformFeeType.payment
+        assert reversal_incoming.incurred_by_transaction == outgoing
+
+        # Subscription fee
+        reversal_outgoing, reversal_incoming = fees_reversal_balances[1]
+
+        assert reversal_outgoing.amount == -50
+        assert reversal_outgoing.account == incoming.account
+        assert reversal_outgoing.platform_fee_type == PlatformFeeType.subscription
+        assert reversal_outgoing.incurred_by_transaction == incoming
+
+        assert reversal_incoming.amount == 50
+        assert reversal_incoming.account is None
+        assert reversal_incoming.platform_fee_type == PlatformFeeType.subscription
+        assert reversal_incoming.incurred_by_transaction == outgoing
+
+    async def test_international_payment(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        account_processor_fees: Account,
+        transaction_order_subscription: Order,
+    ) -> None:
+        stripe_service_mock = MagicMock(spec=StripeService)
+        mocker.patch(
+            "polar.transaction.service.platform_fee.stripe_service",
+            new=stripe_service_mock,
+        )
+        stripe_service_mock.get_charge.return_value = stripe_lib.Charge.construct_from(
+            {
+                "id": "STRIPE_CHARGE_ID",
+                "payment_method_details": {
+                    "card": {
+                        "country": "FR",
+                    }
+                },
+            },
+            None,
+        )
+
+        balance_transactions = await create_balance_transactions(
+            save_fixture,
+            account=account_processor_fees,
+            order=transaction_order_subscription,
+            payment_charge_id="STRIPE_CHARGE_ID",
+        )
+
+        # then
+        session.expunge_all()
+
+        balance_transactions = await load_balance_transactions(
+            session, balance_transactions
+        )
+        outgoing, incoming = balance_transactions
+
+        fees_reversal_balances = (
+            await platform_fee_transaction_service.create_fees_reversal_balances(
+                session, balance_transactions=balance_transactions
+            )
+        )
+
+        assert len(fees_reversal_balances) == 3
+
+        # Payment fee
+        reversal_outgoing, reversal_incoming = fees_reversal_balances[0]
+
+        assert reversal_outgoing.amount == -440
+        assert reversal_outgoing.account == incoming.account
+        assert reversal_outgoing.platform_fee_type == PlatformFeeType.payment
+        assert reversal_outgoing.incurred_by_transaction == incoming
+
+        assert reversal_incoming.amount == 440
+        assert reversal_incoming.account is None
+        assert reversal_incoming.platform_fee_type == PlatformFeeType.payment
+        assert reversal_incoming.incurred_by_transaction == outgoing
+
+        # International payment fee
+        reversal_outgoing, reversal_incoming = fees_reversal_balances[1]
+
+        assert reversal_outgoing.amount == -150
+        assert reversal_outgoing.account == incoming.account
+        assert (
+            reversal_outgoing.platform_fee_type == PlatformFeeType.international_payment
+        )
+        assert reversal_outgoing.incurred_by_transaction == incoming
+
+        assert reversal_incoming.amount == 150
+        assert reversal_incoming.account is None
+        assert (
+            reversal_incoming.platform_fee_type == PlatformFeeType.international_payment
+        )
         assert reversal_incoming.incurred_by_transaction == outgoing
 
         # Subscription fee

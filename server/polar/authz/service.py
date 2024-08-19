@@ -17,6 +17,7 @@ from polar.models.downloadable import Downloadable, DownloadableStatus
 from polar.models.external_organization import ExternalOrganization
 from polar.models.issue import Issue
 from polar.models.issue_reward import IssueReward
+from polar.models.license_key import LicenseKey
 from polar.models.organization import Organization
 from polar.models.pledge import Pledge
 from polar.models.product import Product
@@ -51,6 +52,7 @@ Object = (
     | Article
     | WebhookEndpoint
     | Downloadable
+    | LicenseKey
 )
 
 
@@ -292,6 +294,14 @@ class Authz:
             and isinstance(object, Downloadable)
         ):
             return await self._can_user_download_file(subject, object)
+        #
+        # License Key
+        #
+        if isinstance(object, LicenseKey) and accessType == AccessType.read:
+            if isinstance(subject, User):
+                return subject.id == object.user_id
+            if isinstance(subject, Organization):
+                return object.benefit.organization_id == subject.id
 
         raise Exception(
             f"Unknown subject/action/object combination. subject={type(subject)} access={accessType} object={type(object)}"  # noqa: E501

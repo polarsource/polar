@@ -1,8 +1,12 @@
+from uuid import UUID
+
 import structlog
+from sqlalchemy import select
+from sqlalchemy.orm import contains_eager
 
 from polar.exceptions import ResourceNotFound
 from polar.kit.services import ResourceService
-from polar.models import LicenseKey, User
+from polar.models import Benefit, LicenseKey, User
 from polar.models.benefit import BenefitLicenseKeys
 from polar.postgres import AsyncSession, sql
 
@@ -30,6 +34,19 @@ class LicenseKeyService(
 
         return lk
 
+    async def get_loaded(
+        self,
+        session: AsyncSession,
+        id: UUID,
+    ) -> LicenseKey | None:
+        query = (
+            select(LicenseKey)
+            .join(Benefit, onclause=LicenseKey.benefit_id == Benefit.id)
+            .options(contains_eager(LicenseKey.benefit))
+            .where(LicenseKey.id == id)
+        )
+        result = await session.execute(query)
+        return result.scalar_one_or_none()
     async def user_grant(
         self, session: AsyncSession, *, user: User, benefit: BenefitLicenseKeys
     ) -> LicenseKey:

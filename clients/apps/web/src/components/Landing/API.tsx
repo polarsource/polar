@@ -10,7 +10,7 @@ export const API = () => {
     <Section
       id="integrations"
       className="flex flex-col items-center justify-center gap-y-24"
-      wrapperClassName="overflow-hidden dark:bg-black"
+      wrapperClassName="overflow-hidden"
     >
       <Circles className="absolute inset-0 top-1/2 -z-10 hidden -translate-y-1/2 text-white dark:block" />
       <Circles className="absolute inset-0 top-1/2 -z-10 block -translate-y-1/2 text-black dark:hidden" />

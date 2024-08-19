@@ -1,7 +1,6 @@
 export const quadraticCurve = (
   start: { x: number; y: number },
   end: { x: number; y: number },
-  vertical?: boolean,
 ) => {
   const x1 = start.x
   const y1 = start.y
@@ -22,19 +21,14 @@ export const quadraticCurve = (
   offsetY = Math.min(Math.max((y4 - y1) / 2, -offset), offset)
   offsetX = Math.min(Math.max((x4 - x1) / 2, -offset), offset)
 
-  if (vertical) {
-    return `
+  const midX = (x4 - x1) / 2 + x1
+
+  return `
       M${x1},${y1} 
-      L${x1},${y4 - offsetY} 
-      Q${x1},${y4} ${x1 + offsetX},${y4}
+      L${midX - offsetX},${y1} 
+      Q${midX},${y1} ${midX},${y1 + offsetY} 
+      L${midX},${y4 - offsetY}
+      Q${midX},${y4} ${midX + offsetX},${y4}
       L${x4},${y4}
   `
-  } else {
-    return `
-        M${x1},${y1} 
-        L${x4 - offsetX},${y1} 
-        Q${x4},${y1} ${x4},${y1 + offsetY}
-        L${x4},${y4}
-    `
-  }
 }

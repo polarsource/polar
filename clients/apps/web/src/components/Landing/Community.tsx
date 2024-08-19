@@ -7,17 +7,6 @@ import FeatureItem from './molecules/FeatureItem'
 export const Community = () => {
   return (
     <div key="section-community" className="flex flex-col gap-y-24 md:gap-y-32">
-      <picture>
-        <source
-          media="(prefers-color-scheme: dark)"
-          srcSet={`/assets/landing/post_dark.png`}
-        />
-        <img
-          className="dark:border-polar-700 md:rounded-4xl rounded-2xl border border-gray-200"
-          srcSet={`/assets/landing/post.png`}
-          alt="Post in Polar"
-        />
-      </picture>
       <div className="relative flex flex-col items-center gap-y-4 text-center">
         <h2 className="text-2xl leading-snug md:text-5xl">
           Grow community alongside transactions

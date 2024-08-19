@@ -74,7 +74,7 @@ async def validate(
 ) -> LicenseKey:
     """Validate a license key."""
     lk = await license_key_service.get_or_raise_by_key(session, key=license_key.key)
-    if not await authz.can(auth_subject.subject, AccessType.read, lk):
+    if not await authz.can(auth_subject.subject, AccessType.write, lk):
         raise Unauthorized()
 
     return await license_key_service.validate(

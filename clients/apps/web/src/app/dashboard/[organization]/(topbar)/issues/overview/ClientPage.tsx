@@ -192,6 +192,8 @@ const OrganizationIssues = ({
   // Get all repositories
   const listRepositoriesQuery = useListRepositories({
     organizationId: org.id,
+    limit: 100,
+    sorting: ['name'],
   })
   const allOrgRepositories = listRepositoriesQuery?.data?.items
 

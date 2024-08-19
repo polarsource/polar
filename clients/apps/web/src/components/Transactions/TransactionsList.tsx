@@ -152,15 +152,14 @@ const TransactionMeta: React.FC<TransactionMetaProps> = ({ transaction }) => {
 export const platformFeesDisplayNames: {
   [key in PlatformFeeType]: string
 } = {
+  [PlatformFeeType.PAYMENT]: 'Payment fee',
+  [PlatformFeeType.INTERNATIONAL_PAYMENT]: 'International payment fee',
+  [PlatformFeeType.SUBSCRIPTION]: 'Subscription fee',
+  [PlatformFeeType.INVOICE]: 'Invoice fee',
+  [PlatformFeeType.CROSS_BORDER_TRANSFER]: 'Cross-border transfer payout fee',
+  [PlatformFeeType.PAYOUT]: 'Payout fee',
+  [PlatformFeeType.ACCOUNT]: 'Active payout account fee',
   [PlatformFeeType.PLATFORM]: 'Polar fee',
-  [PlatformFeeType.PAYMENT]: 'Payment processor fee: credit card',
-  [PlatformFeeType.SUBSCRIPTION]:
-    'Payment processor fee: recurring subscription',
-  [PlatformFeeType.INVOICE]: 'Payment processor fee: invoice',
-  [PlatformFeeType.CROSS_BORDER_TRANSFER]:
-    'Payment processor fee: cross-border transfer',
-  [PlatformFeeType.PAYOUT]: 'Payment processor fee: payout',
-  [PlatformFeeType.ACCOUNT]: 'Payment processor fee: active account',
 }
 
 interface TransactionsListProps {

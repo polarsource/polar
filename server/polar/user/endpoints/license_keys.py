@@ -14,7 +14,10 @@ from polar.postgres import get_db_session
 from polar.routing import APIRouter
 
 from .. import auth
-from ..schemas.license_key import LicenseKeyRead, LicenseKeyValidate
+from ..schemas.license_key import (
+    LicenseKeyRead,
+    LicenseKeyValidate,
+)
 from ..service.license_key import license_key as license_key_service
 
 router = APIRouter(prefix="/license-keys", tags=[APITag.documented, APITag.featured])
@@ -64,8 +67,18 @@ async def get(
     responses={404: LicenseKeyNotFound},
 )
 async def validate(
+    auth_subject: auth.LicenseKeysWrite,
     license_key: LicenseKeyValidate,
     session: AsyncSession = Depends(get_db_session),
+    authz: Authz = Depends(Authz.authz),
 ) -> LicenseKey:
     """Validate a license key."""
-    return await license_key_service.get_validated(session, license_key)
+    lk = await license_key_service.get_or_raise_by_key(session, key=license_key.key)
+    if not await authz.can(auth_subject.subject, AccessType.read, lk):
+        raise Unauthorized()
+
+    return await license_key_service.validate(
+        session,
+        validate=license_key,
+        record=lk,
+    )

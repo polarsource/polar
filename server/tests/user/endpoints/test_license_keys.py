@@ -87,6 +87,10 @@ class TestLicenseKeyEndpoints:
         assert data.get("benefit_id") == str(benefit.id)
         assert data.get("key").startswith("TESTING")
 
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="organization"),
+    )
     async def test_validate(
         self,
         session: AsyncSession,

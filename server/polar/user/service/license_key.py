@@ -22,9 +22,10 @@ log = structlog.get_logger()
 class LicenseKeyService(
     ResourceService[LicenseKey, LicenseKeyCreate, LicenseKeyUpdate]
 ):
-
     async def get_by_key(self, session: AsyncSession, *, key: str) -> LicenseKey | None:
-        return await self.get_by(session, key=key)
+        query = self._get_select_base().where(LicenseKey.key == key)
+        result = await session.execute(query)
+        return result.scalar_one_or_none()
 
     async def get_or_raise_by_key(
         self, session: AsyncSession, *, key: str
@@ -40,21 +41,13 @@ class LicenseKeyService(
         session: AsyncSession,
         id: UUID,
     ) -> LicenseKey | None:
-        query = (
-            select(LicenseKey)
-            .join(Benefit, onclause=LicenseKey.benefit_id == Benefit.id)
-            .options(contains_eager(LicenseKey.benefit))
-            .where(LicenseKey.id == id)
-        )
+        query = self._get_select_base().where(LicenseKey.id == id)
         result = await session.execute(query)
         return result.scalar_one_or_none()
 
-    async def get_validated(
-        self,
-        session: AsyncSession,
-        validate: LicenseKeyValidate,
+    async def validate(
+        self, session: AsyncSession, validate: LicenseKeyValidate, record: LicenseKey
     ) -> LicenseKey:
-        record = await self.get_or_raise_by_key(session, key=validate.key)
         if not validate.scope:
             return record
 
@@ -102,6 +95,13 @@ class LicenseKeyService(
 
         await session.flush()
         return ret
+
+    def _get_select_base(self) -> sql.Select:
+        return (
+            select(LicenseKey)
+            .join(Benefit, onclause=LicenseKey.benefit_id == Benefit.id)
+            .options(contains_eager(LicenseKey.benefit))
+        )
 
 
 license_key = LicenseKeyService(LicenseKey)

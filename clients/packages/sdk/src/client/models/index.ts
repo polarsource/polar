@@ -10484,13 +10484,14 @@ export interface PersonalAccessTokenCreateResponse {
  * @export
  */
 export const PlatformFeeType = {
-    PLATFORM: 'platform',
     PAYMENT: 'payment',
+    INTERNATIONAL_PAYMENT: 'international_payment',
     SUBSCRIPTION: 'subscription',
     INVOICE: 'invoice',
     CROSS_BORDER_TRANSFER: 'cross_border_transfer',
     PAYOUT: 'payout',
-    ACCOUNT: 'account'
+    ACCOUNT: 'account',
+    PLATFORM: 'platform'
 } as const;
 export type PlatformFeeType = typeof PlatformFeeType[keyof typeof PlatformFeeType];
 

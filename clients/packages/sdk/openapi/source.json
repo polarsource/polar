@@ -5295,9 +5295,9 @@
                 "operationId": "repositories:list",
                 "security": [
                     {
-                        "oidc": [
-                            "repositories:read",
-                            "repositories:write"
+                        "OpenIdConnect": [
+                            "repositories:write",
+                            "repositories:read"
                         ]
                     },
                     {
@@ -5546,9 +5546,9 @@
                 "operationId": "repositories:get",
                 "security": [
                     {
-                        "oidc": [
-                            "repositories:read",
-                            "repositories:write"
+                        "OpenIdConnect": [
+                            "repositories:write",
+                            "repositories:read"
                         ]
                     },
                     {
@@ -6626,9 +6626,9 @@
                 "operationId": "issues:list",
                 "security": [
                     {
-                        "oidc": [
-                            "issues:read",
-                            "issues:write"
+                        "OpenIdConnect": [
+                            "issues:write",
+                            "issues:read"
                         ]
                     },
                     {
@@ -8234,9 +8234,9 @@
                 "operationId": "organizations:list",
                 "security": [
                     {
-                        "oidc": [
-                            "organizations:read",
-                            "organizations:write"
+                        "OpenIdConnect": [
+                            "organizations:write",
+                            "organizations:read"
                         ]
                     },
                     {
@@ -8449,9 +8449,9 @@
                 "operationId": "organizations:get",
                 "security": [
                     {
-                        "oidc": [
-                            "organizations:read",
-                            "organizations:write"
+                        "OpenIdConnect": [
+                            "organizations:write",
+                            "organizations:read"
                         ]
                     },
                     {
@@ -8622,9 +8622,9 @@
                 "operationId": "organizations:customers",
                 "security": [
                     {
-                        "oidc": [
-                            "organizations:read",
-                            "organizations:write"
+                        "OpenIdConnect": [
+                            "organizations:write",
+                            "organizations:read"
                         ]
                     },
                     {
@@ -9227,9 +9227,9 @@
                 "operationId": "subscriptions:list",
                 "security": [
                     {
-                        "oidc": [
-                            "subscriptions:read",
-                            "subscriptions:write"
+                        "OpenIdConnect": [
+                            "subscriptions:write",
+                            "subscriptions:read"
                         ]
                     },
                     {
@@ -9583,9 +9583,9 @@
                 "operationId": "subscriptions:export",
                 "security": [
                     {
-                        "oidc": [
-                            "subscriptions:read",
-                            "subscriptions:write"
+                        "OpenIdConnect": [
+                            "subscriptions:write",
+                            "subscriptions:read"
                         ]
                     },
                     {
@@ -12728,9 +12728,9 @@
                 "operationId": "benefits:list",
                 "security": [
                     {
-                        "oidc": [
-                            "benefits:read",
-                            "benefits:write"
+                        "OpenIdConnect": [
+                            "benefits:write",
+                            "benefits:read"
                         ]
                     },
                     {
@@ -12998,9 +12998,9 @@
                 "operationId": "benefits:get",
                 "security": [
                     {
-                        "oidc": [
-                            "benefits:read",
-                            "benefits:write"
+                        "OpenIdConnect": [
+                            "benefits:write",
+                            "benefits:read"
                         ]
                     },
                     {
@@ -13318,9 +13318,9 @@
                 "operationId": "benefits:grants",
                 "security": [
                     {
-                        "oidc": [
-                            "benefits:read",
-                            "benefits:write"
+                        "OpenIdConnect": [
+                            "benefits:write",
+                            "benefits:read"
                         ]
                     },
                     {
@@ -13495,9 +13495,9 @@
                 "operationId": "webhooks:list_webhook_endpoints",
                 "security": [
                     {
-                        "oidc": [
-                            "webhooks:read",
-                            "webhooks:write"
+                        "OpenIdConnect": [
+                            "webhooks:write",
+                            "webhooks:read"
                         ]
                     },
                     {
@@ -13693,9 +13693,9 @@
                 "operationId": "webhooks:get_webhook_endpoint",
                 "security": [
                     {
-                        "oidc": [
-                            "webhooks:read",
-                            "webhooks:write"
+                        "OpenIdConnect": [
+                            "webhooks:write",
+                            "webhooks:read"
                         ]
                     },
                     {
@@ -13932,9 +13932,9 @@
                 "operationId": "webhooks:list_webhook_deliveries",
                 "security": [
                     {
-                        "oidc": [
-                            "webhooks:read",
-                            "webhooks:write"
+                        "OpenIdConnect": [
+                            "webhooks:write",
+                            "webhooks:read"
                         ]
                     },
                     {
@@ -14121,9 +14121,9 @@
                 "operationId": "products:list",
                 "security": [
                     {
-                        "oidc": [
-                            "products:read",
-                            "products:write"
+                        "OpenIdConnect": [
+                            "products:write",
+                            "products:read"
                         ]
                     },
                     {
@@ -14422,9 +14422,9 @@
                 "operationId": "products:get",
                 "security": [
                     {
-                        "oidc": [
-                            "products:read",
-                            "products:write"
+                        "OpenIdConnect": [
+                            "products:write",
+                            "products:read"
                         ]
                     },
                     {
@@ -29473,13 +29473,14 @@
             "PlatformFeeType": {
                 "type": "string",
                 "enum": [
-                    "platform",
                     "payment",
+                    "international_payment",
                     "subscription",
                     "invoice",
                     "cross_border_transfer",
                     "payout",
-                    "account"
+                    "account",
+                    "platform"
                 ],
                 "title": "PlatformFeeType",
                 "description": "Type of fees applied by Polar, and billed to the users."

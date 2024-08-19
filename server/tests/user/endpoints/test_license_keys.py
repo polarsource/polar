@@ -1,7 +1,10 @@
 import pytest
 from httpx import AsyncClient
 
-from polar.benefit.schemas import BenefitLicenseKeysCreateProperties
+from polar.benefit.schemas import (
+    BenefitLicenseKeyActivation,
+    BenefitLicenseKeysCreateProperties,
+)
 from polar.kit.utils import generate_uuid
 from polar.models import Organization, Product, User
 from polar.postgres import AsyncSession
@@ -150,3 +153,47 @@ class TestLicenseKeyEndpoints:
         data = full_response.json()
         assert data.get("benefit_id") == str(benefit.id)
         assert data.get("key").startswith("TESTING")
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="organization"),
+    )
+    async def test_activation(
+        self,
+        session: AsyncSession,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        user: User,
+        organization: Organization,
+        product: Product,
+    ) -> None:
+        benefit, granted = await TestLicenseKey.create_benefit_and_grant(
+            session,
+            save_fixture,
+            user=user,
+            organization=organization,
+            product=product,
+            properties=BenefitLicenseKeysCreateProperties(
+                prefix="testing",
+                expires=None,
+                activations=BenefitLicenseKeyActivation(limit=1),
+            ),
+        )
+        id = granted["license_key_id"]
+        lk = await license_key_service.get(session, id)
+        assert lk
+
+        label = "test"
+        metadata = {"test": "test"}
+        response = await client.post(
+            "/v1/users/license-keys/activate",
+            json={
+                "key": lk.key,
+                "label": label,
+                "meta": metadata,
+            },
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert data.get("label") == label
+        assert data.get("meta") == metadata

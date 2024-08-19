@@ -23,8 +23,8 @@ const LicenseKeysForm = ({ organization }: { organization: Organization }) => {
   const { control, watch, getValues, setValue } =
     useFormContext<BenefitCustomCreate>()
 
-  const showExpiration = watch('properties.expires', false)
-  const showLimitation = watch('properties.limited', false)
+  const expires = watch('properties.expires', undefined)
+  const activations = watch('properties.activations', undefined)
 
   return (
     <>
@@ -59,9 +59,10 @@ const LicenseKeysForm = ({ organization }: { organization: Organization }) => {
                 <Switch
                   id="license-key-ttl"
                   checked={field.value}
-                  onCheckedChange={(expires) =>
-                    setValue('properties.expires', expires)
-                  }
+                  onCheckedChange={(expires) => {
+                    const value = expires ? {} : undefined
+                    setValue('properties.expires', value)
+                  }}
                 />
                 <FormMessage />
               </FormItem>
@@ -69,16 +70,16 @@ const LicenseKeysForm = ({ organization }: { organization: Organization }) => {
           }}
         />
       </div>
-      {showExpiration && (
+      {expires && (
         <>
           <FormField
             control={control}
-            name="properties.ttl"
+            name="properties.expires.ttl"
             render={({ field }) => {
               return (
                 <FormItem>
                   <div className="flex flex-row items-center justify-between">
-                    <FormLabel>Limit</FormLabel>
+                    <FormLabel>TTL</FormLabel>
                   </div>
                   <FormControl>
                     <Input {...field} />
@@ -90,7 +91,7 @@ const LicenseKeysForm = ({ organization }: { organization: Organization }) => {
           />
           <FormField
             control={control}
-            name="properties.timeframe"
+            name="properties.expires.timeframe"
             shouldUnregister={true}
             render={({ field }) => {
               return (
@@ -127,16 +128,17 @@ const LicenseKeysForm = ({ organization }: { organization: Organization }) => {
         </div>
         <FormField
           control={control}
-          name="properties.limited"
+          name="properties.activations"
           render={({ field }) => {
             return (
               <FormItem>
                 <Switch
                   id="license-key-limit"
                   checked={field.value}
-                  onCheckedChange={(limited) =>
-                    setValue('properties.limited', limited)
-                  }
+                  onCheckedChange={(limited) => {
+                    const value = limited ? {} : undefined
+                    setValue('properties.activations', value)
+                  }}
                   {...field}
                 />
                 <FormMessage />
@@ -145,11 +147,11 @@ const LicenseKeysForm = ({ organization }: { organization: Organization }) => {
           }}
         />
       </div>
-      {showLimitation && (
+      {activations && (
         <>
           <FormField
             control={control}
-            name="properties.activation_limit"
+            name="properties.activations.limit"
             render={({ field }) => {
               return (
                 <FormItem>

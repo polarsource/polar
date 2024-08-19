@@ -81,15 +81,19 @@ class BenefitDownloadablesProperties(BenefitProperties):
     files: list[UUID]
 
 
+class BenefitLicenseKeyExpiration(TypedDict):
+    ttl: int
+    timeframe: Literal["year", "month", "day"]
+
+
+class BenefitLicenseKeyActivation(TypedDict):
+    limit: int
+
+
 class BenefitLicenseKeysProperties(BenefitProperties):
     prefix: str | None
-
-    expires: bool
-    ttl: int | None
-    timeframe: Literal["year", "month", "day"] | None
-
-    limited: bool
-    activation_limit: int | None
+    expires: BenefitLicenseKeyExpiration | None
+    activations: BenefitLicenseKeyActivation | None
 
 
 class Benefit(RecordModel):

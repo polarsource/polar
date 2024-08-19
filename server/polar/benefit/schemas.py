@@ -254,33 +254,33 @@ class BenefitDownloadablesSubscriberProperties(Schema):
 ## License Keys
 
 
+class BenefitLicenseKeyExpiration(Schema):
+    ttl: int
+    timeframe: Literal["year", "month", "day"]
+
+
+class BenefitLicenseKeyActivation(Schema):
+    limit: int
+
+
 class BenefitLicenseKeysCreateProperties(Schema):
     prefix: str | None = None
-
-    expires: bool = False
-    ttl: int | None = None
-    timeframe: Literal["year", "month", "day"] | None = None
-
-    limited: bool = False
-    activation_limit: int | None = None
+    expires: BenefitLicenseKeyExpiration | None = None
+    activations: BenefitLicenseKeyActivation | None = None
 
 
 class BenefitLicenseKeysProperties(Schema):
     prefix: str | None
-
-    expires: bool
-    ttl: int | None
-    timeframe: Literal["year", "month", "day"] | None
-
-    limited: bool
-    activation_limit: int | None
+    expires: BenefitLicenseKeyExpiration | None
+    activations: BenefitLicenseKeyActivation | None
 
 
 class BenefitLicenseKeysSubscriberProperties(Schema):
     key: str
     activations: int
-    activation_limit: int | None
-    last_activated_at: datetime | None
+    limit_activations: int | None
+    validations: int
+    last_validated_at: datetime | None
     expires_at: datetime | None
 
 

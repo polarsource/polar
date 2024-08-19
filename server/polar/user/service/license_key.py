@@ -1,9 +1,9 @@
 import structlog
 
+from polar.exceptions import ResourceNotFound
 from polar.kit.services import ResourceService
-from polar.models import User
+from polar.models import LicenseKey, User
 from polar.models.benefit import BenefitLicenseKeys
-from polar.models.license_key import LicenseKey
 from polar.postgres import AsyncSession, sql
 
 from ..schemas.license_key import (
@@ -17,6 +17,19 @@ log = structlog.get_logger()
 class LicenseKeyService(
     ResourceService[LicenseKey, LicenseKeyCreate, LicenseKeyUpdate]
 ):
+
+    async def get_by_key(self, session: AsyncSession, *, key: str) -> LicenseKey | None:
+        return await self.get_by(session, key=key)
+
+    async def get_or_raise_by_key(
+        self, session: AsyncSession, *, key: str
+    ) -> LicenseKey:
+        lk = await self.get_by_key(session, key=key)
+        if not lk:
+            raise ResourceNotFound()
+
+        return lk
+
     async def user_grant(
         self, session: AsyncSession, *, user: User, benefit: BenefitLicenseKeys
     ) -> LicenseKey:
@@ -25,10 +38,8 @@ class LicenseKeyService(
             user_id=user.id,
             benefit_id=benefit.id,
             prefix=props.get("prefix", None),
-            activation_limit=props.get("activation_limit", None),
-            expires=props.get("expires", False),
-            ttl=props.get("ttl", None),
-            timeframe=props.get("timeframe", None),
+            activations=props.get("activations", None),
+            expires=props.get("expires", None),
         )
 
         session.add(key)

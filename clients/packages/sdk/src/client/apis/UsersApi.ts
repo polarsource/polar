@@ -16,11 +16,16 @@
 import * as runtime from '../runtime';
 import type {
   HTTPValidationError,
+  LicenseKeyRead,
   UserRead,
   UserScopes,
   UserSetAccount,
   UserStripePortalSession,
 } from '../models/index';
+
+export interface UsersApiGetRequest {
+    key: string;
+}
 
 export interface UsersApiSetAccountRequest {
     body: UserSetAccount;
@@ -62,6 +67,49 @@ export class UsersApi extends runtime.BaseAPI {
      */
     async createStripeCustomerPortal(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<UserStripePortalSession> {
         const response = await this.createStripeCustomerPortalRaw(initOverrides);
+        return await response.value();
+    }
+
+    /**
+     * Get a license key.
+     * Get
+     */
+    async getRaw(requestParameters: UsersApiGetRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<LicenseKeyRead>> {
+        if (requestParameters['key'] == null) {
+            throw new runtime.RequiredError(
+                'key',
+                'Required parameter "key" was null or undefined when calling get().'
+            );
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("pat", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+        const response = await this.request({
+            path: `/v1/users/license-keys/{key}`.replace(`{${"key"}}`, encodeURIComponent(String(requestParameters['key']))),
+            method: 'GET',
+            headers: headerParameters,
+            query: queryParameters,
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse(response);
+    }
+
+    /**
+     * Get a license key.
+     * Get
+     */
+    async get(requestParameters: UsersApiGetRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<LicenseKeyRead> {
+        const response = await this.getRaw(requestParameters, initOverrides);
         return await response.value();
     }
 

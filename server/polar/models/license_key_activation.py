@@ -1,3 +1,4 @@
+from typing import Any
 from uuid import UUID
 
 from sqlalchemy import (
@@ -5,9 +6,12 @@ from sqlalchemy import (
     String,
     Uuid,
 )
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.kit.db.models import RecordModel
+
+from .license_key import LicenseKey
 
 
 class LicenseKeyActivation(RecordModel):
@@ -20,4 +24,10 @@ class LicenseKeyActivation(RecordModel):
         index=True,
     )
 
+    @declared_attr
+    def license_key(cls) -> Mapped[LicenseKey]:
+        return relationship("LicenseKey", lazy="raise")
+
     label: Mapped[str] = mapped_column(String, nullable=False)
+
+    meta: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)

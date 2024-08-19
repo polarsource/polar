@@ -6,11 +6,12 @@ from sqlalchemy.orm import contains_eager
 
 from polar.exceptions import ResourceNotFound
 from polar.kit.services import ResourceService
-from polar.models import Benefit, LicenseKey, User
+from polar.models import Benefit, LicenseKey, LicenseKeyActivation, User
 from polar.models.benefit import BenefitLicenseKeys
 from polar.postgres import AsyncSession, sql
 
 from ..schemas.license_key import (
+    LicenseKeyActivate,
     LicenseKeyCreate,
     LicenseKeyUpdate,
     LicenseKeyValidate,
@@ -46,18 +47,41 @@ class LicenseKeyService(
         return result.scalar_one_or_none()
 
     async def validate(
-        self, session: AsyncSession, validate: LicenseKeyValidate, record: LicenseKey
+        self,
+        session: AsyncSession,
+        *,
+        license_key: LicenseKey,
+        validate: LicenseKeyValidate
     ) -> LicenseKey:
         if not validate.scope:
-            return record
+            return license_key
 
-        if validate.scope.benefit_id and validate.scope.benefit_id != record.benefit_id:
+        if (
+            validate.scope.benefit_id
+            and validate.scope.benefit_id != license_key.benefit_id
+        ):
             raise ResourceNotFound()
 
-        if validate.scope.user_id and validate.scope.user_id != record.user_id:
+        if validate.scope.user_id and validate.scope.user_id != license_key.user_id:
             raise ResourceNotFound()
 
-        return record
+        return license_key
+
+    async def activate(
+        self,
+        session: AsyncSession,
+        license_key: LicenseKey,
+        activate: LicenseKeyActivate,
+    ) -> LicenseKeyActivation:
+        instance = LicenseKeyActivation(
+            license_key=license_key,
+            label=activate.label,
+            meta=activate.meta,
+        )
+        session.add(instance)
+        await session.flush()
+        assert instance.id
+        return instance
 
     async def user_grant(
         self, session: AsyncSession, *, user: User, benefit: BenefitLicenseKeys

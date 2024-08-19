@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Any
 
 from pydantic import UUID4
 
@@ -17,6 +18,12 @@ class LicenseKeyValidate(Schema):
     key: str
 
 
+class LicenseKeyActivate(Schema):
+    key: str
+    label: str
+    meta: dict[str, Any] = {}
+
+
 class LicenseKeyRead(Schema):
     id: UUID4
     user_id: UUID4
@@ -25,6 +32,14 @@ class LicenseKeyRead(Schema):
     status: LicenseKeyStatus
     limit_activations: int | None = None
     expires_at: datetime | None = None
+
+
+class LicenseKeyActivationRead(Schema):
+    id: UUID4
+    license_key_id: UUID4
+    label: str
+    meta: dict[str, Any]
+    license_key: LicenseKeyRead
 
 
 class LicenseKeyCreate(Schema):

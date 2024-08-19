@@ -7,6 +7,16 @@ from polar.kit.schemas import Schema
 from polar.models.license_key import LicenseKeyStatus
 
 
+class LicenseKeyValidationScopes(Schema):
+    benefit_id: BenefitID | None = None
+    user_id: UUID4 | None = None
+
+
+class LicenseKeyValidate(Schema):
+    scope: LicenseKeyValidationScopes | None = None
+    key: str
+
+
 class LicenseKeyRead(Schema):
     id: UUID4
     user_id: UUID4

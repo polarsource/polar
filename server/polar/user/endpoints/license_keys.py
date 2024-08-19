@@ -5,7 +5,6 @@ from pydantic import (
     UUID4,
 )
 
-from polar.auth.dependencies import WebUserOrAnonymous
 from polar.authz.service import AccessType, Authz
 from polar.exceptions import ResourceNotFound, Unauthorized
 from polar.kit.db.postgres import AsyncSession
@@ -14,8 +13,8 @@ from polar.openapi import APITag
 from polar.postgres import get_db_session
 from polar.routing import APIRouter
 
-from ..schemas.license_key import LicenseKeyRead
 from .. import auth
+from ..schemas.license_key import LicenseKeyRead, LicenseKeyValidate
 from ..service.license_key import license_key as license_key_service
 
 router = APIRouter(prefix="/license-keys", tags=[APITag.documented, APITag.featured])
@@ -26,6 +25,10 @@ LicenseKeyNotFound = {
     "description": "License key not found.",
     "model": ResourceNotFound.schema(),
 }
+
+###############################################################################
+# CRUD
+###############################################################################
 
 
 @router.get(
@@ -48,3 +51,21 @@ async def get(
         raise Unauthorized()
 
     return lk
+
+
+###############################################################################
+# ACTIVATION & VALIDATION
+###############################################################################
+
+
+@router.post(
+    "/validate",
+    response_model=LicenseKeyRead,
+    responses={404: LicenseKeyNotFound},
+)
+async def validate(
+    license_key: LicenseKeyValidate,
+    session: AsyncSession = Depends(get_db_session),
+) -> LicenseKey:
+    """Validate a license key."""
+    return await license_key_service.get_validated(session, license_key)

@@ -86,3 +86,63 @@ class TestLicenseKeyEndpoints:
         data = response.json()
         assert data.get("benefit_id") == str(benefit.id)
         assert data.get("key").startswith("TESTING")
+
+    async def test_validate(
+        self,
+        session: AsyncSession,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        user: User,
+        organization: Organization,
+        product: Product,
+    ) -> None:
+        benefit, granted = await TestLicenseKey.create_benefit_and_grant(
+            session,
+            save_fixture,
+            user=user,
+            organization=organization,
+            product=product,
+            properties=BenefitLicenseKeysCreateProperties(
+                prefix="testing",
+                expires=None,
+                activations=None,
+            ),
+        )
+        id = granted["license_key_id"]
+        lk = await license_key_service.get(session, id)
+        assert lk
+
+        key_only_response = await client.post(
+            "/v1/users/license-keys/validate",
+            json={
+                "key": lk.key,
+            },
+        )
+        assert key_only_response.status_code == 200
+
+        scope_benefit_404_response = await client.post(
+            "/v1/users/license-keys/validate",
+            json={"key": lk.key, "scope": {"benefit_id": str(generate_uuid())}},
+        )
+        assert scope_benefit_404_response.status_code == 404
+
+        scope_benefit_response = await client.post(
+            "/v1/users/license-keys/validate",
+            json={
+                "key": lk.key,
+                "scope": {"benefit_id": str(lk.benefit_id)},
+            },
+        )
+        assert scope_benefit_response.status_code == 200
+
+        full_response = await client.post(
+            "/v1/users/license-keys/validate",
+            json={
+                "key": lk.key,
+                "scope": {"benefit_id": str(lk.benefit_id), "user_id": str(lk.user_id)},
+            },
+        )
+        assert full_response.status_code == 200
+        data = full_response.json()
+        assert data.get("benefit_id") == str(benefit.id)
+        assert data.get("key").startswith("TESTING")

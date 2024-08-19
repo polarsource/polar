@@ -13,6 +13,7 @@ from polar.postgres import AsyncSession, sql
 from ..schemas.license_key import (
     LicenseKeyCreate,
     LicenseKeyUpdate,
+    LicenseKeyValidate,
 )
 
 log = structlog.get_logger()
@@ -47,6 +48,24 @@ class LicenseKeyService(
         )
         result = await session.execute(query)
         return result.scalar_one_or_none()
+
+    async def get_validated(
+        self,
+        session: AsyncSession,
+        validate: LicenseKeyValidate,
+    ) -> LicenseKey:
+        record = await self.get_or_raise_by_key(session, key=validate.key)
+        if not validate.scope:
+            return record
+
+        if validate.scope.benefit_id and validate.scope.benefit_id != record.benefit_id:
+            raise ResourceNotFound()
+
+        if validate.scope.user_id and validate.scope.user_id != record.user_id:
+            raise ResourceNotFound()
+
+        return record
+
     async def user_grant(
         self, session: AsyncSession, *, user: User, benefit: BenefitLicenseKeys
     ) -> LicenseKey:

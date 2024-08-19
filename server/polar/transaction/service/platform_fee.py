@@ -1,6 +1,5 @@
 import datetime
 import math
-from collections.abc import Sequence
 from uuid import UUID
 
 import structlog
@@ -8,13 +7,15 @@ from sqlalchemy import select
 
 from polar.account.service import account as account_service
 from polar.enums import AccountType
+from polar.integrations.stripe.service import stripe as stripe_service
 from polar.logging import Logger
 from polar.models import Account, Transaction
-from polar.models.transaction import PlatformFeeType, TransactionType
+from polar.models.transaction import PaymentProcessor, PlatformFeeType, TransactionType
 from polar.postgres import AsyncSession
 from polar.transaction.fees.stripe import (
     get_reverse_stripe_payout_fees,
     get_stripe_account_fee,
+    get_stripe_international_fee,
     get_stripe_invoice_fee,
     get_stripe_subscription_fee,
 )
@@ -26,15 +27,6 @@ log: Logger = structlog.get_logger()
 
 
 class PlatformFeeTransactionError(BaseTransactionServiceError): ...
-
-
-class DanglingBalanceTransactions(PlatformFeeTransactionError):
-    def __init__(self, balance_transactions: tuple[Transaction, Transaction]) -> None:
-        self.balance_transactions = balance_transactions
-        message = (
-            "Balance transactions not linked to a pledge, subscription, or donation."
-        )
-        super().__init__(message)
 
 
 class PayoutAmountTooLow(PlatformFeeTransactionError):
@@ -51,21 +43,9 @@ class PlatformFeeTransactionService(BaseTransactionService):
         *,
         balance_transactions: tuple[Transaction, Transaction],
     ) -> list[tuple[Transaction, Transaction]]:
-        fees_reversal_balances: list[tuple[Transaction, Transaction]] = []
-
-        # Platform fee
-        platform_fees_balances = await self._create_platform_fee(
+        return await self._create_payment_fees(
             session, balance_transactions=balance_transactions
         )
-        fees_reversal_balances.append(platform_fees_balances)
-
-        # Payment processor fees
-        payment_processor_fees_balances = await self._create_payment_processor_fees(
-            session, balance_transactions=balance_transactions
-        )
-        fees_reversal_balances += payment_processor_fees_balances
-
-        return fees_reversal_balances
 
     async def get_payout_fees(
         self, session: AsyncSession, *, account: Account, balance_amount: int
@@ -122,40 +102,7 @@ class PlatformFeeTransactionService(BaseTransactionService):
 
         return balance_amount, payout_fees_balances
 
-    async def _create_platform_fee(
-        self,
-        session: AsyncSession,
-        *,
-        balance_transactions: tuple[Transaction, Transaction],
-    ) -> tuple[Transaction, Transaction]:
-        outgoing, incoming = balance_transactions
-        account_id = incoming.account_id
-        assert account_id is not None
-        account = await account_service.get_by_id(session, account_id)
-        assert account is not None
-
-        if incoming.pledge_id is not None and incoming.issue_reward_id is not None:
-            fee_percent = account.platform_pledge_fee_percent
-            fee_amount = math.floor(incoming.amount * (fee_percent / 100))
-        elif incoming.order_id is not None:
-            fee_percent = account.platform_subscription_fee_percent
-            fee_amount = math.floor(incoming.amount * (fee_percent / 100))
-        elif incoming.donation_id is not None:
-            fee_percent = account.platform_subscription_fee_percent
-            fee_amount = math.floor(incoming.amount * (fee_percent / 100))
-        else:
-            raise DanglingBalanceTransactions(balance_transactions)
-
-        return await balance_transaction_service.create_reversal_balance(
-            session,
-            balance_transactions=balance_transactions,
-            amount=fee_amount,
-            platform_fee_type=PlatformFeeType.platform,
-            outgoing_incurred_by=incoming,
-            incoming_incurred_by=outgoing,
-        )
-
-    async def _create_payment_processor_fees(
+    async def _create_payment_fees(
         self,
         session: AsyncSession,
         *,
@@ -167,49 +114,46 @@ class PlatformFeeTransactionService(BaseTransactionService):
         account = await account_service.get_by_id(session, incoming.account_id)
         assert account is not None
 
-        if not account.processor_fees_applicable:
-            return []
-
-        payment_processor_fees_balances: list[tuple[Transaction, Transaction]] = []
+        total_amount = incoming.amount + incoming.tax_amount
+        fees_balances: list[tuple[Transaction, Transaction]] = []
 
         # Payment fee
+        fee_percent, fee_fixed = account.platform_fee
+        fee_amount = math.floor(total_amount * (fee_percent / 100) + fee_fixed)
+        fee_balances = await balance_transaction_service.create_reversal_balance(
+            session,
+            balance_transactions=balance_transactions,
+            amount=fee_amount,
+            platform_fee_type=PlatformFeeType.payment,
+            outgoing_incurred_by=incoming,
+            incoming_incurred_by=outgoing,
+        )
+        fees_balances.append(fee_balances)
+
+        # International fee
         if incoming.payment_transaction_id is not None:
-            incurred_fees = await self._get_incurred_fee_transactions(
+            if await self._is_international_payment_transaction(
                 session, incoming.payment_transaction_id
-            )
-            for incurred_fee in incurred_fees:
+            ):
+                international_fee_amount = get_stripe_international_fee(total_amount)
                 fee_balances = (
                     await balance_transaction_service.create_reversal_balance(
                         session,
                         balance_transactions=balance_transactions,
-                        amount=-incurred_fee.amount,
-                        platform_fee_type=PlatformFeeType.payment,
+                        amount=international_fee_amount,
+                        platform_fee_type=PlatformFeeType.international_payment,
                         outgoing_incurred_by=incoming,
                         incoming_incurred_by=outgoing,
                     )
                 )
-                payment_processor_fees_balances.append(fee_balances)
-
-        # Invoice fee
-        pledge = incoming.pledge
-        if pledge is not None and pledge.invoice_id is not None:
-            invoice_fee_amount = get_stripe_invoice_fee(incoming.amount)
-            fee_balances = await balance_transaction_service.create_reversal_balance(
-                session,
-                balance_transactions=balance_transactions,
-                amount=invoice_fee_amount,
-                platform_fee_type=PlatformFeeType.invoice,
-                outgoing_incurred_by=incoming,
-                incoming_incurred_by=outgoing,
-            )
-            payment_processor_fees_balances.append(fee_balances)
+                fees_balances.append(fee_balances)
 
         # Subscription fee
         if incoming.order_id is not None:
             await session.refresh(incoming, {"order"})
             assert incoming.order is not None
             if incoming.order.subscription_id is not None:
-                subscription_fee_amount = get_stripe_subscription_fee(incoming.amount)
+                subscription_fee_amount = get_stripe_subscription_fee(total_amount)
                 fee_balances = (
                     await balance_transaction_service.create_reversal_balance(
                         session,
@@ -220,18 +164,51 @@ class PlatformFeeTransactionService(BaseTransactionService):
                         incoming_incurred_by=outgoing,
                     )
                 )
-                payment_processor_fees_balances.append(fee_balances)
+                fees_balances.append(fee_balances)
 
-        return payment_processor_fees_balances
+        # Invoice fee
+        pledge = incoming.pledge
+        if pledge is not None and pledge.invoice_id is not None:
+            invoice_fee_amount = get_stripe_invoice_fee(total_amount)
+            fee_balances = await balance_transaction_service.create_reversal_balance(
+                session,
+                balance_transactions=balance_transactions,
+                amount=invoice_fee_amount,
+                platform_fee_type=PlatformFeeType.invoice,
+                outgoing_incurred_by=incoming,
+                incoming_incurred_by=outgoing,
+            )
+            fees_balances.append(fee_balances)
 
-    async def _get_incurred_fee_transactions(
-        self, session: AsyncSession, transaction_id: UUID
-    ) -> Sequence[Transaction]:
-        statement = select(Transaction).where(
-            Transaction.incurred_by_transaction_id == transaction_id
-        )
-        result = await session.execute(statement)
-        return result.scalars().all()
+        return fees_balances
+
+    async def _is_international_payment_transaction(
+        self, session: AsyncSession, payment_transaction_id: UUID
+    ) -> bool:
+        """
+        Check if the payment transaction is an international payment.
+
+        Currently, we only check if the payment was made using Stripe
+        and the card is not from the US.
+        """
+        payment_transaction = await self.get(session, payment_transaction_id)
+        assert payment_transaction is not None
+
+        if payment_transaction.processor != PaymentProcessor.stripe:
+            return False
+
+        if payment_transaction.charge_id is None:
+            return False
+
+        charge = stripe_service.get_charge(payment_transaction.charge_id)
+
+        if (payment_method_details := charge.payment_method_details) is None:
+            return False
+
+        if (card := payment_method_details.card) is None:
+            return False
+
+        return card.country != "US"
 
     async def _get_last_payout(
         self, session: AsyncSession, account: Account

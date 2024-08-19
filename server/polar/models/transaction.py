@@ -118,24 +118,24 @@ class PlatformFeeType(StrEnum):
     Type of fees applied by Polar, and billed to the users.
     """
 
-    platform = "platform"
-    """
-    Polar platform fee.
-    """
-
     payment = "payment"
     """
-    Fee applied by the payment processor to a payment, like a credit card fee.
+    Fee applied to a payment. This is the base fee applied to all payments.
+    """
+
+    international_payment = "international_payment"
+    """
+    Fee applied to an international payment, i.e. the payment method is not from the US.
     """
 
     subscription = "subscription"
     """
-    Fee applied by the payment processor to a recurring subscription.
+    Fee applied to a recurring subscription.
     """
 
     invoice = "invoice"
     """
-    Fee applied by the payment processor to an issued invoice.
+    Fee applied to an issued invoice.
     """
 
     cross_border_transfer = "cross_border_transfer"
@@ -153,6 +153,13 @@ class PlatformFeeType(StrEnum):
     account = "account"
     """
     Fee applied recurrently by the payment processor to an active account.
+    """
+
+    platform = "platform"
+    """
+    Polar platform fee.
+
+    **Deprecated: we no longer have a generic platform fee. They're always associated with a specific reason.**
     """
 
 

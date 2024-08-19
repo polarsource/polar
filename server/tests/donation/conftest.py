@@ -150,6 +150,7 @@ def get_charge(
         "payment_method_details": {
             "link": {"country": "US"},
             "type": "link",
+            "card": None,
         },
         "radar_options": {},
         "receipt_email": "gustav@westling.dev",

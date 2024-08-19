@@ -127,7 +127,7 @@ class TestDonations:
         )
 
         assert (
-            1861 == summary.balance.amount
+            1880 == summary.balance.amount
         )  # $20 minus Polar and payment processor fees
         assert 0 == summary.payout.amount
 
@@ -180,7 +180,7 @@ class TestDonations:
         )
 
         assert (
-            1861 == summary.balance.amount
+            1880 == summary.balance.amount
         )  # $20 minus Polar and payment processor fees
         assert 0 == summary.payout.amount
 

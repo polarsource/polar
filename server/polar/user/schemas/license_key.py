@@ -14,8 +14,9 @@ class LicenseKeyValidationScopes(Schema):
 
 
 class LicenseKeyValidate(Schema):
-    scope: LicenseKeyValidationScopes | None = None
     key: str
+    activation_id: UUID4 | None = None
+    scope: LicenseKeyValidationScopes | None = None
 
 
 class LicenseKeyActivate(Schema):
@@ -34,11 +35,18 @@ class LicenseKeyRead(Schema):
     expires_at: datetime | None = None
 
 
-class LicenseKeyActivationRead(Schema):
+class LicenseKeyActivationBase(Schema):
     id: UUID4
     license_key_id: UUID4
     label: str
     meta: dict[str, Any]
+
+
+class ValidatedLicenseKey(LicenseKeyRead):
+    activation: LicenseKeyActivationBase | None = None
+
+
+class LicenseKeyActivationRead(LicenseKeyActivationBase):
     license_key: LicenseKeyRead
 
 

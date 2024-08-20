@@ -16,9 +16,11 @@ from polar.routing import APIRouter
 from .. import auth
 from ..schemas.license_key import (
     LicenseKeyActivate,
+    LicenseKeyActivationBase,
     LicenseKeyActivationRead,
     LicenseKeyRead,
     LicenseKeyValidate,
+    ValidatedLicenseKey,
 )
 from ..service.license_key import license_key as license_key_service
 
@@ -78,7 +80,7 @@ async def get(
 
 @router.post(
     "/validate",
-    response_model=LicenseKeyRead,
+    response_model=ValidatedLicenseKey,
     responses={
         401: NotAuthorized,
         404: LicenseKeyNotFound,
@@ -89,16 +91,34 @@ async def validate(
     validate: LicenseKeyValidate,
     session: AsyncSession = Depends(get_db_session),
     authz: Authz = Depends(Authz.authz),
-) -> LicenseKey:
+) -> ValidatedLicenseKey:
     """Validate a license key."""
     lk = await license_key_service.get_or_raise_by_key(session, key=validate.key)
     if not await authz.can(auth_subject.subject, AccessType.write, lk):
         raise Unauthorized()
 
-    return await license_key_service.validate(
+    license_key, activation = await license_key_service.validate(
         session,
         license_key=lk,
         validate=validate,
+    )
+    if activation:
+        activation = LicenseKeyActivationBase(
+            id=activation.id,
+            license_key_id=activation.license_key_id,
+            label=activation.label,
+            meta=activation.meta,
+        )
+
+    return ValidatedLicenseKey(
+        id=license_key.id,
+        user_id=license_key.user_id,
+        benefit_id=license_key.benefit_id,
+        key=license_key.key,
+        status=license_key.status,
+        limit_activations=license_key.limit_activations,
+        expires_at=license_key.expires_at,
+        activation=activation,
     )
 
 

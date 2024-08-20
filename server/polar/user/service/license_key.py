@@ -46,15 +46,38 @@ class LicenseKeyService(
         result = await session.execute(query)
         return result.unique().scalar_one_or_none()
 
+    async def get_activation_or_raise(
+        self, session: AsyncSession, *, license_key: LicenseKey, activation_id: UUID
+    ) -> LicenseKeyActivation | None:
+        query = select(LicenseKeyActivation).where(
+            LicenseKeyActivation.id == activation_id,
+            LicenseKeyActivation.license_key_id == license_key.id,
+            LicenseKeyActivation.deleted_at.is_(None),
+        )
+        result = await session.execute(query)
+        record = result.scalar_one_or_none()
+        if not record:
+            raise ResourceNotFound()
+
+        return record
+
     async def validate(
         self,
         session: AsyncSession,
         *,
         license_key: LicenseKey,
         validate: LicenseKeyValidate
-    ) -> LicenseKey:
+    ) -> tuple[LicenseKey, LicenseKeyActivation | None]:
+        activation = None
+        if validate.activation_id:
+            activation = await self.get_activation_or_raise(
+                session,
+                license_key=license_key,
+                activation_id=validate.activation_id,
+            )
+
         if not validate.scope:
-            return license_key
+            return (license_key, activation)
 
         if (
             validate.scope.benefit_id
@@ -65,7 +88,7 @@ class LicenseKeyService(
         if validate.scope.user_id and validate.scope.user_id != license_key.user_id:
             raise ResourceNotFound()
 
-        return license_key
+        return (license_key, activation)
 
     async def get_activation_count(
         self,

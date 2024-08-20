@@ -255,7 +255,7 @@ class BenefitDownloadablesSubscriberProperties(Schema):
 
 
 class BenefitLicenseKeyExpiration(Schema):
-    ttl: int
+    ttl: int = Field(gt=0)
     timeframe: Literal["year", "month", "day"]
 
 

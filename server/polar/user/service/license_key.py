@@ -6,6 +6,7 @@ from sqlalchemy.orm import contains_eager
 
 from polar.exceptions import NotPermitted, ResourceNotFound
 from polar.kit.services import ResourceService
+from polar.kit.utils import utc_now
 from polar.models import Benefit, LicenseKey, LicenseKeyActivation, User
 from polar.models.benefit import BenefitLicenseKeys
 from polar.postgres import AsyncSession, sql
@@ -68,6 +69,10 @@ class LicenseKeyService(
         license_key: LicenseKey,
         validate: LicenseKeyValidate
     ) -> tuple[LicenseKey, LicenseKeyActivation | None]:
+        if license_key.expires_at:
+            if utc_now() >= license_key.expires_at:
+                raise ResourceNotFound()
+
         activation = None
         if validate.activation_id:
             activation = await self.get_activation_or_raise(

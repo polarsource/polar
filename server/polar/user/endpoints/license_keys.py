@@ -6,7 +6,7 @@ from pydantic import (
 )
 
 from polar.authz.service import AccessType, Authz
-from polar.exceptions import ResourceNotFound, Unauthorized
+from polar.exceptions import NotPermitted, ResourceNotFound, Unauthorized
 from polar.kit.db.postgres import AsyncSession
 from polar.models import LicenseKey, LicenseKeyActivation
 from polar.openapi import APITag
@@ -31,6 +31,16 @@ LicenseKeyNotFound = {
     "model": ResourceNotFound.schema(),
 }
 
+NotAuthorized = {
+    "description": "Not authorized to manage license key.",
+    "model": Unauthorized.schema(),
+}
+
+ActivationNotPermitted = {
+    "description": "License key activation not required or permitted (limit reached).",
+    "model": NotPermitted.schema(),
+}
+
 ###############################################################################
 # CRUD
 ###############################################################################
@@ -39,7 +49,10 @@ LicenseKeyNotFound = {
 @router.get(
     "/{id}",
     response_model=LicenseKeyRead,
-    responses={404: LicenseKeyNotFound},
+    responses={
+        401: NotAuthorized,
+        404: LicenseKeyNotFound,
+    },
 )
 async def get(
     auth_subject: auth.LicenseKeysRead,
@@ -66,7 +79,10 @@ async def get(
 @router.post(
     "/validate",
     response_model=LicenseKeyRead,
-    responses={404: LicenseKeyNotFound},
+    responses={
+        401: NotAuthorized,
+        404: LicenseKeyNotFound,
+    },
 )
 async def validate(
     auth_subject: auth.LicenseKeysWrite,
@@ -89,7 +105,11 @@ async def validate(
 @router.post(
     "/activate",
     response_model=LicenseKeyActivationRead,
-    responses={404: LicenseKeyNotFound},
+    responses={
+        401: NotAuthorized,
+        403: ActivationNotPermitted,
+        404: LicenseKeyNotFound,
+    },
 )
 async def activate(
     auth_subject: auth.LicenseKeysWrite,

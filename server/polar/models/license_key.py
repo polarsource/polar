@@ -16,7 +16,7 @@ from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 from polar.kit.db.models import RecordModel
 from polar.kit.utils import generate_uuid, utc_now
 
-from .benefit import Benefit, BenefitLicenseKeyActivation, BenefitLicenseKeyExpiration
+from .benefit import Benefit, BenefitLicenseKeyExpiration
 from .user import User
 
 if TYPE_CHECKING:
@@ -107,7 +107,7 @@ class LicenseKey(RecordModel):
         benefit_id: UUID,
         prefix: str | None = None,
         status: LicenseKeyStatus = LicenseKeyStatus.granted,
-        activations: BenefitLicenseKeyActivation | None = None,
+        limit_activations: int | None = None,
         expires: BenefitLicenseKeyExpiration | None = None,
     ) -> Self:
         expires_at = None
@@ -116,10 +116,6 @@ class LicenseKey(RecordModel):
             timeframe = expires.get("timeframe", None)
             if ttl and timeframe:
                 expires_at = cls.generate_expiration_dt(ttl, timeframe)
-
-        limit_activations = None
-        if activations:
-            limit_activations = activations.get("limit", None)
 
         key = cls.generate(prefix=prefix)
         return cls(

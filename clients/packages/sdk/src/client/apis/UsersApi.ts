@@ -16,25 +16,86 @@
 import * as runtime from '../runtime';
 import type {
   HTTPValidationError,
+  LicenseKeyActivate,
+  LicenseKeyActivationRead,
   LicenseKeyRead,
+  LicenseKeyValidate,
+  NotPermitted,
+  ResourceNotFound,
+  Unauthorized,
   UserRead,
   UserScopes,
   UserSetAccount,
   UserStripePortalSession,
+  ValidatedLicenseKey,
 } from '../models/index';
 
+export interface UsersApiActivateRequest {
+    body: LicenseKeyActivate;
+}
+
 export interface UsersApiGetRequest {
-    key: string;
+    id: string;
 }
 
 export interface UsersApiSetAccountRequest {
     body: UserSetAccount;
 }
 
+export interface UsersApiValidateRequest {
+    body: LicenseKeyValidate;
+}
+
 /**
  * 
  */
 export class UsersApi extends runtime.BaseAPI {
+
+    /**
+     * Activate a license key instance.
+     * Activate
+     */
+    async activateRaw(requestParameters: UsersApiActivateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<LicenseKeyActivationRead>> {
+        if (requestParameters['body'] == null) {
+            throw new runtime.RequiredError(
+                'body',
+                'Required parameter "body" was null or undefined when calling activate().'
+            );
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        headerParameters['Content-Type'] = 'application/json';
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("pat", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+        const response = await this.request({
+            path: `/v1/users/license-keys/activate`,
+            method: 'POST',
+            headers: headerParameters,
+            query: queryParameters,
+            body: requestParameters['body'],
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse(response);
+    }
+
+    /**
+     * Activate a license key instance.
+     * Activate
+     */
+    async activate(requestParameters: UsersApiActivateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<LicenseKeyActivationRead> {
+        const response = await this.activateRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
 
     /**
      * Create Stripe Customer Portal
@@ -75,10 +136,10 @@ export class UsersApi extends runtime.BaseAPI {
      * Get
      */
     async getRaw(requestParameters: UsersApiGetRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<LicenseKeyRead>> {
-        if (requestParameters['key'] == null) {
+        if (requestParameters['id'] == null) {
             throw new runtime.RequiredError(
-                'key',
-                'Required parameter "key" was null or undefined when calling get().'
+                'id',
+                'Required parameter "id" was null or undefined when calling get().'
             );
         }
 
@@ -95,7 +156,7 @@ export class UsersApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/v1/users/license-keys/{key}`.replace(`{${"key"}}`, encodeURIComponent(String(requestParameters['key']))),
+            path: `/v1/users/license-keys/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
@@ -222,6 +283,52 @@ export class UsersApi extends runtime.BaseAPI {
      */
     async setAccount(requestParameters: UsersApiSetAccountRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<UserRead> {
         const response = await this.setAccountRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
+     * Validate a license key.
+     * Validate
+     */
+    async validateRaw(requestParameters: UsersApiValidateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ValidatedLicenseKey>> {
+        if (requestParameters['body'] == null) {
+            throw new runtime.RequiredError(
+                'body',
+                'Required parameter "body" was null or undefined when calling validate().'
+            );
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        headerParameters['Content-Type'] = 'application/json';
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("pat", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+        const response = await this.request({
+            path: `/v1/users/license-keys/validate`,
+            method: 'POST',
+            headers: headerParameters,
+            query: queryParameters,
+            body: requestParameters['body'],
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse(response);
+    }
+
+    /**
+     * Validate a license key.
+     * Validate
+     */
+    async validate(requestParameters: UsersApiValidateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ValidatedLicenseKey> {
+        const response = await this.validateRaw(requestParameters, initOverrides);
         return await response.value();
     }
 

@@ -93,7 +93,7 @@ class BenefitLicenseKeyActivation(TypedDict):
 class BenefitLicenseKeysProperties(BenefitProperties):
     prefix: str | None
     expires: BenefitLicenseKeyExpiration | None
-    activations: BenefitLicenseKeyActivation | None
+    limit_activations: int | None
 
 
 class Benefit(RecordModel):

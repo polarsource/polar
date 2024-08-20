@@ -17,6 +17,7 @@ import {
   FormLabel,
   FormMessage,
 } from 'polarkit/components/ui/form'
+import { useState } from 'react'
 import { useFormContext } from 'react-hook-form'
 
 const LicenseKeysForm = ({ organization }: { organization: Organization }) => {
@@ -24,7 +25,11 @@ const LicenseKeysForm = ({ organization }: { organization: Organization }) => {
     useFormContext<BenefitCustomCreate>()
 
   const expires = watch('properties.expires', undefined)
-  const activations = watch('properties.activations', undefined)
+  const limitActivations = watch('properties.limit_activations', undefined)
+
+  const [showLimitActivations, setShowLimitActivations] = useState(
+    limitActivations !== undefined,
+  )
 
   return (
     <>
@@ -126,32 +131,21 @@ const LicenseKeysForm = ({ organization }: { organization: Organization }) => {
         <div className="grow">
           <label htmlFor="license-key-limit">Activation Limits</label>
         </div>
-        <FormField
-          control={control}
-          name="properties.activations"
-          render={({ field }) => {
-            return (
-              <FormItem>
-                <Switch
-                  id="license-key-limit"
-                  checked={field.value}
-                  onCheckedChange={(limited) => {
-                    const value = limited ? {} : undefined
-                    setValue('properties.activations', value)
-                  }}
-                  {...field}
-                />
-                <FormMessage />
-              </FormItem>
-            )
+        <Switch
+          id="license-key-limit"
+          checked={showLimitActivations}
+          onCheckedChange={(show) => {
+            const value = show ? 1 : undefined
+            setValue('properties.limit_activations', value)
+            setShowLimitActivations(show)
           }}
         />
       </div>
-      {activations && (
+      {showLimitActivations && (
         <>
           <FormField
             control={control}
-            name="properties.activations.limit"
+            name="properties.limit_activations"
             render={({ field }) => {
               return (
                 <FormItem>

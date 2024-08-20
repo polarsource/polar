@@ -29,6 +29,7 @@ if TYPE_CHECKING:
 class FileServiceTypes(StrEnum):
     downloadable = "downloadable"
     product_media = "product_media"
+    organization_avatar = "organization_avatar"
 
 
 class File(RecordModel):
@@ -82,4 +83,10 @@ class DownloadableFile(File):
 class ProductMediaFile(File):
     __mapper_args__ = {
         "polymorphic_identity": FileServiceTypes.product_media,
+    }
+
+
+class OrganizationAvatarFile(File):
+    __mapper_args__ = {
+        "polymorphic_identity": FileServiceTypes.organization_avatar,
     }

@@ -6,11 +6,15 @@ export const metadata: Metadata = {
 }
 
 export default async function Page({
-  searchParams: { return_to },
+  searchParams: { return_to, ...rest },
 }: {
   searchParams: {
     return_to?: string
   }
 }) {
-  return <Login returnTo={return_to} />
+  const restParams = new URLSearchParams(rest)
+  const returnTo = return_to
+    ? `${return_to || ''}?${restParams.toString()}`
+    : undefined
+  return <Login returnTo={returnTo} />
 }

@@ -6,20 +6,20 @@ import { twMerge } from 'tailwind-merge'
 
 interface GetStartedButtonProps extends ComponentProps<typeof Button> {
   text?: string
-  returnTo?: string
+  href?: string
 }
 
 const GetStartedButton: React.FC<GetStartedButtonProps> = ({
   text: _text,
-  returnTo: _returnTo,
+  href: _href,
   wrapperClassNames,
   size = 'lg',
   ...props
 }) => {
   const text = _text || 'Start for free'
-  const returnTo = _returnTo ? encodeURIComponent(_returnTo) : '/dashboard'
+  const href = _href ? _href : '/dashboard'
   return (
-    <Link href={`/login${returnTo ? `?return_to=${returnTo}` : ''}`}>
+    <Link href={href}>
       <Button
         wrapperClassNames={twMerge(
           'flex flex-row items-center gap-x-2',

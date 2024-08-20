@@ -63,7 +63,8 @@ class BenefitLicenseKeysService(
         diff_activations = c.get("limit_activations", None) != pre.get(
             "limit_activations", None
         )
-        return diff_expires or diff_activations
+        diff_usage = c.get("limit_usage", None) != pre.get("limit_usage", None)
+        return diff_expires or diff_activations or diff_usage
 
     async def validate_properties(
         self, auth_subject: AuthSubject[User | Organization], properties: dict[str, Any]

@@ -140,6 +140,7 @@ class LicenseKeyService(
             benefit_id=benefit.id,
             prefix=props.get("prefix", None),
             limit_activations=props.get("limit_activations", None),
+            limit_usage=props.get("limit_usage", None),
             expires=props.get("expires", None),
         )
 

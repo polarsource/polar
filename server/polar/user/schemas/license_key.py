@@ -28,6 +28,8 @@ class LicenseKeyRead(Schema):
     key: str
     status: LicenseKeyStatus
     limit_activations: int | None = None
+    usage: int
+    limit_usage: int | None = None
     validations: int
     last_validated_at: datetime | None = None
     expires_at: datetime | None = None
@@ -54,6 +56,7 @@ class LicenseKeyCreate(Schema):
     key: str
     status: LicenseKeyStatus
     limit_activations: int | None = Field(gt=0, le=50, default=None)
+    limit_usage: int | None = Field(gt=0, default=None)
     expires_at: datetime | None = None
 
 

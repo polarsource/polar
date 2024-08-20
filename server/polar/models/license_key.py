@@ -65,6 +65,10 @@ class LicenseKey(RecordModel):
     def activations(cls) -> Mapped[list["LicenseKeyActivation"]]:
         return relationship("LicenseKeyActivation", lazy="raise", back_populates="license_key")
 
+    usage: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+
+    limit_usage: Mapped[int | None] = mapped_column(Integer, nullable=True)
+
     validations: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
 
     last_validated_at: Mapped[datetime | None] = mapped_column(
@@ -108,6 +112,7 @@ class LicenseKey(RecordModel):
         prefix: str | None = None,
         status: LicenseKeyStatus = LicenseKeyStatus.granted,
         limit_activations: int | None = None,
+        limit_usage: int | None = None,
         expires: BenefitLicenseKeyExpiration | None = None,
     ) -> Self:
         expires_at = None
@@ -124,6 +129,7 @@ class LicenseKey(RecordModel):
             key=key,
             status=status,
             limit_activations=limit_activations,
+            limit_usage=limit_usage,
             expires_at=expires_at
         )
 

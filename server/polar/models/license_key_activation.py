@@ -27,7 +27,7 @@ class LicenseKeyActivation(RecordModel):
 
     @declared_attr
     def license_key(cls) -> Mapped["LicenseKey"]:
-        return relationship("LicenseKey", lazy="joined", back_populates="activations")
+        return relationship("LicenseKey", lazy="raise", back_populates="activations")
 
     label: Mapped[str] = mapped_column(String, nullable=False)
 

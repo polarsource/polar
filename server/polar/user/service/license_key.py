@@ -1,7 +1,7 @@
 from uuid import UUID
 
 import structlog
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import contains_eager
 
 from polar.exceptions import NotPermitted, ResourceNotFound
@@ -42,7 +42,7 @@ class LicenseKeyService(
         session: AsyncSession,
         id: UUID,
     ) -> LicenseKey | None:
-        query = self._get_select_base().where(LicenseKey.id == id)
+        query = self._get_loaded_base().where(LicenseKey.id == id)
         result = await session.execute(query)
         return result.unique().scalar_one_or_none()
 
@@ -67,17 +67,34 @@ class LicenseKeyService(
 
         return license_key
 
+    async def get_activation_count(
+        self,
+        session: AsyncSession,
+        license_key: LicenseKey,
+    ) -> int:
+        query = select(func.count(LicenseKeyActivation.id)).where(
+            LicenseKeyActivation.license_key_id == license_key.id,
+        )
+        res = await session.execute(query)
+        count = res.scalar()
+        if count:
+            return count
+        return 0
+
     async def activate(
         self,
         session: AsyncSession,
         license_key: LicenseKey,
         activate: LicenseKeyActivate,
     ) -> LicenseKeyActivation:
-        if not license_key.requires_activation():
+        if not license_key.limit_activations:
             raise NotPermitted("License key does not require activation")
 
-        activations = license_key.activations
-        if len(activations) >= license_key.limit_activations:
+        current_activation_count = await self.get_activation_count(
+            session,
+            license_key=license_key,
+        )
+        if current_activation_count >= license_key.limit_activations:
             raise NotPermitted("License key activation limit already reached")
 
         instance = LicenseKeyActivation(
@@ -126,6 +143,17 @@ class LicenseKeyService(
 
         await session.flush()
         return ret
+
+    def _get_loaded_base(self) -> sql.Select:
+        return (
+            self._get_select_base()
+            .join(
+                LicenseKeyActivation,
+                onclause=LicenseKeyActivation.license_key_id == LicenseKey.id,
+                isouter=True,
+            )
+            .options(contains_eager(LicenseKey.activations))
+        )
 
     def _get_select_base(self) -> sql.Select:
         return (

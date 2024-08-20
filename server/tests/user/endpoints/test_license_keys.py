@@ -18,8 +18,7 @@ from tests.fixtures.license_key import TestLicenseKey
 
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
-class TestLicenseKeyEndpoints:
-
+class TestLicenseKeyCRUDEndpoints:
     @pytest.mark.auth(
         AuthSubjectFixture(subject="user"),
         AuthSubjectFixture(subject="organization"),
@@ -95,6 +94,58 @@ class TestLicenseKeyEndpoints:
         data = response.json()
         assert data.get("benefit_id") == str(benefit.id)
         assert data.get("key").startswith("TESTING")
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="organization"),
+    )
+    async def test_update(
+        self,
+        session: AsyncSession,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        user: User,
+        organization: Organization,
+        product: Product,
+    ) -> None:
+        benefit, granted = await TestLicenseKey.create_benefit_and_grant(
+            session,
+            save_fixture,
+            user=user,
+            organization=organization,
+            product=product,
+            properties=BenefitLicenseKeysCreateProperties(
+                prefix="testing",
+                expires=None,
+                limit_activations=None,
+                limit_usage=None,
+            ),
+        )
+        id = granted["license_key_id"]
+        lk = await license_key_service.get(session, id)
+        assert lk
+
+        expires_at = utc_now() + relativedelta(months=1)
+        expires_at = expires_at.strftime("%Y-%m-%dT%H:%M:%S")
+        response = await client.patch(
+            f"/v1/users/license-keys/{lk.id}",
+            json={
+                "usage": 4,
+                "limit_usage": 10,
+                "limit_activations": 5,
+                "expires_at": expires_at,
+            },
+        )
+        assert response.status_code == 200
+        updated = response.json()
+        assert updated["usage"] == 4
+        assert updated["limit_usage"] == 10
+        assert updated["limit_activations"] == 5
+        assert updated["expires_at"] == expires_at
+
+
+@pytest.mark.asyncio
+@pytest.mark.http_auto_expunge
+class TestLicenseKeyActionEndpoints:
 
     @pytest.mark.auth(
         AuthSubjectFixture(subject="user"),

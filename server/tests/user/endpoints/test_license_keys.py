@@ -276,6 +276,70 @@ class TestLicenseKeyEndpoints:
         AuthSubjectFixture(subject="user"),
         AuthSubjectFixture(subject="organization"),
     )
+    async def test_validate_usage(
+        self,
+        session: AsyncSession,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        user: User,
+        organization: Organization,
+        product: Product,
+    ) -> None:
+        benefit, granted = await TestLicenseKey.create_benefit_and_grant(
+            session,
+            save_fixture,
+            user=user,
+            organization=organization,
+            product=product,
+            properties=BenefitLicenseKeysCreateProperties(
+                prefix="testing", limit_usage=10
+            ),
+        )
+        id = granted["license_key_id"]
+        lk = await license_key_service.get(session, id)
+        assert lk
+
+        increment = await client.post(
+            "/v1/users/license-keys/validate",
+            json={
+                "key": lk.key,
+                "label": "testing activation",
+                "increment_usage": 1,
+            },
+        )
+        assert increment.status_code == 200
+        data = increment.json()
+        assert data.get("usage") == 1
+
+        increment = await client.post(
+            "/v1/users/license-keys/validate",
+            json={
+                "key": lk.key,
+                "label": "testing activation",
+                "increment_usage": 8,
+            },
+        )
+        assert increment.status_code == 200
+        data = increment.json()
+        assert data.get("usage") == 9
+
+        increment = await client.post(
+            "/v1/users/license-keys/validate",
+            json={
+                "key": lk.key,
+                "label": "testing activation",
+                "increment_usage": 2,
+            },
+        )
+        assert increment.status_code == 400
+        data = increment.json()
+        detail = data.get("detail")
+        assert detail == "License key only has 1 more usages."
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="organization"),
+    )
     async def test_validate_activation(
         self,
         session: AsyncSession,

@@ -13,6 +13,7 @@ class LicenseKeyValidate(Schema):
     activation_id: UUID4 | None = None
     benefit_id: BenefitID | None = None
     user_id: UUID4 | None = None
+    increment_usage: int | None = None
 
 
 class LicenseKeyActivate(Schema):

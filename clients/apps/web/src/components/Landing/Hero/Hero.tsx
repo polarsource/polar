@@ -8,18 +8,17 @@ import Button from 'polarkit/components/ui/atoms/button'
 export const Hero = () => {
   return (
     <Section
-      className="flex w-full flex-col items-center gap-24 md:py-24"
+      className="flex w-full flex-col items-center gap-24 md:py-16"
       wrapperClassName="relative isolate overflow-hidden"
     >
       <div className="relative z-20 flex w-full flex-col items-center gap-y-12 text-center xl:w-2/3">
-        <div className="z-20 flex flex-col items-center gap-y-12">
-          <h1 className="text-balance text-4xl leading-snug text-gray-950 md:text-7xl md:leading-tight dark:text-white">
+        <div className="z-20 flex flex-col items-center gap-y-8">
+          <h1 className="text-balance text-4xl font-medium !leading-tight text-gray-950 md:text-7xl dark:text-white">
             The best monetization platform for developers
           </h1>
           <div className="flex flex-col items-center gap-y-4 xl:w-2/3">
-            <p className="dark:text-polar-500 text-2xl leading-relaxed text-gray-500">
-              An open source Lemon Squeezy alternative. Leave VAT, taxes &
-              billing to us.
+            <p className="dark:text-polar-400 text-lg leading-relaxed text-gray-500">
+              An open source Lemon Squeezy alternative with better pricing
             </p>
             <p className="dark:text-polar-600 text-xs leading-normal text-gray-400">
               By using Polar you agree to our{' '}

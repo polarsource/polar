@@ -1,58 +1,79 @@
 'use client'
 
-import {
-  AccountBalanceOutlined,
-  ReceiptLongOutlined,
-  TrendingUpOutlined,
-} from '@mui/icons-material'
-import FeatureItem from './molecules/FeatureItem'
+import { ArrowForward } from '@mui/icons-material'
+import { motion } from 'framer-motion'
+import { twMerge } from 'tailwind-merge'
 
 export const MerchantOfRecord = () => {
   return (
-    <div className="flex flex-col gap-y-24">
-      <div className="relative flex flex-col gap-y-4">
-        <picture>
-          <source
-            media="(prefers-color-scheme: dark)"
-            srcSet={`/assets/landing/metrics_dark.png`}
-          />
-          <img
-            className="dark:border-polar-700 md:rounded-4xl hidden rounded-2xl border border-gray-200 md:block"
-            srcSet={`/assets/landing/metrics.png`}
-            alt="Metrics dashboard in Polar"
-          />
-        </picture>
-        <div className="absolute inset-0 flex flex-col items-center justify-end gap-y-2 bg-gradient-to-t from-white from-30% to-transparent p-6 text-center md:gap-y-8 md:p-12 dark:from-black dark:to-transparent">
-          <h2 className="text-2xl leading-snug md:text-5xl">
-            Increase sales, not overhead
-          </h2>
-          <h3 className="dark:text-polar-600 text-xl leading-snug text-gray-500 md:text-4xl">
-            Polar handles VAT, sales tax and billing so you don&apos;t have to
+    <div className="flex flex-col gap-y-32">
+      <div className="rounded-4xl dark:bg-polar-950 from-polar-700 relative flex flex-row items-center gap-x-24 p-12">
+        <div className="flex flex-col gap-y-4">
+          <span className="font-mono text-xs uppercase tracking-wider dark:text-blue-400">
+            Merchant of Record
+          </span>
+          <h3 className="text-3xl font-medium leading-snug">
+            Make money without headaches
           </h3>
+          <ul className="dark:text-polar-200">
+            <li className="flex flex-row items-center gap-x-2">
+              <ArrowForward fontSize="small" />
+              <span>Sales Tax & EU VAT handled</span>
+            </li>
+            <li className="flex flex-row items-center gap-x-2">
+              <ArrowForward fontSize="small" />
+              <span>On-demand Payouts</span>
+            </li>
+            <li className="flex flex-row items-center gap-x-2">
+              <ArrowForward fontSize="small" />
+              <span>Detailed Transactions Overview</span>
+            </li>
+          </ul>
         </div>
-      </div>
+        <motion.div
+          className="absolute bottom-0 right-6 top-6 grid w-1/2 grid-flow-col grid-cols-[repeat(32,minmax(0,1fr))] grid-rows-[repeat(7,minmax(0,1fr))] rounded-3xl"
+          whileInView="visible"
+          initial="hidden"
+          transition={{
+            staggerChildren: 0.05,
+            ease: 'easeInOut',
+          }}
+        >
+          {Array(32 * 7)
+            .fill(0)
+            .map((_, i) => {
+              const active = Math.random() > 0.8
+              const activeClass = active
+                ? 'bg-blue-500 dark:bg-blue-500'
+                : 'hover:bg-blue-100 dark:hover:bg-blue-900'
 
-      <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
-        <FeatureItem
-          icon={<TrendingUpOutlined />}
-          title="Sales Metrics"
-          description="Professional funding, sales and subscription metrics. Your dashboard can be plotted down to each hour - let's aim high, together."
-          link="#"
-          showLink={false}
-        />
-        <FeatureItem
-          icon={<ReceiptLongOutlined />}
-          title="Merchant of Record"
-          description="No more VAT headache - we handle the necessary taxes for you."
-          className="md:col-span-1"
-          link="/docs/payments-taxes#taxes"
-        />
-        <FeatureItem
-          icon={<AccountBalanceOutlined />}
-          title="Payouts"
-          description="Withdraw your earnings with ease. Supporting Stripe & Open Collective."
-          link="/docs/payments-taxes"
-        />
+              return (
+                <div
+                  key={i}
+                  className={twMerge(
+                    'dark:bg-polar-700 flex h-2.5 w-2.5 flex-col items-center justify-center rounded-full bg-gray-100',
+                  )}
+                >
+                  {active && (
+                    <motion.span
+                      className={twMerge(
+                        'h-full w-full rounded-full',
+                        activeClass,
+                      )}
+                      variants={{
+                        hidden: { opacity: 0, scale: 0 },
+                        visible: {
+                          opacity: 1,
+                          scale: 1,
+                          transition: { duration: 0.5 },
+                        },
+                      }}
+                    />
+                  )}
+                </div>
+              )
+            })}
+        </motion.div>
       </div>
     </div>
   )

@@ -86,21 +86,21 @@ export const Testamonials = () => {
       </h3>
       <div className="dark:border-polar-700 rounded-4xl flex flex-col divide-y overflow-hidden border">
         <Link
-          className="hover:bg-gray-75 dark:hover:bg-polar-900 flex flex-col gap-y-6 p-12 transition-colors"
+          className="hover:bg-gray-75 dark:hover:bg-polar-900 flex flex-col items-center gap-y-12 p-12 transition-colors"
           href={testamonials[0].link}
           target="_blank"
         >
-          <div className="flex flex-col gap-y-4 text-lg md:w-2/3">
+          <div className="flex flex-col gap-y-4 text-center text-xl md:w-2/3">
             {testamonials[0].text}
           </div>
-          <div className="flex flex-row items-center gap-x-4">
+          <div className="flex flex-col items-center gap-y-4">
             <Avatar
-              className="h-10 w-10"
+              className="h-16 w-16"
               avatar_url={testamonials[0].avatar}
               name={testamonials[0].name}
             />
 
-            <div className="flex flex-col text-sm">
+            <div className="flex flex-col items-center text-sm">
               <span>{testamonials[0].name}</span>
               <span className="dark:text-polar-500 text-gray-500">
                 {testamonials[0].company}

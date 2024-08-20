@@ -88,6 +88,7 @@
     "rehype-mdx-import-media": "^1.2.0",
     "rehype-slug": "^6.0.0",
     "remark-flexible-toc": "^1.1.1",
+    "remark-gfm": "^4.0.0",
     "rss": "^1.2.2",
     "sass": "^1.59.3",
     "satori": "^0.10.11",

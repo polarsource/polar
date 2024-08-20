@@ -86,14 +86,11 @@ class BenefitLicenseKeyExpiration(TypedDict):
     timeframe: Literal["year", "month", "day"]
 
 
-class BenefitLicenseKeyActivation(TypedDict):
-    limit: int
-
-
 class BenefitLicenseKeysProperties(BenefitProperties):
     prefix: str | None
     expires: BenefitLicenseKeyExpiration | None
     limit_activations: int | None
+    limit_usage: int | None
 
 
 class Benefit(RecordModel):

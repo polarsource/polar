@@ -26,10 +26,13 @@ const LicenseKeysForm = ({ organization }: { organization: Organization }) => {
 
   const expires = watch('properties.expires', undefined)
   const limitActivations = watch('properties.limit_activations', undefined)
+  const limitUsage = watch('properties.limit_usage', undefined)
 
   const [showLimitActivations, setShowLimitActivations] = useState(
     limitActivations !== undefined,
   )
+
+  const [showLimitUsage, setShowLimitUsage] = useState(limitUsage !== undefined)
 
   return (
     <>
@@ -126,13 +129,50 @@ const LicenseKeysForm = ({ organization }: { organization: Organization }) => {
           />
         </>
       )}
+      <div className="flex flex-row items-center">
+        <div className="grow">
+          <label htmlFor="license-key-limit-usage">Usage limit</label>
+        </div>
+        <Switch
+          id="license-key-limit-usage"
+          checked={showLimitActivations}
+          onCheckedChange={(show) => {
+            const value = show ? 1 : undefined
+            setValue('properties.limit_usage', value)
+            setShowLimitUsage(show)
+          }}
+        />
+      </div>
+      {showLimitUsage && (
+        <>
+          <FormField
+            control={control}
+            name="properties.limit_usage"
+            render={({ field }) => {
+              return (
+                <FormItem>
+                  <div className="flex flex-row items-center justify-between">
+                    <FormLabel>Usage Limit</FormLabel>
+                  </div>
+                  <FormControl>
+                    <Input {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )
+            }}
+          />
+        </>
+      )}
 
       <div className="flex flex-row items-center">
         <div className="grow">
-          <label htmlFor="license-key-limit">Activation Limits</label>
+          <label htmlFor="license-key-limit-activations">
+            Activation Limits
+          </label>
         </div>
         <Switch
-          id="license-key-limit"
+          id="license-key-limit-activations"
           checked={showLimitActivations}
           onCheckedChange={(show) => {
             const value = show ? 1 : undefined

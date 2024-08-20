@@ -259,26 +259,25 @@ class BenefitLicenseKeyExpiration(Schema):
     timeframe: Literal["year", "month", "day"]
 
 
-class BenefitLicenseKeyActivation(Schema):
-    limit: int = Field(gt=0, le=50)
-
-
 class BenefitLicenseKeysCreateProperties(Schema):
     prefix: str | None = None
     expires: BenefitLicenseKeyExpiration | None = None
     limit_activations: int | None = Field(gt=0, default=None)
+    limit_usage: int | None = Field(gt=0, default=None)
 
 
 class BenefitLicenseKeysProperties(Schema):
     prefix: str | None
     expires: BenefitLicenseKeyExpiration | None
     limit_activations: int | None
+    limit_usage: int | None
 
 
 class BenefitLicenseKeysSubscriberProperties(Schema):
     key: str
     activations: int
     limit_activations: int | None
+    limit_usage: int | None
     validations: int
     last_validated_at: datetime | None
     expires_at: datetime | None

@@ -136,7 +136,9 @@ class LicenseKey(RecordModel):
     def mark_revoked(self) -> None:
         self.status = LicenseKeyStatus.revoked
 
-    def mark_validated(self) -> None:
+    def mark_validated(self, increment_usage: int | None = None) -> None:
         self.validations += 1
         self.last_validated_at = utc_now()
+        if increment_usage:
+            self.usage += increment_usage
 

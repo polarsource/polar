@@ -4,7 +4,7 @@ import structlog
 from sqlalchemy import func, select
 from sqlalchemy.orm import contains_eager
 
-from polar.exceptions import NotPermitted, ResourceNotFound
+from polar.exceptions import BadRequest, NotPermitted, ResourceNotFound
 from polar.kit.services import ResourceService
 from polar.kit.utils import utc_now
 from polar.models import Benefit, LicenseKey, LicenseKeyActivation, User
@@ -67,11 +67,11 @@ class LicenseKeyService(
         session: AsyncSession,
         *,
         license_key: LicenseKey,
-        validate: LicenseKeyValidate
+        validate: LicenseKeyValidate,
     ) -> tuple[LicenseKey, LicenseKeyActivation | None]:
         if license_key.expires_at:
             if utc_now() >= license_key.expires_at:
-                raise ResourceNotFound()
+                raise ResourceNotFound("License key has expired.")
 
         activation = None
         if validate.activation_id:
@@ -82,12 +82,17 @@ class LicenseKeyService(
             )
 
         if validate.benefit_id and validate.benefit_id != license_key.benefit_id:
-            raise ResourceNotFound()
+            raise ResourceNotFound("License key does not match given benefit.")
 
         if validate.user_id and validate.user_id != license_key.user_id:
-            raise ResourceNotFound()
+            raise ResourceNotFound("License key does not match given user.")
 
-        license_key.mark_validated()
+        if validate.increment_usage and license_key.limit_usage:
+            remaining = license_key.limit_usage - license_key.usage
+            if validate.increment_usage > remaining:
+                raise BadRequest(f"License key only has {remaining} more usages.")
+
+        license_key.mark_validated(increment_usage=validate.increment_usage)
         session.add(license_key)
         return (license_key, activation)
 

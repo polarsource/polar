@@ -29,10 +29,20 @@ import { useForm } from 'react-hook-form'
 import slugify from 'slugify'
 import { twMerge } from 'tailwind-merge'
 
-export default function ClientPage() {
+export default function ClientPage({
+  slug: initialSlug,
+  validationErrors,
+  error,
+}: {
+  slug?: string
+  validationErrors?: ValidationError[]
+  error?: string
+}) {
   const { currentUser, setUserOrganizations } = useAuth()
   const router = useRouter()
-  const form = useForm<{ name: string; slug: string }>()
+  const form = useForm<{ name: string; slug: string }>({
+    defaultValues: { name: initialSlug || '', slug: initialSlug || '' },
+  })
   const {
     control,
     handleSubmit,
@@ -50,6 +60,15 @@ export default function ClientPage() {
     'subscriptions_enabled',
   ])
   const [editedSlug, setEditedSlug] = useState(false)
+
+  useEffect(() => {
+    if (validationErrors) {
+      setValidationErrors(validationErrors, setError)
+    }
+    if (error) {
+      setError('root', { message: error })
+    }
+  }, [validationErrors, error, setError])
 
   const name = watch('name')
   const slug = watch('slug')

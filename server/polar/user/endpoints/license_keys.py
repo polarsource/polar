@@ -117,6 +117,8 @@ async def validate(
         key=license_key.key,
         status=license_key.status,
         limit_activations=license_key.limit_activations,
+        validations=license_key.validations,
+        last_validated_at=license_key.last_validated_at,
         expires_at=license_key.expires_at,
         activation=activation,
     )

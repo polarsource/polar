@@ -81,18 +81,14 @@ class LicenseKeyService(
                 activation_id=validate.activation_id,
             )
 
-        if not validate.scope:
-            return (license_key, activation)
-
-        if (
-            validate.scope.benefit_id
-            and validate.scope.benefit_id != license_key.benefit_id
-        ):
+        if validate.benefit_id and validate.benefit_id != license_key.benefit_id:
             raise ResourceNotFound()
 
-        if validate.scope.user_id and validate.scope.user_id != license_key.user_id:
+        if validate.user_id and validate.user_id != license_key.user_id:
             raise ResourceNotFound()
 
+        license_key.mark_validated()
+        session.add(license_key)
         return (license_key, activation)
 
     async def get_activation_count(

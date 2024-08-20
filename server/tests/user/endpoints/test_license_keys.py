@@ -18,6 +18,10 @@ from tests.fixtures.license_key import TestLicenseKey
 @pytest.mark.http_auto_expunge
 class TestLicenseKeyEndpoints:
 
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="organization"),
+    )
     async def test_get_non_existing_404s(
         self,
         session: AsyncSession,
@@ -195,5 +199,97 @@ class TestLicenseKeyEndpoints:
         )
         assert response.status_code == 200
         data = response.json()
+
         assert data.get("label") == label
         assert data.get("meta") == metadata
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="organization"),
+    )
+    async def test_unnecessary_activation(
+        self,
+        session: AsyncSession,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        user: User,
+        organization: Organization,
+        product: Product,
+    ) -> None:
+        benefit, granted = await TestLicenseKey.create_benefit_and_grant(
+            session,
+            save_fixture,
+            user=user,
+            organization=organization,
+            product=product,
+            properties=BenefitLicenseKeysCreateProperties(
+                prefix="testing",
+                expires=None,
+                activations=None,
+            ),
+        )
+        id = granted["license_key_id"]
+        lk = await license_key_service.get(session, id)
+        assert lk
+
+        response = await client.post(
+            "/v1/users/license-keys/activate",
+            json={
+                "key": lk.key,
+                "label": "test",
+                "meta": {},
+            },
+        )
+        assert response.status_code == 403
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="organization"),
+    )
+    async def test_too_many_activations(
+        self,
+        session: AsyncSession,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        user: User,
+        organization: Organization,
+        product: Product,
+    ) -> None:
+        benefit, granted = await TestLicenseKey.create_benefit_and_grant(
+            session,
+            save_fixture,
+            user=user,
+            organization=organization,
+            product=product,
+            properties=BenefitLicenseKeysCreateProperties(
+                prefix="testing",
+                expires=None,
+                activations=BenefitLicenseKeyActivation(limit=1),
+            ),
+        )
+        id = granted["license_key_id"]
+        lk = await license_key_service.get(session, id)
+        assert lk
+
+        label = "test"
+        metadata = {"test": "test"}
+        response = await client.post(
+            "/v1/users/license-keys/activate",
+            json={
+                "key": lk.key,
+                "label": label,
+                "meta": metadata,
+            },
+        )
+        assert response.status_code == 200
+        data = response.json()
+
+        second_response = await client.post(
+            "/v1/users/license-keys/activate",
+            json={
+                "key": lk.key,
+                "label": label,
+                "meta": metadata,
+            },
+        )
+        assert second_response.status_code == 403

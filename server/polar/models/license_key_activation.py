@@ -1,4 +1,4 @@
-from typing import Any
+from typing import TYPE_CHECKING, Any
 from uuid import UUID
 
 from sqlalchemy import (
@@ -11,7 +11,8 @@ from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.kit.db.models import RecordModel
 
-from .license_key import LicenseKey
+if TYPE_CHECKING:
+    from .license_key import LicenseKey
 
 
 class LicenseKeyActivation(RecordModel):
@@ -25,8 +26,8 @@ class LicenseKeyActivation(RecordModel):
     )
 
     @declared_attr
-    def license_key(cls) -> Mapped[LicenseKey]:
-        return relationship("LicenseKey", lazy="raise")
+    def license_key(cls) -> Mapped["LicenseKey"]:
+        return relationship("LicenseKey", lazy="joined", back_populates="activations")
 
     label: Mapped[str] = mapped_column(String, nullable=False)
 

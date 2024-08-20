@@ -1,6 +1,6 @@
 from datetime import datetime
 from enum import StrEnum
-from typing import Literal, Self
+from typing import TYPE_CHECKING, Literal, Self
 from uuid import UUID
 
 from dateutil.relativedelta import relativedelta
@@ -18,6 +18,9 @@ from polar.kit.utils import generate_uuid, utc_now
 
 from .benefit import Benefit, BenefitLicenseKeyActivation, BenefitLicenseKeyExpiration
 from .user import User
+
+if TYPE_CHECKING:
+    from .license_key_activation import LicenseKeyActivation
 
 
 class LicenseKeyStatus(StrEnum):
@@ -57,6 +60,10 @@ class LicenseKey(RecordModel):
     )
 
     limit_activations: Mapped[int | None] = mapped_column(Integer, nullable=True)
+
+    @declared_attr
+    def activations(cls) -> Mapped[list["LicenseKeyActivation"]]:
+        return relationship("LicenseKeyActivation", lazy="joined", back_populates="license_key")
 
     validations: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
 
@@ -126,4 +133,7 @@ class LicenseKey(RecordModel):
 
     def mark_revoked(self) -> None:
         self.status = LicenseKeyStatus.revoked
+
+    def requires_activation(self) -> None:
+        return self.limit_activations is not None
 

@@ -4,7 +4,7 @@ import structlog
 from sqlalchemy import select
 from sqlalchemy.orm import contains_eager
 
-from polar.exceptions import ResourceNotFound
+from polar.exceptions import NotPermitted, ResourceNotFound
 from polar.kit.services import ResourceService
 from polar.models import Benefit, LicenseKey, LicenseKeyActivation, User
 from polar.models.benefit import BenefitLicenseKeys
@@ -26,7 +26,7 @@ class LicenseKeyService(
     async def get_by_key(self, session: AsyncSession, *, key: str) -> LicenseKey | None:
         query = self._get_select_base().where(LicenseKey.key == key)
         result = await session.execute(query)
-        return result.scalar_one_or_none()
+        return result.unique().scalar_one_or_none()
 
     async def get_or_raise_by_key(
         self, session: AsyncSession, *, key: str
@@ -44,7 +44,7 @@ class LicenseKeyService(
     ) -> LicenseKey | None:
         query = self._get_select_base().where(LicenseKey.id == id)
         result = await session.execute(query)
-        return result.scalar_one_or_none()
+        return result.unique().scalar_one_or_none()
 
     async def validate(
         self,
@@ -73,6 +73,13 @@ class LicenseKeyService(
         license_key: LicenseKey,
         activate: LicenseKeyActivate,
     ) -> LicenseKeyActivation:
+        if not license_key.requires_activation():
+            raise NotPermitted("License key does not require activation")
+
+        activations = license_key.activations
+        if len(activations) >= license_key.limit_activations:
+            raise NotPermitted("License key activation limit already reached")
+
         instance = LicenseKeyActivation(
             license_key=license_key,
             label=activate.label,
@@ -124,7 +131,9 @@ class LicenseKeyService(
         return (
             select(LicenseKey)
             .join(Benefit, onclause=LicenseKey.benefit_id == Benefit.id)
-            .options(contains_eager(LicenseKey.benefit))
+            .options(
+                contains_eager(LicenseKey.benefit),
+            )
         )
 
 

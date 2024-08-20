@@ -4876,7 +4876,7 @@ export type ExternalOrganizationNameFilter = Array<string> | string;
  * 
  * @export
  */
-export type FileCreate = { service: 'downloadable' } & DownloadableFileCreate | { service: 'product_media' } & ProductMediaFileCreate;
+export type FileCreate = { service: 'downloadable' } & DownloadableFileCreate | { service: 'organization_avatar' } & OrganizationAvatarFileCreate | { service: 'product_media' } & ProductMediaFileCreate;
 /**
  * 
  * @export
@@ -5033,7 +5033,7 @@ export interface FilePatch {
  * 
  * @export
  */
-export type FileRead = { service: 'downloadable' } & DownloadableFileRead | { service: 'product_media' } & ProductMediaFileRead;
+export type FileRead = { service: 'downloadable' } & DownloadableFileRead | { service: 'organization_avatar' } & OrganizationAvatarFileRead | { service: 'product_media' } & ProductMediaFileRead;
 
 /**
  * 
@@ -5041,7 +5041,8 @@ export type FileRead = { service: 'downloadable' } & DownloadableFileRead | { se
  */
 export const FileServiceTypes = {
     DOWNLOADABLE: 'downloadable',
-    PRODUCT_MEDIA: 'product_media'
+    PRODUCT_MEDIA: 'product_media',
+    ORGANIZATION_AVATAR: 'organization_avatar'
 } as const;
 export type FileServiceTypes = typeof FileServiceTypes[keyof typeof FileServiceTypes];
 
@@ -5791,19 +5792,19 @@ export interface ListResourceAnnotatedUnionBenefitArticlesSubscriberBenefitAdsSu
 /**
  * 
  * @export
- * @interface ListResourceAnnotatedUnionDownloadableFileReadProductMediaFileReadDiscriminatorMergeJSONSchema
+ * @interface ListResourceAnnotatedUnionDownloadableFileReadProductMediaFileReadOrganizationAvatarFileReadDiscriminatorMergeJSONSchema
  */
-export interface ListResourceAnnotatedUnionDownloadableFileReadProductMediaFileReadDiscriminatorMergeJSONSchema {
+export interface ListResourceAnnotatedUnionDownloadableFileReadProductMediaFileReadOrganizationAvatarFileReadDiscriminatorMergeJSONSchema {
     /**
      * 
      * @type {Array<FileRead>}
-     * @memberof ListResourceAnnotatedUnionDownloadableFileReadProductMediaFileReadDiscriminatorMergeJSONSchema
+     * @memberof ListResourceAnnotatedUnionDownloadableFileReadProductMediaFileReadOrganizationAvatarFileReadDiscriminatorMergeJSONSchema
      */
     items?: Array<FileRead>;
     /**
      * 
      * @type {Pagination}
-     * @memberof ListResourceAnnotatedUnionDownloadableFileReadProductMediaFileReadDiscriminatorMergeJSONSchema
+     * @memberof ListResourceAnnotatedUnionDownloadableFileReadProductMediaFileReadOrganizationAvatarFileReadDiscriminatorMergeJSONSchema
      */
     pagination: Pagination;
 }
@@ -8587,6 +8588,190 @@ export interface Organization {
     feature_settings: OrganizationFeatureSettings | null;
 }
 /**
+ * Schema to create a file to be used as an organization avatar.
+ * @export
+ * @interface OrganizationAvatarFileCreate
+ */
+export interface OrganizationAvatarFileCreate {
+    /**
+     * The organization ID.
+     * @type {string}
+     * @memberof OrganizationAvatarFileCreate
+     */
+    organization_id?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof OrganizationAvatarFileCreate
+     */
+    name: string;
+    /**
+     * MIME type of the file. Only images are supported for this type of file.
+     * @type {string}
+     * @memberof OrganizationAvatarFileCreate
+     */
+    mime_type: string;
+    /**
+     * Size of the file. A maximum of 1 MB is allowed for this type of file.
+     * @type {number}
+     * @memberof OrganizationAvatarFileCreate
+     */
+    size: number;
+    /**
+     * 
+     * @type {string}
+     * @memberof OrganizationAvatarFileCreate
+     */
+    checksum_sha256_base64?: string;
+    /**
+     * 
+     * @type {S3FileCreateMultipart}
+     * @memberof OrganizationAvatarFileCreate
+     */
+    upload: S3FileCreateMultipart;
+    /**
+     * 
+     * @type {string}
+     * @memberof OrganizationAvatarFileCreate
+     */
+    service: OrganizationAvatarFileCreateServiceEnum;
+    /**
+     * 
+     * @type {string}
+     * @memberof OrganizationAvatarFileCreate
+     */
+    version?: string;
+}
+
+
+/**
+ * @export
+ */
+export const OrganizationAvatarFileCreateServiceEnum = {
+    ORGANIZATION_AVATAR: 'organization_avatar'
+} as const;
+export type OrganizationAvatarFileCreateServiceEnum = typeof OrganizationAvatarFileCreateServiceEnum[keyof typeof OrganizationAvatarFileCreateServiceEnum];
+
+/**
+ * File to be used as an organization avatar.
+ * @export
+ * @interface OrganizationAvatarFileRead
+ */
+export interface OrganizationAvatarFileRead {
+    /**
+     * 
+     * @type {string}
+     * @memberof OrganizationAvatarFileRead
+     */
+    id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof OrganizationAvatarFileRead
+     */
+    organization_id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof OrganizationAvatarFileRead
+     */
+    name: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof OrganizationAvatarFileRead
+     */
+    path: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof OrganizationAvatarFileRead
+     */
+    mime_type: string;
+    /**
+     * 
+     * @type {number}
+     * @memberof OrganizationAvatarFileRead
+     */
+    size: number;
+    /**
+     * 
+     * @type {string}
+     * @memberof OrganizationAvatarFileRead
+     */
+    storage_version?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof OrganizationAvatarFileRead
+     */
+    checksum_etag?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof OrganizationAvatarFileRead
+     */
+    checksum_sha256_base64?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof OrganizationAvatarFileRead
+     */
+    checksum_sha256_hex?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof OrganizationAvatarFileRead
+     */
+    last_modified_at?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof OrganizationAvatarFileRead
+     */
+    version?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof OrganizationAvatarFileRead
+     */
+    service: OrganizationAvatarFileReadServiceEnum;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof OrganizationAvatarFileRead
+     */
+    is_uploaded: boolean;
+    /**
+     * 
+     * @type {string}
+     * @memberof OrganizationAvatarFileRead
+     */
+    created_at: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof OrganizationAvatarFileRead
+     */
+    readonly size_readable: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof OrganizationAvatarFileRead
+     */
+    readonly public_url: string;
+}
+
+
+/**
+ * @export
+ */
+export const OrganizationAvatarFileReadServiceEnum = {
+    ORGANIZATION_AVATAR: 'organization_avatar'
+} as const;
+export type OrganizationAvatarFileReadServiceEnum = typeof OrganizationAvatarFileReadServiceEnum[keyof typeof OrganizationAvatarFileReadServiceEnum];
+
+/**
  * 
  * @export
  * @interface OrganizationBadgeSettingsRead
@@ -11045,13 +11230,13 @@ export type ResponseBenefitsUpdate = BenefitAds | BenefitArticles | BenefitCusto
  * 
  * @export
  */
-export type ResponseFilesUpdate = { service: 'downloadable' } & DownloadableFileRead | { service: 'product_media' } & ProductMediaFileRead;
+export type ResponseFilesUpdate = { service: 'downloadable' } & DownloadableFileRead | { service: 'organization_avatar' } & OrganizationAvatarFileRead | { service: 'product_media' } & ProductMediaFileRead;
 /**
  * @type ResponseFilesUploaded
  * 
  * @export
  */
-export type ResponseFilesUploaded = { service: 'downloadable' } & DownloadableFileRead | { service: 'product_media' } & ProductMediaFileRead;
+export type ResponseFilesUploaded = { service: 'downloadable' } & DownloadableFileRead | { service: 'organization_avatar' } & OrganizationAvatarFileRead | { service: 'product_media' } & ProductMediaFileRead;
 /**
  * @type ResponseOauth2Authorize
  * 

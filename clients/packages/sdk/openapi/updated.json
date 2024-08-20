@@ -4565,8 +4565,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
                     "User",
+                    "Organization",
                     "Anonymous"
                 ]
             }
@@ -4804,8 +4804,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
                     "User",
+                    "Organization",
                     "Anonymous"
                 ]
             }
@@ -4882,8 +4882,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
                     "User",
+                    "Organization",
                     "Anonymous"
                 ]
             },
@@ -4977,8 +4977,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -6016,8 +6016,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
                     "User",
+                    "Organization",
                     "Anonymous"
                 ]
             }
@@ -7404,8 +7404,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             },
             "post": {
@@ -7536,8 +7536,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             },
             "patch": {
@@ -7630,8 +7630,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -7685,9 +7685,9 @@
                             "description": "Filter by the type of purchase the customer made.",
                             "default": [
                                 "order",
+                                "donation",
                                 "paid_subscription",
-                                "free_subscription",
-                                "donation"
+                                "free_subscription"
                             ],
                             "title": "Customer Types"
                         },
@@ -7753,8 +7753,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -7837,8 +7837,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             },
             "patch": {
@@ -7929,8 +7929,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -7994,8 +7994,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -8052,8 +8052,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -8110,8 +8110,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             },
             "post": {
@@ -8176,8 +8176,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -8412,8 +8412,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             },
             "post": {
@@ -8467,8 +8467,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -8524,8 +8524,8 @@
                     }
                 ],
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -8610,8 +8610,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -8820,8 +8820,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
                     "User",
+                    "Organization",
                     "Anonymous"
                 ]
             },
@@ -8877,8 +8877,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -8953,8 +8953,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
                     "User",
+                    "Organization",
                     "Anonymous"
                 ]
             },
@@ -9048,8 +9048,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             },
             "delete": {
@@ -9125,8 +9125,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -9191,8 +9191,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -9285,8 +9285,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -9372,8 +9372,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -11643,8 +11643,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             },
             "post": {
@@ -11745,8 +11745,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -11841,8 +11841,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             },
             "patch": {
@@ -11974,8 +11974,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             },
             "delete": {
@@ -12050,8 +12050,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -12207,8 +12207,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -12223,8 +12223,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "webhooks:read",
-                            "webhooks:write"
+                            "webhooks:write",
+                            "webhooks:read"
                         ]
                     },
                     {
@@ -12326,8 +12326,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             },
             "post": {
@@ -12380,8 +12380,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -12396,8 +12396,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "webhooks:read",
-                            "webhooks:write"
+                            "webhooks:write",
+                            "webhooks:read"
                         ]
                     },
                     {
@@ -12451,8 +12451,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             },
             "patch": {
@@ -12539,8 +12539,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             },
             "delete": {
@@ -12610,8 +12610,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -12626,8 +12626,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "webhooks:read",
-                            "webhooks:write"
+                            "webhooks:write",
+                            "webhooks:read"
                         ]
                     },
                     {
@@ -12704,8 +12704,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -12772,8 +12772,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -12985,8 +12985,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
                     "User",
+                    "Organization",
                     "Anonymous"
                 ]
             },
@@ -13050,8 +13050,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -13127,8 +13127,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
                     "User",
+                    "Organization",
                     "Anonymous"
                 ]
             },
@@ -13222,8 +13222,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -13318,8 +13318,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -13556,8 +13556,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -13627,8 +13627,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -13698,8 +13698,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -13902,7 +13902,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/ListResource_Annotated_Union_DownloadableFileRead__ProductMediaFileRead___Discriminator__MergeJSONSchema__"
+                                    "$ref": "#/components/schemas/ListResource_Annotated_Union_DownloadableFileRead__ProductMediaFileRead__OrganizationAvatarFileRead___Discriminator__MergeJSONSchema__"
                                 }
                             }
                         }
@@ -13919,8 +13919,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             },
             "post": {
@@ -13952,13 +13952,17 @@
                                     },
                                     {
                                         "$ref": "#/components/schemas/ProductMediaFileCreate"
+                                    },
+                                    {
+                                        "$ref": "#/components/schemas/OrganizationAvatarFileCreate"
                                     }
                                 ],
                                 "discriminator": {
                                     "propertyName": "service",
                                     "mapping": {
                                         "downloadable": "#/components/schemas/DownloadableFileCreate",
-                                        "product_media": "#/components/schemas/ProductMediaFileCreate"
+                                        "product_media": "#/components/schemas/ProductMediaFileCreate",
+                                        "organization_avatar": "#/components/schemas/OrganizationAvatarFileCreate"
                                     }
                                 },
                                 "title": "File Create"
@@ -13989,8 +13993,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -14049,13 +14053,17 @@
                                         },
                                         {
                                             "$ref": "#/components/schemas/ProductMediaFileRead"
+                                        },
+                                        {
+                                            "$ref": "#/components/schemas/OrganizationAvatarFileRead"
                                         }
                                     ],
                                     "discriminator": {
                                         "propertyName": "service",
                                         "mapping": {
                                             "downloadable": "#/components/schemas/DownloadableFileRead",
-                                            "product_media": "#/components/schemas/ProductMediaFileRead"
+                                            "product_media": "#/components/schemas/ProductMediaFileRead",
+                                            "organization_avatar": "#/components/schemas/OrganizationAvatarFileRead"
                                         }
                                     },
                                     "title": "Response Files:Uploaded"
@@ -14075,8 +14083,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -14135,13 +14143,17 @@
                                         },
                                         {
                                             "$ref": "#/components/schemas/ProductMediaFileRead"
+                                        },
+                                        {
+                                            "$ref": "#/components/schemas/OrganizationAvatarFileRead"
                                         }
                                     ],
                                     "discriminator": {
                                         "propertyName": "service",
                                         "mapping": {
                                             "downloadable": "#/components/schemas/DownloadableFileRead",
-                                            "product_media": "#/components/schemas/ProductMediaFileRead"
+                                            "product_media": "#/components/schemas/ProductMediaFileRead",
+                                            "organization_avatar": "#/components/schemas/OrganizationAvatarFileRead"
                                         }
                                     },
                                     "title": "Response Files:Update"
@@ -14161,8 +14173,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             },
             "delete": {
@@ -14231,8 +14243,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -14420,8 +14432,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -14457,8 +14469,8 @@
                     }
                 ],
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -19983,7 +19995,8 @@
                 "type": "string",
                 "enum": [
                     "downloadable",
-                    "product_media"
+                    "product_media",
+                    "organization_avatar"
                 ],
                 "title": "FileServiceTypes"
             },
@@ -20622,7 +20635,7 @@
                 ],
                 "title": "ListResource[Annotated[Union[BenefitArticlesSubscriber, BenefitAdsSubscriber, BenefitDiscordSubscriber, BenefitCustomSubscriber, BenefitGitHubRepositorySubscriber, BenefitDownloadablesSubscriber], Discriminator, MergeJSONSchema]]"
             },
-            "ListResource_Annotated_Union_DownloadableFileRead__ProductMediaFileRead___Discriminator__MergeJSONSchema__": {
+            "ListResource_Annotated_Union_DownloadableFileRead__ProductMediaFileRead__OrganizationAvatarFileRead___Discriminator__MergeJSONSchema__": {
                 "properties": {
                     "items": {
                         "items": {
@@ -20632,6 +20645,9 @@
                                 },
                                 {
                                     "$ref": "#/components/schemas/ProductMediaFileRead"
+                                },
+                                {
+                                    "$ref": "#/components/schemas/OrganizationAvatarFileRead"
                                 }
                             ],
                             "title": "FileRead",
@@ -20639,6 +20655,7 @@
                                 "propertyName": "service",
                                 "mapping": {
                                     "downloadable": "#/components/schemas/DownloadableFileRead",
+                                    "organization_avatar": "#/components/schemas/OrganizationAvatarFileRead",
                                     "product_media": "#/components/schemas/ProductMediaFileRead"
                                 }
                             }
@@ -20655,7 +20672,7 @@
                 "required": [
                     "pagination"
                 ],
-                "title": "ListResource[Annotated[Union[DownloadableFileRead, ProductMediaFileRead], Discriminator, MergeJSONSchema]]"
+                "title": "ListResource[Annotated[Union[DownloadableFileRead, ProductMediaFileRead, OrganizationAvatarFileRead], Discriminator, MergeJSONSchema]]"
             },
             "ListResource_Article_": {
                 "properties": {
@@ -23423,6 +23440,227 @@
                     "public_name"
                 ],
                 "title": "OrderUser"
+            },
+            "OrganizationAvatarFileCreate": {
+                "properties": {
+                    "organization_id": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "uuid4",
+                                "description": "The organization ID.",
+                                "x-polar-selector-widget": {
+                                    "displayProperty": "name",
+                                    "resourceName": "Organization",
+                                    "resourceRoot": "/v1/organizations"
+                                }
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Organization Id"
+                    },
+                    "name": {
+                        "type": "string",
+                        "title": "Name"
+                    },
+                    "mime_type": {
+                        "type": "string",
+                        "pattern": "^image\\/(jpeg|png|gif|webp|svg\\+xml)$",
+                        "title": "Mime Type",
+                        "description": "MIME type of the file. Only images are supported for this type of file."
+                    },
+                    "size": {
+                        "type": "integer",
+                        "maximum": 1048576,
+                        "title": "Size",
+                        "description": "Size of the file. A maximum of 1 MB is allowed for this type of file."
+                    },
+                    "checksum_sha256_base64": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Checksum Sha256 Base64"
+                    },
+                    "upload": {
+                        "$ref": "#/components/schemas/S3FileCreateMultipart"
+                    },
+                    "service": {
+                        "type": "string",
+                        "enum": [
+                            "organization_avatar"
+                        ],
+                        "const": "organization_avatar",
+                        "title": "Service"
+                    },
+                    "version": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Version"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "name",
+                    "mime_type",
+                    "size",
+                    "upload",
+                    "service"
+                ],
+                "title": "OrganizationAvatarFileCreate",
+                "description": "Schema to create a file to be used as an organization avatar."
+            },
+            "OrganizationAvatarFileRead": {
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid4",
+                        "title": "Id"
+                    },
+                    "organization_id": {
+                        "type": "string",
+                        "format": "uuid4",
+                        "title": "Organization Id"
+                    },
+                    "name": {
+                        "type": "string",
+                        "title": "Name"
+                    },
+                    "path": {
+                        "type": "string",
+                        "title": "Path"
+                    },
+                    "mime_type": {
+                        "type": "string",
+                        "title": "Mime Type"
+                    },
+                    "size": {
+                        "type": "integer",
+                        "title": "Size"
+                    },
+                    "storage_version": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Storage Version"
+                    },
+                    "checksum_etag": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Checksum Etag"
+                    },
+                    "checksum_sha256_base64": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Checksum Sha256 Base64"
+                    },
+                    "checksum_sha256_hex": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Checksum Sha256 Hex"
+                    },
+                    "last_modified_at": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "date-time"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Last Modified At"
+                    },
+                    "version": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Version"
+                    },
+                    "service": {
+                        "type": "string",
+                        "enum": [
+                            "organization_avatar"
+                        ],
+                        "const": "organization_avatar",
+                        "title": "Service"
+                    },
+                    "is_uploaded": {
+                        "type": "boolean",
+                        "title": "Is Uploaded"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "title": "Created At"
+                    },
+                    "size_readable": {
+                        "type": "string",
+                        "title": "Size Readable",
+                        "readOnly": true
+                    },
+                    "public_url": {
+                        "type": "string",
+                        "title": "Public Url",
+                        "readOnly": true
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "id",
+                    "organization_id",
+                    "name",
+                    "path",
+                    "mime_type",
+                    "size",
+                    "service",
+                    "is_uploaded",
+                    "created_at",
+                    "size_readable",
+                    "public_url"
+                ],
+                "title": "OrganizationAvatarFileRead",
+                "description": "File to be used as an organization avatar."
             },
             "OrganizationBadgeSettingsRead": {
                 "properties": {

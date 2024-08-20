@@ -21,7 +21,7 @@ import type {
   FileUpload,
   FileUploadCompleted,
   HTTPValidationError,
-  ListResourceAnnotatedUnionDownloadableFileReadProductMediaFileReadDiscriminatorMergeJSONSchema,
+  ListResourceAnnotatedUnionDownloadableFileReadProductMediaFileReadOrganizationAvatarFileReadDiscriminatorMergeJSONSchema,
   NotPermitted,
   ResponseFilesUpdate,
   ResponseFilesUploaded,
@@ -149,7 +149,7 @@ export class FilesApi extends runtime.BaseAPI {
      * List files.
      * List Files
      */
-    async listRaw(requestParameters: FilesApiListRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListResourceAnnotatedUnionDownloadableFileReadProductMediaFileReadDiscriminatorMergeJSONSchema>> {
+    async listRaw(requestParameters: FilesApiListRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListResourceAnnotatedUnionDownloadableFileReadProductMediaFileReadOrganizationAvatarFileReadDiscriminatorMergeJSONSchema>> {
         const queryParameters: any = {};
 
         if (requestParameters['organizationId'] != null) {
@@ -192,7 +192,7 @@ export class FilesApi extends runtime.BaseAPI {
      * List files.
      * List Files
      */
-    async list(requestParameters: FilesApiListRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ListResourceAnnotatedUnionDownloadableFileReadProductMediaFileReadDiscriminatorMergeJSONSchema> {
+    async list(requestParameters: FilesApiListRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ListResourceAnnotatedUnionDownloadableFileReadProductMediaFileReadOrganizationAvatarFileReadDiscriminatorMergeJSONSchema> {
         const response = await this.listRaw(requestParameters, initOverrides);
         return await response.value();
     }

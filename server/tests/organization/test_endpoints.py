@@ -19,25 +19,9 @@ class TestListOrganizations:
     @pytest.mark.auth(
         AuthSubjectFixture(subject="anonymous"),
         AuthSubjectFixture(subject="user"),
-    )
-    async def test_anonymous_user(
-        self,
-        client: AsyncClient,
-        organization: Organization,
-        organization_second: Organization,
-        organization_blocked: Organization,
-    ) -> None:
-        response = await client.get("/v1/organizations/")
-
-        assert response.status_code == 200
-
-        json = response.json()
-        assert json["pagination"]["total_count"] == 2
-
-    @pytest.mark.auth(
         AuthSubjectFixture(subject="organization"),
     )
-    async def test_organization(
+    async def test_no_filter(
         self,
         client: AsyncClient,
         organization: Organization,
@@ -46,11 +30,7 @@ class TestListOrganizations:
     ) -> None:
         response = await client.get("/v1/organizations/")
 
-        assert response.status_code == 200
-
-        json = response.json()
-        assert json["pagination"]["total_count"] == 1
-        assert json["items"][0]["id"] == str(organization.id)
+        assert response.status_code == 422
 
     @pytest.mark.auth
     async def test_filter_slug(

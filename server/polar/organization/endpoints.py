@@ -9,6 +9,7 @@ from polar.authz.service import AccessType, Authz
 from polar.exceptions import (
     InternalServerError,
     NotPermitted,
+    PolarRequestValidationError,
     ResourceNotFound,
     Unauthorized,
 )
@@ -75,6 +76,18 @@ async def list(
     session: AsyncSession = Depends(get_db_session),
 ) -> ListResource[OrganizationSchema]:
     """List organizations."""
+    if slug is None and is_member is None:
+        raise PolarRequestValidationError(
+            [
+                {
+                    "loc": ("query",),
+                    "msg": "At least one of 'slug' or 'is_member' must be provided.",
+                    "type": "missing",
+                    "input": None,
+                }
+            ]
+        )
+
     results, count = await organization_service.list(
         session,
         auth_subject,

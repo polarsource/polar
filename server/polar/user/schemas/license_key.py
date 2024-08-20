@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Any
 
-from pydantic import UUID4
+from pydantic import UUID4, Field
 
 from polar.benefit.schemas import BenefitID
 from polar.kit.schemas import Schema
@@ -47,7 +47,7 @@ class LicenseKeyCreate(Schema):
     benefit_id: BenefitID
     key: str
     status: LicenseKeyStatus
-    limit_activations: int | None = None
+    limit_activations: int | None = Field(gt=0, le=50, default=None)
     expires_at: datetime | None = None
 
 

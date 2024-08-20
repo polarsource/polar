@@ -260,7 +260,7 @@ class BenefitLicenseKeyExpiration(Schema):
 
 
 class BenefitLicenseKeyActivation(Schema):
-    limit: int
+    limit: int = Field(gt=0, le=50)
 
 
 class BenefitLicenseKeysCreateProperties(Schema):

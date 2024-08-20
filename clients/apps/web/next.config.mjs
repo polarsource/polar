@@ -4,6 +4,7 @@ import { withSentryConfig } from '@sentry/nextjs'
 import rehypeShikiFromHighlighter from '@shikijs/rehype/core'
 import rehypeMdxImportMedia from 'rehype-mdx-import-media'
 import rehypeSlug from 'rehype-slug'
+import remarkGfm from 'remark-gfm'
 import remarkFlexibleToc from 'remark-flexible-toc'
 import { bundledLanguages, createHighlighter } from 'shiki'
 import { themeConfig, themesList, transformers } from './shiki.config.mjs'
@@ -54,15 +55,6 @@ const nextConfig = {
         {
           source: '/ingest/:path*',
           destination: 'https://us.i.posthog.com/:path*',
-        },
-
-        {
-          source: '/legal/privacy',
-          destination: 'https://polarsource.github.io/legal/privacy-policy.pdf',
-        },
-        {
-          source: '/legal/terms',
-          destination: 'https://polarsource.github.io/legal/terms.pdf',
         },
 
         // docs.polar.sh rewrite
@@ -146,29 +138,29 @@ const nextConfig = {
       // Redirect old FAQ to docs.polar.sh
       ...(ENVIRONMENT === 'production'
         ? [
-            {
-              source: '/faq',
-              destination: 'https://docs.polar.sh/faq/overview',
-              has: [
-                {
-                  type: 'host',
-                  value: 'polar.sh',
-                },
-              ],
-              permanent: true,
-            },
-            {
-              source: '/faq/:path*',
-              destination: 'https://docs.polar.sh/faq/:path*',
-              has: [
-                {
-                  type: 'host',
-                  value: 'polar.sh',
-                },
-              ],
-              permanent: true,
-            },
-          ]
+          {
+            source: '/faq',
+            destination: 'https://docs.polar.sh/faq/overview',
+            has: [
+              {
+                type: 'host',
+                value: 'polar.sh',
+              },
+            ],
+            permanent: true,
+          },
+          {
+            source: '/faq/:path*',
+            destination: 'https://docs.polar.sh/faq/:path*',
+            has: [
+              {
+                type: 'host',
+                value: 'polar.sh',
+              },
+            ],
+            permanent: true,
+          },
+        ]
         : []),
 
       {
@@ -251,12 +243,12 @@ const nextConfig = {
       // Redirect /docs to docs.polar.sh
       ...(ENVIRONMENT === 'production'
         ? [
-            {
-              source: '/docs/:path*',
-              destination: 'https://docs.polar.sh/:path*',
-              permanent: false,
-            },
-          ]
+          {
+            source: '/docs/:path*',
+            destination: 'https://docs.polar.sh/:path*',
+            permanent: false,
+          },
+        ]
         : []),
 
       {
@@ -431,6 +423,7 @@ const createConfig = async () => {
   const withMDX = createMDX({
     options: {
       remarkPlugins: [
+        remarkGfm,
         remarkFlexibleToc,
         () => (tree, file) => ({
           ...tree,

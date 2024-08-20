@@ -18,6 +18,7 @@ from ..schemas.license_key import (
     LicenseKeyActivate,
     LicenseKeyActivationBase,
     LicenseKeyActivationRead,
+    LicenseKeyDeactivate,
     LicenseKeyRead,
     LicenseKeyValidate,
     ValidatedLicenseKey,
@@ -149,3 +150,27 @@ async def activate(
     return await license_key_service.activate(
         session, license_key=lk, activate=activate
     )
+
+
+@router.post(
+    "/deactivate",
+    summary="Deactivate license key activation",
+    status_code=204,
+    responses={
+        204: {"description": "License key activation deactivated."},
+        401: NotAuthorized,
+        404: LicenseKeyNotFound,
+    },
+)
+async def deactivate(
+    auth_subject: auth.LicenseKeysWrite,
+    deactivate: LicenseKeyDeactivate,
+    session: AsyncSession = Depends(get_db_session),
+    authz: Authz = Depends(Authz.authz),
+) -> None:
+    """Deactivate a license key instance."""
+    lk = await license_key_service.get_or_raise_by_key(session, key=deactivate.key)
+    if not await authz.can(auth_subject.subject, AccessType.write, lk):
+        raise Unauthorized()
+
+    await license_key_service.deactivate(session, license_key=lk, deactivate=deactivate)

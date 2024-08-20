@@ -14,6 +14,7 @@ from polar.postgres import AsyncSession, sql
 from ..schemas.license_key import (
     LicenseKeyActivate,
     LicenseKeyCreate,
+    LicenseKeyDeactivate,
     LicenseKeyUpdate,
     LicenseKeyValidate,
 )
@@ -49,7 +50,7 @@ class LicenseKeyService(
 
     async def get_activation_or_raise(
         self, session: AsyncSession, *, license_key: LicenseKey, activation_id: UUID
-    ) -> LicenseKeyActivation | None:
+    ) -> LicenseKeyActivation:
         query = select(LicenseKeyActivation).where(
             LicenseKeyActivation.id == activation_id,
             LicenseKeyActivation.license_key_id == license_key.id,
@@ -103,6 +104,7 @@ class LicenseKeyService(
     ) -> int:
         query = select(func.count(LicenseKeyActivation.id)).where(
             LicenseKeyActivation.license_key_id == license_key.id,
+            LicenseKeyActivation.deleted_at.is_(None),
         )
         res = await session.execute(query)
         count = res.scalar()
@@ -135,6 +137,23 @@ class LicenseKeyService(
         await session.flush()
         assert instance.id
         return instance
+
+    async def deactivate(
+        self,
+        session: AsyncSession,
+        license_key: LicenseKey,
+        deactivate: LicenseKeyDeactivate,
+    ) -> bool:
+        activation = await self.get_activation_or_raise(
+            session,
+            license_key=license_key,
+            activation_id=deactivate.activation_id,
+        )
+        activation.mark_deleted()
+        session.add(activation)
+        await session.flush()
+        assert activation.deleted_at is not None
+        return True
 
     async def user_grant(
         self, session: AsyncSession, *, user: User, benefit: BenefitLicenseKeys
@@ -183,6 +202,7 @@ class LicenseKeyService(
                 isouter=True,
             )
             .options(contains_eager(LicenseKey.activations))
+            .where(LicenseKeyActivation.deleted_at.is_(None))
         )
 
     def _get_select_base(self) -> sql.Select:

@@ -10,6 +10,7 @@ from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.kit.db.models import RecordModel
+from polar.kit.utils import utc_now
 
 if TYPE_CHECKING:
     from .license_key import LicenseKey
@@ -32,3 +33,6 @@ class LicenseKeyActivation(RecordModel):
     label: Mapped[str] = mapped_column(String, nullable=False)
 
     meta: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
+
+    def mark_deleted(self) -> None:
+        self.deleted_at = utc_now()

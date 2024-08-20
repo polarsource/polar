@@ -22,7 +22,12 @@ class LicenseKeyActivate(Schema):
     meta: dict[str, Any] = {}
 
 
-class LicenseKeyRead(Schema):
+class LicenseKeyDeactivate(Schema):
+    key: str
+    activation_id: UUID4
+
+
+class LicenseKeyBase(Schema):
     id: UUID4
     user_id: UUID4
     benefit_id: BenefitID
@@ -43,12 +48,16 @@ class LicenseKeyActivationBase(Schema):
     meta: dict[str, Any]
 
 
-class ValidatedLicenseKey(LicenseKeyRead):
+class LicenseKeyRead(LicenseKeyBase):
+    activations: list[LicenseKeyActivationBase]
+
+
+class ValidatedLicenseKey(LicenseKeyBase):
     activation: LicenseKeyActivationBase | None = None
 
 
 class LicenseKeyActivationRead(LicenseKeyActivationBase):
-    license_key: LicenseKeyRead
+    license_key: LicenseKeyBase
 
 
 class LicenseKeyCreate(Schema):

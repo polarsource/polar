@@ -527,3 +527,87 @@ class TestLicenseKeyEndpoints:
             },
         )
         assert second_response.status_code == 403
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="organization"),
+    )
+    async def test_deactivation(
+        self,
+        session: AsyncSession,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        user: User,
+        organization: Organization,
+        product: Product,
+    ) -> None:
+        benefit, granted = await TestLicenseKey.create_benefit_and_grant(
+            session,
+            save_fixture,
+            user=user,
+            organization=organization,
+            product=product,
+            properties=BenefitLicenseKeysCreateProperties(
+                prefix="testing",
+                expires=None,
+                limit_activations=1,
+            ),
+        )
+        id = granted["license_key_id"]
+        lk = await license_key_service.get(session, id)
+        assert lk
+
+        response = await client.post(
+            "/v1/users/license-keys/activate",
+            json={
+                "key": lk.key,
+                "label": "test",
+                "meta": {},
+            },
+        )
+        assert response.status_code == 200
+
+        response = await client.get(f"/v1/users/license-keys/{lk.id}")
+        assert response.status_code == 200
+        fetched = response.json()
+        assert len(fetched["activations"]) == 1
+        assert fetched["activations"][0]["label"] == "test"
+        activation_id = fetched["activations"][0]["id"]
+
+        response = await client.post(
+            "/v1/users/license-keys/activate",
+            json={
+                "key": lk.key,
+                "label": "one_too_many",
+                "meta": {},
+            },
+        )
+        assert response.status_code == 403
+
+        response = await client.post(
+            "/v1/users/license-keys/deactivate",
+            json={
+                "key": lk.key,
+                "activation_id": activation_id,
+            },
+        )
+        assert response.status_code == 204
+
+        response = await client.post(
+            "/v1/users/license-keys/activate",
+            json={
+                "key": lk.key,
+                "label": "new_activation",
+                "meta": {},
+            },
+        )
+        assert response.status_code == 200
+        activated = response.json()
+        new_activation_id = activated["id"]
+
+        response = await client.get(f"/v1/users/license-keys/{lk.id}")
+        assert response.status_code == 200
+        fetched = response.json()
+        assert len(fetched["activations"]) == 1
+        assert fetched["activations"][0]["label"] == "new_activation"
+        assert fetched["activations"][0]["id"] == new_activation_id

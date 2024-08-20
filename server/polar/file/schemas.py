@@ -46,8 +46,27 @@ class ProductMediaFileCreate(FileCreateBase):
     )
 
 
+class OrganizationAvatarFileCreate(FileCreateBase):
+    """Schema to create a file to be used as an organization avatar."""
+
+    service: Literal[FileServiceTypes.organization_avatar]
+    mime_type: str = Field(
+        description=(
+            "MIME type of the file. Only images are supported for this type of file."
+        ),
+        pattern=r"^image\/(jpeg|png|gif|webp|svg\+xml)$",
+    )
+    size: int = Field(
+        description=(
+            "Size of the file. A maximum of 1 MB is allowed for this type of file."
+        ),
+        le=1 * 1024 * 1024,
+    )
+
+
 FileCreate = Annotated[
-    DownloadableFileCreate | ProductMediaFileCreate, Discriminator("service")
+    DownloadableFileCreate | ProductMediaFileCreate | OrganizationAvatarFileCreate,
+    Discriminator("service"),
 ]
 
 
@@ -64,19 +83,27 @@ class DownloadableFileRead(FileReadBase):
     service: Literal[FileServiceTypes.downloadable]
 
 
-class ProductMediaFileRead(FileReadBase):
+class PublicFileReadBase(FileReadBase):
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def public_url(self) -> str:
+        return S3_SERVICES[self.service].get_public_url(self.path)
+
+
+class ProductMediaFileRead(PublicFileReadBase):
     """File to be used as a product media file."""
 
     service: Literal[FileServiceTypes.product_media]
 
-    @computed_field  # type: ignore[prop-decorator]
-    @property
-    def public_url(self) -> str:
-        return S3_SERVICES[FileServiceTypes.product_media].get_public_url(self.path)
+
+class OrganizationAvatarFileRead(PublicFileReadBase):
+    """File to be used as an organization avatar."""
+
+    service: Literal[FileServiceTypes.organization_avatar]
 
 
 FileRead = Annotated[
-    DownloadableFileRead | ProductMediaFileRead,
+    DownloadableFileRead | ProductMediaFileRead | OrganizationAvatarFileRead,
     Discriminator("service"),
     MergeJSONSchema({"title": "FileRead"}),
 ]

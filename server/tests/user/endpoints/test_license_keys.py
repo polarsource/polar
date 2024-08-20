@@ -1,11 +1,14 @@
 import pytest
+from dateutil.relativedelta import relativedelta
+from freezegun import freeze_time
 from httpx import AsyncClient
 
 from polar.benefit.schemas import (
     BenefitLicenseKeyActivation,
+    BenefitLicenseKeyExpiration,
     BenefitLicenseKeysCreateProperties,
 )
-from polar.kit.utils import generate_uuid
+from polar.kit.utils import generate_uuid, utc_now
 from polar.models import Organization, Product, User
 from polar.postgres import AsyncSession
 from polar.user.service.license_key import license_key as license_key_service
@@ -157,6 +160,112 @@ class TestLicenseKeyEndpoints:
         data = full_response.json()
         assert data.get("benefit_id") == str(benefit.id)
         assert data.get("key").startswith("TESTING")
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="organization"),
+    )
+    async def test_validate_expiration(
+        self,
+        session: AsyncSession,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        user: User,
+        organization: Organization,
+        product: Product,
+    ) -> None:
+        now = utc_now()
+        _, granted = await TestLicenseKey.create_benefit_and_grant(
+            session,
+            save_fixture,
+            user=user,
+            organization=organization,
+            product=product,
+            properties=BenefitLicenseKeysCreateProperties(
+                prefix="testing",
+                expires=None,
+                activations=None,
+            ),
+        )
+        id = granted["license_key_id"]
+        lk = await license_key_service.get(session, id)
+        assert lk
+
+        response = await client.post(
+            "/v1/users/license-keys/validate",
+            json={"key": lk.key},
+        )
+        assert response.status_code == 200
+        with freeze_time(now + relativedelta(years=10)):
+            response = await client.post(
+                "/v1/users/license-keys/validate",
+                json={"key": lk.key},
+            )
+            assert response.status_code == 200
+
+        _, granted_with_ttl_day = await TestLicenseKey.create_benefit_and_grant(
+            session,
+            save_fixture,
+            user=user,
+            organization=organization,
+            product=product,
+            properties=BenefitLicenseKeysCreateProperties(
+                prefix="testing",
+                expires=BenefitLicenseKeyExpiration(ttl=1, timeframe="day"),
+                activations=None,
+            ),
+        )
+        day_id = granted_with_ttl_day["license_key_id"]
+        day_lk = await license_key_service.get(session, day_id)
+        assert day_lk
+
+        response = await client.post(
+            "/v1/users/license-keys/validate",
+            json={"key": day_lk.key},
+        )
+        assert response.status_code == 200
+        with freeze_time(now + relativedelta(days=1, minutes=5)):
+            response = await client.post(
+                "/v1/users/license-keys/validate",
+                json={"key": day_lk.key},
+            )
+            assert response.status_code == 404
+
+        _, granted_with_ttl_month = await TestLicenseKey.create_benefit_and_grant(
+            session,
+            save_fixture,
+            user=user,
+            organization=organization,
+            product=product,
+            properties=BenefitLicenseKeysCreateProperties(
+                prefix="testing",
+                expires=BenefitLicenseKeyExpiration(ttl=1, timeframe="month"),
+                activations=None,
+            ),
+        )
+        month_id = granted_with_ttl_month["license_key_id"]
+        month_lk = await license_key_service.get(session, month_id)
+        assert month_lk
+
+        response = await client.post(
+            "/v1/users/license-keys/validate",
+            json={"key": month_lk.key},
+        )
+        assert response.status_code == 200
+
+        with freeze_time(now + relativedelta(days=28, minutes=5)):
+            response = await client.post(
+                "/v1/users/license-keys/validate",
+                json={"key": month_lk.key},
+            )
+            assert response.status_code == 200
+
+        with freeze_time(now + relativedelta(months=1, minutes=5)):
+            response = await client.post(
+                "/v1/users/license-keys/validate",
+                json={"key": month_lk.key},
+            )
+            assert response.status_code == 404
 
     @pytest.mark.auth(
         AuthSubjectFixture(subject="user"),

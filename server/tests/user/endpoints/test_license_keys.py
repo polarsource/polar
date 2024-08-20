@@ -133,10 +133,12 @@ class TestLicenseKeyEndpoints:
             },
         )
         assert key_only_response.status_code == 200
+        data = key_only_response.json()
+        assert data.get("validations") == 1
 
         scope_benefit_404_response = await client.post(
             "/v1/users/license-keys/validate",
-            json={"key": lk.key, "scope": {"benefit_id": str(generate_uuid())}},
+            json={"key": lk.key, "benefit_id": str(generate_uuid())},
         )
         assert scope_benefit_404_response.status_code == 404
 
@@ -144,21 +146,25 @@ class TestLicenseKeyEndpoints:
             "/v1/users/license-keys/validate",
             json={
                 "key": lk.key,
-                "scope": {"benefit_id": str(lk.benefit_id)},
+                "benefit_id": str(lk.benefit_id),
             },
         )
         assert scope_benefit_response.status_code == 200
+        data = scope_benefit_response.json()
+        assert data.get("validations") == 2
 
         full_response = await client.post(
             "/v1/users/license-keys/validate",
             json={
                 "key": lk.key,
-                "scope": {"benefit_id": str(lk.benefit_id), "user_id": str(lk.user_id)},
+                "benefit_id": str(lk.benefit_id),
+                "user_id": str(lk.user_id),
             },
         )
         assert full_response.status_code == 200
         data = full_response.json()
         assert data.get("benefit_id") == str(benefit.id)
+        assert data.get("validations") == 3
         assert data.get("key").startswith("TESTING")
 
     @pytest.mark.auth(

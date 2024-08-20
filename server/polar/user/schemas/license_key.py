@@ -8,15 +8,11 @@ from polar.kit.schemas import Schema
 from polar.models.license_key import LicenseKeyStatus
 
 
-class LicenseKeyValidationScopes(Schema):
-    benefit_id: BenefitID | None = None
-    user_id: UUID4 | None = None
-
-
 class LicenseKeyValidate(Schema):
     key: str
     activation_id: UUID4 | None = None
-    scope: LicenseKeyValidationScopes | None = None
+    benefit_id: BenefitID | None = None
+    user_id: UUID4 | None = None
 
 
 class LicenseKeyActivate(Schema):
@@ -32,6 +28,8 @@ class LicenseKeyRead(Schema):
     key: str
     status: LicenseKeyStatus
     limit_activations: int | None = None
+    validations: int
+    last_validated_at: datetime | None = None
     expires_at: datetime | None = None
 
 

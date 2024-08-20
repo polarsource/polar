@@ -167,6 +167,38 @@ class Settings(BaseSettings):
     # Default organization setting for minimum pledge amount ($20)
     MINIMUM_ORG_PLEDGE_AMOUNT: int = 2000
 
+    ORGANIZATION_SLUG_RESERVED_KEYWORDS: list[str] = [
+        # Landing pages
+        "benefits",
+        "donations",
+        "issue-funding",
+        "newsletters",
+        "products",
+        "careers",
+        "legal",
+        # App
+        "docs",
+        "login",
+        "signup",
+        "oauth2",
+        "checkout",
+        "embed",
+        "maintainer",
+        "dashboard",
+        "feed",
+        "for-you",
+        "posts",
+        "purchases",
+        "funding",
+        "rewards",
+        "settings",
+        "backoffice",
+        "maintainer",
+        "finance",
+        # Misc
+        ".well-known",
+    ]
+
     model_config = SettingsConfigDict(
         env_prefix="polar_",
         env_file_encoding="utf-8",

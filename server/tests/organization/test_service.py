@@ -3,6 +3,7 @@ from pydantic import ValidationError
 from pytest_mock import MockerFixture
 
 from polar.auth.models import AuthSubject
+from polar.config import settings
 from polar.exceptions import PolarRequestValidationError
 from polar.models import Organization, User
 from polar.organization.schemas import OrganizationCreate, OrganizationFeatureSettings
@@ -18,7 +19,15 @@ from polar.user_organization.service import (
 class TestCreate:
     @pytest.mark.auth
     @pytest.mark.parametrize(
-        "slug", ["", "a", "ab", "Polar Software Inc 🌀", "slug/with/slashes"]
+        "slug",
+        [
+            "",
+            "a",
+            "ab",
+            "Polar Software Inc 🌀",
+            "slug/with/slashes",
+            *settings.ORGANIZATION_SLUG_RESERVED_KEYWORDS,
+        ],
     )
     async def test_slug_validation(
         self, slug: str, auth_subject: AuthSubject[User], session: AsyncSession

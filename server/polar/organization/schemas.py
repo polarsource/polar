@@ -117,12 +117,19 @@ def validate_slug(value: str) -> str:
     return value
 
 
+def validate_reserved_keywords(value: str) -> str:
+    if value in settings.ORGANIZATION_SLUG_RESERVED_KEYWORDS:
+        raise ValueError("This slug is reserved.")
+    return value
+
+
 class OrganizationCreate(Schema):
     name: Annotated[str, StringConstraints(min_length=3)]
     slug: Annotated[
         str,
         StringConstraints(to_lower=True, min_length=3),
         AfterValidator(validate_slug),
+        AfterValidator(validate_reserved_keywords),
     ]
     avatar_url: HttpUrlToStr | None = None
     donations_enabled: bool = False

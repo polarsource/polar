@@ -299,7 +299,14 @@ class Authz:
         #
         if isinstance(object, LicenseKey):
             if isinstance(subject, User):
-                return subject.id == object.user_id
+                if subject.id == object.user_id:
+                    return True
+
+                is_member = await self._is_member(
+                    subject.id, object.benefit.organization_id
+                )
+                return is_member
+
             if isinstance(subject, Organization):
                 return object.benefit.organization_id == subject.id
 

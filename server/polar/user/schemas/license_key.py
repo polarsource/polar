@@ -27,7 +27,7 @@ class LicenseKeyDeactivate(Schema):
     activation_id: UUID4
 
 
-class LicenseKeyBase(Schema):
+class LicenseKeyRead(Schema):
     id: UUID4
     user_id: UUID4
     benefit_id: BenefitID
@@ -48,26 +48,27 @@ class LicenseKeyActivationBase(Schema):
     meta: dict[str, Any]
 
 
-class LicenseKeyRead(LicenseKeyBase):
+class LicenseKeyWithActivations(LicenseKeyRead):
     activations: list[LicenseKeyActivationBase]
 
 
-class ValidatedLicenseKey(LicenseKeyBase):
+class ValidatedLicenseKey(LicenseKeyRead):
     activation: LicenseKeyActivationBase | None = None
 
 
 class LicenseKeyActivationRead(LicenseKeyActivationBase):
-    license_key: LicenseKeyBase
+    license_key: LicenseKeyRead
 
 
-class LicenseKeyCreate(Schema):
-    user_id: UUID4
-    benefit_id: BenefitID
-    key: str
-    status: LicenseKeyStatus
+class LicenseKeyUpdate(Schema):
+    status: LicenseKeyStatus | None = None
+    usage: int = 0
     limit_activations: int | None = Field(gt=0, le=50, default=None)
     limit_usage: int | None = Field(gt=0, default=None)
     expires_at: datetime | None = None
 
 
-class LicenseKeyUpdate(LicenseKeyCreate): ...
+class LicenseKeyCreate(LicenseKeyUpdate):
+    user_id: UUID4
+    benefit_id: BenefitID
+    key: str

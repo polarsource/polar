@@ -48,6 +48,15 @@ class LicenseKeyService(
         result = await session.execute(query)
         return result.unique().scalar_one_or_none()
 
+    async def get_by_id(
+        self,
+        session: AsyncSession,
+        id: UUID,
+    ) -> LicenseKey | None:
+        query = self._get_select_base().where(LicenseKey.id == id)
+        result = await session.execute(query)
+        return result.scalar_one_or_none()
+
     async def get_activation_or_raise(
         self, session: AsyncSession, *, license_key: LicenseKey, activation_id: UUID
     ) -> LicenseKeyActivation:
@@ -62,6 +71,21 @@ class LicenseKeyService(
             raise ResourceNotFound()
 
         return record
+
+    async def update(
+        self,
+        session: AsyncSession,
+        *,
+        license_key: LicenseKey,
+        updates: LicenseKeyUpdate,
+    ) -> LicenseKey:
+        update_dict = updates.model_dump(exclude_unset=True)
+        for key, value in update_dict.items():
+            setattr(license_key, key, value)
+
+        session.add(license_key)
+        await session.flush()
+        return license_key
 
     async def validate(
         self,

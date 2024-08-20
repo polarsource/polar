@@ -266,13 +266,13 @@ class BenefitLicenseKeyActivation(Schema):
 class BenefitLicenseKeysCreateProperties(Schema):
     prefix: str | None = None
     expires: BenefitLicenseKeyExpiration | None = None
-    activations: BenefitLicenseKeyActivation | None = None
+    limit_activations: int | None = Field(gt=0, default=None)
 
 
 class BenefitLicenseKeysProperties(Schema):
     prefix: str | None
     expires: BenefitLicenseKeyExpiration | None
-    activations: BenefitLicenseKeyActivation | None
+    limit_activations: int | None
 
 
 class BenefitLicenseKeysSubscriberProperties(Schema):

@@ -4,7 +4,6 @@ from freezegun import freeze_time
 from httpx import AsyncClient
 
 from polar.benefit.schemas import (
-    BenefitLicenseKeyActivation,
     BenefitLicenseKeyExpiration,
     BenefitLicenseKeysCreateProperties,
 )
@@ -52,7 +51,7 @@ class TestLicenseKeyEndpoints:
             properties=BenefitLicenseKeysCreateProperties(
                 prefix="testing",
                 expires=None,
-                activations=None,
+                limit_activations=None,
             ),
         )
         id = granted["license_key_id"]
@@ -84,7 +83,7 @@ class TestLicenseKeyEndpoints:
             properties=BenefitLicenseKeysCreateProperties(
                 prefix="testing",
                 expires=None,
-                activations=None,
+                limit_activations=None,
             ),
         )
         id = granted["license_key_id"]
@@ -119,7 +118,7 @@ class TestLicenseKeyEndpoints:
             properties=BenefitLicenseKeysCreateProperties(
                 prefix="testing",
                 expires=None,
-                activations=None,
+                limit_activations=None,
             ),
         )
         id = granted["license_key_id"]
@@ -190,7 +189,7 @@ class TestLicenseKeyEndpoints:
             properties=BenefitLicenseKeysCreateProperties(
                 prefix="testing",
                 expires=None,
-                activations=None,
+                limit_activations=None,
             ),
         )
         id = granted["license_key_id"]
@@ -218,7 +217,7 @@ class TestLicenseKeyEndpoints:
             properties=BenefitLicenseKeysCreateProperties(
                 prefix="testing",
                 expires=BenefitLicenseKeyExpiration(ttl=1, timeframe="day"),
-                activations=None,
+                limit_activations=None,
             ),
         )
         day_id = granted_with_ttl_day["license_key_id"]
@@ -246,7 +245,7 @@ class TestLicenseKeyEndpoints:
             properties=BenefitLicenseKeysCreateProperties(
                 prefix="testing",
                 expires=BenefitLicenseKeyExpiration(ttl=1, timeframe="month"),
-                activations=None,
+                limit_activations=None,
             ),
         )
         month_id = granted_with_ttl_month["license_key_id"]
@@ -295,7 +294,7 @@ class TestLicenseKeyEndpoints:
             properties=BenefitLicenseKeysCreateProperties(
                 prefix="testing",
                 expires=None,
-                activations=BenefitLicenseKeyActivation(limit=1),
+                limit_activations=1,
             ),
         )
         id = granted["license_key_id"]
@@ -351,7 +350,7 @@ class TestLicenseKeyEndpoints:
             properties=BenefitLicenseKeysCreateProperties(
                 prefix="testing",
                 expires=None,
-                activations=BenefitLicenseKeyActivation(limit=1),
+                limit_activations=1,
             ),
         )
         id = granted["license_key_id"]
@@ -396,7 +395,7 @@ class TestLicenseKeyEndpoints:
             properties=BenefitLicenseKeysCreateProperties(
                 prefix="testing",
                 expires=None,
-                activations=None,
+                limit_activations=None,
             ),
         )
         id = granted["license_key_id"]
@@ -435,7 +434,7 @@ class TestLicenseKeyEndpoints:
             properties=BenefitLicenseKeysCreateProperties(
                 prefix="testing",
                 expires=None,
-                activations=BenefitLicenseKeyActivation(limit=1),
+                limit_activations=1,
             ),
         )
         id = granted["license_key_id"]

@@ -1621,6 +1621,8 @@ export const AvailableScope = {
     USERSUBSCRIPTIONSREAD: 'user:subscriptions:read',
     USERSUBSCRIPTIONSWRITE: 'user:subscriptions:write',
     USERDOWNLOADABLESREAD: 'user:downloadables:read',
+    USERLICENSE_KEYSREAD: 'user:license_keys:read',
+    USERLICENSE_KEYSWRITE: 'user:license_keys:write',
     USERADVERTISEMENT_CAMPAIGNSREAD: 'user:advertisement_campaigns:read',
     USERADVERTISEMENT_CAMPAIGNSWRITE: 'user:advertisement_campaigns:write'
 } as const;
@@ -3755,19 +3757,6 @@ export type BenefitIDFilter1 = Array<string> | string;
 /**
  * 
  * @export
- * @interface BenefitLicenseKeyActivation
- */
-export interface BenefitLicenseKeyActivation {
-    /**
-     * 
-     * @type {number}
-     * @memberof BenefitLicenseKeyActivation
-     */
-    limit: number;
-}
-/**
- * 
- * @export
  * @interface BenefitLicenseKeyExpiration
  */
 export interface BenefitLicenseKeyExpiration {
@@ -3928,10 +3917,10 @@ export interface BenefitLicenseKeysCreateProperties {
     expires?: BenefitLicenseKeyExpiration | null;
     /**
      * 
-     * @type {BenefitLicenseKeyActivation}
+     * @type {number}
      * @memberof BenefitLicenseKeysCreateProperties
      */
-    activations?: BenefitLicenseKeyActivation | null;
+    limit_activations?: number | null;
 }
 /**
  * 
@@ -3953,10 +3942,10 @@ export interface BenefitLicenseKeysProperties {
     expires: BenefitLicenseKeyExpiration | null;
     /**
      * 
-     * @type {BenefitLicenseKeyActivation}
+     * @type {number}
      * @memberof BenefitLicenseKeysProperties
      */
-    activations: BenefitLicenseKeyActivation | null;
+    limit_activations: number | null;
 }
 /**
  * 
@@ -6193,6 +6182,99 @@ export interface Label {
 /**
  * 
  * @export
+ * @interface LicenseKeyActivate
+ */
+export interface LicenseKeyActivate {
+    /**
+     * 
+     * @type {string}
+     * @memberof LicenseKeyActivate
+     */
+    key: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof LicenseKeyActivate
+     */
+    label: string;
+    /**
+     * 
+     * @type {object}
+     * @memberof LicenseKeyActivate
+     */
+    meta?: object;
+}
+/**
+ * 
+ * @export
+ * @interface LicenseKeyActivationBase
+ */
+export interface LicenseKeyActivationBase {
+    /**
+     * 
+     * @type {string}
+     * @memberof LicenseKeyActivationBase
+     */
+    id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof LicenseKeyActivationBase
+     */
+    license_key_id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof LicenseKeyActivationBase
+     */
+    label: string;
+    /**
+     * 
+     * @type {object}
+     * @memberof LicenseKeyActivationBase
+     */
+    meta: object;
+}
+/**
+ * 
+ * @export
+ * @interface LicenseKeyActivationRead
+ */
+export interface LicenseKeyActivationRead {
+    /**
+     * 
+     * @type {string}
+     * @memberof LicenseKeyActivationRead
+     */
+    id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof LicenseKeyActivationRead
+     */
+    license_key_id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof LicenseKeyActivationRead
+     */
+    label: string;
+    /**
+     * 
+     * @type {object}
+     * @memberof LicenseKeyActivationRead
+     */
+    meta: object;
+    /**
+     * 
+     * @type {LicenseKeyRead}
+     * @memberof LicenseKeyActivationRead
+     */
+    license_key: LicenseKeyRead;
+}
+/**
+ * 
+ * @export
  * @interface LicenseKeyRead
  */
 export interface LicenseKeyRead {
@@ -6234,6 +6316,18 @@ export interface LicenseKeyRead {
     limit_activations?: number | null;
     /**
      * 
+     * @type {number}
+     * @memberof LicenseKeyRead
+     */
+    validations: number;
+    /**
+     * 
+     * @type {string}
+     * @memberof LicenseKeyRead
+     */
+    last_validated_at?: string | null;
+    /**
+     * 
      * @type {string}
      * @memberof LicenseKeyRead
      */
@@ -6252,6 +6346,37 @@ export const LicenseKeyStatus = {
 } as const;
 export type LicenseKeyStatus = typeof LicenseKeyStatus[keyof typeof LicenseKeyStatus];
 
+/**
+ * 
+ * @export
+ * @interface LicenseKeyValidate
+ */
+export interface LicenseKeyValidate {
+    /**
+     * 
+     * @type {string}
+     * @memberof LicenseKeyValidate
+     */
+    key: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof LicenseKeyValidate
+     */
+    activation_id?: string | null;
+    /**
+     * The benefit ID.
+     * @type {string}
+     * @memberof LicenseKeyValidate
+     */
+    benefit_id?: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof LicenseKeyValidate
+     */
+    user_id?: string | null;
+}
 
 /**
  * 
@@ -12219,6 +12344,8 @@ export const Scope = {
     USERSUBSCRIPTIONSREAD: 'user:subscriptions:read',
     USERSUBSCRIPTIONSWRITE: 'user:subscriptions:write',
     USERDOWNLOADABLESREAD: 'user:downloadables:read',
+    USERLICENSE_KEYSREAD: 'user:license_keys:read',
+    USERLICENSE_KEYSWRITE: 'user:license_keys:write',
     USERADVERTISEMENT_CAMPAIGNSREAD: 'user:advertisement_campaigns:read',
     USERADVERTISEMENT_CAMPAIGNSWRITE: 'user:advertisement_campaigns:write'
 } as const;
@@ -13677,6 +13804,35 @@ export interface TransactionsSummary {
 /**
  * 
  * @export
+ * @interface Unauthorized
+ */
+export interface Unauthorized {
+    /**
+     * 
+     * @type {string}
+     * @memberof Unauthorized
+     */
+    type: UnauthorizedTypeEnum;
+    /**
+     * 
+     * @type {string}
+     * @memberof Unauthorized
+     */
+    detail: string;
+}
+
+
+/**
+ * @export
+ */
+export const UnauthorizedTypeEnum = {
+    UNAUTHORIZED: 'Unauthorized'
+} as const;
+export type UnauthorizedTypeEnum = typeof UnauthorizedTypeEnum[keyof typeof UnauthorizedTypeEnum];
+
+/**
+ * 
+ * @export
  * @interface UpdateIssue
  */
 export interface UpdateIssue {
@@ -14612,6 +14768,75 @@ export interface UserSubscriptionUpdate {
      */
     product_price_id: string;
 }
+/**
+ * 
+ * @export
+ * @interface ValidatedLicenseKey
+ */
+export interface ValidatedLicenseKey {
+    /**
+     * 
+     * @type {string}
+     * @memberof ValidatedLicenseKey
+     */
+    id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof ValidatedLicenseKey
+     */
+    user_id: string;
+    /**
+     * The benefit ID.
+     * @type {string}
+     * @memberof ValidatedLicenseKey
+     */
+    benefit_id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof ValidatedLicenseKey
+     */
+    key: string;
+    /**
+     * 
+     * @type {LicenseKeyStatus}
+     * @memberof ValidatedLicenseKey
+     */
+    status: LicenseKeyStatus;
+    /**
+     * 
+     * @type {number}
+     * @memberof ValidatedLicenseKey
+     */
+    limit_activations?: number | null;
+    /**
+     * 
+     * @type {number}
+     * @memberof ValidatedLicenseKey
+     */
+    validations: number;
+    /**
+     * 
+     * @type {string}
+     * @memberof ValidatedLicenseKey
+     */
+    last_validated_at?: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof ValidatedLicenseKey
+     */
+    expires_at?: string | null;
+    /**
+     * 
+     * @type {LicenseKeyActivationBase}
+     * @memberof ValidatedLicenseKey
+     */
+    activation?: LicenseKeyActivationBase | null;
+}
+
+
 /**
  * 
  * @export

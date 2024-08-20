@@ -1,6 +1,4 @@
-import { Community } from '@/components/Landing/Community'
 import { Hero } from '@/components/Landing/Hero/Hero'
-import { LastPitch } from '@/components/Landing/LastPitch'
 import { MerchantOfRecord } from '@/components/Landing/MOR'
 import { Monetization } from '@/components/Landing/Monetization'
 import { Testamonials } from '@/components/Landing/Testamonials'
@@ -21,26 +19,17 @@ export default function Page() {
 export const PageContent = () => {
   return (
     <>
-      <Section className="flex flex-col gap-y-48">
+      <Section className="flex flex-col gap-y-32">
         <Benefits />
         <Monetization />
-      </Section>
-
-      <Section>
         <MerchantOfRecord />
       </Section>
 
       <Testamonials />
 
-      <Section>
-        <Community />
-      </Section>
-
       <API />
 
       <Pricing />
-
-      <LastPitch />
     </>
   )
 }

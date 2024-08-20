@@ -1,49 +1,38 @@
+/* eslint-disable react/jsx-no-comment-textnodes */
+
 'use client'
 
-import {
-  AttachMoneyOutlined,
-  DiamondOutlined,
-  HiveOutlined,
-} from '@mui/icons-material'
-import GitHubIcon from '../Icons/GitHubIcon'
-import SubscriptionTierCard from '../Subscriptions/SubscriptionTierCard'
-import FeatureItem from './molecules/FeatureItem'
-import { MOCKED_PRODUCTS } from './utils'
+import { TypewriterText } from './TypewriterText'
 
 export const Monetization = () => {
   // const circleRadius = 80
 
   return (
     <div className="flex flex-col gap-y-24 md:gap-y-32">
-      <div className="flex flex-col gap-y-16">
+      <div className="flex flex-col gap-y-32">
         <div className="relative flex flex-col items-center gap-y-2 text-center md:gap-y-6">
           <h2 className="text-2xl leading-snug md:text-5xl">
-            From first donation to IPO
+            First class GitHub support
           </h2>
-          <h3 className="dark:text-polar-500 text-xl leading-snug text-gray-400 md:text-4xl">
-            Polar offers features to scale with your needs
+          <h3 className="dark:text-polar-400 text-xl leading-snug text-gray-400 md:text-4xl">
+            Tap into more monetization options with crowdfunding
           </h3>
         </div>
-        <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
-          <FeatureItem
-            className="md:row-span-2"
-            icon={<DiamondOutlined />}
-            title="Products & Subscriptions"
-            description="Start offering developer first products and services in minutes - paid once, monthly or annually."
-            link="/products"
-          >
-            <SubscriptionTierCard
-              className="dark:bg-polar-800 dark:border-polar-800 shadow-3xl border-transparent bg-white"
-              subscriptionTier={MOCKED_PRODUCTS[1]}
-            />
-          </FeatureItem>
-          <FeatureItem
-            className="md:col-span-2"
-            icon={<GitHubIcon width={20} height={20} />}
-            title="Issue Funding & Rewards"
-            description="Crowdfunded backlog or community bounties with seamless support to split funds with contributors."
-            link="/issue-funding"
-          >
+
+        <div className="grid grid-cols-1 divide-x md:grid-cols-2">
+          <div className="flex flex-col gap-y-12 pr-32">
+            <div className="flex flex-col gap-y-4 text-center">
+              <span className="font-mono text-xs uppercase tracking-wider dark:text-blue-500">
+                Merchant of Record
+              </span>
+              <h3 className="text-3xl font-medium leading-snug">
+                Issue Funding & Rewards
+              </h3>
+              <p className="dark:text-polar-200 h-full leading-relaxed text-gray-500">
+                Crowdfunded backlog or community bounties with seamless support
+                to split funds with contributors.
+              </p>
+            </div>
             <picture>
               <source
                 media="(prefers-color-scheme: dark)"
@@ -55,20 +44,48 @@ export const Monetization = () => {
                 alt="Polar crowdfunding badge embedded on a GitHub issue"
               />
             </picture>
-          </FeatureItem>
-          <FeatureItem
-            className="md:col-span-1"
-            icon={<AttachMoneyOutlined />}
-            title="Donations"
-            description="Get appreciation from your community for a great newsletter, release or ongoing development."
-            link="/donations"
-          />
-          <FeatureItem
-            icon={<HiveOutlined />}
-            title="Custom Integrations & SaaS"
-            description="Use our API & SDK to integrate Polar across your docs, sites, apps or services."
-            link="#integrations"
-          />
+          </div>
+
+          <div className="flex flex-col gap-y-12 pl-32">
+            <div className="flex flex-col gap-y-4 text-center">
+              <span className="font-mono text-xs uppercase tracking-wider dark:text-yellow-500">
+                Merchant of Record
+              </span>
+              <h3 className="text-3xl font-medium leading-snug">
+                Official GitHub Funding Option
+              </h3>
+              <p className="dark:text-polar-200 h-full leading-relaxed text-gray-500">
+                Promote your Polar page on GitHub with a badge that links to
+                your funding page.
+              </p>
+            </div>
+            <div className="dark:bg-polar-900 flex h-full w-full flex-col gap-y-6 rounded-2xl p-6 text-sm">
+              <div className="flex flex-row items-center gap-x-1.5">
+                <div className="h-2.5 w-2.5 rounded-full bg-red-500" />
+                <div className="h-2.5 w-2.5 rounded-full bg-yellow-500" />
+                <div className="h-2.5 w-2.5 rounded-full bg-green-500" />
+              </div>
+              <div className="flex flex-col gap-y-2">
+                <span className="dark:text-polar-500 font-mono">
+                  // FUNDING.yaml
+                </span>
+                <pre>
+                  <code className="language-yaml">
+                    polar:{' '}
+                    <TypewriterText
+                      delay={1}
+                      texts={[
+                        'capawesome-team',
+                        'serenityos',
+                        'HDInnovations',
+                        'emilwidlund',
+                      ]}
+                    />
+                  </code>
+                </pre>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 

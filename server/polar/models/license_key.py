@@ -63,7 +63,7 @@ class LicenseKey(RecordModel):
 
     @declared_attr
     def activations(cls) -> Mapped[list["LicenseKeyActivation"]]:
-        return relationship("LicenseKeyActivation", lazy="joined", back_populates="license_key")
+        return relationship("LicenseKeyActivation", lazy="raise", back_populates="license_key")
 
     validations: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
 
@@ -133,7 +133,4 @@ class LicenseKey(RecordModel):
 
     def mark_revoked(self) -> None:
         self.status = LicenseKeyStatus.revoked
-
-    def requires_activation(self) -> None:
-        return self.limit_activations is not None
 

@@ -1,9 +1,7 @@
-from typing import Annotated
-
-from fastapi import Depends, Path
+from fastapi import Depends
 
 from polar.authz.service import AccessType, Authz
-from polar.exceptions import NotPermitted, ResourceNotFound, Unauthorized
+from polar.exceptions import NotPermitted, Unauthorized
 from polar.kit.db.postgres import AsyncSession
 from polar.license_key import auth
 from polar.license_key.schemas import (
@@ -12,6 +10,8 @@ from polar.license_key.schemas import (
     LicenseKeyActivationRead,
     LicenseKeyDeactivate,
     LicenseKeyValidate,
+    NotFoundResponse,
+    UnauthorizedResponse,
     ValidatedLicenseKey,
 )
 from polar.license_key.service import license_key as license_key_service
@@ -22,17 +22,6 @@ from polar.routing import APIRouter
 
 router = APIRouter(prefix="/license-keys", tags=[APITag.documented, APITag.featured])
 
-LK = Annotated[str, Path(description="The license key")]
-
-LicenseKeyNotFound = {
-    "description": "License key not found.",
-    "model": ResourceNotFound.schema(),
-}
-
-NotAuthorized = {
-    "description": "Not authorized to manage license key.",
-    "model": Unauthorized.schema(),
-}
 
 ActivationNotPermitted = {
     "description": "License key activation not required or permitted (limit reached).",
@@ -44,8 +33,8 @@ ActivationNotPermitted = {
     "/validate",
     response_model=ValidatedLicenseKey,
     responses={
-        401: NotAuthorized,
-        404: LicenseKeyNotFound,
+        401: UnauthorizedResponse,
+        404: NotFoundResponse,
     },
 )
 async def validate(
@@ -92,9 +81,9 @@ async def validate(
     "/activate",
     response_model=LicenseKeyActivationRead,
     responses={
-        401: NotAuthorized,
+        401: UnauthorizedResponse,
         403: ActivationNotPermitted,
-        404: LicenseKeyNotFound,
+        404: NotFoundResponse,
     },
 )
 async def activate(
@@ -119,8 +108,8 @@ async def activate(
     status_code=204,
     responses={
         204: {"description": "License key activation deactivated."},
-        401: NotAuthorized,
-        404: LicenseKeyNotFound,
+        401: UnauthorizedResponse,
+        404: NotFoundResponse,
     },
 )
 async def deactivate(

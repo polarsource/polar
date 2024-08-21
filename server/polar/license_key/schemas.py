@@ -4,8 +4,28 @@ from typing import Any
 from pydantic import UUID4, Field
 
 from polar.benefit.schemas import BenefitID
+from polar.exceptions import ResourceNotFound, Unauthorized
 from polar.kit.schemas import Schema
 from polar.models.license_key import LicenseKeyStatus
+
+###############################################################################
+# RESPONSES
+###############################################################################
+
+NotFoundResponse = {
+    "description": "License key not found.",
+    "model": ResourceNotFound.schema(),
+}
+
+UnauthorizedResponse = {
+    "description": "Not authorized to manage license key.",
+    "model": Unauthorized.schema(),
+}
+
+
+###############################################################################
+# RESPONSES
+###############################################################################
 
 
 class LicenseKeyValidate(Schema):

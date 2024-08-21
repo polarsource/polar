@@ -2,14 +2,14 @@ from datetime import datetime
 from typing import Any, Literal, Self
 
 from dateutil.relativedelta import relativedelta
-from pydantic import UUID4, Field
+from pydantic import UUID4, Field, model_validator
 
 from polar.benefit.schemas import BenefitID
 from polar.exceptions import ResourceNotFound, Unauthorized
 from polar.kit.schemas import Schema
 from polar.kit.utils import generate_uuid, utc_now
 from polar.models.benefit import BenefitLicenseKeyExpiration
-from polar.models.license_key import LicenseKeyStatus
+from polar.models.license_key import LicenseKey, LicenseKeyStatus
 
 ###############################################################################
 # RESPONSES
@@ -55,6 +55,7 @@ class LicenseKeyRead(Schema):
     user_id: UUID4
     benefit_id: BenefitID
     key: str
+    display_key: str
     status: LicenseKeyStatus
     limit_activations: int | None = None
     usage: int
@@ -62,6 +63,17 @@ class LicenseKeyRead(Schema):
     validations: int
     last_validated_at: datetime | None = None
     expires_at: datetime | None = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def generate_display_key(cls, data: dict[str, Any]) -> dict[str, Any]:
+        if isinstance(data, LicenseKey):
+            data = data.__dict__
+
+        prefix = "****"
+        last_six_digits = data["key"][-6:]
+        data["display_key"] = f"{prefix}-{last_six_digits}"
+        return data
 
 
 class LicenseKeyActivationBase(Schema):

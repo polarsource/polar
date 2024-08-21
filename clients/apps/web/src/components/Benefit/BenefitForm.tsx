@@ -1,5 +1,6 @@
 import { useDiscordGuild } from '@/hooks/queries'
 import { getBotDiscordAuthorizeURL } from '@/utils/auth'
+import { isFeatureEnabled } from '@/utils/feature-flags'
 import {
   BenefitAdsCreate,
   BenefitCreate,
@@ -379,6 +380,8 @@ const BenefitTypeSelect = ({}) => {
                   {Object.values(BenefitType)
                     .filter((value) => {
                       switch (value) {
+                        case BenefitType.LICENSE_KEYS:
+                          return isFeatureEnabled('license-keys')
                         case BenefitType.ARTICLES:
                           return false
                         default:

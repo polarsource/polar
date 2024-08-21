@@ -222,7 +222,7 @@ class LicenseKeyService(
         self, session: AsyncSession, *, user: User, benefit: BenefitLicenseKeys
     ) -> LicenseKey:
         props = benefit.properties
-        key = LicenseKey.build(
+        create_schema = LicenseKeyCreate.build(
             organization_id=benefit.organization_id,
             user_id=user.id,
             benefit_id=benefit.id,
@@ -232,9 +232,24 @@ class LicenseKeyService(
             expires=props.get("expires", None),
         )
 
-        session.add(key)
+        records = await self.upsert_many(
+            session,
+            create_schemas=[create_schema],
+            constraints=[
+                LicenseKey.user_id,
+                LicenseKey.benefit_id,
+            ],
+            mutable_keys={
+                "limit_activations",
+                "limit_usage",
+                "expires_at",
+            },
+            autocommit=False,
+        )
         await session.flush()
-        return key
+        instance = records[0]
+        assert instance.id is not None
+        return instance
 
     async def user_revoke(
         self,

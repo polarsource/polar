@@ -1,22 +1,22 @@
 from datetime import datetime
 from enum import StrEnum
-from typing import TYPE_CHECKING, Literal, Self
+from typing import TYPE_CHECKING
 from uuid import UUID
 
-from dateutil.relativedelta import relativedelta
 from sqlalchemy import (
     TIMESTAMP,
     ForeignKey,
     Integer,
     String,
+    UniqueConstraint,
     Uuid,
 )
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.kit.db.models import RecordModel
-from polar.kit.utils import generate_uuid, utc_now
+from polar.kit.utils import utc_now
 
-from .benefit import Benefit, BenefitLicenseKeyExpiration
+from .benefit import Benefit
 from .user import User
 
 if TYPE_CHECKING:
@@ -31,6 +31,7 @@ class LicenseKeyStatus(StrEnum):
 
 class LicenseKey(RecordModel):
     __tablename__ = "license_keys"
+    __table_args__ = (UniqueConstraint("user_id", "benefit_id"),)
 
     organization_id: Mapped[UUID] = mapped_column(
         Uuid,
@@ -75,7 +76,9 @@ class LicenseKey(RecordModel):
 
     @declared_attr
     def activations(cls) -> Mapped[list["LicenseKeyActivation"]]:
-        return relationship("LicenseKeyActivation", lazy="raise", back_populates="license_key")
+        return relationship(
+            "LicenseKeyActivation", lazy="raise", back_populates="license_key"
+        )
 
     usage: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
 
@@ -93,60 +96,6 @@ class LicenseKey(RecordModel):
         nullable=True,
     )
 
-    @classmethod
-    def generate(cls, prefix: str | None = None) -> str:
-        key = str(generate_uuid()).upper()
-        if prefix is None:
-            return key
-
-        prefix = prefix.strip().upper()
-        return f"{prefix}-{key}"
-
-    @classmethod
-    def generate_expiration_dt(
-        cls, ttl: int, timeframe: Literal["year", "month", "day"]
-    ) -> datetime:
-        now = utc_now()
-        match timeframe:
-            case "year":
-                return now + relativedelta(years=ttl)
-            case "month":
-                return now + relativedelta(months=ttl)
-            case _:
-                return now + relativedelta(days=ttl)
-
-    @classmethod
-    def build(
-        cls,
-        *,
-        organization_id: UUID,
-        user_id: UUID,
-        benefit_id: UUID,
-        prefix: str | None = None,
-        status: LicenseKeyStatus = LicenseKeyStatus.granted,
-        limit_activations: int | None = None,
-        limit_usage: int | None = None,
-        expires: BenefitLicenseKeyExpiration | None = None,
-    ) -> Self:
-        expires_at = None
-        if expires:
-            ttl = expires.get("ttl", None)
-            timeframe = expires.get("timeframe", None)
-            if ttl and timeframe:
-                expires_at = cls.generate_expiration_dt(ttl, timeframe)
-
-        key = cls.generate(prefix=prefix)
-        return cls(
-            organization_id=organization_id,
-            user_id=user_id,
-            benefit_id=benefit_id,
-            key=key,
-            status=status,
-            limit_activations=limit_activations,
-            limit_usage=limit_usage,
-            expires_at=expires_at
-        )
-
     def mark_revoked(self) -> None:
         self.status = LicenseKeyStatus.revoked
 
@@ -155,4 +104,3 @@ class LicenseKey(RecordModel):
         self.last_validated_at = utc_now()
         if increment_usage:
             self.usage += increment_usage
-

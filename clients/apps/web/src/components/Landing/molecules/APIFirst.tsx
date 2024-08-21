@@ -4,7 +4,7 @@ import { motion } from 'framer-motion'
 
 export const APIFirst = () => {
   return (
-    <div className="dark:bg-polar-900/50 flex flex-col gap-y-6 rounded-2xl border p-6 font-mono">
+    <div className="dark:bg-polar-900/50 flex h-[220px] w-full max-w-lg flex-col gap-y-6 rounded-2xl border p-6 font-mono">
       <div className="flex flex-row items-center gap-x-1.5">
         <div className="h-2.5 w-2.5 rounded-full bg-red-500" />
         <div className="h-2.5 w-2.5 rounded-full bg-yellow-500" />

@@ -43,7 +43,7 @@ export const TypewriterText = ({ texts, delay }: TypewriterTextProps) => {
     animate(count, 60, {
       type: 'tween',
       delay,
-      duration: 4,
+      duration: 3,
       ease: 'easeIn',
       repeat: Infinity,
       repeatType: 'reverse',

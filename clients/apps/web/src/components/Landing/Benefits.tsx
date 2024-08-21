@@ -13,25 +13,23 @@ import { quadraticCurve } from './Hero/Hero.utils'
 import { MOCKED_SUBSCRIPTIONS } from './utils'
 
 export const Benefits = () => {
-  const [width, setWidth] = useState(0)
   const [height, setHeight] = useState(0)
 
   const midPointY = useMemo(() => height / 2, [height])
 
   return (
-    <div className="rounded-4xl dark:border-polar-700 flex flex-col gap-y-32 p-16 dark:md:border">
+    <div className="flex flex-col gap-y-32">
       <div
-        className="relative flex w-full flex-col gap-x-24 gap-y-8 md:flex-row"
+        className="relative flex w-full flex-col gap-x-24 gap-y-16 md:flex-row"
         ref={(el) => {
           if (el) {
             const boundingBox = el.getBoundingClientRect()
-            setWidth(boundingBox.width)
             setHeight(boundingBox.height)
           }
         }}
       >
-        <div className="flex h-full flex-col gap-y-4 md:gap-y-8">
-          <h2 className="text-2xl !leading-tight md:text-5xl">
+        <div className="flex h-full flex-col items-center gap-y-4 text-center md:items-start md:gap-y-8 md:text-left">
+          <h2 className="text-3xl !leading-tight md:text-5xl">
             Powerful products with flexible benefits
           </h2>
           <p className="dark:text-polar-400 text-lg text-gray-600">
@@ -71,12 +69,12 @@ export const Benefits = () => {
           className="dark:text-polar-700 pointer-events-none absolute inset-0 z-10 hidden h-full w-full text-gray-200 xl:block"
           xmlns="http://www.w3.org/2000/svg"
         >
-          <Path start={{ x: 721, y: 80 }} end={{ x: 785, y: midPointY }} />
+          <Path start={{ x: 809, y: 80 }} end={{ x: 874, y: midPointY }} />
           <Path
-            start={{ x: 721, y: midPointY }}
-            end={{ x: 785, y: midPointY }}
+            start={{ x: 809, y: midPointY }}
+            end={{ x: 874, y: midPointY }}
           />
-          <Path start={{ x: 721, y: 440 }} end={{ x: 785, y: midPointY }} />
+          <Path start={{ x: 809, y: 440 }} end={{ x: 874, y: midPointY }} />
         </motion.svg>
       </div>
     </div>

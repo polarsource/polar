@@ -21,6 +21,7 @@ from .user import User
 
 if TYPE_CHECKING:
     from .license_key_activation import LicenseKeyActivation
+    from .organization import Organization
 
 
 class LicenseKeyStatus(StrEnum):
@@ -30,6 +31,17 @@ class LicenseKeyStatus(StrEnum):
 
 class LicenseKey(RecordModel):
     __tablename__ = "license_keys"
+
+    organization_id: Mapped[UUID] = mapped_column(
+        Uuid,
+        ForeignKey("organizations.id", ondelete="cascade"),
+        nullable=False,
+        index=True,
+    )
+
+    @declared_attr
+    def organization(cls) -> Mapped["Organization"]:
+        return relationship("Organization", lazy="raise")
 
     user_id: Mapped[UUID] = mapped_column(
         Uuid,
@@ -107,6 +119,7 @@ class LicenseKey(RecordModel):
     def build(
         cls,
         *,
+        organization_id: UUID,
         user_id: UUID,
         benefit_id: UUID,
         prefix: str | None = None,
@@ -124,6 +137,7 @@ class LicenseKey(RecordModel):
 
         key = cls.generate(prefix=prefix)
         return cls(
+            organization_id=organization_id,
             user_id=user_id,
             benefit_id=benefit_id,
             key=key,

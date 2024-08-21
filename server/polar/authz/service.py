@@ -299,13 +299,11 @@ class Authz:
         #
         if isinstance(object, LicenseKey):
             if isinstance(subject, User):
-                is_member = await self._is_member(
-                    subject.id, object.benefit.organization_id
-                )
+                is_member = await self._is_member(subject.id, object.organization_id)
                 return is_member
 
             if isinstance(subject, Organization):
-                return object.benefit.organization_id == subject.id
+                return object.organization_id == subject.id
 
         raise Exception(
             f"Unknown subject/action/object combination. subject={type(subject)} access={accessType} object={type(object)}"  # noqa: E501

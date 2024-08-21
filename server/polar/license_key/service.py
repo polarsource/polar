@@ -83,7 +83,7 @@ class LicenseKeyService(
     ) -> tuple[Sequence[LicenseKey], int]:
         query = (
             self._get_select_base()
-            .where(Benefit.organization_id == organization_id)
+            .where(LicenseKey.organization_id == organization_id)
             .order_by(LicenseKey.created_at.asc())
         )
         return await paginate(session, query, pagination=pagination)
@@ -200,6 +200,7 @@ class LicenseKeyService(
     ) -> LicenseKey:
         props = benefit.properties
         key = LicenseKey.build(
+            organization_id=benefit.organization_id,
             user_id=user.id,
             benefit_id=benefit.id,
             prefix=props.get("prefix", None),
@@ -241,18 +242,16 @@ class LicenseKeyService(
                 onclause=LicenseKeyActivation.license_key_id == LicenseKey.id,
                 isouter=True,
             )
-            .options(contains_eager(LicenseKey.activations))
+            .join(Benefit, onclause=LicenseKey.benefit_id == Benefit.id)
+            .options(
+                contains_eager(LicenseKey.activations),
+                contains_eager(LicenseKey.benefit),
+            )
             .where(LicenseKeyActivation.deleted_at.is_(None))
         )
 
     def _get_select_base(self) -> sql.Select:
-        return (
-            select(LicenseKey)
-            .join(Benefit, onclause=LicenseKey.benefit_id == Benefit.id)
-            .options(
-                contains_eager(LicenseKey.benefit),
-            )
-        )
+        return select(LicenseKey).where(LicenseKey.deleted_at.is_(None))
 
 
 license_key = LicenseKeyService(LicenseKey)

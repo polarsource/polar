@@ -5,10 +5,10 @@ from typing import Any, cast
 import structlog
 
 from polar.auth.models import AuthSubject
+from polar.license_key.service import license_key as license_key_service
 from polar.logging import Logger
 from polar.models import Organization, User
 from polar.models.benefit import BenefitLicenseKeys, BenefitLicenseKeysProperties
-from polar.user.service.license_key import license_key as license_key_service
 
 from .base import (
     BenefitServiceProtocol,

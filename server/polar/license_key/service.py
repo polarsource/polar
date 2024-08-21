@@ -11,7 +11,7 @@ from polar.models import Benefit, LicenseKey, LicenseKeyActivation, User
 from polar.models.benefit import BenefitLicenseKeys
 from polar.postgres import AsyncSession, sql
 
-from ..schemas.license_key import (
+from .schemas import (
     LicenseKeyActivate,
     LicenseKeyCreate,
     LicenseKeyDeactivate,

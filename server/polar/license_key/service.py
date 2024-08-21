@@ -89,6 +89,28 @@ class LicenseKeyService(
         )
         return await paginate(session, query, pagination=pagination)
 
+    async def get_user_list(
+        self,
+        session: AsyncSession,
+        *,
+        user: User,
+        organization_id: UUID,
+        pagination: PaginationParams,
+        benefit_id: UUID | None = None,
+    ) -> tuple[Sequence[LicenseKey], int]:
+        query = (
+            self._get_select_base()
+            .where(
+                LicenseKey.user_id == user.id,
+                LicenseKey.organization_id == organization_id,
+            )
+            .order_by(LicenseKey.created_at.asc())
+        )
+        if benefit_id:
+            query = query.where(LicenseKey.benefit_id == benefit_id)
+
+        return await paginate(session, query, pagination=pagination)
+
     async def update(
         self,
         session: AsyncSession,

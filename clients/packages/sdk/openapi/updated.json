@@ -2162,19 +2162,17 @@
                 "x-speakeasy-name-override": "retrieve"
             }
         },
-        "/v1/users/license-keys/{id}": {
+        "/v1/users/license-keys": {
             "get": {
                 "tags": [
                     "users"
                 ],
-                "summary": "Get",
-                "description": "Get a license key.",
-                "operationId": "get",
+                "summary": "List License Keys",
+                "operationId": "list_license_keys",
                 "security": [
                     {
                         "oidc": [
-                            "user:license_keys:read",
-                            "user:license_keys:write"
+                            "user:license_keys:read"
                         ]
                     },
                     {
@@ -2183,14 +2181,71 @@
                 ],
                 "parameters": [
                     {
-                        "name": "id",
-                        "in": "path",
+                        "name": "organization_id",
+                        "in": "query",
                         "required": true,
                         "schema": {
                             "type": "string",
                             "format": "uuid4",
-                            "title": "Id"
+                            "description": "The organization ID.",
+                            "x-polar-selector-widget": {
+                                "resourceRoot": "/v1/organizations",
+                                "resourceName": "Organization",
+                                "displayProperty": "name"
+                            },
+                            "title": "Organization Id"
                         }
+                    },
+                    {
+                        "name": "benefit_id",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string",
+                                    "format": "uuid4",
+                                    "description": "The benefit ID.",
+                                    "x-polar-selector-widget": {
+                                        "resourceRoot": "/v1/benefits",
+                                        "resourceName": "Benefit",
+                                        "displayProperty": "description"
+                                    }
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "description": "Filter by a specific benefit",
+                            "title": "Benefit Id"
+                        },
+                        "description": "Filter by a specific benefit"
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "exclusiveMinimum": 0,
+                            "description": "Page number, defaults to 1.",
+                            "default": 1,
+                            "title": "Page"
+                        },
+                        "description": "Page number, defaults to 1."
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "exclusiveMinimum": 0,
+                            "description": "Size of a page, defaults to 10. Maximum is 100.",
+                            "default": 10,
+                            "title": "Limit"
+                        },
+                        "description": "Size of a page, defaults to 10. Maximum is 100."
                     }
                 ],
                 "responses": {
@@ -2199,7 +2254,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/LicenseKeyRead"
+                                    "$ref": "#/components/schemas/ListResource_LicenseKeyRead_"
                                 }
                             }
                         }
@@ -2236,10 +2291,28 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
                     "User"
                 ],
-                "x-speakeasy-name-override": "retrieve",
+                "x-speakeasy-pagination": {
+                    "type": "offsetLimit",
+                    "inputs": [
+                        {
+                            "name": "page",
+                            "in": "parameters",
+                            "type": "page"
+                        },
+                        {
+                            "name": "limit",
+                            "in": "parameters",
+                            "type": "limit"
+                        }
+                    ],
+                    "outputs": {
+                        "results": "$.items",
+                        "numPages": "$.pagination.max_page"
+                    }
+                },
+                "x-speakeasy-name-override": "list_license_keys",
                 "x-speakeasy-group": "users"
             }
         },
@@ -2248,9 +2321,9 @@
                 "tags": [
                     "users"
                 ],
-                "summary": "Validate",
+                "summary": "Validate License Key",
                 "description": "Validate a license key.",
-                "operationId": "validate",
+                "operationId": "validate_license_key",
                 "requestBody": {
                     "content": {
                         "application/json": {
@@ -2272,16 +2345,6 @@
                             }
                         }
                     },
-                    "401": {
-                        "description": "Not authorized to manage license key.",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/Unauthorized"
-                                }
-                            }
-                        }
-                    },
                     "404": {
                         "description": "License key not found.",
                         "content": {
@@ -2303,21 +2366,7 @@
                         }
                     }
                 },
-                "security": [
-                    {
-                        "oidc": [
-                            "user:license_keys:write"
-                        ]
-                    },
-                    {
-                        "pat": []
-                    }
-                ],
-                "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
-                ],
-                "x-speakeasy-name-override": "validate",
+                "x-speakeasy-name-override": "validate_license_key",
                 "x-speakeasy-group": "users"
             }
         },
@@ -2326,9 +2375,9 @@
                 "tags": [
                     "users"
                 ],
-                "summary": "Activate",
+                "summary": "Activate License Key",
                 "description": "Activate a license key instance.",
-                "operationId": "activate",
+                "operationId": "activate_license_key",
                 "requestBody": {
                     "content": {
                         "application/json": {
@@ -2346,16 +2395,6 @@
                             "application/json": {
                                 "schema": {
                                     "$ref": "#/components/schemas/LicenseKeyActivationRead"
-                                }
-                            }
-                        }
-                    },
-                    "401": {
-                        "description": "Not authorized to manage license key.",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/Unauthorized"
                                 }
                             }
                         }
@@ -2391,21 +2430,54 @@
                         }
                     }
                 },
-                "security": [
-                    {
-                        "oidc": [
-                            "user:license_keys:write"
-                        ]
+                "x-speakeasy-name-override": "activate_license_key",
+                "x-speakeasy-group": "users"
+            }
+        },
+        "/v1/users/license-keys/deactivate": {
+            "post": {
+                "tags": [
+                    "users"
+                ],
+                "summary": "Deactivate license key activation",
+                "description": "Deactivate a license key instance.",
+                "operationId": "deactivate_license_key",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/LicenseKeyDeactivate"
+                            }
+                        }
                     },
-                    {
-                        "pat": []
+                    "required": true
+                },
+                "responses": {
+                    "204": {
+                        "description": "License key activation deactivated."
+                    },
+                    "404": {
+                        "description": "License key not found.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ResourceNotFound"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
                     }
-                ],
-                "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
-                ],
-                "x-speakeasy-name-override": "activate",
+                },
+                "x-speakeasy-name-override": "deactivate_license_key",
                 "x-speakeasy-group": "users"
             }
         },
@@ -8409,9 +8481,9 @@
                             "description": "Filter by the type of purchase the customer made.",
                             "default": [
                                 "paid_subscription",
+                                "order",
                                 "free_subscription",
-                                "donation",
-                                "order"
+                                "donation"
                             ],
                             "title": "Customer Types"
                         },
@@ -15746,6 +15818,388 @@
                 "x-speakeasy-name-override": "google_callback",
                 "x-speakeasy-ignore": true
             }
+        },
+        "/v1/license-keys": {
+            "get": {
+                "tags": [
+                    ""
+                ],
+                "summary": "List",
+                "description": "Get license keys connected to the given organization & filters.",
+                "operationId": "list",
+                "security": [
+                    {
+                        "oidc": [
+                            "license_keys:read",
+                            "license_keys:write"
+                        ]
+                    },
+                    {
+                        "pat": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "organization_id",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid4",
+                            "title": "Organization Id"
+                        }
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "exclusiveMinimum": 0,
+                            "description": "Page number, defaults to 1.",
+                            "default": 1,
+                            "title": "Page"
+                        },
+                        "description": "Page number, defaults to 1."
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "exclusiveMinimum": 0,
+                            "description": "Size of a page, defaults to 10. Maximum is 100.",
+                            "default": 10,
+                            "title": "Limit"
+                        },
+                        "description": "Size of a page, defaults to 10. Maximum is 100."
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ListResource_LicenseKeyRead_"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Not authorized to manage license key.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Unauthorized"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "License key not found.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ResourceNotFound"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                },
+                "x-polar-allowed-subjects": [
+                    "Organization",
+                    "User"
+                ],
+                "x-speakeasy-pagination": {
+                    "type": "offsetLimit",
+                    "inputs": [
+                        {
+                            "name": "page",
+                            "in": "parameters",
+                            "type": "page"
+                        },
+                        {
+                            "name": "limit",
+                            "in": "parameters",
+                            "type": "limit"
+                        }
+                    ],
+                    "outputs": {
+                        "results": "$.items",
+                        "numPages": "$.pagination.max_page"
+                    }
+                },
+                "x-speakeasy-name-override": "list"
+            }
+        },
+        "/v1/license-keys/{id}": {
+            "get": {
+                "tags": [
+                    ""
+                ],
+                "summary": "Get",
+                "description": "Get a license key.",
+                "operationId": "get",
+                "security": [
+                    {
+                        "oidc": [
+                            "license_keys:read",
+                            "license_keys:write"
+                        ]
+                    },
+                    {
+                        "pat": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid4",
+                            "title": "Id"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/LicenseKeyWithActivations"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Not authorized to manage license key.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Unauthorized"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "License key not found.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ResourceNotFound"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                },
+                "x-polar-allowed-subjects": [
+                    "Organization",
+                    "User"
+                ],
+                "x-speakeasy-name-override": "retrieve"
+            },
+            "patch": {
+                "tags": [
+                    ""
+                ],
+                "summary": "Update",
+                "description": "Update a license key.",
+                "operationId": "update",
+                "security": [
+                    {
+                        "oidc": [
+                            "license_keys:write"
+                        ]
+                    },
+                    {
+                        "pat": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid4",
+                            "title": "Id"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/LicenseKeyUpdate"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/LicenseKeyRead"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Not authorized to manage license key.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Unauthorized"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "License key not found.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ResourceNotFound"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                },
+                "x-polar-allowed-subjects": [
+                    "Organization",
+                    "User"
+                ],
+                "x-speakeasy-name-override": "update"
+            }
+        },
+        "/v1/license-keys/{id}/activations/{activation_id}": {
+            "get": {
+                "tags": [
+                    ""
+                ],
+                "summary": "Get Activation",
+                "description": "Get a license key activation.",
+                "operationId": "get_activation",
+                "security": [
+                    {
+                        "oidc": [
+                            "license_keys:read",
+                            "license_keys:write"
+                        ]
+                    },
+                    {
+                        "pat": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid4",
+                            "title": "Id"
+                        }
+                    },
+                    {
+                        "name": "activation_id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid4",
+                            "title": "Activation Id"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/LicenseKeyActivationRead"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Not authorized to manage license key.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Unauthorized"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "License key not found.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ResourceNotFound"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                },
+                "x-polar-allowed-subjects": [
+                    "Organization",
+                    "User"
+                ],
+                "x-speakeasy-name-override": "get_activation"
+            }
         }
     },
     "components": {
@@ -17253,6 +17707,8 @@
                     "webhooks:read",
                     "webhooks:write",
                     "external_organizations:read",
+                    "license_keys:read",
+                    "license_keys:write",
                     "repositories:read",
                     "repositories:write",
                     "issues:read",
@@ -17263,7 +17719,6 @@
                     "user:subscriptions:write",
                     "user:downloadables:read",
                     "user:license_keys:read",
-                    "user:license_keys:write",
                     "user:advertisement_campaigns:read",
                     "user:advertisement_campaigns:write"
                 ],
@@ -19771,6 +20226,18 @@
                             }
                         ],
                         "title": "Limit Activations"
+                    },
+                    "limit_usage": {
+                        "anyOf": [
+                            {
+                                "type": "integer",
+                                "exclusiveMinimum": 0
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Limit Usage"
                     }
                 },
                 "type": "object",
@@ -19809,13 +20276,25 @@
                             }
                         ],
                         "title": "Limit Activations"
+                    },
+                    "limit_usage": {
+                        "anyOf": [
+                            {
+                                "type": "integer"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Limit Usage"
                     }
                 },
                 "type": "object",
                 "required": [
                     "prefix",
                     "expires",
-                    "limit_activations"
+                    "limit_activations",
+                    "limit_usage"
                 ],
                 "title": "BenefitLicenseKeysProperties"
             },
@@ -19894,64 +20373,8 @@
                 "title": "BenefitLicenseKeysSubscriber"
             },
             "BenefitLicenseKeysSubscriberProperties": {
-                "properties": {
-                    "key": {
-                        "type": "string",
-                        "title": "Key"
-                    },
-                    "activations": {
-                        "type": "integer",
-                        "title": "Activations"
-                    },
-                    "limit_activations": {
-                        "anyOf": [
-                            {
-                                "type": "integer"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Limit Activations"
-                    },
-                    "validations": {
-                        "type": "integer",
-                        "title": "Validations"
-                    },
-                    "last_validated_at": {
-                        "anyOf": [
-                            {
-                                "type": "string",
-                                "format": "date-time"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Last Validated At"
-                    },
-                    "expires_at": {
-                        "anyOf": [
-                            {
-                                "type": "string",
-                                "format": "date-time"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Expires At"
-                    }
-                },
+                "properties": {},
                 "type": "object",
-                "required": [
-                    "key",
-                    "activations",
-                    "limit_activations",
-                    "validations",
-                    "last_validated_at",
-                    "expires_at"
-                ],
                 "title": "BenefitLicenseKeysSubscriberProperties"
             },
             "BenefitLicenseKeysUpdate": {
@@ -22198,6 +22621,25 @@
                 ],
                 "title": "LicenseKeyActivationRead"
             },
+            "LicenseKeyDeactivate": {
+                "properties": {
+                    "key": {
+                        "type": "string",
+                        "title": "Key"
+                    },
+                    "activation_id": {
+                        "type": "string",
+                        "format": "uuid4",
+                        "title": "Activation Id"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "key",
+                    "activation_id"
+                ],
+                "title": "LicenseKeyDeactivate"
+            },
             "LicenseKeyRead": {
                 "properties": {
                     "id": {
@@ -22239,6 +22681,21 @@
                         ],
                         "title": "Limit Activations"
                     },
+                    "usage": {
+                        "type": "integer",
+                        "title": "Usage"
+                    },
+                    "limit_usage": {
+                        "anyOf": [
+                            {
+                                "type": "integer"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Limit Usage"
+                    },
                     "validations": {
                         "type": "integer",
                         "title": "Validations"
@@ -22275,6 +22732,7 @@
                     "benefit_id",
                     "key",
                     "status",
+                    "usage",
                     "validations"
                 ],
                 "title": "LicenseKeyRead"
@@ -22286,6 +22744,64 @@
                     "revoked"
                 ],
                 "title": "LicenseKeyStatus"
+            },
+            "LicenseKeyUpdate": {
+                "properties": {
+                    "status": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/components/schemas/LicenseKeyStatus"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ]
+                    },
+                    "usage": {
+                        "type": "integer",
+                        "title": "Usage",
+                        "default": 0
+                    },
+                    "limit_activations": {
+                        "anyOf": [
+                            {
+                                "type": "integer",
+                                "maximum": 50,
+                                "exclusiveMinimum": 0
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Limit Activations"
+                    },
+                    "limit_usage": {
+                        "anyOf": [
+                            {
+                                "type": "integer",
+                                "exclusiveMinimum": 0
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Limit Usage"
+                    },
+                    "expires_at": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "date-time"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Expires At"
+                    }
+                },
+                "type": "object",
+                "title": "LicenseKeyUpdate"
             },
             "LicenseKeyValidate": {
                 "properties": {
@@ -22334,6 +22850,17 @@
                             }
                         ],
                         "title": "User Id"
+                    },
+                    "increment_usage": {
+                        "anyOf": [
+                            {
+                                "type": "integer"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Increment Usage"
                     }
                 },
                 "type": "object",
@@ -22341,6 +22868,111 @@
                     "key"
                 ],
                 "title": "LicenseKeyValidate"
+            },
+            "LicenseKeyWithActivations": {
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid4",
+                        "title": "Id"
+                    },
+                    "user_id": {
+                        "type": "string",
+                        "format": "uuid4",
+                        "title": "User Id"
+                    },
+                    "benefit_id": {
+                        "type": "string",
+                        "format": "uuid4",
+                        "title": "Benefit Id",
+                        "description": "The benefit ID.",
+                        "x-polar-selector-widget": {
+                            "displayProperty": "description",
+                            "resourceName": "Benefit",
+                            "resourceRoot": "/v1/benefits"
+                        }
+                    },
+                    "key": {
+                        "type": "string",
+                        "title": "Key"
+                    },
+                    "status": {
+                        "$ref": "#/components/schemas/LicenseKeyStatus"
+                    },
+                    "limit_activations": {
+                        "anyOf": [
+                            {
+                                "type": "integer"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Limit Activations"
+                    },
+                    "usage": {
+                        "type": "integer",
+                        "title": "Usage"
+                    },
+                    "limit_usage": {
+                        "anyOf": [
+                            {
+                                "type": "integer"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Limit Usage"
+                    },
+                    "validations": {
+                        "type": "integer",
+                        "title": "Validations"
+                    },
+                    "last_validated_at": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "date-time"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Last Validated At"
+                    },
+                    "expires_at": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "date-time"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Expires At"
+                    },
+                    "activations": {
+                        "items": {
+                            "$ref": "#/components/schemas/LicenseKeyActivationBase"
+                        },
+                        "type": "array",
+                        "title": "Activations"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "id",
+                    "user_id",
+                    "benefit_id",
+                    "key",
+                    "status",
+                    "usage",
+                    "validations",
+                    "activations"
+                ],
+                "title": "LicenseKeyWithActivations"
             },
             "ListFundingSortBy": {
                 "type": "string",
@@ -22626,6 +23258,26 @@
                     "pagination"
                 ],
                 "title": "ListResource[Issue]"
+            },
+            "ListResource_LicenseKeyRead_": {
+                "properties": {
+                    "items": {
+                        "items": {
+                            "$ref": "#/components/schemas/LicenseKeyRead"
+                        },
+                        "type": "array",
+                        "title": "Items"
+                    },
+                    "pagination": {
+                        "$ref": "#/components/schemas/Pagination"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "items",
+                    "pagination"
+                ],
+                "title": "ListResource[LicenseKeyRead]"
             },
             "ListResource_OAuth2Client_": {
                 "properties": {
@@ -24472,7 +25124,7 @@
                     "scope": {
                         "type": "string",
                         "title": "Scope",
-                        "default": "openid profile email user:read organizations:read organizations:write products:read products:write benefits:read benefits:write files:read files:write subscriptions:read subscriptions:write orders:read metrics:read articles:read articles:write webhooks:read webhooks:write external_organizations:read repositories:read repositories:write issues:read issues:write user:benefits:read user:orders:read user:subscriptions:read user:subscriptions:write user:downloadables:read user:license_keys:read user:license_keys:write user:advertisement_campaigns:read user:advertisement_campaigns:write"
+                        "default": "openid profile email user:read organizations:read organizations:write products:read products:write benefits:read benefits:write files:read files:write subscriptions:read subscriptions:write orders:read metrics:read articles:read articles:write webhooks:read webhooks:write external_organizations:read license_keys:read license_keys:write repositories:read repositories:write issues:read issues:write user:benefits:read user:orders:read user:subscriptions:read user:subscriptions:write user:downloadables:read user:license_keys:read user:advertisement_campaigns:read user:advertisement_campaigns:write"
                     },
                     "client_name": {
                         "type": "string",
@@ -24634,7 +25286,7 @@
                     "scope": {
                         "type": "string",
                         "title": "Scope",
-                        "default": "openid profile email user:read organizations:read organizations:write products:read products:write benefits:read benefits:write files:read files:write subscriptions:read subscriptions:write orders:read metrics:read articles:read articles:write webhooks:read webhooks:write external_organizations:read repositories:read repositories:write issues:read issues:write user:benefits:read user:orders:read user:subscriptions:read user:subscriptions:write user:downloadables:read user:license_keys:read user:license_keys:write user:advertisement_campaigns:read user:advertisement_campaigns:write"
+                        "default": "openid profile email user:read organizations:read organizations:write products:read products:write benefits:read benefits:write files:read files:write subscriptions:read subscriptions:write orders:read metrics:read articles:read articles:write webhooks:read webhooks:write external_organizations:read license_keys:read license_keys:write repositories:read repositories:write issues:read issues:write user:benefits:read user:orders:read user:subscriptions:read user:subscriptions:write user:downloadables:read user:license_keys:read user:advertisement_campaigns:read user:advertisement_campaigns:write"
                     },
                     "client_name": {
                         "type": "string",
@@ -24755,7 +25407,7 @@
                     "scope": {
                         "type": "string",
                         "title": "Scope",
-                        "default": "openid profile email user:read organizations:read organizations:write products:read products:write benefits:read benefits:write files:read files:write subscriptions:read subscriptions:write orders:read metrics:read articles:read articles:write webhooks:read webhooks:write external_organizations:read repositories:read repositories:write issues:read issues:write user:benefits:read user:orders:read user:subscriptions:read user:subscriptions:write user:downloadables:read user:license_keys:read user:license_keys:write user:advertisement_campaigns:read user:advertisement_campaigns:write"
+                        "default": "openid profile email user:read organizations:read organizations:write products:read products:write benefits:read benefits:write files:read files:write subscriptions:read subscriptions:write orders:read metrics:read articles:read articles:write webhooks:read webhooks:write external_organizations:read license_keys:read license_keys:write repositories:read repositories:write issues:read issues:write user:benefits:read user:orders:read user:subscriptions:read user:subscriptions:write user:downloadables:read user:license_keys:read user:advertisement_campaigns:read user:advertisement_campaigns:write"
                     },
                     "client_name": {
                         "type": "string",
@@ -28341,6 +28993,8 @@
                     "webhooks:read",
                     "webhooks:write",
                     "external_organizations:read",
+                    "license_keys:read",
+                    "license_keys:write",
                     "repositories:read",
                     "repositories:write",
                     "issues:read",
@@ -28351,7 +29005,6 @@
                     "user:subscriptions:write",
                     "user:downloadables:read",
                     "user:license_keys:read",
-                    "user:license_keys:write",
                     "user:advertisement_campaigns:read",
                     "user:advertisement_campaigns:write"
                 ],
@@ -28364,6 +29017,8 @@
                     "email": "Read your email address",
                     "files:read": "Read file uploads",
                     "files:write": "Create or modify file uploads",
+                    "license_keys:read": "Read license keys",
+                    "license_keys:write": "Modify license keys",
                     "metrics:read": "Read metrics",
                     "openid": "OpenID",
                     "orders:read": "Read orders made on your organizations",
@@ -28378,8 +29033,7 @@
                     "user:advertisement_campaigns:write": "Create or modify your advertisement campaigns",
                     "user:benefits:read": "Read your granted benefits",
                     "user:downloadables:read": "Read your downloadable files",
-                    "user:license_keys:read": "Read your license keys",
-                    "user:license_keys:write": "Modify your license keys",
+                    "user:license_keys:read": "Read license keys you have access to",
                     "user:orders:read": "Read your orders",
                     "user:read": "User Read",
                     "user:subscriptions:read": "Read your subscriptions",
@@ -31326,6 +31980,21 @@
                         ],
                         "title": "Limit Activations"
                     },
+                    "usage": {
+                        "type": "integer",
+                        "title": "Usage"
+                    },
+                    "limit_usage": {
+                        "anyOf": [
+                            {
+                                "type": "integer"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Limit Usage"
+                    },
                     "validations": {
                         "type": "integer",
                         "title": "Validations"
@@ -31372,6 +32041,7 @@
                     "benefit_id",
                     "key",
                     "status",
+                    "usage",
                     "validations"
                 ],
                 "title": "ValidatedLicenseKey"

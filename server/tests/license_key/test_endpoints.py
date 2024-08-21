@@ -5,6 +5,7 @@ from httpx import AsyncClient
 from polar.benefit.schemas import (
     BenefitLicenseKeysCreateProperties,
 )
+from polar.kit.pagination import PaginationParams
 from polar.kit.utils import generate_uuid, utc_now
 from polar.license_key.service import license_key as license_key_service
 from polar.models import Organization, Product, User, UserOrganization
@@ -95,6 +96,7 @@ class TestLicenseKeyEndpoints:
         assert data.get("key").startswith("TESTING")
 
     @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
         AuthSubjectFixture(subject="organization"),
     )
     async def test_update(
@@ -103,6 +105,7 @@ class TestLicenseKeyEndpoints:
         client: AsyncClient,
         save_fixture: SaveFixture,
         user: User,
+        user_organization: UserOrganization,
         organization: Organization,
         product: Product,
     ) -> None:
@@ -140,3 +143,57 @@ class TestLicenseKeyEndpoints:
         assert updated["limit_usage"] == 10
         assert updated["limit_activations"] == 5
         assert updated["expires_at"] == expires_at
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="organization"),
+    )
+    async def test_list(
+        self,
+        session: AsyncSession,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        user: User,
+        user_organization: UserOrganization,
+        organization: Organization,
+        product: Product,
+    ) -> None:
+        benefit, granted = await TestLicenseKey.create_benefit_and_grant(
+            session,
+            save_fixture,
+            user=user,
+            organization=organization,
+            product=product,
+            properties=BenefitLicenseKeysCreateProperties(
+                prefix="testing",
+                expires=None,
+                limit_activations=None,
+                limit_usage=None,
+            ),
+        )
+        benefit, granted = await TestLicenseKey.create_benefit_and_grant(
+            session,
+            save_fixture,
+            user=user,
+            organization=organization,
+            product=product,
+            properties=BenefitLicenseKeysCreateProperties(
+                prefix="testing",
+                expires=None,
+                limit_activations=None,
+                limit_usage=None,
+            ),
+        )
+        keys, count = await license_key_service.get_list(
+            session,
+            organization_id=organization.id,
+            pagination=PaginationParams(1, 50),
+        )
+        assert count >= 2
+
+        response = await client.get(
+            f"/v1/license-keys?organization_id={str(organization.id)}",
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert data["pagination"]["total_count"] == count

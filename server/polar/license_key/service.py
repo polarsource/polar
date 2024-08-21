@@ -1,3 +1,4 @@
+from collections.abc import Sequence
 from uuid import UUID
 
 import structlog
@@ -5,6 +6,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import contains_eager
 
 from polar.exceptions import BadRequest, NotPermitted, ResourceNotFound
+from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.services import ResourceService
 from polar.kit.utils import utc_now
 from polar.models import Benefit, LicenseKey, LicenseKeyActivation, User
@@ -71,6 +73,20 @@ class LicenseKeyService(
             raise ResourceNotFound()
 
         return record
+
+    async def get_list(
+        self,
+        session: AsyncSession,
+        *,
+        organization_id: UUID,
+        pagination: PaginationParams,
+    ) -> tuple[Sequence[LicenseKey], int]:
+        query = (
+            self._get_select_base()
+            .where(Benefit.organization_id == organization_id)
+            .order_by(LicenseKey.created_at.asc())
+        )
+        return await paginate(session, query, pagination=pagination)
 
     async def update(
         self,

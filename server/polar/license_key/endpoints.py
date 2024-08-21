@@ -6,8 +6,10 @@ from pydantic import (
 from polar.authz.service import AccessType, Authz
 from polar.exceptions import ResourceNotFound, Unauthorized
 from polar.kit.db.postgres import AsyncSession
+from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.models import LicenseKey
 from polar.openapi import APITag
+from polar.organization.service import organization as organization_service
 from polar.postgres import get_db_session
 from polar.routing import APIRouter
 
@@ -22,6 +24,42 @@ from .schemas import (
 from .service import license_key as license_key_service
 
 router = APIRouter(prefix="/license-keys", tags=[APITag.documented, APITag.featured])
+
+
+@router.get(
+    "",
+    response_model=ListResource[LicenseKeyRead],
+    responses={
+        401: UnauthorizedResponse,
+        404: NotFoundResponse,
+    },
+)
+async def list(
+    auth_subject: auth.LicenseKeysRead,
+    pagination: PaginationParamsQuery,
+    organization_id: UUID4,
+    session: AsyncSession = Depends(get_db_session),
+    authz: Authz = Depends(Authz.authz),
+) -> ListResource[LicenseKeyRead]:
+    """Get license keys connected to the given organization & filters."""
+    organization = await organization_service.get(session, organization_id)
+    if not organization:
+        raise ResourceNotFound()
+
+    if not await authz.can(auth_subject.subject, AccessType.read, organization):
+        raise Unauthorized()
+
+    results, count = await license_key_service.get_list(
+        session,
+        organization_id=organization_id,
+        pagination=pagination,
+    )
+
+    return ListResource.from_paginated_results(
+        [LicenseKeyRead.model_validate(result) for result in results],
+        count,
+        pagination,
+    )
 
 
 @router.get(

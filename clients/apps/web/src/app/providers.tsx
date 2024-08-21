@@ -46,7 +46,18 @@ export function PolarThemeProvider({
 }: {
   children: React.ReactElement
 }) {
-  return <ThemeProvider attribute="class">{children}</ThemeProvider>
+  const pathname = usePathname()
+  const PAGES_WITH_FORCED_DARK_THEME: string[] = ['/', '/careers']
+
+  const forcedTheme = PAGES_WITH_FORCED_DARK_THEME.includes(pathname)
+    ? 'dark'
+    : undefined
+
+  return (
+    <ThemeProvider forcedTheme={forcedTheme} attribute="class">
+      {children}
+    </ThemeProvider>
+  )
 }
 
 export function PolarQueryClientProvider({

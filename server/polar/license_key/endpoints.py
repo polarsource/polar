@@ -1,12 +1,10 @@
-from typing import Annotated
-
-from fastapi import Depends, Path
+from fastapi import Depends
 from pydantic import (
     UUID4,
 )
 
 from polar.authz.service import AccessType, Authz
-from polar.exceptions import NotPermitted, ResourceNotFound, Unauthorized
+from polar.exceptions import ResourceNotFound, Unauthorized
 from polar.kit.db.postgres import AsyncSession
 from polar.models import LicenseKey
 from polar.openapi import APITag
@@ -19,35 +17,20 @@ from .schemas import (
     LicenseKeyRead,
     LicenseKeyUpdate,
     LicenseKeyWithActivations,
+    NotFoundResponse,
+    UnauthorizedResponse,
 )
 from .service import license_key as license_key_service
 
 router = APIRouter(prefix="/license-keys", tags=[APITag.documented, APITag.featured])
-
-LK = Annotated[str, Path(description="The license key")]
-
-LicenseKeyNotFound = {
-    "description": "License key not found.",
-    "model": ResourceNotFound.schema(),
-}
-
-NotAuthorized = {
-    "description": "Not authorized to manage license key.",
-    "model": Unauthorized.schema(),
-}
-
-ActivationNotPermitted = {
-    "description": "License key activation not required or permitted (limit reached).",
-    "model": NotPermitted.schema(),
-}
 
 
 @router.get(
     "/{id}",
     response_model=LicenseKeyWithActivations,
     responses={
-        401: NotAuthorized,
-        404: LicenseKeyNotFound,
+        401: UnauthorizedResponse,
+        404: NotFoundResponse,
     },
 )
 async def get(
@@ -72,8 +55,8 @@ async def get(
     "/{id}",
     response_model=LicenseKeyRead,
     responses={
-        401: NotAuthorized,
-        404: LicenseKeyNotFound,
+        401: UnauthorizedResponse,
+        404: NotFoundResponse,
     },
 )
 async def update(

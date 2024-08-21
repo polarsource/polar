@@ -72,6 +72,7 @@ class LicenseKeyService(
         if not record:
             raise ResourceNotFound()
 
+        record.license_key = license_key
         return record
 
     async def get_list(

@@ -273,14 +273,7 @@ class BenefitLicenseKeysProperties(Schema):
     limit_usage: int | None
 
 
-class BenefitLicenseKeysSubscriberProperties(Schema):
-    key: str
-    activations: int
-    limit_activations: int | None
-    limit_usage: int | None
-    validations: int
-    last_validated_at: datetime | None
-    expires_at: datetime | None
+class BenefitLicenseKeysSubscriberProperties(Schema): ...
 
 
 # BenefitCreate

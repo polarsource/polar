@@ -1612,6 +1612,8 @@ export const AvailableScope = {
     WEBHOOKSREAD: 'webhooks:read',
     WEBHOOKSWRITE: 'webhooks:write',
     EXTERNAL_ORGANIZATIONSREAD: 'external_organizations:read',
+    LICENSE_KEYSREAD: 'license_keys:read',
+    LICENSE_KEYSWRITE: 'license_keys:write',
     REPOSITORIESREAD: 'repositories:read',
     REPOSITORIESWRITE: 'repositories:write',
     ISSUESREAD: 'issues:read',
@@ -1622,7 +1624,6 @@ export const AvailableScope = {
     USERSUBSCRIPTIONSWRITE: 'user:subscriptions:write',
     USERDOWNLOADABLESREAD: 'user:downloadables:read',
     USERLICENSE_KEYSREAD: 'user:license_keys:read',
-    USERLICENSE_KEYSWRITE: 'user:license_keys:write',
     USERADVERTISEMENT_CAMPAIGNSREAD: 'user:advertisement_campaigns:read',
     USERADVERTISEMENT_CAMPAIGNSWRITE: 'user:advertisement_campaigns:write'
 } as const;
@@ -3921,6 +3922,12 @@ export interface BenefitLicenseKeysCreateProperties {
      * @memberof BenefitLicenseKeysCreateProperties
      */
     limit_activations?: number | null;
+    /**
+     * 
+     * @type {number}
+     * @memberof BenefitLicenseKeysCreateProperties
+     */
+    limit_usage?: number | null;
 }
 /**
  * 
@@ -3946,6 +3953,12 @@ export interface BenefitLicenseKeysProperties {
      * @memberof BenefitLicenseKeysProperties
      */
     limit_activations: number | null;
+    /**
+     * 
+     * @type {number}
+     * @memberof BenefitLicenseKeysProperties
+     */
+    limit_usage: number | null;
 }
 /**
  * 
@@ -4003,10 +4016,10 @@ export interface BenefitLicenseKeysSubscriber {
     organization_id: string;
     /**
      * 
-     * @type {BenefitLicenseKeysSubscriberProperties}
+     * @type {object}
      * @memberof BenefitLicenseKeysSubscriber
      */
-    properties: BenefitLicenseKeysSubscriberProperties;
+    properties: object;
 }
 
 
@@ -4018,49 +4031,6 @@ export const BenefitLicenseKeysSubscriberTypeEnum = {
 } as const;
 export type BenefitLicenseKeysSubscriberTypeEnum = typeof BenefitLicenseKeysSubscriberTypeEnum[keyof typeof BenefitLicenseKeysSubscriberTypeEnum];
 
-/**
- * 
- * @export
- * @interface BenefitLicenseKeysSubscriberProperties
- */
-export interface BenefitLicenseKeysSubscriberProperties {
-    /**
-     * 
-     * @type {string}
-     * @memberof BenefitLicenseKeysSubscriberProperties
-     */
-    key: string;
-    /**
-     * 
-     * @type {number}
-     * @memberof BenefitLicenseKeysSubscriberProperties
-     */
-    activations: number;
-    /**
-     * 
-     * @type {number}
-     * @memberof BenefitLicenseKeysSubscriberProperties
-     */
-    limit_activations: number | null;
-    /**
-     * 
-     * @type {number}
-     * @memberof BenefitLicenseKeysSubscriberProperties
-     */
-    validations: number;
-    /**
-     * 
-     * @type {string}
-     * @memberof BenefitLicenseKeysSubscriberProperties
-     */
-    last_validated_at: string | null;
-    /**
-     * 
-     * @type {string}
-     * @memberof BenefitLicenseKeysSubscriberProperties
-     */
-    expires_at: string | null;
-}
 /**
  * 
  * @export
@@ -6275,6 +6245,25 @@ export interface LicenseKeyActivationRead {
 /**
  * 
  * @export
+ * @interface LicenseKeyDeactivate
+ */
+export interface LicenseKeyDeactivate {
+    /**
+     * 
+     * @type {string}
+     * @memberof LicenseKeyDeactivate
+     */
+    key: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof LicenseKeyDeactivate
+     */
+    activation_id: string;
+}
+/**
+ * 
+ * @export
  * @interface LicenseKeyRead
  */
 export interface LicenseKeyRead {
@@ -6319,6 +6308,18 @@ export interface LicenseKeyRead {
      * @type {number}
      * @memberof LicenseKeyRead
      */
+    usage: number;
+    /**
+     * 
+     * @type {number}
+     * @memberof LicenseKeyRead
+     */
+    limit_usage?: number | null;
+    /**
+     * 
+     * @type {number}
+     * @memberof LicenseKeyRead
+     */
     validations: number;
     /**
      * 
@@ -6345,6 +6346,45 @@ export const LicenseKeyStatus = {
     REVOKED: 'revoked'
 } as const;
 export type LicenseKeyStatus = typeof LicenseKeyStatus[keyof typeof LicenseKeyStatus];
+
+/**
+ * 
+ * @export
+ * @interface LicenseKeyUpdate
+ */
+export interface LicenseKeyUpdate {
+    /**
+     * 
+     * @type {LicenseKeyStatus}
+     * @memberof LicenseKeyUpdate
+     */
+    status?: LicenseKeyStatus | null;
+    /**
+     * 
+     * @type {number}
+     * @memberof LicenseKeyUpdate
+     */
+    usage?: number;
+    /**
+     * 
+     * @type {number}
+     * @memberof LicenseKeyUpdate
+     */
+    limit_activations?: number | null;
+    /**
+     * 
+     * @type {number}
+     * @memberof LicenseKeyUpdate
+     */
+    limit_usage?: number | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof LicenseKeyUpdate
+     */
+    expires_at?: string | null;
+}
+
 
 /**
  * 
@@ -6376,7 +6416,94 @@ export interface LicenseKeyValidate {
      * @memberof LicenseKeyValidate
      */
     user_id?: string | null;
+    /**
+     * 
+     * @type {number}
+     * @memberof LicenseKeyValidate
+     */
+    increment_usage?: number | null;
 }
+/**
+ * 
+ * @export
+ * @interface LicenseKeyWithActivations
+ */
+export interface LicenseKeyWithActivations {
+    /**
+     * 
+     * @type {string}
+     * @memberof LicenseKeyWithActivations
+     */
+    id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof LicenseKeyWithActivations
+     */
+    user_id: string;
+    /**
+     * The benefit ID.
+     * @type {string}
+     * @memberof LicenseKeyWithActivations
+     */
+    benefit_id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof LicenseKeyWithActivations
+     */
+    key: string;
+    /**
+     * 
+     * @type {LicenseKeyStatus}
+     * @memberof LicenseKeyWithActivations
+     */
+    status: LicenseKeyStatus;
+    /**
+     * 
+     * @type {number}
+     * @memberof LicenseKeyWithActivations
+     */
+    limit_activations?: number | null;
+    /**
+     * 
+     * @type {number}
+     * @memberof LicenseKeyWithActivations
+     */
+    usage: number;
+    /**
+     * 
+     * @type {number}
+     * @memberof LicenseKeyWithActivations
+     */
+    limit_usage?: number | null;
+    /**
+     * 
+     * @type {number}
+     * @memberof LicenseKeyWithActivations
+     */
+    validations: number;
+    /**
+     * 
+     * @type {string}
+     * @memberof LicenseKeyWithActivations
+     */
+    last_validated_at?: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof LicenseKeyWithActivations
+     */
+    expires_at?: string | null;
+    /**
+     * 
+     * @type {Array<LicenseKeyActivationBase>}
+     * @memberof LicenseKeyWithActivations
+     */
+    activations: Array<LicenseKeyActivationBase>;
+}
+
+
 
 /**
  * 
@@ -6597,6 +6724,25 @@ export interface ListResourceIssueFunding {
      * 
      * @type {Pagination}
      * @memberof ListResourceIssueFunding
+     */
+    pagination: Pagination;
+}
+/**
+ * 
+ * @export
+ * @interface ListResourceLicenseKeyRead
+ */
+export interface ListResourceLicenseKeyRead {
+    /**
+     * 
+     * @type {Array<LicenseKeyRead>}
+     * @memberof ListResourceLicenseKeyRead
+     */
+    items: Array<LicenseKeyRead>;
+    /**
+     * 
+     * @type {Pagination}
+     * @memberof ListResourceLicenseKeyRead
      */
     pagination: Pagination;
 }
@@ -12335,6 +12481,8 @@ export const Scope = {
     WEBHOOKSREAD: 'webhooks:read',
     WEBHOOKSWRITE: 'webhooks:write',
     EXTERNAL_ORGANIZATIONSREAD: 'external_organizations:read',
+    LICENSE_KEYSREAD: 'license_keys:read',
+    LICENSE_KEYSWRITE: 'license_keys:write',
     REPOSITORIESREAD: 'repositories:read',
     REPOSITORIESWRITE: 'repositories:write',
     ISSUESREAD: 'issues:read',
@@ -12345,7 +12493,6 @@ export const Scope = {
     USERSUBSCRIPTIONSWRITE: 'user:subscriptions:write',
     USERDOWNLOADABLESREAD: 'user:downloadables:read',
     USERLICENSE_KEYSREAD: 'user:license_keys:read',
-    USERLICENSE_KEYSWRITE: 'user:license_keys:write',
     USERADVERTISEMENT_CAMPAIGNSREAD: 'user:advertisement_campaigns:read',
     USERADVERTISEMENT_CAMPAIGNSWRITE: 'user:advertisement_campaigns:write'
 } as const;
@@ -14810,6 +14957,18 @@ export interface ValidatedLicenseKey {
      * @memberof ValidatedLicenseKey
      */
     limit_activations?: number | null;
+    /**
+     * 
+     * @type {number}
+     * @memberof ValidatedLicenseKey
+     */
+    usage: number;
+    /**
+     * 
+     * @type {number}
+     * @memberof ValidatedLicenseKey
+     */
+    limit_usage?: number | null;
     /**
      * 
      * @type {number}

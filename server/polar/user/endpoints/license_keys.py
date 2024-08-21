@@ -1,21 +1,28 @@
-from fastapi import Depends
+from fastapi import Depends, Query
 
+from polar.benefit.schemas import BenefitID
 from polar.exceptions import NotPermitted
 from polar.kit.db.postgres import AsyncSession
+from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.license_key.schemas import (
     LicenseKeyActivate,
     LicenseKeyActivationBase,
     LicenseKeyActivationRead,
     LicenseKeyDeactivate,
+    LicenseKeyRead,
     LicenseKeyValidate,
     NotFoundResponse,
+    UnauthorizedResponse,
     ValidatedLicenseKey,
 )
 from polar.license_key.service import license_key as license_key_service
 from polar.models import LicenseKeyActivation
 from polar.openapi import APITag
+from polar.organization.schemas import OrganizationID
 from polar.postgres import get_db_session
 from polar.routing import APIRouter
+
+from .. import auth
 
 router = APIRouter(prefix="/license-keys", tags=[APITag.documented, APITag.featured])
 
@@ -26,6 +33,38 @@ ActivationNotPermitted = {
 }
 
 
+@router.get(
+    "",
+    response_model=ListResource[LicenseKeyRead],
+    responses={
+        401: UnauthorizedResponse,
+        404: NotFoundResponse,
+    },
+)
+async def list_license_keys(
+    auth_subject: auth.UserLicenseKeysRead,
+    pagination: PaginationParamsQuery,
+    organization_id: OrganizationID,
+    benefit_id: BenefitID | None = Query(
+        None, description="Filter by a specific benefit"
+    ),
+    session: AsyncSession = Depends(get_db_session),
+) -> ListResource[LicenseKeyRead]:
+    results, count = await license_key_service.get_user_list(
+        session,
+        user=auth_subject.subject,
+        organization_id=organization_id,
+        benefit_id=benefit_id,
+        pagination=pagination,
+    )
+
+    return ListResource.from_paginated_results(
+        [LicenseKeyRead.model_validate(result) for result in results],
+        count,
+        pagination,
+    )
+
+
 @router.post(
     "/validate",
     response_model=ValidatedLicenseKey,
@@ -33,7 +72,7 @@ ActivationNotPermitted = {
         404: NotFoundResponse,
     },
 )
-async def validate(
+async def validate_license_key(
     validate: LicenseKeyValidate,
     session: AsyncSession = Depends(get_db_session),
 ) -> ValidatedLicenseKey:
@@ -76,7 +115,7 @@ async def validate(
         404: NotFoundResponse,
     },
 )
-async def activate(
+async def activate_license_key(
     activate: LicenseKeyActivate,
     session: AsyncSession = Depends(get_db_session),
 ) -> LicenseKeyActivation:
@@ -96,7 +135,7 @@ async def activate(
         404: NotFoundResponse,
     },
 )
-async def deactivate(
+async def deactivate_license_key(
     deactivate: LicenseKeyDeactivate,
     session: AsyncSession = Depends(get_db_session),
 ) -> None:

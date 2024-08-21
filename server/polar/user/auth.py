@@ -66,3 +66,16 @@ UserDownloadablesRead = Annotated[
         )
     ),
 ]
+
+UserLicenseKeysRead = Annotated[
+    AuthSubject[User],
+    Depends(
+        Authenticator(
+            required_scopes={
+                Scope.web_default,
+                Scope.user_license_keys_read,
+            },
+            allowed_subjects={User},
+        )
+    ),
+]

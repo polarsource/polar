@@ -10,6 +10,7 @@ import { UserBenefit } from '@polar-sh/sdk'
 import Link from 'next/link'
 import Button from 'polarkit/components/ui/atoms/button'
 import DownloadablesSubscriberWidget from './Downloadables/SubscriberWidget'
+import LicenseKeysSubscriberWidget from './LicenseKeys/SubscriberWidget'
 import ConfigureAdCampaigns from './ads/ConfigureAdCampaigns'
 
 interface BenefitDetailsProps {
@@ -76,6 +77,12 @@ const BenefitDetails = ({ benefit }: BenefitDetailsProps) => {
 
       {benefit.type === 'downloadables' ? (
         <DownloadablesSubscriberWidget benefit={benefit} />
+      ) : null}
+
+      {benefit.type === 'license_keys' ? (
+        <>
+          <LicenseKeysSubscriberWidget benefit={benefit} />
+        </>
       ) : null}
     </div>
   )

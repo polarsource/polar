@@ -19,7 +19,7 @@ export default function Page() {
 export const PageContent = () => {
   return (
     <>
-      <Section className="flex flex-col gap-y-24">
+      <Section className="flex flex-col gap-y-24 md:py-24">
         <Hero />
         <Benefits />
         <Separator />

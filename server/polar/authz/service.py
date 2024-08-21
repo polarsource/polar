@@ -299,9 +299,6 @@ class Authz:
         #
         if isinstance(object, LicenseKey):
             if isinstance(subject, User):
-                if subject.id == object.user_id:
-                    return True
-
                 is_member = await self._is_member(
                     subject.id, object.benefit.organization_id
                 )

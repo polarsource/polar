@@ -11,7 +11,6 @@ from polar.kit.utils import generate_uuid, utc_now
 from polar.license_key.service import license_key as license_key_service
 from polar.models import Organization, Product, User
 from polar.postgres import AsyncSession
-from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.license_key import TestLicenseKey
 
@@ -19,11 +18,6 @@ from tests.fixtures.license_key import TestLicenseKey
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
 class TestUserLicenseKeyEndpoints:
-
-    @pytest.mark.auth(
-        AuthSubjectFixture(subject="user"),
-        AuthSubjectFixture(subject="organization"),
-    )
     async def test_validate(
         self,
         session: AsyncSession,
@@ -90,10 +84,6 @@ class TestUserLicenseKeyEndpoints:
         assert data.get("validations") == 3
         assert data.get("key").startswith("TESTING")
 
-    @pytest.mark.auth(
-        AuthSubjectFixture(subject="user"),
-        AuthSubjectFixture(subject="organization"),
-    )
     async def test_validate_expiration(
         self,
         session: AsyncSession,
@@ -196,10 +186,6 @@ class TestUserLicenseKeyEndpoints:
             )
             assert response.status_code == 404
 
-    @pytest.mark.auth(
-        AuthSubjectFixture(subject="user"),
-        AuthSubjectFixture(subject="organization"),
-    )
     async def test_validate_usage(
         self,
         session: AsyncSession,
@@ -260,10 +246,6 @@ class TestUserLicenseKeyEndpoints:
         detail = data.get("detail")
         assert detail == "License key only has 1 more usages."
 
-    @pytest.mark.auth(
-        AuthSubjectFixture(subject="user"),
-        AuthSubjectFixture(subject="organization"),
-    )
     async def test_validate_activation(
         self,
         session: AsyncSession,
@@ -316,10 +298,6 @@ class TestUserLicenseKeyEndpoints:
         assert validation["key"] == lk.key
         assert validation["activation"]["id"] == activation_id
 
-    @pytest.mark.auth(
-        AuthSubjectFixture(subject="user"),
-        AuthSubjectFixture(subject="organization"),
-    )
     async def test_activation(
         self,
         session: AsyncSession,
@@ -361,10 +339,6 @@ class TestUserLicenseKeyEndpoints:
         assert data.get("label") == label
         assert data.get("meta") == metadata
 
-    @pytest.mark.auth(
-        AuthSubjectFixture(subject="user"),
-        AuthSubjectFixture(subject="organization"),
-    )
     async def test_unnecessary_activation(
         self,
         session: AsyncSession,
@@ -400,10 +374,6 @@ class TestUserLicenseKeyEndpoints:
         )
         assert response.status_code == 403
 
-    @pytest.mark.auth(
-        AuthSubjectFixture(subject="user"),
-        AuthSubjectFixture(subject="organization"),
-    )
     async def test_too_many_activations(
         self,
         session: AsyncSession,
@@ -452,10 +422,6 @@ class TestUserLicenseKeyEndpoints:
         )
         assert second_response.status_code == 403
 
-    @pytest.mark.auth(
-        AuthSubjectFixture(subject="user"),
-        AuthSubjectFixture(subject="organization"),
-    )
     async def test_deactivation(
         self,
         session: AsyncSession,
@@ -490,13 +456,8 @@ class TestUserLicenseKeyEndpoints:
             },
         )
         assert response.status_code == 200
-
-        response = await client.get(f"/v1/license-keys/{lk.id}")
-        assert response.status_code == 200
-        fetched = response.json()
-        assert len(fetched["activations"]) == 1
-        assert fetched["activations"][0]["label"] == "test"
-        activation_id = fetched["activations"][0]["id"]
+        data = response.json()
+        activation_id = data["id"]
 
         response = await client.post(
             "/v1/users/license-keys/activate",
@@ -526,12 +487,3 @@ class TestUserLicenseKeyEndpoints:
             },
         )
         assert response.status_code == 200
-        activated = response.json()
-        new_activation_id = activated["id"]
-
-        response = await client.get(f"/v1/license-keys/{lk.id}")
-        assert response.status_code == 200
-        fetched = response.json()
-        assert len(fetched["activations"]) == 1
-        assert fetched["activations"][0]["label"] == "new_activation"
-        assert fetched["activations"][0]["id"] == new_activation_id

@@ -7,7 +7,7 @@ from polar.benefit.schemas import (
 )
 from polar.kit.utils import generate_uuid, utc_now
 from polar.license_key.service import license_key as license_key_service
-from polar.models import Organization, Product, User
+from polar.models import Organization, Product, User, UserOrganization
 from polar.postgres import AsyncSession
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
@@ -68,6 +68,7 @@ class TestLicenseKeyEndpoints:
         client: AsyncClient,
         save_fixture: SaveFixture,
         user: User,
+        user_organization: UserOrganization,
         organization: Organization,
         product: Product,
     ) -> None:

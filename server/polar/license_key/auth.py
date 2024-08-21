@@ -12,8 +12,8 @@ LicenseKeysRead = Annotated[
         Authenticator(
             required_scopes={
                 Scope.web_default,
-                Scope.user_license_keys_read,
-                Scope.user_license_keys_write,
+                Scope.license_keys_read,
+                Scope.license_keys_write,
             },
             allowed_subjects={User, Organization},
         )
@@ -26,7 +26,7 @@ LicenseKeysWrite = Annotated[
         Authenticator(
             required_scopes={
                 Scope.web_default,
-                Scope.user_license_keys_write,
+                Scope.license_keys_write,
             },
             allowed_subjects={User, Organization},
         )

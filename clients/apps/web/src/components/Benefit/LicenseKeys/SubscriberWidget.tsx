@@ -19,8 +19,6 @@ const LicenseKeysSubscriberWidget = ({
 
   const licenseKeys = licenseKeyQuery.data?.items
 
-  console.log('licenseKeys', licenseKeys)
-
   if (licenseKeyQuery.isLoading) {
     // TODO: Style me
     return <div>Loading...</div>

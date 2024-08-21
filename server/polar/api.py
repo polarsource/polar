@@ -21,6 +21,7 @@ from polar.integrations.github_repository_benefit.endpoints import (
 from polar.integrations.google.endpoints import router as google_router
 from polar.integrations.stripe.endpoints import router as stripe_router
 from polar.issue.endpoints import router as issue_router
+from polar.license_key.endpoints import router as license_key_router
 from polar.magic_link.endpoints import router as magic_link_router
 from polar.metrics.endpoints import router as metrics_router
 from polar.notifications.endpoints import router as notifications_router
@@ -117,3 +118,5 @@ router.include_router(files_router)
 router.include_router(metrics_router)
 # /integrations/google
 router.include_router(google_router)
+# /license-keys
+router.include_router(license_key_router)

@@ -7,7 +7,7 @@ from polar.authz.service import AccessType, Authz
 from polar.exceptions import ResourceNotFound, Unauthorized
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.pagination import ListResource, PaginationParamsQuery
-from polar.models import LicenseKey
+from polar.models import LicenseKey, LicenseKeyActivation
 from polar.openapi import APITag
 from polar.organization.service import organization as organization_service
 from polar.postgres import get_db_session
@@ -15,6 +15,7 @@ from polar.routing import APIRouter
 
 from . import auth
 from .schemas import (
+    LicenseKeyActivationRead,
     LicenseKeyRead,
     LicenseKeyUpdate,
     LicenseKeyWithActivations,
@@ -24,6 +25,10 @@ from .schemas import (
 from .service import license_key as license_key_service
 
 router = APIRouter(prefix="/license-keys", tags=[APITag.documented, APITag.featured])
+
+###############################################################################
+# LICENSE KEYS
+###############################################################################
 
 
 @router.get(
@@ -112,3 +117,39 @@ async def update(
 
     updated = await license_key_service.update(session, license_key=lk, updates=updates)
     return updated
+
+
+###############################################################################
+# LICENSE KEY ACTIVATIONS
+###############################################################################
+
+
+@router.get(
+    "/{id}/activations/{activation_id}",
+    response_model=LicenseKeyActivationRead,
+    responses={
+        401: UnauthorizedResponse,
+        404: NotFoundResponse,
+    },
+)
+async def get_activation(
+    auth_subject: auth.LicenseKeysRead,
+    id: UUID4,
+    activation_id: UUID4,
+    session: AsyncSession = Depends(get_db_session),
+    authz: Authz = Depends(Authz.authz),
+) -> LicenseKeyActivation:
+    """Get a license key activation."""
+    lk = await license_key_service.get_by_id(session, id)
+    if not lk:
+        raise ResourceNotFound()
+
+    if not await authz.can(auth_subject.subject, AccessType.read, lk):
+        raise Unauthorized()
+
+    activation = await license_key_service.get_activation_or_raise(
+        session,
+        license_key=lk,
+        activation_id=activation_id,
+    )
+    return activation

@@ -197,3 +197,52 @@ class TestLicenseKeyEndpoints:
         assert response.status_code == 200
         data = response.json()
         assert data["pagination"]["total_count"] == count
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="organization"),
+    )
+    async def test_get_activation(
+        self,
+        session: AsyncSession,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        user: User,
+        user_organization: UserOrganization,
+        organization: Organization,
+        product: Product,
+    ) -> None:
+        benefit, granted = await TestLicenseKey.create_benefit_and_grant(
+            session,
+            save_fixture,
+            user=user,
+            organization=organization,
+            product=product,
+            properties=BenefitLicenseKeysCreateProperties(
+                prefix="testing",
+                expires=None,
+                limit_activations=2,
+                limit_usage=None,
+            ),
+        )
+        id = granted["license_key_id"]
+        lk = await license_key_service.get(session, id)
+        assert lk
+
+        activate = await client.post(
+            "/v1/users/license-keys/activate",
+            json={
+                "key": lk.key,
+                "label": "testing activation",
+            },
+        )
+        assert activate.status_code == 200
+        data = activate.json()
+        activation_id = data["id"]
+
+        response = await client.get(
+            f"v1/license-keys/{lk.id}/activations/{activation_id}",
+        )
+        data = response.json()
+        assert data["id"] == activation_id
+        assert data["license_key"]["id"] == str(lk.id)

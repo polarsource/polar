@@ -1,17 +1,13 @@
 'use client'
 
 import GetStartedButton from '@/components/Auth/GetStartedButton'
-import { Section } from '@/components/Landing/Section'
 import Link from 'next/link'
 import Button from 'polarkit/components/ui/atoms/button'
 
 export const Hero = () => {
   return (
-    <Section
-      className="flex w-full flex-col items-center gap-24 md:py-16"
-      wrapperClassName="relative isolate overflow-hidden"
-    >
-      <div className="relative z-20 flex w-full flex-col items-center gap-y-12 text-center xl:w-2/3">
+    <div className="flex w-full flex-col items-center gap-24 md:pb-16">
+      <div className="relative z-20 flex w-full flex-col items-center gap-y-12 text-center">
         <div className="z-20 flex flex-col items-center gap-y-8">
           <h1 className="text-balance text-4xl font-medium !leading-tight text-gray-950 md:text-7xl dark:text-white">
             The best monetization platform for developers
@@ -72,6 +68,6 @@ export const Hero = () => {
         playsInline
         muted
       />
-    </Section>
+    </div>
   )
 }

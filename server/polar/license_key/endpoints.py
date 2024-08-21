@@ -8,7 +8,6 @@ from polar.exceptions import ResourceNotFound, Unauthorized
 from polar.kit.db.postgres import AsyncSession
 from polar.models import LicenseKey
 from polar.openapi import APITag
-from polar.organization.service import organization as organization_service
 from polar.postgres import get_db_session
 from polar.routing import APIRouter
 
@@ -44,9 +43,8 @@ async def get(
     if not lk:
         raise ResourceNotFound()
 
-    organization = await organization_service.get(session, lk.benefit.organization_id)
-    if not organization:
-        raise ResourceNotFound()
+    if not await authz.can(auth_subject.subject, AccessType.read, lk):
+        raise Unauthorized()
 
     return lk
 
@@ -60,7 +58,7 @@ async def get(
     },
 )
 async def update(
-    auth_subject: auth.LicenseKeysRead,
+    auth_subject: auth.LicenseKeysWrite,
     id: UUID4,
     updates: LicenseKeyUpdate,
     session: AsyncSession = Depends(get_db_session),
@@ -71,11 +69,7 @@ async def update(
     if not lk:
         raise ResourceNotFound()
 
-    organization = await organization_service.get(session, lk.benefit.organization_id)
-    if not organization:
-        raise ResourceNotFound()
-
-    if not await authz.can(auth_subject.subject, AccessType.write, organization):
+    if not await authz.can(auth_subject.subject, AccessType.write, lk):
         raise Unauthorized()
 
     updated = await license_key_service.update(session, license_key=lk, updates=updates)

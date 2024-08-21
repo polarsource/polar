@@ -41,6 +41,9 @@ class Scope(StrEnum):
 
     external_organizations_read = "external_organizations:read"
 
+    license_keys_read = "license_keys:read"
+    license_keys_write = "license_keys:write"
+
     repositories_read = "repositories:read"
     repositories_write = "repositories:write"
 
@@ -52,8 +55,6 @@ class Scope(StrEnum):
     user_subscriptions_read = "user:subscriptions:read"
     user_subscriptions_write = "user:subscriptions:write"
     user_downloadables_read = "user:downloadables:read"
-    user_license_keys_read = "user:license_keys:read"
-    user_license_keys_write = "user:license_keys:write"
     user_advertisement_campaigns_read = "user:advertisement_campaigns:read"
     user_advertisement_campaigns_write = "user:advertisement_campaigns:write"
 
@@ -90,6 +91,8 @@ SCOPES_SUPPORTED_DISPLAY_NAMES: dict[Scope, str] = {
     Scope.orders_read: "Read orders made on your organizations",
     Scope.metrics_read: "Read metrics",
     Scope.webhooks_read: "Read webhooks",
+    Scope.license_keys_read: "Read license keys",
+    Scope.license_keys_write: "Modify license keys",
     Scope.webhooks_write: "Create or modify webhooks",
     Scope.articles_read: "Read posts",
     Scope.articles_write: "Create or modify posts",
@@ -98,8 +101,6 @@ SCOPES_SUPPORTED_DISPLAY_NAMES: dict[Scope, str] = {
     Scope.user_subscriptions_read: "Read your subscriptions",
     Scope.user_subscriptions_write: "Create or modify your subscriptions",
     Scope.user_downloadables_read: "Read your downloadable files",
-    Scope.user_license_keys_read: "Read your license keys",
-    Scope.user_license_keys_write: "Modify your license keys",
     Scope.user_advertisement_campaigns_read: "Read your advertisement campaigns",
     Scope.user_advertisement_campaigns_write: (
         "Create or modify your advertisement campaigns"

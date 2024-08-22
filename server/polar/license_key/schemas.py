@@ -159,5 +159,5 @@ class LicenseKeyCreate(LicenseKeyUpdate):
             status=status,
             limit_activations=limit_activations,
             limit_usage=limit_usage,
-            expires_at=expires_at
+            expires_at=expires_at,
         )

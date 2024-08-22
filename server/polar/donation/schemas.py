@@ -54,9 +54,9 @@ class Donation(IDSchema, TimestampedSchema):
     amount: int
     currency: str
     message: str | None
-    donor: DonationOrganization | DonationUser | None = None
+    donor: DonationOrganization | DonationUser | None
     email: str
-    issue: Issue | None = None
+    issue: Issue | None
 
 
 class DonationCreateStripePaymentIntent(Schema):
@@ -98,7 +98,7 @@ class DonationStripePaymentIntentMutationResponse(Schema):
     payment_intent_id: str
     amount: int
     currency: str
-    client_secret: str | None = None
+    client_secret: str | None
 
 
 class DonationCreateFromPaymentIntent(Schema):

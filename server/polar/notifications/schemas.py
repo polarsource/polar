@@ -6,7 +6,7 @@ from polar.notifications.notification import Notification
 
 class NotificationsList(Schema):
     notifications: list[Notification]
-    last_read_notification_id: UUID4 | None = None
+    last_read_notification_id: UUID4 | None
 
 
 class NotificationsMarkRead(Schema):

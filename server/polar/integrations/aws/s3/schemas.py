@@ -57,14 +57,14 @@ class S3File(Schema, validate_assignment=True):
     size: int
 
     # Provided by AWS S3
-    storage_version: str | None = None
-    checksum_etag: str | None = None
+    storage_version: str | None
+    checksum_etag: str | None
 
     # Provided by us
-    checksum_sha256_base64: str | None = None
-    checksum_sha256_hex: str | None = None
+    checksum_sha256_base64: str | None
+    checksum_sha256_hex: str | None
 
-    last_modified_at: datetime | None = None
+    last_modified_at: datetime | None
 
     @computed_field  # type: ignore[prop-decorator]
     @property
@@ -133,7 +133,7 @@ class S3FileUpload(S3File):
 class S3FileUploadCompletedPart(Schema):
     number: int
     checksum_etag: str
-    checksum_sha256_base64: str | None = None
+    checksum_sha256_base64: str | None
 
 
 class S3FileUploadCompleted(Schema):

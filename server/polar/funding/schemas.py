@@ -28,7 +28,7 @@ class PledgesTypeSummaries(Schema):
 
 class IssueFunding(Schema):
     issue: Issue
-    funding_goal: CurrencyAmount | None = None
+    funding_goal: CurrencyAmount | None
     total: CurrencyAmount
     pledges_summaries: PledgesTypeSummaries
 

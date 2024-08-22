@@ -33,10 +33,10 @@ class Entry(Schema):
     id: str | UUID
     attributes: IssueSchema
 
-    rewards: list[Reward] | None = None
-    pledges_summary: PledgesTypeSummaries | None = None
-    references: list[IssueReferenceRead] | None = None
-    pledges: list[Pledge] | None = None
+    rewards: list[Reward] | None
+    pledges_summary: PledgesTypeSummaries | None
+    references: list[IssueReferenceRead] | None
+    pledges: list[Pledge] | None
 
 
 class ListResponse(Schema):
@@ -46,7 +46,7 @@ class ListResponse(Schema):
 class PaginationResponse(Schema):
     total_count: int
     page: int
-    next_page: int | None = None
+    next_page: int | None
 
 
 class IssueListResponse(ListResponse):

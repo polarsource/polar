@@ -24,15 +24,15 @@ class ExternalOrganization(Schema):
     avatar_url: str
     is_personal: bool
 
-    bio: str | None = None
-    pretty_name: str | None = None
-    company: str | None = None
-    blog: str | None = None
-    location: str | None = None
-    email: str | None = None
-    twitter_username: str | None = None
+    bio: str | None
+    pretty_name: str | None
+    company: str | None
+    blog: str | None
+    location: str | None
+    email: str | None
+    twitter_username: str | None
 
-    organization_id: OrganizationID | None = None
+    organization_id: OrganizationID | None
 
 
 #

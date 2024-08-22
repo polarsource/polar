@@ -6,8 +6,8 @@ from polar.models.user_organization import UserOrganization as UserOrganizationM
 
 class OrganizationMember(Schema):
     name: str
-    github_username: str | None = None
-    avatar_url: str | None = None
+    github_username: str | None
+    avatar_url: str | None
 
     @classmethod
     def from_db(cls, o: UserOrganizationModel) -> Self:

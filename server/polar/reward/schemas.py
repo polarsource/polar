@@ -36,7 +36,7 @@ class Reward(Schema):
 
 class RewardsSummaryReceiver(Schema):
     name: str
-    avatar_url: str | None = None
+    avatar_url: str | None
 
 
 class RewardsSummary(Schema):

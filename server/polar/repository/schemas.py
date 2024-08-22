@@ -44,10 +44,10 @@ class Repository(Schema):
     platform: Platforms
     is_private: bool
     name: str = Field(examples=["MyOrg"])
-    description: str | None = None
-    stars: int | None = Field(default=None, examples=[1337])
-    license: str | None = None
-    homepage: str | None = None
+    description: str | None
+    stars: int | None = Field(examples=[1337])
+    license: str | None
+    homepage: str | None
 
     profile_settings: RepositoryProfileSettings | None = Field(
         description="Settings for the repository profile"

@@ -13,15 +13,15 @@ class OrderBase(IDSchema, TimestampedSchema):
     user_id: UUID4
     product_id: UUID4
     product_price_id: UUID4
-    subscription_id: UUID4 | None = None
+    subscription_id: UUID4 | None
 
 
 class OrderUser(Schema):
     id: UUID4
     email: str
     public_name: str
-    github_username: str | None = None
-    avatar_url: str | None = None
+    github_username: str | None
+    avatar_url: str | None
 
 
 class OrderProduct(ProductBase): ...
@@ -34,7 +34,7 @@ class Order(OrderBase):
     user: OrderUser
     product: OrderProduct
     product_price: ProductPrice
-    subscription: OrderSubscription | None = None
+    subscription: OrderSubscription | None
 
 
 class OrderInvoice(Schema):

@@ -58,7 +58,7 @@ class NotificationBase(Schema):
 
 
 class MaintainerPledgeCreatedNotificationPayload(NotificationPayloadBase):
-    pledger_name: str | None = None
+    pledger_name: str | None
     pledge_amount: str
     issue_url: str
     issue_title: str
@@ -66,8 +66,8 @@ class MaintainerPledgeCreatedNotificationPayload(NotificationPayloadBase):
     issue_repo_name: str
     issue_number: int
     maintainer_has_stripe_account: bool
-    pledge_id: UUID | None = None  # Added 2023-06-26
-    pledge_type: PledgeType | None = None  # Added 2023-10-17
+    pledge_id: UUID | None  # Added 2023-06-26
+    pledge_type: PledgeType | None  # Added 2023-10-17
 
     def subject(self) -> str:
         return "Received ${{pledge_amount}} in funding for {{issue_org_name}}/{{issue_repo_name}}#{{issue_number}}"  # noqa: E501
@@ -114,7 +114,7 @@ class MaintainerPledgeConfirmationPendingNotificationPayload(NotificationPayload
     issue_repo_name: str
     issue_number: int
     maintainer_has_stripe_account: bool
-    pledge_id: UUID | None = None  # Added 2023-06-26
+    pledge_id: UUID | None  # Added 2023-06-26
 
     def subject(self) -> str:
         return "Please confirm that {{issue_org_name}}/{{issue_repo_name}}#{{issue_number}} is completed"  # noqa: E501
@@ -189,7 +189,7 @@ class MaintainerPledgePendingNotificationPayload(NotificationPayloadBase):
     issue_repo_name: str
     issue_number: int
     maintainer_has_stripe_account: bool
-    pledge_id: UUID | None = None  # Added 2023-06-26
+    pledge_id: UUID | None  # Added 2023-06-26
 
     def subject(self) -> str:
         return "You have ${{pledge_amount}} in pending pledges for {{issue_org_name}}/{{issue_repo_name}}#{{issue_number}}!"  # noqa: E501
@@ -260,7 +260,7 @@ class MaintainerPledgePaidNotificationPayload(NotificationPayloadBase):
     issue_org_name: str
     issue_repo_name: str
     issue_number: int
-    pledge_id: UUID | None = None  # Added 2023-06-26
+    pledge_id: UUID | None  # Added 2023-06-26
 
     def subject(self) -> str:
         return "${{paid_out_amount}} transferred for {{issue_org_name}}/{{issue_repo_name}}#{{issue_number}}"  # noqa: E501
@@ -322,8 +322,8 @@ class PledgerPledgePendingNotificationPayload(NotificationPayloadBase):
     issue_org_name: str
     issue_repo_name: str
     pledge_date: str
-    pledge_id: UUID | None = None  # Added 2023-06-26
-    pledge_type: PledgeType | None = None  # Added 2023-11-27
+    pledge_id: UUID | None  # Added 2023-06-26
+    pledge_type: PledgeType | None  # Added 2023-11-27
 
     def subject(self) -> str:
         return "{{issue_org_name}}/{{issue_repo_name}}#{{issue_number}} is completed"

@@ -10,7 +10,7 @@ class UserAdvertisementCampaign(TimestampedSchema):
     views: int
     clicks: int
     image_url: HttpUrl
-    image_url_dark: HttpUrl | None = None
+    image_url_dark: HttpUrl | None
     text: str
     link_url: HttpUrl
 

@@ -10,27 +10,27 @@ from polar.product.schemas import Product, ProductPrice
 class SubscriptionUser(Schema):
     email: str
     public_name: str
-    github_username: str | None = None
-    avatar_url: str | None = None
+    github_username: str | None
+    avatar_url: str | None
 
 
 class SubscriptionBase(IDSchema, TimestampedSchema):
     status: SubscriptionStatus
     current_period_start: datetime
-    current_period_end: datetime | None = None
+    current_period_end: datetime | None
     cancel_at_period_end: bool
-    started_at: datetime | None = None
-    ended_at: datetime | None = None
+    started_at: datetime | None
+    ended_at: datetime | None
 
     user_id: UUID4
     product_id: UUID4
-    price_id: UUID4 | None = None
+    price_id: UUID4 | None
 
 
 class Subscription(SubscriptionBase):
     user: SubscriptionUser
     product: Product
-    price: ProductPrice | None = None
+    price: ProductPrice | None
 
 
 class SubscriptionCreateEmail(Schema):

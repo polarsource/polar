@@ -220,7 +220,7 @@ class TestUserCreate:
             type=BenefitType.custom,
             description="Benefit",
             is_tax_applicable=True,
-            properties=BenefitCustomProperties(),
+            properties=BenefitCustomProperties(note=None),
             organization_id=None,
         )
 
@@ -240,7 +240,7 @@ class TestUserCreate:
             type=BenefitType.custom,
             description="Benefit",
             is_tax_applicable=True,
-            properties=BenefitCustomProperties(),
+            properties=BenefitCustomProperties(note=None),
             organization_id=uuid.uuid4(),
         )
 
@@ -264,7 +264,7 @@ class TestUserCreate:
             type=BenefitType.custom,
             description="Benefit",
             is_tax_applicable=True,
-            properties=BenefitCustomProperties(),
+            properties=BenefitCustomProperties(note=None),
             organization_id=organization.id,
         )
 
@@ -290,7 +290,7 @@ class TestUserCreate:
             type=BenefitType.custom,
             description="Benefit",
             is_tax_applicable=True,
-            properties=BenefitCustomProperties(),
+            properties=BenefitCustomProperties(note=None),
             organization_id=organization.id,
         )
 
@@ -313,7 +313,7 @@ class TestUserCreate:
             type=BenefitType.custom,
             description="Benefit",
             is_tax_applicable=True,
-            properties=BenefitCustomProperties(),
+            properties=BenefitCustomProperties(note=None),
             organization_id=uuid.uuid4(),
         )
 
@@ -353,7 +353,7 @@ class TestUserCreate:
             type=BenefitType.custom,
             description="Benefit",
             is_tax_applicable=True,
-            properties=BenefitCustomProperties(),
+            properties=BenefitCustomProperties(note=None),
             organization_id=organization.id,
         )
 

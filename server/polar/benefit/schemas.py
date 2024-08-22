@@ -55,7 +55,7 @@ class BenefitCustomProperties(Schema):
     Properties for a benefit of type `custom`.
     """
 
-    note: Note = None
+    note: Note | None
 
 
 class BenefitCustomSubscriberProperties(Schema):
@@ -63,7 +63,7 @@ class BenefitCustomSubscriberProperties(Schema):
     Properties available to subscribers for a benefit of type `custom`.
     """
 
-    note: Note = None
+    note: Note | None
 
 
 ## Articles
@@ -198,7 +198,7 @@ class BenefitGitHubRepositoryProperties(Schema):
     """
 
     # Is set to None for all benefits created after 2024-03-15
-    repository_id: UUID4 | None = None
+    repository_id: UUID4 | None
     repository_owner: RepositoryOwner
     repository_name: RepositoryName
     permission: Permission
@@ -499,11 +499,10 @@ class BenefitGrant(TimestampedSchema):
         description="The properties of the grant."
     )
     subscription_id: UUID4 | None = Field(
-        default=None,
         description="The ID of the subscription that granted this benefit.",
     )
     order_id: UUID4 | None = Field(
-        default=None, description="The ID of the order that granted this benefit."
+        description="The ID of the order that granted this benefit."
     )
     user_id: UUID4 = Field(description="The ID of the user concerned by this grant.")
     benefit_id: UUID4 = Field(

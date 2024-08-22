@@ -100,6 +100,7 @@ class FileService(ResourceServiceReader[File]):
 
         return FileUpload(
             is_uploaded=instance.is_uploaded,
+            version=instance.version,
             service=create_schema.service,
             **upload.model_dump(),
         )

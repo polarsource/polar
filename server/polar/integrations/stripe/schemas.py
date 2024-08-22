@@ -10,8 +10,8 @@ class PaymentIntentSuccessWebhook(Schema):
     amount: int
     currency: str
     amount_received: int
-    customer: str | None = None
-    invoice: str | None = None  # A invoice ID (in_)
+    customer: str | None
+    invoice: str | None  # A invoice ID (in_)
     latest_charge: str  # A charge ID (ch_ or py_)
     status: str  # "succeeded"
     receipt_email: str | None = None

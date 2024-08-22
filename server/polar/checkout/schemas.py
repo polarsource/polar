@@ -34,7 +34,7 @@ class Checkout(Schema):
         None,
         description="URL the customer should be redirected to complete the purchase.",
     )
-    customer_email: str | None = None
-    customer_name: str | None = None
+    customer_email: str | None
+    customer_name: str | None
     product: Product
     product_price: ProductPrice

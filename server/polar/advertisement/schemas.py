@@ -9,7 +9,7 @@ from polar.kit.schemas import MergeJSONSchema, TimestampedSchema
 class AdvertisementCampaign(TimestampedSchema):
     id: UUID4
     image_url: HttpUrl
-    image_url_dark: HttpUrl | None = None
+    image_url_dark: HttpUrl | None
     text: str
     link_url: HttpUrl
 

@@ -27,8 +27,8 @@ class User(Schema):
 class UserBase(Schema):
     username: str = Field(..., max_length=50)
     email: EmailStr
-    avatar_url: str | None = None
-    account_id: UUID4 | None = None
+    avatar_url: str | None
+    account_id: UUID4 | None
 
 
 class OAuthAccountRead(TimestampedSchema):

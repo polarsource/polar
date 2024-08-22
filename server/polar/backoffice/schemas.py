@@ -9,20 +9,20 @@ from polar.reward.schemas import Reward
 
 
 class BackofficeReward(Reward):
-    transfer_id: str | None = None
+    transfer_id: str | None
     issue_reward_id: UUID
-    pledge_payment_id: str | None = None
-    pledger_email: str | None = None
+    pledge_payment_id: str | None
+    pledger_email: str | None
 
 
 class BackofficePledge(PledgeSchema):
-    payment_id: str | None = None
+    payment_id: str | None
 
-    dispute_reason: str | None = None
-    disputed_by_user_id: UUID | None = None
-    disputed_at: datetime | None = None
+    dispute_reason: str | None
+    disputed_by_user_id: UUID | None
+    disputed_at: datetime | None
 
-    pledger_email: str | None = None
+    pledger_email: str | None
 
     @classmethod
     def from_db(
@@ -43,6 +43,7 @@ class BackofficePledge(PledgeSchema):
         return cls(
             id=p.id,
             created_at=p.created_at,
+            modified_at=p.modified_at,
             amount=p.amount,
             currency=p.currency,
             state=p.state,

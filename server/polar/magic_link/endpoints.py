@@ -1,5 +1,5 @@
-from fastapi import Depends, Query, Request, status
-from fastapi.responses import RedirectResponse
+from fastapi import Depends, Form, Query, Request, Response, status
+from fastapi.responses import HTMLResponse, RedirectResponse
 
 from polar.auth.dependencies import WebUserOrAnonymous
 from polar.auth.models import is_user
@@ -43,12 +43,43 @@ async def request_magic_link(
     )
 
 
-@router.get("/authenticate", name="magic_link.authenticate")
-async def authenticate_magic_link(
+@router.get("/authenticate", name="magic_link.authenticate_get")
+async def authenticate_magic_link_get(
     request: Request,
     return_to: ReturnTo,
     auth_subject: WebUserOrAnonymous,
     token: str = Query(),
+) -> Response:
+    if is_user(auth_subject):
+        return RedirectResponse(return_to, 303)
+
+    return HTMLResponse(
+        f"""
+        <html>
+            <head>
+                <title>Redirecting to Polar...</title>
+                <script>
+                    document.addEventListener("DOMContentLoaded", function() {{
+                        document.getElementById("magic-link-form").submit();
+                    }});
+                </script>
+            </head>
+            <body>
+                <form id="magic-link-form" action="{request.url_for('magic_link.authenticate_post')}" method="post">
+                    <input type="hidden" name="token" value="{token}">
+                </form>
+            </body>
+        </html>
+        """
+    )
+
+
+@router.post("/authenticate", name="magic_link.authenticate_post")
+async def authenticate_magic_link_post(
+    request: Request,
+    return_to: ReturnTo,
+    auth_subject: WebUserOrAnonymous,
+    token: str = Form(),
     session: AsyncSession = Depends(get_db_session),
 ) -> RedirectResponse:
     if is_user(auth_subject):

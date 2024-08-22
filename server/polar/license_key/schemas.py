@@ -8,7 +8,10 @@ from polar.benefit.schemas import BenefitID
 from polar.exceptions import ResourceNotFound, Unauthorized
 from polar.kit.schemas import Schema
 from polar.kit.utils import generate_uuid, utc_now
-from polar.models.benefit import BenefitLicenseKeyExpiration
+from polar.models.benefit import (
+    BenefitLicenseKeyActivationProperties,
+    BenefitLicenseKeyExpirationProperties,
+)
 from polar.models.license_key import LicenseKeyStatus
 
 ###############################################################################
@@ -128,9 +131,9 @@ class LicenseKeyCreate(LicenseKeyUpdate):
         benefit_id: UUID4,
         prefix: str | None = None,
         status: LicenseKeyStatus = LicenseKeyStatus.granted,
-        limit_activations: int | None = None,
         limit_usage: int | None = None,
-        expires: BenefitLicenseKeyExpiration | None = None,
+        activations: BenefitLicenseKeyActivationProperties | None = None,
+        expires: BenefitLicenseKeyExpirationProperties | None = None,
     ) -> Self:
         expires_at = None
         if expires:
@@ -138,6 +141,10 @@ class LicenseKeyCreate(LicenseKeyUpdate):
             timeframe = expires.get("timeframe", None)
             if ttl and timeframe:
                 expires_at = cls.generate_expiration_dt(ttl, timeframe)
+
+        limit_activations = None
+        if activations:
+            limit_activations = activations.get("limit", None)
 
         key = cls.generate_key(prefix=prefix)
         return cls(

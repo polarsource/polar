@@ -254,29 +254,34 @@ class BenefitDownloadablesSubscriberProperties(Schema):
 ## License Keys
 
 
-class BenefitLicenseKeyExpiration(Schema):
+class BenefitLicenseKeyExpirationProperties(Schema):
     ttl: int = Field(gt=0)
     timeframe: Literal["year", "month", "day"]
 
 
+class BenefitLicenseKeyActivationProperties(Schema):
+    limit: int = Field(gt=0, le=50)
+    enable_user_admin: bool
+
+
 class BenefitLicenseKeysCreateProperties(Schema):
     prefix: str | None = None
-    expires: BenefitLicenseKeyExpiration | None = None
-    limit_activations: int | None = Field(gt=0, default=None)
+    expires: BenefitLicenseKeyExpirationProperties | None = None
+    activations: BenefitLicenseKeyActivationProperties | None = None
     limit_usage: int | None = Field(gt=0, default=None)
 
 
 class BenefitLicenseKeysProperties(Schema):
     prefix: str | None
-    expires: BenefitLicenseKeyExpiration | None
-    limit_activations: int | None
+    expires: BenefitLicenseKeyExpirationProperties | None
+    activations: BenefitLicenseKeyActivationProperties | None
     limit_usage: int | None
 
 
 class BenefitLicenseKeysSubscriberProperties(Schema):
     prefix: str | None
-    expires: BenefitLicenseKeyExpiration | None
-    limit_activations: int | None
+    expires: BenefitLicenseKeyExpirationProperties | None
+    activations: BenefitLicenseKeyActivationProperties | None
     limit_usage: int | None
 
 

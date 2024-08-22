@@ -8633,9 +8633,9 @@
                             },
                             "description": "Filter by the type of purchase the customer made.",
                             "default": [
-                                "donation",
                                 "paid_subscription",
                                 "order",
+                                "donation",
                                 "free_subscription"
                             ],
                             "title": "Customer Types"
@@ -21096,7 +21096,27 @@
                 "title": "BenefitGrantProperties",
                 "description": "Properties for a benefit grant."
             },
-            "BenefitLicenseKeyExpiration": {
+            "BenefitLicenseKeyActivationProperties": {
+                "properties": {
+                    "limit": {
+                        "type": "integer",
+                        "maximum": 50,
+                        "exclusiveMinimum": 0,
+                        "title": "Limit"
+                    },
+                    "enable_user_admin": {
+                        "type": "boolean",
+                        "title": "Enable User Admin"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "limit",
+                    "enable_user_admin"
+                ],
+                "title": "BenefitLicenseKeyActivationProperties"
+            },
+            "BenefitLicenseKeyExpirationProperties": {
                 "properties": {
                     "ttl": {
                         "type": "integer",
@@ -21118,7 +21138,7 @@
                     "ttl",
                     "timeframe"
                 ],
-                "title": "BenefitLicenseKeyExpiration"
+                "title": "BenefitLicenseKeyExpirationProperties"
             },
             "BenefitLicenseKeys-Input": {
                 "properties": {
@@ -21332,24 +21352,22 @@
                     "expires": {
                         "anyOf": [
                             {
-                                "$ref": "#/components/schemas/BenefitLicenseKeyExpiration"
+                                "$ref": "#/components/schemas/BenefitLicenseKeyExpirationProperties"
                             },
                             {
                                 "type": "null"
                             }
                         ]
                     },
-                    "limit_activations": {
+                    "activations": {
                         "anyOf": [
                             {
-                                "type": "integer",
-                                "exclusiveMinimum": 0
+                                "$ref": "#/components/schemas/BenefitLicenseKeyActivationProperties"
                             },
                             {
                                 "type": "null"
                             }
-                        ],
-                        "title": "Limit Activations"
+                        ]
                     },
                     "limit_usage": {
                         "anyOf": [
@@ -21383,23 +21401,22 @@
                     "expires": {
                         "anyOf": [
                             {
-                                "$ref": "#/components/schemas/BenefitLicenseKeyExpiration"
+                                "$ref": "#/components/schemas/BenefitLicenseKeyExpirationProperties"
                             },
                             {
                                 "type": "null"
                             }
                         ]
                     },
-                    "limit_activations": {
+                    "activations": {
                         "anyOf": [
                             {
-                                "type": "integer"
+                                "$ref": "#/components/schemas/BenefitLicenseKeyActivationProperties"
                             },
                             {
                                 "type": "null"
                             }
-                        ],
-                        "title": "Limit Activations"
+                        ]
                     },
                     "limit_usage": {
                         "anyOf": [
@@ -21417,7 +21434,7 @@
                 "required": [
                     "prefix",
                     "expires",
-                    "limit_activations",
+                    "activations",
                     "limit_usage"
                 ],
                 "title": "BenefitLicenseKeysProperties"
@@ -21520,23 +21537,22 @@
                     "expires": {
                         "anyOf": [
                             {
-                                "$ref": "#/components/schemas/BenefitLicenseKeyExpiration"
+                                "$ref": "#/components/schemas/BenefitLicenseKeyExpirationProperties"
                             },
                             {
                                 "type": "null"
                             }
                         ]
                     },
-                    "limit_activations": {
+                    "activations": {
                         "anyOf": [
                             {
-                                "type": "integer"
+                                "$ref": "#/components/schemas/BenefitLicenseKeyActivationProperties"
                             },
                             {
                                 "type": "null"
                             }
-                        ],
-                        "title": "Limit Activations"
+                        ]
                     },
                     "limit_usage": {
                         "anyOf": [
@@ -21554,7 +21570,7 @@
                 "required": [
                     "prefix",
                     "expires",
-                    "limit_activations",
+                    "activations",
                     "limit_usage"
                 ],
                 "title": "BenefitLicenseKeysSubscriberProperties"

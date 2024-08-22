@@ -3856,33 +3856,52 @@ export type BenefitIDFilter1 = Array<string> | string;
 /**
  * 
  * @export
- * @interface BenefitLicenseKeyExpiration
+ * @interface BenefitLicenseKeyActivationProperties
  */
-export interface BenefitLicenseKeyExpiration {
+export interface BenefitLicenseKeyActivationProperties {
     /**
      * 
      * @type {number}
-     * @memberof BenefitLicenseKeyExpiration
+     * @memberof BenefitLicenseKeyActivationProperties
+     */
+    limit: number;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof BenefitLicenseKeyActivationProperties
+     */
+    enable_user_admin: boolean;
+}
+/**
+ * 
+ * @export
+ * @interface BenefitLicenseKeyExpirationProperties
+ */
+export interface BenefitLicenseKeyExpirationProperties {
+    /**
+     * 
+     * @type {number}
+     * @memberof BenefitLicenseKeyExpirationProperties
      */
     ttl: number;
     /**
      * 
      * @type {string}
-     * @memberof BenefitLicenseKeyExpiration
+     * @memberof BenefitLicenseKeyExpirationProperties
      */
-    timeframe: BenefitLicenseKeyExpirationTimeframeEnum;
+    timeframe: BenefitLicenseKeyExpirationPropertiesTimeframeEnum;
 }
 
 
 /**
  * @export
  */
-export const BenefitLicenseKeyExpirationTimeframeEnum = {
+export const BenefitLicenseKeyExpirationPropertiesTimeframeEnum = {
     YEAR: 'year',
     MONTH: 'month',
     DAY: 'day'
 } as const;
-export type BenefitLicenseKeyExpirationTimeframeEnum = typeof BenefitLicenseKeyExpirationTimeframeEnum[keyof typeof BenefitLicenseKeyExpirationTimeframeEnum];
+export type BenefitLicenseKeyExpirationPropertiesTimeframeEnum = typeof BenefitLicenseKeyExpirationPropertiesTimeframeEnum[keyof typeof BenefitLicenseKeyExpirationPropertiesTimeframeEnum];
 
 /**
  * 
@@ -4010,16 +4029,16 @@ export interface BenefitLicenseKeysCreateProperties {
     prefix?: string | null;
     /**
      * 
-     * @type {BenefitLicenseKeyExpiration}
+     * @type {BenefitLicenseKeyExpirationProperties}
      * @memberof BenefitLicenseKeysCreateProperties
      */
-    expires?: BenefitLicenseKeyExpiration | null;
+    expires?: BenefitLicenseKeyExpirationProperties | null;
     /**
      * 
-     * @type {number}
+     * @type {BenefitLicenseKeyActivationProperties}
      * @memberof BenefitLicenseKeysCreateProperties
      */
-    limit_activations?: number | null;
+    activations?: BenefitLicenseKeyActivationProperties | null;
     /**
      * 
      * @type {number}
@@ -4041,16 +4060,16 @@ export interface BenefitLicenseKeysProperties {
     prefix: string | null;
     /**
      * 
-     * @type {BenefitLicenseKeyExpiration}
+     * @type {BenefitLicenseKeyExpirationProperties}
      * @memberof BenefitLicenseKeysProperties
      */
-    expires: BenefitLicenseKeyExpiration | null;
+    expires: BenefitLicenseKeyExpirationProperties | null;
     /**
      * 
-     * @type {number}
+     * @type {BenefitLicenseKeyActivationProperties}
      * @memberof BenefitLicenseKeysProperties
      */
-    limit_activations: number | null;
+    activations: BenefitLicenseKeyActivationProperties | null;
     /**
      * 
      * @type {number}
@@ -4149,16 +4168,16 @@ export interface BenefitLicenseKeysSubscriberProperties {
     prefix: string | null;
     /**
      * 
-     * @type {BenefitLicenseKeyExpiration}
+     * @type {BenefitLicenseKeyExpirationProperties}
      * @memberof BenefitLicenseKeysSubscriberProperties
      */
-    expires: BenefitLicenseKeyExpiration | null;
+    expires: BenefitLicenseKeyExpirationProperties | null;
     /**
      * 
-     * @type {number}
+     * @type {BenefitLicenseKeyActivationProperties}
      * @memberof BenefitLicenseKeysSubscriberProperties
      */
-    limit_activations: number | null;
+    activations: BenefitLicenseKeyActivationProperties | null;
     /**
      * 
      * @type {number}

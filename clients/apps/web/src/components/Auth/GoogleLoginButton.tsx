@@ -15,7 +15,7 @@ const GoogleLoginButton: React.FC<GoogleLoginButtonProps> = ({ returnTo }) => {
         fullWidth
       >
         <Google />
-        <div>Sign in with Google</div>
+        <div>Continue with Google</div>
       </Button>
     </a>
   )

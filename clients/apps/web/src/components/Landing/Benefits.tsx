@@ -4,7 +4,7 @@ import { FileDownloadOutlined } from '@mui/icons-material'
 import { Transition, motion } from 'framer-motion'
 import Link from 'next/link'
 import Button from 'polarkit/components/ui/atoms/button'
-import React, { useMemo, useState } from 'react'
+import React, { forwardRef, useCallback, useMemo, useState } from 'react'
 import GetStartedButton from '../Auth/GetStartedButton'
 import { DiscordIcon } from '../Benefit/utils'
 import GitHubIcon from '../Icons/GitHubIcon'
@@ -13,21 +13,55 @@ import { quadraticCurve } from './Hero/Hero.utils'
 import { MOCKED_SUBSCRIPTIONS } from './utils'
 
 export const Benefits = () => {
-  const [height, setHeight] = useState(0)
+  const [points, setPoints] = useState({
+    benefits: [
+      { x: 0, y: 0 },
+      { x: 0, y: 0 },
+      { x: 0, y: 0 },
+    ],
+    subscription: { x: 0, y: 0 },
+  })
 
-  const midPointY = useMemo(() => height / 2, [height])
+  const setPoint = useCallback(
+    (index?: number) => (el: HTMLDivElement | null) => {
+      if (el) {
+        const boundingBox = el.getBoundingClientRect()
+
+        if (typeof index === 'number') {
+          setPoints((prev) => {
+            const benefits = [...prev.benefits]
+            benefits.splice(index, 1, {
+              x: boundingBox.width + 8,
+              y: el.offsetTop + boundingBox.height / 2,
+            })
+
+            return {
+              ...prev,
+              benefits,
+            }
+          })
+        } else {
+          setPoints((prev) => ({
+            ...prev,
+            subscription: {
+              x: el.offsetLeft - 8,
+              y: el.offsetTop + boundingBox.height / 2,
+            },
+          }))
+        }
+      }
+    },
+    [],
+  )
+
+  const benefit1 = useMemo(() => setPoint(0), [setPoint])
+  const benefit2 = useMemo(() => setPoint(1), [setPoint])
+  const benefit3 = useMemo(() => setPoint(2), [setPoint])
+  const subscription = useMemo(() => setPoint(), [setPoint])
 
   return (
     <div className="flex flex-col gap-y-32">
-      <div
-        className="relative flex w-full flex-col gap-x-24 gap-y-16 md:flex-row"
-        ref={(el) => {
-          if (el) {
-            const boundingBox = el.getBoundingClientRect()
-            setHeight(boundingBox.height)
-          }
-        }}
-      >
+      <div className="flex w-full flex-col gap-x-24 gap-y-16 md:flex-row">
         <div className="flex h-full flex-col items-center gap-y-4 text-center md:items-start md:gap-y-8 md:text-left">
           <h2 className="text-3xl !leading-tight md:text-5xl">
             Powerful products with flexible benefits
@@ -44,38 +78,46 @@ export const Benefits = () => {
           </div>
         </div>
 
-        <div className="flex grid-cols-2 flex-col gap-x-4 gap-y-8 md:grid md:gap-x-8 lg:gap-x-16">
+        <div className="relative flex grid-cols-2 flex-col gap-x-4 gap-y-8 md:grid md:gap-x-8 lg:gap-x-16">
           <div className="hidden flex-col gap-y-6 md:flex">
             <Benefit
+              ref={benefit1}
               icon={<GitHubIcon />}
               title="Private Repository Access"
               description="Gatekeep GitHub repositories to paying customers"
             />
             <Benefit
+              ref={benefit2}
               icon={<DiscordIcon />}
               title="Discord Channel Access"
               description="Give customers exclusive access to Discord channels"
             />
             <Benefit
+              ref={benefit3}
               icon={<FileDownloadOutlined />}
               title="File Downloads"
               description="Any kind of file up to 10GB"
             />
           </div>
 
-          <SubscriptionTierCard subscriptionTier={MOCKED_SUBSCRIPTIONS[0]} />
+          <div className="flex h-full flex-col" ref={subscription}>
+            <SubscriptionTierCard
+              className="h-full"
+              subscriptionTier={MOCKED_SUBSCRIPTIONS[0]}
+            />
+          </div>
+          <motion.svg
+            className="dark:text-polar-700 pointer-events-none absolute inset-0 z-10 hidden h-full w-full text-gray-200 xl:block"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <Path start={points.benefits[0]} end={points.subscription} />
+            <Path
+              start={{ x: points.benefits[1].x, y: points.subscription.y }}
+              end={points.subscription}
+            />
+            <Path start={points.benefits[2]} end={points.subscription} />
+          </motion.svg>
         </div>
-        <motion.svg
-          className="dark:text-polar-700 pointer-events-none absolute inset-0 z-10 hidden h-full w-full text-gray-200 xl:block"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          <Path start={{ x: 809, y: 80 }} end={{ x: 874, y: midPointY }} />
-          <Path
-            start={{ x: 809, y: midPointY }}
-            end={{ x: 874, y: midPointY }}
-          />
-          <Path start={{ x: 809, y: 440 }} end={{ x: 874, y: midPointY }} />
-        </motion.svg>
       </div>
     </div>
   )
@@ -87,28 +129,35 @@ interface BenefitProps {
   description: string
 }
 
-const Benefit = ({ icon, title, description }: BenefitProps) => {
-  const iconSize = 20
+const Benefit = forwardRef<HTMLDivElement, BenefitProps>(
+  ({ icon, title, description }, ref) => {
+    const iconSize = 20
 
-  return (
-    <div className="dark:bg-polar-900 dark:border-polar-700 flex flex-col gap-y-4 rounded-3xl border border-gray-100 bg-white p-6">
-      <span className="text-2xl">
-        {React.cloneElement(icon, {
-          fontSize: 'inherit',
-          width: iconSize,
-          height: iconSize,
-          size: iconSize,
-        })}
-      </span>
-      <div className="flex flex-col gap-y-2">
-        <h3>{title}</h3>
-        <p className="dark:text-polar-500 text-sm text-gray-500">
-          {description}
-        </p>
+    return (
+      <div
+        ref={ref}
+        className="dark:bg-polar-900 dark:border-polar-700 flex flex-col gap-y-4 rounded-3xl border border-gray-100 bg-white p-6"
+      >
+        <span className="text-2xl">
+          {React.cloneElement(icon, {
+            fontSize: 'inherit',
+            width: iconSize,
+            height: iconSize,
+            size: iconSize,
+          })}
+        </span>
+        <div className="flex flex-col gap-y-2">
+          <h3>{title}</h3>
+          <p className="dark:text-polar-500 text-sm text-gray-500">
+            {description}
+          </p>
+        </div>
       </div>
-    </div>
-  )
-}
+    )
+  },
+)
+
+Benefit.displayName = 'Benefit'
 
 interface PathProps {
   start: { x: number; y: number }

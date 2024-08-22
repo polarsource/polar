@@ -68,7 +68,7 @@ module.exports = {
         '3xl': '0 0 50px rgba(0 0 0 / 0.02), 0 0 50px rgba(0 0 0 / 0.04)',
       },
       fontFamily: {
-        sans: ['var(--font-inter)', ...defaultTheme.fontFamily.sans],
+        sans: ['var(--font-geist)', ...defaultTheme.fontFamily.sans],
       },
       fontSize: {
         xxs: '0.65rem'

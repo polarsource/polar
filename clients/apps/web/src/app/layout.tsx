@@ -5,8 +5,8 @@ import { getServerSideAPI } from '@/utils/api/serverside'
 import { getAuthenticatedUser, getUserOrganizations } from '@/utils/user'
 import { Organization, UserRead } from '@polar-sh/sdk'
 import { SpeedInsights } from '@vercel/speed-insights/next'
+import { GeistSans } from 'geist/font/sans'
 import { PHASE_PRODUCTION_BUILD } from 'next/constants'
-import localFont from 'next/font/local'
 import { Metadata } from 'next/types'
 import { twMerge } from 'tailwind-merge'
 import {
@@ -15,12 +15,6 @@ import {
   PolarThemeProvider,
   PolarToploaderProvider,
 } from './providers'
-
-const inter = localFont({
-  src: '../assets/fonts/Inter-Variable.woff2',
-  display: 'swap',
-  variable: '--font-inter',
-})
 
 export const metadata: Metadata = {
   title: {
@@ -85,7 +79,7 @@ export default async function RootLayout({
       <body
         className={twMerge(
           `dark:bg-polar-950 bg-gray-75 h-full [font-feature-settings:'ss03','zero'] md:h-screen dark:text-white`,
-          inter.className,
+          GeistSans.className,
         )}
       >
         <UserContextProvider

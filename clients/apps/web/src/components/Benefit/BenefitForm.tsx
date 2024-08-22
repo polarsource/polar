@@ -119,9 +119,7 @@ export const BenefitForm = ({
       {type === 'downloadables' && (
         <DownloadablesBenefitForm organization={organization} update={update} />
       )}
-      {type === 'license_keys' && (
-        <LicenseKeysBenefitForm organization={organization} update={update} />
-      )}
+      {type === 'license_keys' && <LicenseKeysBenefitForm />}
     </>
   )
 }

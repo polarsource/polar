@@ -1,6 +1,6 @@
 'use client'
 
-import { BenefitCustomCreate, Organization } from '@polar-sh/sdk'
+import { BenefitCustomCreate } from '@polar-sh/sdk'
 import { Switch } from 'polarkit/components/ui/atoms'
 import Input from 'polarkit/components/ui/atoms/input'
 import {
@@ -20,9 +20,8 @@ import {
 import { useState } from 'react'
 import { useFormContext } from 'react-hook-form'
 
-const LicenseKeysForm = ({ organization }: { organization: Organization }) => {
-  const { control, watch, getValues, setValue } =
-    useFormContext<BenefitCustomCreate>()
+export const LicenseKeysBenefitForm = () => {
+  const { control, watch, setValue } = useFormContext<BenefitCustomCreate>()
 
   const expires = watch('properties.expires', undefined)
   const limitActivations = watch('properties.limit_activations', undefined)
@@ -204,24 +203,4 @@ const LicenseKeysForm = ({ organization }: { organization: Organization }) => {
       )}
     </>
   )
-}
-
-interface LicenseKeysBenefitFormProps {
-  organization: Organization
-  update?: boolean
-}
-
-const LicenseKeysEditForm = ({ organization }: LicenseKeysBenefitFormProps) => {
-  return <LicenseKeysForm organization={organization} />
-}
-
-export const LicenseKeysBenefitForm = ({
-  organization,
-  update = false,
-}: LicenseKeysBenefitFormProps) => {
-  if (!update) {
-    return <LicenseKeysForm organization={organization} />
-  }
-
-  return <LicenseKeysEditForm organization={organization} />
 }

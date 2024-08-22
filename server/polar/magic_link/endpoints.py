@@ -1,3 +1,5 @@
+import html
+
 from fastapi import Depends, Form, Query, Request, Response, status
 from fastapi.responses import HTMLResponse, RedirectResponse
 
@@ -66,7 +68,7 @@ async def authenticate_magic_link_get(
             </head>
             <body>
                 <form id="magic-link-form" action="{request.url_for('magic_link.authenticate_post')}" method="post">
-                    <input type="hidden" name="token" value="{token}">
+                    <input type="hidden" name="token" value="{html.escape(token)}">
                 </form>
             </body>
         </html>

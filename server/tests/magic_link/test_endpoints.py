@@ -45,46 +45,7 @@ async def test_request(client: AsyncClient, mocker: MockerFixture) -> None:
 @pytest.mark.asyncio
 @pytest.mark.auth
 @pytest.mark.http_auto_expunge
-async def test_authenticate_get_already_authenticated(
-    client: AsyncClient, user: User, mocker: MockerFixture
-) -> None:
-    magic_link_service_mock = mocker.patch.object(
-        magic_link_service, "authenticate", new=AsyncMock(return_value=user)
-    )
-
-    response = await client.get(
-        "/v1/magic_link/authenticate", params={"token": "TOKEN"}
-    )
-
-    assert response.status_code == 303
-    assert response.headers["Location"].startswith(f"{settings.FRONTEND_BASE_URL}/")
-
-    magic_link_service_mock.assert_not_called()
-
-
-@pytest.mark.asyncio
-@pytest.mark.http_auto_expunge
-async def test_authenticate_get(
-    client: AsyncClient, user: User, mocker: MockerFixture
-) -> None:
-    magic_link_service_mock = mocker.patch.object(
-        magic_link_service, "authenticate", new=AsyncMock(return_value=user)
-    )
-
-    response = await client.get(
-        "/v1/magic_link/authenticate", params={"token": "TOKEN"}
-    )
-
-    assert response.status_code == 200
-    assert response.headers["Content-Type"] == "text/html; charset=utf-8"
-
-    magic_link_service_mock.assert_not_called()
-
-
-@pytest.mark.asyncio
-@pytest.mark.auth
-@pytest.mark.http_auto_expunge
-async def test_authenticate_post_already_authenticated(
+async def test_authenticate_already_authenticated(
     client: AsyncClient, user: User, mocker: MockerFixture
 ) -> None:
     magic_link_service_mock = mocker.patch.object(
@@ -101,7 +62,7 @@ async def test_authenticate_post_already_authenticated(
 
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
-async def test_authenticate_post_invalid_token(
+async def test_authenticate_invalid_token(
     client: AsyncClient, mocker: MockerFixture
 ) -> None:
     magic_link_service_mock = mocker.patch.object(
@@ -121,7 +82,7 @@ async def test_authenticate_post_invalid_token(
 
 @pytest.mark.asyncio
 @pytest.mark.http_auto_expunge
-async def test_authenticate_post_valid_token(
+async def test_authenticate_valid_token(
     client: AsyncClient, user: User, mocker: MockerFixture
 ) -> None:
     magic_link_service_mock = mocker.patch.object(

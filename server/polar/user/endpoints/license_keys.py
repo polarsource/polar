@@ -12,13 +12,12 @@ from polar.license_key.schemas import (
     LicenseKeyDeactivate,
     LicenseKeyRead,
     LicenseKeyValidate,
-    LicenseKeyWithActivations,
     NotFoundResponse,
     UnauthorizedResponse,
     ValidatedLicenseKey,
 )
 from polar.license_key.service import license_key as license_key_service
-from polar.models import LicenseKeyActivation
+from polar.models import LicenseKey, LicenseKeyActivation
 from polar.openapi import APITag
 from polar.organization.schemas import OrganizationID
 from polar.postgres import get_db_session
@@ -37,7 +36,7 @@ ActivationNotPermitted = {
 
 @router.get(
     "/{id}",
-    response_model=LicenseKeyWithActivations,
+    response_model=LicenseKeyRead,
     responses={
         401: UnauthorizedResponse,
         404: NotFoundResponse,
@@ -47,7 +46,7 @@ async def get_license_key(
     auth_subject: auth.UserLicenseKeysRead,
     id: UUID4,
     session: AsyncSession = Depends(get_db_session),
-) -> LicenseKeyWithActivations:
+) -> LicenseKey:
     """Get a license key."""
     lk = await license_key_service.get_loaded(session, id)
     if not lk:
@@ -57,11 +56,7 @@ async def get_license_key(
     if user_id != lk.user_id:
         raise Unauthorized()
 
-    ret = LicenseKeyWithActivations.model_validate(lk)
-
-    # TODO: Add feature to show & manage this for user. Keep private until then.
-    ret.activations = []
-    return ret
+    return lk
 
 
 @router.get(

@@ -53,10 +53,7 @@ ProductName = Annotated[
 ]
 ProductDescription = Annotated[
     str | None,
-    Field(
-        default=None,
-        description="The description of the product.",
-    ),
+    Field(description="The description of the product."),
     EmptyStrToNoneValidator,
 ]
 
@@ -257,7 +254,7 @@ class ProductPriceRecurring(ProductPriceBase):
         description="The type of the price."
     )
     recurring_interval: ProductPriceRecurringInterval | None = Field(
-        None, description="The recurring interval of the price, if type is `recurring`."
+        description="The recurring interval of the price, if type is `recurring`."
     )
 
     def get_display_price(self) -> str:
@@ -285,9 +282,7 @@ ProductPrice = Annotated[
 class ProductBase(IDSchema, TimestampedSchema):
     id: UUID4 = Field(description="The ID of the product.")
     name: str = Field(description="The name of the product.")
-    description: str | None = Field(
-        default=None, description="The description of the product."
-    )
+    description: str | None = Field(description="The description of the product.")
     is_recurring: bool = Field(
         description="Whether the product is a subscription tier."
     )
@@ -298,8 +293,8 @@ class ProductBase(IDSchema, TimestampedSchema):
         description="The ID of the organization owning the product."
     )
 
-    type: SubscriptionTierType | None = Field(default=None, deprecated=True)
-    is_highlighted: bool | None = Field(default=None, deprecated=True)
+    type: SubscriptionTierType | None = Field(deprecated=True)
+    is_highlighted: bool | None = Field(deprecated=True)
 
 
 class Product(ProductBase):

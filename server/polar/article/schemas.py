@@ -21,7 +21,7 @@ ArticleID = Annotated[
 
 class BylineProfile(Schema):
     name: str
-    avatar_url: str | None = None
+    avatar_url: str | None
 
 
 class Article(Schema):
@@ -32,23 +32,23 @@ class Article(Schema):
     byline: BylineProfile
     visibility: ArticleVisibility
 
-    user_id: UUID4 | None = None
+    user_id: UUID4 | None
     organization_id: UUID4
 
     organization: Organization
 
-    published_at: datetime.datetime | None = None
-    paid_subscribers_only: bool | None = None
-    paid_subscribers_only_ends_at: datetime.datetime | None = None
+    published_at: datetime.datetime | None
+    paid_subscribers_only: bool | None
+    paid_subscribers_only_ends_at: datetime.datetime | None
     is_preview: bool
     is_pinned: bool
 
-    notify_subscribers: bool | None = None
-    notifications_sent_at: datetime.datetime | None = None
-    email_sent_to_count: int | None = None
+    notify_subscribers: bool | None
+    notifications_sent_at: datetime.datetime | None
+    email_sent_to_count: int | None
 
-    og_image_url: str | None = None
-    og_description: str | None = None
+    og_image_url: str | None
+    og_description: str | None
 
     @classmethod
     def cut_premium_content(

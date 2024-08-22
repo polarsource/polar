@@ -31,9 +31,9 @@ class IDSchema(Schema):
 
 
 class TimestampedSchema(Schema):
-    created_at: datetime = Field(..., description="Creation timestamp of the object.")
+    created_at: datetime = Field(description="Creation timestamp of the object.")
     modified_at: datetime | None = Field(
-        None, description="Last modification timestamp of the object."
+        description="Last modification timestamp of the object."
     )
 
 

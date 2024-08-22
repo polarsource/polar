@@ -71,7 +71,7 @@ FileCreate = Annotated[
 
 
 class FileReadBase(S3File):
-    version: str | None = None
+    version: str | None
     service: FileServiceTypes
     is_uploaded: bool
     created_at: datetime
@@ -112,7 +112,7 @@ FileReadAdapter: TypeAdapter[FileRead] = TypeAdapter[FileRead](FileRead)
 
 
 class FileUpload(S3FileUpload):
-    version: str | None = None
+    version: str | None
     is_uploaded: bool = False
     service: FileServiceTypes
 

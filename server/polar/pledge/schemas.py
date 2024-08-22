@@ -17,8 +17,8 @@ from polar.models.pledge import PledgeState, PledgeType
 # Public API
 class Pledger(Schema):
     name: str
-    github_username: str | None = None
-    avatar_url: str | None = None
+    github_username: str | None
+    avatar_url: str | None
 
     @classmethod
     def from_pledge(cls, p: PledgeModel) -> Self | None:
@@ -145,7 +145,7 @@ class Pledge(IDSchema, TimestampedSchema):
 
 class SummaryPledge(Schema):
     type: PledgeType = Field(description="Type of pledge")
-    pledger: Pledger | None = None
+    pledger: Pledger | None
 
     @classmethod
     def from_db(cls, o: PledgeModel) -> SummaryPledge:
@@ -240,4 +240,4 @@ class PledgeStripePaymentIntentMutationResponse(Schema):
     currency: str
     fee: int
     amount_including_fee: int
-    client_secret: str | None = None
+    client_secret: str | None

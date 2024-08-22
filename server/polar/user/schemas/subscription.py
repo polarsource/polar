@@ -11,15 +11,15 @@ class UserSubscriptionBase(TimestampedSchema):
     id: UUID4
     status: SubscriptionStatus
     current_period_start: datetime
-    current_period_end: datetime | None = None
+    current_period_end: datetime | None
     cancel_at_period_end: bool
-    started_at: datetime | None = None
-    ended_at: datetime | None = None
+    started_at: datetime | None
+    ended_at: datetime | None
 
     user_id: UUID4
-    organization_id: UUID4 | None = None
+    organization_id: UUID4 | None
     product_id: UUID4
-    price_id: UUID4 | None = None
+    price_id: UUID4 | None
 
 
 class UserSubscriptionProduct(Product): ...
@@ -27,7 +27,7 @@ class UserSubscriptionProduct(Product): ...
 
 class UserSubscription(UserSubscriptionBase):
     product: UserSubscriptionProduct
-    price: ProductPrice | None = None
+    price: ProductPrice | None
 
 
 class UserFreeSubscriptionCreate(Schema):

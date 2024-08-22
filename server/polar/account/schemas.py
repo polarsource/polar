@@ -39,8 +39,8 @@ class Account(Schema):
     id: UUID
     account_type: AccountType
     status: AccountModel.Status
-    stripe_id: str | None = None
-    open_collective_slug: str | None = None
+    stripe_id: str | None
+    open_collective_slug: str | None
     is_details_submitted: bool
     is_charges_enabled: bool
     is_payouts_enabled: bool

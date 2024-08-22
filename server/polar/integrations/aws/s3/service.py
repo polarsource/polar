@@ -57,6 +57,11 @@ class S3Service:
             path=path,
             mime_type=data.mime_type,
             size=data.size,
+            storage_version=None,
+            checksum_etag=None,
+            checksum_sha256_base64=None,
+            checksum_sha256_hex=None,
+            last_modified_at=None,
         )
 
         if data.checksum_sha256_base64:

@@ -51,12 +51,12 @@ class TransactionOrganization(TimestampedSchema):
     id: UUID4
     name: str
     slug: str
-    avatar_url: str | None = None
+    avatar_url: str | None
 
 
 class TransactionDonation(TimestampedSchema):
     id: UUID4
-    to_organization: TransactionOrganization | None = None
+    to_organization: TransactionOrganization | None
 
 
 class TransactionIssueReward(TimestampedSchema):
@@ -68,9 +68,9 @@ class TransactionIssueReward(TimestampedSchema):
 class TransactionProduct(TimestampedSchema):
     id: UUID4
     name: str
-    organization_id: UUID4 | None = None
-    organization: TransactionOrganization | None = None
-    type: SubscriptionTierType | None = Field(default=None, deprecated=True)
+    organization_id: UUID4 | None
+    organization: TransactionOrganization | None
+    type: SubscriptionTierType | None = Field(deprecated=True)
 
 
 TransactionProductPrice = ProductPrice
@@ -80,35 +80,35 @@ class TransactionOrder(TimestampedSchema):
     id: UUID4
     product: TransactionProduct
     product_price: TransactionProductPrice
-    subscription_id: UUID4 | None = None
+    subscription_id: UUID4 | None
 
 
 class TransactionEmbedded(TimestampedSchema):
     id: UUID4
     type: TransactionType
-    processor: PaymentProcessor | None = None
+    processor: PaymentProcessor | None
 
     currency: str
     amount: int
     account_currency: str
     account_amount: int
 
-    platform_fee_type: PlatformFeeType | None = None
+    platform_fee_type: PlatformFeeType | None
 
-    pledge_id: UUID4 | None = None
-    issue_reward_id: UUID4 | None = None
-    subscription_id: UUID4 | None = None
-    product_price_id: UUID4 | None = None
+    pledge_id: UUID4 | None
+    issue_reward_id: UUID4 | None
+    order_id: UUID4 | None
+    donation_id: UUID4 | None
 
-    payout_transaction_id: UUID4 | None = None
-    incurred_by_transaction_id: UUID4 | None = None
+    payout_transaction_id: UUID4 | None
+    incurred_by_transaction_id: UUID4 | None
 
 
 class Transaction(TransactionEmbedded):
-    pledge: TransactionPledge | None = None
-    issue_reward: TransactionIssueReward | None = None
-    order: TransactionOrder | None = None
-    donation: TransactionDonation | None = None
+    pledge: TransactionPledge | None
+    issue_reward: TransactionIssueReward | None
+    order: TransactionOrder | None
+    donation: TransactionDonation | None
 
     account_incurred_transactions: list[TransactionEmbedded]
 

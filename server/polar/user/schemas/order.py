@@ -14,7 +14,7 @@ class UserOrderBase(TimestampedSchema):
     user_id: UUID4
     product_id: UUID4
     product_price_id: UUID4
-    subscription_id: UUID4 | None = None
+    subscription_id: UUID4 | None
 
 
 class UserOrderProduct(Product): ...
@@ -26,7 +26,7 @@ class UserOrderSubscription(SubscriptionBase): ...
 class UserOrder(UserOrderBase):
     product: UserOrderProduct
     product_price: ProductPrice
-    subscription: UserOrderSubscription | None = None
+    subscription: UserOrderSubscription | None
 
 
 class UserOrderInvoice(Schema):

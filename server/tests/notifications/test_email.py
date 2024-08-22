@@ -58,6 +58,7 @@ async def test_MaintainerPledgeCreatedNotification_no_stripe(
         issue_repo_name="testrepo",
         maintainer_has_stripe_account=False,
         pledge_type=PledgeType.pay_directly,
+        pledge_id=None,
     )
 
     await check_diff(n.render())
@@ -78,6 +79,7 @@ async def test_MaintainerPledgeCreatedNotification_with_stripe(
         issue_repo_name="testrepo",
         maintainer_has_stripe_account=True,
         pledge_type=PledgeType.pay_directly,
+        pledge_id=None,
     )
 
     await check_diff(n.render())
@@ -98,6 +100,7 @@ async def test_MaintainerPledgeCreatedNotification_anonymous(
         issue_repo_name="testrepo",
         maintainer_has_stripe_account=True,
         pledge_type=PledgeType.pay_directly,
+        pledge_id=None,
     )
 
     await check_diff(n.render())
@@ -118,6 +121,7 @@ async def test_MaintainerPledgeCreatedNotification_pay_on_completion(
         issue_repo_name="testrepo",
         maintainer_has_stripe_account=True,
         pledge_type=PledgeType.pay_on_completion,
+        pledge_id=None,
     )
 
     await check_diff(n.render())
@@ -137,6 +141,7 @@ async def test_MaintainerPledgeConfirmationPendingdNotification_no_stripe(
         issue_org_name="testorg",
         issue_repo_name="testrepo",
         maintainer_has_stripe_account=False,
+        pledge_id=None,
     )
 
     await check_diff(n.render())
@@ -156,6 +161,7 @@ async def test_MaintainerPledgeConfirmationPendingdNotification_with_stripe(
         issue_org_name="testorg",
         issue_repo_name="testrepo",
         maintainer_has_stripe_account=True,
+        pledge_id=None,
     )
 
     await check_diff(n.render())

@@ -24,7 +24,7 @@ class PersonalAccessToken(TimestampedSchema):
     scopes: list[Scope]
     expires_at: datetime
     comment: str
-    last_used_at: datetime | None = None
+    last_used_at: datetime | None
 
 
 class PersonalAccessTokenCreateResponse(Schema):

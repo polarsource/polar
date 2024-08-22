@@ -20,7 +20,7 @@ class TrafficStatisticsPeriod(Schema):
     start_date: date
     end_date: date
     views: int
-    article_id: UUID | None = None
+    article_id: UUID | None
 
 
 class TrafficStatistics(Schema):

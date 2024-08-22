@@ -19,8 +19,8 @@ import type {
   LicenseKeyActivate,
   LicenseKeyActivationRead,
   LicenseKeyDeactivate,
+  LicenseKeyRead,
   LicenseKeyValidate,
-  LicenseKeyWithActivations,
   ListResourceLicenseKeyRead,
   NotPermitted,
   ResourceNotFound,
@@ -211,7 +211,7 @@ export class UsersApi extends runtime.BaseAPI {
      * Get a license key.
      * Get License Key
      */
-    async getLicenseKeyRaw(requestParameters: UsersApiGetLicenseKeyRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<LicenseKeyWithActivations>> {
+    async getLicenseKeyRaw(requestParameters: UsersApiGetLicenseKeyRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<LicenseKeyRead>> {
         if (requestParameters['id'] == null) {
             throw new runtime.RequiredError(
                 'id',
@@ -245,7 +245,7 @@ export class UsersApi extends runtime.BaseAPI {
      * Get a license key.
      * Get License Key
      */
-    async getLicenseKey(requestParameters: UsersApiGetLicenseKeyRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<LicenseKeyWithActivations> {
+    async getLicenseKey(requestParameters: UsersApiGetLicenseKeyRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<LicenseKeyRead> {
         const response = await this.getLicenseKeyRaw(requestParameters, initOverrides);
         return await response.value();
     }

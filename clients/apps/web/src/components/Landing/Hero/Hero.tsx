@@ -9,7 +9,7 @@ export const Hero = () => {
     <div className="flex w-full flex-col items-center gap-24 md:pb-16">
       <div className="relative z-20 flex w-full flex-col items-center gap-y-12 text-center">
         <div className="z-20 flex flex-col items-center gap-y-8">
-          <h1 className="text-balance text-4xl font-medium !leading-tight text-gray-950 md:text-7xl dark:text-white">
+          <h1 className="text-balance text-4xl !leading-tight text-gray-950 md:text-7xl dark:text-white">
             The best monetization platform for developers
           </h1>
           <div className="flex flex-col items-center gap-y-4 xl:w-2/3">

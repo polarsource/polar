@@ -273,7 +273,11 @@ class BenefitLicenseKeysProperties(Schema):
     limit_usage: int | None
 
 
-class BenefitLicenseKeysSubscriberProperties(Schema): ...
+class BenefitLicenseKeysSubscriberProperties(Schema):
+    prefix: str | None
+    expires: BenefitLicenseKeyExpiration | None
+    limit_activations: int | None
+    limit_usage: int | None
 
 
 # BenefitCreate
@@ -603,9 +607,19 @@ class BenefitDownloadablesSubscriber(BenefitBase):
     properties: BenefitDownloadablesSubscriberProperties
 
 
+class BenefitGrantLicenseKeysProperties(BenefitGrantProperties):
+    license_key_id: UUID4
+    display_key: str
+
+
+class BenefitGrantLicenseKeys(BenefitGrant):
+    properties: BenefitGrantLicenseKeysProperties
+
+
 class BenefitLicenseKeysSubscriber(BenefitBase):
     type: Literal[BenefitType.license_keys]
     properties: BenefitLicenseKeysSubscriberProperties
+    grants: list[BenefitGrantLicenseKeys]
 
 
 # Properties that are available to subscribers only

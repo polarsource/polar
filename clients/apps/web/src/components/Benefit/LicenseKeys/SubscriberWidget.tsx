@@ -1,6 +1,31 @@
-import { BenefitLicenseKeysSubscriber, LicenseKeyRead } from '@polar-sh/sdk'
+import {
+  BenefitLicenseKeysSubscriber,
+  LicenseKeyRead,
+  UserOrder,
+  UserSubscription,
+} from '@polar-sh/sdk'
 
-import { useLicenseKeys } from '@/hooks/queries'
+import { useLicenseKey } from '@/hooks/queries'
+
+export const getLicenseKeyGrant = (
+  benefit: BenefitLicenseKeysSubscriber,
+  order?: UserOrder,
+  subscription?: UserSubscription,
+) => {
+  let licenseKeyGrant = undefined
+  if (benefit.type === 'license_keys') {
+    if (order) {
+      licenseKeyGrant = benefit.grants
+        .filter((grant) => grant.order_id === order.id)
+        .pop()
+    } else if (subscription) {
+      licenseKeyGrant = benefit.grants
+        .filter((grant) => grant.subscription_id === subscription.id)
+        .pop()
+    }
+  }
+  return licenseKeyGrant
+}
 
 const LicenseKey = ({ licenseKey }: { licenseKey: LicenseKeyRead }) => {
   return (
@@ -10,14 +35,23 @@ const LicenseKey = ({ licenseKey }: { licenseKey: LicenseKeyRead }) => {
   )
 }
 
-const LicenseKeysSubscriberWidget = ({
+export const LicenseKeysSubscriberWidget = ({
   benefit,
+  order,
+  subscription,
 }: {
   benefit: BenefitLicenseKeysSubscriber
+  order?: UserOrder
+  subscription?: UserSubscription
 }) => {
-  const licenseKeyQuery = useLicenseKeys(benefit.organization_id, benefit.id)
+  const licenseKeyGrant = getLicenseKeyGrant(benefit, order, subscription)
+  if (!licenseKeyGrant) {
+    return <></>
+  }
 
-  const licenseKeys = licenseKeyQuery.data?.items
+  const licenseKeyId = licenseKeyGrant.properties.license_key_id
+  const licenseKeyQuery = useLicenseKey(licenseKeyId)
+  const licenseKey = licenseKeyQuery.data
 
   if (licenseKeyQuery.isLoading) {
     // TODO: Style me
@@ -26,15 +60,7 @@ const LicenseKeysSubscriberWidget = ({
 
   return (
     <div className="flex w-full flex-col">
-      <ul className="flex w-full flex-col gap-y-4">
-        {licenseKeys?.map((licenseKey) => (
-          <li key={licenseKey.id} className="flex w-full flex-col">
-            <LicenseKey licenseKey={licenseKey} />
-          </li>
-        ))}
-      </ul>
+      <LicenseKey licenseKey={licenseKey} />
     </div>
   )
 }
-
-export default LicenseKeysSubscriberWidget

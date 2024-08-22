@@ -1,22 +1,31 @@
 import { useDiscordAccount, useGitHubAccount } from '@/hooks'
 import { getGitHubAuthorizeURL, getUserDiscordAuthorizeURL } from '@/utils/auth'
 import { AutoAwesome } from '@mui/icons-material'
-import { UserBenefit } from '@polar-sh/sdk'
+import { UserBenefit, UserOrder, UserSubscription } from '@polar-sh/sdk'
 import { usePathname } from 'next/navigation'
 import Button from 'polarkit/components/ui/atoms/button'
 import { twMerge } from 'tailwind-merge'
+import { getLicenseKeyGrant } from './LicenseKeys/SubscriberWidget'
 import { useBenefitActions } from './useBenefitAction'
 import { benefitsDisplayNames, resolveBenefitIcon } from './utils'
 
 interface BenefitRowProps {
   benefit: UserBenefit
+  order?: UserOrder
+  subscription?: UserSubscription
 }
 
-export const BenefitRow = ({ benefit }: BenefitRowProps) => {
+export const BenefitRow = ({
+  benefit,
+  order,
+  subscription,
+}: BenefitRowProps) => {
   const benefitActions = useBenefitActions(benefit)
   const discordAccount = useDiscordAccount()
   const gitHubAccount = useGitHubAccount()
   const pathname = usePathname()
+
+  const licenseKeyGrant = getLicenseKeyGrant(benefit, order, subscription)
 
   return (
     <div className={twMerge('flex w-full flex-row justify-between gap-x-8')}>
@@ -59,6 +68,7 @@ export const BenefitRow = ({ benefit }: BenefitRowProps) => {
           </a>
         </Button>
       )}
+      {licenseKeyGrant && <p>{licenseKeyGrant.properties.display_key}</p>}
       {benefitActions.length > 0 && (
         <div className="flex flex-row items-center gap-x-4">
           {benefitActions.map((action) => (

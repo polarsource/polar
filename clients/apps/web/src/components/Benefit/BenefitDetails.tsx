@@ -6,16 +6,12 @@ import {
 } from '@/components/Benefit/utils'
 import GitHubIcon from '@/components/Icons/GitHubIcon'
 import { useOrganization } from '@/hooks/queries'
-import { UserBenefit } from '@polar-sh/sdk'
+import { UserBenefit, UserOrder, UserSubscription } from '@polar-sh/sdk'
 import Link from 'next/link'
 import Button from 'polarkit/components/ui/atoms/button'
 import DownloadablesSubscriberWidget from './Downloadables/SubscriberWidget'
-import LicenseKeysSubscriberWidget from './LicenseKeys/SubscriberWidget'
+import { LicenseKeysSubscriberWidget } from './LicenseKeys/SubscriberWidget'
 import ConfigureAdCampaigns from './ads/ConfigureAdCampaigns'
-
-interface BenefitDetailsProps {
-  benefit: UserBenefit
-}
 
 const GitHubRepoWidget = ({ benefit }: BenefitDetailsProps) => {
   if (benefit.type !== 'github_repository') {
@@ -38,7 +34,17 @@ const GitHubRepoWidget = ({ benefit }: BenefitDetailsProps) => {
   )
 }
 
-const BenefitDetails = ({ benefit }: BenefitDetailsProps) => {
+interface BenefitDetailsProps {
+  benefit: UserBenefit
+  order?: UserOrder
+  subscription?: UserSubscription
+}
+
+const BenefitDetails = ({
+  benefit,
+  order,
+  subscription,
+}: BenefitDetailsProps) => {
   const { data: org } = useOrganization(benefit.organization_id)
 
   if (!org) {
@@ -80,9 +86,11 @@ const BenefitDetails = ({ benefit }: BenefitDetailsProps) => {
       ) : null}
 
       {benefit.type === 'license_keys' ? (
-        <>
-          <LicenseKeysSubscriberWidget benefit={benefit} />
-        </>
+        <LicenseKeysSubscriberWidget
+          benefit={benefit}
+          order={order}
+          subscription={subscription}
+        />
       ) : null}
     </div>
   )

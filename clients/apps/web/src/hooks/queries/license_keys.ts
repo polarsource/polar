@@ -13,3 +13,13 @@ export const useLicenseKeys = (organizationId: string, benefitId: string) =>
       }),
     retry: defaultRetry,
   })
+
+export const useLicenseKey = (licenseKeyId: string) =>
+  useQuery({
+    queryKey: ['user', 'license_key', licenseKeyId],
+    queryFn: () =>
+      api.users.getLicenseKey({
+        id: licenseKeyId,
+      }),
+    retry: defaultRetry,
+  })

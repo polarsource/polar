@@ -8,7 +8,6 @@ from sqlalchemy import (
     ForeignKey,
     Integer,
     String,
-    UniqueConstraint,
     Uuid,
 )
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
@@ -31,7 +30,6 @@ class LicenseKeyStatus(StrEnum):
 
 class LicenseKey(RecordModel):
     __tablename__ = "license_keys"
-    __table_args__ = (UniqueConstraint("user_id", "benefit_id"),)
 
     organization_id: Mapped[UUID] = mapped_column(
         Uuid,

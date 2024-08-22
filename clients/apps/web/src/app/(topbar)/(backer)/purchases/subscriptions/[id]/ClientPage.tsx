@@ -108,7 +108,7 @@ const ClientPage = ({ subscription }: { subscription: UserSubscription }) => {
                     selected={benefit.id === selectedBenefit?.id}
                     onSelect={() => setSelectedBenefit(benefit)}
                   >
-                    <BenefitRow benefit={benefit} />
+                    <BenefitRow benefit={benefit} subscription={subscription} />
                   </ListItem>
                 ))}
               </List>
@@ -246,7 +246,12 @@ const ClientPage = ({ subscription }: { subscription: UserSubscription }) => {
         hide={() => setSelectedBenefit(null)}
         modalContent={
           <div className="px-8 py-10">
-            {selectedBenefit && <BenefitDetails benefit={selectedBenefit} />}
+            {selectedBenefit && (
+              <BenefitDetails
+                benefit={selectedBenefit}
+                subscription={subscription}
+              />
+            )}
           </div>
         }
       />

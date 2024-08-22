@@ -11,7 +11,7 @@ from polar.kit.services import ResourceService
 from polar.kit.utils import utc_now
 from polar.models import Benefit, LicenseKey, LicenseKeyActivation, User
 from polar.models.benefit import BenefitLicenseKeys
-from polar.postgres import AsyncSession, sql
+from polar.postgres import AsyncSession
 
 from .schemas import (
     LicenseKeyActivate,
@@ -74,6 +74,27 @@ class LicenseKeyService(
         query = self._get_select_base().where(LicenseKey.id == id)
         result = await session.execute(query)
         return result.scalar_one_or_none()
+
+    async def get_by_grant_or_raise(
+        self,
+        session: AsyncSession,
+        *,
+        id: UUID,
+        organization_id: UUID,
+        user_id: UUID,
+        benefit_id: UUID,
+    ) -> LicenseKey:
+        query = self._get_select_base().where(
+            LicenseKey.id == id,
+            LicenseKey.organization_id == organization_id,
+            LicenseKey.user_id == user_id,
+            LicenseKey.benefit_id == benefit_id,
+        )
+        result = await session.execute(query)
+        key = result.scalar_one_or_none()
+        if not key:
+            raise ResourceNotFound()
+        return key
 
     async def get_activation_or_raise(
         self, session: AsyncSession, *, license_key: LicenseKey, activation_id: UUID
@@ -235,7 +256,12 @@ class LicenseKeyService(
         return True
 
     async def user_grant(
-        self, session: AsyncSession, *, user: User, benefit: BenefitLicenseKeys
+        self,
+        session: AsyncSession,
+        *,
+        user: User,
+        benefit: BenefitLicenseKeys,
+        license_key_id: UUID | None = None,
     ) -> LicenseKey:
         props = benefit.properties
         create_schema = LicenseKeyCreate.build(
@@ -247,50 +273,82 @@ class LicenseKeyService(
             limit_usage=props.get("limit_usage", None),
             expires=props.get("expires", None),
         )
+        if license_key_id:
+            return await self.user_update_grant(
+                session,
+                create_schema=create_schema,
+                license_key_id=license_key_id,
+            )
 
-        records = await self.upsert_many(
+        return await self.user_create_grant(
             session,
-            create_schemas=[create_schema],
-            constraints=[
-                LicenseKey.user_id,
-                LicenseKey.benefit_id,
-            ],
-            mutable_keys={
-                "limit_activations",
-                "limit_usage",
-                "expires_at",
-            },
-            autocommit=False,
+            create_schema=create_schema,
         )
+
+    async def user_update_grant(
+        self,
+        session: AsyncSession,
+        *,
+        license_key_id: UUID,
+        create_schema: LicenseKeyCreate,
+    ) -> LicenseKey:
+        key = await self.get_by_grant_or_raise(
+            session,
+            id=license_key_id,
+            organization_id=create_schema.organization_id,
+            user_id=create_schema.user_id,
+            benefit_id=create_schema.benefit_id,
+        )
+
+        update_attrs = [
+            "status",
+            "expires_at",
+            "limit_activations",
+            "limit_usage",
+        ]
+        for attr in update_attrs:
+            current = getattr(key, attr)
+            updated = getattr(create_schema, attr)
+            if current != updated:
+                setattr(key, attr, updated)
+
+        session.add(key)
         await session.flush()
-        instance = records[0]
-        assert instance.id is not None
-        return instance
+        assert key.id is not None
+        return key
+
+    async def user_create_grant(
+        self,
+        session: AsyncSession,
+        *,
+        create_schema: LicenseKeyCreate,
+    ) -> LicenseKey:
+        key = LicenseKey(**create_schema.model_dump())
+        session.add(key)
+        await session.flush()
+        assert key.id is not None
+        return key
 
     async def user_revoke(
         self,
         session: AsyncSession,
         user: User,
         benefit: BenefitLicenseKeys,
-    ) -> list[LicenseKey]:
-        query = sql.select(LicenseKey).filter_by(user_id=user.id, benefit_id=benefit.id)
-        res = await session.execute(query)
-        keys = res.scalars().all()
-        if not keys:
-            return []
-
-        ret = []
-        for key in keys:
-            key.mark_revoked()
-            session.add(key)
-            ret.append(key)
-
+        license_key_id: UUID,
+    ) -> LicenseKey:
+        key = await self.get_by_grant_or_raise(
+            session,
+            id=license_key_id,
+            organization_id=benefit.organization_id,
+            user_id=user.id,
+            benefit_id=benefit.id,
+        )
+        key.mark_revoked()
+        session.add(key)
         await session.flush()
-        return ret
+        return key
 
-    def _get_select_base(
-        self,
-    ) -> Select[tuple[LicenseKey]]:
+    def _get_select_base(self) -> Select[tuple[LicenseKey]]:
         return select(LicenseKey).where(LicenseKey.deleted_at.is_(None))
 
 

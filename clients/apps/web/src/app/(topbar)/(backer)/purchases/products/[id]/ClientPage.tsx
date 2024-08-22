@@ -81,7 +81,7 @@ const ClientPage = ({ order }: { order: UserOrder }) => {
                     selected={benefit.id === selectedBenefit?.id}
                     onSelect={() => setSelectedBenefit(benefit)}
                   >
-                    <BenefitRow benefit={benefit} />
+                    <BenefitRow benefit={benefit} order={order} />
                   </ListItem>
                 ))}
               </List>
@@ -136,7 +136,9 @@ const ClientPage = ({ order }: { order: UserOrder }) => {
         hide={() => setSelectedBenefit(null)}
         modalContent={
           <div className="px-8 py-10">
-            {selectedBenefit && <BenefitDetails benefit={selectedBenefit} />}
+            {selectedBenefit && (
+              <BenefitDetails benefit={selectedBenefit} order={order} />
+            )}
           </div>
         }
       />

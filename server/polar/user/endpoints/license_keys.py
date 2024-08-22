@@ -1,7 +1,8 @@
 from fastapi import Depends, Query
+from pydantic import UUID4
 
 from polar.benefit.schemas import BenefitID
-from polar.exceptions import NotPermitted
+from polar.exceptions import NotPermitted, ResourceNotFound, Unauthorized
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.license_key.schemas import (
@@ -11,6 +12,7 @@ from polar.license_key.schemas import (
     LicenseKeyDeactivate,
     LicenseKeyRead,
     LicenseKeyValidate,
+    LicenseKeyWithActivations,
     NotFoundResponse,
     UnauthorizedResponse,
     ValidatedLicenseKey,
@@ -31,6 +33,35 @@ ActivationNotPermitted = {
     "description": "License key activation not required or permitted (limit reached).",
     "model": NotPermitted.schema(),
 }
+
+
+@router.get(
+    "/{id}",
+    response_model=LicenseKeyWithActivations,
+    responses={
+        401: UnauthorizedResponse,
+        404: NotFoundResponse,
+    },
+)
+async def get_license_key(
+    auth_subject: auth.UserLicenseKeysRead,
+    id: UUID4,
+    session: AsyncSession = Depends(get_db_session),
+) -> LicenseKeyWithActivations:
+    """Get a license key."""
+    lk = await license_key_service.get_loaded(session, id)
+    if not lk:
+        raise ResourceNotFound()
+
+    user_id = auth_subject.subject.id
+    if user_id != lk.user_id:
+        raise Unauthorized()
+
+    ret = LicenseKeyWithActivations.model_validate(lk)
+
+    # TODO: Add feature to show & manage this for user. Keep private until then.
+    ret.activations = []
+    return ret
 
 
 @router.get(

@@ -3742,6 +3742,104 @@ export interface BenefitGrantAdsProperties {
     advertisement_campaign_id?: string | null;
 }
 /**
+ * 
+ * @export
+ * @interface BenefitGrantLicenseKeys
+ */
+export interface BenefitGrantLicenseKeys {
+    /**
+     * Creation timestamp of the object.
+     * @type {string}
+     * @memberof BenefitGrantLicenseKeys
+     */
+    created_at: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitGrantLicenseKeys
+     */
+    modified_at: string | null;
+    /**
+     * The ID of the grant.
+     * @type {string}
+     * @memberof BenefitGrantLicenseKeys
+     */
+    id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitGrantLicenseKeys
+     */
+    granted_at?: string | null;
+    /**
+     * Whether the benefit is granted.
+     * @type {boolean}
+     * @memberof BenefitGrantLicenseKeys
+     */
+    is_granted: boolean;
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitGrantLicenseKeys
+     */
+    revoked_at?: string | null;
+    /**
+     * Whether the benefit is revoked.
+     * @type {boolean}
+     * @memberof BenefitGrantLicenseKeys
+     */
+    is_revoked: boolean;
+    /**
+     * 
+     * @type {BenefitGrantLicenseKeysProperties}
+     * @memberof BenefitGrantLicenseKeys
+     */
+    properties: BenefitGrantLicenseKeysProperties;
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitGrantLicenseKeys
+     */
+    subscription_id: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitGrantLicenseKeys
+     */
+    order_id: string | null;
+    /**
+     * The ID of the user concerned by this grant.
+     * @type {string}
+     * @memberof BenefitGrantLicenseKeys
+     */
+    user_id: string;
+    /**
+     * The ID of the benefit concerned by this grant.
+     * @type {string}
+     * @memberof BenefitGrantLicenseKeys
+     */
+    benefit_id: string;
+}
+/**
+ * 
+ * @export
+ * @interface BenefitGrantLicenseKeysProperties
+ */
+export interface BenefitGrantLicenseKeysProperties {
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitGrantLicenseKeysProperties
+     */
+    license_key_id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitGrantLicenseKeysProperties
+     */
+    display_key: string;
+}
+/**
  * @type BenefitIDFilter
  * Filter by given benefit ID. 
  * @export
@@ -4016,10 +4114,16 @@ export interface BenefitLicenseKeysSubscriber {
     organization_id: string;
     /**
      * 
-     * @type {object}
+     * @type {BenefitLicenseKeysSubscriberProperties}
      * @memberof BenefitLicenseKeysSubscriber
      */
-    properties: object;
+    properties: BenefitLicenseKeysSubscriberProperties;
+    /**
+     * 
+     * @type {Array<BenefitGrantLicenseKeys>}
+     * @memberof BenefitLicenseKeysSubscriber
+     */
+    grants: Array<BenefitGrantLicenseKeys>;
 }
 
 
@@ -4031,6 +4135,37 @@ export const BenefitLicenseKeysSubscriberTypeEnum = {
 } as const;
 export type BenefitLicenseKeysSubscriberTypeEnum = typeof BenefitLicenseKeysSubscriberTypeEnum[keyof typeof BenefitLicenseKeysSubscriberTypeEnum];
 
+/**
+ * 
+ * @export
+ * @interface BenefitLicenseKeysSubscriberProperties
+ */
+export interface BenefitLicenseKeysSubscriberProperties {
+    /**
+     * 
+     * @type {string}
+     * @memberof BenefitLicenseKeysSubscriberProperties
+     */
+    prefix: string | null;
+    /**
+     * 
+     * @type {BenefitLicenseKeyExpiration}
+     * @memberof BenefitLicenseKeysSubscriberProperties
+     */
+    expires: BenefitLicenseKeyExpiration | null;
+    /**
+     * 
+     * @type {number}
+     * @memberof BenefitLicenseKeysSubscriberProperties
+     */
+    limit_activations: number | null;
+    /**
+     * 
+     * @type {number}
+     * @memberof BenefitLicenseKeysSubscriberProperties
+     */
+    limit_usage: number | null;
+}
 /**
  * 
  * @export
@@ -6293,6 +6428,12 @@ export interface LicenseKeyRead {
     key: string;
     /**
      * 
+     * @type {string}
+     * @memberof LicenseKeyRead
+     */
+    display_key: string;
+    /**
+     * 
      * @type {LicenseKeyStatus}
      * @memberof LicenseKeyRead
      */
@@ -6453,6 +6594,12 @@ export interface LicenseKeyWithActivations {
      * @memberof LicenseKeyWithActivations
      */
     key: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof LicenseKeyWithActivations
+     */
+    display_key: string;
     /**
      * 
      * @type {LicenseKeyStatus}
@@ -14945,6 +15092,12 @@ export interface ValidatedLicenseKey {
      * @memberof ValidatedLicenseKey
      */
     key: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof ValidatedLicenseKey
+     */
+    display_key: string;
     /**
      * 
      * @type {LicenseKeyStatus}

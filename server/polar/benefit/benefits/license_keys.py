@@ -29,12 +29,21 @@ class BenefitLicenseKeysService(
         update: bool = False,
         attempt: int = 1,
     ) -> dict[str, Any]:
+        current_lk_id = grant_properties.get("license_key_id", None)
+        if update and not current_lk_id:
+            # TODO: Fix me
+            raise RuntimeError()
+
         key = await license_key_service.user_grant(
             self.session,
             user=user,
             benefit=benefit,
+            license_key_id=current_lk_id,
         )
-        return dict(license_key_id=str(key.id))
+        return dict(
+            license_key_id=str(key.id),
+            display_key=key.display_key,
+        )
 
     async def revoke(
         self,
@@ -44,10 +53,12 @@ class BenefitLicenseKeysService(
         *,
         attempt: int = 1,
     ) -> dict[str, Any]:
+        license_key_id = grant_properties["license_key_id"]
         revoked = await license_key_service.user_revoke(
             self.session,
             user=user,
             benefit=benefit,
+            license_key_id=license_key_id,
         )
         return {}
 

@@ -2210,6 +2210,87 @@
                 "x-speakeasy-name-override": "retrieve"
             }
         },
+        "/v1/users/license-keys/{id}": {
+            "get": {
+                "tags": [
+                    "users",
+                    "documented",
+                    "featured"
+                ],
+                "summary": "Get License Key",
+                "description": "Get a license key.",
+                "operationId": "users:get_license_key",
+                "security": [
+                    {
+                        "oidc": [
+                            "user:license_keys:read"
+                        ]
+                    },
+                    {
+                        "pat": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid4",
+                            "title": "Id"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/LicenseKeyWithActivations"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Not authorized to manage license key.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Unauthorized"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "License key not found.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ResourceNotFound"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                },
+                "x-polar-allowed-subjects": [
+                    "User"
+                ],
+                "x-speakeasy-name-override": "get_license_key",
+                "x-speakeasy-group": "users"
+            }
+        },
         "/v1/users/license-keys": {
             "get": {
                 "tags": [
@@ -20870,6 +20951,145 @@
                 "type": "object",
                 "title": "BenefitGrantAdsProperties"
             },
+            "BenefitGrantLicenseKeys": {
+                "properties": {
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "title": "Created At",
+                        "description": "Creation timestamp of the object."
+                    },
+                    "modified_at": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "date-time"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Modified At",
+                        "description": "Last modification timestamp of the object."
+                    },
+                    "id": {
+                        "type": "string",
+                        "format": "uuid4",
+                        "title": "Id",
+                        "description": "The ID of the grant."
+                    },
+                    "granted_at": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "date-time"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Granted At",
+                        "description": "The timestamp when the benefit was granted. If `None`, the benefit is not granted."
+                    },
+                    "is_granted": {
+                        "type": "boolean",
+                        "title": "Is Granted",
+                        "description": "Whether the benefit is granted."
+                    },
+                    "revoked_at": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "date-time"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Revoked At",
+                        "description": "The timestamp when the benefit was revoked. If `None`, the benefit is not revoked."
+                    },
+                    "is_revoked": {
+                        "type": "boolean",
+                        "title": "Is Revoked",
+                        "description": "Whether the benefit is revoked."
+                    },
+                    "properties": {
+                        "$ref": "#/components/schemas/BenefitGrantLicenseKeysProperties"
+                    },
+                    "subscription_id": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "uuid4"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Subscription Id",
+                        "description": "The ID of the subscription that granted this benefit."
+                    },
+                    "order_id": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "uuid4"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Order Id",
+                        "description": "The ID of the order that granted this benefit."
+                    },
+                    "user_id": {
+                        "type": "string",
+                        "format": "uuid4",
+                        "title": "User Id",
+                        "description": "The ID of the user concerned by this grant."
+                    },
+                    "benefit_id": {
+                        "type": "string",
+                        "format": "uuid4",
+                        "title": "Benefit Id",
+                        "description": "The ID of the benefit concerned by this grant."
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "created_at",
+                    "modified_at",
+                    "id",
+                    "is_granted",
+                    "is_revoked",
+                    "properties",
+                    "subscription_id",
+                    "order_id",
+                    "user_id",
+                    "benefit_id"
+                ],
+                "title": "BenefitGrantLicenseKeys"
+            },
+            "BenefitGrantLicenseKeysProperties": {
+                "properties": {
+                    "license_key_id": {
+                        "type": "string",
+                        "format": "uuid4",
+                        "title": "License Key Id"
+                    },
+                    "display_key": {
+                        "type": "string",
+                        "title": "Display Key"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "license_key_id",
+                    "display_key"
+                ],
+                "title": "BenefitGrantLicenseKeysProperties"
+            },
             "BenefitGrantProperties": {
                 "properties": {},
                 "type": "object",
@@ -21260,6 +21480,13 @@
                     },
                     "properties": {
                         "$ref": "#/components/schemas/BenefitLicenseKeysSubscriberProperties"
+                    },
+                    "grants": {
+                        "items": {
+                            "$ref": "#/components/schemas/BenefitGrantLicenseKeys"
+                        },
+                        "type": "array",
+                        "title": "Grants"
                     }
                 },
                 "type": "object",
@@ -21272,13 +21499,64 @@
                     "selectable",
                     "deletable",
                     "organization_id",
-                    "properties"
+                    "properties",
+                    "grants"
                 ],
                 "title": "BenefitLicenseKeysSubscriber"
             },
             "BenefitLicenseKeysSubscriberProperties": {
-                "properties": {},
+                "properties": {
+                    "prefix": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Prefix"
+                    },
+                    "expires": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/components/schemas/BenefitLicenseKeyExpiration"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ]
+                    },
+                    "limit_activations": {
+                        "anyOf": [
+                            {
+                                "type": "integer"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Limit Activations"
+                    },
+                    "limit_usage": {
+                        "anyOf": [
+                            {
+                                "type": "integer"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Limit Usage"
+                    }
+                },
                 "type": "object",
+                "required": [
+                    "prefix",
+                    "expires",
+                    "limit_activations",
+                    "limit_usage"
+                ],
                 "title": "BenefitLicenseKeysSubscriberProperties"
             },
             "BenefitLicenseKeysUpdate": {
@@ -24149,6 +24427,10 @@
                         "type": "string",
                         "title": "Key"
                     },
+                    "display_key": {
+                        "type": "string",
+                        "title": "Display Key"
+                    },
                     "status": {
                         "$ref": "#/components/schemas/LicenseKeyStatus"
                     },
@@ -24213,6 +24495,7 @@
                     "user_id",
                     "benefit_id",
                     "key",
+                    "display_key",
                     "status",
                     "usage",
                     "validations"
@@ -24378,6 +24661,10 @@
                         "type": "string",
                         "title": "Key"
                     },
+                    "display_key": {
+                        "type": "string",
+                        "title": "Display Key"
+                    },
                     "status": {
                         "$ref": "#/components/schemas/LicenseKeyStatus"
                     },
@@ -24449,6 +24736,7 @@
                     "user_id",
                     "benefit_id",
                     "key",
+                    "display_key",
                     "status",
                     "usage",
                     "validations",
@@ -35370,6 +35658,10 @@
                         "type": "string",
                         "title": "Key"
                     },
+                    "display_key": {
+                        "type": "string",
+                        "title": "Display Key"
+                    },
                     "status": {
                         "$ref": "#/components/schemas/LicenseKeyStatus"
                     },
@@ -35444,6 +35736,7 @@
                     "user_id",
                     "benefit_id",
                     "key",
+                    "display_key",
                     "status",
                     "usage",
                     "validations"

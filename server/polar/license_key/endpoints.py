@@ -1,7 +1,5 @@
 from fastapi import Depends
-from pydantic import (
-    UUID4,
-)
+from pydantic import UUID4
 
 from polar.authz.service import AccessType, Authz
 from polar.exceptions import ResourceNotFound, Unauthorized

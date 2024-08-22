@@ -46,7 +46,7 @@ export const UpsellFooter = ({ wide }: { wide?: boolean }) => {
             </div>
             <Link
               className="text-blue-500 hover:text-blue-400 dark:text-blue-400 dark:hover:text-blue-300"
-              href="/signup/maintainer"
+              href="/signup"
             >
               Become a Creator
               <ArrowForward className="ml-2" fontSize="inherit" />

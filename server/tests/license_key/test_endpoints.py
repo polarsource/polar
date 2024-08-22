@@ -3,6 +3,7 @@ from dateutil.relativedelta import relativedelta
 from httpx import AsyncClient
 
 from polar.benefit.schemas import (
+    BenefitLicenseKeyActivationProperties,
     BenefitLicenseKeysCreateProperties,
 )
 from polar.kit.pagination import PaginationParams
@@ -48,8 +49,6 @@ class TestLicenseKeyEndpoints:
             product=product,
             properties=BenefitLicenseKeysCreateProperties(
                 prefix="testing",
-                expires=None,
-                limit_activations=None,
             ),
         )
         id = granted["license_key_id"]
@@ -81,8 +80,6 @@ class TestLicenseKeyEndpoints:
             product=product,
             properties=BenefitLicenseKeysCreateProperties(
                 prefix="testing",
-                expires=None,
-                limit_activations=None,
             ),
         )
         id = granted["license_key_id"]
@@ -117,9 +114,6 @@ class TestLicenseKeyEndpoints:
             product=product,
             properties=BenefitLicenseKeysCreateProperties(
                 prefix="testing",
-                expires=None,
-                limit_activations=None,
-                limit_usage=None,
             ),
         )
         id = granted["license_key_id"]
@@ -166,9 +160,6 @@ class TestLicenseKeyEndpoints:
             product=product,
             properties=BenefitLicenseKeysCreateProperties(
                 prefix="testing",
-                expires=None,
-                limit_activations=None,
-                limit_usage=None,
             ),
         )
         benefit, granted = await TestLicenseKey.create_benefit_and_grant(
@@ -179,9 +170,6 @@ class TestLicenseKeyEndpoints:
             product=product,
             properties=BenefitLicenseKeysCreateProperties(
                 prefix="testing",
-                expires=None,
-                limit_activations=None,
-                limit_usage=None,
             ),
         )
         keys, count = await license_key_service.get_list(
@@ -220,9 +208,9 @@ class TestLicenseKeyEndpoints:
             product=product,
             properties=BenefitLicenseKeysCreateProperties(
                 prefix="testing",
-                expires=None,
-                limit_activations=2,
-                limit_usage=None,
+                activations=BenefitLicenseKeyActivationProperties(
+                    limit=2, enable_user_admin=True
+                ),
             ),
         )
         id = granted["license_key_id"]

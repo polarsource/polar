@@ -1,7 +1,8 @@
 'use client'
 
 import {
-  BenefitLicenseKeyExpiration,
+  BenefitLicenseKeyActivationProperties,
+  BenefitLicenseKeyExpirationProperties,
   BenefitLicenseKeysCreate,
 } from '@polar-sh/sdk'
 import { Switch } from 'polarkit/components/ui/atoms'
@@ -13,6 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from 'polarkit/components/ui/atoms/select'
+import { Checkbox } from 'polarkit/components/ui/checkbox'
 import {
   FormControl,
   FormField,
@@ -28,19 +30,21 @@ export const LicenseKeysBenefitForm = () => {
     useFormContext<BenefitLicenseKeysCreate>()
 
   const expires = watch('properties.expires', undefined)
-  const limitActivations = watch('properties.limit_activations', undefined)
-  const limitUsage = watch('properties.limit_usage', undefined)
-
-  const [showLimitActivations, setShowLimitActivations] = useState(
-    limitActivations !== undefined,
-  )
-  const [showLimitUsage, setShowLimitUsage] = useState(limitUsage !== undefined)
-
   const showExpirationFields = expires !== undefined
-  const defaultExpiration: BenefitLicenseKeyExpiration = {
+  const defaultExpiration: BenefitLicenseKeyExpirationProperties = {
     ttl: 1,
     timeframe: 'year',
   }
+
+  const activations = watch('properties.activations', undefined)
+  const showActivationFields = activations !== undefined
+  const defaultActivations: BenefitLicenseKeyActivationProperties = {
+    limit: 5,
+    enable_user_admin: true,
+  }
+
+  const limitUsage = watch('properties.limit_usage', undefined)
+  const [showLimitUsage, setShowLimitUsage] = useState(limitUsage !== undefined)
 
   return (
     <>
@@ -75,8 +79,8 @@ export const LicenseKeysBenefitForm = () => {
                 <Switch
                   id="license-key-ttl"
                   checked={showExpirationFields}
-                  onCheckedChange={(expires) => {
-                    const value = expires ? defaultExpiration : undefined
+                  onCheckedChange={(enabled) => {
+                    const value = enabled ? defaultExpiration : undefined
                     setValue('properties.expires', value)
                   }}
                 />
@@ -134,25 +138,22 @@ export const LicenseKeysBenefitForm = () => {
 
       <div className="flex flex-row items-center">
         <div className="grow">
-          <label htmlFor="license-key-limit-activations">
-            Limit Activations
-          </label>
+          <label htmlFor="license-key-activations">Limit Activations</label>
         </div>
         <Switch
-          id="license-key-limit-activations"
-          checked={showLimitActivations}
-          onCheckedChange={(show) => {
-            const value = show ? 1 : undefined
-            setValue('properties.limit_activations', value)
-            setShowLimitActivations(show)
+          id="license-key-activations"
+          checked={showActivationFields}
+          onCheckedChange={(enabled) => {
+            const value = enabled ? defaultActivations : undefined
+            setValue('properties.activations', value)
           }}
         />
       </div>
-      {showLimitActivations && (
+      {activations && (
         <>
           <FormField
             control={control}
-            name="properties.limit_activations"
+            name="properties.activations.limit"
             render={({ field }) => {
               return (
                 <FormItem>
@@ -164,6 +165,38 @@ export const LicenseKeysBenefitForm = () => {
               )
             }}
           />
+
+          <div className="flex flex-row items-center space-x-4">
+            <FormField
+              control={control}
+              name="properties.activations.enable_user_admin"
+              render={({ field }) => {
+                return (
+                  <FormItem>
+                    <Checkbox
+                      id="license-key-activations-user-admin"
+                      checked={field.value}
+                      onCheckedChange={(checked) => {
+                        // String | boolean type for some reason
+                        const value = checked ? true : false
+                        setValue(
+                          'properties.activations.enable_user_admin',
+                          value,
+                        )
+                      }}
+                    />
+                    <FormMessage />
+                  </FormItem>
+                )
+              }}
+            />
+            <label
+              htmlFor="license-key-activations-user-admin"
+              className="-mt-2 text-sm"
+            >
+              Enable user to deactivate instances via Polar
+            </label>
+          </div>
         </>
       )}
 

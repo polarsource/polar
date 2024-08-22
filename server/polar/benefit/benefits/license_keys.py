@@ -71,9 +71,7 @@ class BenefitLicenseKeysService(
         pre = previous_properties
 
         diff_expires = c.get("expires", None) != pre.get("expires", None)
-        diff_activations = c.get("limit_activations", None) != pre.get(
-            "limit_activations", None
-        )
+        diff_activations = c.get("activations", None) != pre.get("activations", None)
         diff_usage = c.get("limit_usage", None) != pre.get("limit_usage", None)
         return diff_expires or diff_activations or diff_usage
 

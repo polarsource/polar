@@ -269,8 +269,8 @@ class LicenseKeyService(
             user_id=user.id,
             benefit_id=benefit.id,
             prefix=props.get("prefix", None),
-            limit_activations=props.get("limit_activations", None),
             limit_usage=props.get("limit_usage", None),
+            activations=props.get("activations", None),
             expires=props.get("expires", None),
         )
         if license_key_id:

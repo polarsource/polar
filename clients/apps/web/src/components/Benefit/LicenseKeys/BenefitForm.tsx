@@ -34,14 +34,13 @@ export const LicenseKeysBenefitForm = () => {
   const [showLimitActivations, setShowLimitActivations] = useState(
     limitActivations !== undefined,
   )
+  const [showLimitUsage, setShowLimitUsage] = useState(limitUsage !== undefined)
 
   const showExpirationFields = expires !== undefined
   const defaultExpiration: BenefitLicenseKeyExpiration = {
     ttl: 1,
     timeframe: 'year',
   }
-
-  const [showLimitUsage, setShowLimitUsage] = useState(limitUsage !== undefined)
 
   return (
     <>
@@ -88,16 +87,13 @@ export const LicenseKeysBenefitForm = () => {
         />
       </div>
       {expires && (
-        <>
+        <div className="flex flex-row space-x-4">
           <FormField
             control={control}
             name="properties.expires.ttl"
             render={({ field }) => {
               return (
                 <FormItem>
-                  <div className="flex flex-row items-center justify-between">
-                    <FormLabel>TTL</FormLabel>
-                  </div>
                   <FormControl>
                     <Input {...field} />
                   </FormControl>
@@ -113,9 +109,6 @@ export const LicenseKeysBenefitForm = () => {
             render={({ field }) => {
               return (
                 <FormItem>
-                  <div className="flex flex-row items-center justify-between">
-                    <FormLabel>Type</FormLabel>
-                  </div>
                   <FormControl>
                     <Select
                       onValueChange={field.onChange}
@@ -136,48 +129,13 @@ export const LicenseKeysBenefitForm = () => {
               )
             }}
           />
-        </>
-      )}
-      <div className="flex flex-row items-center">
-        <div className="grow">
-          <label htmlFor="license-key-limit-usage">Usage limit</label>
         </div>
-        <Switch
-          id="license-key-limit-usage"
-          checked={showLimitActivations}
-          onCheckedChange={(show) => {
-            const value = show ? 1 : undefined
-            setValue('properties.limit_usage', value)
-            setShowLimitUsage(show)
-          }}
-        />
-      </div>
-      {showLimitUsage && (
-        <>
-          <FormField
-            control={control}
-            name="properties.limit_usage"
-            render={({ field }) => {
-              return (
-                <FormItem>
-                  <div className="flex flex-row items-center justify-between">
-                    <FormLabel>Usage Limit</FormLabel>
-                  </div>
-                  <FormControl>
-                    <Input {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )
-            }}
-          />
-        </>
       )}
 
       <div className="flex flex-row items-center">
         <div className="grow">
           <label htmlFor="license-key-limit-activations">
-            Activation Limits
+            Limit Activations
           </label>
         </div>
         <Switch
@@ -198,9 +156,39 @@ export const LicenseKeysBenefitForm = () => {
             render={({ field }) => {
               return (
                 <FormItem>
-                  <div className="flex flex-row items-center justify-between">
-                    <FormLabel>Activation Limit</FormLabel>
-                  </div>
+                  <FormControl>
+                    <Input {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )
+            }}
+          />
+        </>
+      )}
+
+      <div className="flex flex-row items-center">
+        <div className="grow">
+          <label htmlFor="license-key-limit-usage">Limit Usage</label>
+        </div>
+        <Switch
+          id="license-key-limit-usage"
+          checked={showLimitUsage}
+          onCheckedChange={(show) => {
+            const value = show ? 1 : undefined
+            setValue('properties.limit_usage', value)
+            setShowLimitUsage(show)
+          }}
+        />
+      </div>
+      {showLimitUsage && (
+        <>
+          <FormField
+            control={control}
+            name="properties.limit_usage"
+            render={({ field }) => {
+              return (
+                <FormItem>
                   <FormControl>
                     <Input {...field} />
                   </FormControl>

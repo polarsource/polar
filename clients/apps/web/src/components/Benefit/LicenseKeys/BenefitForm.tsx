@@ -1,6 +1,9 @@
 'use client'
 
-import { BenefitCustomCreate } from '@polar-sh/sdk'
+import {
+  BenefitLicenseKeyExpiration,
+  BenefitLicenseKeysCreate,
+} from '@polar-sh/sdk'
 import { Switch } from 'polarkit/components/ui/atoms'
 import Input from 'polarkit/components/ui/atoms/input'
 import {
@@ -21,7 +24,8 @@ import { useState } from 'react'
 import { useFormContext } from 'react-hook-form'
 
 export const LicenseKeysBenefitForm = () => {
-  const { control, watch, setValue } = useFormContext<BenefitCustomCreate>()
+  const { control, watch, setValue } =
+    useFormContext<BenefitLicenseKeysCreate>()
 
   const expires = watch('properties.expires', undefined)
   const limitActivations = watch('properties.limit_activations', undefined)
@@ -30,6 +34,12 @@ export const LicenseKeysBenefitForm = () => {
   const [showLimitActivations, setShowLimitActivations] = useState(
     limitActivations !== undefined,
   )
+
+  const showExpirationFields = expires !== undefined
+  const defaultExpiration: BenefitLicenseKeyExpiration = {
+    ttl: 1,
+    timeframe: 'year',
+  }
 
   const [showLimitUsage, setShowLimitUsage] = useState(limitUsage !== undefined)
 
@@ -60,14 +70,14 @@ export const LicenseKeysBenefitForm = () => {
         <FormField
           control={control}
           name="properties.expires"
-          render={({ field }) => {
+          render={() => {
             return (
               <FormItem>
                 <Switch
                   id="license-key-ttl"
-                  checked={field.value}
+                  checked={showExpirationFields}
                   onCheckedChange={(expires) => {
-                    const value = expires ? {} : undefined
+                    const value = expires ? defaultExpiration : undefined
                     setValue('properties.expires', value)
                   }}
                 />
@@ -115,9 +125,9 @@ export const LicenseKeysBenefitForm = () => {
                         <SelectValue placeholder="Select timeframe" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="day">Days</SelectItem>
-                        <SelectItem value="month">Months</SelectItem>
-                        <SelectItem value="year">Years</SelectItem>
+                        <SelectItem value="day">Day</SelectItem>
+                        <SelectItem value="month">Month</SelectItem>
+                        <SelectItem value="year">Year</SelectItem>
                       </SelectContent>
                     </Select>
                   </FormControl>

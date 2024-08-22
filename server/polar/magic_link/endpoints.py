@@ -1,7 +1,5 @@
-import html
-
-from fastapi import Depends, Form, Query, Request, Response, status
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi import Depends, Form, Request, status
+from fastapi.responses import RedirectResponse
 
 from polar.auth.dependencies import WebUserOrAnonymous
 from polar.auth.models import is_user
@@ -38,46 +36,15 @@ async def request_magic_link(
     await magic_link_service.send(
         magic_link,
         token,
-        base_url=str(settings.generate_external_url("/magic_link/authenticate")),
+        base_url=str(settings.generate_frontend_url("/login/magic-link/authenticate")),
         extra_url_params={"return_to": magic_link_request.return_to}
         if magic_link_request.return_to
         else {},
     )
 
 
-@router.get("/authenticate", name="magic_link.authenticate_get")
-async def authenticate_magic_link_get(
-    request: Request,
-    return_to: ReturnTo,
-    auth_subject: WebUserOrAnonymous,
-    token: str = Query(),
-) -> Response:
-    if is_user(auth_subject):
-        return RedirectResponse(return_to, 303)
-
-    return HTMLResponse(
-        f"""
-        <html>
-            <head>
-                <title>Redirecting to Polar...</title>
-                <script>
-                    document.addEventListener("DOMContentLoaded", function() {{
-                        document.getElementById("magic-link-form").submit();
-                    }});
-                </script>
-            </head>
-            <body>
-                <form id="magic-link-form" action="{request.url_for('magic_link.authenticate_post')}" method="post">
-                    <input type="hidden" name="token" value="{html.escape(token)}">
-                </form>
-            </body>
-        </html>
-        """
-    )
-
-
-@router.post("/authenticate", name="magic_link.authenticate_post")
-async def authenticate_magic_link_post(
+@router.post("/authenticate", name="magic_link.authenticate")
+async def authenticate_magic_link(
     request: Request,
     return_to: ReturnTo,
     auth_subject: WebUserOrAnonymous,

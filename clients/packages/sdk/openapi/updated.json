@@ -4232,8 +4232,8 @@
                 "tags": [
                     "magic_link"
                 ],
-                "summary": "Magic Link.Authenticate",
-                "operationId": "magic_link.authenticate",
+                "summary": "Magic Link.Authenticate Get",
+                "operationId": "magic_link.authenticate_get",
                 "security": [
                     {
                         "OpenIdConnect": []
@@ -4269,6 +4269,73 @@
                         }
                     }
                 ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                },
+                "x-polar-allowed-subjects": [
+                    "User",
+                    "Anonymous"
+                ]
+            },
+            "post": {
+                "tags": [
+                    "magic_link"
+                ],
+                "summary": "Magic Link.Authenticate Post",
+                "operationId": "magic_link.authenticate_post",
+                "security": [
+                    {
+                        "OpenIdConnect": []
+                    },
+                    {
+                        "HTTPBearer": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "return_to",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "Return To"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "$ref": "#/components/schemas/authenticate_post"
+                            }
+                        }
+                    }
+                },
                 "responses": {
                     "200": {
                         "description": "Successful Response",
@@ -4565,8 +4632,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
                     "Organization",
+                    "User",
                     "Anonymous"
                 ]
             }
@@ -4584,8 +4651,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "repositories:read",
-                            "repositories:write"
+                            "repositories:write",
+                            "repositories:read"
                         ]
                     },
                     {
@@ -4804,8 +4871,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
                     "Organization",
+                    "User",
                     "Anonymous"
                 ]
             }
@@ -4823,8 +4890,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "repositories:read",
-                            "repositories:write"
+                            "repositories:write",
+                            "repositories:read"
                         ]
                     },
                     {
@@ -4882,8 +4949,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
                     "Organization",
+                    "User",
                     "Anonymous"
                 ]
             },
@@ -4977,8 +5044,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -6016,8 +6083,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
                     "Organization",
+                    "User",
                     "Anonymous"
                 ]
             }
@@ -7404,8 +7471,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             },
             "post": {
@@ -7536,8 +7603,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             },
             "patch": {
@@ -7630,8 +7697,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -7684,10 +7751,10 @@
                             },
                             "description": "Filter by the type of purchase the customer made.",
                             "default": [
-                                "order",
                                 "donation",
+                                "free_subscription",
                                 "paid_subscription",
-                                "free_subscription"
+                                "order"
                             ],
                             "title": "Customer Types"
                         },
@@ -7753,8 +7820,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -7837,8 +7904,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             },
             "patch": {
@@ -7929,8 +7996,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -7994,8 +8061,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -8052,8 +8119,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -8110,8 +8177,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             },
             "post": {
@@ -8176,8 +8243,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -8193,8 +8260,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "subscriptions:read",
-                            "subscriptions:write"
+                            "subscriptions:write",
+                            "subscriptions:read"
                         ]
                     },
                     {
@@ -8412,8 +8479,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             },
             "post": {
@@ -8467,8 +8534,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -8524,8 +8591,8 @@
                     }
                 ],
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -8541,8 +8608,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "subscriptions:read",
-                            "subscriptions:write"
+                            "subscriptions:write",
+                            "subscriptions:read"
                         ]
                     },
                     {
@@ -8610,8 +8677,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -8820,8 +8887,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
                     "Organization",
+                    "User",
                     "Anonymous"
                 ]
             },
@@ -8877,8 +8944,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -8953,8 +9020,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
                     "Organization",
+                    "User",
                     "Anonymous"
                 ]
             },
@@ -9048,8 +9115,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             },
             "delete": {
@@ -9125,8 +9192,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -9191,8 +9258,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -9285,8 +9352,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -9372,8 +9439,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -11522,8 +11589,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "benefits:read",
-                            "benefits:write"
+                            "benefits:write",
+                            "benefits:read"
                         ]
                     },
                     {
@@ -11643,8 +11710,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             },
             "post": {
@@ -11745,8 +11812,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -11762,8 +11829,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "benefits:read",
-                            "benefits:write"
+                            "benefits:write",
+                            "benefits:read"
                         ]
                     },
                     {
@@ -11841,8 +11908,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             },
             "patch": {
@@ -11974,8 +12041,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             },
             "delete": {
@@ -12050,8 +12117,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -12067,8 +12134,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "benefits:read",
-                            "benefits:write"
+                            "benefits:write",
+                            "benefits:read"
                         ]
                     },
                     {
@@ -12207,8 +12274,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -12326,8 +12393,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             },
             "post": {
@@ -12380,8 +12447,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -12451,8 +12518,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             },
             "patch": {
@@ -12539,8 +12606,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             },
             "delete": {
@@ -12610,8 +12677,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -12704,8 +12771,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -12772,8 +12839,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -12790,8 +12857,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "products:read",
-                            "products:write"
+                            "products:write",
+                            "products:read"
                         ]
                     },
                     {
@@ -12985,8 +13052,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
                     "Organization",
+                    "User",
                     "Anonymous"
                 ]
             },
@@ -13050,8 +13117,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -13068,8 +13135,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "products:read",
-                            "products:write"
+                            "products:write",
+                            "products:read"
                         ]
                     },
                     {
@@ -13127,8 +13194,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
                     "Organization",
+                    "User",
                     "Anonymous"
                 ]
             },
@@ -13222,8 +13289,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -13318,8 +13385,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -13556,8 +13623,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -13627,8 +13694,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -13698,8 +13765,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -13919,8 +13986,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             },
             "post": {
@@ -13993,8 +14060,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -14083,8 +14150,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -14173,8 +14240,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             },
             "delete": {
@@ -14243,8 +14310,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -14432,8 +14499,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -14469,8 +14536,8 @@
                     }
                 ],
                 "x-polar-allowed-subjects": [
-                    "User",
-                    "Organization"
+                    "Organization",
+                    "User"
                 ]
             }
         },
@@ -14732,6 +14799,8 @@
                     "id",
                     "account_type",
                     "status",
+                    "stripe_id",
+                    "open_collective_slug",
                     "is_details_submitted",
                     "is_charges_enabled",
                     "is_payouts_enabled",
@@ -14856,8 +14925,10 @@
                 "type": "object",
                 "required": [
                     "created_at",
+                    "modified_at",
                     "id",
                     "image_url",
+                    "image_url_dark",
                     "text",
                     "link_url"
                 ],
@@ -15493,10 +15564,19 @@
                     "body",
                     "byline",
                     "visibility",
+                    "user_id",
                     "organization_id",
                     "organization",
+                    "published_at",
+                    "paid_subscribers_only",
+                    "paid_subscribers_only_ends_at",
                     "is_preview",
-                    "is_pinned"
+                    "is_pinned",
+                    "notify_subscribers",
+                    "notifications_sent_at",
+                    "email_sent_to_count",
+                    "og_image_url",
+                    "og_description"
                 ],
                 "title": "Article"
             },
@@ -15981,7 +16061,8 @@
                 "type": "object",
                 "required": [
                     "id",
-                    "slug"
+                    "slug",
+                    "avatar_url"
                 ],
                 "title": "AuthorizeOrganization"
             },
@@ -16027,6 +16108,7 @@
                 "required": [
                     "client",
                     "sub_type",
+                    "sub",
                     "scopes",
                     "organizations"
                 ],
@@ -16067,6 +16149,7 @@
                 "required": [
                     "client",
                     "sub_type",
+                    "sub",
                     "scopes"
                 ],
                 "title": "AuthorizeResponseUser"
@@ -16103,7 +16186,8 @@
                 "required": [
                     "id",
                     "username",
-                    "email"
+                    "email",
+                    "avatar_url"
                 ],
                 "title": "AuthorizeUser"
             },
@@ -16407,12 +16491,18 @@
                 "type": "object",
                 "required": [
                     "created_at",
+                    "modified_at",
                     "id",
                     "amount",
                     "currency",
                     "state",
                     "type",
-                    "issue"
+                    "issue",
+                    "payment_id",
+                    "dispute_reason",
+                    "disputed_by_user_id",
+                    "disputed_at",
+                    "pledger_email"
                 ],
                 "title": "BackofficePledge"
             },
@@ -16511,7 +16601,10 @@
                     "pledge",
                     "amount",
                     "state",
-                    "issue_reward_id"
+                    "transfer_id",
+                    "issue_reward_id",
+                    "pledge_payment_id",
+                    "pledger_email"
                 ],
                 "title": "BackofficeReward"
             },
@@ -16578,6 +16671,7 @@
                 "type": "object",
                 "required": [
                     "created_at",
+                    "modified_at",
                     "id",
                     "type",
                     "description",
@@ -16726,6 +16820,7 @@
                 "type": "object",
                 "required": [
                     "created_at",
+                    "modified_at",
                     "id",
                     "type",
                     "description",
@@ -16841,6 +16936,7 @@
                 "type": "object",
                 "required": [
                     "created_at",
+                    "modified_at",
                     "id",
                     "type",
                     "description",
@@ -16930,6 +17026,7 @@
                 "type": "object",
                 "required": [
                     "created_at",
+                    "modified_at",
                     "id",
                     "type",
                     "description",
@@ -17046,6 +17143,7 @@
                 "type": "object",
                 "required": [
                     "created_at",
+                    "modified_at",
                     "id",
                     "type",
                     "description",
@@ -17123,6 +17221,7 @@
                 "type": "object",
                 "required": [
                     "created_at",
+                    "modified_at",
                     "id",
                     "type",
                     "description",
@@ -17195,17 +17294,27 @@
                     "note": {
                         "anyOf": [
                             {
-                                "type": "string"
+                                "anyOf": [
+                                    {
+                                        "type": "string"
+                                    },
+                                    {
+                                        "type": "null"
+                                    }
+                                ],
+                                "description": "Private note to be shared with users who have this benefit granted."
                             },
                             {
                                 "type": "null"
                             }
                         ],
-                        "title": "Note",
-                        "description": "Private note to be shared with users who have this benefit granted."
+                        "title": "Note"
                     }
                 },
                 "type": "object",
+                "required": [
+                    "note"
+                ],
                 "title": "BenefitCustomProperties",
                 "description": "Properties for a benefit of type `custom`."
             },
@@ -17279,6 +17388,7 @@
                 "type": "object",
                 "required": [
                     "created_at",
+                    "modified_at",
                     "id",
                     "type",
                     "description",
@@ -17295,17 +17405,27 @@
                     "note": {
                         "anyOf": [
                             {
-                                "type": "string"
+                                "anyOf": [
+                                    {
+                                        "type": "string"
+                                    },
+                                    {
+                                        "type": "null"
+                                    }
+                                ],
+                                "description": "Private note to be shared with users who have this benefit granted."
                             },
                             {
                                 "type": "null"
                             }
                         ],
-                        "title": "Note",
-                        "description": "Private note to be shared with users who have this benefit granted."
+                        "title": "Note"
                     }
                 },
                 "type": "object",
+                "required": [
+                    "note"
+                ],
                 "title": "BenefitCustomSubscriberProperties",
                 "description": "Properties available to subscribers for a benefit of type `custom`."
             },
@@ -17481,6 +17601,7 @@
                 "type": "object",
                 "required": [
                     "created_at",
+                    "modified_at",
                     "id",
                     "type",
                     "description",
@@ -17610,6 +17731,7 @@
                 "type": "object",
                 "required": [
                     "created_at",
+                    "modified_at",
                     "id",
                     "type",
                     "description",
@@ -17781,6 +17903,7 @@
                 "type": "object",
                 "required": [
                     "created_at",
+                    "modified_at",
                     "id",
                     "type",
                     "description",
@@ -17912,6 +18035,7 @@
                 "type": "object",
                 "required": [
                     "created_at",
+                    "modified_at",
                     "id",
                     "type",
                     "description",
@@ -18080,6 +18204,7 @@
                 },
                 "type": "object",
                 "required": [
+                    "repository_id",
                     "repository_owner",
                     "repository_name",
                     "permission"
@@ -18150,6 +18275,7 @@
                 "type": "object",
                 "required": [
                     "created_at",
+                    "modified_at",
                     "id",
                     "type",
                     "description",
@@ -18341,10 +18467,13 @@
                 "type": "object",
                 "required": [
                     "created_at",
+                    "modified_at",
                     "id",
                     "is_granted",
                     "is_revoked",
                     "properties",
+                    "subscription_id",
+                    "order_id",
                     "user_id",
                     "benefit_id"
                 ],
@@ -18459,10 +18588,13 @@
                 "type": "object",
                 "required": [
                     "created_at",
+                    "modified_at",
                     "id",
                     "is_granted",
                     "is_revoked",
                     "properties",
+                    "subscription_id",
+                    "order_id",
                     "user_id",
                     "benefit_id"
                 ],
@@ -18640,7 +18772,8 @@
                 },
                 "type": "object",
                 "required": [
-                    "name"
+                    "name",
+                    "avatar_url"
                 ],
                 "title": "BylineProfile"
             },
@@ -18710,6 +18843,8 @@
                 "type": "object",
                 "required": [
                     "id",
+                    "customer_email",
+                    "customer_name",
                     "product",
                     "product_price"
                 ],
@@ -19139,7 +19274,8 @@
                 "required": [
                     "payment_intent_id",
                     "amount",
-                    "currency"
+                    "currency",
+                    "client_secret"
                 ],
                 "title": "DonationStripePaymentIntentMutationResponse"
             },
@@ -19459,6 +19595,12 @@
                     "path",
                     "mime_type",
                     "size",
+                    "storage_version",
+                    "checksum_etag",
+                    "checksum_sha256_base64",
+                    "checksum_sha256_hex",
+                    "last_modified_at",
+                    "version",
                     "service",
                     "is_uploaded",
                     "created_at",
@@ -19569,7 +19711,11 @@
                 "required": [
                     "type",
                     "id",
-                    "attributes"
+                    "attributes",
+                    "rewards",
+                    "pledges_summary",
+                    "references",
+                    "pledges"
                 ],
                 "title": "Entry"
             },
@@ -19810,7 +19956,15 @@
                     "platform",
                     "name",
                     "avatar_url",
-                    "is_personal"
+                    "is_personal",
+                    "bio",
+                    "pretty_name",
+                    "company",
+                    "blog",
+                    "location",
+                    "email",
+                    "twitter_username",
+                    "organization_id"
                 ],
                 "title": "ExternalOrganization"
             },
@@ -19933,6 +20087,11 @@
                     "path",
                     "mime_type",
                     "size",
+                    "storage_version",
+                    "checksum_etag",
+                    "checksum_sha256_base64",
+                    "checksum_sha256_hex",
+                    "last_modified_at",
                     "download",
                     "version",
                     "is_uploaded",
@@ -20120,7 +20279,13 @@
                     "path",
                     "mime_type",
                     "size",
+                    "storage_version",
+                    "checksum_etag",
+                    "checksum_sha256_base64",
+                    "checksum_sha256_hex",
+                    "last_modified_at",
                     "upload",
+                    "version",
                     "service",
                     "size_readable"
                 ],
@@ -20424,6 +20589,7 @@
                 "type": "object",
                 "required": [
                     "issue",
+                    "funding_goal",
                     "total",
                     "pledges_summaries"
                 ],
@@ -21747,7 +21913,8 @@
                     "issue_org_name",
                     "issue_repo_name",
                     "issue_number",
-                    "maintainer_has_stripe_account"
+                    "maintainer_has_stripe_account",
+                    "pledge_id"
                 ],
                 "title": "MaintainerPledgeConfirmationPendingNotificationPayload"
             },
@@ -21850,13 +22017,16 @@
                 },
                 "type": "object",
                 "required": [
+                    "pledger_name",
                     "pledge_amount",
                     "issue_url",
                     "issue_title",
                     "issue_org_name",
                     "issue_repo_name",
                     "issue_number",
-                    "maintainer_has_stripe_account"
+                    "maintainer_has_stripe_account",
+                    "pledge_id",
+                    "pledge_type"
                 ],
                 "title": "MaintainerPledgeCreatedNotificationPayload"
             },
@@ -21939,7 +22109,8 @@
                     "issue_title",
                     "issue_org_name",
                     "issue_repo_name",
-                    "issue_number"
+                    "issue_number",
+                    "pledge_id"
                 ],
                 "title": "MaintainerPledgePaidNotificationPayload"
             },
@@ -22032,7 +22203,8 @@
                     "issue_org_name",
                     "issue_repo_name",
                     "issue_number",
-                    "maintainer_has_stripe_account"
+                    "maintainer_has_stripe_account",
+                    "pledge_id"
                 ],
                 "title": "MaintainerPledgePendingNotificationPayload"
             },
@@ -22597,7 +22769,8 @@
                 },
                 "type": "object",
                 "required": [
-                    "notifications"
+                    "notifications",
+                    "last_read_notification_id"
                 ],
                 "title": "NotificationsList"
             },
@@ -22769,6 +22942,7 @@
                     "redirect_uris",
                     "client_name",
                     "created_at",
+                    "modified_at",
                     "client_id",
                     "client_secret",
                     "client_id_issued_at",
@@ -23107,7 +23281,13 @@
                 "type": "object",
                 "required": [
                     "created_at",
-                    "client_id"
+                    "modified_at",
+                    "client_id",
+                    "client_name",
+                    "client_uri",
+                    "logo_uri",
+                    "tos_uri",
+                    "policy_uri"
                 ],
                 "title": "OAuth2ClientPublic"
             },
@@ -23158,6 +23338,7 @@
                 "type": "object",
                 "required": [
                     "created_at",
+                    "modified_at",
                     "platform",
                     "account_id",
                     "account_email",
@@ -23277,11 +23458,15 @@
                 "type": "object",
                 "required": [
                     "created_at",
+                    "modified_at",
                     "id",
                     "name",
+                    "description",
                     "is_recurring",
                     "is_archived",
-                    "organization_id"
+                    "organization_id",
+                    "type",
+                    "is_highlighted"
                 ],
                 "title": "OrderProduct"
             },
@@ -23386,12 +23571,17 @@
                 "type": "object",
                 "required": [
                     "created_at",
+                    "modified_at",
                     "id",
                     "status",
                     "current_period_start",
+                    "current_period_end",
                     "cancel_at_period_end",
+                    "started_at",
+                    "ended_at",
                     "user_id",
-                    "product_id"
+                    "product_id",
+                    "price_id"
                 ],
                 "title": "OrderSubscription"
             },
@@ -23437,7 +23627,9 @@
                 "required": [
                     "id",
                     "email",
-                    "public_name"
+                    "public_name",
+                    "github_username",
+                    "avatar_url"
                 ],
                 "title": "OrderUser"
             },
@@ -23653,6 +23845,12 @@
                     "path",
                     "mime_type",
                     "size",
+                    "storage_version",
+                    "checksum_etag",
+                    "checksum_sha256_base64",
+                    "checksum_sha256_hex",
+                    "last_modified_at",
+                    "version",
                     "service",
                     "is_uploaded",
                     "created_at",
@@ -23695,6 +23893,7 @@
                 "required": [
                     "show_amount",
                     "minimum_amount",
+                    "message",
                     "repositories"
                 ],
                 "title": "OrganizationBadgeSettingsRead"
@@ -23846,7 +24045,9 @@
                 },
                 "type": "object",
                 "required": [
-                    "public_name"
+                    "public_name",
+                    "github_username",
+                    "avatar_url"
                 ],
                 "title": "OrganizationCustomer"
             },
@@ -23915,7 +24116,9 @@
                 },
                 "type": "object",
                 "required": [
-                    "name"
+                    "name",
+                    "github_username",
+                    "avatar_url"
                 ],
                 "title": "OrganizationMember"
             },
@@ -24222,7 +24425,8 @@
                 "type": "object",
                 "required": [
                     "total_count",
-                    "page"
+                    "page",
+                    "next_page"
                 ],
                 "title": "PaginationResponse"
             },
@@ -24267,6 +24471,7 @@
                 "required": [
                     "stripe_payment_method_id",
                     "type",
+                    "brand",
                     "last4",
                     "exp_month",
                     "exp_year"
@@ -24383,10 +24588,12 @@
                 "type": "object",
                 "required": [
                     "created_at",
+                    "modified_at",
                     "id",
                     "scopes",
                     "expires_at",
-                    "comment"
+                    "comment",
+                    "last_used_at"
                 ],
                 "title": "PersonalAccessToken"
             },
@@ -24629,7 +24836,8 @@
                     "amount",
                     "currency",
                     "fee",
-                    "amount_including_fee"
+                    "amount_including_fee",
+                    "client_secret"
                 ],
                 "title": "PledgeStripePaymentIntentMutationResponse"
             },
@@ -24729,7 +24937,9 @@
                 },
                 "type": "object",
                 "required": [
-                    "name"
+                    "name",
+                    "github_username",
+                    "avatar_url"
                 ],
                 "title": "Pledger"
             },
@@ -24827,7 +25037,9 @@
                     "issue_number",
                     "issue_org_name",
                     "issue_repo_name",
-                    "pledge_date"
+                    "pledge_date",
+                    "pledge_id",
+                    "pledge_type"
                 ],
                 "title": "PledgerPledgePendingNotificationPayload"
             },
@@ -25125,6 +25337,7 @@
                 "type": "object",
                 "required": [
                     "created_at",
+                    "modified_at",
                     "id",
                     "price_amount",
                     "price_currency",
@@ -25233,11 +25446,13 @@
                 "type": "object",
                 "required": [
                     "created_at",
+                    "modified_at",
                     "id",
                     "price_amount",
                     "price_currency",
                     "is_archived",
-                    "type"
+                    "type",
+                    "recurring_interval"
                 ],
                 "title": "ProductPriceRecurring",
                 "description": "A recurring price for a product, i.e. a subscription."
@@ -25793,6 +26008,7 @@
                 "type": "object",
                 "required": [
                     "id",
+                    "avatar_url",
                     "name",
                     "synced_issues",
                     "open_issues",
@@ -26240,7 +26456,8 @@
                 },
                 "type": "object",
                 "required": [
-                    "name"
+                    "name",
+                    "avatar_url"
                 ],
                 "title": "RewardsSummaryReceiver"
             },
@@ -26346,7 +26563,8 @@
                 "type": "object",
                 "required": [
                     "number",
-                    "checksum_etag"
+                    "checksum_etag",
+                    "checksum_sha256_base64"
                 ],
                 "title": "S3FileUploadCompletedPart"
             },
@@ -26606,7 +26824,9 @@
                 "type": "object",
                 "required": [
                     "email",
-                    "public_name"
+                    "public_name",
+                    "github_username",
+                    "avatar_url"
                 ],
                 "title": "SubscriptionUser"
             },
@@ -26647,7 +26867,8 @@
                 },
                 "type": "object",
                 "required": [
-                    "type"
+                    "type",
+                    "pledger"
                 ],
                 "title": "SummaryPledge"
             },
@@ -26781,6 +27002,7 @@
                     "access_token",
                     "token_type",
                     "expires_in",
+                    "refresh_token",
                     "scope",
                     "id_token"
                 ],
@@ -26914,7 +27136,8 @@
                 "required": [
                     "start_date",
                     "end_date",
-                    "views"
+                    "views",
+                    "article_id"
                 ],
                 "title": "TrafficStatisticsPeriod"
             },
@@ -27007,7 +27230,7 @@
                         ],
                         "title": "Issue Reward Id"
                     },
-                    "subscription_id": {
+                    "order_id": {
                         "anyOf": [
                             {
                                 "type": "string",
@@ -27017,9 +27240,9 @@
                                 "type": "null"
                             }
                         ],
-                        "title": "Subscription Id"
+                        "title": "Order Id"
                     },
-                    "product_price_id": {
+                    "donation_id": {
                         "anyOf": [
                             {
                                 "type": "string",
@@ -27029,7 +27252,7 @@
                                 "type": "null"
                             }
                         ],
-                        "title": "Product Price Id"
+                        "title": "Donation Id"
                     },
                     "payout_transaction_id": {
                         "anyOf": [
@@ -27118,12 +27341,25 @@
                 "type": "object",
                 "required": [
                     "created_at",
+                    "modified_at",
                     "id",
                     "type",
+                    "processor",
                     "currency",
                     "amount",
                     "account_currency",
                     "account_amount",
+                    "platform_fee_type",
+                    "pledge_id",
+                    "issue_reward_id",
+                    "order_id",
+                    "donation_id",
+                    "payout_transaction_id",
+                    "incurred_by_transaction_id",
+                    "pledge",
+                    "issue_reward",
+                    "order",
+                    "donation",
                     "account_incurred_transactions",
                     "incurred_amount",
                     "gross_amount",
@@ -27220,7 +27456,7 @@
                         ],
                         "title": "Issue Reward Id"
                     },
-                    "subscription_id": {
+                    "order_id": {
                         "anyOf": [
                             {
                                 "type": "string",
@@ -27230,9 +27466,9 @@
                                 "type": "null"
                             }
                         ],
-                        "title": "Subscription Id"
+                        "title": "Order Id"
                     },
-                    "product_price_id": {
+                    "donation_id": {
                         "anyOf": [
                             {
                                 "type": "string",
@@ -27242,7 +27478,7 @@
                                 "type": "null"
                             }
                         ],
-                        "title": "Product Price Id"
+                        "title": "Donation Id"
                     },
                     "payout_transaction_id": {
                         "anyOf": [
@@ -27338,12 +27574,25 @@
                 "type": "object",
                 "required": [
                     "created_at",
+                    "modified_at",
                     "id",
                     "type",
+                    "processor",
                     "currency",
                     "amount",
                     "account_currency",
                     "account_amount",
+                    "platform_fee_type",
+                    "pledge_id",
+                    "issue_reward_id",
+                    "order_id",
+                    "donation_id",
+                    "payout_transaction_id",
+                    "incurred_by_transaction_id",
+                    "pledge",
+                    "issue_reward",
+                    "order",
+                    "donation",
                     "account_incurred_transactions",
                     "incurred_amount",
                     "gross_amount",
@@ -27392,7 +27641,9 @@
                 "type": "object",
                 "required": [
                     "created_at",
-                    "id"
+                    "modified_at",
+                    "id",
+                    "to_organization"
                 ],
                 "title": "TransactionDonation"
             },
@@ -27485,7 +27736,7 @@
                         ],
                         "title": "Issue Reward Id"
                     },
-                    "subscription_id": {
+                    "order_id": {
                         "anyOf": [
                             {
                                 "type": "string",
@@ -27495,9 +27746,9 @@
                                 "type": "null"
                             }
                         ],
-                        "title": "Subscription Id"
+                        "title": "Order Id"
                     },
-                    "product_price_id": {
+                    "donation_id": {
                         "anyOf": [
                             {
                                 "type": "string",
@@ -27507,7 +27758,7 @@
                                 "type": "null"
                             }
                         ],
-                        "title": "Product Price Id"
+                        "title": "Donation Id"
                     },
                     "payout_transaction_id": {
                         "anyOf": [
@@ -27537,12 +27788,21 @@
                 "type": "object",
                 "required": [
                     "created_at",
+                    "modified_at",
                     "id",
                     "type",
+                    "processor",
                     "currency",
                     "amount",
                     "account_currency",
-                    "account_amount"
+                    "account_amount",
+                    "platform_fee_type",
+                    "pledge_id",
+                    "issue_reward_id",
+                    "order_id",
+                    "donation_id",
+                    "payout_transaction_id",
+                    "incurred_by_transaction_id"
                 ],
                 "title": "TransactionEmbedded"
             },
@@ -27591,6 +27851,7 @@
                 "type": "object",
                 "required": [
                     "created_at",
+                    "modified_at",
                     "id",
                     "platform",
                     "name",
@@ -27656,6 +27917,7 @@
                 "type": "object",
                 "required": [
                     "created_at",
+                    "modified_at",
                     "id",
                     "platform",
                     "organization_id",
@@ -27706,6 +27968,7 @@
                 "type": "object",
                 "required": [
                     "created_at",
+                    "modified_at",
                     "id",
                     "issue_id",
                     "share_thousands"
@@ -27775,9 +28038,11 @@
                 "type": "object",
                 "required": [
                     "created_at",
+                    "modified_at",
                     "id",
                     "product",
-                    "product_price"
+                    "product_price",
+                    "subscription_id"
                 ],
                 "title": "TransactionOrder"
             },
@@ -27830,9 +28095,11 @@
                 "type": "object",
                 "required": [
                     "created_at",
+                    "modified_at",
                     "id",
                     "name",
-                    "slug"
+                    "slug",
+                    "avatar_url"
                 ],
                 "title": "TransactionOrganization"
             },
@@ -27872,6 +28139,7 @@
                 "type": "object",
                 "required": [
                     "created_at",
+                    "modified_at",
                     "id",
                     "state",
                     "issue"
@@ -27945,8 +28213,12 @@
                 "type": "object",
                 "required": [
                     "created_at",
+                    "modified_at",
                     "id",
-                    "name"
+                    "name",
+                    "organization_id",
+                    "organization",
+                    "type"
                 ],
                 "title": "TransactionProduct"
             },
@@ -27992,6 +28264,7 @@
                 "type": "object",
                 "required": [
                     "created_at",
+                    "modified_at",
                     "id",
                     "platform",
                     "organization_id",
@@ -28190,11 +28463,13 @@
                 "type": "object",
                 "required": [
                     "created_at",
+                    "modified_at",
                     "id",
                     "user_id",
                     "views",
                     "clicks",
                     "image_url",
+                    "image_url_dark",
                     "text",
                     "link_url"
                 ],
@@ -28361,7 +28636,9 @@
                 "type": "object",
                 "required": [
                     "username",
-                    "email"
+                    "email",
+                    "avatar_url",
+                    "account_id"
                 ],
                 "title": "UserBase"
             },
@@ -28413,7 +28690,8 @@
                 },
                 "type": "object",
                 "required": [
-                    "sub"
+                    "sub",
+                    "name"
                 ],
                 "title": "UserInfoOrganization"
             },
@@ -28459,7 +28737,10 @@
                 },
                 "type": "object",
                 "required": [
-                    "sub"
+                    "sub",
+                    "name",
+                    "email",
+                    "email_verified"
                 ],
                 "title": "UserInfoUser"
             },
@@ -28563,6 +28844,7 @@
                 "type": "object",
                 "required": [
                     "created_at",
+                    "modified_at",
                     "id",
                     "amount",
                     "tax_amount",
@@ -28570,8 +28852,10 @@
                     "user_id",
                     "product_id",
                     "product_price_id",
+                    "subscription_id",
                     "product",
-                    "product_price"
+                    "product_price",
+                    "subscription"
                 ],
                 "title": "UserOrder"
             },
@@ -28722,11 +29006,15 @@
                 "type": "object",
                 "required": [
                     "created_at",
+                    "modified_at",
                     "id",
                     "name",
+                    "description",
                     "is_recurring",
                     "is_archived",
                     "organization_id",
+                    "type",
+                    "is_highlighted",
                     "prices",
                     "benefits",
                     "medias"
@@ -28834,12 +29122,17 @@
                 "type": "object",
                 "required": [
                     "created_at",
+                    "modified_at",
                     "id",
                     "status",
                     "current_period_start",
+                    "current_period_end",
                     "cancel_at_period_end",
+                    "started_at",
+                    "ended_at",
                     "user_id",
-                    "product_id"
+                    "product_id",
+                    "price_id"
                 ],
                 "title": "UserOrderSubscription"
             },
@@ -28917,8 +29210,11 @@
                 "type": "object",
                 "required": [
                     "created_at",
+                    "modified_at",
                     "username",
                     "email",
+                    "avatar_url",
+                    "account_id",
                     "id",
                     "accepted_terms_of_service",
                     "oauth_accounts"
@@ -29117,13 +29413,20 @@
                 "type": "object",
                 "required": [
                     "created_at",
+                    "modified_at",
                     "id",
                     "status",
                     "current_period_start",
+                    "current_period_end",
                     "cancel_at_period_end",
+                    "started_at",
+                    "ended_at",
                     "user_id",
+                    "organization_id",
                     "product_id",
-                    "product"
+                    "price_id",
+                    "product",
+                    "price"
                 ],
                 "title": "UserSubscription"
             },
@@ -29259,11 +29562,15 @@
                 "type": "object",
                 "required": [
                     "created_at",
+                    "modified_at",
                     "id",
                     "name",
+                    "description",
                     "is_recurring",
                     "is_archived",
                     "organization_id",
+                    "type",
+                    "is_highlighted",
                     "prices",
                     "benefits",
                     "medias"
@@ -29457,6 +29764,7 @@
                 "type": "object",
                 "required": [
                     "created_at",
+                    "modified_at",
                     "id",
                     "succeeded",
                     "webhook_event"
@@ -29567,6 +29875,7 @@
                 "type": "object",
                 "required": [
                     "created_at",
+                    "modified_at",
                     "id",
                     "url",
                     "format",
@@ -29772,6 +30081,7 @@
                 "type": "object",
                 "required": [
                     "created_at",
+                    "modified_at",
                     "id",
                     "payload"
                 ],
@@ -30015,6 +30325,19 @@
                 "title": "WebhookSubscriptionUpdatedPayload",
                 "description": "Sent when a new subscription is updated. This event fires if the subscription is cancelled, both immediately and if the subscription is cancelled at the end of the current period.\n\n**Discord & Slack support:** On cancellation"
             },
+            "authenticate_post": {
+                "properties": {
+                    "token": {
+                        "type": "string",
+                        "title": "Token"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "token"
+                ],
+                "title": "Body_magic_link:magic_link.authenticate_post"
+            },
             "BenefitDiscord": {
                 "properties": {
                     "created_at": {
@@ -30078,6 +30401,7 @@
                 "type": "object",
                 "required": [
                     "created_at",
+                    "modified_at",
                     "id",
                     "type",
                     "description",
@@ -30194,11 +30518,14 @@
                 "type": "object",
                 "required": [
                     "created_at",
+                    "modified_at",
                     "id",
                     "amount",
                     "currency",
                     "message",
-                    "email"
+                    "donor",
+                    "email",
+                    "issue"
                 ],
                 "title": "Donation"
             },
@@ -30506,6 +30833,7 @@
                 "type": "object",
                 "required": [
                     "created_at",
+                    "modified_at",
                     "id",
                     "amount",
                     "tax_amount",
@@ -30513,9 +30841,11 @@
                     "user_id",
                     "product_id",
                     "product_price_id",
+                    "subscription_id",
                     "user",
                     "product",
-                    "product_price"
+                    "product_price",
+                    "subscription"
                 ],
                 "title": "Order"
             },
@@ -30686,11 +31016,20 @@
                 "type": "object",
                 "required": [
                     "created_at",
+                    "modified_at",
                     "id",
                     "name",
                     "slug",
+                    "avatar_url",
+                    "bio",
+                    "company",
+                    "blog",
+                    "location",
+                    "email",
+                    "twitter_username",
                     "pledge_minimum_amount",
                     "pledge_badge_show_amount",
+                    "default_upfront_split_to_contributors",
                     "donations_enabled",
                     "profile_settings",
                     "feature_settings"
@@ -30833,6 +31172,7 @@
                 "type": "object",
                 "required": [
                     "created_at",
+                    "modified_at",
                     "id",
                     "amount",
                     "currency",
@@ -30974,11 +31314,15 @@
                 "type": "object",
                 "required": [
                     "created_at",
+                    "modified_at",
                     "id",
                     "name",
+                    "description",
                     "is_recurring",
                     "is_archived",
                     "organization_id",
+                    "type",
+                    "is_highlighted",
                     "prices",
                     "benefits",
                     "medias"
@@ -31117,6 +31461,12 @@
                     "path",
                     "mime_type",
                     "size",
+                    "storage_version",
+                    "checksum_etag",
+                    "checksum_sha256_base64",
+                    "checksum_sha256_hex",
+                    "last_modified_at",
+                    "version",
                     "service",
                     "is_uploaded",
                     "created_at",
@@ -31215,6 +31565,10 @@
                     "platform",
                     "is_private",
                     "name",
+                    "description",
+                    "stars",
+                    "license",
+                    "homepage",
                     "profile_settings",
                     "organization"
                 ],
@@ -31352,14 +31706,20 @@
                 "type": "object",
                 "required": [
                     "created_at",
+                    "modified_at",
                     "id",
                     "status",
                     "current_period_start",
+                    "current_period_end",
                     "cancel_at_period_end",
+                    "started_at",
+                    "ended_at",
                     "user_id",
                     "product_id",
+                    "price_id",
                     "user",
-                    "product"
+                    "product",
+                    "price"
                 ],
                 "title": "Subscription"
             }

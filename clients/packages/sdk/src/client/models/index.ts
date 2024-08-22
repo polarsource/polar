@@ -29,13 +29,13 @@ export interface Account {
      * @type {string}
      * @memberof Account
      */
-    stripe_id?: string;
+    stripe_id: string | null;
     /**
      * 
      * @type {string}
      * @memberof Account
      */
-    open_collective_slug?: string;
+    open_collective_slug: string | null;
     /**
      * 
      * @type {boolean}
@@ -73,6 +73,8 @@ export interface Account {
      */
     organizations: Array<Organization>;
 }
+
+
 /**
  * 
  * @export
@@ -90,7 +92,7 @@ export interface AccountCreate {
      * @type {string}
      * @memberof AccountCreate
      */
-    open_collective_slug?: string;
+    open_collective_slug?: string | null;
     /**
      * Two letter uppercase country code
      * @type {string}
@@ -98,6 +100,8 @@ export interface AccountCreate {
      */
     country: string;
 }
+
+
 /**
  * 
  * @export
@@ -139,7 +143,7 @@ export interface AdvertisementCampaign {
      * @type {string}
      * @memberof AdvertisementCampaign
      */
-    modified_at?: string;
+    modified_at: string | null;
     /**
      * 
      * @type {string}
@@ -157,7 +161,7 @@ export interface AdvertisementCampaign {
      * @type {string}
      * @memberof AdvertisementCampaign
      */
-    image_url_dark?: string;
+    image_url_dark: string | null;
     /**
      * 
      * @type {string}
@@ -1034,7 +1038,7 @@ export interface Article {
      * @type {string}
      * @memberof Article
      */
-    user_id?: string;
+    user_id: string | null;
     /**
      * 
      * @type {string}
@@ -1052,19 +1056,19 @@ export interface Article {
      * @type {string}
      * @memberof Article
      */
-    published_at?: string;
+    published_at: string | null;
     /**
      * 
      * @type {boolean}
      * @memberof Article
      */
-    paid_subscribers_only?: boolean;
+    paid_subscribers_only: boolean | null;
     /**
      * 
      * @type {string}
      * @memberof Article
      */
-    paid_subscribers_only_ends_at?: string;
+    paid_subscribers_only_ends_at: string | null;
     /**
      * 
      * @type {boolean}
@@ -1082,32 +1086,34 @@ export interface Article {
      * @type {boolean}
      * @memberof Article
      */
-    notify_subscribers?: boolean;
+    notify_subscribers: boolean | null;
     /**
      * 
      * @type {string}
      * @memberof Article
      */
-    notifications_sent_at?: string;
+    notifications_sent_at: string | null;
     /**
      * 
      * @type {number}
      * @memberof Article
      */
-    email_sent_to_count?: number;
+    email_sent_to_count: number | null;
     /**
      * 
      * @type {string}
      * @memberof Article
      */
-    og_image_url?: string;
+    og_image_url: string | null;
     /**
      * 
      * @type {string}
      * @memberof Article
      */
-    og_description?: string;
+    og_description: string | null;
 }
+
+
 
 /**
  * 
@@ -1136,25 +1142,25 @@ export interface ArticleCreate {
      * @type {string}
      * @memberof ArticleCreate
      */
-    slug?: string;
+    slug?: string | null;
     /**
      * 
      * @type {string}
      * @memberof ArticleCreate
      */
-    body?: string;
+    body?: string | null;
     /**
      * 
      * @type {string}
      * @memberof ArticleCreate
      */
-    body_base64?: string;
+    body_base64?: string | null;
     /**
      * The organization ID.
      * @type {string}
      * @memberof ArticleCreate
      */
-    organization_id?: string;
+    organization_id?: string | null;
     /**
      * If the user or organization should be credited in the byline.
      * @type {ArticleByline}
@@ -1178,38 +1184,40 @@ export interface ArticleCreate {
      * @type {string}
      * @memberof ArticleCreate
      */
-    paid_subscribers_only_ends_at?: string;
+    paid_subscribers_only_ends_at?: string | null;
     /**
      * 
      * @type {string}
      * @memberof ArticleCreate
      */
-    published_at?: string;
+    published_at?: string | null;
     /**
      * 
      * @type {boolean}
      * @memberof ArticleCreate
      */
-    notify_subscribers?: boolean;
+    notify_subscribers?: boolean | null;
     /**
      * 
      * @type {boolean}
      * @memberof ArticleCreate
      */
-    is_pinned?: boolean;
+    is_pinned?: boolean | null;
     /**
      * 
      * @type {string}
      * @memberof ArticleCreate
      */
-    og_image_url?: string;
+    og_image_url?: string | null;
     /**
      * 
      * @type {string}
      * @memberof ArticleCreate
      */
-    og_description?: string;
+    og_description?: string | null;
 }
+
+
 /**
  * 
  * @export
@@ -1259,80 +1267,82 @@ export interface ArticleUpdate {
      * @type {string}
      * @memberof ArticleUpdate
      */
-    title?: string;
+    title?: string | null;
     /**
      * 
      * @type {string}
      * @memberof ArticleUpdate
      */
-    body?: string;
+    body?: string | null;
     /**
      * 
      * @type {string}
      * @memberof ArticleUpdate
      */
-    body_base64?: string;
+    body_base64?: string | null;
     /**
      * 
      * @type {string}
      * @memberof ArticleUpdate
      */
-    slug?: string;
+    slug?: string | null;
     /**
      * 
      * @type {ArticleByline}
      * @memberof ArticleUpdate
      */
-    byline?: ArticleByline;
+    byline?: ArticleByline | null;
     /**
      * 
      * @type {ArticleVisibility}
      * @memberof ArticleUpdate
      */
-    visibility?: ArticleVisibility;
+    visibility?: ArticleVisibility | null;
     /**
      * 
      * @type {boolean}
      * @memberof ArticleUpdate
      */
-    paid_subscribers_only?: boolean;
+    paid_subscribers_only?: boolean | null;
     /**
      * 
      * @type {string}
      * @memberof ArticleUpdate
      */
-    paid_subscribers_only_ends_at?: string;
+    paid_subscribers_only_ends_at?: string | null;
     /**
      * 
      * @type {string}
      * @memberof ArticleUpdate
      */
-    published_at?: string;
+    published_at?: string | null;
     /**
      * 
      * @type {boolean}
      * @memberof ArticleUpdate
      */
-    notify_subscribers?: boolean;
+    notify_subscribers?: boolean | null;
     /**
      * 
      * @type {boolean}
      * @memberof ArticleUpdate
      */
-    is_pinned?: boolean;
+    is_pinned?: boolean | null;
     /**
      * 
      * @type {string}
      * @memberof ArticleUpdate
      */
-    og_image_url?: string;
+    og_image_url?: string | null;
     /**
      * 
      * @type {string}
      * @memberof ArticleUpdate
      */
-    og_description?: string;
+    og_description?: string | null;
 }
+
+
 
 /**
  * 
@@ -1437,7 +1447,7 @@ export interface AuthorizeOrganization {
      * @type {string}
      * @memberof AuthorizeOrganization
      */
-    avatar_url?: string;
+    avatar_url: string | null;
 }
 /**
  * 
@@ -1462,7 +1472,7 @@ export interface AuthorizeResponseOrganization {
      * @type {AuthorizeOrganization}
      * @memberof AuthorizeResponseOrganization
      */
-    sub?: AuthorizeOrganization;
+    sub: AuthorizeOrganization | null;
     /**
      * 
      * @type {Array<Scope>}
@@ -1509,7 +1519,7 @@ export interface AuthorizeResponseUser {
      * @type {AuthorizeUser}
      * @memberof AuthorizeResponseUser
      */
-    sub?: AuthorizeUser;
+    sub: AuthorizeUser | null;
     /**
      * 
      * @type {Array<Scope>}
@@ -1556,7 +1566,7 @@ export interface AuthorizeUser {
      * @type {string}
      * @memberof AuthorizeUser
      */
-    avatar_url?: string;
+    avatar_url: string | null;
 }
 
 /**
@@ -1706,7 +1716,7 @@ export interface BackofficePledge {
      * @type {string}
      * @memberof BackofficePledge
      */
-    modified_at?: string;
+    modified_at: string | null;
     /**
      * The ID of the object.
      * @type {string}
@@ -1742,13 +1752,13 @@ export interface BackofficePledge {
      * @type {string}
      * @memberof BackofficePledge
      */
-    refunded_at?: string;
+    refunded_at?: string | null;
     /**
      * 
      * @type {string}
      * @memberof BackofficePledge
      */
-    scheduled_payout_at?: string;
+    scheduled_payout_at?: string | null;
     /**
      * The issue that the pledge was made towards
      * @type {Issue}
@@ -1760,13 +1770,13 @@ export interface BackofficePledge {
      * @type {Pledger}
      * @memberof BackofficePledge
      */
-    pledger?: Pledger;
+    pledger?: Pledger | null;
     /**
      * 
      * @type {string}
      * @memberof BackofficePledge
      */
-    hosted_invoice_url?: string;
+    hosted_invoice_url?: string | null;
     /**
      * If the currently authenticated subject can perform admin actions on behalf of the maker of the peldge
      * @type {boolean}
@@ -1784,38 +1794,40 @@ export interface BackofficePledge {
      * @type {Pledger}
      * @memberof BackofficePledge
      */
-    created_by?: Pledger;
+    created_by?: Pledger | null;
     /**
      * 
      * @type {string}
      * @memberof BackofficePledge
      */
-    payment_id?: string;
+    payment_id: string | null;
     /**
      * 
      * @type {string}
      * @memberof BackofficePledge
      */
-    dispute_reason?: string;
+    dispute_reason: string | null;
     /**
      * 
      * @type {string}
      * @memberof BackofficePledge
      */
-    disputed_by_user_id?: string;
+    disputed_by_user_id: string | null;
     /**
      * 
      * @type {string}
      * @memberof BackofficePledge
      */
-    disputed_at?: string;
+    disputed_at: string | null;
     /**
      * 
      * @type {string}
      * @memberof BackofficePledge
      */
-    pledger_email?: string;
+    pledger_email: string | null;
 }
+
+
 /**
  * 
  * @export
@@ -1833,13 +1845,13 @@ export interface BackofficeReward {
      * @type {User}
      * @memberof BackofficeReward
      */
-    user?: User;
+    user?: User | null;
     /**
      * 
      * @type {Organization}
      * @memberof BackofficeReward
      */
-    organization?: Organization;
+    organization?: Organization | null;
     /**
      * 
      * @type {CurrencyAmount}
@@ -1857,13 +1869,13 @@ export interface BackofficeReward {
      * @type {string}
      * @memberof BackofficeReward
      */
-    paid_at?: string;
+    paid_at?: string | null;
     /**
      * 
      * @type {string}
      * @memberof BackofficeReward
      */
-    transfer_id?: string;
+    transfer_id: string | null;
     /**
      * 
      * @type {string}
@@ -1875,14 +1887,16 @@ export interface BackofficeReward {
      * @type {string}
      * @memberof BackofficeReward
      */
-    pledge_payment_id?: string;
+    pledge_payment_id: string | null;
     /**
      * 
      * @type {string}
      * @memberof BackofficeReward
      */
-    pledger_email?: string;
+    pledger_email: string | null;
 }
+
+
 /**
  * A benefit of type `ads`.
  * 
@@ -1902,7 +1916,7 @@ export interface BenefitAds {
      * @type {string}
      * @memberof BenefitAds
      */
-    modified_at?: string;
+    modified_at: string | null;
     /**
      * The ID of the benefit.
      * @type {string}
@@ -1979,7 +1993,7 @@ export interface BenefitAdsCreate {
      * @type {string}
      * @memberof BenefitAdsCreate
      */
-    organization_id?: string;
+    organization_id?: string | null;
     /**
      * 
      * @type {BenefitAdsProperties}
@@ -2033,7 +2047,7 @@ export interface BenefitAdsSubscriber {
      * @type {string}
      * @memberof BenefitAdsSubscriber
      */
-    modified_at?: string;
+    modified_at: string | null;
     /**
      * The ID of the benefit.
      * @type {string}
@@ -2104,7 +2118,7 @@ export interface BenefitAdsUpdate {
      * @type {string}
      * @memberof BenefitAdsUpdate
      */
-    description?: string;
+    description?: string | null;
     /**
      * 
      * @type {string}
@@ -2116,7 +2130,7 @@ export interface BenefitAdsUpdate {
      * @type {BenefitAdsProperties}
      * @memberof BenefitAdsUpdate
      */
-    properties?: BenefitAdsProperties;
+    properties?: BenefitAdsProperties | null;
 }
 
 
@@ -2147,7 +2161,7 @@ export interface BenefitArticles {
      * @type {string}
      * @memberof BenefitArticles
      */
-    modified_at?: string;
+    modified_at: string | null;
     /**
      * The ID of the benefit.
      * @type {string}
@@ -2231,7 +2245,7 @@ export interface BenefitArticlesSubscriber {
      * @type {string}
      * @memberof BenefitArticlesSubscriber
      */
-    modified_at?: string;
+    modified_at: string | null;
     /**
      * The ID of the benefit.
      * @type {string}
@@ -2309,7 +2323,7 @@ export interface BenefitArticlesUpdate {
      * @type {string}
      * @memberof BenefitArticlesUpdate
      */
-    description?: string;
+    description?: string | null;
     /**
      * 
      * @type {string}
@@ -2344,7 +2358,7 @@ export interface BenefitBase {
      * @type {string}
      * @memberof BenefitBase
      */
-    modified_at?: string;
+    modified_at: string | null;
     /**
      * The ID of the benefit.
      * @type {string}
@@ -2382,6 +2396,8 @@ export interface BenefitBase {
      */
     organization_id: string;
 }
+
+
 /**
  * @type BenefitCreate
  * 
@@ -2407,7 +2423,7 @@ export interface BenefitCustom {
      * @type {string}
      * @memberof BenefitCustom
      */
-    modified_at?: string;
+    modified_at: string | null;
     /**
      * The ID of the benefit.
      * @type {string}
@@ -2490,7 +2506,7 @@ export interface BenefitCustomCreate {
      * @type {string}
      * @memberof BenefitCustomCreate
      */
-    organization_id?: string;
+    organization_id?: string | null;
     /**
      * Whether the benefit is taxable.
      * @type {boolean}
@@ -2522,11 +2538,18 @@ export type BenefitCustomCreateTypeEnum = typeof BenefitCustomCreateTypeEnum[key
 export interface BenefitCustomProperties {
     /**
      * 
-     * @type {string}
+     * @type {BenefitCustomPropertiesNote}
      * @memberof BenefitCustomProperties
      */
-    note?: string;
+    note: BenefitCustomPropertiesNote | null;
 }
+/**
+ * @type BenefitCustomPropertiesNote
+ * Private note to be shared with users who have this benefit granted.
+ * @export
+ */
+export type BenefitCustomPropertiesNote = string;
+
 /**
  * 
  * @export
@@ -2544,7 +2567,7 @@ export interface BenefitCustomSubscriber {
      * @type {string}
      * @memberof BenefitCustomSubscriber
      */
-    modified_at?: string;
+    modified_at: string | null;
     /**
      * The ID of the benefit.
      * @type {string}
@@ -2612,10 +2635,10 @@ export type BenefitCustomSubscriberTypeEnum = typeof BenefitCustomSubscriberType
 export interface BenefitCustomSubscriberProperties {
     /**
      * 
-     * @type {string}
+     * @type {BenefitCustomPropertiesNote}
      * @memberof BenefitCustomSubscriberProperties
      */
-    note?: string;
+    note: BenefitCustomPropertiesNote | null;
 }
 /**
  * 
@@ -2628,7 +2651,7 @@ export interface BenefitCustomUpdate {
      * @type {string}
      * @memberof BenefitCustomUpdate
      */
-    description?: string;
+    description?: string | null;
     /**
      * 
      * @type {string}
@@ -2640,7 +2663,7 @@ export interface BenefitCustomUpdate {
      * @type {BenefitCustomProperties}
      * @memberof BenefitCustomUpdate
      */
-    properties?: BenefitCustomProperties;
+    properties?: BenefitCustomProperties | null;
 }
 
 
@@ -2671,7 +2694,7 @@ export interface BenefitDiscord {
      * @type {string}
      * @memberof BenefitDiscord
      */
-    modified_at?: string;
+    modified_at: string | null;
     /**
      * The ID of the benefit.
      * @type {string}
@@ -2748,7 +2771,7 @@ export interface BenefitDiscordCreate {
      * @type {string}
      * @memberof BenefitDiscordCreate
      */
-    organization_id?: string;
+    organization_id?: string | null;
     /**
      * 
      * @type {BenefitDiscordCreateProperties}
@@ -2827,7 +2850,7 @@ export interface BenefitDiscordSubscriber {
      * @type {string}
      * @memberof BenefitDiscordSubscriber
      */
-    modified_at?: string;
+    modified_at: string | null;
     /**
      * The ID of the benefit.
      * @type {string}
@@ -2905,7 +2928,7 @@ export interface BenefitDiscordUpdate {
      * @type {string}
      * @memberof BenefitDiscordUpdate
      */
-    description?: string;
+    description?: string | null;
     /**
      * 
      * @type {string}
@@ -2917,7 +2940,7 @@ export interface BenefitDiscordUpdate {
      * @type {BenefitDiscordCreateProperties}
      * @memberof BenefitDiscordUpdate
      */
-    properties?: BenefitDiscordCreateProperties;
+    properties?: BenefitDiscordCreateProperties | null;
 }
 
 
@@ -2946,7 +2969,7 @@ export interface BenefitDownloadables {
      * @type {string}
      * @memberof BenefitDownloadables
      */
-    modified_at?: string;
+    modified_at: string | null;
     /**
      * The ID of the benefit.
      * @type {string}
@@ -3023,7 +3046,7 @@ export interface BenefitDownloadablesCreate {
      * @type {string}
      * @memberof BenefitDownloadablesCreate
      */
-    organization_id?: string;
+    organization_id?: string | null;
     /**
      * 
      * @type {BenefitDownloadablesCreateProperties}
@@ -3096,7 +3119,7 @@ export interface BenefitDownloadablesSubscriber {
      * @type {string}
      * @memberof BenefitDownloadablesSubscriber
      */
-    modified_at?: string;
+    modified_at: string | null;
     /**
      * The ID of the benefit.
      * @type {string}
@@ -3174,7 +3197,7 @@ export interface BenefitDownloadablesUpdate {
      * @type {string}
      * @memberof BenefitDownloadablesUpdate
      */
-    description?: string;
+    description?: string | null;
     /**
      * 
      * @type {string}
@@ -3186,7 +3209,7 @@ export interface BenefitDownloadablesUpdate {
      * @type {BenefitDownloadablesCreateProperties}
      * @memberof BenefitDownloadablesUpdate
      */
-    properties?: BenefitDownloadablesCreateProperties;
+    properties?: BenefitDownloadablesCreateProperties | null;
 }
 
 
@@ -3217,7 +3240,7 @@ export interface BenefitGitHubRepository {
      * @type {string}
      * @memberof BenefitGitHubRepository
      */
-    modified_at?: string;
+    modified_at: string | null;
     /**
      * The ID of the benefit.
      * @type {string}
@@ -3294,7 +3317,7 @@ export interface BenefitGitHubRepositoryCreate {
      * @type {string}
      * @memberof BenefitGitHubRepositoryCreate
      */
-    organization_id?: string;
+    organization_id?: string | null;
     /**
      * 
      * @type {BenefitGitHubRepositoryCreateProperties}
@@ -3323,19 +3346,19 @@ export interface BenefitGitHubRepositoryCreateProperties {
      * @type {string}
      * @memberof BenefitGitHubRepositoryCreateProperties
      */
-    repository_id?: string;
+    repository_id?: string | null;
     /**
      * 
      * @type {string}
      * @memberof BenefitGitHubRepositoryCreateProperties
      */
-    repository_owner?: string;
+    repository_owner?: string | null;
     /**
      * 
      * @type {string}
      * @memberof BenefitGitHubRepositoryCreateProperties
      */
-    repository_name?: string;
+    repository_name?: string | null;
     /**
      * The permission level to grant. Read more about roles and their permissions on [GitHub documentation](https://docs.github.com/en/organizations/managing-user-access-to-your-organizations-repositories/managing-repository-roles/repository-roles-for-an-organization#permissions-for-each-role).
      * @type {string}
@@ -3368,7 +3391,7 @@ export interface BenefitGitHubRepositoryProperties {
      * @type {string}
      * @memberof BenefitGitHubRepositoryProperties
      */
-    repository_id?: string;
+    repository_id: string | null;
     /**
      * The owner of the repository.
      * @type {string}
@@ -3419,7 +3442,7 @@ export interface BenefitGitHubRepositorySubscriber {
      * @type {string}
      * @memberof BenefitGitHubRepositorySubscriber
      */
-    modified_at?: string;
+    modified_at: string | null;
     /**
      * The ID of the benefit.
      * @type {string}
@@ -3503,7 +3526,7 @@ export interface BenefitGitHubRepositoryUpdate {
      * @type {string}
      * @memberof BenefitGitHubRepositoryUpdate
      */
-    description?: string;
+    description?: string | null;
     /**
      * 
      * @type {string}
@@ -3515,7 +3538,7 @@ export interface BenefitGitHubRepositoryUpdate {
      * @type {BenefitGitHubRepositoryCreateProperties}
      * @memberof BenefitGitHubRepositoryUpdate
      */
-    properties?: BenefitGitHubRepositoryCreateProperties;
+    properties?: BenefitGitHubRepositoryCreateProperties | null;
 }
 
 
@@ -3544,7 +3567,7 @@ export interface BenefitGrant {
      * @type {string}
      * @memberof BenefitGrant
      */
-    modified_at?: string;
+    modified_at: string | null;
     /**
      * The ID of the grant.
      * @type {string}
@@ -3556,7 +3579,7 @@ export interface BenefitGrant {
      * @type {string}
      * @memberof BenefitGrant
      */
-    granted_at?: string;
+    granted_at?: string | null;
     /**
      * Whether the benefit is granted.
      * @type {boolean}
@@ -3568,7 +3591,7 @@ export interface BenefitGrant {
      * @type {string}
      * @memberof BenefitGrant
      */
-    revoked_at?: string;
+    revoked_at?: string | null;
     /**
      * Whether the benefit is revoked.
      * @type {boolean}
@@ -3586,13 +3609,13 @@ export interface BenefitGrant {
      * @type {string}
      * @memberof BenefitGrant
      */
-    subscription_id?: string;
+    subscription_id: string | null;
     /**
      * 
      * @type {string}
      * @memberof BenefitGrant
      */
-    order_id?: string;
+    order_id: string | null;
     /**
      * The ID of the user concerned by this grant.
      * @type {string}
@@ -3623,7 +3646,7 @@ export interface BenefitGrantAds {
      * @type {string}
      * @memberof BenefitGrantAds
      */
-    modified_at?: string;
+    modified_at: string | null;
     /**
      * The ID of the grant.
      * @type {string}
@@ -3635,7 +3658,7 @@ export interface BenefitGrantAds {
      * @type {string}
      * @memberof BenefitGrantAds
      */
-    granted_at?: string;
+    granted_at?: string | null;
     /**
      * Whether the benefit is granted.
      * @type {boolean}
@@ -3647,7 +3670,7 @@ export interface BenefitGrantAds {
      * @type {string}
      * @memberof BenefitGrantAds
      */
-    revoked_at?: string;
+    revoked_at?: string | null;
     /**
      * Whether the benefit is revoked.
      * @type {boolean}
@@ -3665,13 +3688,13 @@ export interface BenefitGrantAds {
      * @type {string}
      * @memberof BenefitGrantAds
      */
-    subscription_id?: string;
+    subscription_id: string | null;
     /**
      * 
      * @type {string}
      * @memberof BenefitGrantAds
      */
-    order_id?: string;
+    order_id: string | null;
     /**
      * The ID of the user concerned by this grant.
      * @type {string}
@@ -3696,7 +3719,7 @@ export interface BenefitGrantAdsProperties {
      * @type {string}
      * @memberof BenefitGrantAdsProperties
      */
-    advertisement_campaign_id?: string;
+    advertisement_campaign_id?: string | null;
 }
 /**
  * @type BenefitIDFilter
@@ -3853,7 +3876,7 @@ export interface BylineProfile {
      * @type {string}
      * @memberof BylineProfile
      */
-    avatar_url?: string;
+    avatar_url: string | null;
 }
 /**
  * A checkout session.
@@ -3872,19 +3895,19 @@ export interface Checkout {
      * @type {string}
      * @memberof Checkout
      */
-    url?: string;
+    url?: string | null;
     /**
      * 
      * @type {string}
      * @memberof Checkout
      */
-    customer_email?: string;
+    customer_email: string | null;
     /**
      * 
      * @type {string}
      * @memberof Checkout
      */
-    customer_name?: string;
+    customer_name: string | null;
     /**
      * 
      * @type {Product}
@@ -3921,7 +3944,7 @@ export interface CheckoutCreate {
      * @type {string}
      * @memberof CheckoutCreate
      */
-    customer_email?: string;
+    customer_email?: string | null;
 }
 /**
  * 
@@ -3947,13 +3970,13 @@ export interface ConfirmIssueSplit {
      * @type {string}
      * @memberof ConfirmIssueSplit
      */
-    organization_id?: string;
+    organization_id?: string | null;
     /**
      * 
      * @type {string}
      * @memberof ConfirmIssueSplit
      */
-    github_username?: string;
+    github_username?: string | null;
     /**
      * 
      * @type {number}
@@ -4003,13 +4026,13 @@ export interface CreatePledgePayLater {
      * @type {string}
      * @memberof CreatePledgePayLater
      */
-    on_behalf_of_organization_id?: string;
+    on_behalf_of_organization_id?: string | null;
     /**
      * 
      * @type {string}
      * @memberof CreatePledgePayLater
      */
-    by_organization_id?: string;
+    by_organization_id?: string | null;
 }
 /**
  * 
@@ -4109,7 +4132,7 @@ export interface Donation {
      * @type {string}
      * @memberof Donation
      */
-    modified_at?: string;
+    modified_at: string | null;
     /**
      * The ID of the object.
      * @type {string}
@@ -4139,7 +4162,7 @@ export interface Donation {
      * @type {Donor}
      * @memberof Donation
      */
-    donor?: Donor;
+    donor: Donor | null;
     /**
      * 
      * @type {string}
@@ -4151,7 +4174,7 @@ export interface Donation {
      * @type {Issue}
      * @memberof Donation
      */
-    issue?: Issue;
+    issue: Issue | null;
 }
 /**
  * 
@@ -4188,25 +4211,25 @@ export interface DonationCreateStripePaymentIntent {
      * @type {string}
      * @memberof DonationCreateStripePaymentIntent
      */
-    setup_future_usage?: DonationCreateStripePaymentIntentSetupFutureUsageEnum;
+    setup_future_usage?: DonationCreateStripePaymentIntentSetupFutureUsageEnum | null;
     /**
      * 
      * @type {string}
      * @memberof DonationCreateStripePaymentIntent
      */
-    on_behalf_of_organization_id?: string;
+    on_behalf_of_organization_id?: string | null;
     /**
      * 
      * @type {string}
      * @memberof DonationCreateStripePaymentIntent
      */
-    message?: string;
+    message?: string | null;
     /**
      * 
      * @type {string}
      * @memberof DonationCreateStripePaymentIntent
      */
-    issue_id?: string;
+    issue_id?: string | null;
 }
 
 
@@ -4255,6 +4278,8 @@ export interface DonationOrganization {
      */
     is_personal: boolean;
 }
+
+
 /**
  * 
  * @export
@@ -4322,7 +4347,7 @@ export interface DonationStripePaymentIntentMutationResponse {
      * @type {string}
      * @memberof DonationStripePaymentIntentMutationResponse
      */
-    client_secret?: string;
+    client_secret: string | null;
 }
 /**
  * 
@@ -4353,25 +4378,25 @@ export interface DonationUpdateStripePaymentIntent {
      * @type {string}
      * @memberof DonationUpdateStripePaymentIntent
      */
-    setup_future_usage?: DonationUpdateStripePaymentIntentSetupFutureUsageEnum;
+    setup_future_usage?: DonationUpdateStripePaymentIntentSetupFutureUsageEnum | null;
     /**
      * 
      * @type {string}
      * @memberof DonationUpdateStripePaymentIntent
      */
-    on_behalf_of_organization_id?: string;
+    on_behalf_of_organization_id?: string | null;
     /**
      * 
      * @type {string}
      * @memberof DonationUpdateStripePaymentIntent
      */
-    message?: string;
+    message?: string | null;
     /**
      * 
      * @type {string}
      * @memberof DonationUpdateStripePaymentIntent
      */
-    issue_id?: string;
+    issue_id?: string | null;
 }
 
 
@@ -4425,7 +4450,7 @@ export interface DownloadableFileCreate {
      * @type {string}
      * @memberof DownloadableFileCreate
      */
-    organization_id?: string;
+    organization_id?: string | null;
     /**
      * 
      * @type {string}
@@ -4449,7 +4474,7 @@ export interface DownloadableFileCreate {
      * @type {string}
      * @memberof DownloadableFileCreate
      */
-    checksum_sha256_base64?: string;
+    checksum_sha256_base64?: string | null;
     /**
      * 
      * @type {S3FileCreateMultipart}
@@ -4467,7 +4492,7 @@ export interface DownloadableFileCreate {
      * @type {string}
      * @memberof DownloadableFileCreate
      */
-    version?: string;
+    version?: string | null;
 }
 
 
@@ -4526,37 +4551,37 @@ export interface DownloadableFileRead {
      * @type {string}
      * @memberof DownloadableFileRead
      */
-    storage_version?: string;
+    storage_version: string | null;
     /**
      * 
      * @type {string}
      * @memberof DownloadableFileRead
      */
-    checksum_etag?: string;
+    checksum_etag: string | null;
     /**
      * 
      * @type {string}
      * @memberof DownloadableFileRead
      */
-    checksum_sha256_base64?: string;
+    checksum_sha256_base64: string | null;
     /**
      * 
      * @type {string}
      * @memberof DownloadableFileRead
      */
-    checksum_sha256_hex?: string;
+    checksum_sha256_hex: string | null;
     /**
      * 
      * @type {string}
      * @memberof DownloadableFileRead
      */
-    last_modified_at?: string;
+    last_modified_at: string | null;
     /**
      * 
      * @type {string}
      * @memberof DownloadableFileRead
      */
-    version?: string;
+    version: string | null;
     /**
      * 
      * @type {string}
@@ -4646,25 +4671,25 @@ export interface Entry {
      * @type {Array<Reward>}
      * @memberof Entry
      */
-    rewards?: Array<Reward>;
+    rewards: Array<Reward> | null;
     /**
      * 
      * @type {PledgesTypeSummaries}
      * @memberof Entry
      */
-    pledges_summary?: PledgesTypeSummaries;
+    pledges_summary: PledgesTypeSummaries | null;
     /**
      * 
      * @type {Array<IssueReferenceRead>}
      * @memberof Entry
      */
-    references?: Array<IssueReferenceRead>;
+    references: Array<IssueReferenceRead> | null;
     /**
      * 
      * @type {Array<Pledge>}
      * @memberof Entry
      */
-    pledges?: Array<Pledge>;
+    pledges: Array<Pledge> | null;
 }
 /**
  * A price that already exists for this product.
@@ -4722,13 +4747,13 @@ export interface ExternalGitHubCommitReference {
      * @type {string}
      * @memberof ExternalGitHubCommitReference
      */
-    branch_name?: string;
+    branch_name?: string | null;
     /**
      * 
      * @type {string}
      * @memberof ExternalGitHubCommitReference
      */
-    message?: string;
+    message?: string | null;
 }
 /**
  * 
@@ -4820,50 +4845,52 @@ export interface ExternalOrganization {
      * @type {string}
      * @memberof ExternalOrganization
      */
-    bio?: string;
+    bio: string | null;
     /**
      * 
      * @type {string}
      * @memberof ExternalOrganization
      */
-    pretty_name?: string;
+    pretty_name: string | null;
     /**
      * 
      * @type {string}
      * @memberof ExternalOrganization
      */
-    company?: string;
+    company: string | null;
     /**
      * 
      * @type {string}
      * @memberof ExternalOrganization
      */
-    blog?: string;
+    blog: string | null;
     /**
      * 
      * @type {string}
      * @memberof ExternalOrganization
      */
-    location?: string;
+    location: string | null;
     /**
      * 
      * @type {string}
      * @memberof ExternalOrganization
      */
-    email?: string;
+    email: string | null;
     /**
      * 
      * @type {string}
      * @memberof ExternalOrganization
      */
-    twitter_username?: string;
+    twitter_username: string | null;
     /**
      * The organization ID.
      * @type {string}
      * @memberof ExternalOrganization
      */
-    organization_id?: string;
+    organization_id: string | null;
 }
+
+
 /**
  * @type ExternalOrganizationNameFilter
  * Filter by external organization name.
@@ -4924,31 +4951,31 @@ export interface FileDownload {
      * @type {string}
      * @memberof FileDownload
      */
-    storage_version?: string;
+    storage_version: string | null;
     /**
      * 
      * @type {string}
      * @memberof FileDownload
      */
-    checksum_etag?: string;
+    checksum_etag: string | null;
     /**
      * 
      * @type {string}
      * @memberof FileDownload
      */
-    checksum_sha256_base64?: string;
+    checksum_sha256_base64: string | null;
     /**
      * 
      * @type {string}
      * @memberof FileDownload
      */
-    checksum_sha256_hex?: string;
+    checksum_sha256_hex: string | null;
     /**
      * 
      * @type {string}
      * @memberof FileDownload
      */
-    last_modified_at?: string;
+    last_modified_at: string | null;
     /**
      * 
      * @type {S3DownloadURL}
@@ -4980,6 +5007,8 @@ export interface FileDownload {
      */
     readonly size_readable: string;
 }
+
+
 /**
  * 
  * @export
@@ -5020,13 +5049,13 @@ export interface FilePatch {
      * @type {string}
      * @memberof FilePatch
      */
-    name?: string;
+    name?: string | null;
     /**
      * 
      * @type {string}
      * @memberof FilePatch
      */
-    version?: string;
+    version?: string | null;
 }
 /**
  * @type FileRead
@@ -5093,31 +5122,31 @@ export interface FileUpload {
      * @type {string}
      * @memberof FileUpload
      */
-    storage_version?: string;
+    storage_version: string | null;
     /**
      * 
      * @type {string}
      * @memberof FileUpload
      */
-    checksum_etag?: string;
+    checksum_etag: string | null;
     /**
      * 
      * @type {string}
      * @memberof FileUpload
      */
-    checksum_sha256_base64?: string;
+    checksum_sha256_base64: string | null;
     /**
      * 
      * @type {string}
      * @memberof FileUpload
      */
-    checksum_sha256_hex?: string;
+    checksum_sha256_hex: string | null;
     /**
      * 
      * @type {string}
      * @memberof FileUpload
      */
-    last_modified_at?: string;
+    last_modified_at: string | null;
     /**
      * 
      * @type {S3FileUploadMultipart}
@@ -5129,7 +5158,7 @@ export interface FileUpload {
      * @type {string}
      * @memberof FileUpload
      */
-    version?: string;
+    version: string | null;
     /**
      * 
      * @type {boolean}
@@ -5149,6 +5178,8 @@ export interface FileUpload {
      */
     readonly size_readable: string;
 }
+
+
 /**
  * 
  * @export
@@ -5214,13 +5245,13 @@ export interface Funding {
      * @type {CurrencyAmount}
      * @memberof Funding
      */
-    funding_goal?: CurrencyAmount;
+    funding_goal?: CurrencyAmount | null;
     /**
      * 
      * @type {CurrencyAmount}
      * @memberof Funding
      */
-    pledges_sum?: CurrencyAmount;
+    pledges_sum?: CurrencyAmount | null;
 }
 /**
  * 
@@ -5475,13 +5506,13 @@ export interface Issue {
      * @type {string}
      * @memberof Issue
      */
-    body?: string;
+    body?: string | null;
     /**
      * 
      * @type {number}
      * @memberof Issue
      */
-    comments?: number;
+    comments?: number | null;
     /**
      * 
      * @type {Array<Label>}
@@ -5493,19 +5524,19 @@ export interface Issue {
      * @type {Author}
      * @memberof Issue
      */
-    author?: Author;
+    author?: Author | null;
     /**
      * 
      * @type {Array<Assignee>}
      * @memberof Issue
      */
-    assignees?: Array<Assignee>;
+    assignees?: Array<Assignee> | null;
     /**
      * 
      * @type {Reactions}
      * @memberof Issue
      */
-    reactions?: Reactions;
+    reactions?: Reactions | null;
     /**
      * 
      * @type {State}
@@ -5517,13 +5548,13 @@ export interface Issue {
      * @type {string}
      * @memberof Issue
      */
-    issue_closed_at?: string;
+    issue_closed_at?: string | null;
     /**
      * 
      * @type {string}
      * @memberof Issue
      */
-    issue_modified_at?: string;
+    issue_modified_at?: string | null;
     /**
      * 
      * @type {string}
@@ -5541,7 +5572,7 @@ export interface Issue {
      * @type {string}
      * @memberof Issue
      */
-    confirmed_solved_at?: string;
+    confirmed_solved_at?: string | null;
     /**
      * 
      * @type {Funding}
@@ -5559,7 +5590,7 @@ export interface Issue {
      * @type {number}
      * @memberof Issue
      */
-    upfront_split_to_contributors?: number;
+    upfront_split_to_contributors?: number | null;
     /**
      * If this issue currently has the Polar badge SVG embedded
      * @type {boolean}
@@ -5571,8 +5602,10 @@ export interface Issue {
      * @type {string}
      * @memberof Issue
      */
-    badge_custom_content?: string;
+    badge_custom_content?: string | null;
 }
+
+
 /**
  * 
  * @export
@@ -5590,7 +5623,7 @@ export interface IssueFunding {
      * @type {CurrencyAmount}
      * @memberof IssueFunding
      */
-    funding_goal?: CurrencyAmount;
+    funding_goal: CurrencyAmount | null;
     /**
      * 
      * @type {CurrencyAmount}
@@ -5653,20 +5686,22 @@ export interface IssueReferenceRead {
      * @type {PullRequestReference}
      * @memberof IssueReferenceRead
      */
-    pull_request_reference?: PullRequestReference;
+    pull_request_reference?: PullRequestReference | null;
     /**
      * 
      * @type {ExternalGitHubPullRequestReference}
      * @memberof IssueReferenceRead
      */
-    external_github_pull_request_reference?: ExternalGitHubPullRequestReference;
+    external_github_pull_request_reference?: ExternalGitHubPullRequestReference | null;
     /**
      * 
      * @type {ExternalGitHubCommitReference}
      * @memberof IssueReferenceRead
      */
-    external_github_commit_reference?: ExternalGitHubCommitReference;
+    external_github_commit_reference?: ExternalGitHubCommitReference | null;
 }
+
+
 
 /**
  * 
@@ -6414,7 +6449,7 @@ export interface MagicLinkRequest {
      * @type {string}
      * @memberof MagicLinkRequest
      */
-    return_to?: string;
+    return_to?: string | null;
 }
 /**
  * 
@@ -6900,7 +6935,7 @@ export interface MaintainerPledgeConfirmationPendingNotificationPayload {
      * @type {string}
      * @memberof MaintainerPledgeConfirmationPendingNotificationPayload
      */
-    pledge_id?: string;
+    pledge_id: string | null;
 }
 /**
  * 
@@ -6954,7 +6989,7 @@ export interface MaintainerPledgeCreatedNotificationPayload {
      * @type {string}
      * @memberof MaintainerPledgeCreatedNotificationPayload
      */
-    pledger_name?: string;
+    pledger_name: string | null;
     /**
      * 
      * @type {string}
@@ -7002,14 +7037,16 @@ export interface MaintainerPledgeCreatedNotificationPayload {
      * @type {string}
      * @memberof MaintainerPledgeCreatedNotificationPayload
      */
-    pledge_id?: string;
+    pledge_id: string | null;
     /**
      * 
      * @type {PledgeType}
      * @memberof MaintainerPledgeCreatedNotificationPayload
      */
-    pledge_type?: PledgeType;
+    pledge_type: PledgeType | null;
 }
+
+
 /**
  * 
  * @export
@@ -7098,7 +7135,7 @@ export interface MaintainerPledgePaidNotificationPayload {
      * @type {string}
      * @memberof MaintainerPledgePaidNotificationPayload
      */
-    pledge_id?: string;
+    pledge_id: string | null;
 }
 /**
  * 
@@ -7200,7 +7237,7 @@ export interface MaintainerPledgePendingNotificationPayload {
      * @type {string}
      * @memberof MaintainerPledgePendingNotificationPayload
      */
-    pledge_id?: string;
+    pledge_id: string | null;
 }
 /**
  * 
@@ -7419,6 +7456,8 @@ export interface Metric {
      */
     type: MetricType;
 }
+
+
 /**
  * 
  * @export
@@ -7722,7 +7761,7 @@ export interface NotificationsList {
      * @type {string}
      * @memberof NotificationsList
      */
-    last_read_notification_id?: string;
+    last_read_notification_id: string | null;
 }
 /**
  * 
@@ -7784,25 +7823,25 @@ export interface OAuth2Client {
      * @type {string}
      * @memberof OAuth2Client
      */
-    client_uri?: string;
+    client_uri?: string | null;
     /**
      * 
      * @type {string}
      * @memberof OAuth2Client
      */
-    logo_uri?: string;
+    logo_uri?: string | null;
     /**
      * 
      * @type {string}
      * @memberof OAuth2Client
      */
-    tos_uri?: string;
+    tos_uri?: string | null;
     /**
      * 
      * @type {string}
      * @memberof OAuth2Client
      */
-    policy_uri?: string;
+    policy_uri?: string | null;
     /**
      * Creation timestamp of the object.
      * @type {string}
@@ -7814,7 +7853,7 @@ export interface OAuth2Client {
      * @type {string}
      * @memberof OAuth2Client
      */
-    modified_at?: string;
+    modified_at: string | null;
     /**
      * 
      * @type {string}
@@ -7916,25 +7955,25 @@ export interface OAuth2ClientConfiguration {
      * @type {string}
      * @memberof OAuth2ClientConfiguration
      */
-    client_uri?: string;
+    client_uri?: string | null;
     /**
      * 
      * @type {string}
      * @memberof OAuth2ClientConfiguration
      */
-    logo_uri?: string;
+    logo_uri?: string | null;
     /**
      * 
      * @type {string}
      * @memberof OAuth2ClientConfiguration
      */
-    tos_uri?: string;
+    tos_uri?: string | null;
     /**
      * 
      * @type {string}
      * @memberof OAuth2ClientConfiguration
      */
-    policy_uri?: string;
+    policy_uri?: string | null;
 }
 
 
@@ -8012,25 +8051,25 @@ export interface OAuth2ClientConfigurationUpdate {
      * @type {string}
      * @memberof OAuth2ClientConfigurationUpdate
      */
-    client_uri?: string;
+    client_uri?: string | null;
     /**
      * 
      * @type {string}
      * @memberof OAuth2ClientConfigurationUpdate
      */
-    logo_uri?: string;
+    logo_uri?: string | null;
     /**
      * 
      * @type {string}
      * @memberof OAuth2ClientConfigurationUpdate
      */
-    tos_uri?: string;
+    tos_uri?: string | null;
     /**
      * 
      * @type {string}
      * @memberof OAuth2ClientConfigurationUpdate
      */
-    policy_uri?: string;
+    policy_uri?: string | null;
     /**
      * 
      * @type {string}
@@ -8084,7 +8123,7 @@ export interface OAuth2ClientPublic {
      * @type {string}
      * @memberof OAuth2ClientPublic
      */
-    modified_at?: string;
+    modified_at: string | null;
     /**
      * 
      * @type {string}
@@ -8096,31 +8135,31 @@ export interface OAuth2ClientPublic {
      * @type {string}
      * @memberof OAuth2ClientPublic
      */
-    client_name?: string;
+    client_name: string | null;
     /**
      * 
      * @type {string}
      * @memberof OAuth2ClientPublic
      */
-    client_uri?: string;
+    client_uri: string | null;
     /**
      * 
      * @type {string}
      * @memberof OAuth2ClientPublic
      */
-    logo_uri?: string;
+    logo_uri: string | null;
     /**
      * 
      * @type {string}
      * @memberof OAuth2ClientPublic
      */
-    tos_uri?: string;
+    tos_uri: string | null;
     /**
      * 
      * @type {string}
      * @memberof OAuth2ClientPublic
      */
-    policy_uri?: string;
+    policy_uri: string | null;
 }
 /**
  * 
@@ -8139,7 +8178,7 @@ export interface OAuthAccountRead {
      * @type {string}
      * @memberof OAuthAccountRead
      */
-    modified_at?: string;
+    modified_at: string | null;
     /**
      * 
      * @type {OAuthPlatform}
@@ -8165,6 +8204,8 @@ export interface OAuthAccountRead {
      */
     account_username: string | null;
 }
+
+
 
 /**
  * 
@@ -8195,7 +8236,7 @@ export interface Order {
      * @type {string}
      * @memberof Order
      */
-    modified_at?: string;
+    modified_at: string | null;
     /**
      * The ID of the object.
      * @type {string}
@@ -8243,7 +8284,7 @@ export interface Order {
      * @type {string}
      * @memberof Order
      */
-    subscription_id?: string;
+    subscription_id: string | null;
     /**
      * 
      * @type {OrderUser}
@@ -8267,7 +8308,7 @@ export interface Order {
      * @type {OrderSubscription}
      * @memberof Order
      */
-    subscription?: OrderSubscription;
+    subscription: OrderSubscription | null;
 }
 /**
  * @type OrderIDFilter
@@ -8306,7 +8347,7 @@ export interface OrderProduct {
      * @type {string}
      * @memberof OrderProduct
      */
-    modified_at?: string;
+    modified_at: string | null;
     /**
      * The ID of the product.
      * @type {string}
@@ -8324,7 +8365,7 @@ export interface OrderProduct {
      * @type {string}
      * @memberof OrderProduct
      */
-    description?: string;
+    description: string | null;
     /**
      * Whether the product is a subscription tier.
      * @type {boolean}
@@ -8348,14 +8389,16 @@ export interface OrderProduct {
      * @type {SubscriptionTierType}
      * @memberof OrderProduct
      */
-    type?: SubscriptionTierType;
+    type: SubscriptionTierType | null;
     /**
      * 
      * @type {boolean}
      * @memberof OrderProduct
      */
-    is_highlighted?: boolean;
+    is_highlighted: boolean | null;
 }
+
+
 /**
  * 
  * @export
@@ -8373,7 +8416,7 @@ export interface OrderSubscription {
      * @type {string}
      * @memberof OrderSubscription
      */
-    modified_at?: string;
+    modified_at: string | null;
     /**
      * The ID of the object.
      * @type {string}
@@ -8397,7 +8440,7 @@ export interface OrderSubscription {
      * @type {string}
      * @memberof OrderSubscription
      */
-    current_period_end?: string;
+    current_period_end: string | null;
     /**
      * 
      * @type {boolean}
@@ -8409,13 +8452,13 @@ export interface OrderSubscription {
      * @type {string}
      * @memberof OrderSubscription
      */
-    started_at?: string;
+    started_at: string | null;
     /**
      * 
      * @type {string}
      * @memberof OrderSubscription
      */
-    ended_at?: string;
+    ended_at: string | null;
     /**
      * 
      * @type {string}
@@ -8433,8 +8476,10 @@ export interface OrderSubscription {
      * @type {string}
      * @memberof OrderSubscription
      */
-    price_id?: string;
+    price_id: string | null;
 }
+
+
 /**
  * 
  * @export
@@ -8464,13 +8509,13 @@ export interface OrderUser {
      * @type {string}
      * @memberof OrderUser
      */
-    github_username?: string;
+    github_username: string | null;
     /**
      * 
      * @type {string}
      * @memberof OrderUser
      */
-    avatar_url?: string;
+    avatar_url: string | null;
 }
 /**
  * 
@@ -8489,7 +8534,7 @@ export interface Organization {
      * @type {string}
      * @memberof Organization
      */
-    modified_at?: string;
+    modified_at: string | null;
     /**
      * The organization ID.
      * @type {string}
@@ -8513,43 +8558,43 @@ export interface Organization {
      * @type {string}
      * @memberof Organization
      */
-    avatar_url?: string;
+    avatar_url: string | null;
     /**
      * 
      * @type {string}
      * @memberof Organization
      */
-    bio?: string;
+    bio: string | null;
     /**
      * 
      * @type {string}
      * @memberof Organization
      */
-    company?: string;
+    company: string | null;
     /**
      * 
      * @type {string}
      * @memberof Organization
      */
-    blog?: string;
+    blog: string | null;
     /**
      * 
      * @type {string}
      * @memberof Organization
      */
-    location?: string;
+    location: string | null;
     /**
      * 
      * @type {string}
      * @memberof Organization
      */
-    email?: string;
+    email: string | null;
     /**
      * 
      * @type {string}
      * @memberof Organization
      */
-    twitter_username?: string;
+    twitter_username: string | null;
     /**
      * 
      * @type {number}
@@ -8567,7 +8612,7 @@ export interface Organization {
      * @type {number}
      * @memberof Organization
      */
-    default_upfront_split_to_contributors?: number;
+    default_upfront_split_to_contributors: number | null;
     /**
      * If this organizations accepts donations
      * @type {boolean}
@@ -8598,7 +8643,7 @@ export interface OrganizationAvatarFileCreate {
      * @type {string}
      * @memberof OrganizationAvatarFileCreate
      */
-    organization_id?: string;
+    organization_id?: string | null;
     /**
      * 
      * @type {string}
@@ -8622,7 +8667,7 @@ export interface OrganizationAvatarFileCreate {
      * @type {string}
      * @memberof OrganizationAvatarFileCreate
      */
-    checksum_sha256_base64?: string;
+    checksum_sha256_base64?: string | null;
     /**
      * 
      * @type {S3FileCreateMultipart}
@@ -8640,7 +8685,7 @@ export interface OrganizationAvatarFileCreate {
      * @type {string}
      * @memberof OrganizationAvatarFileCreate
      */
-    version?: string;
+    version?: string | null;
 }
 
 
@@ -8699,37 +8744,37 @@ export interface OrganizationAvatarFileRead {
      * @type {string}
      * @memberof OrganizationAvatarFileRead
      */
-    storage_version?: string;
+    storage_version: string | null;
     /**
      * 
      * @type {string}
      * @memberof OrganizationAvatarFileRead
      */
-    checksum_etag?: string;
+    checksum_etag: string | null;
     /**
      * 
      * @type {string}
      * @memberof OrganizationAvatarFileRead
      */
-    checksum_sha256_base64?: string;
+    checksum_sha256_base64: string | null;
     /**
      * 
      * @type {string}
      * @memberof OrganizationAvatarFileRead
      */
-    checksum_sha256_hex?: string;
+    checksum_sha256_hex: string | null;
     /**
      * 
      * @type {string}
      * @memberof OrganizationAvatarFileRead
      */
-    last_modified_at?: string;
+    last_modified_at: string | null;
     /**
      * 
      * @type {string}
      * @memberof OrganizationAvatarFileRead
      */
-    version?: string;
+    version: string | null;
     /**
      * 
      * @type {string}
@@ -8794,7 +8839,7 @@ export interface OrganizationBadgeSettingsRead {
      * @type {string}
      * @memberof OrganizationBadgeSettingsRead
      */
-    message?: string;
+    message: string | null;
     /**
      * 
      * @type {Array<RepositoryBadgeSettingsRead>}
@@ -8894,7 +8939,7 @@ export interface OrganizationCreate {
      * @type {string}
      * @memberof OrganizationCreate
      */
-    avatar_url?: string;
+    avatar_url?: string | null;
     /**
      * 
      * @type {boolean}
@@ -8906,7 +8951,7 @@ export interface OrganizationCreate {
      * @type {OrganizationFeatureSettings}
      * @memberof OrganizationCreate
      */
-    feature_settings?: OrganizationFeatureSettings;
+    feature_settings?: OrganizationFeatureSettings | null;
 }
 /**
  * 
@@ -8925,13 +8970,13 @@ export interface OrganizationCustomer {
      * @type {string}
      * @memberof OrganizationCustomer
      */
-    github_username?: string;
+    github_username: string | null;
     /**
      * 
      * @type {string}
      * @memberof OrganizationCustomer
      */
-    avatar_url?: string;
+    avatar_url: string | null;
 }
 
 /**
@@ -9002,13 +9047,13 @@ export interface OrganizationMember {
      * @type {string}
      * @memberof OrganizationMember
      */
-    github_username?: string;
+    github_username: string | null;
     /**
      * 
      * @type {string}
      * @memberof OrganizationMember
      */
-    avatar_url?: string;
+    avatar_url: string | null;
 }
 /**
  * 
@@ -9021,31 +9066,31 @@ export interface OrganizationProfileSettings {
      * @type {string}
      * @memberof OrganizationProfileSettings
      */
-    description?: string;
+    description?: string | null;
     /**
      * 
      * @type {Array<string>}
      * @memberof OrganizationProfileSettings
      */
-    featured_projects?: Array<string>;
+    featured_projects?: Array<string> | null;
     /**
      * 
      * @type {Array<string>}
      * @memberof OrganizationProfileSettings
      */
-    featured_organizations?: Array<string>;
+    featured_organizations?: Array<string> | null;
     /**
      * 
      * @type {Array<string>}
      * @memberof OrganizationProfileSettings
      */
-    links?: Array<string>;
+    links?: Array<string> | null;
     /**
      * 
      * @type {OrganizationSubscribePromoteSettings}
      * @memberof OrganizationProfileSettings
      */
-    subscribe?: OrganizationSubscribePromoteSettings;
+    subscribe?: OrganizationSubscribePromoteSettings | null;
 }
 /**
  * 
@@ -9109,19 +9154,19 @@ export interface OrganizationUpdate {
      * @type {string}
      * @memberof OrganizationUpdate
      */
-    name?: string;
+    name?: string | null;
     /**
      * 
      * @type {string}
      * @memberof OrganizationUpdate
      */
-    avatar_url?: string;
+    avatar_url?: string | null;
     /**
      * 
      * @type {number}
      * @memberof OrganizationUpdate
      */
-    default_upfront_split_to_contributors?: number;
+    default_upfront_split_to_contributors?: number | null;
     /**
      * 
      * @type {boolean}
@@ -9133,13 +9178,13 @@ export interface OrganizationUpdate {
      * @type {string}
      * @memberof OrganizationUpdate
      */
-    billing_email?: string;
+    billing_email?: string | null;
     /**
      * 
      * @type {string}
      * @memberof OrganizationUpdate
      */
-    default_badge_custom_content?: string;
+    default_badge_custom_content?: string | null;
     /**
      * 
      * @type {number}
@@ -9151,13 +9196,13 @@ export interface OrganizationUpdate {
      * @type {number}
      * @memberof OrganizationUpdate
      */
-    total_monthly_spending_limit?: number;
+    total_monthly_spending_limit?: number | null;
     /**
      * 
      * @type {number}
      * @memberof OrganizationUpdate
      */
-    per_user_monthly_spending_limit?: number;
+    per_user_monthly_spending_limit?: number | null;
     /**
      * 
      * @type {boolean}
@@ -9169,13 +9214,13 @@ export interface OrganizationUpdate {
      * @type {OrganizationProfileSettings}
      * @memberof OrganizationUpdate
      */
-    profile_settings?: OrganizationProfileSettings;
+    profile_settings?: OrganizationProfileSettings | null;
     /**
      * 
      * @type {OrganizationFeatureSettings}
      * @memberof OrganizationUpdate
      */
-    feature_settings?: OrganizationFeatureSettings;
+    feature_settings?: OrganizationFeatureSettings | null;
 }
 /**
  * 
@@ -9219,7 +9264,7 @@ export interface PaginationResponse {
      * @type {number}
      * @memberof PaginationResponse
      */
-    next_page?: number;
+    next_page: number | null;
 }
 /**
  * 
@@ -9244,7 +9289,7 @@ export interface PaymentMethod {
      * @type {string}
      * @memberof PaymentMethod
      */
-    brand?: string;
+    brand: string | null;
     /**
      * 
      * @type {string}
@@ -9347,7 +9392,7 @@ export interface PersonalAccessToken {
      * @type {string}
      * @memberof PersonalAccessToken
      */
-    modified_at?: string;
+    modified_at: string | null;
     /**
      * 
      * @type {string}
@@ -9377,7 +9422,7 @@ export interface PersonalAccessToken {
      * @type {string}
      * @memberof PersonalAccessToken
      */
-    last_used_at?: string;
+    last_used_at: string | null;
 }
 /**
  * 
@@ -9473,7 +9518,7 @@ export interface Pledge {
      * @type {string}
      * @memberof Pledge
      */
-    modified_at?: string;
+    modified_at: string | null;
     /**
      * The ID of the object.
      * @type {string}
@@ -9509,13 +9554,13 @@ export interface Pledge {
      * @type {string}
      * @memberof Pledge
      */
-    refunded_at?: string;
+    refunded_at?: string | null;
     /**
      * 
      * @type {string}
      * @memberof Pledge
      */
-    scheduled_payout_at?: string;
+    scheduled_payout_at?: string | null;
     /**
      * The issue that the pledge was made towards
      * @type {Issue}
@@ -9527,13 +9572,13 @@ export interface Pledge {
      * @type {Pledger}
      * @memberof Pledge
      */
-    pledger?: Pledger;
+    pledger?: Pledger | null;
     /**
      * 
      * @type {string}
      * @memberof Pledge
      */
-    hosted_invoice_url?: string;
+    hosted_invoice_url?: string | null;
     /**
      * If the currently authenticated subject can perform admin actions on behalf of the maker of the peldge
      * @type {boolean}
@@ -9551,8 +9596,10 @@ export interface Pledge {
      * @type {Pledger}
      * @memberof Pledge
      */
-    created_by?: Pledger;
+    created_by?: Pledger | null;
 }
+
+
 /**
  * 
  * @export
@@ -9661,13 +9708,13 @@ export interface PledgeStripePaymentIntentCreate {
      * @type {string}
      * @memberof PledgeStripePaymentIntentCreate
      */
-    setup_future_usage?: PledgeStripePaymentIntentCreateSetupFutureUsageEnum;
+    setup_future_usage?: PledgeStripePaymentIntentCreateSetupFutureUsageEnum | null;
     /**
      * 
      * @type {string}
      * @memberof PledgeStripePaymentIntentCreate
      */
-    on_behalf_of_organization_id?: string;
+    on_behalf_of_organization_id?: string | null;
 }
 
 
@@ -9720,7 +9767,7 @@ export interface PledgeStripePaymentIntentMutationResponse {
      * @type {string}
      * @memberof PledgeStripePaymentIntentMutationResponse
      */
-    client_secret?: string;
+    client_secret: string | null;
 }
 /**
  * 
@@ -9751,13 +9798,13 @@ export interface PledgeStripePaymentIntentUpdate {
      * @type {string}
      * @memberof PledgeStripePaymentIntentUpdate
      */
-    setup_future_usage?: PledgeStripePaymentIntentUpdateSetupFutureUsageEnum;
+    setup_future_usage?: PledgeStripePaymentIntentUpdateSetupFutureUsageEnum | null;
     /**
      * 
      * @type {string}
      * @memberof PledgeStripePaymentIntentUpdate
      */
-    on_behalf_of_organization_id?: string;
+    on_behalf_of_organization_id?: string | null;
 }
 
 
@@ -9798,13 +9845,13 @@ export interface Pledger {
      * @type {string}
      * @memberof Pledger
      */
-    github_username?: string;
+    github_username: string | null;
     /**
      * 
      * @type {string}
      * @memberof Pledger
      */
-    avatar_url?: string;
+    avatar_url: string | null;
 }
 /**
  * 
@@ -9900,14 +9947,16 @@ export interface PledgerPledgePendingNotificationPayload {
      * @type {string}
      * @memberof PledgerPledgePendingNotificationPayload
      */
-    pledge_id?: string;
+    pledge_id: string | null;
     /**
      * 
      * @type {PledgeType}
      * @memberof PledgerPledgePendingNotificationPayload
      */
-    pledge_type?: PledgeType;
+    pledge_type: PledgeType | null;
 }
+
+
 /**
  * 
  * @export
@@ -9994,7 +10043,7 @@ export interface Product {
      * @type {string}
      * @memberof Product
      */
-    modified_at?: string;
+    modified_at: string | null;
     /**
      * The ID of the product.
      * @type {string}
@@ -10012,7 +10061,7 @@ export interface Product {
      * @type {string}
      * @memberof Product
      */
-    description?: string;
+    description: string | null;
     /**
      * Whether the product is a subscription tier.
      * @type {boolean}
@@ -10036,13 +10085,13 @@ export interface Product {
      * @type {SubscriptionTierType}
      * @memberof Product
      */
-    type?: SubscriptionTierType;
+    type: SubscriptionTierType | null;
     /**
      * 
      * @type {boolean}
      * @memberof Product
      */
-    is_highlighted?: boolean;
+    is_highlighted: boolean | null;
     /**
      * List of available prices for this product.
      * @type {Array<PricesInner>}
@@ -10062,6 +10111,8 @@ export interface Product {
      */
     medias: Array<ProductMediaFileRead>;
 }
+
+
 /**
  * Schema to update the benefits granted by a product.
  * @export
@@ -10099,7 +10150,7 @@ export interface ProductMediaFileCreate {
      * @type {string}
      * @memberof ProductMediaFileCreate
      */
-    organization_id?: string;
+    organization_id?: string | null;
     /**
      * 
      * @type {string}
@@ -10123,7 +10174,7 @@ export interface ProductMediaFileCreate {
      * @type {string}
      * @memberof ProductMediaFileCreate
      */
-    checksum_sha256_base64?: string;
+    checksum_sha256_base64?: string | null;
     /**
      * 
      * @type {S3FileCreateMultipart}
@@ -10141,7 +10192,7 @@ export interface ProductMediaFileCreate {
      * @type {string}
      * @memberof ProductMediaFileCreate
      */
-    version?: string;
+    version?: string | null;
 }
 
 
@@ -10200,37 +10251,37 @@ export interface ProductMediaFileRead {
      * @type {string}
      * @memberof ProductMediaFileRead
      */
-    storage_version?: string;
+    storage_version: string | null;
     /**
      * 
      * @type {string}
      * @memberof ProductMediaFileRead
      */
-    checksum_etag?: string;
+    checksum_etag: string | null;
     /**
      * 
      * @type {string}
      * @memberof ProductMediaFileRead
      */
-    checksum_sha256_base64?: string;
+    checksum_sha256_base64: string | null;
     /**
      * 
      * @type {string}
      * @memberof ProductMediaFileRead
      */
-    checksum_sha256_hex?: string;
+    checksum_sha256_hex: string | null;
     /**
      * 
      * @type {string}
      * @memberof ProductMediaFileRead
      */
-    last_modified_at?: string;
+    last_modified_at: string | null;
     /**
      * 
      * @type {string}
      * @memberof ProductMediaFileRead
      */
-    version?: string;
+    version: string | null;
     /**
      * 
      * @type {string}
@@ -10289,7 +10340,7 @@ export interface ProductOneTimeCreate {
      * @type {string}
      * @memberof ProductOneTimeCreate
      */
-    description?: string;
+    description?: string | null;
     /**
      * List of available prices for this product.
      * @type {Array<ProductPriceOneTimeCreate>}
@@ -10301,13 +10352,13 @@ export interface ProductOneTimeCreate {
      * @type {Array<string>}
      * @memberof ProductOneTimeCreate
      */
-    medias?: Array<string>;
+    medias?: Array<string> | null;
     /**
      * The organization ID.
      * @type {string}
      * @memberof ProductOneTimeCreate
      */
-    organization_id?: string;
+    organization_id?: string | null;
 }
 /**
  * @type ProductPrice
@@ -10332,7 +10383,7 @@ export interface ProductPriceOneTime {
      * @type {string}
      * @memberof ProductPriceOneTime
      */
-    modified_at?: string;
+    modified_at: string | null;
     /**
      * The ID of the price.
      * @type {string}
@@ -10426,7 +10477,7 @@ export interface ProductPriceRecurring {
      * @type {string}
      * @memberof ProductPriceRecurring
      */
-    modified_at?: string;
+    modified_at: string | null;
     /**
      * The ID of the price.
      * @type {string}
@@ -10462,7 +10513,7 @@ export interface ProductPriceRecurring {
      * @type {ProductPriceRecurringInterval}
      * @memberof ProductPriceRecurring
      */
-    recurring_interval?: ProductPriceRecurringInterval;
+    recurring_interval: ProductPriceRecurringInterval | null;
 }
 
 
@@ -10568,7 +10619,7 @@ export interface ProductRecurringCreate {
      * @type {string}
      * @memberof ProductRecurringCreate
      */
-    description?: string;
+    description?: string | null;
     /**
      * List of available prices for this product.
      * @type {Array<ProductPriceRecurringCreate>}
@@ -10580,13 +10631,13 @@ export interface ProductRecurringCreate {
      * @type {Array<string>}
      * @memberof ProductRecurringCreate
      */
-    medias?: Array<string>;
+    medias?: Array<string> | null;
     /**
      * The organization ID.
      * @type {string}
      * @memberof ProductRecurringCreate
      */
-    organization_id?: string;
+    organization_id?: string | null;
     /**
      * 
      * @type {string}
@@ -10624,37 +10675,37 @@ export interface ProductUpdate {
      * @type {string}
      * @memberof ProductUpdate
      */
-    name?: string;
+    name?: string | null;
     /**
      * 
      * @type {string}
      * @memberof ProductUpdate
      */
-    description?: string;
+    description?: string | null;
     /**
      * 
      * @type {boolean}
      * @memberof ProductUpdate
      */
-    is_highlighted?: boolean;
+    is_highlighted?: boolean | null;
     /**
      * 
      * @type {boolean}
      * @memberof ProductUpdate
      */
-    is_archived?: boolean;
+    is_archived?: boolean | null;
     /**
      * 
      * @type {Array<ProductUpdatePricesInner>}
      * @memberof ProductUpdate
      */
-    prices?: Array<ProductUpdatePricesInner>;
+    prices?: Array<ProductUpdatePricesInner> | null;
     /**
      * 
      * @type {Array<string>}
      * @memberof ProductUpdate
      */
-    medias?: Array<string>;
+    medias?: Array<string> | null;
 }
 /**
  * @type ProductUpdatePricesInner
@@ -10728,7 +10779,7 @@ export interface PullRequest {
      * @type {Author}
      * @memberof PullRequest
      */
-    author?: Author;
+    author?: Author | null;
     /**
      * 
      * @type {number}
@@ -10819,13 +10870,13 @@ export interface PullRequestReference {
      * @type {string}
      * @memberof PullRequestReference
      */
-    merged_at?: string;
+    merged_at?: string | null;
     /**
      * 
      * @type {string}
      * @memberof PullRequestReference
      */
-    closed_at?: string;
+    closed_at?: string | null;
     /**
      * 
      * @type {boolean}
@@ -10929,25 +10980,25 @@ export interface Repository {
      * @type {string}
      * @memberof Repository
      */
-    description?: string;
+    description: string | null;
     /**
      * 
      * @type {number}
      * @memberof Repository
      */
-    stars?: number;
+    stars: number | null;
     /**
      * 
      * @type {string}
      * @memberof Repository
      */
-    license?: string;
+    license: string | null;
     /**
      * 
      * @type {string}
      * @memberof Repository
      */
-    homepage?: string;
+    homepage: string | null;
     /**
      * 
      * @type {RepositoryProfileSettings}
@@ -10961,6 +11012,8 @@ export interface Repository {
      */
     organization: ExternalOrganization;
 }
+
+
 /**
  * 
  * @export
@@ -10978,7 +11031,7 @@ export interface RepositoryBadgeSettingsRead {
      * @type {string}
      * @memberof RepositoryBadgeSettingsRead
      */
-    avatar_url?: string;
+    avatar_url: string | null;
     /**
      * 
      * @type {string}
@@ -11090,31 +11143,31 @@ export interface RepositoryProfileSettings {
      * @type {string}
      * @memberof RepositoryProfileSettings
      */
-    description?: string;
+    description?: string | null;
     /**
      * 
      * @type {string}
      * @memberof RepositoryProfileSettings
      */
-    cover_image_url?: string;
+    cover_image_url?: string | null;
     /**
      * 
      * @type {Array<string>}
      * @memberof RepositoryProfileSettings
      */
-    featured_organizations?: Array<string>;
+    featured_organizations?: Array<string> | null;
     /**
      * 
      * @type {Array<string>}
      * @memberof RepositoryProfileSettings
      */
-    highlighted_subscription_tiers?: Array<string>;
+    highlighted_subscription_tiers?: Array<string> | null;
     /**
      * 
      * @type {Array<string>}
      * @memberof RepositoryProfileSettings
      */
-    links?: Array<string>;
+    links?: Array<string> | null;
 }
 /**
  * 
@@ -11127,43 +11180,43 @@ export interface RepositoryProfileSettingsUpdate {
      * @type {boolean}
      * @memberof RepositoryProfileSettingsUpdate
      */
-    set_description?: boolean;
+    set_description?: boolean | null;
     /**
      * 
      * @type {string}
      * @memberof RepositoryProfileSettingsUpdate
      */
-    description?: string;
+    description?: string | null;
     /**
      * 
      * @type {boolean}
      * @memberof RepositoryProfileSettingsUpdate
      */
-    set_cover_image_url?: boolean;
+    set_cover_image_url?: boolean | null;
     /**
      * 
      * @type {string}
      * @memberof RepositoryProfileSettingsUpdate
      */
-    cover_image_url?: string;
+    cover_image_url?: string | null;
     /**
      * 
      * @type {Array<string>}
      * @memberof RepositoryProfileSettingsUpdate
      */
-    featured_organizations?: Array<string>;
+    featured_organizations?: Array<string> | null;
     /**
      * 
      * @type {Array<string>}
      * @memberof RepositoryProfileSettingsUpdate
      */
-    highlighted_subscription_tiers?: Array<string>;
+    highlighted_subscription_tiers?: Array<string> | null;
     /**
      * 
      * @type {Array<string>}
      * @memberof RepositoryProfileSettingsUpdate
      */
-    links?: Array<string>;
+    links?: Array<string> | null;
 }
 /**
  * 
@@ -11176,7 +11229,7 @@ export interface RepositoryUpdate {
      * @type {RepositoryProfileSettingsUpdate}
      * @memberof RepositoryUpdate
      */
-    profile_settings?: RepositoryProfileSettingsUpdate;
+    profile_settings?: RepositoryProfileSettingsUpdate | null;
 }
 /**
  * 
@@ -11272,13 +11325,13 @@ export interface Reward {
      * @type {User}
      * @memberof Reward
      */
-    user?: User;
+    user?: User | null;
     /**
      * 
      * @type {Organization}
      * @memberof Reward
      */
-    organization?: Organization;
+    organization?: Organization | null;
     /**
      * 
      * @type {CurrencyAmount}
@@ -11296,8 +11349,10 @@ export interface Reward {
      * @type {string}
      * @memberof Reward
      */
-    paid_at?: string;
+    paid_at?: string | null;
 }
+
+
 /**
  * 
  * @export
@@ -11435,7 +11490,7 @@ export interface RewardsSummaryReceiver {
      * @type {string}
      * @memberof RewardsSummaryReceiver
      */
-    avatar_url?: string;
+    avatar_url: string | null;
 }
 /**
  * 
@@ -11504,7 +11559,7 @@ export interface S3FileCreatePart {
      * @type {string}
      * @memberof S3FileCreatePart
      */
-    checksum_sha256_base64?: string;
+    checksum_sha256_base64?: string | null;
 }
 /**
  * 
@@ -11529,7 +11584,7 @@ export interface S3FileUploadCompletedPart {
      * @type {string}
      * @memberof S3FileUploadCompletedPart
      */
-    checksum_sha256_base64?: string;
+    checksum_sha256_base64: string | null;
 }
 /**
  * 
@@ -11585,7 +11640,7 @@ export interface S3FileUploadPart {
      * @type {string}
      * @memberof S3FileUploadPart
      */
-    checksum_sha256_base64?: string;
+    checksum_sha256_base64?: string | null;
     /**
      * 
      * @type {string}
@@ -11700,7 +11755,7 @@ export interface Subscription {
      * @type {string}
      * @memberof Subscription
      */
-    modified_at?: string;
+    modified_at: string | null;
     /**
      * The ID of the object.
      * @type {string}
@@ -11724,7 +11779,7 @@ export interface Subscription {
      * @type {string}
      * @memberof Subscription
      */
-    current_period_end?: string;
+    current_period_end: string | null;
     /**
      * 
      * @type {boolean}
@@ -11736,13 +11791,13 @@ export interface Subscription {
      * @type {string}
      * @memberof Subscription
      */
-    started_at?: string;
+    started_at: string | null;
     /**
      * 
      * @type {string}
      * @memberof Subscription
      */
-    ended_at?: string;
+    ended_at: string | null;
     /**
      * 
      * @type {string}
@@ -11760,7 +11815,7 @@ export interface Subscription {
      * @type {string}
      * @memberof Subscription
      */
-    price_id?: string;
+    price_id: string | null;
     /**
      * 
      * @type {SubscriptionUser}
@@ -11778,8 +11833,10 @@ export interface Subscription {
      * @type {UserSubscriptionPrice}
      * @memberof Subscription
      */
-    price?: UserSubscriptionPrice;
+    price: UserSubscriptionPrice | null;
 }
+
+
 /**
  * Request schema for creating a subscription by email.
  * @export
@@ -11864,13 +11921,13 @@ export interface SubscriptionUser {
      * @type {string}
      * @memberof SubscriptionUser
      */
-    github_username?: string;
+    github_username: string | null;
     /**
      * 
      * @type {string}
      * @memberof SubscriptionUser
      */
-    avatar_url?: string;
+    avatar_url: string | null;
 }
 /**
  * Result of a subscription import operation.
@@ -11902,8 +11959,10 @@ export interface SummaryPledge {
      * @type {Pledger}
      * @memberof SummaryPledge
      */
-    pledger?: Pledger;
+    pledger: Pledger | null;
 }
+
+
 /**
  * 
  * @export
@@ -12035,7 +12094,7 @@ export interface TokenResponse {
      * @type {string}
      * @memberof TokenResponse
      */
-    refresh_token?: string;
+    refresh_token: string | null;
     /**
      * 
      * @type {string}
@@ -12076,19 +12135,19 @@ export interface TrackPageView {
      * @type {string}
      * @memberof TrackPageView
      */
-    article_id?: string;
+    article_id?: string | null;
     /**
      * 
      * @type {string}
      * @memberof TrackPageView
      */
-    organization_id?: string;
+    organization_id?: string | null;
     /**
      * 
      * @type {string}
      * @memberof TrackPageView
      */
-    referrer?: string;
+    referrer?: string | null;
 }
 /**
  * 
@@ -12164,7 +12223,7 @@ export interface TrafficStatisticsPeriod {
      * @type {string}
      * @memberof TrafficStatisticsPeriod
      */
-    article_id?: string;
+    article_id: string | null;
 }
 /**
  * 
@@ -12183,7 +12242,7 @@ export interface Transaction {
      * @type {string}
      * @memberof Transaction
      */
-    modified_at?: string;
+    modified_at: string | null;
     /**
      * 
      * @type {string}
@@ -12201,7 +12260,7 @@ export interface Transaction {
      * @type {PaymentProcessor}
      * @memberof Transaction
      */
-    processor?: PaymentProcessor;
+    processor: PaymentProcessor | null;
     /**
      * 
      * @type {string}
@@ -12231,67 +12290,67 @@ export interface Transaction {
      * @type {PlatformFeeType}
      * @memberof Transaction
      */
-    platform_fee_type?: PlatformFeeType;
+    platform_fee_type: PlatformFeeType | null;
     /**
      * 
      * @type {string}
      * @memberof Transaction
      */
-    pledge_id?: string;
+    pledge_id: string | null;
     /**
      * 
      * @type {string}
      * @memberof Transaction
      */
-    issue_reward_id?: string;
+    issue_reward_id: string | null;
     /**
      * 
      * @type {string}
      * @memberof Transaction
      */
-    subscription_id?: string;
+    order_id: string | null;
     /**
      * 
      * @type {string}
      * @memberof Transaction
      */
-    product_price_id?: string;
+    donation_id: string | null;
     /**
      * 
      * @type {string}
      * @memberof Transaction
      */
-    payout_transaction_id?: string;
+    payout_transaction_id: string | null;
     /**
      * 
      * @type {string}
      * @memberof Transaction
      */
-    incurred_by_transaction_id?: string;
+    incurred_by_transaction_id: string | null;
     /**
      * 
      * @type {TransactionPledge}
      * @memberof Transaction
      */
-    pledge?: TransactionPledge;
+    pledge: TransactionPledge | null;
     /**
      * 
      * @type {TransactionIssueReward}
      * @memberof Transaction
      */
-    issue_reward?: TransactionIssueReward;
+    issue_reward: TransactionIssueReward | null;
     /**
      * 
      * @type {TransactionOrder}
      * @memberof Transaction
      */
-    order?: TransactionOrder;
+    order: TransactionOrder | null;
     /**
      * 
      * @type {TransactionDonation}
      * @memberof Transaction
      */
-    donation?: TransactionDonation;
+    donation: TransactionDonation | null;
     /**
      * 
      * @type {Array<TransactionEmbedded>}
@@ -12317,6 +12376,8 @@ export interface Transaction {
      */
     net_amount: number;
 }
+
+
 /**
  * 
  * @export
@@ -12334,7 +12395,7 @@ export interface TransactionDetails {
      * @type {string}
      * @memberof TransactionDetails
      */
-    modified_at?: string;
+    modified_at: string | null;
     /**
      * 
      * @type {string}
@@ -12352,7 +12413,7 @@ export interface TransactionDetails {
      * @type {PaymentProcessor}
      * @memberof TransactionDetails
      */
-    processor?: PaymentProcessor;
+    processor: PaymentProcessor | null;
     /**
      * 
      * @type {string}
@@ -12382,67 +12443,67 @@ export interface TransactionDetails {
      * @type {PlatformFeeType}
      * @memberof TransactionDetails
      */
-    platform_fee_type?: PlatformFeeType;
+    platform_fee_type: PlatformFeeType | null;
     /**
      * 
      * @type {string}
      * @memberof TransactionDetails
      */
-    pledge_id?: string;
+    pledge_id: string | null;
     /**
      * 
      * @type {string}
      * @memberof TransactionDetails
      */
-    issue_reward_id?: string;
+    issue_reward_id: string | null;
     /**
      * 
      * @type {string}
      * @memberof TransactionDetails
      */
-    subscription_id?: string;
+    order_id: string | null;
     /**
      * 
      * @type {string}
      * @memberof TransactionDetails
      */
-    product_price_id?: string;
+    donation_id: string | null;
     /**
      * 
      * @type {string}
      * @memberof TransactionDetails
      */
-    payout_transaction_id?: string;
+    payout_transaction_id: string | null;
     /**
      * 
      * @type {string}
      * @memberof TransactionDetails
      */
-    incurred_by_transaction_id?: string;
+    incurred_by_transaction_id: string | null;
     /**
      * 
      * @type {TransactionPledge}
      * @memberof TransactionDetails
      */
-    pledge?: TransactionPledge;
+    pledge: TransactionPledge | null;
     /**
      * 
      * @type {TransactionIssueReward}
      * @memberof TransactionDetails
      */
-    issue_reward?: TransactionIssueReward;
+    issue_reward: TransactionIssueReward | null;
     /**
      * 
      * @type {TransactionOrder}
      * @memberof TransactionDetails
      */
-    order?: TransactionOrder;
+    order: TransactionOrder | null;
     /**
      * 
      * @type {TransactionDonation}
      * @memberof TransactionDetails
      */
-    donation?: TransactionDonation;
+    donation: TransactionDonation | null;
     /**
      * 
      * @type {Array<TransactionEmbedded>}
@@ -12474,6 +12535,8 @@ export interface TransactionDetails {
      */
     paid_transactions: Array<Transaction>;
 }
+
+
 /**
  * 
  * @export
@@ -12491,7 +12554,7 @@ export interface TransactionDonation {
      * @type {string}
      * @memberof TransactionDonation
      */
-    modified_at?: string;
+    modified_at: string | null;
     /**
      * 
      * @type {string}
@@ -12503,7 +12566,7 @@ export interface TransactionDonation {
      * @type {TransactionOrganization}
      * @memberof TransactionDonation
      */
-    to_organization?: TransactionOrganization;
+    to_organization: TransactionOrganization | null;
 }
 /**
  * 
@@ -12522,7 +12585,7 @@ export interface TransactionEmbedded {
      * @type {string}
      * @memberof TransactionEmbedded
      */
-    modified_at?: string;
+    modified_at: string | null;
     /**
      * 
      * @type {string}
@@ -12540,7 +12603,7 @@ export interface TransactionEmbedded {
      * @type {PaymentProcessor}
      * @memberof TransactionEmbedded
      */
-    processor?: PaymentProcessor;
+    processor: PaymentProcessor | null;
     /**
      * 
      * @type {string}
@@ -12570,44 +12633,46 @@ export interface TransactionEmbedded {
      * @type {PlatformFeeType}
      * @memberof TransactionEmbedded
      */
-    platform_fee_type?: PlatformFeeType;
+    platform_fee_type: PlatformFeeType | null;
     /**
      * 
      * @type {string}
      * @memberof TransactionEmbedded
      */
-    pledge_id?: string;
+    pledge_id: string | null;
     /**
      * 
      * @type {string}
      * @memberof TransactionEmbedded
      */
-    issue_reward_id?: string;
+    issue_reward_id: string | null;
     /**
      * 
      * @type {string}
      * @memberof TransactionEmbedded
      */
-    subscription_id?: string;
+    order_id: string | null;
     /**
      * 
      * @type {string}
      * @memberof TransactionEmbedded
      */
-    product_price_id?: string;
+    donation_id: string | null;
     /**
      * 
      * @type {string}
      * @memberof TransactionEmbedded
      */
-    payout_transaction_id?: string;
+    payout_transaction_id: string | null;
     /**
      * 
      * @type {string}
      * @memberof TransactionEmbedded
      */
-    incurred_by_transaction_id?: string;
+    incurred_by_transaction_id: string | null;
 }
+
+
 /**
  * 
  * @export
@@ -12625,7 +12690,7 @@ export interface TransactionExternalOrganization {
      * @type {string}
      * @memberof TransactionExternalOrganization
      */
-    modified_at?: string;
+    modified_at: string | null;
     /**
      * 
      * @type {string}
@@ -12657,6 +12722,8 @@ export interface TransactionExternalOrganization {
      */
     is_personal: boolean;
 }
+
+
 /**
  * 
  * @export
@@ -12674,7 +12741,7 @@ export interface TransactionIssue {
      * @type {string}
      * @memberof TransactionIssue
      */
-    modified_at?: string;
+    modified_at: string | null;
     /**
      * 
      * @type {string}
@@ -12724,6 +12791,8 @@ export interface TransactionIssue {
      */
     repository: TransactionRepository;
 }
+
+
 /**
  * 
  * @export
@@ -12741,7 +12810,7 @@ export interface TransactionIssueReward {
      * @type {string}
      * @memberof TransactionIssueReward
      */
-    modified_at?: string;
+    modified_at: string | null;
     /**
      * 
      * @type {string}
@@ -12778,7 +12847,7 @@ export interface TransactionOrder {
      * @type {string}
      * @memberof TransactionOrder
      */
-    modified_at?: string;
+    modified_at: string | null;
     /**
      * 
      * @type {string}
@@ -12802,7 +12871,7 @@ export interface TransactionOrder {
      * @type {string}
      * @memberof TransactionOrder
      */
-    subscription_id?: string;
+    subscription_id: string | null;
 }
 /**
  * 
@@ -12821,7 +12890,7 @@ export interface TransactionOrganization {
      * @type {string}
      * @memberof TransactionOrganization
      */
-    modified_at?: string;
+    modified_at: string | null;
     /**
      * 
      * @type {string}
@@ -12845,7 +12914,7 @@ export interface TransactionOrganization {
      * @type {string}
      * @memberof TransactionOrganization
      */
-    avatar_url?: string;
+    avatar_url: string | null;
 }
 /**
  * 
@@ -12864,7 +12933,7 @@ export interface TransactionPledge {
      * @type {string}
      * @memberof TransactionPledge
      */
-    modified_at?: string;
+    modified_at: string | null;
     /**
      * 
      * @type {string}
@@ -12884,6 +12953,8 @@ export interface TransactionPledge {
      */
     issue: TransactionIssue;
 }
+
+
 /**
  * 
  * @export
@@ -12901,7 +12972,7 @@ export interface TransactionProduct {
      * @type {string}
      * @memberof TransactionProduct
      */
-    modified_at?: string;
+    modified_at: string | null;
     /**
      * 
      * @type {string}
@@ -12919,20 +12990,22 @@ export interface TransactionProduct {
      * @type {string}
      * @memberof TransactionProduct
      */
-    organization_id?: string;
+    organization_id: string | null;
     /**
      * 
      * @type {TransactionOrganization}
      * @memberof TransactionProduct
      */
-    organization?: TransactionOrganization;
+    organization: TransactionOrganization | null;
     /**
      * 
      * @type {SubscriptionTierType}
      * @memberof TransactionProduct
      */
-    type?: SubscriptionTierType;
+    type: SubscriptionTierType | null;
 }
+
+
 /**
  * 
  * @export
@@ -12950,7 +13023,7 @@ export interface TransactionRepository {
      * @type {string}
      * @memberof TransactionRepository
      */
-    modified_at?: string;
+    modified_at: string | null;
     /**
      * 
      * @type {string}
@@ -12976,6 +13049,8 @@ export interface TransactionRepository {
      */
     name: string;
 }
+
+
 
 /**
  * Type of transactions.
@@ -13053,19 +13128,19 @@ export interface UpdateIssue {
      * @type {CurrencyAmount}
      * @memberof UpdateIssue
      */
-    funding_goal?: CurrencyAmount;
+    funding_goal?: CurrencyAmount | null;
     /**
      * 
      * @type {number}
      * @memberof UpdateIssue
      */
-    upfront_split_to_contributors?: number;
+    upfront_split_to_contributors?: number | null;
     /**
      * 
      * @type {boolean}
      * @memberof UpdateIssue
      */
-    set_upfront_split_to_contributors?: boolean;
+    set_upfront_split_to_contributors?: boolean | null;
 }
 /**
  * 
@@ -13103,7 +13178,7 @@ export interface UserAdvertisementCampaign {
      * @type {string}
      * @memberof UserAdvertisementCampaign
      */
-    modified_at?: string;
+    modified_at: string | null;
     /**
      * 
      * @type {string}
@@ -13139,7 +13214,7 @@ export interface UserAdvertisementCampaign {
      * @type {string}
      * @memberof UserAdvertisementCampaign
      */
-    image_url_dark?: string;
+    image_url_dark: string | null;
     /**
      * 
      * @type {string}
@@ -13170,7 +13245,7 @@ export interface UserAdvertisementCampaignCreate {
      * @type {string}
      * @memberof UserAdvertisementCampaignCreate
      */
-    image_url_dark?: string;
+    image_url_dark?: string | null;
     /**
      * 
      * @type {string}
@@ -13208,25 +13283,25 @@ export interface UserAdvertisementCampaignUpdate {
      * @type {string}
      * @memberof UserAdvertisementCampaignUpdate
      */
-    image_url?: string;
+    image_url?: string | null;
     /**
      * 
      * @type {string}
      * @memberof UserAdvertisementCampaignUpdate
      */
-    image_url_dark?: string;
+    image_url_dark?: string | null;
     /**
      * 
      * @type {string}
      * @memberof UserAdvertisementCampaignUpdate
      */
-    text?: string;
+    text?: string | null;
     /**
      * 
      * @type {string}
      * @memberof UserAdvertisementCampaignUpdate
      */
-    link_url?: string;
+    link_url?: string | null;
 }
 /**
  * 
@@ -13251,13 +13326,13 @@ export interface UserBase {
      * @type {string}
      * @memberof UserBase
      */
-    avatar_url?: string;
+    avatar_url: string | null;
     /**
      * 
      * @type {string}
      * @memberof UserBase
      */
-    account_id?: string;
+    account_id: string | null;
 }
 /**
  * @type UserBenefit
@@ -13282,7 +13357,7 @@ export interface UserFreeSubscriptionCreate {
      * @type {string}
      * @memberof UserFreeSubscriptionCreate
      */
-    customer_email?: string;
+    customer_email?: string | null;
 }
 /**
  * @type UserIDFilter
@@ -13308,7 +13383,7 @@ export interface UserInfoOrganization {
      * @type {string}
      * @memberof UserInfoOrganization
      */
-    name?: string;
+    name: string | null;
 }
 /**
  * 
@@ -13327,19 +13402,19 @@ export interface UserInfoUser {
      * @type {string}
      * @memberof UserInfoUser
      */
-    name?: string;
+    name: string | null;
     /**
      * 
      * @type {string}
      * @memberof UserInfoUser
      */
-    email?: string;
+    email: string | null;
     /**
      * 
      * @type {boolean}
      * @memberof UserInfoUser
      */
-    email_verified?: boolean;
+    email_verified: boolean | null;
 }
 /**
  * 
@@ -13358,7 +13433,7 @@ export interface UserOrder {
      * @type {string}
      * @memberof UserOrder
      */
-    modified_at?: string;
+    modified_at: string | null;
     /**
      * 
      * @type {string}
@@ -13406,7 +13481,7 @@ export interface UserOrder {
      * @type {string}
      * @memberof UserOrder
      */
-    subscription_id?: string;
+    subscription_id: string | null;
     /**
      * 
      * @type {UserOrderProduct}
@@ -13424,7 +13499,7 @@ export interface UserOrder {
      * @type {UserOrderSubscription}
      * @memberof UserOrder
      */
-    subscription?: UserOrderSubscription;
+    subscription: UserOrderSubscription | null;
 }
 /**
  * Order's invoice data.
@@ -13456,7 +13531,7 @@ export interface UserOrderProduct {
      * @type {string}
      * @memberof UserOrderProduct
      */
-    modified_at?: string;
+    modified_at: string | null;
     /**
      * The ID of the product.
      * @type {string}
@@ -13474,7 +13549,7 @@ export interface UserOrderProduct {
      * @type {string}
      * @memberof UserOrderProduct
      */
-    description?: string;
+    description: string | null;
     /**
      * Whether the product is a subscription tier.
      * @type {boolean}
@@ -13498,13 +13573,13 @@ export interface UserOrderProduct {
      * @type {SubscriptionTierType}
      * @memberof UserOrderProduct
      */
-    type?: SubscriptionTierType;
+    type: SubscriptionTierType | null;
     /**
      * 
      * @type {boolean}
      * @memberof UserOrderProduct
      */
-    is_highlighted?: boolean;
+    is_highlighted: boolean | null;
     /**
      * List of available prices for this product.
      * @type {Array<PricesInner>}
@@ -13524,6 +13599,8 @@ export interface UserOrderProduct {
      */
     medias: Array<ProductMediaFileRead>;
 }
+
+
 /**
  * 
  * @export
@@ -13541,7 +13618,7 @@ export interface UserOrderSubscription {
      * @type {string}
      * @memberof UserOrderSubscription
      */
-    modified_at?: string;
+    modified_at: string | null;
     /**
      * The ID of the object.
      * @type {string}
@@ -13565,7 +13642,7 @@ export interface UserOrderSubscription {
      * @type {string}
      * @memberof UserOrderSubscription
      */
-    current_period_end?: string;
+    current_period_end: string | null;
     /**
      * 
      * @type {boolean}
@@ -13577,13 +13654,13 @@ export interface UserOrderSubscription {
      * @type {string}
      * @memberof UserOrderSubscription
      */
-    started_at?: string;
+    started_at: string | null;
     /**
      * 
      * @type {string}
      * @memberof UserOrderSubscription
      */
-    ended_at?: string;
+    ended_at: string | null;
     /**
      * 
      * @type {string}
@@ -13601,8 +13678,10 @@ export interface UserOrderSubscription {
      * @type {string}
      * @memberof UserOrderSubscription
      */
-    price_id?: string;
+    price_id: string | null;
 }
+
+
 /**
  * 
  * @export
@@ -13620,7 +13699,7 @@ export interface UserRead {
      * @type {string}
      * @memberof UserRead
      */
-    modified_at?: string;
+    modified_at: string | null;
     /**
      * 
      * @type {string}
@@ -13638,13 +13717,13 @@ export interface UserRead {
      * @type {string}
      * @memberof UserRead
      */
-    avatar_url?: string;
+    avatar_url: string | null;
     /**
      * 
      * @type {string}
      * @memberof UserRead
      */
-    account_id?: string;
+    account_id: string | null;
     /**
      * 
      * @type {string}
@@ -13732,7 +13811,7 @@ export interface UserSubscription {
      * @type {string}
      * @memberof UserSubscription
      */
-    modified_at?: string;
+    modified_at: string | null;
     /**
      * 
      * @type {string}
@@ -13756,7 +13835,7 @@ export interface UserSubscription {
      * @type {string}
      * @memberof UserSubscription
      */
-    current_period_end?: string;
+    current_period_end: string | null;
     /**
      * 
      * @type {boolean}
@@ -13768,13 +13847,13 @@ export interface UserSubscription {
      * @type {string}
      * @memberof UserSubscription
      */
-    started_at?: string;
+    started_at: string | null;
     /**
      * 
      * @type {string}
      * @memberof UserSubscription
      */
-    ended_at?: string;
+    ended_at: string | null;
     /**
      * 
      * @type {string}
@@ -13786,7 +13865,7 @@ export interface UserSubscription {
      * @type {string}
      * @memberof UserSubscription
      */
-    organization_id?: string;
+    organization_id: string | null;
     /**
      * 
      * @type {string}
@@ -13798,7 +13877,7 @@ export interface UserSubscription {
      * @type {string}
      * @memberof UserSubscription
      */
-    price_id?: string;
+    price_id: string | null;
     /**
      * 
      * @type {UserSubscriptionProduct}
@@ -13810,8 +13889,10 @@ export interface UserSubscription {
      * @type {UserSubscriptionPrice}
      * @memberof UserSubscription
      */
-    price?: UserSubscriptionPrice;
+    price: UserSubscriptionPrice | null;
 }
+
+
 /**
  * @type UserSubscriptionPrice
  * 
@@ -13835,7 +13916,7 @@ export interface UserSubscriptionProduct {
      * @type {string}
      * @memberof UserSubscriptionProduct
      */
-    modified_at?: string;
+    modified_at: string | null;
     /**
      * The ID of the product.
      * @type {string}
@@ -13853,7 +13934,7 @@ export interface UserSubscriptionProduct {
      * @type {string}
      * @memberof UserSubscriptionProduct
      */
-    description?: string;
+    description: string | null;
     /**
      * Whether the product is a subscription tier.
      * @type {boolean}
@@ -13877,13 +13958,13 @@ export interface UserSubscriptionProduct {
      * @type {SubscriptionTierType}
      * @memberof UserSubscriptionProduct
      */
-    type?: SubscriptionTierType;
+    type: SubscriptionTierType | null;
     /**
      * 
      * @type {boolean}
      * @memberof UserSubscriptionProduct
      */
-    is_highlighted?: boolean;
+    is_highlighted: boolean | null;
     /**
      * List of available prices for this product.
      * @type {Array<PricesInner>}
@@ -13903,6 +13984,8 @@ export interface UserSubscriptionProduct {
      */
     medias: Array<ProductMediaFileRead>;
 }
+
+
 /**
  * 
  * @export
@@ -14020,7 +14103,7 @@ export interface WebhookDelivery {
      * @type {string}
      * @memberof WebhookDelivery
      */
-    modified_at?: string;
+    modified_at: string | null;
     /**
      * The webhook delivery ID.
      * @type {string}
@@ -14032,7 +14115,7 @@ export interface WebhookDelivery {
      * @type {number}
      * @memberof WebhookDelivery
      */
-    http_code?: number;
+    http_code?: number | null;
     /**
      * Whether the delivery was successful.
      * @type {boolean}
@@ -14094,7 +14177,7 @@ export interface WebhookEndpoint {
      * @type {string}
      * @memberof WebhookEndpoint
      */
-    modified_at?: string;
+    modified_at: string | null;
     /**
      * The webhook endpoint ID.
      * @type {string}
@@ -14118,13 +14201,13 @@ export interface WebhookEndpoint {
      * @type {string}
      * @memberof WebhookEndpoint
      */
-    user_id?: string;
+    user_id?: string | null;
     /**
      * 
      * @type {string}
      * @memberof WebhookEndpoint
      */
-    organization_id?: string;
+    organization_id?: string | null;
     /**
      * The events that will trigger the webhook.
      * @type {Array<WebhookEventType>}
@@ -14132,6 +14215,8 @@ export interface WebhookEndpoint {
      */
     events: Array<WebhookEventType>;
 }
+
+
 /**
  * Schema to create a webhook endpoint.
  * @export
@@ -14167,8 +14252,10 @@ export interface WebhookEndpointCreate {
      * @type {string}
      * @memberof WebhookEndpointCreate
      */
-    organization_id?: string;
+    organization_id?: string | null;
 }
+
+
 /**
  * Schema to update a webhook endpoint.
  * @export
@@ -14180,26 +14267,28 @@ export interface WebhookEndpointUpdate {
      * @type {string}
      * @memberof WebhookEndpointUpdate
      */
-    url?: string;
+    url?: string | null;
     /**
      * The format of the webhook payload.
      * @type {WebhookFormat}
      * @memberof WebhookEndpointUpdate
      */
-    format?: WebhookFormat;
+    format?: WebhookFormat | null;
     /**
      * The secret used to sign the webhook events.
      * @type {string}
      * @memberof WebhookEndpointUpdate
      */
-    secret?: string;
+    secret?: string | null;
     /**
      * The events that will trigger the webhook.
      * @type {Array<WebhookEventType>}
      * @memberof WebhookEndpointUpdate
      */
-    events?: Array<WebhookEventType>;
+    events?: Array<WebhookEventType> | null;
 }
+
+
 /**
  * A webhook event.
  * 
@@ -14223,7 +14312,7 @@ export interface WebhookEvent {
      * @type {string}
      * @memberof WebhookEvent
      */
-    modified_at?: string;
+    modified_at: string | null;
     /**
      * The webhook event ID.
      * @type {string}
@@ -14235,13 +14324,13 @@ export interface WebhookEvent {
      * @type {number}
      * @memberof WebhookEvent
      */
-    last_http_code?: number;
+    last_http_code?: number | null;
     /**
      * 
      * @type {boolean}
      * @memberof WebhookEvent
      */
-    succeeded?: boolean;
+    succeeded?: boolean | null;
     /**
      * The payload of the webhook event.
      * @type {string}
@@ -14484,13 +14573,13 @@ export interface WebhookResponse {
      * @type {string}
      * @memberof WebhookResponse
      */
-    message?: string;
+    message?: string | null;
     /**
      * 
      * @type {string}
      * @memberof WebhookResponse
      */
-    job_id?: string;
+    job_id?: string | null;
 }
 /**
  * Sent when a new subscription is created.

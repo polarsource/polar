@@ -126,8 +126,8 @@ class TestLicenseKeyEndpoints:
         lk = await license_key_service.get(session, id)
         assert lk
 
-        expires_at = utc_now() + relativedelta(months=1)
-        expires_at = expires_at.strftime("%Y-%m-%dT%H:%M:%S")
+        expires = utc_now() + relativedelta(months=1)
+        expires_at = expires.strftime("%Y-%m-%dT%H:%M:%S")
         response = await client.patch(
             f"/v1/license-keys/{lk.id}",
             json={

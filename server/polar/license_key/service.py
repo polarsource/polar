@@ -2,7 +2,7 @@ from collections.abc import Sequence
 from uuid import UUID
 
 import structlog
-from sqlalchemy import func, select
+from sqlalchemy import Select, func, select
 from sqlalchemy.orm import contains_eager
 
 from polar.exceptions import BadRequest, NotPermitted, ResourceNotFound
@@ -46,7 +46,23 @@ class LicenseKeyService(
         session: AsyncSession,
         id: UUID,
     ) -> LicenseKey | None:
-        query = self._get_loaded_base().where(LicenseKey.id == id)
+        query = (
+            self._get_select_base()
+            .join(
+                LicenseKeyActivation,
+                onclause=LicenseKeyActivation.license_key_id == LicenseKey.id,
+                isouter=True,
+            )
+            .join(Benefit, onclause=LicenseKey.benefit_id == Benefit.id)
+            .options(
+                contains_eager(LicenseKey.activations),
+                contains_eager(LicenseKey.benefit),
+            )
+            .where(
+                LicenseKey.id == id,
+                LicenseKeyActivation.deleted_at.is_(None),
+            )
+        )
         result = await session.execute(query)
         return result.unique().scalar_one_or_none()
 
@@ -272,23 +288,9 @@ class LicenseKeyService(
         await session.flush()
         return ret
 
-    def _get_loaded_base(self) -> sql.Select:
-        return (
-            self._get_select_base()
-            .join(
-                LicenseKeyActivation,
-                onclause=LicenseKeyActivation.license_key_id == LicenseKey.id,
-                isouter=True,
-            )
-            .join(Benefit, onclause=LicenseKey.benefit_id == Benefit.id)
-            .options(
-                contains_eager(LicenseKey.activations),
-                contains_eager(LicenseKey.benefit),
-            )
-            .where(LicenseKeyActivation.deleted_at.is_(None))
-        )
-
-    def _get_select_base(self) -> sql.Select:
+    def _get_select_base(
+        self,
+    ) -> Select[tuple[LicenseKey]]:
         return select(LicenseKey).where(LicenseKey.deleted_at.is_(None))
 
 

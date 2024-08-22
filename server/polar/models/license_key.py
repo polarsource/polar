@@ -96,6 +96,12 @@ class LicenseKey(RecordModel):
         nullable=True,
     )
 
+    @property
+    def display_key(self) -> str:
+        prefix = "****"
+        last_six_digits = self.key[-6:]
+        return f"{prefix}-{last_six_digits}"
+
     def mark_revoked(self) -> None:
         self.status = LicenseKeyStatus.revoked
 

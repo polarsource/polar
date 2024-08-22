@@ -83,28 +83,18 @@ async def validate_license_key(
         license_key=lk,
         validate=validate,
     )
+    activation_schema = None
     if activation:
-        activation = LicenseKeyActivationBase(
+        activation_schema = LicenseKeyActivationBase(
             id=activation.id,
             license_key_id=activation.license_key_id,
             label=activation.label,
             meta=activation.meta,
         )
 
-    return ValidatedLicenseKey(
-        id=license_key.id,
-        user_id=license_key.user_id,
-        benefit_id=license_key.benefit_id,
-        key=license_key.key,
-        status=license_key.status,
-        usage=license_key.usage,
-        limit_usage=license_key.limit_usage,
-        limit_activations=license_key.limit_activations,
-        activation=activation,
-        expires_at=license_key.expires_at,
-        validations=license_key.validations,
-        last_validated_at=license_key.last_validated_at,
-    )
+    ret = ValidatedLicenseKey.model_validate(license_key)
+    ret.activation = activation_schema
+    return ret
 
 
 @router.post(

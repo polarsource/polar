@@ -46,6 +46,7 @@ class TestUserLicenseKeyEndpoints:
             "/v1/users/license-keys/validate",
             json={
                 "key": lk.key,
+                "organization_id": str(organization.id),
             },
         )
         assert key_only_response.status_code == 200
@@ -54,7 +55,11 @@ class TestUserLicenseKeyEndpoints:
 
         scope_benefit_404_response = await client.post(
             "/v1/users/license-keys/validate",
-            json={"key": lk.key, "benefit_id": str(generate_uuid())},
+            json={
+                "key": lk.key,
+                "organization_id": str(organization.id),
+                "benefit_id": str(generate_uuid()),
+            },
         )
         assert scope_benefit_404_response.status_code == 404
 
@@ -62,6 +67,7 @@ class TestUserLicenseKeyEndpoints:
             "/v1/users/license-keys/validate",
             json={
                 "key": lk.key,
+                "organization_id": str(organization.id),
                 "benefit_id": str(lk.benefit_id),
             },
         )
@@ -73,6 +79,7 @@ class TestUserLicenseKeyEndpoints:
             "/v1/users/license-keys/validate",
             json={
                 "key": lk.key,
+                "organization_id": str(organization.id),
                 "benefit_id": str(lk.benefit_id),
                 "user_id": str(lk.user_id),
             },
@@ -109,13 +116,19 @@ class TestUserLicenseKeyEndpoints:
 
         response = await client.post(
             "/v1/users/license-keys/validate",
-            json={"key": lk.key},
+            json={
+                "key": lk.key,
+                "organization_id": str(organization.id),
+            },
         )
         assert response.status_code == 200
         with freeze_time(now + relativedelta(years=10)):
             response = await client.post(
                 "/v1/users/license-keys/validate",
-                json={"key": lk.key},
+                json={
+                    "key": lk.key,
+                    "organization_id": str(organization.id),
+                },
             )
             assert response.status_code == 200
 
@@ -136,13 +149,19 @@ class TestUserLicenseKeyEndpoints:
 
         response = await client.post(
             "/v1/users/license-keys/validate",
-            json={"key": day_lk.key},
+            json={
+                "key": day_lk.key,
+                "organization_id": str(organization.id),
+            },
         )
         assert response.status_code == 200
         with freeze_time(now + relativedelta(days=1, minutes=5)):
             response = await client.post(
                 "/v1/users/license-keys/validate",
-                json={"key": day_lk.key},
+                json={
+                    "key": day_lk.key,
+                    "organization_id": str(organization.id),
+                },
             )
             assert response.status_code == 404
 
@@ -163,21 +182,30 @@ class TestUserLicenseKeyEndpoints:
 
         response = await client.post(
             "/v1/users/license-keys/validate",
-            json={"key": month_lk.key},
+            json={
+                "key": month_lk.key,
+                "organization_id": str(organization.id),
+            },
         )
         assert response.status_code == 200
 
         with freeze_time(now + relativedelta(days=28, minutes=5)):
             response = await client.post(
                 "/v1/users/license-keys/validate",
-                json={"key": month_lk.key},
+                json={
+                    "key": month_lk.key,
+                    "organization_id": str(organization.id),
+                },
             )
             assert response.status_code == 200
 
         with freeze_time(now + relativedelta(months=1, minutes=5)):
             response = await client.post(
                 "/v1/users/license-keys/validate",
-                json={"key": month_lk.key},
+                json={
+                    "key": month_lk.key,
+                    "organization_id": str(organization.id),
+                },
             )
             assert response.status_code == 404
 
@@ -208,6 +236,7 @@ class TestUserLicenseKeyEndpoints:
             "/v1/users/license-keys/validate",
             json={
                 "key": lk.key,
+                "organization_id": str(organization.id),
                 "label": "testing activation",
                 "increment_usage": 1,
             },
@@ -220,6 +249,7 @@ class TestUserLicenseKeyEndpoints:
             "/v1/users/license-keys/validate",
             json={
                 "key": lk.key,
+                "organization_id": str(organization.id),
                 "label": "testing activation",
                 "increment_usage": 8,
             },
@@ -232,6 +262,7 @@ class TestUserLicenseKeyEndpoints:
             "/v1/users/license-keys/validate",
             json={
                 "key": lk.key,
+                "organization_id": str(organization.id),
                 "label": "testing activation",
                 "increment_usage": 2,
             },
@@ -271,6 +302,7 @@ class TestUserLicenseKeyEndpoints:
             "/v1/users/license-keys/activate",
             json={
                 "key": lk.key,
+                "organization_id": str(organization.id),
                 "label": "testing activation",
             },
         )
@@ -281,13 +313,21 @@ class TestUserLicenseKeyEndpoints:
         random_id = generate_uuid()
         activation_404 = await client.post(
             "/v1/users/license-keys/validate",
-            json={"key": lk.key, "activation_id": str(random_id)},
+            json={
+                "key": lk.key,
+                "organization_id": str(organization.id),
+                "activation_id": str(random_id),
+            },
         )
         assert activation_404.status_code == 404
 
         validate_activation = await client.post(
             "/v1/users/license-keys/validate",
-            json={"key": lk.key, "activation_id": activation_id},
+            json={
+                "key": lk.key,
+                "organization_id": str(organization.id),
+                "activation_id": activation_id,
+            },
         )
         assert validate_activation.status_code == 200
         validation = validate_activation.json()
@@ -326,6 +366,7 @@ class TestUserLicenseKeyEndpoints:
             "/v1/users/license-keys/activate",
             json={
                 "key": lk.key,
+                "organization_id": str(organization.id),
                 "label": "testing activation",
                 "conditions": conditions,
             },
@@ -336,7 +377,11 @@ class TestUserLicenseKeyEndpoints:
 
         activation_404 = await client.post(
             "/v1/users/license-keys/validate",
-            json={"key": lk.key, "activation_id": str(activation_id)},
+            json={
+                "key": lk.key,
+                "organization_id": str(organization.id),
+                "activation_id": str(activation_id),
+            },
         )
         assert activation_404.status_code == 404
 
@@ -344,6 +389,7 @@ class TestUserLicenseKeyEndpoints:
             "/v1/users/license-keys/validate",
             json={
                 "key": lk.key,
+                "organization_id": str(organization.id),
                 "activation_id": activation_id,
                 "conditions": conditions,
             },
@@ -385,6 +431,7 @@ class TestUserLicenseKeyEndpoints:
             "/v1/users/license-keys/activate",
             json={
                 "key": lk.key,
+                "organization_id": str(organization.id),
                 "label": label,
                 "meta": metadata,
             },
@@ -422,6 +469,7 @@ class TestUserLicenseKeyEndpoints:
             "/v1/users/license-keys/activate",
             json={
                 "key": lk.key,
+                "organization_id": str(organization.id),
                 "label": "test",
                 "meta": {},
             },
@@ -460,6 +508,7 @@ class TestUserLicenseKeyEndpoints:
             "/v1/users/license-keys/activate",
             json={
                 "key": lk.key,
+                "organization_id": str(organization.id),
                 "label": label,
                 "meta": metadata,
             },
@@ -471,6 +520,7 @@ class TestUserLicenseKeyEndpoints:
             "/v1/users/license-keys/activate",
             json={
                 "key": lk.key,
+                "organization_id": str(organization.id),
                 "label": label,
                 "meta": metadata,
             },
@@ -507,6 +557,7 @@ class TestUserLicenseKeyEndpoints:
             "/v1/users/license-keys/activate",
             json={
                 "key": lk.key,
+                "organization_id": str(organization.id),
                 "label": "test",
                 "meta": {},
             },
@@ -519,6 +570,7 @@ class TestUserLicenseKeyEndpoints:
             "/v1/users/license-keys/activate",
             json={
                 "key": lk.key,
+                "organization_id": str(organization.id),
                 "label": "one_too_many",
                 "meta": {},
             },
@@ -529,6 +581,7 @@ class TestUserLicenseKeyEndpoints:
             "/v1/users/license-keys/deactivate",
             json={
                 "key": lk.key,
+                "organization_id": str(organization.id),
                 "activation_id": activation_id,
             },
         )
@@ -538,6 +591,7 @@ class TestUserLicenseKeyEndpoints:
             "/v1/users/license-keys/activate",
             json={
                 "key": lk.key,
+                "organization_id": str(organization.id),
                 "label": "new_activation",
                 "meta": {},
             },

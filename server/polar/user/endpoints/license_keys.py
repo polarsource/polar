@@ -111,7 +111,11 @@ async def validate_license_key(
     session: AsyncSession = Depends(get_db_session),
 ) -> ValidatedLicenseKey:
     """Validate a license key."""
-    lk = await license_key_service.get_or_raise_by_key(session, key=validate.key)
+    lk = await license_key_service.get_or_raise_by_key(
+        session,
+        organization_id=validate.organization_id,
+        key=validate.key,
+    )
     license_key, activation = await license_key_service.validate(
         session,
         license_key=lk,
@@ -139,7 +143,11 @@ async def activate_license_key(
     session: AsyncSession = Depends(get_db_session),
 ) -> LicenseKeyActivation:
     """Activate a license key instance."""
-    lk = await license_key_service.get_or_raise_by_key(session, key=activate.key)
+    lk = await license_key_service.get_or_raise_by_key(
+        session,
+        organization_id=activate.organization_id,
+        key=activate.key,
+    )
     return await license_key_service.activate(
         session, license_key=lk, activate=activate
     )
@@ -159,5 +167,9 @@ async def deactivate_license_key(
     session: AsyncSession = Depends(get_db_session),
 ) -> None:
     """Deactivate a license key instance."""
-    lk = await license_key_service.get_or_raise_by_key(session, key=deactivate.key)
+    lk = await license_key_service.get_or_raise_by_key(
+        session,
+        organization_id=deactivate.organization_id,
+        key=deactivate.key,
+    )
     await license_key_service.deactivate(session, license_key=lk, deactivate=deactivate)

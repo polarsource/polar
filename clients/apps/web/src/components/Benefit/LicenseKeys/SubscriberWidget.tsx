@@ -9,7 +9,8 @@ import {
   UserSubscription,
 } from '@polar-sh/sdk'
 
-import { ContentPasteOutlined } from '@mui/icons-material'
+import { CloseOutlined, ContentPasteOutlined } from '@mui/icons-material'
+import { Pill } from 'polarkit/components/ui/atoms'
 import Button from 'polarkit/components/ui/atoms/button'
 import Input from 'polarkit/components/ui/atoms/input'
 
@@ -48,6 +49,14 @@ const LicenseKey = ({
     Array<LicenseKeyActivationBase>
   >(licenseKey?.activations ?? [])
   const hasActivations = activations.length > 0
+  const hasLimitations =
+    licenseKey.limit_activations ||
+    licenseKey.limit_usage ||
+    licenseKey.expires_at
+
+  const humanDate = (date: string) => {
+    return new Date(date).toLocaleString()
+  }
 
   const onDeactivate = async (activationId: string) => {
     await api.users.deactivateLicenseKey({
@@ -71,7 +80,7 @@ const LicenseKey = ({
   }
 
   return (
-    <div>
+    <>
       <div className="flex flex-row items-center space-x-2">
         <Input value={licenseKey.key} readOnly />
         <Button
@@ -84,47 +93,83 @@ const LicenseKey = ({
         </Button>
       </div>
 
-      {licenseKey.expires_at && (
-        <p>
-          Expires: <span>{licenseKey.expires_at}</span>
-        </p>
-      )}
+      {hasLimitations && (
+        <table>
+          <tbody>
+            {licenseKey.expires_at && (
+              <tr>
+                <td>
+                  <strong className="w-1/2 text-xs font-medium uppercase text-gray-500">
+                    Expires
+                  </strong>
+                </td>
+                <td>
+                  <p className="w-1/2">{humanDate(licenseKey.expires_at)}</p>
+                </td>
+              </tr>
+            )}
 
-      {licenseKey.limit_usage && (
-        <p>
-          Usage:{' '}
-          <span>
-            {licenseKey.usage} / {licenseKey.limit_usage}
-          </span>
-        </p>
-      )}
+            {licenseKey.limit_usage && (
+              <tr>
+                <td>
+                  <strong className="w-1/2 text-xs font-medium uppercase text-gray-500">
+                    Usage Limit
+                  </strong>
+                </td>
+                <td>
+                  <p className="w-1/2">
+                    {licenseKey.usage} / {licenseKey.limit_usage}
+                  </p>
+                </td>
+              </tr>
+            )}
 
-      {licenseKey.limit_activations && (
-        <p>
-          Activations limit: <span>{licenseKey.limit_activations}</span>
-        </p>
+            {licenseKey.limit_activations && (
+              <tr>
+                <td>
+                  <strong className="w-1/2 text-xs font-medium uppercase text-gray-500">
+                    Activation Limit
+                  </strong>
+                </td>
+                <td>
+                  <p className="w-1/2">{licenseKey.limit_activations}</p>
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
       )}
 
       {hasActivations && (
         <>
-          <hr />
-          <ul>
-            {activations.map((activation) => (
-              <li key={activation.id}>
-                {activation.label}
-                <button
-                  onClick={() => {
-                    onDeactivate(activation.id)
-                  }}
-                >
-                  Deactivate
-                </button>
-              </li>
-            ))}
-          </ul>
+          <hr className="my-4" />
+          <h3 className="font-display mb-4 text-sm">Activation Instances</h3>
+          <table>
+            <tbody>
+              {activations.map((activation) => (
+                <tr key={activation.id}>
+                  <td>
+                    <Pill color="gray">{activation.label}</Pill>
+                  </td>
+                  <td>{humanDate(activation.created_at)}</td>
+                  <td>
+                    <Button
+                      variant="link"
+                      size="sm"
+                      onClick={() => {
+                        onDeactivate(activation.id)
+                      }}
+                    >
+                      <CloseOutlined size="inherit" />
+                    </Button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </>
       )}
-    </div>
+    </>
   )
 }
 

@@ -6358,6 +6358,18 @@ export interface LicenseKeyActivationBase {
      * @memberof LicenseKeyActivationBase
      */
     meta: object;
+    /**
+     * 
+     * @type {string}
+     * @memberof LicenseKeyActivationBase
+     */
+    created_at: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof LicenseKeyActivationBase
+     */
+    modified_at?: string | null;
 }
 /**
  * 
@@ -6389,6 +6401,18 @@ export interface LicenseKeyActivationRead {
      * @memberof LicenseKeyActivationRead
      */
     meta: object;
+    /**
+     * 
+     * @type {string}
+     * @memberof LicenseKeyActivationRead
+     */
+    created_at: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof LicenseKeyActivationRead
+     */
+    modified_at?: string | null;
     /**
      * 
      * @type {LicenseKeyRead}

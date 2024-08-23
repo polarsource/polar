@@ -8560,9 +8560,9 @@
                             "description": "Filter by the type of purchase the customer made.",
                             "default": [
                                 "donation",
-                                "free_subscription",
+                                "order",
                                 "paid_subscription",
-                                "order"
+                                "free_subscription"
                             ],
                             "title": "Customer Types"
                         },
@@ -22868,6 +22868,23 @@
                     "meta": {
                         "type": "object",
                         "title": "Meta"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "title": "Created At"
+                    },
+                    "modified_at": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "date-time"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Modified At"
                     }
                 },
                 "type": "object",
@@ -22875,7 +22892,8 @@
                     "id",
                     "license_key_id",
                     "label",
-                    "meta"
+                    "meta",
+                    "created_at"
                 ],
                 "title": "LicenseKeyActivationBase"
             },
@@ -22899,6 +22917,23 @@
                         "type": "object",
                         "title": "Meta"
                     },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "title": "Created At"
+                    },
+                    "modified_at": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "date-time"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Modified At"
+                    },
                     "license_key": {
                         "$ref": "#/components/schemas/LicenseKeyRead"
                     }
@@ -22909,6 +22944,7 @@
                     "license_key_id",
                     "label",
                     "meta",
+                    "created_at",
                     "license_key"
                 ],
                 "title": "LicenseKeyActivationRead"

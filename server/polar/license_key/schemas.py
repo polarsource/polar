@@ -73,6 +73,8 @@ class LicenseKeyActivationBase(Schema):
     license_key_id: UUID4
     label: str
     meta: dict[str, Any]
+    created_at: datetime
+    modified_at: datetime | None = None
 
 
 class LicenseKeyWithActivations(LicenseKeyRead):

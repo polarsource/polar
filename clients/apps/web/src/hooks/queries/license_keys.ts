@@ -3,7 +3,11 @@ import { useQuery } from '@tanstack/react-query'
 import { api } from '@/utils/api'
 import { defaultRetry } from './retry'
 
-export const useLicenseKey = (licenseKeyId: string) =>
+interface GetLicenseKeysRequest {
+  licenseKeyId: string
+}
+
+export const useLicenseKey = ({ licenseKeyId }: GetLicenseKeysRequest) =>
   useQuery({
     queryKey: ['user', 'license_key', licenseKeyId],
     queryFn: () =>

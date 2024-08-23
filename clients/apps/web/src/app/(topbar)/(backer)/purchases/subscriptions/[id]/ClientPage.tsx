@@ -54,6 +54,8 @@ const ClientPage = ({ subscription }: { subscription: UserSubscription }) => {
     [orderInvoiceMutation],
   )
 
+  const hasInvoices = orders?.items && orders.items.length > 0
+
   const cancelSubscription = useCancelSubscription(subscription.id)
   const isCanceled =
     cancelSubscription.isPending ||
@@ -200,12 +202,11 @@ const ClientPage = ({ subscription }: { subscription: UserSubscription }) => {
               />
             </div>
           </ShadowBox>
-          <div className="flex flex-col gap-y-4">
-            <h3 className="font-medium">Invoices</h3>
-            <List>
-              {orders?.items &&
-                orders.items.length > 0 &&
-                orders.items.map((order) => (
+          {hasInvoices && (
+            <div className="flex flex-col gap-y-4">
+              <h3 className="font-medium">Invoices</h3>
+              <List>
+                {orders.items?.map((order) => (
                   <ListItem
                     key={order.id}
                     className="flex flex-row items-center justify-between"
@@ -237,8 +238,9 @@ const ClientPage = ({ subscription }: { subscription: UserSubscription }) => {
                     </Button>
                   </ListItem>
                 ))}
-            </List>
-          </div>
+              </List>
+            </div>
+          )}
         </div>
       </div>
       <InlineModal

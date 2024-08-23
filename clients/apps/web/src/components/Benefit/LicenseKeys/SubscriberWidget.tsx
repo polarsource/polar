@@ -9,6 +9,12 @@ import {
   UserSubscription,
 } from '@polar-sh/sdk'
 
+import { ContentPasteOutlined } from '@mui/icons-material'
+import Button from 'polarkit/components/ui/atoms/button'
+import Input from 'polarkit/components/ui/atoms/input'
+
+import { useCallback } from 'react'
+
 import { useState } from 'react'
 
 import { useLicenseKey } from '@/hooks/queries'
@@ -42,7 +48,8 @@ const LicenseKey = ({
     Array<LicenseKeyActivationBase>
   >(licenseKey?.activations ?? [])
   const hasActivations = activations.length > 0
-  const deactivate = async (activationId: string) => {
+
+  const onDeactivate = async (activationId: string) => {
     await api.users.deactivateLicenseKey({
       body: {
         key: licenseKey.key,
@@ -55,28 +62,67 @@ const LicenseKey = ({
     setActivations(newActivations)
   }
 
+  const onCopyKey = useCallback(() => {
+    navigator.clipboard.writeText(licenseKey.key ?? '')
+  }, [licenseKey])
+
   if (!licenseKey) {
     return <></>
   }
 
   return (
     <div>
-      <p>{licenseKey.key}</p>
+      <div className="flex flex-row items-center space-x-2">
+        <Input value={licenseKey.key} readOnly />
+        <Button
+          size="icon"
+          variant="secondary"
+          className="h-10 w-10 rounded-full bg-gray-50 text-sm dark:bg-gray-900"
+          onClick={onCopyKey}
+        >
+          <ContentPasteOutlined fontSize="inherit" />
+        </Button>
+      </div>
+
+      {licenseKey.expires_at && (
+        <p>
+          Expires: <span>{licenseKey.expires_at}</span>
+        </p>
+      )}
+
+      {licenseKey.limit_usage && (
+        <p>
+          Usage:{' '}
+          <span>
+            {licenseKey.usage} / {licenseKey.limit_usage}
+          </span>
+        </p>
+      )}
+
+      {licenseKey.limit_activations && (
+        <p>
+          Activations limit: <span>{licenseKey.limit_activations}</span>
+        </p>
+      )}
+
       {hasActivations && (
-        <ul>
-          {activations.map((activation) => (
-            <li key={activation.id}>
-              {activation.label}
-              <button
-                onClick={() => {
-                  deactivate(activation.id)
-                }}
-              >
-                Deactivate
-              </button>
-            </li>
-          ))}
-        </ul>
+        <>
+          <hr />
+          <ul>
+            {activations.map((activation) => (
+              <li key={activation.id}>
+                {activation.label}
+                <button
+                  onClick={() => {
+                    onDeactivate(activation.id)
+                  }}
+                >
+                  Deactivate
+                </button>
+              </li>
+            ))}
+          </ul>
+        </>
       )}
     </div>
   )

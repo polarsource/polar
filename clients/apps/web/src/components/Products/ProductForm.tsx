@@ -4,9 +4,9 @@ import { ErrorMessage } from '@hookform/error-message'
 import { ClearOutlined } from '@mui/icons-material'
 import {
   Organization,
-  PricesInner,
   ProductCreate,
   ProductMediaFileRead,
+  ProductPrice,
   ProductPriceRecurringInterval,
   ProductPriceType,
   ProductUpdate,
@@ -160,7 +160,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
 
   const hasMonthlyPrice = useMemo(
     () =>
-      (prices as PricesInner[]).some(
+      (prices as ProductPrice[]).some(
         (price) =>
           price.type === 'recurring' &&
           price.recurring_interval === ProductPriceRecurringInterval.MONTH,
@@ -169,7 +169,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
   )
   const hasYearlyPrice = useMemo(
     () =>
-      (prices as PricesInner[]).some(
+      (prices as ProductPrice[]).some(
         (price) =>
           price.type === 'recurring' &&
           price.recurring_interval === ProductPriceRecurringInterval.YEAR,

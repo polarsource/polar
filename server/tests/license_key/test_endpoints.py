@@ -221,6 +221,7 @@ class TestLicenseKeyEndpoints:
             "/v1/users/license-keys/activate",
             json={
                 "key": lk.key,
+                "organization_id": str(organization.id),
                 "label": "testing activation",
             },
         )

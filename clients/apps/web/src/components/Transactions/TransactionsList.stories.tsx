@@ -25,8 +25,10 @@ type Story = StoryObj<typeof TransactionsList>
 
 const tx: Transaction = {
   created_at: '2024-03-27',
+  modified_at: null,
   id: '',
   type: 'payment',
+  processor: 'stripe',
   currency: 'USD',
   amount: 12300,
   account_currency: 'USD',
@@ -35,10 +37,22 @@ const tx: Transaction = {
   incurred_amount: 300,
   gross_amount: 12300,
   net_amount: 12000,
+  platform_fee_type: null,
+  pledge_id: null,
+  issue_reward_id: null,
+  order_id: null,
+  donation_id: null,
+  payout_transaction_id: null,
+  incurred_by_transaction_id: null,
+  pledge: null,
+  issue_reward: null,
+  order: null,
+  donation: null,
 }
 
 const donation: TransactionDonation = {
   created_at: '2024-03-27',
+  modified_at: null,
   id: '',
   to_organization: {
     id: '',
@@ -46,6 +60,7 @@ const donation: TransactionDonation = {
     slug: 'hello',
     avatar_url: '',
     created_at: '2024-03-27',
+    modified_at: null,
   },
 }
 
@@ -56,6 +71,7 @@ const txDonation: Transaction = {
 
 const issue_reward: TransactionIssueReward = {
   created_at: '',
+  modified_at: null,
   id: '',
   issue_id: '',
   share_thousands: 800,
@@ -63,6 +79,7 @@ const issue_reward: TransactionIssueReward = {
 
 const organization: TransactionOrganization = {
   created_at: '',
+  modified_at: null,
   id: '',
   name: 'OrgName',
   slug: 'OrgName',
@@ -72,6 +89,7 @@ const organization: TransactionOrganization = {
 const externalOrganization: TransactionExternalOrganization = {
   id: '',
   created_at: '',
+  modified_at: null,
   name: 'OrgName',
   platform: 'github',
   avatar_url: 'https://avatars.githubusercontent.com/u/1144727?s=60&v=4',
@@ -80,6 +98,7 @@ const externalOrganization: TransactionExternalOrganization = {
 
 const repository: TransactionRepository = {
   created_at: '',
+  modified_at: null,
   id: '',
   platform: 'github',
   organization_id: '',
@@ -88,6 +107,7 @@ const repository: TransactionRepository = {
 
 const issue: TransactionIssue = {
   created_at: '',
+  modified_at: null,
   id: '',
   platform: 'github',
   organization_id: '',
@@ -100,6 +120,7 @@ const issue: TransactionIssue = {
 
 const pledge: TransactionPledge = {
   created_at: '',
+  modified_at: null,
   id: '',
   state: 'initiated',
   issue,
@@ -113,14 +134,17 @@ const txIssueReward: Transaction = {
 
 const product: TransactionProduct = {
   created_at: '',
+  modified_at: null,
   id: '',
   type: 'free',
   name: 'TierName',
+  organization_id: organization.id,
   organization,
 }
 
 const product_price: ProductPrice = {
   created_at: '',
+  modified_at: null,
   id: '',
   type: 'recurring',
   recurring_interval: 'month',
@@ -131,9 +155,11 @@ const product_price: ProductPrice = {
 
 const order: TransactionOrder = {
   created_at: '',
+  modified_at: null,
   id: '',
   product,
   product_price,
+  subscription_id: null,
 }
 
 const txOrder: Transaction = {

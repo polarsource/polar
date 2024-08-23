@@ -224,7 +224,7 @@ const HighlightedTiersEditorAuthenticatedEmptyState = ({
 }
 
 interface MockedBaselineTier {
-  subscriptionTier: Product
+  subscriptionTier: Product & { type: SubscriptionTierType }
   create: () => Promise<void>
 }
 
@@ -232,6 +232,7 @@ const useCreateBaselineTier = (
   organization: Organization,
 ): MockedBaselineTier => {
   const mockedBaselineTier: Product & {
+    type: SubscriptionTierType
     prices: ProductPriceRecurringCreate[]
   } = useMemo(() => {
     return {
@@ -246,6 +247,7 @@ const useCreateBaselineTier = (
           name: 'Premium posts',
           description: 'Premium posts',
           created_at: new Date().toISOString(),
+          modified_at: null,
           deletable: false,
           selectable: true,
           type: 'articles',
@@ -256,6 +258,7 @@ const useCreateBaselineTier = (
         {
           id: '1',
           created_at: new Date().toISOString(),
+          modified_at: null,
           is_archived: false,
           price_amount: 500,
           price_currency: 'usd',
@@ -265,6 +268,7 @@ const useCreateBaselineTier = (
       ],
       medias: [],
       created_at: new Date().toISOString(),
+      modified_at: null,
       is_highlighted: false,
       is_archived: false,
       is_recurring: true,

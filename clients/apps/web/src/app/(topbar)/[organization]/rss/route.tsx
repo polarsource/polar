@@ -46,7 +46,7 @@ export async function GET(
     feed_url: `https://polar.sh/${organization.slug}/rss`,
     site_url: organizationPageLink(organization),
     generator: 'polar.sh',
-    image_url: organization.avatar_url,
+    ...(organization.avatar_url ? { image_url: organization.avatar_url } : {}),
   })
 
   const ReactDOMServer = (await import('react-dom/server')).default

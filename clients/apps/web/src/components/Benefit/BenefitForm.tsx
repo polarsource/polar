@@ -144,6 +144,7 @@ export const CustomBenefitForm = ({
               <FormControl>
                 <TextArea
                   {...field}
+                  value={field.value || ''}
                   placeholder="Write a secret note to subscribers here. Like your private email address for premium support, Cal.com link to book consultation, etc."
                 />
               </FormControl>

@@ -5,7 +5,7 @@ const OpenGraphImageFunding = (props: {
   org_name: string
   repo_name?: string
   issue_count: number
-  avatar?: string
+  avatar: string | null
   issues: Issue[]
   largeIssue: boolean
 }) => {

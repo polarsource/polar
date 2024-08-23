@@ -2,7 +2,7 @@
 
 import IssueBadge from '@/components/Embed/IssueBadge'
 import SubscriptionTierCard from '@/components/Subscriptions/SubscriptionTierCard'
-import { Product } from '@polar-sh/sdk'
+import { Product, SubscriptionTierType } from '@polar-sh/sdk'
 import { twMerge } from 'tailwind-merge'
 import { MOCKED_SUBSCRIPTIONS } from '../utils'
 
@@ -11,7 +11,7 @@ const SubCard = ({
   subscriptionTier,
 }: {
   className?: string
-  subscriptionTier: Partial<Product>
+  subscriptionTier: Partial<Product> & { type: SubscriptionTierType }
 }) => {
   return (
     <SubscriptionTierCard

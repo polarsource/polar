@@ -29,6 +29,7 @@ const pledges: Pledge[] = [
   {
     id: 'xx',
     created_at: new Date('2023-10-17').toISOString(),
+    modified_at: null,
     issue: issue,
     amount: 1234,
     currency: 'usd',
@@ -37,6 +38,7 @@ const pledges: Pledge[] = [
     pledger: {
       name: 'zz',
       avatar_url: 'https://avatars.githubusercontent.com/u/1426460?v=4',
+      github_username: 'zz',
     },
   },
 ]
@@ -516,6 +518,7 @@ export const PledgeMultipleTypes: Story = {
         pledger: {
           name: 'xx',
           avatar_url: 'https://avatars.githubusercontent.com/u/1426460?v=4',
+          github_username: 'xx',
         },
       },
       {
@@ -524,6 +527,7 @@ export const PledgeMultipleTypes: Story = {
         pledger: {
           name: 'xx',
           avatar_url: 'https://avatars.githubusercontent.com/u/47952?v=4',
+          github_username: 'xx',
         },
       },
       {
@@ -532,6 +536,7 @@ export const PledgeMultipleTypes: Story = {
         pledger: {
           name: 'xx',
           avatar_url: 'https://avatars.githubusercontent.com/u/47952?v=4',
+          github_username: 'xx',
         },
       },
       {
@@ -540,6 +545,7 @@ export const PledgeMultipleTypes: Story = {
         pledger: {
           name: 'xx',
           avatar_url: 'https://avatars.githubusercontent.com/u/47952?v=4',
+          github_username: 'xx',
         },
       },
       {
@@ -548,6 +554,7 @@ export const PledgeMultipleTypes: Story = {
         pledger: {
           name: 'xx',
           avatar_url: 'https://avatars.githubusercontent.com/u/47952?v=4',
+          github_username: 'xx',
         },
       },
       {
@@ -556,6 +563,7 @@ export const PledgeMultipleTypes: Story = {
         pledger: {
           name: 'xx',
           avatar_url: 'https://avatars.githubusercontent.com/u/47952?v=4',
+          github_username: 'xx',
         },
       },
 
@@ -565,6 +573,7 @@ export const PledgeMultipleTypes: Story = {
         pledger: {
           name: 'xx',
           avatar_url: 'https://avatars.githubusercontent.com/u/1426460?v=4',
+          github_username: 'xx',
         },
       },
     ],
@@ -630,6 +639,7 @@ export const SelfSummaryFundingGoal: Story = {
         pledger: {
           name: user.username,
           github_username: user.username,
+          avatar_url: user.avatar_url,
         },
         authed_can_admin_sender: true,
       },
@@ -685,6 +695,7 @@ export const SelfSummaryNoGoal: Story = {
         pledger: {
           name: user.username,
           github_username: user.username,
+          avatar_url: user.avatar_url,
         },
         authed_can_admin_sender: true,
       },

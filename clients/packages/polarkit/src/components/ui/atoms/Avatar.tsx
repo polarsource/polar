@@ -8,7 +8,7 @@ const Avatar = ({
   width,
 }: {
   name: string
-  avatar_url: string | undefined
+  avatar_url: string | null
   className?: string
   height?: number | undefined
   width?: number | undefined

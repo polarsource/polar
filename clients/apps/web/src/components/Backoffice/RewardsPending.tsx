@@ -280,10 +280,12 @@ const Pledges = () => {
                         )}
                         {r.organization && (
                           <>
-                            <img
-                              className="h-6 w-6"
-                              src={r.organization.avatar_url}
-                            />
+                            {r.organization.avatar_url && (
+                              <img
+                                className="h-6 w-6"
+                                src={r.organization.avatar_url}
+                              />
+                            )}
                             <div className="underline">
                               {r.organization.name}
                             </div>

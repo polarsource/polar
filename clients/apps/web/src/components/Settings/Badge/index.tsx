@@ -247,7 +247,7 @@ const BadgeSetup = ({
 
   const updateOrg = useUpdateOrganization()
 
-  const onSaveUpfrontSplit = async (value: number | undefined) => {
+  const onSaveUpfrontSplit = async (value: number | null) => {
     setUpfrontSplitValue(value)
 
     await updateOrg.mutateAsync({

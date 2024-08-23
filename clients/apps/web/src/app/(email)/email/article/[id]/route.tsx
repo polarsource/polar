@@ -299,10 +299,16 @@ const renderArticle = async (
                   </Row>
                 </Column>
                 <Column>
-                  <Img
-                    className="h-10 w-10 rounded-full"
-                    src={article.byline.avatar_url}
-                  />
+                  {article.byline.avatar_url ? (
+                    <Img
+                      className="h-10 w-10 rounded-full"
+                      src={article.byline.avatar_url}
+                    />
+                  ) : (
+                    <div className="h-10 w-10 rounded-full bg-gray-200 text-gray-400">
+                      {article.byline.name[0]}
+                    </div>
+                  )}
                 </Column>
               </Row>
 

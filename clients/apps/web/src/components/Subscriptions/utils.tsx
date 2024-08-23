@@ -8,7 +8,7 @@ import {
 } from '@polar-sh/sdk'
 
 export const getSubscriptionColorByType = (
-  type?: SubscriptionTierType,
+  type: SubscriptionTierType,
 ): string => {
   switch (type) {
     case SubscriptionTierType.BUSINESS:
@@ -69,7 +69,9 @@ export const hasRecurringInterval =
     recurringInterval: ProductPriceRecurringInterval,
     hideFree: boolean = false,
   ) =>
-  (subscriptionTier: Product) => {
+  (
+    subscriptionTier: Product,
+  ): subscriptionTier is Product & { type: SubscriptionTierType } => {
     if (subscriptionTier.type === SubscriptionTierType.FREE) {
       return !hideFree
     }
@@ -102,7 +104,7 @@ export const getRecurringBillingLabel = (
   }
 }
 
-export const getSubscriptionTierAudience = (type?: SubscriptionTierType) => {
+export const getSubscriptionTierAudience = (type: SubscriptionTierType) => {
   switch (type) {
     case SubscriptionTierType.FREE:
       return 'For Anyone'

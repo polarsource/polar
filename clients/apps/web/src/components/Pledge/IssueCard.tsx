@@ -95,13 +95,13 @@ const IssueCard = ({
           </div>
           {/* Right part */}
           <div className="flex flex-row items-center justify-center gap-4 sm:justify-end">
-            {issue.comments !== undefined && (
+            {issue.comments && (
               <div className="flex flex-row items-center gap-1">
                 <ChatBubbleOutline className="h-5 w-5" fontSize="small" />
                 {issue.comments}
               </div>
             )}
-            {issue.reactions !== undefined && (
+            {issue.reactions && (
               <div className="flex flex-row items-center gap-1">
                 <div>👍</div>
                 {issue.reactions.plus_one}
@@ -157,7 +157,7 @@ const IssueCard = ({
           </div>
         </div>
         {/* Stars */}
-        {repository.stars !== undefined && (
+        {repository.stars && (
           <div className="hidden flex-row items-center justify-end gap-1 sm:flex">
             <StarIcon className="h-5 w-5 text-yellow-500" />
             {formatStarsNumber(repository.stars)}

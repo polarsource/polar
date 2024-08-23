@@ -1,6 +1,7 @@
 import { api } from '@/utils/api'
 import { githubIssueLink } from '@/utils/github'
 import { ConfirmIssueSplit, Issue, Pledge, UserRead } from '@polar-sh/sdk'
+import Avatar from 'polarkit/components/ui/atoms/avatar'
 import Button from 'polarkit/components/ui/atoms/button'
 import TextArea from 'polarkit/components/ui/atoms/textarea'
 import { Banner } from 'polarkit/components/ui/molecules'
@@ -88,7 +89,10 @@ _If you already have a Polar account setup, you don't need to do anything._
             rows={14}
           />
           <div className="flex flex-row items-center gap-4">
-            <img src={props.user.avatar_url} className="h-8 w-8 rounded-full" />
+            <Avatar
+              avatar_url={props.user.avatar_url}
+              name={props.user.username}
+            />
             <span className="dark:text-polar-200 text-gray-500">
               Comment will be posted on your behalf to issue{' '}
               <a href={githubIssueLink(props.issue)} className="font-medium">

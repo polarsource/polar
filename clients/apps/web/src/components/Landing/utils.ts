@@ -1,4 +1,4 @@
-import { Product } from '@polar-sh/sdk'
+import { Product, SubscriptionTierType } from '@polar-sh/sdk'
 
 export const MOCKED_PRODUCTS: Partial<Product>[] = [
   {
@@ -11,6 +11,7 @@ export const MOCKED_PRODUCTS: Partial<Product>[] = [
         description: 'Weekly Newsletter',
         type: 'articles',
         created_at: new Date().toDateString(),
+        modified_at: null,
         selectable: false,
         deletable: false,
         organization_id: '123',
@@ -27,6 +28,7 @@ export const MOCKED_PRODUCTS: Partial<Product>[] = [
       {
         id: '123',
         created_at: new Date().toDateString(),
+        modified_at: null,
         price_amount: 1900,
         price_currency: 'usd',
         type: 'recurring',
@@ -40,6 +42,7 @@ export const MOCKED_PRODUCTS: Partial<Product>[] = [
         description: 'Binary Downloads',
         type: 'downloadables',
         created_at: new Date().toDateString(),
+        modified_at: null,
         selectable: false,
         deletable: false,
         organization_id: '123',
@@ -49,6 +52,7 @@ export const MOCKED_PRODUCTS: Partial<Product>[] = [
         description: 'Private GitHub repository',
         type: 'github_repository',
         created_at: new Date().toDateString(),
+        modified_at: null,
         selectable: false,
         deletable: false,
         organization_id: '123',
@@ -58,6 +62,7 @@ export const MOCKED_PRODUCTS: Partial<Product>[] = [
         description: 'Discord Invite',
         type: 'discord',
         created_at: new Date().toDateString(),
+        modified_at: null,
         selectable: false,
         deletable: false,
         organization_id: '123',
@@ -74,6 +79,7 @@ export const MOCKED_PRODUCTS: Partial<Product>[] = [
       {
         id: '123',
         created_at: new Date().toDateString(),
+        modified_at: null,
         price_amount: 299900,
         price_currency: 'usd',
         type: 'recurring',
@@ -87,6 +93,7 @@ export const MOCKED_PRODUCTS: Partial<Product>[] = [
         description: 'Logotype in Newsletter',
         type: 'articles',
         created_at: new Date().toDateString(),
+        modified_at: null,
         selectable: false,
         deletable: false,
         organization_id: '123',
@@ -96,6 +103,7 @@ export const MOCKED_PRODUCTS: Partial<Product>[] = [
         description: 'Private GitHub repository',
         type: 'github_repository',
         created_at: new Date().toDateString(),
+        modified_at: null,
         selectable: false,
         deletable: false,
         organization_id: '123',
@@ -105,6 +113,7 @@ export const MOCKED_PRODUCTS: Partial<Product>[] = [
         description: 'Premium Role on Discord',
         type: 'discord',
         created_at: new Date().toDateString(),
+        modified_at: null,
         selectable: false,
         deletable: false,
         organization_id: '123',
@@ -123,6 +132,7 @@ export const MOCKED_PRODUCTS: Partial<Product>[] = [
         description: 'Logotype in Newsletter',
         type: 'articles',
         created_at: new Date().toDateString(),
+        modified_at: null,
         selectable: false,
         deletable: false,
         organization_id: '123',
@@ -132,6 +142,7 @@ export const MOCKED_PRODUCTS: Partial<Product>[] = [
         description: 'Private GitHub repository',
         type: 'github_repository',
         created_at: new Date().toDateString(),
+        modified_at: null,
         selectable: false,
         deletable: false,
         organization_id: '123',
@@ -141,6 +152,7 @@ export const MOCKED_PRODUCTS: Partial<Product>[] = [
         description: 'Premium Role on Discord',
         type: 'discord',
         created_at: new Date().toDateString(),
+        modified_at: null,
         selectable: false,
         deletable: false,
         organization_id: '123',
@@ -169,6 +181,7 @@ export const MOCKED_PRODUCTS: Partial<Product>[] = [
       {
         id: '123',
         created_at: new Date().toDateString(),
+        modified_at: null,
         price_amount: 99900,
         price_currency: 'usd',
         type: 'one_time',
@@ -178,7 +191,9 @@ export const MOCKED_PRODUCTS: Partial<Product>[] = [
   },
 ]
 
-export const MOCKED_SUBSCRIPTIONS: Partial<Product>[] = [
+export const MOCKED_SUBSCRIPTIONS: (Partial<Product> & {
+  type: SubscriptionTierType
+})[] = [
   {
     name: 'Supporter',
     type: 'individual',
@@ -188,6 +203,7 @@ export const MOCKED_SUBSCRIPTIONS: Partial<Product>[] = [
       {
         id: '123',
         created_at: new Date().toDateString(),
+        modified_at: null,
         price_amount: 1900,
         price_currency: 'usd',
         type: 'recurring',
@@ -201,6 +217,7 @@ export const MOCKED_SUBSCRIPTIONS: Partial<Product>[] = [
         description: 'Private GitHub repository',
         type: 'github_repository',
         created_at: new Date().toDateString(),
+        modified_at: null,
         selectable: false,
         deletable: false,
         organization_id: '123',
@@ -210,6 +227,7 @@ export const MOCKED_SUBSCRIPTIONS: Partial<Product>[] = [
         description: 'Discord Invite',
         type: 'discord',
         created_at: new Date().toDateString(),
+        modified_at: null,
         selectable: false,
         deletable: false,
         organization_id: '123',
@@ -219,6 +237,7 @@ export const MOCKED_SUBSCRIPTIONS: Partial<Product>[] = [
         description: 'Binary Downloads',
         type: 'downloadables',
         created_at: new Date().toDateString(),
+        modified_at: null,
         selectable: false,
         deletable: false,
         organization_id: '123',
@@ -235,6 +254,7 @@ export const MOCKED_SUBSCRIPTIONS: Partial<Product>[] = [
       {
         id: '123',
         created_at: new Date().toDateString(),
+        modified_at: null,
         price_amount: 199900,
         price_currency: 'usd',
         type: 'recurring',
@@ -248,6 +268,7 @@ export const MOCKED_SUBSCRIPTIONS: Partial<Product>[] = [
         description: 'Private GitHub repository',
         type: 'github_repository',
         created_at: new Date().toDateString(),
+        modified_at: null,
         selectable: false,
         deletable: false,
         organization_id: '123',
@@ -257,6 +278,7 @@ export const MOCKED_SUBSCRIPTIONS: Partial<Product>[] = [
         description: 'Binary Downloads',
         type: 'downloadables',
         created_at: new Date().toDateString(),
+        modified_at: null,
         selectable: false,
         deletable: false,
         organization_id: '123',
@@ -266,6 +288,7 @@ export const MOCKED_SUBSCRIPTIONS: Partial<Product>[] = [
         description: 'Premium Role on Discord',
         type: 'discord',
         created_at: new Date().toDateString(),
+        modified_at: null,
         selectable: false,
         deletable: false,
         organization_id: '123',
@@ -282,6 +305,7 @@ export const MOCKED_SUBSCRIPTIONS: Partial<Product>[] = [
       {
         id: '123',
         created_at: new Date().toDateString(),
+        modified_at: null,
         price_amount: 299900,
         price_currency: 'usd',
         type: 'recurring',
@@ -295,6 +319,7 @@ export const MOCKED_SUBSCRIPTIONS: Partial<Product>[] = [
         description: 'Logotype in Newsletter',
         type: 'articles',
         created_at: new Date().toDateString(),
+        modified_at: null,
         selectable: false,
         deletable: false,
         organization_id: '123',
@@ -304,6 +329,7 @@ export const MOCKED_SUBSCRIPTIONS: Partial<Product>[] = [
         description: 'Private GitHub repository',
         type: 'github_repository',
         created_at: new Date().toDateString(),
+        modified_at: null,
         selectable: false,
         deletable: false,
         organization_id: '123',
@@ -313,6 +339,7 @@ export const MOCKED_SUBSCRIPTIONS: Partial<Product>[] = [
         description: 'Premium Role on Discord',
         type: 'discord',
         created_at: new Date().toDateString(),
+        modified_at: null,
         selectable: false,
         deletable: false,
         organization_id: '123',

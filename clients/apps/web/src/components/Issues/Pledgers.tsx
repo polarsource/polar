@@ -77,13 +77,15 @@ const Pledgers: React.FC<PledgersProps> = ({
     >
       {shownPledgers.map((pledger, idx) => (
         <div className={`${marginClasses} ${sizeClasses}`} key={idx}>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            key={pledger.name}
-            src={pledger.avatar_url}
-            className={`dark:border-polar-950 rounded-full border border-gray-50 ${borderClasses}`}
-            alt={pledger.name}
-          />
+          {pledger.avatar_url && (
+            /* eslint-disable-next-line @next/next/no-img-element */
+            <img
+              key={pledger.name}
+              src={pledger.avatar_url}
+              className={`dark:border-polar-950 rounded-full border border-gray-50 ${borderClasses}`}
+              alt={pledger.name}
+            />
+          )}
         </div>
       ))}
       {hiddenPledgersCount > 0 && (

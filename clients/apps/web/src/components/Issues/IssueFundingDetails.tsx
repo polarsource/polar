@@ -12,7 +12,7 @@ interface IssueFundingDetailsProps {
   organization: Organization
   issue: Issue
   total: CurrencyAmount
-  fundingGoal?: CurrencyAmount
+  fundingGoal: CurrencyAmount | null
   pledgesSummaries: PledgesTypeSummaries
   showLogo?: boolean
   showStatus?: boolean

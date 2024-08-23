@@ -8,7 +8,9 @@ interface ProductPillProps {
 }
 
 const ProductPill: React.FC<ProductPillProps> = ({ product, price }) => {
-  const color = getSubscriptionColorByType(product.type)
+  const color = product.type
+    ? getSubscriptionColorByType(product.type)
+    : '#3381FF'
   return (
     <div className="flex  items-center justify-between gap-3">
       <div

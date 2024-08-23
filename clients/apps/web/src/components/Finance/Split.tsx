@@ -28,7 +28,7 @@ const zeroIfNanOrInfinite = (value: number): number => {
 export interface Contributor {
   id: string
   username: string
-  avatar_url?: string
+  avatar_url: string | null
   is_suggested_from_contributions?: boolean
   is_maintainer_org?: boolean
 }

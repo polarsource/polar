@@ -51,10 +51,10 @@ export const NoNameDescription: Story = {
       ...issue,
       repository: {
         ...issue.repository,
-        description: undefined,
+        description: null,
         organization: {
           ...issue.repository.organization,
-          pretty_name: undefined,
+          pretty_name: null,
         },
       },
     },
@@ -107,6 +107,7 @@ export const Rewards: Story = {
 
         {
           name: 'Foo Bar',
+          avatar_url: null,
         },
         {
           name: 'baz',
@@ -171,6 +172,7 @@ export const AssigneeAndRewards: Story = {
 
         {
           name: 'Foo Bar',
+          avatar_url: null,
         },
         {
           name: 'baz',

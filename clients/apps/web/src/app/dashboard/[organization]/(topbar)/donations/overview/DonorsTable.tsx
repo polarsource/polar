@@ -118,7 +118,7 @@ const DonorsTable: React.FC<DonorsTableProps> = ({
         return (
           <div className="flex flex-row items-center gap-2">
             <Avatar
-              avatar_url={donation.donor?.avatar_url ?? undefined}
+              avatar_url={donation.donor.avatar_url}
               name={donation.donor.public_name}
             />
             <div className="fw-medium">{donation.donor.public_name}</div>

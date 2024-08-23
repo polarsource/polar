@@ -56,6 +56,7 @@ const PolarBadge = ({ showAmount }: { showAmount: boolean }) => {
       orgName={'myorg'}
       issueIsClosed={false}
       donationsEnabled={false}
+      upfront_split_to_contributors={null}
     />
   )
 }

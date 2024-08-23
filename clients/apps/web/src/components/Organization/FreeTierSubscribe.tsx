@@ -66,10 +66,12 @@ export const AuthenticatedFreeTierSubscribe = ({
                 fullWidth
                 variant="outline"
               >
-                <SubscriptionGroupIcon
-                  type={subscription?.product.type}
-                  className="mr-2"
-                />
+                {subscription.product.type && (
+                  <SubscriptionGroupIcon
+                    type={subscription.product.type}
+                    className="mr-2"
+                  />
+                )}
                 Subscribed to {subscription.product.name}
               </Button>
             </Link>

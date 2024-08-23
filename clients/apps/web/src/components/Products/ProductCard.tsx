@@ -58,7 +58,9 @@ export const ProductCard = ({
         <div className="flex flex-col gap-y-2">
           <h3 className="line-clamp-2 flex items-center justify-between gap-1 font-medium leading-snug text-gray-950 dark:text-white">
             {product.name}
-            <SubscriptionGroupIcon type={product.type} className="text-xl" />
+            {product.type && (
+              <SubscriptionGroupIcon type={product.type} className="text-xl" />
+            )}
           </h3>
           <div className="dark:text-polar-400 line-clamp-2 text-sm text-gray-600">
             {product.description && (

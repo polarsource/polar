@@ -9,8 +9,8 @@ import {
 import { defaultRetry } from './retry'
 
 export const useGetPledge: (
-  pledgeId?: string,
-) => UseQueryResult<Pledge, Error> = (pledgeId?: string) =>
+  pledgeId: string | null,
+) => UseQueryResult<Pledge, Error> = (pledgeId: string | null) =>
   useQuery({
     queryKey: ['pledge', pledgeId],
     queryFn: () =>

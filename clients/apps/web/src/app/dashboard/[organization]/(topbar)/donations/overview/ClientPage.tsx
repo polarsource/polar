@@ -221,7 +221,7 @@ const DonationActivity = ({ donations }: { donations: Donation[] }) => {
                   ) : (
                     <>
                       <Avatar
-                        avatar_url={donation.donor?.avatar_url ?? undefined}
+                        avatar_url={donation.donor.avatar_url}
                         name={donation.donor.public_name}
                         className="h-8 w-8"
                       />

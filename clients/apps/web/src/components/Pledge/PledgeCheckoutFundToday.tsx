@@ -456,7 +456,9 @@ const PledgeCheckoutFundToday = ({
         <Elements
           stripe={stripePromise}
           options={{
-            clientSecret: polarPaymentIntent.client_secret,
+            ...(polarPaymentIntent.client_secret
+              ? { clientSecret: polarPaymentIntent.client_secret }
+              : {}),
             appearance: {
               rules: {
                 '.Label': {

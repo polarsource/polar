@@ -19,11 +19,11 @@ const BadgeMessageForm = (props: {
   innerClassNames: string
   showAmountRaised: boolean
   canSetFundingGoal: boolean
+  upfrontSplit: number | null
   funding: Funding
   orgName: string
   title?: string
   subtitle?: string
-  upfrontSplit?: number
 }) => {
   const [message, setMessage] = useState(props.value)
 

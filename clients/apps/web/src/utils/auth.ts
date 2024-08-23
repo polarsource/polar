@@ -6,7 +6,7 @@ import {
   IntegrationsGithubApiRedirectToOrganizationInstallationRequest,
   IntegrationsGithubRepositoryBenefitApiIntegrationsGithubRepositoryBenefitUserAuthorizeRequest,
   IntegrationsGoogleApiIntegrationsGoogleAuthorizeRequest,
-  MagicLinkApiMagicLinkAuthenticateRequest,
+  MagicLinkApiMagicLinkAuthenticateGetRequest,
 } from '@polar-sh/sdk'
 
 export const getGitHubAuthorizeURL = (
@@ -51,7 +51,7 @@ export const getGitHubOrganizationInstallationURL = (
 }
 
 export const getMagicLinkAuthenticateURL = (
-  params: MagicLinkApiMagicLinkAuthenticateRequest,
+  params: MagicLinkApiMagicLinkAuthenticateGetRequest,
 ): string => {
   const searchParams = new URLSearchParams({ token: params.token })
   if (params.returnTo !== undefined) {

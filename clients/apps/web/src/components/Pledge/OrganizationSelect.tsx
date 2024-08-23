@@ -108,14 +108,14 @@ const OrganizationSelect = ({
                   </div>
                 </SelectItem>
               ))}
-              {allowSelfSelect ? (
+              {allowSelfSelect && currentUser ? (
                 <SelectItem value="self">
                   <div className="flex items-center space-x-2">
                     <Avatar
-                      avatar_url={currentUser?.avatar_url}
-                      name={currentUser?.username ?? ''}
+                      avatar_url={currentUser.avatar_url}
+                      name={currentUser.username ?? ''}
                     />
-                    <span>{currentUser?.username || currentUser?.email}</span>
+                    <span>{currentUser.username}</span>
                   </div>
                 </SelectItem>
               ) : null}

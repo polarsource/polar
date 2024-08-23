@@ -62,17 +62,32 @@ const OpenGraphImageArticle = (props: { article: Article }) => {
           gap: '24px',
         }}
       >
-        <img
-          src={article.byline.avatar_url}
-          height={48}
-          width={48}
-          style={{
-            height: 48,
-            width: 48,
-            borderRadius: 48,
-            flexShrink: 0,
-          }}
-        />
+        {article.byline.avatar_url ? (
+          <img
+            src={article.byline.avatar_url}
+            height={48}
+            width={48}
+            style={{
+              height: 48,
+              width: 48,
+              borderRadius: 48,
+              flexShrink: 0,
+            }}
+          />
+        ) : (
+          <div
+            style={{
+              height: 48,
+              width: 48,
+              borderRadius: 48,
+              flexShrink: 0,
+              background: 'black',
+              color: 'white',
+            }}
+          >
+            {article.byline.name[0].toUpperCase()}
+          </div>
+        )}
         <div
           style={{
             display: 'flex',

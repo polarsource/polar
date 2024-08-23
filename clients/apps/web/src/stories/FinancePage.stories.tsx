@@ -26,6 +26,7 @@ export default meta
 const pledge: Pledge = {
   id: 'xx',
   created_at: new Date('2023-06-29').toISOString(),
+  modified_at: null,
   // issue_id: 'xx',
   amount: 12300,
   currency: 'usd',

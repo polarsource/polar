@@ -53,7 +53,11 @@ export const FieldUrl = () => {
             <FormLabel>URL</FormLabel>
           </div>
           <FormControl>
-            <Input {...field} placeholder="https://..." />
+            <Input
+              {...field}
+              value={field.value || ''}
+              placeholder="https://..."
+            />
           </FormControl>
           <FormMessage />
         </FormItem>
@@ -90,7 +94,7 @@ export const FieldFormat = () => {
             <FormLabel>Format</FormLabel>
           </div>
           <FormControl>
-            <Select {...field}>
+            <Select {...field} value={field.value || undefined}>
               <SelectTrigger>
                 <SelectValue placeholder="Select a payload format" />
               </SelectTrigger>
@@ -139,6 +143,7 @@ export const FieldSecret = ({ isUpdate }: { isUpdate: boolean }) => {
               <FormControl>
                 <Input
                   {...field}
+                  value={field.value || ''}
                   placeholder={
                     isUpdate
                       ? 'Changing the secret will override your existing signing key...'
@@ -192,7 +197,9 @@ export const FieldEvents = () => {
               <FormItem className="flex flex-row items-center space-x-3 space-y-0">
                 <FormControl>
                   <Checkbox
-                    defaultChecked={field.value && field.value.includes(event)}
+                    defaultChecked={
+                      field.value ? field.value.includes(event) : false
+                    }
                     onCheckedChange={(checked) => {
                       if (checked) {
                         field.onChange([...(field.value || []), event])

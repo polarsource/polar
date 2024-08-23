@@ -3,7 +3,7 @@ import { getCentsInDollarString } from 'polarkit/lib/money'
 
 interface FundingPillProps {
   total: CurrencyAmount
-  goal?: CurrencyAmount
+  goal: CurrencyAmount | null
 }
 
 const FundingPill: React.FC<FundingPillProps> = ({ total, goal }) => {

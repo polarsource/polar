@@ -157,9 +157,7 @@ export class Upload {
             const completed: S3FileUploadCompletedPart = {
               number: part.number,
               checksum_etag: etag,
-            }
-            if (part.checksum_sha256_base64) {
-              completed.checksum_sha256_base64 = part.checksum_sha256_base64
+              checksum_sha256_base64: part.checksum_sha256_base64 || null,
             }
             resolve(completed)
           } else {

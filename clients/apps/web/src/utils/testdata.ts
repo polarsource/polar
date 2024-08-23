@@ -47,6 +47,7 @@ export function addHours(date: Date, hours: number) {
 export const org: Organization = {
   id: 'xxxabc',
   created_at: new Date('2023-01-01T00:00:00Z').toISOString(),
+  modified_at: null,
   name: 'Pydantic',
   slug: 'pydantic',
   avatar_url: 'https://avatars.githubusercontent.com/u/110818415?s=48&v=4',
@@ -55,6 +56,13 @@ export const org: Organization = {
   profile_settings: {},
   donations_enabled: false,
   feature_settings: {},
+  default_upfront_split_to_contributors: null,
+  bio: null,
+  company: null,
+  blog: null,
+  location: null,
+  email: null,
+  twitter_username: null,
 }
 
 export const user: UserRead = {
@@ -66,6 +74,7 @@ export const user: UserRead = {
   accepted_terms_of_service: true,
   id: 'xxxabc-123',
   oauth_accounts: [],
+  account_id: null,
 }
 
 export const externalOrganization: ExternalOrganization = {
@@ -74,6 +83,14 @@ export const externalOrganization: ExternalOrganization = {
   name: 'polarsource',
   avatar_url: 'https://avatars.githubusercontent.com/u/105373340?v=4',
   is_personal: false,
+  bio: null,
+  pretty_name: null,
+  company: null,
+  blog: null,
+  location: null,
+  email: null,
+  twitter_username: null,
+  organization_id: null,
 }
 
 export const repo: Repository = {
@@ -164,6 +181,7 @@ export const issueFunding: IssueFunding = {
 export const pledgePublicAPI: Pledge = {
   id: 'pppp',
   created_at: '2023-10-11',
+  modified_at: null,
   issue: issue,
   amount: 3000,
   currency: 'usd',
@@ -182,6 +200,8 @@ const maintainerPledgeCreatedNotification: MaintainerPledgeCreatedNotificationPa
     issue_repo_name: 'polar',
     issue_number: 123,
     maintainer_has_stripe_account: false,
+    pledge_id: null,
+    pledge_type: PledgeType.UPFRONT,
   }
 
 const maintainerPledgeConfirmationPendingNotification: MaintainerPledgeConfirmationPendingNotificationPayload =
@@ -194,6 +214,7 @@ const maintainerPledgeConfirmationPendingNotification: MaintainerPledgeConfirmat
     issue_repo_name: 'polar',
     issue_number: 123,
     maintainer_has_stripe_account: false,
+    pledge_id: null,
   }
 
 const maintainerPledgePendingNotification: MaintainerPledgePendingNotificationPayload =
@@ -206,6 +227,7 @@ const maintainerPledgePendingNotification: MaintainerPledgePendingNotificationPa
     issue_repo_name: 'polar',
     issue_number: 123,
     maintainer_has_stripe_account: false,
+    pledge_id: null,
   }
 
 const maintainerPledgePaidNotification: MaintainerPledgePaidNotificationPayload =
@@ -216,6 +238,7 @@ const maintainerPledgePaidNotification: MaintainerPledgePaidNotificationPayload 
     issue_org_name: 'polarsource',
     issue_repo_name: 'polar',
     issue_number: 123,
+    pledge_id: null,
   }
 
 const pledgerPledgePendingNotification: PledgerPledgePendingNotificationPayload =
@@ -227,6 +250,8 @@ const pledgerPledgePendingNotification: PledgerPledgePendingNotificationPayload 
     issue_repo_name: 'polar',
     issue_number: 123,
     pledge_date: addDays(new Date(), -2).toISOString(),
+    pledge_id: null,
+    pledge_type: PledgeType.UPFRONT,
   }
 
 const rewardPaidNotification: RewardPaidNotificationPayload = {
@@ -357,4 +382,13 @@ Our mission at Polar is for developers to get paid coding on their passions. Emp
     avatar_url: 'https://avatars.githubusercontent.com/u/105373340?v=4',
   },
   is_pinned: false,
+  user_id: null,
+  published_at: null,
+  paid_subscribers_only: false,
+  paid_subscribers_only_ends_at: null,
+  notify_subscribers: false,
+  notifications_sent_at: null,
+  email_sent_to_count: null,
+  og_image_url: null,
+  og_description: null,
 }

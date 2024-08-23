@@ -1,4 +1,4 @@
-export const prettyCardName = (brand?: string) => {
+export const prettyCardName = (brand: string | null) => {
   if (!brand) {
     return 'Saved Card'
   }

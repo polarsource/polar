@@ -1,7 +1,12 @@
 from typing import Annotated, Literal
 
 from babel.numbers import format_currency
-from pydantic import UUID4, AfterValidator, Discriminator, Field
+from pydantic import (
+    UUID4,
+    AfterValidator,
+    Discriminator,
+    Field,
+)
 
 from polar.benefit.schemas import BenefitID, BenefitPublic
 from polar.file.schemas import ProductMediaFileRead
@@ -11,6 +16,7 @@ from polar.kit.schemas import (
     MergeJSONSchema,
     Schema,
     SelectorWidget,
+    SetSchemaReference,
     TimestampedSchema,
 )
 from polar.models.product import SubscriptionTierType
@@ -275,7 +281,9 @@ class ProductPriceOneTime(ProductPriceBase):
 
 
 ProductPrice = Annotated[
-    ProductPriceRecurring | ProductPriceOneTime, Discriminator("type")
+    ProductPriceRecurring | ProductPriceOneTime,
+    Discriminator("type"),
+    SetSchemaReference("ProductPrice"),
 ]
 
 

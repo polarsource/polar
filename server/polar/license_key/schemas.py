@@ -65,12 +65,12 @@ class LicenseKeyRead(Schema):
     key: str
     display_key: str
     status: LicenseKeyStatus
-    limit_activations: int | None = None
+    limit_activations: int | None
     usage: int
-    limit_usage: int | None = None
+    limit_usage: int | None
     validations: int
-    last_validated_at: datetime | None = None
-    expires_at: datetime | None = None
+    last_validated_at: datetime | None
+    expires_at: datetime | None
 
 
 class LicenseKeyActivationBase(Schema):
@@ -79,7 +79,7 @@ class LicenseKeyActivationBase(Schema):
     label: str
     meta: dict[str, Any]
     created_at: datetime
-    modified_at: datetime | None = None
+    modified_at: datetime | None
 
 
 class LicenseKeyWithActivations(LicenseKeyRead):

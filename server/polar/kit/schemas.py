@@ -17,7 +17,7 @@ from pydantic import (
     PlainSerializer,
 )
 from pydantic.json_schema import JsonSchemaValue
-from pydantic_core import PydanticCustomError, core_schema
+from pydantic_core import CoreSchema, PydanticCustomError, core_schema
 
 from .email import EmailNotValidError, validate_email
 
@@ -84,6 +84,21 @@ class MergeJSONSchema:
 
     def __hash__(self) -> int:
         return hash(type(self.mode))
+
+
+@dataclasses.dataclass(slots=True)
+class SetSchemaReference:
+    ref_name: str
+
+    def __get_pydantic_core_schema__(
+        self, source_type: Any, handler: GetCoreSchemaHandler
+    ) -> CoreSchema:
+        schema = handler(source_type)
+        schema["ref"] = self.ref_name  # type: ignore
+        return schema
+
+    def __hash__(self) -> int:
+        return hash(type(self.ref_name))
 
 
 @dataclasses.dataclass(slots=True)

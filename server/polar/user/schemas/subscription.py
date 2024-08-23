@@ -17,7 +17,6 @@ class UserSubscriptionBase(TimestampedSchema):
     ended_at: datetime | None
 
     user_id: UUID4
-    organization_id: UUID4 | None
     product_id: UUID4
     price_id: UUID4 | None
 

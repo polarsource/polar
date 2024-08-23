@@ -3,6 +3,7 @@ import { getGitHubAuthorizeURL, getUserDiscordAuthorizeURL } from '@/utils/auth'
 import { AutoAwesome } from '@mui/icons-material'
 import { UserBenefit, UserOrder, UserSubscription } from '@polar-sh/sdk'
 import { usePathname } from 'next/navigation'
+import { Pill } from 'polarkit/components/ui/atoms'
 import Button from 'polarkit/components/ui/atoms/button'
 import { twMerge } from 'tailwind-merge'
 import { getLicenseKeyGrant } from './LicenseKeys/SubscriberWidget'
@@ -68,7 +69,11 @@ export const BenefitRow = ({
           </a>
         </Button>
       )}
-      {licenseKeyGrant && <p>{licenseKeyGrant.properties.display_key}</p>}
+      {licenseKeyGrant && (
+        <Pill color="blue" className="px-4">
+          {licenseKeyGrant.properties.display_key}
+        </Pill>
+      )}
       {benefitActions.length > 0 && (
         <div className="flex flex-row items-center gap-x-4">
           {benefitActions.map((action) => (

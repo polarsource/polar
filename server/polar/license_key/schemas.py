@@ -36,6 +36,7 @@ UnauthorizedResponse = {
 
 class LicenseKeyValidate(Schema):
     key: str
+    organization_id: UUID4
     activation_id: UUID4 | None = None
     benefit_id: BenefitID | None = None
     user_id: UUID4 | None = None
@@ -45,6 +46,7 @@ class LicenseKeyValidate(Schema):
 
 class LicenseKeyActivate(Schema):
     key: str
+    organization_id: UUID4
     label: str
     conditions: dict[str, Any] = {}
     meta: dict[str, Any] = {}
@@ -52,6 +54,7 @@ class LicenseKeyActivate(Schema):
 
 class LicenseKeyDeactivate(Schema):
     key: str
+    organization_id: UUID4
     activation_id: UUID4
 
 

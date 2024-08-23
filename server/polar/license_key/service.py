@@ -27,15 +27,28 @@ log = structlog.get_logger()
 class LicenseKeyService(
     ResourceService[LicenseKey, LicenseKeyCreate, LicenseKeyUpdate]
 ):
-    async def get_by_key(self, session: AsyncSession, *, key: str) -> LicenseKey | None:
-        query = self._get_select_base().where(LicenseKey.key == key)
+    async def get_by_key(
+        self,
+        session: AsyncSession,
+        *,
+        organization_id: UUID,
+        key: str,
+    ) -> LicenseKey | None:
+        query = self._get_select_base().where(
+            LicenseKey.key == key,
+            LicenseKey.organization_id == organization_id,
+        )
         result = await session.execute(query)
         return result.unique().scalar_one_or_none()
 
     async def get_or_raise_by_key(
-        self, session: AsyncSession, *, key: str
+        self,
+        session: AsyncSession,
+        *,
+        organization_id: UUID,
+        key: str,
     ) -> LicenseKey:
-        lk = await self.get_by_key(session, key=key)
+        lk = await self.get_by_key(session, organization_id=organization_id, key=key)
         if not lk:
             raise ResourceNotFound()
 

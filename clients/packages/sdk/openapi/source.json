@@ -4228,78 +4228,12 @@
             }
         },
         "/v1/magic_link/authenticate": {
-            "get": {
-                "tags": [
-                    "magic_link"
-                ],
-                "summary": "Magic Link.Authenticate Get",
-                "operationId": "magic_link:magic_link.authenticate_get",
-                "security": [
-                    {
-                        "OpenIdConnect": []
-                    },
-                    {
-                        "HTTPBearer": []
-                    }
-                ],
-                "parameters": [
-                    {
-                        "name": "token",
-                        "in": "query",
-                        "required": true,
-                        "schema": {
-                            "type": "string",
-                            "title": "Token"
-                        }
-                    },
-                    {
-                        "name": "return_to",
-                        "in": "query",
-                        "required": false,
-                        "schema": {
-                            "anyOf": [
-                                {
-                                    "type": "string"
-                                },
-                                {
-                                    "type": "null"
-                                }
-                            ],
-                            "title": "Return To"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Successful Response",
-                        "content": {
-                            "application/json": {
-                                "schema": {}
-                            }
-                        }
-                    },
-                    "422": {
-                        "description": "Validation Error",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/HTTPValidationError"
-                                }
-                            }
-                        }
-                    }
-                },
-                "x-polar-allowed-subjects": [
-                    "User",
-                    "Anonymous"
-                ]
-            },
             "post": {
                 "tags": [
                     "magic_link"
                 ],
-                "summary": "Magic Link.Authenticate Post",
-                "operationId": "magic_link:magic_link.authenticate_post",
+                "summary": "Magic Link.Authenticate",
+                "operationId": "magic_link:magic_link.authenticate",
                 "security": [
                     {
                         "OpenIdConnect": []
@@ -4331,7 +4265,7 @@
                     "content": {
                         "application/x-www-form-urlencoded": {
                             "schema": {
-                                "$ref": "#/components/schemas/authenticate_post"
+                                "$ref": "#/components/schemas/authenticate"
                             }
                         }
                     }
@@ -4632,9 +4566,9 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
                     "User",
-                    "Anonymous"
+                    "Anonymous",
+                    "Organization"
                 ]
             }
         },
@@ -4651,8 +4585,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "repositories:write",
-                            "repositories:read"
+                            "repositories:read",
+                            "repositories:write"
                         ]
                     },
                     {
@@ -4871,9 +4805,9 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
                     "User",
-                    "Anonymous"
+                    "Anonymous",
+                    "Organization"
                 ]
             }
         },
@@ -4890,8 +4824,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "repositories:write",
-                            "repositories:read"
+                            "repositories:read",
+                            "repositories:write"
                         ]
                     },
                     {
@@ -4949,9 +4883,9 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
                     "User",
-                    "Anonymous"
+                    "Anonymous",
+                    "Organization"
                 ]
             },
             "patch": {
@@ -5044,8 +4978,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -5832,8 +5766,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "issues:read",
-                            "issues:write"
+                            "issues:write",
+                            "issues:read"
                         ]
                     },
                     {
@@ -6083,9 +6017,9 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
                     "User",
-                    "Anonymous"
+                    "Anonymous",
+                    "Organization"
                 ]
             }
         },
@@ -7168,18 +7102,6 @@
                             }
                         }
                     },
-                    "400": {
-                        "description": "Bad Request",
-                        "detail": "message"
-                    },
-                    "403": {
-                        "description": "Forbidden",
-                        "detail": "message"
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "detail": "message"
-                    },
                     "422": {
                         "description": "Validation Error",
                         "content": {
@@ -7471,8 +7393,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             },
             "post": {
@@ -7603,8 +7525,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             },
             "patch": {
@@ -7697,8 +7619,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -7751,10 +7673,10 @@
                             },
                             "description": "Filter by the type of purchase the customer made.",
                             "default": [
+                                "order",
                                 "donation",
                                 "free_subscription",
-                                "paid_subscription",
-                                "order"
+                                "paid_subscription"
                             ],
                             "title": "Customer Types"
                         },
@@ -7820,8 +7742,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -7904,8 +7826,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             },
             "patch": {
@@ -7996,8 +7918,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -8061,8 +7983,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -8119,8 +8041,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -8177,8 +8099,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             },
             "post": {
@@ -8243,8 +8165,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -8260,8 +8182,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "subscriptions:write",
-                            "subscriptions:read"
+                            "subscriptions:read",
+                            "subscriptions:write"
                         ]
                     },
                     {
@@ -8479,8 +8401,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             },
             "post": {
@@ -8534,8 +8456,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -8591,8 +8513,8 @@
                     }
                 ],
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -8608,8 +8530,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "subscriptions:write",
-                            "subscriptions:read"
+                            "subscriptions:read",
+                            "subscriptions:write"
                         ]
                     },
                     {
@@ -8677,8 +8599,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -8887,9 +8809,9 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
                     "User",
-                    "Anonymous"
+                    "Anonymous",
+                    "Organization"
                 ]
             },
             "post": {
@@ -8944,8 +8866,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -9020,9 +8942,9 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
                     "User",
-                    "Anonymous"
+                    "Anonymous",
+                    "Organization"
                 ]
             },
             "patch": {
@@ -9115,8 +9037,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             },
             "delete": {
@@ -9192,8 +9114,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -9258,8 +9180,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -9352,8 +9274,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -9439,8 +9361,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -11540,41 +11462,6 @@
                         "OpenIdConnect": []
                     }
                 ]
-            },
-            "post": {
-                "tags": [
-                    "oauth2",
-                    "documented",
-                    "featured"
-                ],
-                "summary": "Get User Info",
-                "description": "Get information about the authenticated user.",
-                "operationId": "oauth2:userinfo",
-                "responses": {
-                    "200": {
-                        "description": "Successful Response",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "anyOf": [
-                                        {
-                                            "$ref": "#/components/schemas/UserInfoUser"
-                                        },
-                                        {
-                                            "$ref": "#/components/schemas/UserInfoOrganization"
-                                        }
-                                    ],
-                                    "title": "Response Oauth2:Userinfo"
-                                }
-                            }
-                        }
-                    }
-                },
-                "security": [
-                    {
-                        "OpenIdConnect": []
-                    }
-                ]
             }
         },
         "/v1/benefits/": {
@@ -11710,8 +11597,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             },
             "post": {
@@ -11812,8 +11699,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -11908,8 +11795,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             },
             "patch": {
@@ -12041,8 +11928,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             },
             "delete": {
@@ -12117,8 +12004,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -12274,8 +12161,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -12290,8 +12177,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "webhooks:write",
-                            "webhooks:read"
+                            "webhooks:read",
+                            "webhooks:write"
                         ]
                     },
                     {
@@ -12393,8 +12280,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             },
             "post": {
@@ -12447,8 +12334,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -12463,8 +12350,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "webhooks:write",
-                            "webhooks:read"
+                            "webhooks:read",
+                            "webhooks:write"
                         ]
                     },
                     {
@@ -12518,8 +12405,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             },
             "patch": {
@@ -12606,8 +12493,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             },
             "delete": {
@@ -12677,8 +12564,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -12693,8 +12580,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "webhooks:write",
-                            "webhooks:read"
+                            "webhooks:read",
+                            "webhooks:write"
                         ]
                     },
                     {
@@ -12771,8 +12658,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -12839,8 +12726,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -13052,9 +12939,9 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
                     "User",
-                    "Anonymous"
+                    "Anonymous",
+                    "Organization"
                 ]
             },
             "post": {
@@ -13117,8 +13004,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -13194,9 +13081,9 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
                     "User",
-                    "Anonymous"
+                    "Anonymous",
+                    "Organization"
                 ]
             },
             "patch": {
@@ -13289,8 +13176,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -13385,8 +13272,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -13623,8 +13510,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -13694,8 +13581,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -13765,8 +13652,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -13986,8 +13873,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             },
             "post": {
@@ -14060,8 +13947,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -14150,8 +14037,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -14240,8 +14127,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             },
             "delete": {
@@ -14310,8 +14197,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -14499,8 +14386,8 @@
                     }
                 },
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -14536,8 +14423,8 @@
                     }
                 ],
                 "x-polar-allowed-subjects": [
-                    "Organization",
-                    "User"
+                    "User",
+                    "Organization"
                 ]
             }
         },
@@ -19429,22 +19316,7 @@
                         "$ref": "#/components/schemas/Product-Output"
                     },
                     "product_price": {
-                        "oneOf": [
-                            {
-                                "$ref": "#/components/schemas/ProductPriceRecurring"
-                            },
-                            {
-                                "$ref": "#/components/schemas/ProductPriceOneTime"
-                            }
-                        ],
-                        "title": "Product Price",
-                        "discriminator": {
-                            "propertyName": "type",
-                            "mapping": {
-                                "one_time": "#/components/schemas/ProductPriceOneTime",
-                                "recurring": "#/components/schemas/ProductPriceRecurring"
-                            }
-                        }
+                        "$ref": "#/components/schemas/ProductPrice-Output"
                     }
                 },
                 "type": "object",
@@ -24614,22 +24486,7 @@
                         "$ref": "#/components/schemas/OrderProduct"
                     },
                     "product_price": {
-                        "oneOf": [
-                            {
-                                "$ref": "#/components/schemas/ProductPriceRecurring"
-                            },
-                            {
-                                "$ref": "#/components/schemas/ProductPriceOneTime"
-                            }
-                        ],
-                        "title": "Product Price",
-                        "discriminator": {
-                            "propertyName": "type",
-                            "mapping": {
-                                "one_time": "#/components/schemas/ProductPriceOneTime",
-                                "recurring": "#/components/schemas/ProductPriceRecurring"
-                            }
-                        }
+                        "$ref": "#/components/schemas/ProductPrice-Input"
                     },
                     "subscription": {
                         "anyOf": [
@@ -24734,22 +24591,7 @@
                         "$ref": "#/components/schemas/OrderProduct"
                     },
                     "product_price": {
-                        "oneOf": [
-                            {
-                                "$ref": "#/components/schemas/ProductPriceRecurring"
-                            },
-                            {
-                                "$ref": "#/components/schemas/ProductPriceOneTime"
-                            }
-                        ],
-                        "title": "Product Price",
-                        "discriminator": {
-                            "propertyName": "type",
-                            "mapping": {
-                                "one_time": "#/components/schemas/ProductPriceOneTime",
-                                "recurring": "#/components/schemas/ProductPriceRecurring"
-                            }
-                        }
+                        "$ref": "#/components/schemas/ProductPrice-Output"
                     },
                     "subscription": {
                         "anyOf": [
@@ -27277,21 +27119,7 @@
                     },
                     "prices": {
                         "items": {
-                            "oneOf": [
-                                {
-                                    "$ref": "#/components/schemas/ProductPriceRecurring"
-                                },
-                                {
-                                    "$ref": "#/components/schemas/ProductPriceOneTime"
-                                }
-                            ],
-                            "discriminator": {
-                                "propertyName": "type",
-                                "mapping": {
-                                    "one_time": "#/components/schemas/ProductPriceOneTime",
-                                    "recurring": "#/components/schemas/ProductPriceRecurring"
-                                }
-                            }
+                            "$ref": "#/components/schemas/ProductPrice-Input"
                         },
                         "type": "array",
                         "title": "Prices",
@@ -27425,21 +27253,7 @@
                     },
                     "prices": {
                         "items": {
-                            "oneOf": [
-                                {
-                                    "$ref": "#/components/schemas/ProductPriceRecurring"
-                                },
-                                {
-                                    "$ref": "#/components/schemas/ProductPriceOneTime"
-                                }
-                            ],
-                            "discriminator": {
-                                "propertyName": "type",
-                                "mapping": {
-                                    "one_time": "#/components/schemas/ProductPriceOneTime",
-                                    "recurring": "#/components/schemas/ProductPriceRecurring"
-                                }
-                            }
+                            "$ref": "#/components/schemas/ProductPrice-Output"
                         },
                         "type": "array",
                         "title": "Prices",
@@ -27948,6 +27762,40 @@
                 ],
                 "title": "ProductOneTimeCreate",
                 "description": "Schema to create a one-time product."
+            },
+            "ProductPrice-Input": {
+                "oneOf": [
+                    {
+                        "$ref": "#/components/schemas/ProductPriceRecurring"
+                    },
+                    {
+                        "$ref": "#/components/schemas/ProductPriceOneTime"
+                    }
+                ],
+                "discriminator": {
+                    "propertyName": "type",
+                    "mapping": {
+                        "one_time": "#/components/schemas/ProductPriceOneTime",
+                        "recurring": "#/components/schemas/ProductPriceRecurring"
+                    }
+                }
+            },
+            "ProductPrice-Output": {
+                "oneOf": [
+                    {
+                        "$ref": "#/components/schemas/ProductPriceRecurring"
+                    },
+                    {
+                        "$ref": "#/components/schemas/ProductPriceOneTime"
+                    }
+                ],
+                "discriminator": {
+                    "propertyName": "type",
+                    "mapping": {
+                        "one_time": "#/components/schemas/ProductPriceOneTime",
+                        "recurring": "#/components/schemas/ProductPriceRecurring"
+                    }
+                }
             },
             "ProductPriceOneTime": {
                 "properties": {
@@ -29712,27 +29560,12 @@
                     "price": {
                         "anyOf": [
                             {
-                                "oneOf": [
-                                    {
-                                        "$ref": "#/components/schemas/ProductPriceRecurring"
-                                    },
-                                    {
-                                        "$ref": "#/components/schemas/ProductPriceOneTime"
-                                    }
-                                ],
-                                "discriminator": {
-                                    "propertyName": "type",
-                                    "mapping": {
-                                        "one_time": "#/components/schemas/ProductPriceOneTime",
-                                        "recurring": "#/components/schemas/ProductPriceRecurring"
-                                    }
-                                }
+                                "$ref": "#/components/schemas/ProductPrice-Input"
                             },
                             {
                                 "type": "null"
                             }
-                        ],
-                        "title": "Price"
+                        ]
                     }
                 },
                 "type": "object",
@@ -29861,27 +29694,12 @@
                     "price": {
                         "anyOf": [
                             {
-                                "oneOf": [
-                                    {
-                                        "$ref": "#/components/schemas/ProductPriceRecurring"
-                                    },
-                                    {
-                                        "$ref": "#/components/schemas/ProductPriceOneTime"
-                                    }
-                                ],
-                                "discriminator": {
-                                    "propertyName": "type",
-                                    "mapping": {
-                                        "one_time": "#/components/schemas/ProductPriceOneTime",
-                                        "recurring": "#/components/schemas/ProductPriceRecurring"
-                                    }
-                                }
+                                "$ref": "#/components/schemas/ProductPrice-Output"
                             },
                             {
                                 "type": "null"
                             }
-                        ],
-                        "title": "Price"
+                        ]
                     }
                 },
                 "type": "object",
@@ -31166,22 +30984,7 @@
                         "$ref": "#/components/schemas/TransactionProduct"
                     },
                     "product_price": {
-                        "oneOf": [
-                            {
-                                "$ref": "#/components/schemas/ProductPriceRecurring"
-                            },
-                            {
-                                "$ref": "#/components/schemas/ProductPriceOneTime"
-                            }
-                        ],
-                        "title": "Product Price",
-                        "discriminator": {
-                            "propertyName": "type",
-                            "mapping": {
-                                "one_time": "#/components/schemas/ProductPriceOneTime",
-                                "recurring": "#/components/schemas/ProductPriceRecurring"
-                            }
-                        }
+                        "$ref": "#/components/schemas/ProductPrice-Output"
                     },
                     "subscription_id": {
                         "anyOf": [
@@ -31974,22 +31777,7 @@
                         "$ref": "#/components/schemas/UserOrderProduct"
                     },
                     "product_price": {
-                        "oneOf": [
-                            {
-                                "$ref": "#/components/schemas/ProductPriceRecurring"
-                            },
-                            {
-                                "$ref": "#/components/schemas/ProductPriceOneTime"
-                            }
-                        ],
-                        "title": "Product Price",
-                        "discriminator": {
-                            "propertyName": "type",
-                            "mapping": {
-                                "one_time": "#/components/schemas/ProductPriceOneTime",
-                                "recurring": "#/components/schemas/ProductPriceRecurring"
-                            }
-                        }
+                        "$ref": "#/components/schemas/ProductPrice-Output"
                     },
                     "subscription": {
                         "anyOf": [
@@ -32120,21 +31908,7 @@
                     },
                     "prices": {
                         "items": {
-                            "oneOf": [
-                                {
-                                    "$ref": "#/components/schemas/ProductPriceRecurring"
-                                },
-                                {
-                                    "$ref": "#/components/schemas/ProductPriceOneTime"
-                                }
-                            ],
-                            "discriminator": {
-                                "propertyName": "type",
-                                "mapping": {
-                                    "one_time": "#/components/schemas/ProductPriceOneTime",
-                                    "recurring": "#/components/schemas/ProductPriceRecurring"
-                                }
-                            }
+                            "$ref": "#/components/schemas/ProductPrice-Output"
                         },
                         "type": "array",
                         "title": "Prices",
@@ -32513,18 +32287,6 @@
                         "format": "uuid4",
                         "title": "User Id"
                     },
-                    "organization_id": {
-                        "anyOf": [
-                            {
-                                "type": "string",
-                                "format": "uuid4"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Organization Id"
-                    },
                     "product_id": {
                         "type": "string",
                         "format": "uuid4",
@@ -32548,27 +32310,12 @@
                     "price": {
                         "anyOf": [
                             {
-                                "oneOf": [
-                                    {
-                                        "$ref": "#/components/schemas/ProductPriceRecurring"
-                                    },
-                                    {
-                                        "$ref": "#/components/schemas/ProductPriceOneTime"
-                                    }
-                                ],
-                                "discriminator": {
-                                    "propertyName": "type",
-                                    "mapping": {
-                                        "one_time": "#/components/schemas/ProductPriceOneTime",
-                                        "recurring": "#/components/schemas/ProductPriceRecurring"
-                                    }
-                                }
+                                "$ref": "#/components/schemas/ProductPrice-Output"
                             },
                             {
                                 "type": "null"
                             }
-                        ],
-                        "title": "Price"
+                        ]
                     }
                 },
                 "type": "object",
@@ -32583,7 +32330,6 @@
                     "started_at",
                     "ended_at",
                     "user_id",
-                    "organization_id",
                     "product_id",
                     "price_id",
                     "product",
@@ -32676,21 +32422,7 @@
                     },
                     "prices": {
                         "items": {
-                            "oneOf": [
-                                {
-                                    "$ref": "#/components/schemas/ProductPriceRecurring"
-                                },
-                                {
-                                    "$ref": "#/components/schemas/ProductPriceOneTime"
-                                }
-                            ],
-                            "discriminator": {
-                                "propertyName": "type",
-                                "mapping": {
-                                    "one_time": "#/components/schemas/ProductPriceOneTime",
-                                    "recurring": "#/components/schemas/ProductPriceRecurring"
-                                }
-                            }
+                            "$ref": "#/components/schemas/ProductPrice-Output"
                         },
                         "type": "array",
                         "title": "Prices",
@@ -33486,7 +33218,7 @@
                 "title": "WebhookSubscriptionUpdatedPayload",
                 "description": "Sent when a new subscription is updated. This event fires if the subscription is cancelled, both immediately and if the subscription is cancelled at the end of the current period.\n\n**Discord & Slack support:** On cancellation"
             },
-            "authenticate_post": {
+            "authenticate": {
                 "properties": {
                     "token": {
                         "type": "string",
@@ -33497,7 +33229,7 @@
                 "required": [
                     "token"
                 ],
-                "title": "Body_magic_link:magic_link.authenticate_post"
+                "title": "Body_magic_link:magic_link.authenticate"
             }
         },
         "securitySchemes": {

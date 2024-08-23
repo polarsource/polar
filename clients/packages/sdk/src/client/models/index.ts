@@ -10021,12 +10021,6 @@ export interface PostIssueComment {
     append_badge?: boolean;
 }
 /**
- * @type PricesInner
- * 
- * @export
- */
-export type PricesInner = { type: 'one_time' } & ProductPriceOneTime | { type: 'recurring' } & ProductPriceRecurring;
-/**
  * A product.
  * @export
  * @interface Product
@@ -10094,10 +10088,10 @@ export interface Product {
     is_highlighted: boolean | null;
     /**
      * List of available prices for this product.
-     * @type {Array<PricesInner>}
+     * @type {Array<ProductPrice>}
      * @memberof Product
      */
-    prices: Array<PricesInner>;
+    prices: Array<ProductPrice>;
     /**
      * The benefits granted by the product.
      * @type {Array<BenefitPublicInner>}
@@ -11830,10 +11824,10 @@ export interface Subscription {
     product: Product;
     /**
      * 
-     * @type {UserSubscriptionPrice}
+     * @type {ProductPrice}
      * @memberof Subscription
      */
-    price: UserSubscriptionPrice | null;
+    price: ProductPrice | null;
 }
 
 
@@ -13582,10 +13576,10 @@ export interface UserOrderProduct {
     is_highlighted: boolean | null;
     /**
      * List of available prices for this product.
-     * @type {Array<PricesInner>}
+     * @type {Array<ProductPrice>}
      * @memberof UserOrderProduct
      */
-    prices: Array<PricesInner>;
+    prices: Array<ProductPrice>;
     /**
      * The benefits granted by the product.
      * @type {Array<BenefitPublicInner>}
@@ -13865,12 +13859,6 @@ export interface UserSubscription {
      * @type {string}
      * @memberof UserSubscription
      */
-    organization_id: string | null;
-    /**
-     * 
-     * @type {string}
-     * @memberof UserSubscription
-     */
     product_id: string;
     /**
      * 
@@ -13886,19 +13874,13 @@ export interface UserSubscription {
     product: UserSubscriptionProduct;
     /**
      * 
-     * @type {UserSubscriptionPrice}
+     * @type {ProductPrice}
      * @memberof UserSubscription
      */
-    price: UserSubscriptionPrice | null;
+    price: ProductPrice | null;
 }
 
 
-/**
- * @type UserSubscriptionPrice
- * 
- * @export
- */
-export type UserSubscriptionPrice = { type: 'one_time' } & ProductPriceOneTime | { type: 'recurring' } & ProductPriceRecurring;
 /**
  * 
  * @export
@@ -13967,10 +13949,10 @@ export interface UserSubscriptionProduct {
     is_highlighted: boolean | null;
     /**
      * List of available prices for this product.
-     * @type {Array<PricesInner>}
+     * @type {Array<ProductPrice>}
      * @memberof UserSubscriptionProduct
      */
-    prices: Array<PricesInner>;
+    prices: Array<ProductPrice>;
     /**
      * The benefits granted by the product.
      * @type {Array<BenefitPublicInner>}

@@ -19,12 +19,7 @@ import type {
   MagicLinkRequest,
 } from '../models/index';
 
-export interface MagicLinkApiMagicLinkAuthenticateGetRequest {
-    token: string;
-    returnTo?: string;
-}
-
-export interface MagicLinkApiMagicLinkAuthenticatePostRequest {
+export interface MagicLinkApiMagicLinkAuthenticateRequest {
     token: string;
     returnTo?: string;
 }
@@ -39,66 +34,13 @@ export interface MagicLinkApiMagicLinkRequestRequest {
 export class MagicLinkApi extends runtime.BaseAPI {
 
     /**
-     * Magic Link.Authenticate Get
+     * Magic Link.Authenticate
      */
-    async magicLinkAuthenticateGetRaw(requestParameters: MagicLinkApiMagicLinkAuthenticateGetRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<any>> {
+    async magicLinkAuthenticateRaw(requestParameters: MagicLinkApiMagicLinkAuthenticateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<any>> {
         if (requestParameters['token'] == null) {
             throw new runtime.RequiredError(
                 'token',
-                'Required parameter "token" was null or undefined when calling magicLinkAuthenticateGet().'
-            );
-        }
-
-        const queryParameters: any = {};
-
-        if (requestParameters['token'] != null) {
-            queryParameters['token'] = requestParameters['token'];
-        }
-
-        if (requestParameters['returnTo'] != null) {
-            queryParameters['return_to'] = requestParameters['returnTo'];
-        }
-
-        const headerParameters: runtime.HTTPHeaders = {};
-
-        if (this.configuration && this.configuration.accessToken) {
-            const token = this.configuration.accessToken;
-            const tokenString = await token("HTTPBearer", []);
-
-            if (tokenString) {
-                headerParameters["Authorization"] = `Bearer ${tokenString}`;
-            }
-        }
-        const response = await this.request({
-            path: `/v1/magic_link/authenticate`,
-            method: 'GET',
-            headers: headerParameters,
-            query: queryParameters,
-        }, initOverrides);
-
-        if (this.isJsonMime(response.headers.get('content-type'))) {
-            return new runtime.JSONApiResponse<any>(response);
-        } else {
-            return new runtime.TextApiResponse(response) as any;
-        }
-    }
-
-    /**
-     * Magic Link.Authenticate Get
-     */
-    async magicLinkAuthenticateGet(requestParameters: MagicLinkApiMagicLinkAuthenticateGetRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<any> {
-        const response = await this.magicLinkAuthenticateGetRaw(requestParameters, initOverrides);
-        return await response.value();
-    }
-
-    /**
-     * Magic Link.Authenticate Post
-     */
-    async magicLinkAuthenticatePostRaw(requestParameters: MagicLinkApiMagicLinkAuthenticatePostRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<any>> {
-        if (requestParameters['token'] == null) {
-            throw new runtime.RequiredError(
-                'token',
-                'Required parameter "token" was null or undefined when calling magicLinkAuthenticatePost().'
+                'Required parameter "token" was null or undefined when calling magicLinkAuthenticate().'
             );
         }
 
@@ -152,10 +94,10 @@ export class MagicLinkApi extends runtime.BaseAPI {
     }
 
     /**
-     * Magic Link.Authenticate Post
+     * Magic Link.Authenticate
      */
-    async magicLinkAuthenticatePost(requestParameters: MagicLinkApiMagicLinkAuthenticatePostRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<any> {
-        const response = await this.magicLinkAuthenticatePostRaw(requestParameters, initOverrides);
+    async magicLinkAuthenticate(requestParameters: MagicLinkApiMagicLinkAuthenticateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<any> {
+        const response = await this.magicLinkAuthenticateRaw(requestParameters, initOverrides);
         return await response.value();
     }
 

@@ -629,34 +629,6 @@ export class Oauth2Api extends runtime.BaseAPI {
         return await response.value();
     }
 
-    /**
-     * Get information about the authenticated user.
-     * Get User Info
-     */
-    async userinfo_1Raw(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ResponseOauth2Userinfo>> {
-        const queryParameters: any = {};
-
-        const headerParameters: runtime.HTTPHeaders = {};
-
-        const response = await this.request({
-            path: `/v1/oauth2/userinfo`,
-            method: 'POST',
-            headers: headerParameters,
-            query: queryParameters,
-        }, initOverrides);
-
-        return new runtime.JSONApiResponse(response);
-    }
-
-    /**
-     * Get information about the authenticated user.
-     * Get User Info
-     */
-    async userinfo_1(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ResponseOauth2Userinfo> {
-        const response = await this.userinfo_1Raw(initOverrides);
-        return await response.value();
-    }
-
 }
 
 /**

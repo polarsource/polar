@@ -37,10 +37,10 @@ export const BenefitRow = ({
         </div>
         <div className="flex flex-col">
           <h3 className="text-sm font-medium capitalize">
-            {benefitsDisplayNames[benefit.type]}
+            {benefit.description}
           </h3>
           <p className="dark:text-polar-500 flex flex-row gap-x-1 truncate text-sm text-gray-500">
-            {benefit.description}
+            {benefitsDisplayNames[benefit.type]}
           </p>
         </div>
       </div>

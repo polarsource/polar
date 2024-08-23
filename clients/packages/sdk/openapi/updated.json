@@ -2198,7 +2198,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/LicenseKeyRead"
+                                    "$ref": "#/components/schemas/LicenseKeyWithActivations"
                                 }
                             }
                         }
@@ -8559,10 +8559,10 @@
                             },
                             "description": "Filter by the type of purchase the customer made.",
                             "default": [
-                                "paid_subscription",
-                                "order",
                                 "donation",
-                                "free_subscription"
+                                "free_subscription",
+                                "paid_subscription",
+                                "order"
                             ],
                             "title": "Customer Types"
                         },

@@ -119,10 +119,12 @@ const SubscriptionItem = ({
     <div className="flex w-full flex-row items-center justify-between">
       <div className="flex flex-row items-baseline gap-x-2">
         <div className="flex flex-row items-center gap-4">
-          <SubscriptionGroupIcon
-            className="text-xl"
-            type={subscription.product.type}
-          />
+          {subscription.product.type && (
+            <SubscriptionGroupIcon
+              className="text-xl"
+              type={subscription.product.type}
+            />
+          )}
           <div className="flex flex-row items-baseline gap-3">
             <h3>{subscription.product.name}</h3>
             {organization && (

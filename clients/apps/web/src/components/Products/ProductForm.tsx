@@ -236,7 +236,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
                 </span>
               </div>
               <FormControl>
-                <Input {...field} />
+                <Input {...field} value={field.value || ''} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -257,6 +257,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
                 <TextArea
                   className="min-h-44 resize-none rounded-2xl"
                   {...field}
+                  value={field.value || ''}
                 />
               </FormControl>
               <FormMessage />
@@ -419,7 +420,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
                     <FormItem className="flex flex-row items-center space-x-3 space-y-0">
                       <FormControl>
                         <Checkbox
-                          defaultChecked={field.value}
+                          defaultChecked={field.value || false}
                           onCheckedChange={field.onChange}
                         />
                       </FormControl>

@@ -126,7 +126,7 @@ const OAuthClientDetails = ({ client, onClick }: OAuthClientDetailsProps) => {
         <div className="flex flex-row items-center gap-x-4">
           <Avatar
             className="h-12 w-12"
-            avatar_url={client.logo_uri}
+            avatar_url={client.logo_uri || null}
             name={client.client_name}
           />
           <div className="flex flex-col">

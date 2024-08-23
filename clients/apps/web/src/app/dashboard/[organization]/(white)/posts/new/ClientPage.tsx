@@ -23,7 +23,7 @@ const ClientPage = () => {
   } = useStore()
 
   const [localArticle, setLocalArticle] = useState<
-    Pick<ArticleCreate, 'title'> & { body: string }
+    Pick<ArticleCreate, 'title' | 'body'>
   >({
     title: '',
     body: '',
@@ -131,12 +131,14 @@ const ClientPage = () => {
         disabled={create.isPending}
         canCreate={canCreate}
         title={localArticle.title}
-        body={localArticle.body}
+        body={localArticle.body || ''}
         onTitleChange={(title) => setLocalArticle((a) => ({ ...a, title }))}
         onBodyChange={(body) => setLocalArticle((a) => ({ ...a, body }))}
         previewProps={{
           article: {
             ...localArticle,
+            body: localArticle.body || '',
+            published_at: null,
             organization: org,
             byline: {
               name: org.name,

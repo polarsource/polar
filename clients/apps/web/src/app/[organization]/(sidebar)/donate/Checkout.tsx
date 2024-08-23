@@ -376,7 +376,11 @@ const Message = () => {
             </div>
             <FormControl>
               <div className="w-full">
-                <TextArea {...field} placeholder="Include a personal message" />
+                <TextArea
+                  {...field}
+                  value={field.value || ''}
+                  placeholder="Include a personal message"
+                />
               </div>
             </FormControl>
             <FormMessage />
@@ -479,7 +483,9 @@ const StripeForm = ({
       <Elements
         stripe={stripePromise}
         options={{
-          clientSecret: polarPaymentIntent.client_secret,
+          ...(polarPaymentIntent.client_secret
+            ? { clientSecret: polarPaymentIntent.client_secret }
+            : {}),
           appearance: {
             rules: {
               '.Label': {

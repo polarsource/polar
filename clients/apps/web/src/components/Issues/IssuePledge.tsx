@@ -73,7 +73,11 @@ const IssuePledge = (props: Props) => {
         <div className="flex flex-wrap items-center gap-4">
           <FundingPill
             total={{ amount: totalPledgeAmount, currency: 'USD' }}
-            goal={showFundingGoal ? issue.funding.funding_goal : undefined}
+            goal={
+              showFundingGoal && issue.funding.funding_goal
+                ? issue.funding.funding_goal
+                : null
+            }
           />
 
           {props.pledgesSummary.pay_upfront.total.amount > 0 && (
@@ -129,7 +133,7 @@ const IssuePledge = (props: Props) => {
         >
           <Avatar
             name={p.pledger?.name || ''}
-            avatar_url={p.pledger?.avatar_url}
+            avatar_url={p.pledger?.avatar_url || null}
           />
           <div className="flex-1">
             {p.pledger?.name} {pledgeVerb(p)}{' '}

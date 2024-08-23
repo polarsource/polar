@@ -49,7 +49,7 @@ const ClientPage = ({
   issuesFunding: ListResourceIssueFunding
   featuredOrganizations: Organization[]
   userOrganizations: Organization[]
-  products: Product[]
+  products: (Product & { type: SubscriptionTierType })[]
   links: { opengraph: OgObject; url: string }[]
   posts: Article[]
 }) => {
@@ -122,7 +122,9 @@ const ClientPage = ({
             <CoverEditor
               organization={organization}
               onChange={updateCoverImage}
-              coverImageUrl={repository.profile_settings?.cover_image_url}
+              coverImageUrl={
+                repository.profile_settings?.cover_image_url || undefined
+              }
               disabled={!isOrgMember}
             />
 

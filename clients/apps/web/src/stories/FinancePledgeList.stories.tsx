@@ -17,6 +17,7 @@ export default meta
 const pledge: Pledge = {
   id: 'xx',
   created_at: new Date('2023-06-29').toISOString(),
+  modified_at: null,
   amount: 12300,
   currency: 'usd',
   state: PledgeState.CREATED,
@@ -50,6 +51,8 @@ export const Default: Story = {
         },
         pledger: {
           name: 'Mr. Money',
+          avatar_url: null,
+          github_username: null,
         },
       },
       {
@@ -62,6 +65,7 @@ export const Default: Story = {
           name: 'Mr. Money',
           avatar_url:
             'https://avatars.githubusercontent.com/u/1525981?s=200&v=4',
+          github_username: null,
         },
       },
       {
@@ -75,6 +79,7 @@ export const Default: Story = {
           name: 'Mr. Money',
           avatar_url:
             'https://avatars.githubusercontent.com/u/1525981?s=200&v=4',
+          github_username: null,
         },
       },
     ],

@@ -46,7 +46,7 @@ const IssueListItemDecoration = ({
   rewards,
 }: {
   pledges: Array<Pledge>
-  pledgesSummary?: PledgesTypeSummaries
+  pledgesSummary: PledgesTypeSummaries | null
   references: IssueReferenceRead[]
   showDisputeAction: boolean
   onDispute: (pledge: Pledge) => void
@@ -56,7 +56,7 @@ const IssueListItemDecoration = ({
   funding: Funding
   issue: Issue
   organization: Organization
-  rewards?: Reward[]
+  rewards: Reward[] | null
 }) => {
   const showPledges = pledges && pledges.length > 0
 

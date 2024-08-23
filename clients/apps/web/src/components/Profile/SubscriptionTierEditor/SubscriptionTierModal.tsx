@@ -1,16 +1,18 @@
 import SubscriptionGroupIcon from '@/components/Subscriptions/SubscriptionGroupIcon'
 import { CloseOutlined } from '@mui/icons-material'
-import { Product } from '@polar-sh/sdk'
+import { Product, SubscriptionTierType } from '@polar-sh/sdk'
 import Button from 'polarkit/components/ui/atoms/button'
 import { List, ListItem } from 'polarkit/components/ui/atoms/list'
 import { Checkbox } from 'polarkit/components/ui/checkbox'
 
 export interface SubscriptionTiersModalProps {
-  subscriptionTiers: Product[]
-  selectedSubscriptionTiers: Product[]
+  subscriptionTiers: (Product & { type: SubscriptionTierType })[]
+  selectedSubscriptionTiers: (Product & { type: SubscriptionTierType })[]
   hideModal: () => void
   setSubscriptionTiers: (
-    producer: (subscriptionTiers: Product[]) => Product[],
+    producer: (
+      subscriptionTiers: (Product & { type: SubscriptionTierType })[],
+    ) => (Product & { type: SubscriptionTierType })[],
   ) => void
 }
 
@@ -20,7 +22,9 @@ export const SubscriptionTiersModal = ({
   hideModal,
   setSubscriptionTiers,
 }: SubscriptionTiersModalProps) => {
-  const addSubscriptionTier = (subscriptionTier: Product) => {
+  const addSubscriptionTier = (
+    subscriptionTier: Product & { type: SubscriptionTierType },
+  ) => {
     setSubscriptionTiers((subscriptionTiers) =>
       [...subscriptionTiers, subscriptionTier].slice(-3),
     )
@@ -60,20 +64,20 @@ export const SubscriptionTiersModal = ({
             <h3>Subscriptions</h3>
             <List className="flex flex-col">
               {subscriptionTiers.map((subscriptionTier) => (
-                <ListItem 
-                key={subscriptionTier.id}
-                selected={selectedSubscriptionTiers.some(
-                  (tier) => tier.id === subscriptionTier.id,
-                )}
-                >
-                  <SubscriptionTierRow
-                  subscriptionTier={subscriptionTier}
+                <ListItem
+                  key={subscriptionTier.id}
                   selected={selectedSubscriptionTiers.some(
                     (tier) => tier.id === subscriptionTier.id,
                   )}
-                  selectTier={addSubscriptionTier}
-                  deselectTier={removeSubscriptionTier}
-                />
+                >
+                  <SubscriptionTierRow
+                    subscriptionTier={subscriptionTier}
+                    selected={selectedSubscriptionTiers.some(
+                      (tier) => tier.id === subscriptionTier.id,
+                    )}
+                    selectTier={addSubscriptionTier}
+                    deselectTier={removeSubscriptionTier}
+                  />
                 </ListItem>
               ))}
             </List>
@@ -90,13 +94,17 @@ const SubscriptionTierRow = ({
   selectTier,
   deselectTier,
 }: {
-  subscriptionTier: Product
+  subscriptionTier: Product & { type: SubscriptionTierType }
   selected: boolean
-  selectTier: (subscriptionTiers: Product) => void
-  deselectTier: (subscriptionTier: Product) => void
+  selectTier: (
+    subscriptionTiers: Product & { type: SubscriptionTierType },
+  ) => void
+  deselectTier: (
+    subscriptionTier: Product & { type: SubscriptionTierType },
+  ) => void
 }) => {
   return (
-    <div className="flex flex-row items-center justify-between gap-x-2 text-sm w-full">
+    <div className="flex w-full flex-row items-center justify-between gap-x-2 text-sm">
       <div className="flex flex-row items-center gap-x-2">
         <SubscriptionGroupIcon type={subscriptionTier.type} />
         <span>{subscriptionTier.name}</span>

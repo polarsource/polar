@@ -15,6 +15,7 @@ import { HeartIcon } from '@heroicons/react/24/outline'
 import { CardGiftcardOutlined, WifiTethering } from '@mui/icons-material'
 import { CurrencyAmount, Issue, Pledge, UserRead } from '@polar-sh/sdk'
 import Image from 'next/image'
+import Avatar from 'polarkit/components/ui/atoms/avatar'
 import Button from 'polarkit/components/ui/atoms/button'
 import CopyToClipboardInput from 'polarkit/components/ui/atoms/copytoclipboardinput'
 import MoneyInput from 'polarkit/components/ui/atoms/moneyinput'
@@ -268,7 +269,7 @@ export const BadgePromotionModal = (props: {
             innerClassNames="shadow"
             canSetFundingGoal={true}
             orgName={props.issue.repository.organization.name}
-            upfrontSplit={upfrontRewards}
+            upfrontSplit={upfrontRewards || null}
           />
         </TabsContent>
         <TabsContent value="rewards" className="p-6">
@@ -529,13 +530,13 @@ const RewardsTab = (props: { issue: Issue; user: UserRead }) => {
     props.issue.upfront_split_to_contributors ??
     linkedOrganization?.default_upfront_split_to_contributors
 
-  const [contributorsShare, setContributorsShare] = useState<
-    number | undefined
-  >(upfront ?? 50)
+  const [contributorsShare, setContributorsShare] = useState<number | null>(
+    upfront ?? 50,
+  )
 
   const updateIssue = useUpdateIssue()
 
-  const saveUpFrontSplit = async (splitShare?: number) => {
+  const saveUpFrontSplit = async (splitShare: number | null) => {
     setContributorsShare(splitShare)
     await updateIssue.mutateAsync({
       id: props.issue.id,
@@ -617,9 +618,10 @@ const RewardsTab = (props: { issue: Issue; user: UserRead }) => {
 
               <div className="flex gap-4">
                 <div className="flex items-center gap-2">
-                  <img
-                    src={props.user.avatar_url}
-                    className="h-6 w-6 rounded-full"
+                  <Avatar
+                    className="h-6 w-6"
+                    avatar_url={props.user.avatar_url}
+                    name={props.user.username}
                   />
                   <div className="text-sm">@{props.user.username}</div>
                 </div>

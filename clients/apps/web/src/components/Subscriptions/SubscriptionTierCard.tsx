@@ -8,7 +8,11 @@ import {
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { DragIndicatorOutlined } from '@mui/icons-material'
-import { Product, ProductPriceRecurringInterval } from '@polar-sh/sdk'
+import {
+  Product,
+  ProductPriceRecurringInterval,
+  SubscriptionTierType,
+} from '@polar-sh/sdk'
 import {
   Card,
   CardContent,
@@ -25,7 +29,7 @@ import SubscriptionGroupIcon from './SubscriptionGroupIcon'
 import { getSubscriptionColorByType } from './utils'
 
 export interface SubscriptionTierCardProps {
-  subscriptionTier: Partial<Product>
+  subscriptionTier: Partial<Product> & { type: SubscriptionTierType }
   children?: React.ReactNode
   className?: string
   variant?: 'default' | 'small'
@@ -60,7 +64,7 @@ const SubscriptionTierCard: React.FC<SubscriptionTierCardProps> = ({
   const audience = useProductAudience(subscriptionTier.type)
   const price = useRecurringProductPrice(subscriptionTier, recurringInterval)
   const recurringBillingLabel = useRecurringBillingLabel(
-    price?.recurring_interval,
+    price ? price.recurring_interval : null,
   )
 
   const style = {

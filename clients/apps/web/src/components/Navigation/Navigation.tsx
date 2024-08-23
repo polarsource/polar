@@ -17,10 +17,7 @@ export const ListItem = (props: {
   return <li className={className}>{props.children}</li>
 }
 
-export const Profile = (props: {
-  name: string
-  avatar_url: string | undefined
-}) => {
+export const Profile = (props: { name: string; avatar_url: string | null }) => {
   return (
     <>
       <div className="flex w-full min-w-0 shrink grow-0 items-center justify-between text-sm">

@@ -302,13 +302,13 @@ export default async function Page({
     '@context': 'https://schema.org',
     '@type': 'ProfilePage',
     name: organization.name,
-    image: organization.avatar_url,
+    ...(organization.avatar_url ? { image: organization.avatar_url } : {}),
     sameAs,
     mainEntity: {
       '@type': 'Organization',
       name: organization.name,
       alternateName: organization.slug,
-      image: organization.avatar_url,
+      ...(organization.avatar_url ? { image: organization.avatar_url } : {}),
     },
   }
   jsonLd = org

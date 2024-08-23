@@ -6,12 +6,13 @@ import {
   Organization,
   Product,
   ProductPriceRecurringInterval,
+  SubscriptionTierType,
 } from '@polar-sh/sdk'
 import { twMerge } from 'tailwind-merge'
 
 export interface DraggableSubscriptionTierCardProps {
   organization: Organization
-  subscriptionTier: Product
+  subscriptionTier: Product & { type: SubscriptionTierType }
   recurringInterval: ProductPriceRecurringInterval
   subscribeButton: boolean
   disabled?: boolean

@@ -76,7 +76,7 @@ export const useUpdateIssue = () =>
     mutationFn: (variables: {
       id: string
       funding_goal?: CurrencyAmount
-      upfront_split_to_contributors?: number
+      upfront_split_to_contributors?: number | null
       set_upfront_split_to_contributors?: boolean
     }) => {
       return api.issues.update({

@@ -7,10 +7,10 @@ import { Banner } from 'polarkit/components/ui/molecules'
 import { useMemo, useRef, useState } from 'react'
 
 const PublicRewardsSetting = (props: {
-  value: number | undefined
+  value: number | null
   org: Organization
   isIssue?: boolean
-  onSave: (value: number | undefined) => void
+  onSave: (value: number | null) => void
 }) => {
   const usePublicRewards = props.value !== null && props.value !== undefined
   const contributorsShare =
@@ -23,7 +23,7 @@ const PublicRewardsSetting = (props: {
     return 100 - contributorsShare
   }, [contributorsShare])
 
-  const onSave = async (splitShare?: number) => {
+  const onSave = async (splitShare: number | null) => {
     props.onSave(splitShare)
   }
 
@@ -42,7 +42,7 @@ const PublicRewardsSetting = (props: {
   const bannerTimeout = useRef<Timeout | null>(null)
 
   const onCheckedChange = (checked: boolean) => {
-    onSave(checked ? contributorsShare : undefined)
+    onSave(checked ? contributorsShare : null)
 
     if (checked) {
       setBannerContributionRewardShown(true)

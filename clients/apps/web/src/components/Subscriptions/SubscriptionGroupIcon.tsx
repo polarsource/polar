@@ -6,7 +6,7 @@ import { getSubscriptionColorByType } from './utils'
 
 interface SubscriptionGroupIconProps {
   className?: string
-  type?: SubscriptionTierType
+  type: SubscriptionTierType
 }
 
 const SubscriptionGroupIcon: React.FC<SubscriptionGroupIconProps> = ({

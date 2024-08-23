@@ -32,7 +32,7 @@ interface OrganizationAppearanceSettingsProps {
 const OrganizationAppearanceSettings: React.FC<
   OrganizationAppearanceSettingsProps
 > = ({ organization }) => {
-  const form = useForm<{ name: string; avatar_url: string }>({
+  const form = useForm<{ name: string; avatar_url: string | null }>({
     defaultValues: organization,
   })
   const { control, handleSubmit, watch, setError, setValue } = form
@@ -74,7 +74,10 @@ const OrganizationAppearanceSettings: React.FC<
   })
 
   const updateOrganization = useUpdateOrganization()
-  const onSubmit = async (body: { name: string; avatar_url: string }) => {
+  const onSubmit = async (body: {
+    name: string
+    avatar_url: string | null
+  }) => {
     try {
       await updateOrganization.mutateAsync({
         id: organization.id,
@@ -123,7 +126,11 @@ const OrganizationAppearanceSettings: React.FC<
             <div className="flex flex-row items-center gap-4">
               <FormItem className="grow">
                 <FormControl>
-                  <Input {...field} placeholder="Logo URL" />
+                  <Input
+                    {...field}
+                    value={field.value || ''}
+                    placeholder="Logo URL"
+                  />
                 </FormControl>
 
                 <FormMessage />

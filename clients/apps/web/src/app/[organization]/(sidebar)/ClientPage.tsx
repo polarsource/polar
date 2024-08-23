@@ -254,7 +254,7 @@ const DonationsFeed = ({ donations }: DonationsFeedProps) => {
           >
             <Avatar
               className="h-8 w-8"
-              avatar_url={donation.donor?.avatar_url ?? undefined}
+              avatar_url={donation.donor?.avatar_url ?? null}
               name={getDonorName(donation)}
             />
             <div className="flex w-full flex-col gap-y-2">

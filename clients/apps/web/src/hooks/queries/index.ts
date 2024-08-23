@@ -52,7 +52,7 @@ export const useListRepositories: (
     enabled,
   })
 
-export const useAccount = (id?: string) =>
+export const useAccount = (id?: string | null) =>
   useQuery({
     queryKey: ['accounts', id],
     queryFn: () => api.accounts.get({ id: id as string }),

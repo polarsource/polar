@@ -69,12 +69,24 @@ const EmbedIssue = (props: { src: string }) => {
       is_private: false,
       name: m[2],
       profile_settings: {},
+      description: null,
+      stars: null,
+      license: null,
+      homepage: null,
       organization: {
         id: 'embed',
         platform: 'github',
         name: m[1],
         avatar_url: '',
         is_personal: false,
+        bio: null,
+        pretty_name: null,
+        company: null,
+        blog: null,
+        location: null,
+        email: null,
+        twitter_username: null,
+        organization_id: null,
       },
     },
     pledge_badge_currently_embedded: false,
@@ -88,6 +100,8 @@ const EmbedIssue = (props: { src: string }) => {
         issue={issue}
         references={[]}
         pledges={[]}
+        pledgesSummary={null}
+        rewards={null}
         key={issue.id}
         canAddRemovePolarLabel={false}
         showPledgeAction={true}

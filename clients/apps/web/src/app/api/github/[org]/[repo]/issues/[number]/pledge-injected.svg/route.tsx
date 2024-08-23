@@ -30,7 +30,7 @@ const renderBadge = async ({
       funding={funding}
       avatarsUrls={[]}
       orgName="SerenityOS"
-      upfront_split_to_contributors={withUpfrontSplit ? 80 : undefined}
+      upfront_split_to_contributors={withUpfrontSplit ? 80 : null}
       issueIsClosed={false}
       donationsEnabled={false}
     />,

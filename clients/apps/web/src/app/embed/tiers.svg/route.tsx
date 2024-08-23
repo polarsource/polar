@@ -6,6 +6,7 @@ import {
   Organization,
   Product,
   ProductPriceRecurringInterval,
+  SubscriptionTierType,
 } from '@polar-sh/sdk'
 import { notFound } from 'next/navigation'
 const { default: satori } = require('satori')
@@ -32,7 +33,7 @@ const getOrg = async (org: string): Promise<Organization> => {
 const getHighlightedSubscriptions = async (
   org: string,
   limit: number = 100,
-): Promise<Product[]> => {
+): Promise<(Product & { type: SubscriptionTierType })[]> => {
   const { id: orgId } = await getOrg(org)
 
   let url = getServerURL(
@@ -43,14 +44,14 @@ const getHighlightedSubscriptions = async (
     method: 'GET',
   })
   const d = (await response.json()) as ListResourceProduct
-  return (
-    d.items?.filter((tier) => tier.is_highlighted || tier.type === 'free') || []
-  )
+  return (d.items?.filter(
+    (tier) => tier.is_highlighted || tier.type === 'free',
+  ) || []) as (Product & { type: SubscriptionTierType })[]
 }
 
 const renderBadge = async (
   label: string,
-  products: Product[],
+  products: (Product & { type: SubscriptionTierType })[],
   recurringInterval: ProductPriceRecurringInterval,
   darkmode: boolean,
 ) => {

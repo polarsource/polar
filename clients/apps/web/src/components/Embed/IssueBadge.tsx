@@ -16,7 +16,7 @@ const IssueBadge = ({
   darkmode: boolean
   funding: Funding
   avatarsUrls: string[]
-  upfront_split_to_contributors?: number
+  upfront_split_to_contributors: number | null
   orgName: string
   issueIsClosed: boolean
   donationsEnabled: boolean

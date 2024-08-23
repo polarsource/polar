@@ -26,7 +26,7 @@ const IssueListItem = (props: {
   issue: Issue
   references: IssueReferenceRead[]
   pledges: Array<Pledge>
-  pledgesSummary?: PledgesTypeSummaries
+  pledgesSummary: PledgesTypeSummaries | null
   checkJustPledged?: boolean
   canAddRemovePolarLabel: boolean
   showPledgeAction: boolean
@@ -34,7 +34,7 @@ const IssueListItem = (props: {
   className?: string
   showLogo?: boolean
   showIssueOpenClosedStatus?: boolean
-  rewards?: Reward[]
+  rewards: Reward[] | null
 }) => {
   const externalOrganization = props.issue.repository.organization
   const repo = props.issue.repository

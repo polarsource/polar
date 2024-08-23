@@ -66,7 +66,7 @@ export const useRecurringProductPrice = (
 }
 
 export const useRecurringBillingLabel = (
-  recurringInterval: ProductPriceRecurringInterval | undefined,
+  recurringInterval: ProductPriceRecurringInterval | null,
 ) => {
   return useMemo(
     () =>
@@ -75,7 +75,7 @@ export const useRecurringBillingLabel = (
   )
 }
 
-export const useProductAudience = (type?: SubscriptionTierType) => {
+export const useProductAudience = (type: SubscriptionTierType) => {
   return useMemo(() => getSubscriptionTierAudience(type), [type])
 }
 

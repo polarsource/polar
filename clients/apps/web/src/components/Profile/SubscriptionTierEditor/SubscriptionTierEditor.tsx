@@ -7,7 +7,12 @@ import { useUpdateProject } from '@/hooks/queries'
 import { DndContext, DragOverlay, closestCenter } from '@dnd-kit/core'
 import { SortableContext, rectSortingStrategy } from '@dnd-kit/sortable'
 import { BoltOutlined } from '@mui/icons-material'
-import { Organization, Product, Repository } from '@polar-sh/sdk'
+import {
+  Organization,
+  Product,
+  Repository,
+  SubscriptionTierType,
+} from '@polar-sh/sdk'
 import { ShadowBoxOnMd } from 'polarkit/components/ui/atoms/shadowbox'
 import { useDraggableEditorCallbacks } from '../Draggable/useDraggableEditorCallbacks'
 import { DraggableSubscriptionTierCard } from './DraggableSubscriptionTierCard'
@@ -16,7 +21,7 @@ import { SubscriptionTiersModal } from './SubscriptionTierModal'
 export interface SubscriptionTierEditorProps {
   organization: Organization
   repository: Repository
-  subscriptionTiers: Product[]
+  subscriptionTiers: (Product & { type: SubscriptionTierType })[]
   disabled?: boolean
 }
 
@@ -43,7 +48,9 @@ export const SubscriptionTierEditor = ({
   } = useDraggableEditorCallbacks(
     repoHighlightedTiers
       .map((id) => subscriptionTiers.find((tier) => tier.id === id))
-      .filter((tier): tier is Product => !!tier),
+      .filter(
+        (tier): tier is Product & { type: SubscriptionTierType } => !!tier,
+      ),
     (tiers) =>
       updateProjectMutation
         .mutateAsync({
@@ -126,9 +133,7 @@ export const SubscriptionTierEditor = ({
                   organization={organization}
                   subscribeButton={false}
                   subscriptionTier={
-                    highlightedTiers.find(
-                      (tier) => tier.id === activeId,
-                    ) as Product
+                    highlightedTiers.find((tier) => tier.id === activeId)!!
                   }
                   recurringInterval={recurringInterval}
                 />

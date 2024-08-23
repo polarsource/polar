@@ -42,16 +42,17 @@ interface PublishModalContentProps {
 export const PublishSettings = ({ article }: PublishModalContentProps) => {
   const form = useForm<ArticleUpdate>({
     defaultValues: {
-      paid_subscribers_only: article.paid_subscribers_only,
-      paid_subscribers_only_ends_at: article.paid_subscribers_only
-        ? article.paid_subscribers_only_ends_at
-        : undefined,
-      notify_subscribers: article.notify_subscribers,
-      published_at: article.published_at,
+      paid_subscribers_only: article.paid_subscribers_only || undefined,
+      paid_subscribers_only_ends_at:
+        article.paid_subscribers_only && article.paid_subscribers_only_ends_at
+          ? article.paid_subscribers_only_ends_at
+          : undefined,
+      notify_subscribers: article.notify_subscribers || undefined,
+      published_at: article.published_at || undefined,
       slug: article.slug,
       is_pinned: article.is_pinned,
-      og_description: article.og_description,
-      og_image_url: article.og_image_url,
+      og_description: article.og_description || undefined,
+      og_image_url: article.og_image_url || undefined,
     },
   })
   const { handleSubmit, setError } = form
@@ -270,7 +271,7 @@ const FormSlug = (props: { article: Article }) => {
                     field.onChange(v)
                     setChanged(true)
                   }}
-                  defaultValue={field.value}
+                  defaultValue={field.value || ''}
                 />
               </FormControl>
 
@@ -340,7 +341,7 @@ const FormNotifySubscribers = (props: { article: Article }) => {
               <FormControl>
                 <Checkbox
                   onCheckedChange={field.onChange}
-                  checked={field.value}
+                  checked={field.value || false}
                 />
               </FormControl>
               <FormLabel className="text-sm font-normal">
@@ -374,7 +375,7 @@ const FormIsPinned = () => {
               <FormControl>
                 <Checkbox
                   onCheckedChange={field.onChange}
-                  checked={field.value}
+                  checked={field.value || false}
                 />
               </FormControl>
 
@@ -462,7 +463,13 @@ const OgImage = ({ article }: { article: Article }) => {
             <div className="flex flex-row items-center gap-2">
               <FormControl>
                 <ImageUpload
-                  defaultValue={field.value ?? defaultImage}
+                  defaultValue={
+                    field.value
+                      ? field.value
+                      : defaultImage
+                        ? defaultImage
+                        : undefined
+                  }
                   onUploaded={field.onChange}
                 />
               </FormControl>

@@ -72,6 +72,8 @@ export const Status = (props: {
             checkJustPledged={false}
             canAddRemovePolarLabel={false}
             showPledgeAction={true}
+            pledgesSummary={null}
+            rewards={null}
           />
         </GrayCard>
 

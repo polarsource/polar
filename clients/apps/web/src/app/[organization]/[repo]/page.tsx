@@ -15,6 +15,8 @@ import {
   ListResourceIssueFunding,
   ListResourceProduct,
   Organization,
+  Product,
+  SubscriptionTierType,
 } from '@polar-sh/sdk'
 import { Metadata } from 'next'
 import { notFound, redirect } from 'next/navigation'
@@ -196,7 +198,9 @@ export default async function Page({
       repository={repository}
       issuesFunding={issuesFunding}
       featuredOrganizations={featuredOrganizations}
-      products={products?.items ?? []}
+      products={
+        (products?.items ?? []) as (Product & { type: SubscriptionTierType })[]
+      }
       userOrganizations={userOrganizations}
       links={links}
       posts={posts?.items ?? []}

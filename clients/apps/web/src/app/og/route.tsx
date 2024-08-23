@@ -22,7 +22,7 @@ const renderFundingOG = async (
   org_name: string,
   repository: Repository | undefined,
   issue_count: number,
-  avatar: string | undefined,
+  avatar: string | null,
   issues: Issue[],
   largeIssue: boolean,
 ) => {

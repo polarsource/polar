@@ -158,7 +158,7 @@ export const FieldLogo = () => {
               height={200}
               width={200}
               onUploaded={field.onChange}
-              defaultValue={field.value}
+              defaultValue={field.value || undefined}
               validate={(img) => {
                 return img.width / img.height !== 1
                   ? 'Image should have a ratio of 1:1'
@@ -317,7 +317,11 @@ export const FieldClientURI = () => {
             <FormLabel>Homepage URL</FormLabel>
           </div>
           <FormControl>
-            <Input {...field} placeholder="https://" />
+            <Input
+              {...field}
+              value={field.value || ''}
+              placeholder="https://"
+            />
           </FormControl>
           <FormMessage />
         </FormItem>
@@ -339,7 +343,11 @@ export const FieldTOS = () => {
             <FormLabel>Terms of Service</FormLabel>
           </div>
           <FormControl>
-            <Input {...field} placeholder="Link to Terms of Service" />
+            <Input
+              {...field}
+              value={field.value || ''}
+              placeholder="Link to Terms of Service"
+            />
           </FormControl>
           <FormMessage />
         </FormItem>
@@ -361,7 +369,11 @@ export const FieldPrivacy = () => {
             <FormLabel>Privacy Policy</FormLabel>
           </div>
           <FormControl>
-            <Input {...field} placeholder="Link to Privacy Policy" />
+            <Input
+              {...field}
+              value={field.value || ''}
+              placeholder="Link to Privacy Policy"
+            />
           </FormControl>
           <FormMessage />
         </FormItem>

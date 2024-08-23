@@ -44,7 +44,7 @@ export const useDashboard = (vars: {
 
       return promise
     },
-    getNextPageParam: (lastPage, _pages): number | undefined => {
+    getNextPageParam: (lastPage, _pages): number | null => {
       return lastPage.pagination.next_page
     },
     initialPageParam: 1,
@@ -78,7 +78,7 @@ export const usePersonalDashboard = (vars: {
 
       return promise
     },
-    getNextPageParam: (lastPage, _pages): number | undefined => {
+    getNextPageParam: (lastPage, _pages): number | null => {
       return lastPage.pagination.next_page
     },
     initialPageParam: 1,

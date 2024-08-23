@@ -315,7 +315,7 @@ const FormImage = ({
             <FormControl>
               <ImageUpload
                 onUploaded={field.onChange}
-                defaultValue={field.value}
+                defaultValue={field.value || undefined}
                 width={expectedSizes[0][0]}
                 height={expectedSizes[0][1]}
                 validate={(el) => {

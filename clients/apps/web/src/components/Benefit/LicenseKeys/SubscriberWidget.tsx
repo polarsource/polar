@@ -4,6 +4,7 @@ import {
   BenefitLicenseKeysSubscriber,
   LicenseKeyActivationBase,
   LicenseKeyWithActivations,
+  UserBenefit,
   UserOrder,
   UserSubscription,
 } from '@polar-sh/sdk'
@@ -13,7 +14,7 @@ import { useState } from 'react'
 import { useLicenseKey } from '@/hooks/queries'
 
 export const getLicenseKeyGrant = (
-  benefit: BenefitLicenseKeysSubscriber,
+  benefit: UserBenefit,
   order?: UserOrder,
   subscription?: UserSubscription,
 ) => {

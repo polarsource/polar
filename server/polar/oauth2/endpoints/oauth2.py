@@ -264,15 +264,27 @@ async def introspect_token(
     )
 
 
-@router.api_route(
+@router.get(
     "/userinfo",
     summary="Get User Info",
-    methods=["GET", "POST"],
     name="oauth2:userinfo",
     operation_id="oauth2:userinfo",
     response_model=UserInfoSchema,
     tags=[APITag.featured],
 )
-async def userinfo(token: OAuth2Token = Depends(get_token)) -> UserInfo:
+async def userinfo_get(token: OAuth2Token = Depends(get_token)) -> UserInfo:
+    """Get information about the authenticated user."""
+    return generate_user_info(token.get_sub_type_value(), cast(str, token.scope))
+
+
+# Repeat the /userinfo endpoint to support POST requests
+# But don't include it in the OpenAPI schema
+@router.post(
+    "/userinfo",
+    summary="Get User Info",
+    response_model=UserInfoSchema,
+    include_in_schema=False,
+)
+async def userinfo_post(token: OAuth2Token = Depends(get_token)) -> UserInfo:
     """Get information about the authenticated user."""
     return generate_user_info(token.get_sub_type_value(), cast(str, token.scope))

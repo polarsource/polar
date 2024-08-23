@@ -416,11 +416,6 @@ async def create_invoice(
     response_model=PledgeStripePaymentIntentMutationResponse,
     include_in_schema=IN_DEVELOPMENT_ONLY,
     status_code=200,
-    responses={
-        400: {"detail": "message"},
-        403: {"detail": "message"},
-        404: {"detail": "message"},
-    },
 )
 async def create_payment_intent(
     intent: PledgeStripePaymentIntentCreate,

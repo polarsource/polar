@@ -294,6 +294,65 @@ class TestUserLicenseKeyEndpoints:
         assert validation["key"] == lk.key
         assert validation["activation"]["id"] == activation_id
 
+    async def test_validate_conditions(
+        self,
+        session: AsyncSession,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        user: User,
+        organization: Organization,
+        product: Product,
+    ) -> None:
+        benefit, granted = await TestLicenseKey.create_benefit_and_grant(
+            session,
+            save_fixture,
+            user=user,
+            organization=organization,
+            product=product,
+            properties=BenefitLicenseKeysCreateProperties(
+                prefix="testing",
+                activations=BenefitLicenseKeyActivationProperties(
+                    limit=1, enable_user_admin=True
+                ),
+            ),
+        )
+        id = granted["license_key_id"]
+        lk = await license_key_service.get(session, id)
+        assert lk
+
+        conditions = dict(ip="127.0.0.1", fingerprint="sdfsd23:uuojj8:sdfsdf")
+
+        activate = await client.post(
+            "/v1/users/license-keys/activate",
+            json={
+                "key": lk.key,
+                "label": "testing activation",
+                "conditions": conditions,
+            },
+        )
+        assert activate.status_code == 200
+        data = activate.json()
+        activation_id = data["id"]
+
+        activation_404 = await client.post(
+            "/v1/users/license-keys/validate",
+            json={"key": lk.key, "activation_id": str(activation_id)},
+        )
+        assert activation_404.status_code == 404
+
+        validate_activation = await client.post(
+            "/v1/users/license-keys/validate",
+            json={
+                "key": lk.key,
+                "activation_id": activation_id,
+                "conditions": conditions,
+            },
+        )
+        assert validate_activation.status_code == 200
+        validation = validate_activation.json()
+        assert validation["key"] == lk.key
+        assert validation["activation"]["id"] == activation_id
+
     async def test_activation(
         self,
         session: AsyncSession,

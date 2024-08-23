@@ -183,6 +183,8 @@ class LicenseKeyService(
                 license_key=license_key,
                 activation_id=validate.activation_id,
             )
+            if activation.conditions and validate.conditions != activation.conditions:
+                raise ResourceNotFound("License key does not match required conditions")
 
         if validate.benefit_id and validate.benefit_id != license_key.benefit_id:
             raise ResourceNotFound("License key does not match given benefit.")
@@ -233,6 +235,7 @@ class LicenseKeyService(
         instance = LicenseKeyActivation(
             license_key=license_key,
             label=activate.label,
+            conditions=activate.conditions,
             meta=activate.meta,
         )
         session.add(instance)

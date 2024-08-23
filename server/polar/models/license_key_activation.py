@@ -32,6 +32,10 @@ class LicenseKeyActivation(RecordModel):
 
     label: Mapped[str] = mapped_column(String, nullable=False)
 
+    conditions: Mapped[dict[str, Any]] = mapped_column(
+        JSONB, nullable=False, default=dict
+    )
+
     meta: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
 
     def mark_deleted(self) -> None:

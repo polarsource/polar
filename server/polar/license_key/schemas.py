@@ -40,11 +40,13 @@ class LicenseKeyValidate(Schema):
     benefit_id: BenefitID | None = None
     user_id: UUID4 | None = None
     increment_usage: int | None = None
+    conditions: dict[str, Any] = {}
 
 
 class LicenseKeyActivate(Schema):
     key: str
     label: str
+    conditions: dict[str, Any] = {}
     meta: dict[str, Any] = {}
 
 

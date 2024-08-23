@@ -119,12 +119,7 @@ async def validate_license_key(
     )
     activation_schema = None
     if activation:
-        activation_schema = LicenseKeyActivationBase(
-            id=activation.id,
-            license_key_id=activation.license_key_id,
-            label=activation.label,
-            meta=activation.meta,
-        )
+        activation_schema = LicenseKeyActivationBase.model_validate(activation)
 
     ret = ValidatedLicenseKey.model_validate(license_key)
     ret.activation = activation_schema

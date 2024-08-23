@@ -2,7 +2,7 @@ from collections.abc import Sequence
 from uuid import UUID
 
 import structlog
-from sqlalchemy import Select, func, select
+from sqlalchemy import Select, and_, func, select
 from sqlalchemy.orm import contains_eager
 
 from polar.exceptions import BadRequest, NotPermitted, ResourceNotFound
@@ -50,7 +50,12 @@ class LicenseKeyService(
             self._get_select_base()
             .join(
                 LicenseKeyActivation,
-                onclause=LicenseKeyActivation.license_key_id == LicenseKey.id,
+                onclause=(
+                    and_(
+                        LicenseKeyActivation.license_key_id == LicenseKey.id,
+                        LicenseKeyActivation.deleted_at.is_(None),
+                    )
+                ),
                 isouter=True,
             )
             .join(Benefit, onclause=LicenseKey.benefit_id == Benefit.id)
@@ -58,10 +63,7 @@ class LicenseKeyService(
                 contains_eager(LicenseKey.activations),
                 contains_eager(LicenseKey.benefit),
             )
-            .where(
-                LicenseKey.id == id,
-                LicenseKeyActivation.deleted_at.is_(None),
-            )
+            .where(LicenseKey.id == id)
         )
         result = await session.execute(query)
         return result.unique().scalar_one_or_none()

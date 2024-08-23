@@ -1,9 +1,6 @@
 'use client'
 
-import {
-  resolveBenefitIcon,
-  resolveBenefitTypeDisplayName,
-} from '@/components/Benefit/utils'
+import { resolveBenefitIcon } from '@/components/Benefit/utils'
 import GitHubIcon from '@/components/Icons/GitHubIcon'
 import { useOrganization } from '@/hooks/queries'
 import { UserBenefit, UserOrder, UserSubscription } from '@polar-sh/sdk'
@@ -59,13 +56,8 @@ const BenefitDetails = ({
             {resolveBenefitIcon(benefit, 'inherit')}
           </span>
         </div>
-        <h2 className="font-medium capitalize">
-          {resolveBenefitTypeDisplayName(benefit.type)}
-        </h2>
+        <h2 className="font-medium capitalize">{benefit.description}</h2>
       </div>
-      <p className="dark:text-polar-500 text-sm text-gray-500">
-        {benefit.description}
-      </p>
       {benefit.type === 'custom' && benefit.properties.note && (
         <div className="rounded-2xl bg-blue-50 px-4 py-3 text-sm dark:bg-blue-950">
           <p className="mb-4 font-medium">Note from {org.name}</p>

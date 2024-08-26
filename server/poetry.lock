@@ -1612,13 +1612,13 @@ colorama = ">=0.3.9"
 
 [[package]]
 name = "logfire"
-version = "0.46.1"
+version = "0.51.0"
 description = "The best Python observability tool! 🪵🔥"
 optional = false
 python-versions = "*"
 files = [
-    {file = "logfire-0.46.1-py2.py3-none-any.whl", hash = "sha256:d66ff558bdbdb4a92da0a20bdf79b79d99d5ee5c97098e60acb78637b112042a"},
-    {file = "logfire-0.46.1.tar.gz", hash = "sha256:f2c56076627de2ab6a60bc835124dc2abed83fad0eb8414644a407c80271a647"},
+    {file = "logfire-0.51.0-py2.py3-none-any.whl", hash = "sha256:0b6490876ef1d652af82ad4c0eb3f2748d3ad45c7dc151628f3551d422797557"},
+    {file = "logfire-0.51.0.tar.gz", hash = "sha256:fa9ea9c566ac2c61053a838395ea185f1a8ac5da6564fa8d1e1b0c17a096fec6"},
 ]
 
 [package.dependencies]
@@ -1638,6 +1638,7 @@ django = ["opentelemetry-instrumentation-django (>=0.42b0)"]
 fastapi = ["opentelemetry-instrumentation-fastapi (>=0.42b0)"]
 flask = ["opentelemetry-instrumentation-flask (>=0.42b0)"]
 httpx = ["opentelemetry-instrumentation-httpx (>=0.42b0)"]
+mysql = ["opentelemetry-instrumentation-mysql (>=0.42b0)"]
 psycopg = ["opentelemetry-instrumentation-psycopg (>=0.42b0)", "packaging"]
 psycopg2 = ["opentelemetry-instrumentation-psycopg2 (>=0.42b0)", "packaging"]
 pymongo = ["opentelemetry-instrumentation-pymongo (>=0.42b0)"]
@@ -4066,4 +4067,4 @@ test = ["big-O", "importlib-resources", "jaraco.functools", "jaraco.itertools", 
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.12"
-content-hash = "5b4013e60a0a1aca07ccf34c0e4e6e81af85d0251188b6d98a901918dc3fb1f4"
+content-hash = "2a71b8e66edf4e4a1f4ab97c72d70bff78fbf7ee5e85c7a90b36123ac933f8e0"

@@ -57,11 +57,11 @@ export const RevenueWidget = ({ className }: RevenueWidgetProps) => {
         </h2>
       </CardHeader>
       <TooltipProvider>
-        <CardFooter className="flex h-full flex-row items-end justify-between">
+        <CardFooter className="flex h-full flex-row items-end justify-between gap-x-1">
           {revenueMetrics.data?.periods.map((period, i) => {
             const activeClass =
               i === revenueMetrics.data.periods.length - 1
-                ? 'bg-blue-400 dark:bg-blue-400'
+                ? 'bg-blue-500 dark:bg-blue-500'
                 : 'hover:bg-blue-100 dark:hover:bg-blue-900'
 
             const tooltipContent = `$${getCentsInDollarString(period.revenue, false)} in ${period.timestamp.toLocaleDateString(
@@ -82,7 +82,7 @@ export const RevenueWidget = ({ className }: RevenueWidgetProps) => {
                     )}%`,
                   }}
                   className={twMerge(
-                    'dark:bg-polar-700 w-3 rounded-full bg-gray-100',
+                    'dark:bg-polar-700 w-3 flex-shrink rounded-full bg-gray-100',
                     activeClass,
                   )}
                 />

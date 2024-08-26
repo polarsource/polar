@@ -21,22 +21,19 @@ export const metadata: Metadata = {
     template: '%s | Polar',
     default: 'Polar',
   },
-  description:
-    'From first donation to IPO. Polar is the funding & monetization platform for developers.',
+  description: 'The best monetization platform for developers',
   openGraph: {
     images: 'https://polar.sh/assets/brand/polar_og.jpg',
     type: 'website',
-    title: 'Polar - A funding & monetization platform for developers',
+    title: 'Polar - The best monetization platform for developers',
     siteName: 'Polar',
-    description:
-      'From first donation to IPO. Polar is the funding & monetization platform for developers.',
+    description: 'The best monetization platform for developers',
   },
   twitter: {
     images: 'https://polar.sh/assets/brand/polar_og.jpg',
     card: 'summary_large_image',
-    title: 'Polar - A funding & monetization platform for developers',
-    description:
-      'From first donation to IPO. Polar is the funding & monetization platform for developers.',
+    title: 'Polar - The best monetization platform for developers',
+    description: 'The best monetization platform for developers',
   },
   metadataBase: new URL('https://polar.sh/'),
 }

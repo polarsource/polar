@@ -54,13 +54,14 @@ class BenefitLicenseKeysService(
         attempt: int = 1,
     ) -> dict[str, Any]:
         license_key_id = grant_properties["license_key_id"]
-        revoked = await license_key_service.user_revoke(
+        await license_key_service.user_revoke(
             self.session,
             user=user,
             benefit=benefit,
             license_key_id=license_key_id,
         )
-        return {}
+        # Keep grant properties for reference
+        return grant_properties
 
     async def requires_update(
         self,

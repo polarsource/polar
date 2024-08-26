@@ -185,6 +185,9 @@ class LicenseKeyService(
         license_key: LicenseKey,
         validate: LicenseKeyValidate,
     ) -> tuple[LicenseKey, LicenseKeyActivation | None]:
+        if not license_key.is_active():
+            raise ResourceNotFound("License key is no longer active.")
+
         if license_key.expires_at:
             if utc_now() >= license_key.expires_at:
                 raise ResourceNotFound("License key has expired.")

@@ -26,6 +26,7 @@ if TYPE_CHECKING:
 class LicenseKeyStatus(StrEnum):
     granted = "granted"
     revoked = "revoked"
+    disabled = "disabled"
 
 
 class LicenseKey(RecordModel):
@@ -108,3 +109,6 @@ class LicenseKey(RecordModel):
         self.last_validated_at = utc_now()
         if increment_usage:
             self.usage += increment_usage
+
+    def is_active(self) -> bool:
+        return self.status == LicenseKeyStatus.granted

@@ -23,10 +23,11 @@ class DocumentedAuthSubjectAPIRoute(APIRoute):
                     allowed_subjects = set(typing.get_args(allowed_subjects_type))
                 else:
                     allowed_subjects = {allowed_subjects_type}
+                allowed_subjects_names = sorted(
+                    [allowed_subject.__name__ for allowed_subject in allowed_subjects]
+                )
                 kwargs["openapi_extra"] = {
-                    "x-polar-allowed-subjects": [
-                        allowed_subject.__name__ for allowed_subject in allowed_subjects
-                    ],
+                    "x-polar-allowed-subjects": allowed_subjects_names
                 }
         super().__init__(path, endpoint, **kwargs)
 

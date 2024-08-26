@@ -29,10 +29,9 @@ class BenefitLicenseKeysService(
         update: bool = False,
         attempt: int = 1,
     ) -> dict[str, Any]:
-        current_lk_id = grant_properties.get("license_key_id", None)
-        if update and not current_lk_id:
-            # TODO: Fix me
-            raise RuntimeError()
+        current_lk_id = None
+        if update:
+            current_lk_id = grant_properties["license_key_id"]
 
         key = await license_key_service.user_grant(
             self.session,

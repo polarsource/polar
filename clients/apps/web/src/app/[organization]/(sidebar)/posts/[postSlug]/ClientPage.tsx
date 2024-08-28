@@ -25,7 +25,7 @@ export default async function Page({ article, products }: PostPageProps) {
   // Check if the user is subscriber
   let isSubscriber = false
   try {
-    const userSubs = await api.users.listSubscriptions({
+    const userSubs = await api.usersSubscriptions.list({
       organizationId: article.organization.id,
       active: true,
       limit: 100,
@@ -39,7 +39,7 @@ export default async function Page({ article, products }: PostPageProps) {
   // Check if the user has access to paid articles
   let hasPaidArticlesBenefit = false
   try {
-    const benefits = await api.users.listBenefits({
+    const benefits = await api.usersBenefits.list({
       type: 'articles',
       organizationId: article.organization.id,
       limit: 100,

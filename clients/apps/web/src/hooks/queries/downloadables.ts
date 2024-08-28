@@ -8,8 +8,8 @@ export const useDownloadables = (benefitId: string, activeFileIds: string[]) =>
   useQuery({
     queryKey: ['user', 'downloadables', benefitId, ...activeFileIds],
     queryFn: () =>
-      api.users
-        .listDownloadables({
+      api.usersDownloadables
+        .list({
           benefitId,
         })
         .then((response: ListResourceDownloadableRead) => {

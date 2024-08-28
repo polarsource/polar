@@ -69,7 +69,7 @@ export default async function Layout({
       customerTypes.push(OrganizationCustomerType.FREE_SUBSCRIPTION)
     }
 
-    organizationCustomers = await api.organizations.listOrganizationCustomers(
+    organizationCustomers = await api.organizations.customers(
       {
         id: organization.id,
         customerTypes: new Set(customerTypes),

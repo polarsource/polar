@@ -150,7 +150,7 @@ export const useArticleReceivers = (id: string) =>
   useQuery({
     queryKey: ['articles', 'receivers', id],
     queryFn: () =>
-      api.articles.getReceivers({
+      api.articles.receivers({
         id,
       }),
     retry: defaultRetry,
@@ -159,7 +159,7 @@ export const useArticleReceivers = (id: string) =>
 export const useSendArticlePreview = () =>
   useMutation({
     mutationFn: ({ id, email }: { id: string; email: string }) =>
-      api.articles.sendPreview({
+      api.articles.preview({
         id,
         body: {
           email,

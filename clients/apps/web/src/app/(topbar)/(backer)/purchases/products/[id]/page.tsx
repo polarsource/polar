@@ -9,7 +9,7 @@ export default async function Page({ params }: { params: { id: string } }) {
   let order: UserOrder | undefined
 
   try {
-    order = await api.users.getOrder({ id: params.id })
+    order = await api.usersOrders.get({ id: params.id })
   } catch (e) {
     if (e instanceof ResponseError && e.response.status === 404) {
       notFound()

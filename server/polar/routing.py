@@ -1,8 +1,14 @@
 from polar.auth.routing import DocumentedAuthSubjectAPIRoute
-from polar.kit.routing import AutoCommitAPIRoute, get_api_router_class
+from polar.kit.routing import (
+    AutoCommitAPIRoute,
+    SpeakeasyIgnoreAPIRoute,
+    get_api_router_class,
+)
 
 
-class APIRoute(AutoCommitAPIRoute, DocumentedAuthSubjectAPIRoute):
+class APIRoute(
+    AutoCommitAPIRoute, DocumentedAuthSubjectAPIRoute, SpeakeasyIgnoreAPIRoute
+):
     pass
 
 

@@ -26,8 +26,10 @@ class DocumentedAuthSubjectAPIRoute(APIRoute):
                 allowed_subjects_names = sorted(
                     [allowed_subject.__name__ for allowed_subject in allowed_subjects]
                 )
+                openapi_extra = kwargs.get("openapi_extra") or {}
                 kwargs["openapi_extra"] = {
-                    "x-polar-allowed-subjects": allowed_subjects_names
+                    "x-polar-allowed-subjects": allowed_subjects_names,
+                    **openapi_extra,
                 }
         super().__init__(path, endpoint, **kwargs)
 

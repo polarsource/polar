@@ -1,6 +1,9 @@
 from enum import StrEnum
 from typing import Any, NotRequired, TypedDict
 
+from fastapi import FastAPI
+from fastapi.openapi.utils import get_openapi
+
 from polar.config import settings
 
 
@@ -82,4 +85,42 @@ OPENAPI_PARAMETERS: OpenAPIParameters = {
 
 IN_DEVELOPMENT_ONLY = settings.is_development()
 
-__all__ = ["OPENAPI_PARAMETERS", "IN_DEVELOPMENT_ONLY", "APITag"]
+
+def set_openapi_generator(app: FastAPI) -> None:
+    def _openapi_generator() -> dict[str, Any]:
+        if app.openapi_schema:
+            return app.openapi_schema
+
+        openapi_schema = get_openapi(
+            title=app.title,
+            version=app.version,
+            openapi_version=app.openapi_version,
+            summary=app.summary,
+            description=app.description,
+            terms_of_service=app.terms_of_service,
+            contact=app.contact,
+            license_info=app.license_info,
+            routes=app.routes,
+            webhooks=app.webhooks.routes,
+            tags=app.openapi_tags,
+            servers=app.servers,
+            separate_input_output_schemas=app.separate_input_output_schemas,
+        )
+        openapi_schema["x-speakeasy-name-override"] = [
+            {"operationId": r".*:list", "methodNameOverride": "list"},
+            {"operationId": r".*:get", "methodNameOverride": "retrieve"},
+            {"operationId": r".*:create", "methodNameOverride": "create"},
+            {"operationId": r".*:update", "methodNameOverride": "update"},
+            {"operationId": r".*:delete", "methodNameOverride": "delete"},
+        ]
+        return openapi_schema
+
+    app.openapi = _openapi_generator  # type: ignore[method-assign]
+
+
+__all__ = [
+    "OPENAPI_PARAMETERS",
+    "IN_DEVELOPMENT_ONLY",
+    "APITag",
+    "set_openapi_generator",
+]

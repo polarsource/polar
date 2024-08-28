@@ -1,5 +1,6 @@
 import '../styles/globals.scss'
 
+import { CookieConsent } from '@/components/Privacy/CookieConsent'
 import { UserContextProvider } from '@/providers/auth'
 import { getServerSideAPI } from '@/utils/api/serverside'
 import { getAuthenticatedUser, getUserOrganizations } from '@/utils/user'
@@ -87,7 +88,10 @@ export default async function RootLayout({
             <PolarThemeProvider>
               <PolarToploaderProvider>
                 <PolarQueryClientProvider>
-                  <>{children}</>
+                  <>
+                    {children}
+                    <CookieConsent />
+                  </>
                 </PolarQueryClientProvider>
               </PolarToploaderProvider>
             </PolarThemeProvider>

@@ -22,7 +22,9 @@ from .schemas import (
 )
 from .service import license_key as license_key_service
 
-router = APIRouter(prefix="/license-keys", tags=[APITag.documented, APITag.featured])
+router = APIRouter(
+    prefix="/license-keys", tags=["license_keys", APITag.documented, APITag.featured]
+)
 
 ###############################################################################
 # LICENSE KEYS

@@ -6320,7 +6320,19 @@ export interface LicenseKeyActivate {
      * @type {string}
      * @memberof LicenseKeyActivate
      */
+    organization_id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof LicenseKeyActivate
+     */
     label: string;
+    /**
+     * 
+     * @type {object}
+     * @memberof LicenseKeyActivate
+     */
+    conditions?: object;
     /**
      * 
      * @type {object}
@@ -6369,7 +6381,7 @@ export interface LicenseKeyActivationBase {
      * @type {string}
      * @memberof LicenseKeyActivationBase
      */
-    modified_at?: string | null;
+    modified_at: string | null;
 }
 /**
  * 
@@ -6412,7 +6424,7 @@ export interface LicenseKeyActivationRead {
      * @type {string}
      * @memberof LicenseKeyActivationRead
      */
-    modified_at?: string | null;
+    modified_at: string | null;
     /**
      * 
      * @type {LicenseKeyRead}
@@ -6432,6 +6444,12 @@ export interface LicenseKeyDeactivate {
      * @memberof LicenseKeyDeactivate
      */
     key: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof LicenseKeyDeactivate
+     */
+    organization_id: string;
     /**
      * 
      * @type {string}
@@ -6486,7 +6504,7 @@ export interface LicenseKeyRead {
      * @type {number}
      * @memberof LicenseKeyRead
      */
-    limit_activations?: number | null;
+    limit_activations: number | null;
     /**
      * 
      * @type {number}
@@ -6498,7 +6516,7 @@ export interface LicenseKeyRead {
      * @type {number}
      * @memberof LicenseKeyRead
      */
-    limit_usage?: number | null;
+    limit_usage: number | null;
     /**
      * 
      * @type {number}
@@ -6510,13 +6528,13 @@ export interface LicenseKeyRead {
      * @type {string}
      * @memberof LicenseKeyRead
      */
-    last_validated_at?: string | null;
+    last_validated_at: string | null;
     /**
      * 
      * @type {string}
      * @memberof LicenseKeyRead
      */
-    expires_at?: string | null;
+    expires_at: string | null;
 }
 
 
@@ -6527,7 +6545,8 @@ export interface LicenseKeyRead {
  */
 export const LicenseKeyStatus = {
     GRANTED: 'granted',
-    REVOKED: 'revoked'
+    REVOKED: 'revoked',
+    DISABLED: 'disabled'
 } as const;
 export type LicenseKeyStatus = typeof LicenseKeyStatus[keyof typeof LicenseKeyStatus];
 
@@ -6587,6 +6606,12 @@ export interface LicenseKeyValidate {
      * @type {string}
      * @memberof LicenseKeyValidate
      */
+    organization_id: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof LicenseKeyValidate
+     */
     activation_id?: string | null;
     /**
      * The benefit ID.
@@ -6606,6 +6631,12 @@ export interface LicenseKeyValidate {
      * @memberof LicenseKeyValidate
      */
     increment_usage?: number | null;
+    /**
+     * 
+     * @type {object}
+     * @memberof LicenseKeyValidate
+     */
+    conditions?: object;
 }
 /**
  * 
@@ -6654,7 +6685,7 @@ export interface LicenseKeyWithActivations {
      * @type {number}
      * @memberof LicenseKeyWithActivations
      */
-    limit_activations?: number | null;
+    limit_activations: number | null;
     /**
      * 
      * @type {number}
@@ -6666,7 +6697,7 @@ export interface LicenseKeyWithActivations {
      * @type {number}
      * @memberof LicenseKeyWithActivations
      */
-    limit_usage?: number | null;
+    limit_usage: number | null;
     /**
      * 
      * @type {number}
@@ -6678,13 +6709,13 @@ export interface LicenseKeyWithActivations {
      * @type {string}
      * @memberof LicenseKeyWithActivations
      */
-    last_validated_at?: string | null;
+    last_validated_at: string | null;
     /**
      * 
      * @type {string}
      * @memberof LicenseKeyWithActivations
      */
-    expires_at?: string | null;
+    expires_at: string | null;
     /**
      * 
      * @type {Array<LicenseKeyActivationBase>}
@@ -15152,7 +15183,7 @@ export interface ValidatedLicenseKey {
      * @type {number}
      * @memberof ValidatedLicenseKey
      */
-    limit_activations?: number | null;
+    limit_activations: number | null;
     /**
      * 
      * @type {number}
@@ -15164,7 +15195,7 @@ export interface ValidatedLicenseKey {
      * @type {number}
      * @memberof ValidatedLicenseKey
      */
-    limit_usage?: number | null;
+    limit_usage: number | null;
     /**
      * 
      * @type {number}
@@ -15176,13 +15207,13 @@ export interface ValidatedLicenseKey {
      * @type {string}
      * @memberof ValidatedLicenseKey
      */
-    last_validated_at?: string | null;
+    last_validated_at: string | null;
     /**
      * 
      * @type {string}
      * @memberof ValidatedLicenseKey
      */
-    expires_at?: string | null;
+    expires_at: string | null;
     /**
      * 
      * @type {LicenseKeyActivationBase}

@@ -6,7 +6,6 @@ apis/BackofficeApi.ts
 apis/BenefitsApi.ts
 apis/CheckoutsApi.ts
 apis/DashboardApi.ts
-apis/DefaultApi.ts
 apis/DonationsApi.ts
 apis/ExternalOrganizationsApi.ts
 apis/FilesApi.ts
@@ -16,6 +15,7 @@ apis/IntegrationsGithubApi.ts
 apis/IntegrationsGithubRepositoryBenefitApi.ts
 apis/IntegrationsGoogleApi.ts
 apis/IssuesApi.ts
+apis/LicenseKeysApi.ts
 apis/MagicLinkApi.ts
 apis/MetricsApi.ts
 apis/NotificationsApi.ts

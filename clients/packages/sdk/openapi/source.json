@@ -180,7 +180,7 @@
                     "documented",
                     "featured"
                 ],
-                "summary": "List",
+                "summary": "List Benefits",
                 "description": "List my granted benefits.",
                 "operationId": "users:benefits:list",
                 "security": [
@@ -415,7 +415,7 @@
                     "documented",
                     "featured"
                 ],
-                "summary": "Get",
+                "summary": "Get Benefit",
                 "description": "Get a granted benefit by ID.",
                 "operationId": "users:benefits:get",
                 "security": [
@@ -520,7 +520,7 @@
                     "documented",
                     "featured"
                 ],
-                "summary": "List",
+                "summary": "List Orders",
                 "description": "List my orders.",
                 "operationId": "users:orders:list",
                 "security": [
@@ -785,7 +785,7 @@
                     "documented",
                     "featured"
                 ],
-                "summary": "Get",
+                "summary": "Get Order",
                 "description": "Get an order by ID.",
                 "operationId": "users:orders:get",
                 "security": [
@@ -859,7 +859,7 @@
                     "documented",
                     "featured"
                 ],
-                "summary": "Invoice",
+                "summary": "Get Order Invoice",
                 "description": "Get an order's invoice data.",
                 "operationId": "users:orders:invoice",
                 "security": [
@@ -933,7 +933,7 @@
                     "documented",
                     "featured"
                 ],
-                "summary": "List",
+                "summary": "List Subscriptions",
                 "description": "List my subscriptions.",
                 "operationId": "users:subscriptions:list",
                 "security": [
@@ -1164,7 +1164,7 @@
                     "documented",
                     "featured"
                 ],
-                "summary": "Create",
+                "summary": "Create Free Subscription",
                 "description": "Create a subscription on a **free** tier.\n\nIf you want to subscribe to a paid tier, you need to create a checkout session.",
                 "operationId": "users:subscriptions:create",
                 "security": [
@@ -1245,7 +1245,7 @@
                     "documented",
                     "featured"
                 ],
-                "summary": "Get",
+                "summary": "Get Subscription",
                 "description": "Get a subscription by ID.",
                 "operationId": "users:subscriptions:get",
                 "security": [
@@ -1317,7 +1317,7 @@
                     "documented",
                     "featured"
                 ],
-                "summary": "Update",
+                "summary": "Update Subscription",
                 "description": "Update a subscription.",
                 "operationId": "users:subscriptions:update",
                 "security": [
@@ -1409,7 +1409,7 @@
                     "documented",
                     "featured"
                 ],
-                "summary": "Cancel",
+                "summary": "Cancel Subscription",
                 "description": "Cancel a subscription.",
                 "operationId": "users:subscriptions:cancel",
                 "security": [
@@ -1492,7 +1492,7 @@
                     "advertisements",
                     "documented"
                 ],
-                "summary": "List",
+                "summary": "List Advertisements",
                 "description": "List advertisement campaigns.",
                 "operationId": "users:advertisements:list",
                 "security": [
@@ -1610,7 +1610,7 @@
                     "advertisements",
                     "documented"
                 ],
-                "summary": "Create",
+                "summary": "Create Advertisement",
                 "description": "Create an advertisement campaign.",
                 "operationId": "users:advertisements:create",
                 "security": [
@@ -1669,7 +1669,7 @@
                     "advertisements",
                     "documented"
                 ],
-                "summary": "Get",
+                "summary": "Get Advertisement",
                 "description": "Get an advertisement campaign by ID.",
                 "operationId": "users:advertisements:get",
                 "security": [
@@ -1740,7 +1740,7 @@
                     "advertisements",
                     "documented"
                 ],
-                "summary": "Update",
+                "summary": "Update Advertisement",
                 "description": "Update an advertisement campaign.",
                 "operationId": "users:advertisements:update",
                 "security": [
@@ -1821,7 +1821,7 @@
                     "advertisements",
                     "documented"
                 ],
-                "summary": "Delete",
+                "summary": "Delete Advertisement",
                 "description": "Delete an advertisement campaign.\n\nIt'll be automatically disabled on all granted benefits.",
                 "operationId": "users:advertisements:delete",
                 "security": [
@@ -1895,7 +1895,7 @@
                     "advertisements",
                     "documented"
                 ],
-                "summary": "Enable",
+                "summary": "Enable Advertisement",
                 "description": "Enable an advertisement campaign on a granted benefit.",
                 "operationId": "users:advertisements:enable",
                 "security": [
@@ -1972,7 +1972,7 @@
                     "documented",
                     "featured"
                 ],
-                "summary": "List",
+                "summary": "List Downloadables",
                 "operationId": "users:downloadables:list",
                 "security": [
                     {
@@ -2144,7 +2144,7 @@
                     "documented",
                     "featured"
                 ],
-                "summary": "Get",
+                "summary": "Get Downloadable",
                 "operationId": "users:downloadables:get",
                 "security": [
                     {
@@ -4857,8 +4857,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "repositories:write",
-                            "repositories:read"
+                            "repositories:read",
+                            "repositories:write"
                         ]
                     },
                     {
@@ -5108,8 +5108,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "repositories:write",
-                            "repositories:read"
+                            "repositories:read",
+                            "repositories:write"
                         ]
                     },
                     {
@@ -12290,8 +12290,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "benefits:read",
-                            "benefits:write"
+                            "benefits:write",
+                            "benefits:read"
                         ]
                     },
                     {
@@ -12553,8 +12553,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "benefits:read",
-                            "benefits:write"
+                            "benefits:write",
+                            "benefits:read"
                         ]
                     },
                     {
@@ -12864,8 +12864,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "benefits:read",
-                            "benefits:write"
+                            "benefits:write",
+                            "benefits:read"
                         ]
                     },
                     {

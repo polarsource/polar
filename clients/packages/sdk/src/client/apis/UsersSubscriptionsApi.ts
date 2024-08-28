@@ -63,7 +63,7 @@ export class UsersSubscriptionsApi extends runtime.BaseAPI {
 
     /**
      * Cancel a subscription.
-     * Cancel
+     * Cancel Subscription
      */
     async cancelRaw(requestParameters: UsersSubscriptionsApiCancelRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<UserSubscription>> {
         if (requestParameters['id'] == null) {
@@ -97,7 +97,7 @@ export class UsersSubscriptionsApi extends runtime.BaseAPI {
 
     /**
      * Cancel a subscription.
-     * Cancel
+     * Cancel Subscription
      */
     async cancel(requestParameters: UsersSubscriptionsApiCancelRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<UserSubscription> {
         const response = await this.cancelRaw(requestParameters, initOverrides);
@@ -106,7 +106,7 @@ export class UsersSubscriptionsApi extends runtime.BaseAPI {
 
     /**
      * Create a subscription on a **free** tier.  If you want to subscribe to a paid tier, you need to create a checkout session.
-     * Create
+     * Create Free Subscription
      */
     async createRaw(requestParameters: UsersSubscriptionsApiCreateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<UserSubscription>> {
         if (requestParameters['body'] == null) {
@@ -143,7 +143,7 @@ export class UsersSubscriptionsApi extends runtime.BaseAPI {
 
     /**
      * Create a subscription on a **free** tier.  If you want to subscribe to a paid tier, you need to create a checkout session.
-     * Create
+     * Create Free Subscription
      */
     async create(requestParameters: UsersSubscriptionsApiCreateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<UserSubscription> {
         const response = await this.createRaw(requestParameters, initOverrides);
@@ -152,7 +152,7 @@ export class UsersSubscriptionsApi extends runtime.BaseAPI {
 
     /**
      * Get a subscription by ID.
-     * Get
+     * Get Subscription
      */
     async getRaw(requestParameters: UsersSubscriptionsApiGetRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<UserSubscription>> {
         if (requestParameters['id'] == null) {
@@ -186,7 +186,7 @@ export class UsersSubscriptionsApi extends runtime.BaseAPI {
 
     /**
      * Get a subscription by ID.
-     * Get
+     * Get Subscription
      */
     async get(requestParameters: UsersSubscriptionsApiGetRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<UserSubscription> {
         const response = await this.getRaw(requestParameters, initOverrides);
@@ -195,7 +195,7 @@ export class UsersSubscriptionsApi extends runtime.BaseAPI {
 
     /**
      * List my subscriptions.
-     * List
+     * List Subscriptions
      */
     async listRaw(requestParameters: UsersSubscriptionsApiListRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListResourceUserSubscription>> {
         const queryParameters: any = {};
@@ -250,7 +250,7 @@ export class UsersSubscriptionsApi extends runtime.BaseAPI {
 
     /**
      * List my subscriptions.
-     * List
+     * List Subscriptions
      */
     async list(requestParameters: UsersSubscriptionsApiListRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ListResourceUserSubscription> {
         const response = await this.listRaw(requestParameters, initOverrides);
@@ -259,7 +259,7 @@ export class UsersSubscriptionsApi extends runtime.BaseAPI {
 
     /**
      * Update a subscription.
-     * Update
+     * Update Subscription
      */
     async updateRaw(requestParameters: UsersSubscriptionsApiUpdateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<UserSubscription>> {
         if (requestParameters['id'] == null) {
@@ -303,7 +303,7 @@ export class UsersSubscriptionsApi extends runtime.BaseAPI {
 
     /**
      * Update a subscription.
-     * Update
+     * Update Subscription
      */
     async update(requestParameters: UsersSubscriptionsApiUpdateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<UserSubscription> {
         const response = await this.updateRaw(requestParameters, initOverrides);

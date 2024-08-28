@@ -47,7 +47,7 @@ export class UsersBenefitsApi extends runtime.BaseAPI {
 
     /**
      * Get a granted benefit by ID.
-     * Get
+     * Get Benefit
      */
     async getRaw(requestParameters: UsersBenefitsApiGetRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ResponseUsersBenefitsGet>> {
         if (requestParameters['id'] == null) {
@@ -81,7 +81,7 @@ export class UsersBenefitsApi extends runtime.BaseAPI {
 
     /**
      * Get a granted benefit by ID.
-     * Get
+     * Get Benefit
      */
     async get(requestParameters: UsersBenefitsApiGetRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ResponseUsersBenefitsGet> {
         const response = await this.getRaw(requestParameters, initOverrides);
@@ -90,7 +90,7 @@ export class UsersBenefitsApi extends runtime.BaseAPI {
 
     /**
      * List my granted benefits.
-     * List
+     * List Benefits
      */
     async listRaw(requestParameters: UsersBenefitsApiListRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListResourceAnnotatedUnionBenefitArticlesSubscriberBenefitAdsSubscriberBenefitDiscordSubscriberBenefitCustomSubscriberBenefitGitHubRepositorySubscriberBenefitDownloadablesSubscriberDiscriminatorMergeJSONSchema>> {
         const queryParameters: any = {};
@@ -145,7 +145,7 @@ export class UsersBenefitsApi extends runtime.BaseAPI {
 
     /**
      * List my granted benefits.
-     * List
+     * List Benefits
      */
     async list(requestParameters: UsersBenefitsApiListRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ListResourceAnnotatedUnionBenefitArticlesSubscriberBenefitAdsSubscriberBenefitDiscordSubscriberBenefitCustomSubscriberBenefitGitHubRepositorySubscriberBenefitDownloadablesSubscriberDiscriminatorMergeJSONSchema> {
         const response = await this.listRaw(requestParameters, initOverrides);

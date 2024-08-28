@@ -60,7 +60,7 @@ export class UsersAdvertisementsApi extends runtime.BaseAPI {
 
     /**
      * Create an advertisement campaign.
-     * Create
+     * Create Advertisement
      */
     async createRaw(requestParameters: UsersAdvertisementsApiCreateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<UserAdvertisementCampaign>> {
         if (requestParameters['body'] == null) {
@@ -97,7 +97,7 @@ export class UsersAdvertisementsApi extends runtime.BaseAPI {
 
     /**
      * Create an advertisement campaign.
-     * Create
+     * Create Advertisement
      */
     async create(requestParameters: UsersAdvertisementsApiCreateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<UserAdvertisementCampaign> {
         const response = await this.createRaw(requestParameters, initOverrides);
@@ -106,7 +106,7 @@ export class UsersAdvertisementsApi extends runtime.BaseAPI {
 
     /**
      * Delete an advertisement campaign.  It\'ll be automatically disabled on all granted benefits.
-     * Delete
+     * Delete Advertisement
      */
     async deleteRaw(requestParameters: UsersAdvertisementsApiDeleteRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<any>> {
         if (requestParameters['id'] == null) {
@@ -144,7 +144,7 @@ export class UsersAdvertisementsApi extends runtime.BaseAPI {
 
     /**
      * Delete an advertisement campaign.  It\'ll be automatically disabled on all granted benefits.
-     * Delete
+     * Delete Advertisement
      */
     async delete(requestParameters: UsersAdvertisementsApiDeleteRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<any | null | undefined > {
         const response = await this.deleteRaw(requestParameters, initOverrides);
@@ -160,7 +160,7 @@ export class UsersAdvertisementsApi extends runtime.BaseAPI {
 
     /**
      * Enable an advertisement campaign on a granted benefit.
-     * Enable
+     * Enable Advertisement
      */
     async enableRaw(requestParameters: UsersAdvertisementsApiEnableRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<void>> {
         if (requestParameters['id'] == null) {
@@ -204,7 +204,7 @@ export class UsersAdvertisementsApi extends runtime.BaseAPI {
 
     /**
      * Enable an advertisement campaign on a granted benefit.
-     * Enable
+     * Enable Advertisement
      */
     async enable(requestParameters: UsersAdvertisementsApiEnableRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<void> {
         await this.enableRaw(requestParameters, initOverrides);
@@ -212,7 +212,7 @@ export class UsersAdvertisementsApi extends runtime.BaseAPI {
 
     /**
      * Get an advertisement campaign by ID.
-     * Get
+     * Get Advertisement
      */
     async getRaw(requestParameters: UsersAdvertisementsApiGetRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<UserAdvertisementCampaign>> {
         if (requestParameters['id'] == null) {
@@ -246,7 +246,7 @@ export class UsersAdvertisementsApi extends runtime.BaseAPI {
 
     /**
      * Get an advertisement campaign by ID.
-     * Get
+     * Get Advertisement
      */
     async get(requestParameters: UsersAdvertisementsApiGetRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<UserAdvertisementCampaign> {
         const response = await this.getRaw(requestParameters, initOverrides);
@@ -255,7 +255,7 @@ export class UsersAdvertisementsApi extends runtime.BaseAPI {
 
     /**
      * List advertisement campaigns.
-     * List
+     * List Advertisements
      */
     async listRaw(requestParameters: UsersAdvertisementsApiListRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListResourceUserAdvertisementCampaign>> {
         const queryParameters: any = {};
@@ -294,7 +294,7 @@ export class UsersAdvertisementsApi extends runtime.BaseAPI {
 
     /**
      * List advertisement campaigns.
-     * List
+     * List Advertisements
      */
     async list(requestParameters: UsersAdvertisementsApiListRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ListResourceUserAdvertisementCampaign> {
         const response = await this.listRaw(requestParameters, initOverrides);
@@ -303,7 +303,7 @@ export class UsersAdvertisementsApi extends runtime.BaseAPI {
 
     /**
      * Update an advertisement campaign.
-     * Update
+     * Update Advertisement
      */
     async updateRaw(requestParameters: UsersAdvertisementsApiUpdateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<UserAdvertisementCampaign>> {
         if (requestParameters['id'] == null) {
@@ -347,7 +347,7 @@ export class UsersAdvertisementsApi extends runtime.BaseAPI {
 
     /**
      * Update an advertisement campaign.
-     * Update
+     * Update Advertisement
      */
     async update(requestParameters: UsersAdvertisementsApiUpdateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<UserAdvertisementCampaign> {
         const response = await this.updateRaw(requestParameters, initOverrides);

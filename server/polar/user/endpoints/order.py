@@ -34,7 +34,7 @@ ListSorting = Annotated[
 ]
 
 
-@router.get("/", response_model=ListResource[UserOrder])
+@router.get("/", summary="List Orders", response_model=ListResource[UserOrder])
 async def list(
     auth_subject: auth.UserOrdersRead,
     pagination: PaginationParamsQuery,
@@ -85,6 +85,7 @@ async def list(
 
 @router.get(
     "/{id}",
+    summary="Get Order",
     response_model=UserOrder,
     responses={404: OrderNotFound},
 )
@@ -104,6 +105,7 @@ async def get(
 
 @router.get(
     "/{id}/invoice",
+    summary="Get Order Invoice",
     response_model=UserOrderInvoice,
     responses={404: OrderNotFound},
 )

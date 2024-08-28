@@ -20,6 +20,7 @@ router = APIRouter(
 
 @router.get(
     "/",
+    summary="List Downloadables",
     response_model=ListResource[DownloadableRead],
 )
 async def list(
@@ -54,6 +55,7 @@ async def list(
 
 @router.get(
     "/{token}",
+    summary="Get Downloadable",
     responses={
         302: {"description": "Redirected to download"},
         400: {"description": "Invalid signature"},

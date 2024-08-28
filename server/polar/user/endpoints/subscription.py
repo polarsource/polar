@@ -45,7 +45,9 @@ ListSorting = Annotated[
 ]
 
 
-@router.get("/", response_model=ListResource[UserSubscription])
+@router.get(
+    "/", summary="List Subscriptions", response_model=ListResource[UserSubscription]
+)
 async def list(
     auth_subject: auth.UserSubscriptionsRead,
     pagination: PaginationParamsQuery,
@@ -86,6 +88,7 @@ async def list(
 
 @router.get(
     "/{id}",
+    summary="Get Subscription",
     response_model=UserSubscription,
     responses={404: SubscriptionNotFound},
 )
@@ -105,6 +108,7 @@ async def get(
 
 @router.post(
     "/",
+    summary="Create Free Subscription",
     response_model=UserSubscription,
     status_code=201,
     responses={
@@ -135,6 +139,7 @@ async def create(
 
 @router.patch(
     "/{id}",
+    summary="Update Subscription",
     response_model=UserSubscription,
     responses={
         200: {"description": "Subscription updated."},
@@ -166,6 +171,7 @@ async def update(
 
 @router.delete(
     "/{id}",
+    summary="Cancel Subscription",
     response_model=UserSubscription,
     responses={
         200: {"description": "Subscription canceled."},

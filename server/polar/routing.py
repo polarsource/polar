@@ -3,6 +3,7 @@ from polar.kit.routing import (
     AutoCommitAPIRoute,
     SpeakeasyGroupAPIRoute,
     SpeakeasyIgnoreAPIRoute,
+    SpeakeasyPaginationAPIRoute,
     get_api_router_class,
 )
 
@@ -12,6 +13,7 @@ class APIRoute(
     DocumentedAuthSubjectAPIRoute,
     SpeakeasyIgnoreAPIRoute,
     SpeakeasyGroupAPIRoute,
+    SpeakeasyPaginationAPIRoute,
 ):
     pass
 

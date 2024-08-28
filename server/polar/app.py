@@ -37,7 +37,7 @@ from polar.middlewares import (
 )
 from polar.oauth2.endpoints.well_known import router as well_known_router
 from polar.oauth2.exception_handlers import OAuth2Error, oauth2_error_exception_handler
-from polar.openapi import OPENAPI_PARAMETERS
+from polar.openapi import OPENAPI_PARAMETERS, set_openapi_generator
 from polar.postgres import create_async_engine, create_sync_engine
 from polar.posthog import configure_posthog
 from polar.sentry import configure_sentry
@@ -157,5 +157,6 @@ configure_logging(logfire=True)
 configure_posthog()
 
 app = create_app()
+set_openapi_generator(app)
 instrument_fastapi(app)
 instrument_httpx()

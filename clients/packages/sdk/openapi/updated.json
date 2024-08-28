@@ -41,7 +41,9 @@
                 ],
                 "x-polar-allowed-subjects": [
                     "User"
-                ]
+                ],
+                "x-speakeasy-ignore": true,
+                "x-speakeasy-group": "users"
             }
         },
         "/v1/users/me/scopes": {
@@ -73,7 +75,9 @@
                 ],
                 "x-polar-allowed-subjects": [
                     "User"
-                ]
+                ],
+                "x-speakeasy-ignore": true,
+                "x-speakeasy-group": "users"
             }
         },
         "/v1/users/me/account": {
@@ -125,7 +129,9 @@
                 ],
                 "x-polar-allowed-subjects": [
                     "User"
-                ]
+                ],
+                "x-speakeasy-ignore": true,
+                "x-speakeasy-group": "users"
             }
         },
         "/v1/users/me/stripe_customer_portal": {
@@ -157,7 +163,9 @@
                 ],
                 "x-polar-allowed-subjects": [
                     "User"
-                ]
+                ],
+                "x-speakeasy-ignore": true,
+                "x-speakeasy-group": "users"
             }
         },
         "/v1/users/benefits/": {
@@ -330,7 +338,7 @@
                                 {
                                     "type": "array",
                                     "items": {
-                                        "type": "string"
+                                        "$ref": "#/components/schemas/UserBenefitSortProperty"
                                     }
                                 },
                                 {
@@ -338,15 +346,6 @@
                                 }
                             ],
                             "description": "Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.",
-                            "type": "string",
-                            "enum": [
-                                "granted_at",
-                                "-granted_at",
-                                "type",
-                                "-type",
-                                "organization",
-                                "-organization"
-                            ],
                             "default": [
                                 "-granted_at"
                             ],
@@ -379,7 +378,27 @@
                 },
                 "x-polar-allowed-subjects": [
                     "User"
-                ]
+                ],
+                "x-speakeasy-pagination": {
+                    "type": "offsetLimit",
+                    "inputs": [
+                        {
+                            "name": "page",
+                            "in": "parameters",
+                            "type": "page"
+                        },
+                        {
+                            "name": "limit",
+                            "in": "parameters",
+                            "type": "limit"
+                        }
+                    ],
+                    "outputs": {
+                        "results": "$.items",
+                        "numPages": "$.pagination.max_page"
+                    }
+                },
+                "x-speakeasy-group": "users"
             }
         },
         "/v1/users/benefits/{id}": {
@@ -481,7 +500,8 @@
                 },
                 "x-polar-allowed-subjects": [
                     "User"
-                ]
+                ],
+                "x-speakeasy-group": "users"
             }
         },
         "/v1/users/orders/": {
@@ -684,7 +704,7 @@
                                 {
                                     "type": "array",
                                     "items": {
-                                        "type": "string"
+                                        "$ref": "#/components/schemas/UserOrderSortProperty"
                                     }
                                 },
                                 {
@@ -692,19 +712,6 @@
                                 }
                             ],
                             "description": "Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.",
-                            "type": "string",
-                            "enum": [
-                                "created_at",
-                                "-created_at",
-                                "amount",
-                                "-amount",
-                                "organization",
-                                "-organization",
-                                "product",
-                                "-product",
-                                "subscription",
-                                "-subscription"
-                            ],
                             "default": [
                                 "-created_at"
                             ],
@@ -737,7 +744,27 @@
                 },
                 "x-polar-allowed-subjects": [
                     "User"
-                ]
+                ],
+                "x-speakeasy-pagination": {
+                    "type": "offsetLimit",
+                    "inputs": [
+                        {
+                            "name": "page",
+                            "in": "parameters",
+                            "type": "page"
+                        },
+                        {
+                            "name": "limit",
+                            "in": "parameters",
+                            "type": "limit"
+                        }
+                    ],
+                    "outputs": {
+                        "results": "$.items",
+                        "numPages": "$.pagination.max_page"
+                    }
+                },
+                "x-speakeasy-group": "users"
             }
         },
         "/v1/users/orders/{id}": {
@@ -808,7 +835,8 @@
                 },
                 "x-polar-allowed-subjects": [
                     "User"
-                ]
+                ],
+                "x-speakeasy-group": "users"
             }
         },
         "/v1/users/orders/{id}/invoice": {
@@ -879,7 +907,8 @@
                 },
                 "x-polar-allowed-subjects": [
                     "User"
-                ]
+                ],
+                "x-speakeasy-group": "users"
             }
         },
         "/v1/users/subscriptions/": {
@@ -1050,7 +1079,7 @@
                                 {
                                     "type": "array",
                                     "items": {
-                                        "type": "string"
+                                        "$ref": "#/components/schemas/UserSubscriptionSortProperty"
                                     }
                                 },
                                 {
@@ -1058,19 +1087,6 @@
                                 }
                             ],
                             "description": "Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.",
-                            "type": "string",
-                            "enum": [
-                                "started_at",
-                                "-started_at",
-                                "price_amount",
-                                "-price_amount",
-                                "status",
-                                "-status",
-                                "organization",
-                                "-organization",
-                                "product",
-                                "-product"
-                            ],
                             "default": [
                                 "-started_at"
                             ],
@@ -1103,7 +1119,27 @@
                 },
                 "x-polar-allowed-subjects": [
                     "User"
-                ]
+                ],
+                "x-speakeasy-pagination": {
+                    "type": "offsetLimit",
+                    "inputs": [
+                        {
+                            "name": "page",
+                            "in": "parameters",
+                            "type": "page"
+                        },
+                        {
+                            "name": "limit",
+                            "in": "parameters",
+                            "type": "limit"
+                        }
+                    ],
+                    "outputs": {
+                        "results": "$.items",
+                        "numPages": "$.pagination.max_page"
+                    }
+                },
+                "x-speakeasy-group": "users"
             },
             "post": {
                 "tags": [
@@ -1179,7 +1215,8 @@
                 "x-polar-allowed-subjects": [
                     "Anonymous",
                     "User"
-                ]
+                ],
+                "x-speakeasy-group": "users"
             }
         },
         "/v1/users/subscriptions/{id}": {
@@ -1250,7 +1287,8 @@
                 },
                 "x-polar-allowed-subjects": [
                     "User"
-                ]
+                ],
+                "x-speakeasy-group": "users"
             },
             "patch": {
                 "tags": [
@@ -1339,7 +1377,8 @@
                 },
                 "x-polar-allowed-subjects": [
                     "User"
-                ]
+                ],
+                "x-speakeasy-group": "users"
             },
             "delete": {
                 "tags": [
@@ -1418,7 +1457,8 @@
                 },
                 "x-polar-allowed-subjects": [
                     "User"
-                ]
+                ],
+                "x-speakeasy-group": "users"
             }
         },
         "/v1/users/advertisements/": {
@@ -1476,7 +1516,7 @@
                                 {
                                     "type": "array",
                                     "items": {
-                                        "type": "string"
+                                        "$ref": "#/components/schemas/UserAdvertisementSortProperty"
                                     }
                                 },
                                 {
@@ -1484,15 +1524,6 @@
                                 }
                             ],
                             "description": "Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.",
-                            "type": "string",
-                            "enum": [
-                                "created_at",
-                                "-created_at",
-                                "views",
-                                "-views",
-                                "clicks",
-                                "-clicks"
-                            ],
                             "default": [
                                 "-created_at"
                             ],
@@ -1525,7 +1556,27 @@
                 },
                 "x-polar-allowed-subjects": [
                     "User"
-                ]
+                ],
+                "x-speakeasy-pagination": {
+                    "type": "offsetLimit",
+                    "inputs": [
+                        {
+                            "name": "page",
+                            "in": "parameters",
+                            "type": "page"
+                        },
+                        {
+                            "name": "limit",
+                            "in": "parameters",
+                            "type": "limit"
+                        }
+                    ],
+                    "outputs": {
+                        "results": "$.items",
+                        "numPages": "$.pagination.max_page"
+                    }
+                },
+                "x-speakeasy-group": "users"
             },
             "post": {
                 "tags": [
@@ -1579,7 +1630,8 @@
                 },
                 "x-polar-allowed-subjects": [
                     "User"
-                ]
+                ],
+                "x-speakeasy-group": "users"
             }
         },
         "/v1/users/advertisements/{id}": {
@@ -1649,7 +1701,8 @@
                 },
                 "x-polar-allowed-subjects": [
                     "User"
-                ]
+                ],
+                "x-speakeasy-group": "users"
             },
             "patch": {
                 "tags": [
@@ -1727,7 +1780,8 @@
                 },
                 "x-polar-allowed-subjects": [
                     "User"
-                ]
+                ],
+                "x-speakeasy-group": "users"
             },
             "delete": {
                 "tags": [
@@ -1796,7 +1850,8 @@
                 },
                 "x-polar-allowed-subjects": [
                     "User"
-                ]
+                ],
+                "x-speakeasy-group": "users"
             }
         },
         "/v1/users/advertisements/{id}/enable": {
@@ -1869,7 +1924,8 @@
                 },
                 "x-polar-allowed-subjects": [
                     "User"
-                ]
+                ],
+                "x-speakeasy-group": "users"
             }
         },
         "/v1/users/downloadables/": {
@@ -2019,7 +2075,27 @@
                 },
                 "x-polar-allowed-subjects": [
                     "User"
-                ]
+                ],
+                "x-speakeasy-pagination": {
+                    "type": "offsetLimit",
+                    "inputs": [
+                        {
+                            "name": "page",
+                            "in": "parameters",
+                            "type": "page"
+                        },
+                        {
+                            "name": "limit",
+                            "in": "parameters",
+                            "type": "limit"
+                        }
+                    ],
+                    "outputs": {
+                        "results": "$.items",
+                        "numPages": "$.pagination.max_page"
+                    }
+                },
+                "x-speakeasy-group": "users"
             }
         },
         "/v1/users/downloadables/{token}": {
@@ -2086,7 +2162,8 @@
                 },
                 "x-polar-allowed-subjects": [
                     "User"
-                ]
+                ],
+                "x-speakeasy-group": "users"
             }
         },
         "/v1/integrations/github/authorize": {
@@ -2641,7 +2718,9 @@
                 },
                 "x-polar-allowed-subjects": [
                     "User"
-                ]
+                ],
+                "x-speakeasy-group": "integrations_github_repository_benefit",
+                "x-speakeasy-ignore": true
             }
         },
         "/v1/integrations/github_repository_benefit/user/callback": {
@@ -2747,7 +2826,9 @@
                 },
                 "x-polar-allowed-subjects": [
                     "User"
-                ]
+                ],
+                "x-speakeasy-group": "integrations_github_repository_benefit",
+                "x-speakeasy-ignore": true
             }
         },
         "/v1/integrations/github_repository_benefit/user/repositories": {
@@ -2780,7 +2861,9 @@
                 ],
                 "x-polar-allowed-subjects": [
                     "User"
-                ]
+                ],
+                "x-speakeasy-group": "integrations_github_repository_benefit",
+                "x-speakeasy-ignore": true
             }
         },
         "/v1/integrations/github_repository_benefit/installation/install": {
@@ -2810,7 +2893,9 @@
                 ],
                 "x-polar-allowed-subjects": [
                     "User"
-                ]
+                ],
+                "x-speakeasy-group": "integrations_github_repository_benefit",
+                "x-speakeasy-ignore": true
             }
         },
         "/v1/integrations/github_repository_benefit/installation/callback": {
@@ -2840,7 +2925,9 @@
                 ],
                 "x-polar-allowed-subjects": [
                     "User"
-                ]
+                ],
+                "x-speakeasy-group": "integrations_github_repository_benefit",
+                "x-speakeasy-ignore": true
             }
         },
         "/v1/integrations/discord/bot/authorize": {
@@ -2898,7 +2985,9 @@
                 },
                 "x-polar-allowed-subjects": [
                     "User"
-                ]
+                ],
+                "x-speakeasy-group": "integrations_discord",
+                "x-speakeasy-ignore": true
             }
         },
         "/v1/integrations/discord/bot/callback": {
@@ -2997,7 +3086,9 @@
                 },
                 "x-polar-allowed-subjects": [
                     "User"
-                ]
+                ],
+                "x-speakeasy-group": "integrations_discord",
+                "x-speakeasy-ignore": true
             }
         },
         "/v1/integrations/discord/user/authorize": {
@@ -3055,7 +3146,9 @@
                 },
                 "x-polar-allowed-subjects": [
                     "User"
-                ]
+                ],
+                "x-speakeasy-group": "integrations_discord",
+                "x-speakeasy-ignore": true
             }
         },
         "/v1/integrations/discord/user/callback": {
@@ -3154,7 +3247,9 @@
                 },
                 "x-polar-allowed-subjects": [
                     "User"
-                ]
+                ],
+                "x-speakeasy-group": "integrations_discord",
+                "x-speakeasy-ignore": true
             }
         },
         "/v1/integrations/discord/guild/lookup": {
@@ -3207,7 +3302,9 @@
                 },
                 "x-polar-allowed-subjects": [
                     "User"
-                ]
+                ],
+                "x-speakeasy-group": "integrations_discord",
+                "x-speakeasy-ignore": true
             }
         },
         "/v1/backoffice/pledges": {
@@ -3243,7 +3340,9 @@
                 ],
                 "x-polar-allowed-subjects": [
                     "User"
-                ]
+                ],
+                "x-speakeasy-group": "backoffice",
+                "x-speakeasy-ignore": true
             }
         },
         "/v1/backoffice/rewards/by_issue": {
@@ -3304,7 +3403,28 @@
                 },
                 "x-polar-allowed-subjects": [
                     "User"
-                ]
+                ],
+                "x-speakeasy-pagination": {
+                    "type": "offsetLimit",
+                    "inputs": [
+                        {
+                            "name": "page",
+                            "in": "parameters",
+                            "type": "page"
+                        },
+                        {
+                            "name": "limit",
+                            "in": "parameters",
+                            "type": "limit"
+                        }
+                    ],
+                    "outputs": {
+                        "results": "$.items",
+                        "numPages": "$.pagination.max_page"
+                    }
+                },
+                "x-speakeasy-group": "backoffice",
+                "x-speakeasy-ignore": true
             }
         },
         "/v1/backoffice/rewards/pending": {
@@ -3336,7 +3456,28 @@
                 ],
                 "x-polar-allowed-subjects": [
                     "User"
-                ]
+                ],
+                "x-speakeasy-pagination": {
+                    "type": "offsetLimit",
+                    "inputs": [
+                        {
+                            "name": "page",
+                            "in": "parameters",
+                            "type": "page"
+                        },
+                        {
+                            "name": "limit",
+                            "in": "parameters",
+                            "type": "limit"
+                        }
+                    ],
+                    "outputs": {
+                        "results": "$.items",
+                        "numPages": "$.pagination.max_page"
+                    }
+                },
+                "x-speakeasy-group": "backoffice",
+                "x-speakeasy-ignore": true
             }
         },
         "/v1/backoffice/issue/{id}": {
@@ -3390,7 +3531,9 @@
                 },
                 "x-polar-allowed-subjects": [
                     "User"
-                ]
+                ],
+                "x-speakeasy-group": "backoffice",
+                "x-speakeasy-ignore": true
             }
         },
         "/v1/backoffice/pledges/approve": {
@@ -3442,7 +3585,9 @@
                 ],
                 "x-polar-allowed-subjects": [
                     "User"
-                ]
+                ],
+                "x-speakeasy-group": "backoffice",
+                "x-speakeasy-ignore": true
             }
         },
         "/v1/backoffice/pledges/create_invoice/{pledge_id}": {
@@ -3496,7 +3641,9 @@
                 },
                 "x-polar-allowed-subjects": [
                     "User"
-                ]
+                ],
+                "x-speakeasy-group": "backoffice",
+                "x-speakeasy-ignore": true
             }
         },
         "/v1/backoffice/pledges/mark_disputed/{pledge_id}": {
@@ -3550,7 +3697,9 @@
                 },
                 "x-polar-allowed-subjects": [
                     "User"
-                ]
+                ],
+                "x-speakeasy-group": "backoffice",
+                "x-speakeasy-ignore": true
             }
         },
         "/v1/backoffice/badge": {
@@ -3602,7 +3751,9 @@
                 ],
                 "x-polar-allowed-subjects": [
                     "User"
-                ]
+                ],
+                "x-speakeasy-group": "backoffice",
+                "x-speakeasy-ignore": true
             }
         },
         "/v1/backoffice/update_badge_contents": {
@@ -3665,7 +3816,9 @@
                 },
                 "x-polar-allowed-subjects": [
                     "User"
-                ]
+                ],
+                "x-speakeasy-group": "backoffice",
+                "x-speakeasy-ignore": true
             }
         },
         "/v1/dashboard/personal": {
@@ -3781,7 +3934,9 @@
                 },
                 "x-polar-allowed-subjects": [
                     "User"
-                ]
+                ],
+                "x-speakeasy-group": "dashboard",
+                "x-speakeasy-ignore": true
             }
         },
         "/v1/dashboard/organization/{id}": {
@@ -3935,7 +4090,9 @@
                 },
                 "x-polar-allowed-subjects": [
                     "User"
-                ]
+                ],
+                "x-speakeasy-group": "dashboard",
+                "x-speakeasy-ignore": true
             }
         },
         "/v1/dashboard/dummy_do_not_use": {
@@ -3956,7 +4113,9 @@
                             }
                         }
                     }
-                }
+                },
+                "x-speakeasy-group": "dashboard",
+                "x-speakeasy-ignore": true
             }
         },
         "/v1/funding/search": {
@@ -4130,7 +4289,28 @@
                 "x-polar-allowed-subjects": [
                     "Anonymous",
                     "User"
-                ]
+                ],
+                "x-speakeasy-pagination": {
+                    "type": "offsetLimit",
+                    "inputs": [
+                        {
+                            "name": "page",
+                            "in": "parameters",
+                            "type": "page"
+                        },
+                        {
+                            "name": "limit",
+                            "in": "parameters",
+                            "type": "limit"
+                        }
+                    ],
+                    "outputs": {
+                        "results": "$.items",
+                        "numPages": "$.pagination.max_page"
+                    }
+                },
+                "x-speakeasy-group": "funding",
+                "x-speakeasy-ignore": true
             }
         },
         "/v1/funding/lookup": {
@@ -4185,7 +4365,9 @@
                 "x-polar-allowed-subjects": [
                     "Anonymous",
                     "User"
-                ]
+                ],
+                "x-speakeasy-group": "funding",
+                "x-speakeasy-ignore": true
             }
         },
         "/v1/magic_link/request": {
@@ -4224,7 +4406,9 @@
                             }
                         }
                     }
-                }
+                },
+                "x-speakeasy-group": "magic_link",
+                "x-speakeasy-ignore": true
             }
         },
         "/v1/magic_link/authenticate": {
@@ -4293,7 +4477,9 @@
                 "x-polar-allowed-subjects": [
                     "Anonymous",
                     "User"
-                ]
+                ],
+                "x-speakeasy-group": "magic_link",
+                "x-speakeasy-ignore": true
             }
         },
         "/v1/notifications": {
@@ -4325,7 +4511,9 @@
                 ],
                 "x-polar-allowed-subjects": [
                     "User"
-                ]
+                ],
+                "x-speakeasy-group": "notifications",
+                "x-speakeasy-ignore": true
             }
         },
         "/v1/notifications/read": {
@@ -4375,7 +4563,9 @@
                 ],
                 "x-polar-allowed-subjects": [
                     "User"
-                ]
+                ],
+                "x-speakeasy-group": "notifications",
+                "x-speakeasy-ignore": true
             }
         },
         "/v1/external_organizations/": {
@@ -4520,7 +4710,7 @@
                                 {
                                     "type": "array",
                                     "items": {
-                                        "type": "string"
+                                        "$ref": "#/components/schemas/ExternalOrganizationSortProperty"
                                     }
                                 },
                                 {
@@ -4528,13 +4718,6 @@
                                 }
                             ],
                             "description": "Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.",
-                            "type": "string",
-                            "enum": [
-                                "created_at",
-                                "-created_at",
-                                "name",
-                                "-name"
-                            ],
                             "default": [
                                 "-created_at"
                             ],
@@ -4569,7 +4752,27 @@
                     "Anonymous",
                     "Organization",
                     "User"
-                ]
+                ],
+                "x-speakeasy-pagination": {
+                    "type": "offsetLimit",
+                    "inputs": [
+                        {
+                            "name": "page",
+                            "in": "parameters",
+                            "type": "page"
+                        },
+                        {
+                            "name": "limit",
+                            "in": "parameters",
+                            "type": "limit"
+                        }
+                    ],
+                    "outputs": {
+                        "results": "$.items",
+                        "numPages": "$.pagination.max_page"
+                    }
+                },
+                "x-speakeasy-group": "external_organizations"
             }
         },
         "/v1/repositories/": {
@@ -4585,8 +4788,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "repositories:write",
-                            "repositories:read"
+                            "repositories:read",
+                            "repositories:write"
                         ]
                     },
                     {
@@ -4757,7 +4960,7 @@
                                 {
                                     "type": "array",
                                     "items": {
-                                        "type": "string"
+                                        "$ref": "#/components/schemas/RepositorySortProperty"
                                     }
                                 },
                                 {
@@ -4765,15 +4968,6 @@
                                 }
                             ],
                             "description": "Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.",
-                            "type": "string",
-                            "enum": [
-                                "created_at",
-                                "-created_at",
-                                "name",
-                                "-name",
-                                "stars",
-                                "-stars"
-                            ],
                             "default": [
                                 "-created_at"
                             ],
@@ -4808,7 +5002,27 @@
                     "Anonymous",
                     "Organization",
                     "User"
-                ]
+                ],
+                "x-speakeasy-pagination": {
+                    "type": "offsetLimit",
+                    "inputs": [
+                        {
+                            "name": "page",
+                            "in": "parameters",
+                            "type": "page"
+                        },
+                        {
+                            "name": "limit",
+                            "in": "parameters",
+                            "type": "limit"
+                        }
+                    ],
+                    "outputs": {
+                        "results": "$.items",
+                        "numPages": "$.pagination.max_page"
+                    }
+                },
+                "x-speakeasy-group": "repositories"
             }
         },
         "/v1/repositories/{id}": {
@@ -4824,8 +5038,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "repositories:write",
-                            "repositories:read"
+                            "repositories:read",
+                            "repositories:write"
                         ]
                     },
                     {
@@ -4886,7 +5100,8 @@
                     "Anonymous",
                     "Organization",
                     "User"
-                ]
+                ],
+                "x-speakeasy-group": "repositories"
             },
             "patch": {
                 "tags": [
@@ -4980,7 +5195,8 @@
                 "x-polar-allowed-subjects": [
                     "Organization",
                     "User"
-                ]
+                ],
+                "x-speakeasy-group": "repositories"
             }
         },
         "/v1/rewards/search": {
@@ -5082,7 +5298,28 @@
                 },
                 "x-polar-allowed-subjects": [
                     "User"
-                ]
+                ],
+                "x-speakeasy-pagination": {
+                    "type": "offsetLimit",
+                    "inputs": [
+                        {
+                            "name": "page",
+                            "in": "parameters",
+                            "type": "page"
+                        },
+                        {
+                            "name": "limit",
+                            "in": "parameters",
+                            "type": "limit"
+                        }
+                    ],
+                    "outputs": {
+                        "results": "$.items",
+                        "numPages": "$.pagination.max_page"
+                    }
+                },
+                "x-speakeasy-group": "rewards",
+                "x-speakeasy-ignore": true
             }
         },
         "/v1/rewards/summary": {
@@ -5138,7 +5375,9 @@
                 "x-polar-allowed-subjects": [
                     "Anonymous",
                     "User"
-                ]
+                ],
+                "x-speakeasy-group": "rewards",
+                "x-speakeasy-ignore": true
             }
         },
         "/v1/personal_access_tokens/": {
@@ -5209,7 +5448,28 @@
                 },
                 "x-polar-allowed-subjects": [
                     "User"
-                ]
+                ],
+                "x-speakeasy-pagination": {
+                    "type": "offsetLimit",
+                    "inputs": [
+                        {
+                            "name": "page",
+                            "in": "parameters",
+                            "type": "page"
+                        },
+                        {
+                            "name": "limit",
+                            "in": "parameters",
+                            "type": "limit"
+                        }
+                    ],
+                    "outputs": {
+                        "results": "$.items",
+                        "numPages": "$.pagination.max_page"
+                    }
+                },
+                "x-speakeasy-group": "personal_access_token",
+                "x-speakeasy-ignore": true
             },
             "post": {
                 "tags": [
@@ -5259,7 +5519,9 @@
                 },
                 "x-polar-allowed-subjects": [
                     "User"
-                ]
+                ],
+                "x-speakeasy-group": "personal_access_token",
+                "x-speakeasy-ignore": true
             }
         },
         "/v1/personal_access_tokens/{id}": {
@@ -5306,7 +5568,9 @@
                 },
                 "x-polar-allowed-subjects": [
                     "User"
-                ]
+                ],
+                "x-speakeasy-group": "personal_access_token",
+                "x-speakeasy-ignore": true
             }
         },
         "/v1/payment_methods": {
@@ -5338,7 +5602,28 @@
                 ],
                 "x-polar-allowed-subjects": [
                     "User"
-                ]
+                ],
+                "x-speakeasy-pagination": {
+                    "type": "offsetLimit",
+                    "inputs": [
+                        {
+                            "name": "page",
+                            "in": "parameters",
+                            "type": "page"
+                        },
+                        {
+                            "name": "limit",
+                            "in": "parameters",
+                            "type": "limit"
+                        }
+                    ],
+                    "outputs": {
+                        "results": "$.items",
+                        "numPages": "$.pagination.max_page"
+                    }
+                },
+                "x-speakeasy-group": "payment_methods",
+                "x-speakeasy-ignore": true
             }
         },
         "/v1/payment_methods/{id}/detach": {
@@ -5391,7 +5676,9 @@
                 },
                 "x-polar-allowed-subjects": [
                     "User"
-                ]
+                ],
+                "x-speakeasy-group": "payment_methods",
+                "x-speakeasy-ignore": true
             }
         },
         "/v1/pull_requests/search": {
@@ -5459,7 +5746,28 @@
                 "x-polar-allowed-subjects": [
                     "Anonymous",
                     "User"
-                ]
+                ],
+                "x-speakeasy-pagination": {
+                    "type": "offsetLimit",
+                    "inputs": [
+                        {
+                            "name": "page",
+                            "in": "parameters",
+                            "type": "page"
+                        },
+                        {
+                            "name": "limit",
+                            "in": "parameters",
+                            "type": "limit"
+                        }
+                    ],
+                    "outputs": {
+                        "results": "$.items",
+                        "numPages": "$.pagination.max_page"
+                    }
+                },
+                "x-speakeasy-group": "pull_requests",
+                "x-speakeasy-ignore": true
             }
         },
         "/v1/accounts/search": {
@@ -5529,7 +5837,28 @@
                 },
                 "x-polar-allowed-subjects": [
                     "User"
-                ]
+                ],
+                "x-speakeasy-pagination": {
+                    "type": "offsetLimit",
+                    "inputs": [
+                        {
+                            "name": "page",
+                            "in": "parameters",
+                            "type": "page"
+                        },
+                        {
+                            "name": "limit",
+                            "in": "parameters",
+                            "type": "limit"
+                        }
+                    ],
+                    "outputs": {
+                        "results": "$.items",
+                        "numPages": "$.pagination.max_page"
+                    }
+                },
+                "x-speakeasy-group": "accounts",
+                "x-speakeasy-ignore": true
             }
         },
         "/v1/accounts/{id}": {
@@ -5583,7 +5912,9 @@
                 },
                 "x-polar-allowed-subjects": [
                     "User"
-                ]
+                ],
+                "x-speakeasy-group": "accounts",
+                "x-speakeasy-ignore": true
             }
         },
         "/v1/accounts/{id}/onboarding_link": {
@@ -5646,7 +5977,9 @@
                 },
                 "x-polar-allowed-subjects": [
                     "User"
-                ]
+                ],
+                "x-speakeasy-group": "accounts",
+                "x-speakeasy-ignore": true
             }
         },
         "/v1/accounts/{id}/dashboard_link": {
@@ -5700,7 +6033,9 @@
                 },
                 "x-polar-allowed-subjects": [
                     "User"
-                ]
+                ],
+                "x-speakeasy-group": "accounts",
+                "x-speakeasy-ignore": true
             }
         },
         "/v1/accounts": {
@@ -5752,7 +6087,9 @@
                 ],
                 "x-polar-allowed-subjects": [
                     "User"
-                ]
+                ],
+                "x-speakeasy-group": "accounts",
+                "x-speakeasy-ignore": true
             }
         },
         "/v1/issues/": {
@@ -5766,8 +6103,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "issues:read",
-                            "issues:write"
+                            "issues:write",
+                            "issues:read"
                         ]
                     },
                     {
@@ -5962,7 +6299,7 @@
                                 {
                                     "type": "array",
                                     "items": {
-                                        "type": "string"
+                                        "$ref": "#/components/schemas/IssueSortProperty"
                                     }
                                 },
                                 {
@@ -5970,19 +6307,6 @@
                                 }
                             ],
                             "description": "Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.",
-                            "type": "string",
-                            "enum": [
-                                "created_at",
-                                "-created_at",
-                                "modified_at",
-                                "-modified_at",
-                                "engagement",
-                                "-engagement",
-                                "positive_reactions",
-                                "-positive_reactions",
-                                "funding_goal",
-                                "-funding_goal"
-                            ],
                             "default": [
                                 "-modified_at"
                             ],
@@ -6020,7 +6344,28 @@
                     "Anonymous",
                     "Organization",
                     "User"
-                ]
+                ],
+                "x-speakeasy-pagination": {
+                    "type": "offsetLimit",
+                    "inputs": [
+                        {
+                            "name": "page",
+                            "in": "parameters",
+                            "type": "page"
+                        },
+                        {
+                            "name": "limit",
+                            "in": "parameters",
+                            "type": "limit"
+                        }
+                    ],
+                    "outputs": {
+                        "results": "$.items",
+                        "numPages": "$.pagination.max_page"
+                    }
+                },
+                "x-speakeasy-group": "issues",
+                "x-speakeasy-ignore": true
             }
         },
         "/v1/issues/lookup": {
@@ -6086,7 +6431,9 @@
                 "x-polar-allowed-subjects": [
                     "Anonymous",
                     "User"
-                ]
+                ],
+                "x-speakeasy-group": "issues",
+                "x-speakeasy-ignore": true
             }
         },
         "/v1/issues/{id}/body": {
@@ -6139,7 +6486,9 @@
                 "x-polar-allowed-subjects": [
                     "Anonymous",
                     "User"
-                ]
+                ],
+                "x-speakeasy-group": "issues",
+                "x-speakeasy-ignore": true
             }
         },
         "/v1/issues/for_you": {
@@ -6171,7 +6520,28 @@
                 ],
                 "x-polar-allowed-subjects": [
                     "User"
-                ]
+                ],
+                "x-speakeasy-pagination": {
+                    "type": "offsetLimit",
+                    "inputs": [
+                        {
+                            "name": "page",
+                            "in": "parameters",
+                            "type": "page"
+                        },
+                        {
+                            "name": "limit",
+                            "in": "parameters",
+                            "type": "limit"
+                        }
+                    ],
+                    "outputs": {
+                        "results": "$.items",
+                        "numPages": "$.pagination.max_page"
+                    }
+                },
+                "x-speakeasy-group": "issues",
+                "x-speakeasy-ignore": true
             }
         },
         "/v1/issues/{id}": {
@@ -6227,7 +6597,9 @@
                 "x-polar-allowed-subjects": [
                     "Anonymous",
                     "User"
-                ]
+                ],
+                "x-speakeasy-group": "issues",
+                "x-speakeasy-ignore": true
             },
             "post": {
                 "tags": [
@@ -6290,7 +6662,9 @@
                 },
                 "x-polar-allowed-subjects": [
                     "User"
-                ]
+                ],
+                "x-speakeasy-group": "issues",
+                "x-speakeasy-ignore": true
             }
         },
         "/v1/issues/{id}/confirm_solved": {
@@ -6355,7 +6729,9 @@
                 },
                 "x-polar-allowed-subjects": [
                     "User"
-                ]
+                ],
+                "x-speakeasy-group": "issues",
+                "x-speakeasy-ignore": true
             }
         },
         "/v1/issues/{id}/add_badge": {
@@ -6409,7 +6785,9 @@
                 },
                 "x-polar-allowed-subjects": [
                     "User"
-                ]
+                ],
+                "x-speakeasy-group": "issues",
+                "x-speakeasy-ignore": true
             }
         },
         "/v1/issues/{id}/remove_badge": {
@@ -6463,7 +6841,9 @@
                 },
                 "x-polar-allowed-subjects": [
                     "User"
-                ]
+                ],
+                "x-speakeasy-group": "issues",
+                "x-speakeasy-ignore": true
             }
         },
         "/v1/issues/{id}/comment": {
@@ -6527,7 +6907,9 @@
                 },
                 "x-polar-allowed-subjects": [
                     "User"
-                ]
+                ],
+                "x-speakeasy-group": "issues",
+                "x-speakeasy-ignore": true
             }
         },
         "/v1/issues/{id}/badge_with_message": {
@@ -6591,7 +6973,9 @@
                 },
                 "x-polar-allowed-subjects": [
                     "User"
-                ]
+                ],
+                "x-speakeasy-group": "issues",
+                "x-speakeasy-ignore": true
             }
         },
         "/v1/pledges/search": {
@@ -6741,7 +7125,28 @@
                 "x-polar-allowed-subjects": [
                     "Anonymous",
                     "User"
-                ]
+                ],
+                "x-speakeasy-pagination": {
+                    "type": "offsetLimit",
+                    "inputs": [
+                        {
+                            "name": "page",
+                            "in": "parameters",
+                            "type": "page"
+                        },
+                        {
+                            "name": "limit",
+                            "in": "parameters",
+                            "type": "limit"
+                        }
+                    ],
+                    "outputs": {
+                        "results": "$.items",
+                        "numPages": "$.pagination.max_page"
+                    }
+                },
+                "x-speakeasy-group": "pledges",
+                "x-speakeasy-ignore": true
             }
         },
         "/v1/pledges/summary": {
@@ -6797,7 +7202,9 @@
                 "x-polar-allowed-subjects": [
                     "Anonymous",
                     "User"
-                ]
+                ],
+                "x-speakeasy-group": "pledges",
+                "x-speakeasy-ignore": true
             }
         },
         "/v1/pledges/spending": {
@@ -6854,7 +7261,9 @@
                 },
                 "x-polar-allowed-subjects": [
                     "User"
-                ]
+                ],
+                "x-speakeasy-group": "pledges",
+                "x-speakeasy-ignore": true
             }
         },
         "/v1/pledges/{id}": {
@@ -6909,7 +7318,9 @@
                 },
                 "x-polar-allowed-subjects": [
                     "User"
-                ]
+                ],
+                "x-speakeasy-group": "pledges",
+                "x-speakeasy-ignore": true
             }
         },
         "/v1/pledges": {
@@ -6963,7 +7374,9 @@
                 "x-polar-allowed-subjects": [
                     "Anonymous",
                     "User"
-                ]
+                ],
+                "x-speakeasy-group": "pledges",
+                "x-speakeasy-ignore": true
             }
         },
         "/v1/pledges/pay_on_completion": {
@@ -7016,7 +7429,9 @@
                 ],
                 "x-polar-allowed-subjects": [
                     "User"
-                ]
+                ],
+                "x-speakeasy-group": "pledges",
+                "x-speakeasy-ignore": true
             }
         },
         "/v1/pledges/{id}/create_invoice": {
@@ -7071,7 +7486,9 @@
                 },
                 "x-polar-allowed-subjects": [
                     "User"
-                ]
+                ],
+                "x-speakeasy-group": "pledges",
+                "x-speakeasy-ignore": true
             }
         },
         "/v1/pledges/payment_intent": {
@@ -7124,7 +7541,9 @@
                 "x-polar-allowed-subjects": [
                     "Anonymous",
                     "User"
-                ]
+                ],
+                "x-speakeasy-group": "pledges",
+                "x-speakeasy-ignore": true
             }
         },
         "/v1/pledges/payment_intent/{id}": {
@@ -7188,7 +7607,9 @@
                 "x-polar-allowed-subjects": [
                     "Anonymous",
                     "User"
-                ]
+                ],
+                "x-speakeasy-group": "pledges",
+                "x-speakeasy-ignore": true
             }
         },
         "/v1/pledges/{pledge_id}/dispute": {
@@ -7251,7 +7672,9 @@
                 },
                 "x-polar-allowed-subjects": [
                     "User"
-                ]
+                ],
+                "x-speakeasy-group": "pledges",
+                "x-speakeasy-ignore": true
             }
         },
         "/v1/organizations/": {
@@ -7267,8 +7690,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "organizations:read",
-                            "organizations:write"
+                            "organizations:write",
+                            "organizations:read"
                         ]
                     },
                     {
@@ -7347,7 +7770,7 @@
                                 {
                                     "type": "array",
                                     "items": {
-                                        "type": "string"
+                                        "$ref": "#/components/schemas/OrganizationSortProperty"
                                     }
                                 },
                                 {
@@ -7355,13 +7778,6 @@
                                 }
                             ],
                             "description": "Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.",
-                            "type": "string",
-                            "enum": [
-                                "created_at",
-                                "-created_at",
-                                "name",
-                                "-name"
-                            ],
                             "default": [
                                 "created_at"
                             ],
@@ -7395,7 +7811,27 @@
                 "x-polar-allowed-subjects": [
                     "Organization",
                     "User"
-                ]
+                ],
+                "x-speakeasy-pagination": {
+                    "type": "offsetLimit",
+                    "inputs": [
+                        {
+                            "name": "page",
+                            "in": "parameters",
+                            "type": "page"
+                        },
+                        {
+                            "name": "limit",
+                            "in": "parameters",
+                            "type": "limit"
+                        }
+                    ],
+                    "outputs": {
+                        "results": "$.items",
+                        "numPages": "$.pagination.max_page"
+                    }
+                },
+                "x-speakeasy-group": "organizations"
             },
             "post": {
                 "tags": [
@@ -7450,7 +7886,8 @@
                 },
                 "x-polar-allowed-subjects": [
                     "User"
-                ]
+                ],
+                "x-speakeasy-group": "organizations"
             }
         },
         "/v1/organizations/{id}": {
@@ -7466,8 +7903,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "organizations:read",
-                            "organizations:write"
+                            "organizations:write",
+                            "organizations:read"
                         ]
                     },
                     {
@@ -7527,7 +7964,8 @@
                 "x-polar-allowed-subjects": [
                     "Organization",
                     "User"
-                ]
+                ],
+                "x-speakeasy-group": "organizations"
             },
             "patch": {
                 "tags": [
@@ -7621,7 +8059,8 @@
                 "x-polar-allowed-subjects": [
                     "Organization",
                     "User"
-                ]
+                ],
+                "x-speakeasy-group": "organizations"
             }
         },
         "/v1/organizations/{id}/customers": {
@@ -7636,8 +8075,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "organizations:read",
-                            "organizations:write"
+                            "organizations:write",
+                            "organizations:read"
                         ]
                     },
                     {
@@ -7674,9 +8113,9 @@
                             "description": "Filter by the type of purchase the customer made.",
                             "default": [
                                 "order",
+                                "donation",
                                 "paid_subscription",
-                                "free_subscription",
-                                "donation"
+                                "free_subscription"
                             ],
                             "title": "Customer Types"
                         },
@@ -7744,7 +8183,27 @@
                 "x-polar-allowed-subjects": [
                     "Organization",
                     "User"
-                ]
+                ],
+                "x-speakeasy-pagination": {
+                    "type": "offsetLimit",
+                    "inputs": [
+                        {
+                            "name": "page",
+                            "in": "parameters",
+                            "type": "page"
+                        },
+                        {
+                            "name": "limit",
+                            "in": "parameters",
+                            "type": "limit"
+                        }
+                    ],
+                    "outputs": {
+                        "results": "$.items",
+                        "numPages": "$.pagination.max_page"
+                    }
+                },
+                "x-speakeasy-group": "organizations"
             }
         },
         "/v1/organizations/{id}/account": {
@@ -7828,7 +8287,9 @@
                 "x-polar-allowed-subjects": [
                     "Organization",
                     "User"
-                ]
+                ],
+                "x-speakeasy-group": "organizations",
+                "x-speakeasy-ignore": true
             },
             "patch": {
                 "tags": [
@@ -7920,7 +8381,9 @@
                 "x-polar-allowed-subjects": [
                     "Organization",
                     "User"
-                ]
+                ],
+                "x-speakeasy-group": "organizations",
+                "x-speakeasy-ignore": true
             }
         },
         "/v1/organizations/{id}/members": {
@@ -7985,7 +8448,28 @@
                 "x-polar-allowed-subjects": [
                     "Organization",
                     "User"
-                ]
+                ],
+                "x-speakeasy-pagination": {
+                    "type": "offsetLimit",
+                    "inputs": [
+                        {
+                            "name": "page",
+                            "in": "parameters",
+                            "type": "page"
+                        },
+                        {
+                            "name": "limit",
+                            "in": "parameters",
+                            "type": "limit"
+                        }
+                    ],
+                    "outputs": {
+                        "results": "$.items",
+                        "numPages": "$.pagination.max_page"
+                    }
+                },
+                "x-speakeasy-group": "organizations",
+                "x-speakeasy-ignore": true
             }
         },
         "/v1/organizations/{id}/stripe_customer_portal": {
@@ -8043,7 +8527,9 @@
                 "x-polar-allowed-subjects": [
                     "Organization",
                     "User"
-                ]
+                ],
+                "x-speakeasy-group": "organizations",
+                "x-speakeasy-ignore": true
             }
         },
         "/v1/organizations/{id}/badge_settings": {
@@ -8101,7 +8587,9 @@
                 "x-polar-allowed-subjects": [
                     "Organization",
                     "User"
-                ]
+                ],
+                "x-speakeasy-group": "organizations",
+                "x-speakeasy-ignore": true
             },
             "post": {
                 "tags": [
@@ -8167,7 +8655,9 @@
                 "x-polar-allowed-subjects": [
                     "Organization",
                     "User"
-                ]
+                ],
+                "x-speakeasy-group": "organizations",
+                "x-speakeasy-ignore": true
             }
         },
         "/v1/subscriptions/": {
@@ -8345,7 +8835,7 @@
                                 {
                                     "type": "array",
                                     "items": {
-                                        "type": "string"
+                                        "$ref": "#/components/schemas/SubscriptionSortProperty"
                                     }
                                 },
                                 {
@@ -8353,23 +8843,6 @@
                                 }
                             ],
                             "description": "Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.",
-                            "type": "string",
-                            "enum": [
-                                "user",
-                                "-user",
-                                "status",
-                                "-status",
-                                "started_at",
-                                "-started_at",
-                                "current_period_end",
-                                "-current_period_end",
-                                "price_amount",
-                                "-price_amount",
-                                "subscription_tier_type",
-                                "-subscription_tier_type",
-                                "product",
-                                "-product"
-                            ],
                             "default": [
                                 "-started_at"
                             ],
@@ -8403,7 +8876,27 @@
                 "x-polar-allowed-subjects": [
                     "Organization",
                     "User"
-                ]
+                ],
+                "x-speakeasy-pagination": {
+                    "type": "offsetLimit",
+                    "inputs": [
+                        {
+                            "name": "page",
+                            "in": "parameters",
+                            "type": "page"
+                        },
+                        {
+                            "name": "limit",
+                            "in": "parameters",
+                            "type": "limit"
+                        }
+                    ],
+                    "outputs": {
+                        "results": "$.items",
+                        "numPages": "$.pagination.max_page"
+                    }
+                },
+                "x-speakeasy-group": "subscriptions"
             },
             "post": {
                 "tags": [
@@ -8458,7 +8951,8 @@
                 "x-polar-allowed-subjects": [
                     "Organization",
                     "User"
-                ]
+                ],
+                "x-speakeasy-group": "subscriptions"
             }
         },
         "/v1/subscriptions/import": {
@@ -8515,7 +9009,8 @@
                 "x-polar-allowed-subjects": [
                     "Organization",
                     "User"
-                ]
+                ],
+                "x-speakeasy-group": "subscriptions"
             }
         },
         "/v1/subscriptions/export": {
@@ -8601,7 +9096,8 @@
                 "x-polar-allowed-subjects": [
                     "Organization",
                     "User"
-                ]
+                ],
+                "x-speakeasy-group": "subscriptions"
             }
         },
         "/v1/articles/": {
@@ -8812,7 +9308,27 @@
                     "Anonymous",
                     "Organization",
                     "User"
-                ]
+                ],
+                "x-speakeasy-pagination": {
+                    "type": "offsetLimit",
+                    "inputs": [
+                        {
+                            "name": "page",
+                            "in": "parameters",
+                            "type": "page"
+                        },
+                        {
+                            "name": "limit",
+                            "in": "parameters",
+                            "type": "limit"
+                        }
+                    ],
+                    "outputs": {
+                        "results": "$.items",
+                        "numPages": "$.pagination.max_page"
+                    }
+                },
+                "x-speakeasy-group": "articles"
             },
             "post": {
                 "tags": [
@@ -8868,7 +9384,8 @@
                 "x-polar-allowed-subjects": [
                     "Organization",
                     "User"
-                ]
+                ],
+                "x-speakeasy-group": "articles"
             }
         },
         "/v1/articles/{id}": {
@@ -8945,7 +9462,8 @@
                     "Anonymous",
                     "Organization",
                     "User"
-                ]
+                ],
+                "x-speakeasy-group": "articles"
             },
             "patch": {
                 "tags": [
@@ -9039,7 +9557,8 @@
                 "x-polar-allowed-subjects": [
                     "Organization",
                     "User"
-                ]
+                ],
+                "x-speakeasy-group": "articles"
             },
             "delete": {
                 "tags": [
@@ -9116,7 +9635,8 @@
                 "x-polar-allowed-subjects": [
                     "Organization",
                     "User"
-                ]
+                ],
+                "x-speakeasy-group": "articles"
             }
         },
         "/v1/articles/{id}/receivers": {
@@ -9182,7 +9702,8 @@
                 "x-polar-allowed-subjects": [
                     "Organization",
                     "User"
-                ]
+                ],
+                "x-speakeasy-group": "articles"
             }
         },
         "/v1/articles/{id}/preview": {
@@ -9276,7 +9797,8 @@
                 "x-polar-allowed-subjects": [
                     "Organization",
                     "User"
-                ]
+                ],
+                "x-speakeasy-group": "articles"
             }
         },
         "/v1/articles/{id}/send": {
@@ -9363,7 +9885,8 @@
                 "x-polar-allowed-subjects": [
                     "Organization",
                     "User"
-                ]
+                ],
+                "x-speakeasy-group": "articles"
             }
         },
         "/v1/articles/unsubscribe": {
@@ -9401,7 +9924,8 @@
                             }
                         }
                     }
-                }
+                },
+                "x-speakeasy-group": "articles"
             }
         },
         "/v1/transactions/search": {
@@ -9532,7 +10056,7 @@
                                 {
                                     "type": "array",
                                     "items": {
-                                        "type": "string"
+                                        "$ref": "#/components/schemas/TransactionSortProperty"
                                     }
                                 },
                                 {
@@ -9540,13 +10064,6 @@
                                 }
                             ],
                             "description": "Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.",
-                            "type": "string",
-                            "enum": [
-                                "created_at",
-                                "-created_at",
-                                "amount",
-                                "-amount"
-                            ],
                             "default": [
                                 "-created_at"
                             ],
@@ -9579,7 +10096,28 @@
                 },
                 "x-polar-allowed-subjects": [
                     "User"
-                ]
+                ],
+                "x-speakeasy-pagination": {
+                    "type": "offsetLimit",
+                    "inputs": [
+                        {
+                            "name": "page",
+                            "in": "parameters",
+                            "type": "page"
+                        },
+                        {
+                            "name": "limit",
+                            "in": "parameters",
+                            "type": "limit"
+                        }
+                    ],
+                    "outputs": {
+                        "results": "$.items",
+                        "numPages": "$.pagination.max_page"
+                    }
+                },
+                "x-speakeasy-group": "transactions",
+                "x-speakeasy-ignore": true
             }
         },
         "/v1/transactions/lookup": {
@@ -9633,7 +10171,9 @@
                 },
                 "x-polar-allowed-subjects": [
                     "User"
-                ]
+                ],
+                "x-speakeasy-group": "transactions",
+                "x-speakeasy-ignore": true
             }
         },
         "/v1/transactions/summary": {
@@ -9687,7 +10227,9 @@
                 },
                 "x-polar-allowed-subjects": [
                     "User"
-                ]
+                ],
+                "x-speakeasy-group": "transactions",
+                "x-speakeasy-ignore": true
             }
         },
         "/v1/transactions/payouts": {
@@ -9741,7 +10283,9 @@
                 },
                 "x-polar-allowed-subjects": [
                     "User"
-                ]
+                ],
+                "x-speakeasy-group": "transactions",
+                "x-speakeasy-ignore": true
             },
             "post": {
                 "tags": [
@@ -9791,7 +10335,9 @@
                 },
                 "x-polar-allowed-subjects": [
                     "User"
-                ]
+                ],
+                "x-speakeasy-group": "transactions",
+                "x-speakeasy-ignore": true
             }
         },
         "/v1/transactions/payouts/{id}/csv": {
@@ -9843,7 +10389,9 @@
                 },
                 "x-polar-allowed-subjects": [
                     "User"
-                ]
+                ],
+                "x-speakeasy-group": "transactions",
+                "x-speakeasy-ignore": true
             }
         },
         "/v1/advertisements/": {
@@ -9907,7 +10455,7 @@
                                 {
                                     "type": "array",
                                     "items": {
-                                        "type": "string"
+                                        "$ref": "#/components/schemas/AdvertisementSortProperty"
                                     }
                                 },
                                 {
@@ -9915,17 +10463,6 @@
                                 }
                             ],
                             "description": "Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.",
-                            "type": "string",
-                            "enum": [
-                                "created_at",
-                                "-created_at",
-                                "granted_at",
-                                "-granted_at",
-                                "views",
-                                "-views",
-                                "clicks",
-                                "-clicks"
-                            ],
                             "default": [
                                 "granted_at"
                             ],
@@ -9955,7 +10492,27 @@
                             }
                         }
                     }
-                }
+                },
+                "x-speakeasy-pagination": {
+                    "type": "offsetLimit",
+                    "inputs": [
+                        {
+                            "name": "page",
+                            "in": "parameters",
+                            "type": "page"
+                        },
+                        {
+                            "name": "limit",
+                            "in": "parameters",
+                            "type": "limit"
+                        }
+                    ],
+                    "outputs": {
+                        "results": "$.items",
+                        "numPages": "$.pagination.max_page"
+                    }
+                },
+                "x-speakeasy-group": "advertisements"
             }
         },
         "/v1/advertisements/{id}": {
@@ -10012,7 +10569,8 @@
                             }
                         }
                     }
-                }
+                },
+                "x-speakeasy-group": "advertisements"
             }
         },
         "/v1/advertisements/{id}/view": {
@@ -10062,7 +10620,8 @@
                             }
                         }
                     }
-                }
+                },
+                "x-speakeasy-group": "advertisements"
             }
         },
         "/v1/traffic/track_page_view": {
@@ -10103,7 +10662,9 @@
                             }
                         }
                     }
-                }
+                },
+                "x-speakeasy-group": "traffic",
+                "x-speakeasy-ignore": true
             }
         },
         "/v1/traffic/statistics": {
@@ -10231,7 +10792,9 @@
                 },
                 "x-polar-allowed-subjects": [
                     "User"
-                ]
+                ],
+                "x-speakeasy-group": "traffic",
+                "x-speakeasy-ignore": true
             }
         },
         "/v1/traffic/referrers": {
@@ -10331,7 +10894,28 @@
                 },
                 "x-polar-allowed-subjects": [
                     "User"
-                ]
+                ],
+                "x-speakeasy-pagination": {
+                    "type": "offsetLimit",
+                    "inputs": [
+                        {
+                            "name": "page",
+                            "in": "parameters",
+                            "type": "page"
+                        },
+                        {
+                            "name": "limit",
+                            "in": "parameters",
+                            "type": "limit"
+                        }
+                    ],
+                    "outputs": {
+                        "results": "$.items",
+                        "numPages": "$.pagination.max_page"
+                    }
+                },
+                "x-speakeasy-group": "traffic",
+                "x-speakeasy-ignore": true
             }
         },
         "/v1/auth/logout": {
@@ -10350,7 +10934,9 @@
                             }
                         }
                     }
-                }
+                },
+                "x-speakeasy-group": "auth",
+                "x-speakeasy-ignore": true
             }
         },
         "/v1/donations/search": {
@@ -10414,7 +11000,7 @@
                                 {
                                     "type": "array",
                                     "items": {
-                                        "type": "string"
+                                        "$ref": "#/components/schemas/DonationSortProperty"
                                     }
                                 },
                                 {
@@ -10422,13 +11008,6 @@
                                 }
                             ],
                             "description": "Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.",
-                            "type": "string",
-                            "enum": [
-                                "amount",
-                                "-amount",
-                                "created_at",
-                                "-created_at"
-                            ],
                             "default": [
                                 "-created_at"
                             ],
@@ -10461,7 +11040,28 @@
                 },
                 "x-polar-allowed-subjects": [
                     "User"
-                ]
+                ],
+                "x-speakeasy-pagination": {
+                    "type": "offsetLimit",
+                    "inputs": [
+                        {
+                            "name": "page",
+                            "in": "parameters",
+                            "type": "page"
+                        },
+                        {
+                            "name": "limit",
+                            "in": "parameters",
+                            "type": "limit"
+                        }
+                    ],
+                    "outputs": {
+                        "results": "$.items",
+                        "numPages": "$.pagination.max_page"
+                    }
+                },
+                "x-speakeasy-group": "donations",
+                "x-speakeasy-ignore": true
             }
         },
         "/v1/donations/payment_intent": {
@@ -10514,7 +11114,9 @@
                 "x-polar-allowed-subjects": [
                     "Anonymous",
                     "User"
-                ]
+                ],
+                "x-speakeasy-group": "donations",
+                "x-speakeasy-ignore": true
             }
         },
         "/v1/donations/payment_intent/{id}": {
@@ -10578,7 +11180,9 @@
                 "x-polar-allowed-subjects": [
                     "Anonymous",
                     "User"
-                ]
+                ],
+                "x-speakeasy-group": "donations",
+                "x-speakeasy-ignore": true
             }
         },
         "/v1/donations/statistics": {
@@ -10666,7 +11270,9 @@
                 },
                 "x-polar-allowed-subjects": [
                     "User"
-                ]
+                ],
+                "x-speakeasy-group": "donations",
+                "x-speakeasy-ignore": true
             }
         },
         "/v1/donations/public/search": {
@@ -10728,7 +11334,7 @@
                                 {
                                     "type": "array",
                                     "items": {
-                                        "type": "string"
+                                        "$ref": "#/components/schemas/DonationSortProperty"
                                     }
                                 },
                                 {
@@ -10736,13 +11342,6 @@
                                 }
                             ],
                             "description": "Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.",
-                            "type": "string",
-                            "enum": [
-                                "amount",
-                                "-amount",
-                                "created_at",
-                                "-created_at"
-                            ],
                             "default": [
                                 "-created_at"
                             ],
@@ -10772,7 +11371,28 @@
                             }
                         }
                     }
-                }
+                },
+                "x-speakeasy-pagination": {
+                    "type": "offsetLimit",
+                    "inputs": [
+                        {
+                            "name": "page",
+                            "in": "parameters",
+                            "type": "page"
+                        },
+                        {
+                            "name": "limit",
+                            "in": "parameters",
+                            "type": "limit"
+                        }
+                    ],
+                    "outputs": {
+                        "results": "$.items",
+                        "numPages": "$.pagination.max_page"
+                    }
+                },
+                "x-speakeasy-group": "donations",
+                "x-speakeasy-ignore": true
             }
         },
         "/v1/oauth2/": {
@@ -10844,7 +11464,27 @@
                 },
                 "x-polar-allowed-subjects": [
                     "User"
-                ]
+                ],
+                "x-speakeasy-pagination": {
+                    "type": "offsetLimit",
+                    "inputs": [
+                        {
+                            "name": "page",
+                            "in": "parameters",
+                            "type": "page"
+                        },
+                        {
+                            "name": "limit",
+                            "in": "parameters",
+                            "type": "limit"
+                        }
+                    ],
+                    "outputs": {
+                        "results": "$.items",
+                        "numPages": "$.pagination.max_page"
+                    }
+                },
+                "x-speakeasy-group": "oauth2"
             }
         },
         "/v1/oauth2/register": {
@@ -10896,7 +11536,8 @@
                 ],
                 "x-polar-allowed-subjects": [
                     "User"
-                ]
+                ],
+                "x-speakeasy-group": "oauth2"
             }
         },
         "/v1/oauth2/register/{client_id}": {
@@ -10950,7 +11591,8 @@
                 "x-polar-allowed-subjects": [
                     "Anonymous",
                     "User"
-                ]
+                ],
+                "x-speakeasy-group": "oauth2"
             },
             "put": {
                 "tags": [
@@ -11012,7 +11654,8 @@
                 "x-polar-allowed-subjects": [
                     "Anonymous",
                     "User"
-                ]
+                ],
+                "x-speakeasy-group": "oauth2"
             },
             "delete": {
                 "tags": [
@@ -11064,7 +11707,8 @@
                 "x-polar-allowed-subjects": [
                     "Anonymous",
                     "User"
-                ]
+                ],
+                "x-speakeasy-group": "oauth2"
             }
         },
         "/v1/oauth2/authorize": {
@@ -11113,7 +11757,8 @@
                 "x-polar-allowed-subjects": [
                     "Anonymous",
                     "User"
-                ]
+                ],
+                "x-speakeasy-group": "oauth2"
             }
         },
         "/v1/oauth2/consent": {
@@ -11164,7 +11809,8 @@
                 ],
                 "x-polar-allowed-subjects": [
                     "User"
-                ]
+                ],
+                "x-speakeasy-group": "oauth2"
             }
         },
         "/v1/oauth2/token": {
@@ -11286,7 +11932,8 @@
                         "title": "RefreshTokenRequest",
                         "type": "object"
                     }
-                }
+                },
+                "x-speakeasy-group": "oauth2"
             }
         },
         "/v1/oauth2/revoke": {
@@ -11355,7 +12002,8 @@
                             }
                         }
                     }
-                }
+                },
+                "x-speakeasy-group": "oauth2"
             }
         },
         "/v1/oauth2/introspect": {
@@ -11424,7 +12072,8 @@
                             }
                         }
                     }
-                }
+                },
+                "x-speakeasy-group": "oauth2"
             }
         },
         "/v1/oauth2/userinfo": {
@@ -11461,7 +12110,8 @@
                     {
                         "OpenIdConnect": []
                     }
-                ]
+                ],
+                "x-speakeasy-group": "oauth2"
             }
         },
         "/v1/benefits/": {
@@ -11476,8 +12126,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "benefits:write",
-                            "benefits:read"
+                            "benefits:read",
+                            "benefits:write"
                         ]
                     },
                     {
@@ -11599,7 +12249,27 @@
                 "x-polar-allowed-subjects": [
                     "Organization",
                     "User"
-                ]
+                ],
+                "x-speakeasy-pagination": {
+                    "type": "offsetLimit",
+                    "inputs": [
+                        {
+                            "name": "page",
+                            "in": "parameters",
+                            "type": "page"
+                        },
+                        {
+                            "name": "limit",
+                            "in": "parameters",
+                            "type": "limit"
+                        }
+                    ],
+                    "outputs": {
+                        "results": "$.items",
+                        "numPages": "$.pagination.max_page"
+                    }
+                },
+                "x-speakeasy-group": "benefits"
             },
             "post": {
                 "tags": [
@@ -11701,7 +12371,8 @@
                 "x-polar-allowed-subjects": [
                     "Organization",
                     "User"
-                ]
+                ],
+                "x-speakeasy-group": "benefits"
             }
         },
         "/v1/benefits/{id}": {
@@ -11716,8 +12387,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "benefits:write",
-                            "benefits:read"
+                            "benefits:read",
+                            "benefits:write"
                         ]
                     },
                     {
@@ -11797,7 +12468,8 @@
                 "x-polar-allowed-subjects": [
                     "Organization",
                     "User"
-                ]
+                ],
+                "x-speakeasy-group": "benefits"
             },
             "patch": {
                 "tags": [
@@ -11930,7 +12602,8 @@
                 "x-polar-allowed-subjects": [
                     "Organization",
                     "User"
-                ]
+                ],
+                "x-speakeasy-group": "benefits"
             },
             "delete": {
                 "tags": [
@@ -12006,7 +12679,8 @@
                 "x-polar-allowed-subjects": [
                     "Organization",
                     "User"
-                ]
+                ],
+                "x-speakeasy-group": "benefits"
             }
         },
         "/v1/benefits/{id}/grants": {
@@ -12021,8 +12695,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "benefits:write",
-                            "benefits:read"
+                            "benefits:read",
+                            "benefits:write"
                         ]
                     },
                     {
@@ -12163,7 +12837,27 @@
                 "x-polar-allowed-subjects": [
                     "Organization",
                     "User"
-                ]
+                ],
+                "x-speakeasy-pagination": {
+                    "type": "offsetLimit",
+                    "inputs": [
+                        {
+                            "name": "page",
+                            "in": "parameters",
+                            "type": "page"
+                        },
+                        {
+                            "name": "limit",
+                            "in": "parameters",
+                            "type": "limit"
+                        }
+                    ],
+                    "outputs": {
+                        "results": "$.items",
+                        "numPages": "$.pagination.max_page"
+                    }
+                },
+                "x-speakeasy-group": "benefits"
             }
         },
         "/v1/webhooks/endpoints": {
@@ -12177,8 +12871,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "webhooks:write",
-                            "webhooks:read"
+                            "webhooks:read",
+                            "webhooks:write"
                         ]
                     },
                     {
@@ -12282,7 +12976,28 @@
                 "x-polar-allowed-subjects": [
                     "Organization",
                     "User"
-                ]
+                ],
+                "x-speakeasy-pagination": {
+                    "type": "offsetLimit",
+                    "inputs": [
+                        {
+                            "name": "page",
+                            "in": "parameters",
+                            "type": "page"
+                        },
+                        {
+                            "name": "limit",
+                            "in": "parameters",
+                            "type": "limit"
+                        }
+                    ],
+                    "outputs": {
+                        "results": "$.items",
+                        "numPages": "$.pagination.max_page"
+                    }
+                },
+                "x-speakeasy-group": "webhooks",
+                "x-speakeasy-ignore": true
             },
             "post": {
                 "tags": [
@@ -12336,7 +13051,9 @@
                 "x-polar-allowed-subjects": [
                     "Organization",
                     "User"
-                ]
+                ],
+                "x-speakeasy-group": "webhooks",
+                "x-speakeasy-ignore": true
             }
         },
         "/v1/webhooks/endpoints/{id}": {
@@ -12350,8 +13067,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "webhooks:write",
-                            "webhooks:read"
+                            "webhooks:read",
+                            "webhooks:write"
                         ]
                     },
                     {
@@ -12407,7 +13124,9 @@
                 "x-polar-allowed-subjects": [
                     "Organization",
                     "User"
-                ]
+                ],
+                "x-speakeasy-group": "webhooks",
+                "x-speakeasy-ignore": true
             },
             "patch": {
                 "tags": [
@@ -12495,7 +13214,9 @@
                 "x-polar-allowed-subjects": [
                     "Organization",
                     "User"
-                ]
+                ],
+                "x-speakeasy-group": "webhooks",
+                "x-speakeasy-ignore": true
             },
             "delete": {
                 "tags": [
@@ -12566,7 +13287,9 @@
                 "x-polar-allowed-subjects": [
                     "Organization",
                     "User"
-                ]
+                ],
+                "x-speakeasy-group": "webhooks",
+                "x-speakeasy-ignore": true
             }
         },
         "/v1/webhooks/deliveries": {
@@ -12580,8 +13303,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "webhooks:write",
-                            "webhooks:read"
+                            "webhooks:read",
+                            "webhooks:write"
                         ]
                     },
                     {
@@ -12660,7 +13383,28 @@
                 "x-polar-allowed-subjects": [
                     "Organization",
                     "User"
-                ]
+                ],
+                "x-speakeasy-pagination": {
+                    "type": "offsetLimit",
+                    "inputs": [
+                        {
+                            "name": "page",
+                            "in": "parameters",
+                            "type": "page"
+                        },
+                        {
+                            "name": "limit",
+                            "in": "parameters",
+                            "type": "limit"
+                        }
+                    ],
+                    "outputs": {
+                        "results": "$.items",
+                        "numPages": "$.pagination.max_page"
+                    }
+                },
+                "x-speakeasy-group": "webhooks",
+                "x-speakeasy-ignore": true
             }
         },
         "/v1/webhooks/events/{id}/redeliver": {
@@ -12728,7 +13472,9 @@
                 "x-polar-allowed-subjects": [
                     "Organization",
                     "User"
-                ]
+                ],
+                "x-speakeasy-group": "webhooks",
+                "x-speakeasy-ignore": true
             }
         },
         "/v1/products/": {
@@ -12744,8 +13490,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "products:write",
-                            "products:read"
+                            "products:read",
+                            "products:write"
                         ]
                     },
                     {
@@ -12942,7 +13688,27 @@
                     "Anonymous",
                     "Organization",
                     "User"
-                ]
+                ],
+                "x-speakeasy-pagination": {
+                    "type": "offsetLimit",
+                    "inputs": [
+                        {
+                            "name": "page",
+                            "in": "parameters",
+                            "type": "page"
+                        },
+                        {
+                            "name": "limit",
+                            "in": "parameters",
+                            "type": "limit"
+                        }
+                    ],
+                    "outputs": {
+                        "results": "$.items",
+                        "numPages": "$.pagination.max_page"
+                    }
+                },
+                "x-speakeasy-group": "products"
             },
             "post": {
                 "tags": [
@@ -13006,7 +13772,8 @@
                 "x-polar-allowed-subjects": [
                     "Organization",
                     "User"
-                ]
+                ],
+                "x-speakeasy-group": "products"
             }
         },
         "/v1/products/{id}": {
@@ -13022,8 +13789,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "products:write",
-                            "products:read"
+                            "products:read",
+                            "products:write"
                         ]
                     },
                     {
@@ -13084,7 +13851,8 @@
                     "Anonymous",
                     "Organization",
                     "User"
-                ]
+                ],
+                "x-speakeasy-group": "products"
             },
             "patch": {
                 "tags": [
@@ -13178,7 +13946,8 @@
                 "x-polar-allowed-subjects": [
                     "Organization",
                     "User"
-                ]
+                ],
+                "x-speakeasy-group": "products"
             }
         },
         "/v1/products/{id}/benefits": {
@@ -13274,7 +14043,8 @@
                 "x-polar-allowed-subjects": [
                     "Organization",
                     "User"
-                ]
+                ],
+                "x-speakeasy-group": "products"
             }
         },
         "/v1/orders/": {
@@ -13458,7 +14228,7 @@
                                 {
                                     "type": "array",
                                     "items": {
-                                        "type": "string"
+                                        "$ref": "#/components/schemas/OrderSortProperty"
                                     }
                                 },
                                 {
@@ -13466,19 +14236,6 @@
                                 }
                             ],
                             "description": "Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.",
-                            "type": "string",
-                            "enum": [
-                                "created_at",
-                                "-created_at",
-                                "amount",
-                                "-amount",
-                                "user",
-                                "-user",
-                                "product",
-                                "-product",
-                                "subscription",
-                                "-subscription"
-                            ],
                             "default": [
                                 "-created_at"
                             ],
@@ -13512,7 +14269,27 @@
                 "x-polar-allowed-subjects": [
                     "Organization",
                     "User"
-                ]
+                ],
+                "x-speakeasy-pagination": {
+                    "type": "offsetLimit",
+                    "inputs": [
+                        {
+                            "name": "page",
+                            "in": "parameters",
+                            "type": "page"
+                        },
+                        {
+                            "name": "limit",
+                            "in": "parameters",
+                            "type": "limit"
+                        }
+                    ],
+                    "outputs": {
+                        "results": "$.items",
+                        "numPages": "$.pagination.max_page"
+                    }
+                },
+                "x-speakeasy-group": "orders"
             }
         },
         "/v1/orders/{id}": {
@@ -13583,7 +14360,8 @@
                 "x-polar-allowed-subjects": [
                     "Organization",
                     "User"
-                ]
+                ],
+                "x-speakeasy-group": "orders"
             }
         },
         "/v1/orders/{id}/invoice": {
@@ -13654,7 +14432,8 @@
                 "x-polar-allowed-subjects": [
                     "Organization",
                     "User"
-                ]
+                ],
+                "x-speakeasy-group": "orders"
             }
         },
         "/v1/checkouts/": {
@@ -13710,7 +14489,8 @@
                 "x-polar-allowed-subjects": [
                     "Anonymous",
                     "User"
-                ]
+                ],
+                "x-speakeasy-group": "checkouts"
             }
         },
         "/v1/checkouts/{id}": {
@@ -13755,7 +14535,8 @@
                             }
                         }
                     }
-                }
+                },
+                "x-speakeasy-group": "checkouts"
             }
         },
         "/v1/files/": {
@@ -13875,7 +14656,27 @@
                 "x-polar-allowed-subjects": [
                     "Organization",
                     "User"
-                ]
+                ],
+                "x-speakeasy-pagination": {
+                    "type": "offsetLimit",
+                    "inputs": [
+                        {
+                            "name": "page",
+                            "in": "parameters",
+                            "type": "page"
+                        },
+                        {
+                            "name": "limit",
+                            "in": "parameters",
+                            "type": "limit"
+                        }
+                    ],
+                    "outputs": {
+                        "results": "$.items",
+                        "numPages": "$.pagination.max_page"
+                    }
+                },
+                "x-speakeasy-group": "files"
             },
             "post": {
                 "tags": [
@@ -13949,7 +14750,8 @@
                 "x-polar-allowed-subjects": [
                     "Organization",
                     "User"
-                ]
+                ],
+                "x-speakeasy-group": "files"
             }
         },
         "/v1/files/{id}/uploaded": {
@@ -14039,7 +14841,8 @@
                 "x-polar-allowed-subjects": [
                     "Organization",
                     "User"
-                ]
+                ],
+                "x-speakeasy-group": "files"
             }
         },
         "/v1/files/{id}": {
@@ -14129,7 +14932,8 @@
                 "x-polar-allowed-subjects": [
                     "Organization",
                     "User"
-                ]
+                ],
+                "x-speakeasy-group": "files"
             },
             "delete": {
                 "tags": [
@@ -14199,7 +15003,8 @@
                 "x-polar-allowed-subjects": [
                     "Organization",
                     "User"
-                ]
+                ],
+                "x-speakeasy-group": "files"
             }
         },
         "/v1/metrics/": {
@@ -14388,7 +15193,8 @@
                 "x-polar-allowed-subjects": [
                     "Organization",
                     "User"
-                ]
+                ],
+                "x-speakeasy-group": "metrics"
             }
         },
         "/v1/metrics/limits": {
@@ -14425,7 +15231,8 @@
                 "x-polar-allowed-subjects": [
                     "Organization",
                     "User"
-                ]
+                ],
+                "x-speakeasy-group": "metrics"
             }
         },
         "/v1/integrations/google/authorize": {
@@ -14500,7 +15307,9 @@
                 "x-polar-allowed-subjects": [
                     "Anonymous",
                     "User"
-                ]
+                ],
+                "x-speakeasy-group": "integrations_google",
+                "x-speakeasy-ignore": true
             }
         },
         "/v1/integrations/google/callback": {
@@ -14607,7 +15416,9 @@
                 "x-polar-allowed-subjects": [
                     "Anonymous",
                     "User"
-                ]
+                ],
+                "x-speakeasy-group": "integrations_google",
+                "x-speakeasy-ignore": true
             }
         }
     },
@@ -14859,6 +15670,20 @@
                     "dimensions"
                 ],
                 "title": "AdvertisementCampaignListResource"
+            },
+            "AdvertisementSortProperty": {
+                "type": "string",
+                "enum": [
+                    "created_at",
+                    "-created_at",
+                    "granted_at",
+                    "-granted_at",
+                    "views",
+                    "-views",
+                    "clicks",
+                    "-clicks"
+                ],
+                "title": "AdvertisementSortProperty"
             },
             "AlreadyCanceledSubscription": {
                 "properties": {
@@ -19075,6 +19900,16 @@
                 ],
                 "title": "DonationOrganization"
             },
+            "DonationSortProperty": {
+                "type": "string",
+                "enum": [
+                    "amount",
+                    "-amount",
+                    "created_at",
+                    "-created_at"
+                ],
+                "title": "DonationSortProperty"
+            },
             "DonationStatistics": {
                 "properties": {
                     "periods": {
@@ -19840,6 +20675,16 @@
                 ],
                 "title": "ExternalOrganization"
             },
+            "ExternalOrganizationSortProperty": {
+                "type": "string",
+                "enum": [
+                    "created_at",
+                    "-created_at",
+                    "name",
+                    "-name"
+                ],
+                "title": "ExternalOrganizationSortProperty"
+            },
             "FileDownload": {
                 "properties": {
                     "id": {
@@ -20559,6 +21404,22 @@
                     "most_recently_funded"
                 ],
                 "title": "IssueSortBy"
+            },
+            "IssueSortProperty": {
+                "type": "string",
+                "enum": [
+                    "created_at",
+                    "-created_at",
+                    "modified_at",
+                    "-modified_at",
+                    "engagement",
+                    "-engagement",
+                    "positive_reactions",
+                    "-positive_reactions",
+                    "funding_goal",
+                    "-funding_goal"
+                ],
+                "title": "IssueSortProperty"
             },
             "IssueUpdateBadgeMessage": {
                 "properties": {
@@ -23342,6 +24203,22 @@
                 ],
                 "title": "OrderProduct"
             },
+            "OrderSortProperty": {
+                "type": "string",
+                "enum": [
+                    "created_at",
+                    "-created_at",
+                    "amount",
+                    "-amount",
+                    "user",
+                    "-user",
+                    "product",
+                    "-product",
+                    "subscription",
+                    "-subscription"
+                ],
+                "title": "OrderSortProperty"
+            },
             "OrderSubscription": {
                 "properties": {
                     "created_at": {
@@ -24092,6 +24969,16 @@
                     "account_id"
                 ],
                 "title": "OrganizationSetAccount"
+            },
+            "OrganizationSortProperty": {
+                "type": "string",
+                "enum": [
+                    "created_at",
+                    "-created_at",
+                    "name",
+                    "-name"
+                ],
+                "title": "OrganizationSortProperty"
             },
             "OrganizationStripePortalSession": {
                 "properties": {
@@ -26098,6 +26985,18 @@
                 "type": "object",
                 "title": "RepositoryProfileSettingsUpdate"
             },
+            "RepositorySortProperty": {
+                "type": "string",
+                "enum": [
+                    "created_at",
+                    "-created_at",
+                    "name",
+                    "-name",
+                    "stars",
+                    "-stars"
+                ],
+                "title": "RepositorySortProperty"
+            },
             "RepositoryUpdate": {
                 "properties": {
                     "profile_settings": {
@@ -26637,6 +27536,26 @@
                 ],
                 "title": "SubscriptionCreateEmail",
                 "description": "Request schema for creating a subscription by email."
+            },
+            "SubscriptionSortProperty": {
+                "type": "string",
+                "enum": [
+                    "user",
+                    "-user",
+                    "status",
+                    "-status",
+                    "started_at",
+                    "-started_at",
+                    "current_period_end",
+                    "-current_period_end",
+                    "price_amount",
+                    "-price_amount",
+                    "subscription_tier_type",
+                    "-subscription_tier_type",
+                    "product",
+                    "-product"
+                ],
+                "title": "SubscriptionSortProperty"
             },
             "SubscriptionStatus": {
                 "type": "string",
@@ -28129,6 +29048,16 @@
                 ],
                 "title": "TransactionRepository"
             },
+            "TransactionSortProperty": {
+                "type": "string",
+                "enum": [
+                    "created_at",
+                    "-created_at",
+                    "amount",
+                    "-amount"
+                ],
+                "title": "TransactionSortProperty"
+            },
             "TransactionType": {
                 "type": "string",
                 "enum": [
@@ -28454,6 +29383,18 @@
                 "type": "object",
                 "title": "UserAdvertisementCampaignUpdate"
             },
+            "UserAdvertisementSortProperty": {
+                "type": "string",
+                "enum": [
+                    "created_at",
+                    "-created_at",
+                    "views",
+                    "-views",
+                    "clicks",
+                    "-clicks"
+                ],
+                "title": "UserAdvertisementSortProperty"
+            },
             "UserBase": {
                 "properties": {
                     "username": {
@@ -28498,6 +29439,18 @@
                     "account_id"
                 ],
                 "title": "UserBase"
+            },
+            "UserBenefitSortProperty": {
+                "type": "string",
+                "enum": [
+                    "granted_at",
+                    "-granted_at",
+                    "type",
+                    "-type",
+                    "organization",
+                    "-organization"
+                ],
+                "title": "UserBenefitSortProperty"
             },
             "UserFreeSubscriptionCreate": {
                 "properties": {
@@ -28848,6 +29801,22 @@
                     "medias"
                 ],
                 "title": "UserOrderProduct"
+            },
+            "UserOrderSortProperty": {
+                "type": "string",
+                "enum": [
+                    "created_at",
+                    "-created_at",
+                    "amount",
+                    "-amount",
+                    "organization",
+                    "-organization",
+                    "product",
+                    "-product",
+                    "subscription",
+                    "-subscription"
+                ],
+                "title": "UserOrderSortProperty"
             },
             "UserOrderSubscription": {
                 "properties": {
@@ -29362,6 +30331,22 @@
                     "medias"
                 ],
                 "title": "UserSubscriptionProduct"
+            },
+            "UserSubscriptionSortProperty": {
+                "type": "string",
+                "enum": [
+                    "started_at",
+                    "-started_at",
+                    "price_amount",
+                    "-price_amount",
+                    "status",
+                    "-status",
+                    "organization",
+                    "-organization",
+                    "product",
+                    "-product"
+                ],
+                "title": "UserSubscriptionSortProperty"
             },
             "UserSubscriptionUpdate": {
                 "properties": {
@@ -31507,6 +32492,28 @@
         {
             "name": "issue_funding",
             "description": "Endpoints related to issue funding and rewards in the Polar API."
+        }
+    ],
+    "x-speakeasy-name-override": [
+        {
+            "operationId": ".*:list$",
+            "methodNameOverride": "list"
+        },
+        {
+            "operationId": ".*:get$",
+            "methodNameOverride": "retrieve"
+        },
+        {
+            "operationId": ".*:create$",
+            "methodNameOverride": "create"
+        },
+        {
+            "operationId": ".*:update$",
+            "methodNameOverride": "update"
+        },
+        {
+            "operationId": ".*:delete$",
+            "methodNameOverride": "delete"
         }
     ]
 }

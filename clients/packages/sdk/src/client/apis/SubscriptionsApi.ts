@@ -22,6 +22,7 @@ import type {
   ProductIDFilter,
   Subscription,
   SubscriptionCreateEmail,
+  SubscriptionSortProperty,
   SubscriptionTierTypeFilter,
   SubscriptionsImported,
 } from '../models/index';
@@ -46,7 +47,7 @@ export interface SubscriptionsApiListRequest {
     active?: boolean;
     page?: number;
     limit?: number;
-    sorting?: Array<string>;
+    sorting?: Array<SubscriptionSortProperty>;
 }
 
 /**

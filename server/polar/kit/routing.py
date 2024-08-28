@@ -49,11 +49,25 @@ class SpeakeasyIgnoreAPIRoute(APIRoute):
     """
 
     def __init__(self, path: str, endpoint: Callable[..., Any], **kwargs: Any) -> None:
-        tags = kwargs.get("tags", [])
-        if APITag.documented not in tags:
-            openapi_extra = kwargs.get("openapi_extra") or {}
-            kwargs["openapi_extra"] = {"x-speakeasy-ignore": True, **openapi_extra}
         super().__init__(path, endpoint, **kwargs)
+        tags = self.tags
+        if APITag.documented not in tags:
+            openapi_extra = self.openapi_extra or {}
+            self.openapi_extra = {**openapi_extra, "x-speakeasy-ignore": True}
+
+
+class SpeakeasyGroupAPIRoute(APIRoute):
+    """
+    A subclass of `APIRoute` that automatically adds the `x-speakeasy-group` property
+    to the OpenAPI schema following the first tag.
+    """
+
+    def __init__(self, path: str, endpoint: Callable[..., Any], **kwargs: Any) -> None:
+        super().__init__(path, endpoint, **kwargs)
+        tags = self.tags
+        if len(tags) > 0:
+            openapi_extra = self.openapi_extra or {}
+            self.openapi_extra = {**openapi_extra, "x-speakeasy-group": tags[0]}
 
 
 _P = ParamSpec("_P")

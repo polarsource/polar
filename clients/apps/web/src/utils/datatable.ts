@@ -13,8 +13,10 @@ export type DataTableSearchParams = {
   sorting?: string[] | string
 }
 
-const sortingStateToQueryParam = (state: DataTableSortingState): string[] => {
-  return state.map(({ id, desc }) => `${desc ? '-' : ''}${id}`)
+const sortingStateToQueryParam = <S extends string>(
+  state: DataTableSortingState,
+): S[] => {
+  return state.map(({ id, desc }) => `${desc ? '-' : ''}${id}` as S)
 }
 
 const sortingQueryParamToState = (param: string[]): DataTableSortingState => {
@@ -62,10 +64,10 @@ export const serializeSearchParams = (
   return searchParams
 }
 
-export const getAPIParams = (
+export const getAPIParams = <S extends string>(
   pagination: DataTablePaginationState,
   sorting: DataTableSortingState,
-): { page: number; limit: number; sorting: string[] } => {
+): { page: number; limit: number; sorting: S[] } => {
   return {
     page: pagination.pageIndex + 1,
     limit: pagination.pageSize,

@@ -87,7 +87,7 @@ async def get(
     response_model=ListResource[BenefitGrant],
     responses={404: BenefitNotFound},
 )
-async def list_grants(
+async def grants(
     id: BenefitID,
     auth_subject: auth.BenefitsRead,
     pagination: PaginationParamsQuery,

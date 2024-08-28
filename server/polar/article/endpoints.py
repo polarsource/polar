@@ -205,7 +205,7 @@ async def delete(
     summary="Get Article Receivers Count",
     response_model=ArticleReceivers,
 )
-async def get_receivers(
+async def receivers(
     id: ArticleID,
     auth_subject: auth.ArticlesWrite,
     session: AsyncSession = Depends(get_db_session),
@@ -245,7 +245,7 @@ async def get_receivers(
         404: ArticleNotFound,
     },
 )
-async def send_preview(
+async def preview(
     id: ArticleID,
     body: ArticlePreview,
     auth_subject: auth.ArticlesWrite,

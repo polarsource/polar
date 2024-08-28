@@ -37,7 +37,7 @@ from polar.middlewares import (
 )
 from polar.oauth2.endpoints.well_known import router as well_known_router
 from polar.oauth2.exception_handlers import OAuth2Error, oauth2_error_exception_handler
-from polar.openapi import OPENAPI_PARAMETERS, set_openapi_generator
+from polar.openapi import OPENAPI_PARAMETERS, APITag, set_openapi_generator
 from polar.postgres import create_async_engine, create_sync_engine
 from polar.posthog import configure_posthog
 from polar.sentry import configure_sentry
@@ -80,7 +80,8 @@ def configure_cors(app: FastAPI) -> None:
 
 
 def generate_unique_openapi_id(route: APIRoute) -> str:
-    return f"{route.tags[0]}:{route.name}"
+    parts = [str(tag) for tag in route.tags if tag not in APITag] + [route.name]
+    return ":".join(parts)
 
 
 class State(TypedDict):

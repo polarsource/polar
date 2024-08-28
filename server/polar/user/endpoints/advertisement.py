@@ -22,7 +22,7 @@ from ..schemas.advertisement import (
 from ..service.advertisement import UserAdvertisementSortProperty
 from ..service.advertisement import user_advertisement as user_advertisement_service
 
-router = APIRouter(prefix="/advertisements", tags=[APITag.documented])
+router = APIRouter(prefix="/advertisements", tags=["advertisements", APITag.documented])
 
 AdvertisementCampaignID = Annotated[
     UUID4, Path(description="The advertisement campaign ID.")
@@ -39,7 +39,7 @@ ListSorting = Annotated[
 
 
 @router.get("/", response_model=ListResource[UserAdvertisementCampaign])
-async def list_advertisement_campaigns(
+async def list(
     auth_subject: auth.UserAdvertisementCampaignsRead,
     pagination: PaginationParamsQuery,
     sorting: ListSorting,
@@ -65,7 +65,7 @@ async def list_advertisement_campaigns(
     response_model=UserAdvertisementCampaign,
     responses={404: AdvertisementCampaignNotFound},
 )
-async def get_advertisement_campaign(
+async def get(
     id: AdvertisementCampaignID,
     auth_subject: auth.UserAdvertisementCampaignsRead,
     session: AsyncSession = Depends(get_db_session),
@@ -87,7 +87,7 @@ async def get_advertisement_campaign(
     status_code=201,
     responses={201: {"description": "Advertisement campaign created."}},
 )
-async def create_advertisement_campaign(
+async def create(
     advertisement_campaign_create: UserAdvertisementCampaignCreate,
     auth_subject: auth.UserAdvertisementCampaignsWrite,
     session: AsyncSession = Depends(get_db_session),
@@ -108,7 +108,7 @@ async def create_advertisement_campaign(
         404: AdvertisementCampaignNotFound,
     },
 )
-async def update_advertisement_campaign(
+async def update(
     id: AdvertisementCampaignID,
     advertisement_campaign_update: UserAdvertisementCampaignUpdate,
     auth_subject: auth.UserAdvertisementCampaignsWrite,
@@ -137,7 +137,7 @@ async def update_advertisement_campaign(
         404: AdvertisementCampaignNotFound,
     },
 )
-async def enable_advertisement_campaign(
+async def enable(
     id: AdvertisementCampaignID,
     advertisement_campaign_enable: UserAdvertisementCampaignEnable,
     auth_subject: auth.UserAdvertisementCampaignsWrite,
@@ -168,7 +168,7 @@ async def enable_advertisement_campaign(
         404: AdvertisementCampaignNotFound,
     },
 )
-async def delete_advertisement_campaign(
+async def delete(
     id: AdvertisementCampaignID,
     auth_subject: auth.UserAdvertisementCampaignsWrite,
     session: AsyncSession = Depends(get_db_session),

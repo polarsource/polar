@@ -21,7 +21,9 @@ from ..schemas.order import UserOrder, UserOrderInvoice
 from ..service.order import UserOrderSortProperty
 from ..service.order import user_order as user_order_service
 
-router = APIRouter(prefix="/orders", tags=[APITag.documented, APITag.featured])
+router = APIRouter(
+    prefix="/orders", tags=["orders", APITag.documented, APITag.featured]
+)
 
 OrderID = Annotated[UUID4, Path(description="The order ID.")]
 OrderNotFound = {"description": "Order not found.", "model": ResourceNotFound.schema()}
@@ -33,7 +35,7 @@ ListSorting = Annotated[
 
 
 @router.get("/", response_model=ListResource[UserOrder])
-async def list_orders(
+async def list(
     auth_subject: auth.UserOrdersRead,
     pagination: PaginationParamsQuery,
     sorting: ListSorting,
@@ -86,7 +88,7 @@ async def list_orders(
     response_model=UserOrder,
     responses={404: OrderNotFound},
 )
-async def get_order(
+async def get(
     id: OrderID,
     auth_subject: auth.UserOrdersRead,
     session: AsyncSession = Depends(get_db_session),
@@ -105,7 +107,7 @@ async def get_order(
     response_model=UserOrderInvoice,
     responses={404: OrderNotFound},
 )
-async def get_order_invoice(
+async def invoice(
     id: OrderID,
     auth_subject: auth.UserOrdersRead,
     session: AsyncSession = Depends(get_db_session),

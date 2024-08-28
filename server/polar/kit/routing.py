@@ -44,6 +44,25 @@ class AutoCommitAPIRoute(APIRoute):
         return wrapped_endpoint
 
 
+class SpeakeasyNameOverrideAPIRoute(APIRoute):
+    """
+    A subclass of `APIRoute` that automatically adds `x-speakeasy-name-override` property
+    following the route function name.
+    """
+
+    def __init__(self, path: str, endpoint: Callable[..., Any], **kwargs: Any) -> None:
+        super().__init__(path, endpoint, **kwargs)
+        endpoint_name = endpoint.__name__
+        if endpoint_name == "get":
+            endpoint_name = "retrieve"
+        openapi_extra = self.openapi_extra or {}
+        if "x-speakeasy-name-override" not in openapi_extra:
+            self.openapi_extra = {
+                **openapi_extra,
+                "x-speakeasy-name-override": endpoint_name,
+            }
+
+
 class SpeakeasyIgnoreAPIRoute(APIRoute):
     """
     A subclass of `APIRoute` that automatically adds `x-speakeasy-ignore` property
@@ -61,15 +80,18 @@ class SpeakeasyIgnoreAPIRoute(APIRoute):
 class SpeakeasyGroupAPIRoute(APIRoute):
     """
     A subclass of `APIRoute` that automatically adds `x-speakeasy-group` property
-    to the OpenAPI schema following the first tag.
+    to the OpenAPI schema by combining all the non-generic tags.
     """
 
     def __init__(self, path: str, endpoint: Callable[..., Any], **kwargs: Any) -> None:
         super().__init__(path, endpoint, **kwargs)
-        tags = self.tags
-        if len(tags) > 0:
+        non_generic_tags = [str(tag) for tag in self.tags if tag not in APITag]
+        if len(non_generic_tags) > 0:
             openapi_extra = self.openapi_extra or {}
-            self.openapi_extra = {**openapi_extra, "x-speakeasy-group": tags[0]}
+            self.openapi_extra = {
+                **openapi_extra,
+                "x-speakeasy-group": ".".join(non_generic_tags),
+            }
 
 
 class SpeakeasyPaginationAPIRoute(APIRoute):

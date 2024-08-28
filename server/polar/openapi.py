@@ -106,13 +106,6 @@ def set_openapi_generator(app: FastAPI) -> None:
             servers=app.servers,
             separate_input_output_schemas=app.separate_input_output_schemas,
         )
-        openapi_schema["x-speakeasy-name-override"] = [
-            {"operationId": r".*:list$", "methodNameOverride": "list"},
-            {"operationId": r".*:get$", "methodNameOverride": "retrieve"},
-            {"operationId": r".*:create$", "methodNameOverride": "create"},
-            {"operationId": r".*:update$", "methodNameOverride": "update"},
-            {"operationId": r".*:delete$", "methodNameOverride": "delete"},
-        ]
         return openapi_schema
 
     app.openapi = _openapi_generator  # type: ignore[method-assign]

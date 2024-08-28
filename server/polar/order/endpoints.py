@@ -97,7 +97,7 @@ async def get(
     response_model=OrderInvoice,
     responses={404: OrderNotFound},
 )
-async def get_invoice(
+async def invoice(
     id: OrderID,
     auth_subject: auth.OrdersRead,
     session: AsyncSession = Depends(get_db_session),

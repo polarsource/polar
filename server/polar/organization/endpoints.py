@@ -194,9 +194,9 @@ async def update(
     summary="List Organization Customers",
     response_model=ListResource[OrganizationCustomer],
     responses={404: OrganizationNotFound},
-    tags=[APITag.documented],
+    include_in_schema=IN_DEVELOPMENT_ONLY,
 )
-async def list_organization_customers(
+async def customers(
     id: OrganizationID,
     auth_subject: auth.AnonymousOrganizationsRead,
     pagination: PaginationParamsQuery,

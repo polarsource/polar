@@ -1,6 +1,5 @@
 /* tslint:disable */
 /* eslint-disable */
-export * from './DefaultApi';
 export * from './AccountsApi';
 export * from './AdvertisementsApi';
 export * from './ArticlesApi';
@@ -18,6 +17,7 @@ export * from './IntegrationsGithubApi';
 export * from './IntegrationsGithubRepositoryBenefitApi';
 export * from './IntegrationsGoogleApi';
 export * from './IssuesApi';
+export * from './LicenseKeysApi';
 export * from './MagicLinkApi';
 export * from './MetricsApi';
 export * from './NotificationsApi';

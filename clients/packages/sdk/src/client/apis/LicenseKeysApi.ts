@@ -25,22 +25,22 @@ import type {
   Unauthorized,
 } from '../models/index';
 
-export interface DocumentedApiGetRequest {
+export interface LicenseKeysApiGetRequest {
     id: string;
 }
 
-export interface DocumentedApiGetActivationRequest {
+export interface LicenseKeysApiGetActivationRequest {
     id: string;
     activationId: string;
 }
 
-export interface DocumentedApiListRequest {
+export interface LicenseKeysApiListRequest {
     organizationId: string;
     page?: number;
     limit?: number;
 }
 
-export interface DocumentedApiUpdateRequest {
+export interface LicenseKeysApiUpdateRequest {
     id: string;
     body: LicenseKeyUpdate;
 }
@@ -48,13 +48,13 @@ export interface DocumentedApiUpdateRequest {
 /**
  * 
  */
-export class DocumentedApi extends runtime.BaseAPI {
+export class LicenseKeysApi extends runtime.BaseAPI {
 
     /**
      * Get a license key.
      * Get
      */
-    async getRaw(requestParameters: DocumentedApiGetRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<LicenseKeyWithActivations>> {
+    async getRaw(requestParameters: LicenseKeysApiGetRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<LicenseKeyWithActivations>> {
         if (requestParameters['id'] == null) {
             throw new runtime.RequiredError(
                 'id',
@@ -68,7 +68,7 @@ export class DocumentedApi extends runtime.BaseAPI {
 
         if (this.configuration && this.configuration.accessToken) {
             const token = this.configuration.accessToken;
-            const tokenString = await token("HTTPBearer", []);
+            const tokenString = await token("pat", []);
 
             if (tokenString) {
                 headerParameters["Authorization"] = `Bearer ${tokenString}`;
@@ -88,7 +88,7 @@ export class DocumentedApi extends runtime.BaseAPI {
      * Get a license key.
      * Get
      */
-    async get(requestParameters: DocumentedApiGetRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<LicenseKeyWithActivations> {
+    async get(requestParameters: LicenseKeysApiGetRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<LicenseKeyWithActivations> {
         const response = await this.getRaw(requestParameters, initOverrides);
         return await response.value();
     }
@@ -97,7 +97,7 @@ export class DocumentedApi extends runtime.BaseAPI {
      * Get a license key activation.
      * Get Activation
      */
-    async getActivationRaw(requestParameters: DocumentedApiGetActivationRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<LicenseKeyActivationRead>> {
+    async getActivationRaw(requestParameters: LicenseKeysApiGetActivationRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<LicenseKeyActivationRead>> {
         if (requestParameters['id'] == null) {
             throw new runtime.RequiredError(
                 'id',
@@ -118,7 +118,7 @@ export class DocumentedApi extends runtime.BaseAPI {
 
         if (this.configuration && this.configuration.accessToken) {
             const token = this.configuration.accessToken;
-            const tokenString = await token("HTTPBearer", []);
+            const tokenString = await token("pat", []);
 
             if (tokenString) {
                 headerParameters["Authorization"] = `Bearer ${tokenString}`;
@@ -138,7 +138,7 @@ export class DocumentedApi extends runtime.BaseAPI {
      * Get a license key activation.
      * Get Activation
      */
-    async getActivation(requestParameters: DocumentedApiGetActivationRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<LicenseKeyActivationRead> {
+    async getActivation(requestParameters: LicenseKeysApiGetActivationRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<LicenseKeyActivationRead> {
         const response = await this.getActivationRaw(requestParameters, initOverrides);
         return await response.value();
     }
@@ -147,7 +147,7 @@ export class DocumentedApi extends runtime.BaseAPI {
      * Get license keys connected to the given organization & filters.
      * List
      */
-    async listRaw(requestParameters: DocumentedApiListRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListResourceLicenseKeyRead>> {
+    async listRaw(requestParameters: LicenseKeysApiListRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListResourceLicenseKeyRead>> {
         if (requestParameters['organizationId'] == null) {
             throw new runtime.RequiredError(
                 'organizationId',
@@ -173,7 +173,7 @@ export class DocumentedApi extends runtime.BaseAPI {
 
         if (this.configuration && this.configuration.accessToken) {
             const token = this.configuration.accessToken;
-            const tokenString = await token("HTTPBearer", []);
+            const tokenString = await token("pat", []);
 
             if (tokenString) {
                 headerParameters["Authorization"] = `Bearer ${tokenString}`;
@@ -193,7 +193,7 @@ export class DocumentedApi extends runtime.BaseAPI {
      * Get license keys connected to the given organization & filters.
      * List
      */
-    async list(requestParameters: DocumentedApiListRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ListResourceLicenseKeyRead> {
+    async list(requestParameters: LicenseKeysApiListRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ListResourceLicenseKeyRead> {
         const response = await this.listRaw(requestParameters, initOverrides);
         return await response.value();
     }
@@ -202,7 +202,7 @@ export class DocumentedApi extends runtime.BaseAPI {
      * Update a license key.
      * Update
      */
-    async updateRaw(requestParameters: DocumentedApiUpdateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<LicenseKeyRead>> {
+    async updateRaw(requestParameters: LicenseKeysApiUpdateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<LicenseKeyRead>> {
         if (requestParameters['id'] == null) {
             throw new runtime.RequiredError(
                 'id',
@@ -225,7 +225,7 @@ export class DocumentedApi extends runtime.BaseAPI {
 
         if (this.configuration && this.configuration.accessToken) {
             const token = this.configuration.accessToken;
-            const tokenString = await token("HTTPBearer", []);
+            const tokenString = await token("pat", []);
 
             if (tokenString) {
                 headerParameters["Authorization"] = `Bearer ${tokenString}`;
@@ -246,7 +246,7 @@ export class DocumentedApi extends runtime.BaseAPI {
      * Update a license key.
      * Update
      */
-    async update(requestParameters: DocumentedApiUpdateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<LicenseKeyRead> {
+    async update(requestParameters: LicenseKeysApiUpdateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<LicenseKeyRead> {
         const response = await this.updateRaw(requestParameters, initOverrides);
         return await response.value();
     }

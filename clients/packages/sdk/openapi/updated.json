@@ -8559,10 +8559,10 @@
                             },
                             "description": "Filter by the type of purchase the customer made.",
                             "default": [
+                                "free_subscription",
                                 "donation",
                                 "order",
-                                "paid_subscription",
-                                "free_subscription"
+                                "paid_subscription"
                             ],
                             "title": "Customer Types"
                         },
@@ -15901,7 +15901,7 @@
         "/v1/license-keys": {
             "get": {
                 "tags": [
-                    ""
+                    "license_keys"
                 ],
                 "summary": "List",
                 "description": "Get license keys connected to the given organization & filters.",
@@ -16020,13 +16020,14 @@
                         "numPages": "$.pagination.max_page"
                     }
                 },
+                "x-speakeasy-group": "license_keys",
                 "x-speakeasy-name-override": "list"
             }
         },
         "/v1/license-keys/{id}": {
             "get": {
                 "tags": [
-                    ""
+                    "license_keys"
                 ],
                 "summary": "Get",
                 "description": "Get a license key.",
@@ -16100,11 +16101,12 @@
                     "Organization",
                     "User"
                 ],
+                "x-speakeasy-group": "license_keys",
                 "x-speakeasy-name-override": "retrieve"
             },
             "patch": {
                 "tags": [
-                    ""
+                    "license_keys"
                 ],
                 "summary": "Update",
                 "description": "Update a license key.",
@@ -16187,13 +16189,14 @@
                     "Organization",
                     "User"
                 ],
+                "x-speakeasy-group": "license_keys",
                 "x-speakeasy-name-override": "update"
             }
         },
         "/v1/license-keys/{id}/activations/{activation_id}": {
             "get": {
                 "tags": [
-                    ""
+                    "license_keys"
                 ],
                 "summary": "Get Activation",
                 "description": "Get a license key activation.",
@@ -16277,6 +16280,7 @@
                     "Organization",
                     "User"
                 ],
+                "x-speakeasy-group": "license_keys",
                 "x-speakeasy-name-override": "get_activation"
             }
         }
@@ -22832,9 +22836,19 @@
                         "type": "string",
                         "title": "Key"
                     },
+                    "organization_id": {
+                        "type": "string",
+                        "format": "uuid4",
+                        "title": "Organization Id"
+                    },
                     "label": {
                         "type": "string",
                         "title": "Label"
+                    },
+                    "conditions": {
+                        "type": "object",
+                        "title": "Conditions",
+                        "default": {}
                     },
                     "meta": {
                         "type": "object",
@@ -22845,6 +22859,7 @@
                 "type": "object",
                 "required": [
                     "key",
+                    "organization_id",
                     "label"
                 ],
                 "title": "LicenseKeyActivate"
@@ -22893,7 +22908,8 @@
                     "license_key_id",
                     "label",
                     "meta",
-                    "created_at"
+                    "created_at",
+                    "modified_at"
                 ],
                 "title": "LicenseKeyActivationBase"
             },
@@ -22945,6 +22961,7 @@
                     "label",
                     "meta",
                     "created_at",
+                    "modified_at",
                     "license_key"
                 ],
                 "title": "LicenseKeyActivationRead"
@@ -22955,6 +22972,11 @@
                         "type": "string",
                         "title": "Key"
                     },
+                    "organization_id": {
+                        "type": "string",
+                        "format": "uuid4",
+                        "title": "Organization Id"
+                    },
                     "activation_id": {
                         "type": "string",
                         "format": "uuid4",
@@ -22964,6 +22986,7 @@
                 "type": "object",
                 "required": [
                     "key",
+                    "organization_id",
                     "activation_id"
                 ],
                 "title": "LicenseKeyDeactivate"
@@ -23065,8 +23088,12 @@
                     "key",
                     "display_key",
                     "status",
+                    "limit_activations",
                     "usage",
-                    "validations"
+                    "limit_usage",
+                    "validations",
+                    "last_validated_at",
+                    "expires_at"
                 ],
                 "title": "LicenseKeyRead"
             },
@@ -23074,7 +23101,8 @@
                 "type": "string",
                 "enum": [
                     "granted",
-                    "revoked"
+                    "revoked",
+                    "disabled"
                 ],
                 "title": "LicenseKeyStatus"
             },
@@ -23142,6 +23170,11 @@
                         "type": "string",
                         "title": "Key"
                     },
+                    "organization_id": {
+                        "type": "string",
+                        "format": "uuid4",
+                        "title": "Organization Id"
+                    },
                     "activation_id": {
                         "anyOf": [
                             {
@@ -23194,11 +23227,17 @@
                             }
                         ],
                         "title": "Increment Usage"
+                    },
+                    "conditions": {
+                        "type": "object",
+                        "title": "Conditions",
+                        "default": {}
                     }
                 },
                 "type": "object",
                 "required": [
-                    "key"
+                    "key",
+                    "organization_id"
                 ],
                 "title": "LicenseKeyValidate"
             },
@@ -23306,8 +23345,12 @@
                     "key",
                     "display_key",
                     "status",
+                    "limit_activations",
                     "usage",
+                    "limit_usage",
                     "validations",
+                    "last_validated_at",
+                    "expires_at",
                     "activations"
                 ],
                 "title": "LicenseKeyWithActivations"
@@ -32384,8 +32427,12 @@
                     "key",
                     "display_key",
                     "status",
+                    "limit_activations",
                     "usage",
-                    "validations"
+                    "limit_usage",
+                    "validations",
+                    "last_validated_at",
+                    "expires_at"
                 ],
                 "title": "ValidatedLicenseKey"
             },

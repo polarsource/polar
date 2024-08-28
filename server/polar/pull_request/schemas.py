@@ -30,7 +30,7 @@ class PullRequest(Schema):
             author=Author.model_validate(pr.author) if pr.author else None,
             additions=pr.additions if pr.additions else 0,
             deletions=pr.deletions if pr.deletions else 0,
-            is_merged=pr.is_merged if pr.is_merged else False,
+            is_merged=pr.is_merged,
             is_closed=True if pr.issue_closed_at else False,
         )
 
@@ -69,8 +69,6 @@ class MinimalPullRequestCreate(IssueAndPullRequestBase):
     requested_reviewers: JSONAny | None = None
     requested_teams: JSONAny | None = None
 
-    is_merged: bool | None = None
-
     merged_at: datetime | None = None
     merge_commit_sha: str | None = None
 
@@ -87,7 +85,6 @@ class MinimalPullRequestCreate(IssueAndPullRequestBase):
     __mutable_keys__ = common_mutable_keys | {
         "requested_reviewers",
         "requested_teams",
-        "is_merged",
         "merged_at",
         "merge_commit_sha",
         "head",

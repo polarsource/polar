@@ -1,7 +1,17 @@
 from datetime import datetime
 
-from sqlalchemy import TIMESTAMP, Boolean, Index, Integer, String, UniqueConstraint
+from sqlalchemy import (
+    TIMESTAMP,
+    Boolean,
+    ColumnElement,
+    Index,
+    Integer,
+    String,
+    UniqueConstraint,
+    type_coerce,
+)
 from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import Mapped, mapped_column
 
 from polar.kit.db.models import RecordModel
@@ -43,7 +53,6 @@ class PullRequest(IssueFields, RecordModel):
     is_mergeable: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
     mergeable_state: Mapped[str | None] = mapped_column(String, nullable=True)
     auto_merge: Mapped[str | None] = mapped_column(String, nullable=True)
-    is_merged: Mapped[bool] = mapped_column(Boolean, nullable=True)
     merged_by: Mapped[JSONDict | None] = mapped_column(
         JSONB, nullable=True, default=dict
     )
@@ -55,3 +64,12 @@ class PullRequest(IssueFields, RecordModel):
     # TODO: Storing these for now, but need to trim them down
     head: Mapped[JSONDict | None] = mapped_column(JSONB, nullable=True, default=dict)
     base: Mapped[JSONDict | None] = mapped_column(JSONB, nullable=True, default=dict)
+
+    @hybrid_property
+    def is_merged(self) -> bool:
+        return self.merged_at is not None
+
+    @is_merged.inplace.expression
+    @classmethod
+    def _is_granted_expression(cls) -> ColumnElement[bool]:
+        return type_coerce(cls.merged_at.is_not(None), Boolean)

@@ -445,7 +445,6 @@ async def pull_request(
         is_draft=False,
         is_rebaseable=True,
         is_mergeable=True,
-        is_merged=False,
         review_comments=5,
         maintainer_can_modify=True,
         merged_at=None,

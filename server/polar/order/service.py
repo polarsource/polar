@@ -43,7 +43,7 @@ from polar.notifications.notification import (
 )
 from polar.notifications.service import PartialNotification
 from polar.notifications.service import notifications as notifications_service
-from polar.order.sorting import SortProperty
+from polar.order.sorting import OrderSortProperty
 from polar.organization.service import organization as organization_service
 from polar.product.service.product_price import product_price as product_price_service
 from polar.subscription.service import subscription as subscription_service
@@ -123,7 +123,9 @@ class OrderService(ResourceServiceReader[Order]):
         product_price_type: Sequence[ProductPriceType] | None = None,
         user_id: Sequence[uuid.UUID] | None = None,
         pagination: PaginationParams,
-        sorting: list[Sorting[SortProperty]] = [(SortProperty.created_at, True)],
+        sorting: list[Sorting[OrderSortProperty]] = [
+            (OrderSortProperty.created_at, True)
+        ],
     ) -> tuple[Sequence[Order], int]:
         statement = self._get_readable_order_statement(auth_subject)
 
@@ -156,15 +158,15 @@ class OrderService(ResourceServiceReader[Order]):
         order_by_clauses: list[UnaryExpression[Any]] = []
         for criterion, is_desc in sorting:
             clause_function = desc if is_desc else asc
-            if criterion == SortProperty.created_at:
+            if criterion == OrderSortProperty.created_at:
                 order_by_clauses.append(clause_function(Order.created_at))
-            elif criterion == SortProperty.amount:
+            elif criterion == OrderSortProperty.amount:
                 order_by_clauses.append(clause_function(Order.amount))
-            elif criterion == SortProperty.user:
+            elif criterion == OrderSortProperty.user:
                 order_by_clauses.append(clause_function(OrderUser.username))
-            elif criterion == SortProperty.product:
+            elif criterion == OrderSortProperty.product:
                 order_by_clauses.append(clause_function(Product.name))
-            elif criterion == SortProperty.subscription:
+            elif criterion == OrderSortProperty.subscription:
                 order_by_clauses.append(clause_function(Order.subscription_id))
         statement = statement.order_by(*order_by_clauses)
 

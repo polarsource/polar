@@ -25,7 +25,7 @@ from .benefit import user_benefit as user_benefit_service
 class UserAdvertisementError(PolarError): ...
 
 
-class SortProperty(StrEnum):
+class UserAdvertisementSortProperty(StrEnum):
     created_at = "created_at"
     views = "views"
     clicks = "clicks"
@@ -38,20 +38,22 @@ class UserAdvertisementService(ResourceServiceReader[AdvertisementCampaign]):
         auth_subject: AuthSubject[User],
         *,
         pagination: PaginationParams,
-        sorting: list[Sorting[SortProperty]] = [(SortProperty.created_at, True)],
+        sorting: list[Sorting[UserAdvertisementSortProperty]] = [
+            (UserAdvertisementSortProperty.created_at, True)
+        ],
     ) -> tuple[Sequence[AdvertisementCampaign], int]:
         statement = self._get_readable_advertisement_statement(auth_subject)
 
         order_by_clauses: list[UnaryExpression[Any]] = []
         for criterion, is_desc in sorting:
             clause_function = desc if is_desc else asc
-            if criterion == SortProperty.created_at:
+            if criterion == UserAdvertisementSortProperty.created_at:
                 order_by_clauses.append(
                     clause_function(AdvertisementCampaign.created_at)
                 )
-            elif criterion == SortProperty.views:
+            elif criterion == UserAdvertisementSortProperty.views:
                 order_by_clauses.append(clause_function(AdvertisementCampaign.views))
-            elif criterion == SortProperty.clicks:
+            elif criterion == UserAdvertisementSortProperty.clicks:
                 order_by_clauses.append(clause_function(AdvertisementCampaign.clicks))
         statement = statement.order_by(*order_by_clauses)
 

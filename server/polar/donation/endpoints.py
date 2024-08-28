@@ -28,14 +28,14 @@ from .schemas import (
     DonationUpdateStripePaymentIntent,
     PublicDonation,
 )
-from .service import SearchSortProperty, donation_service
+from .service import DonationSortProperty, donation_service
 
 router = APIRouter(tags=["donations"])
 
 
 SearchSorting = Annotated[
-    list[Sorting[SearchSortProperty]],
-    Depends(SortingGetter(SearchSortProperty, ["-created_at"])),
+    list[Sorting[DonationSortProperty]],
+    Depends(SortingGetter(DonationSortProperty, ["-created_at"])),
 ]
 
 

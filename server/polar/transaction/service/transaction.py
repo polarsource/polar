@@ -33,7 +33,7 @@ from ..schemas import (
 from .base import BaseTransactionService
 
 
-class SearchSortProperty(StrEnum):
+class TransactionSortProperty(StrEnum):
     created_at = "created_at"
     amount = "amount"
 
@@ -50,8 +50,8 @@ class TransactionService(BaseTransactionService):
         payment_organization_id: uuid.UUID | None = None,
         exclude_platform_fees: bool = False,
         pagination: PaginationParams,
-        sorting: list[Sorting[SearchSortProperty]] = [
-            (SearchSortProperty.created_at, True)
+        sorting: list[Sorting[TransactionSortProperty]] = [
+            (TransactionSortProperty.created_at, True)
         ],
     ) -> tuple[Sequence[Transaction], int]:
         statement = self._get_readable_transactions_statement(user)
@@ -99,9 +99,9 @@ class TransactionService(BaseTransactionService):
         order_by_clauses: list[UnaryExpression[Any]] = []
         for criterion, is_desc in sorting:
             clause_function = desc if is_desc else asc
-            if criterion == SearchSortProperty.created_at:
+            if criterion == TransactionSortProperty.created_at:
                 order_by_clauses.append(clause_function(Transaction.created_at))
-            elif criterion == SearchSortProperty.amount:
+            elif criterion == TransactionSortProperty.amount:
                 order_by_clauses.append(clause_function(Transaction.amount))
         statement = statement.order_by(*order_by_clauses)
 

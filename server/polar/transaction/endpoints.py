@@ -24,15 +24,15 @@ from .schemas import (
     TransactionsSummary,
 )
 from .service.payout import payout_transaction as payout_transaction_service
-from .service.transaction import SearchSortProperty
+from .service.transaction import TransactionSortProperty
 from .service.transaction import transaction as transaction_service
 
 router = APIRouter(prefix="/transactions", tags=["transactions"])
 
 
 SearchSorting = Annotated[
-    list[Sorting[SearchSortProperty]],
-    Depends(SortingGetter(SearchSortProperty, ["-created_at"])),
+    list[Sorting[TransactionSortProperty]],
+    Depends(SortingGetter(TransactionSortProperty, ["-created_at"])),
 ]
 
 

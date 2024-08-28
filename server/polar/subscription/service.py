@@ -119,7 +119,7 @@ def _from_timestamp(t: int | None) -> datetime | None:
     return datetime.fromtimestamp(t, UTC)
 
 
-class SearchSortProperty(StrEnum):
+class SubscriptionSortProperty(StrEnum):
     user = "user"
     status = "status"
     started_at = "started_at"
@@ -165,8 +165,8 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         product_id: Sequence[uuid.UUID] | None = None,
         active: bool | None = None,
         pagination: PaginationParams,
-        sorting: list[Sorting[SearchSortProperty]] = [
-            (SearchSortProperty.started_at, True)
+        sorting: list[Sorting[SubscriptionSortProperty]] = [
+            (SubscriptionSortProperty.started_at, True)
         ],
     ) -> tuple[Sequence[Subscription], int]:
         statement = self._get_readable_subscriptions_statement(auth_subject).where(
@@ -195,9 +195,9 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         order_by_clauses: list[UnaryExpression[Any]] = []
         for criterion, is_desc in sorting:
             clause_function = desc if is_desc else asc
-            if criterion == SearchSortProperty.user:
+            if criterion == SubscriptionSortProperty.user:
                 order_by_clauses.append(clause_function(User.username))
-            if criterion == SearchSortProperty.status:
+            if criterion == SubscriptionSortProperty.status:
                 order_by_clauses.append(
                     clause_function(
                         case(
@@ -221,19 +221,19 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
                         )
                     )
                 )
-            if criterion == SearchSortProperty.started_at:
+            if criterion == SubscriptionSortProperty.started_at:
                 order_by_clauses.append(clause_function(Subscription.started_at))
-            if criterion == SearchSortProperty.current_period_end:
+            if criterion == SubscriptionSortProperty.current_period_end:
                 order_by_clauses.append(
                     clause_function(Subscription.current_period_end)
                 )
-            if criterion == SearchSortProperty.price_amount:
+            if criterion == SubscriptionSortProperty.price_amount:
                 order_by_clauses.append(
                     clause_function(ProductPrice.price_amount).nulls_last()
                 )
-            if criterion == SearchSortProperty.subscription_tier_type:
+            if criterion == SubscriptionSortProperty.subscription_tier_type:
                 order_by_clauses.append(clause_function(Product.type))
-            if criterion == SearchSortProperty.product:
+            if criterion == SubscriptionSortProperty.product:
                 order_by_clauses.append(clause_function(Product.name))
         statement = statement.order_by(*order_by_clauses)
 

@@ -57,7 +57,7 @@ from polar.user.service.user import user as user_service
 from polar.webhook.service import webhook as webhook_service
 
 
-class SearchSortProperty(StrEnum):
+class DonationSortProperty(StrEnum):
     amount = "amount"
     created_at = "created_at"
 
@@ -97,8 +97,8 @@ class DonationService:
         *,
         to_organization: Organization,
         pagination: PaginationParams,
-        sorting: list[Sorting[SearchSortProperty]] = [
-            (SearchSortProperty.created_at, True)
+        sorting: list[Sorting[DonationSortProperty]] = [
+            (DonationSortProperty.created_at, True)
         ],
     ) -> tuple[Sequence[Donation], int]:
         statement = (
@@ -118,9 +118,9 @@ class DonationService:
         order_by_clauses: list[UnaryExpression[Any]] = []
         for criterion, is_desc in sorting:
             clause_function = desc if is_desc else asc
-            if criterion == SearchSortProperty.amount:
+            if criterion == DonationSortProperty.amount:
                 order_by_clauses.append(clause_function(Donation.amount_received))
-            if criterion == SearchSortProperty.created_at:
+            if criterion == DonationSortProperty.created_at:
                 order_by_clauses.append(clause_function(Donation.created_at))
 
         statement = statement.order_by(*order_by_clauses)

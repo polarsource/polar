@@ -13,7 +13,7 @@ from polar.kit.sorting import Sorting
 from polar.models import ExternalOrganization, Organization, User
 from polar.postgres import AsyncSession
 
-from .sorting import SortProperty
+from .sorting import ExternalOrganizationSortProperty
 
 
 class ExternalOrganizationService(ResourceServiceReader[ExternalOrganization]):
@@ -26,7 +26,9 @@ class ExternalOrganizationService(ResourceServiceReader[ExternalOrganization]):
         name: Sequence[str] | None = None,
         organization_id: Sequence[uuid.UUID] | None = None,
         pagination: PaginationParams,
-        sorting: list[Sorting[SortProperty]] = [(SortProperty.created_at, True)],
+        sorting: list[Sorting[ExternalOrganizationSortProperty]] = [
+            (ExternalOrganizationSortProperty.created_at, True)
+        ],
     ) -> tuple[Sequence[ExternalOrganization], int]:
         statement = self._get_readable_external_organization_statement(auth_subject)
 
@@ -44,11 +46,11 @@ class ExternalOrganizationService(ResourceServiceReader[ExternalOrganization]):
         order_by_clauses: list[UnaryExpression[Any]] = []
         for criterion, is_desc in sorting:
             clause_function = desc if is_desc else asc
-            if criterion == SortProperty.created_at:
+            if criterion == ExternalOrganizationSortProperty.created_at:
                 order_by_clauses.append(
                     clause_function(ExternalOrganization.created_at)
                 )
-            elif criterion == SortProperty.name:
+            elif criterion == ExternalOrganizationSortProperty.name:
                 order_by_clauses.append(clause_function(ExternalOrganization.name))
         statement = statement.order_by(*order_by_clauses)
 

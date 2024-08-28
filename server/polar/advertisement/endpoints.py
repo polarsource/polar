@@ -15,7 +15,7 @@ from polar.postgres import AsyncSession, get_db_session
 from polar.routing import APIRouter
 
 from .schemas import AdvertisementCampaign, AdvertisementCampaignListResource
-from .service import SortProperty
+from .service import AdvertisementSortProperty
 from .service import advertisement_campaign as advertisement_campaign_service
 
 router = APIRouter(prefix="/advertisements", tags=["advertisements", APITag.documented])
@@ -30,8 +30,8 @@ AdvertisementCampaignNotFound = {
 
 
 ListSorting = Annotated[
-    list[Sorting[SortProperty]],
-    Depends(SortingGetter(SortProperty, ["granted_at"])),
+    list[Sorting[AdvertisementSortProperty]],
+    Depends(SortingGetter(AdvertisementSortProperty, ["granted_at"])),
 ]
 
 

@@ -36,7 +36,7 @@ ListSorting = Annotated[
 ]
 
 
-@router.get("/", response_model=ListResource[UserBenefit])
+@router.get("/", summary="List Benefits", response_model=ListResource[UserBenefit])
 async def list(
     auth_subject: auth.UserBenefitsRead,
     pagination: PaginationParamsQuery,
@@ -76,6 +76,7 @@ async def list(
 
 @router.get(
     "/{id}",
+    summary="Get Benefit",
     response_model=UserBenefit,
     responses={404: BenefitNotFound},
 )

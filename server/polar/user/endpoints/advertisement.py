@@ -38,7 +38,11 @@ ListSorting = Annotated[
 ]
 
 
-@router.get("/", response_model=ListResource[UserAdvertisementCampaign])
+@router.get(
+    "/",
+    summary="List Advertisements",
+    response_model=ListResource[UserAdvertisementCampaign],
+)
 async def list(
     auth_subject: auth.UserAdvertisementCampaignsRead,
     pagination: PaginationParamsQuery,
@@ -62,6 +66,7 @@ async def list(
 
 @router.get(
     "/{id}",
+    summary="Get Advertisement",
     response_model=UserAdvertisementCampaign,
     responses={404: AdvertisementCampaignNotFound},
 )
@@ -83,6 +88,7 @@ async def get(
 
 @router.post(
     "/",
+    summary="Create Advertisement",
     response_model=UserAdvertisementCampaign,
     status_code=201,
     responses={201: {"description": "Advertisement campaign created."}},
@@ -102,6 +108,7 @@ async def create(
 
 @router.patch(
     "/{id}",
+    summary="Update Advertisement",
     response_model=UserAdvertisementCampaign,
     responses={
         200: {"description": "Advertisement campaign updated."},
@@ -131,6 +138,7 @@ async def update(
 
 @router.post(
     "/{id}/enable",
+    summary="Enable Advertisement",
     status_code=204,
     responses={
         204: {"description": "Advertisement campaign enabled on benefit."},
@@ -163,6 +171,7 @@ async def enable(
 
 @router.delete(
     "/{id}",
+    summary="Delete Advertisement",
     responses={
         204: {"description": "Advertisement campaign deleted."},
         404: AdvertisementCampaignNotFound,

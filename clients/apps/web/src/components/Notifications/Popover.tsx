@@ -665,7 +665,7 @@ const MaintainerNewProductSale = ({
           <>
             {payload.customer_name} just purchased{' '}
             <InternalLink
-              href={`/dashboard/${payload.organization_name}/sales/orders`}
+              href={`/dashboard/${payload.organization_name}/sales`}
             >
               <>{payload.product_name}</>
             </InternalLink>{' '}

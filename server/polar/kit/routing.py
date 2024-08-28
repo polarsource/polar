@@ -5,6 +5,8 @@ from typing import Any, ParamSpec, TypeVar
 from fastapi import APIRouter as _APIRouter
 from fastapi.routing import APIRoute
 
+from polar.openapi import APITag
+
 from .db.postgres import AsyncSession
 
 
@@ -38,6 +40,20 @@ class AutoCommitAPIRoute(APIRoute):
             return response
 
         return wrapped_endpoint
+
+
+class SpeakeasyIgnoreAPIRoute(APIRoute):
+    """
+    A subclass of `APIRoute` that automatically adds the `x-speakeasy-ignore` property
+    to the OpenAPI schema if `APITag.documented` is missing.
+    """
+
+    def __init__(self, path: str, endpoint: Callable[..., Any], **kwargs: Any) -> None:
+        tags = kwargs.get("tags", [])
+        if APITag.documented not in tags:
+            openapi_extra = kwargs.get("openapi_extra") or {}
+            kwargs["openapi_extra"] = {"x-speakeasy-ignore": True, **openapi_extra}
+        super().__init__(path, endpoint, **kwargs)
 
 
 _P = ParamSpec("_P")

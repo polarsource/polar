@@ -20,6 +20,7 @@ import type {
   HTTPValidationError,
   Issue,
   IssueNumberFilter,
+  IssueSortProperty,
   IssueUpdateBadgeMessage,
   ListResourceIssue,
   OrganizationIDFilter,
@@ -65,7 +66,7 @@ export interface IssuesApiListRequest {
     isBadged?: boolean;
     page?: number;
     limit?: number;
-    sorting?: Array<string>;
+    sorting?: Array<IssueSortProperty>;
 }
 
 export interface IssuesApiLookupRequest {

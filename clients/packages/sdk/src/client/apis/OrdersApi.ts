@@ -19,6 +19,7 @@ import type {
   ListResourceOrder,
   Order,
   OrderInvoice,
+  OrderSortProperty,
   OrganizationIDFilter,
   ProductIDFilter,
   ProductPriceTypeFilter,
@@ -41,7 +42,7 @@ export interface OrdersApiListRequest {
     userId?: UserIDFilter;
     page?: number;
     limit?: number;
-    sorting?: Array<string>;
+    sorting?: Array<OrderSortProperty>;
 }
 
 /**

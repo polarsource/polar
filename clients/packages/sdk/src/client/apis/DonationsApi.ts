@@ -16,6 +16,7 @@
 import * as runtime from '../runtime';
 import type {
   DonationCreateStripePaymentIntent,
+  DonationSortProperty,
   DonationStatistics,
   DonationStripePaymentIntentMutationResponse,
   DonationUpdateStripePaymentIntent,
@@ -32,14 +33,14 @@ export interface DonationsApiDonationsPublicSearchRequest {
     organizationId: string;
     page?: number;
     limit?: number;
-    sorting?: Array<string>;
+    sorting?: Array<DonationSortProperty>;
 }
 
 export interface DonationsApiSearchDonationsRequest {
     toOrganizationId: string;
     page?: number;
     limit?: number;
-    sorting?: Array<string>;
+    sorting?: Array<DonationSortProperty>;
 }
 
 export interface DonationsApiStatisticsRequest {

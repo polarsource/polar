@@ -37,14 +37,18 @@ import type {
   UserAdvertisementCampaignCreate,
   UserAdvertisementCampaignEnable,
   UserAdvertisementCampaignUpdate,
+  UserAdvertisementSortProperty,
+  UserBenefitSortProperty,
   UserFreeSubscriptionCreate,
   UserOrder,
   UserOrderInvoice,
+  UserOrderSortProperty,
   UserRead,
   UserScopes,
   UserSetAccount,
   UserStripePortalSession,
   UserSubscription,
+  UserSubscriptionSortProperty,
   UserSubscriptionUpdate,
 } from '../models/index';
 
@@ -96,7 +100,7 @@ export interface UsersApiGetSubscriptionRequest {
 export interface UsersApiListAdvertisementCampaignsRequest {
     page?: number;
     limit?: number;
-    sorting?: Array<string>;
+    sorting?: Array<UserAdvertisementSortProperty>;
 }
 
 export interface UsersApiListBenefitsRequest {
@@ -106,7 +110,7 @@ export interface UsersApiListBenefitsRequest {
     subscriptionId?: SubscriptionIDFilter;
     page?: number;
     limit?: number;
-    sorting?: Array<string>;
+    sorting?: Array<UserBenefitSortProperty>;
 }
 
 export interface UsersApiListDownloadablesRequest {
@@ -124,7 +128,7 @@ export interface UsersApiListOrdersRequest {
     query?: string;
     page?: number;
     limit?: number;
-    sorting?: Array<string>;
+    sorting?: Array<UserOrderSortProperty>;
 }
 
 export interface UsersApiListSubscriptionsRequest {
@@ -134,7 +138,7 @@ export interface UsersApiListSubscriptionsRequest {
     query?: string;
     page?: number;
     limit?: number;
-    sorting?: Array<string>;
+    sorting?: Array<UserSubscriptionSortProperty>;
 }
 
 export interface UsersApiSetAccountRequest {

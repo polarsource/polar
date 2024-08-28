@@ -21,6 +21,7 @@ import type {
   PayoutEstimate,
   Transaction,
   TransactionDetails,
+  TransactionSortProperty,
   TransactionType,
   TransactionsSummary,
 } from '../models/index';
@@ -53,7 +54,7 @@ export interface TransactionsApiSearchTransactionsRequest {
     excludePlatformFees?: boolean;
     page?: number;
     limit?: number;
-    sorting?: Array<string>;
+    sorting?: Array<TransactionSortProperty>;
 }
 
 /**

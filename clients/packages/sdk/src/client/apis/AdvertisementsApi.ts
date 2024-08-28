@@ -17,6 +17,7 @@ import * as runtime from '../runtime';
 import type {
   AdvertisementCampaign,
   AdvertisementCampaignListResource,
+  AdvertisementSortProperty,
   HTTPValidationError,
   ResourceNotFound,
 } from '../models/index';
@@ -29,7 +30,7 @@ export interface AdvertisementsApiListRequest {
     benefitId: string;
     page?: number;
     limit?: number;
-    sorting?: Array<string>;
+    sorting?: Array<AdvertisementSortProperty>;
 }
 
 export interface AdvertisementsApiTrackViewRequest {

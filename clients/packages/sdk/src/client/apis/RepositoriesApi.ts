@@ -23,6 +23,7 @@ import type {
   PlatformFilter,
   Repository,
   RepositoryNameFilter,
+  RepositorySortProperty,
   RepositoryUpdate,
   ResourceNotFound,
 } from '../models/index';
@@ -39,7 +40,7 @@ export interface RepositoriesApiListRequest {
     organizationId?: OrganizationIDFilter;
     page?: number;
     limit?: number;
-    sorting?: Array<string>;
+    sorting?: Array<RepositorySortProperty>;
 }
 
 export interface RepositoriesApiUpdateRequest {

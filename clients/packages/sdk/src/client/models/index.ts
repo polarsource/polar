@@ -200,6 +200,23 @@ export interface AdvertisementCampaignListResource {
      */
     dimensions: Array<number>;
 }
+
+/**
+ * 
+ * @export
+ */
+export const AdvertisementSortProperty = {
+    CREATED_AT: 'created_at',
+    CREATED_AT2: '-created_at',
+    GRANTED_AT: 'granted_at',
+    GRANTED_AT2: '-granted_at',
+    VIEWS: 'views',
+    VIEWS2: '-views',
+    CLICKS: 'clicks',
+    CLICKS2: '-clicks'
+} as const;
+export type AdvertisementSortProperty = typeof AdvertisementSortProperty[keyof typeof AdvertisementSortProperty];
+
 /**
  * 
  * @export
@@ -4280,6 +4297,19 @@ export interface DonationOrganization {
 }
 
 
+
+/**
+ * 
+ * @export
+ */
+export const DonationSortProperty = {
+    AMOUNT: 'amount',
+    AMOUNT2: '-amount',
+    CREATED_AT: 'created_at',
+    CREATED_AT2: '-created_at'
+} as const;
+export type DonationSortProperty = typeof DonationSortProperty[keyof typeof DonationSortProperty];
+
 /**
  * 
  * @export
@@ -4897,6 +4927,19 @@ export interface ExternalOrganization {
  * @export
  */
 export type ExternalOrganizationNameFilter = Array<string> | string;
+
+
+/**
+ * 
+ * @export
+ */
+export const ExternalOrganizationSortProperty = {
+    CREATED_AT: 'created_at',
+    CREATED_AT2: '-created_at',
+    NAME: 'name',
+    NAME2: '-name'
+} as const;
+export type ExternalOrganizationSortProperty = typeof ExternalOrganizationSortProperty[keyof typeof ExternalOrganizationSortProperty];
 
 /**
  * @type FileCreate
@@ -5733,6 +5776,25 @@ export const IssueSortBy = {
     MOST_RECENTLY_FUNDED: 'most_recently_funded'
 } as const;
 export type IssueSortBy = typeof IssueSortBy[keyof typeof IssueSortBy];
+
+
+/**
+ * 
+ * @export
+ */
+export const IssueSortProperty = {
+    CREATED_AT: 'created_at',
+    CREATED_AT2: '-created_at',
+    MODIFIED_AT: 'modified_at',
+    MODIFIED_AT2: '-modified_at',
+    ENGAGEMENT: 'engagement',
+    ENGAGEMENT2: '-engagement',
+    POSITIVE_REACTIONS: 'positive_reactions',
+    POSITIVE_REACTIONS2: '-positive_reactions',
+    FUNDING_GOAL: 'funding_goal',
+    FUNDING_GOAL2: '-funding_goal'
+} as const;
+export type IssueSortProperty = typeof IssueSortProperty[keyof typeof IssueSortProperty];
 
 /**
  * 
@@ -8399,6 +8461,25 @@ export interface OrderProduct {
 }
 
 
+
+/**
+ * 
+ * @export
+ */
+export const OrderSortProperty = {
+    CREATED_AT: 'created_at',
+    CREATED_AT2: '-created_at',
+    AMOUNT: 'amount',
+    AMOUNT2: '-amount',
+    USER: 'user',
+    USER2: '-user',
+    PRODUCT: 'product',
+    PRODUCT2: '-product',
+    SUBSCRIPTION: 'subscription',
+    SUBSCRIPTION2: '-subscription'
+} as const;
+export type OrderSortProperty = typeof OrderSortProperty[keyof typeof OrderSortProperty];
+
 /**
  * 
  * @export
@@ -9105,6 +9186,19 @@ export interface OrganizationSetAccount {
      */
     account_id: string;
 }
+
+/**
+ * 
+ * @export
+ */
+export const OrganizationSortProperty = {
+    CREATED_AT: 'created_at',
+    CREATED_AT2: '-created_at',
+    NAME: 'name',
+    NAME2: '-name'
+} as const;
+export type OrganizationSortProperty = typeof OrganizationSortProperty[keyof typeof OrganizationSortProperty];
+
 /**
  * 
  * @export
@@ -11212,6 +11306,21 @@ export interface RepositoryProfileSettingsUpdate {
      */
     links?: Array<string> | null;
 }
+
+/**
+ * 
+ * @export
+ */
+export const RepositorySortProperty = {
+    CREATED_AT: 'created_at',
+    CREATED_AT2: '-created_at',
+    NAME: 'name',
+    NAME2: '-name',
+    STARS: 'stars',
+    STARS2: '-stars'
+} as const;
+export type RepositorySortProperty = typeof RepositorySortProperty[keyof typeof RepositorySortProperty];
+
 /**
  * 
  * @export
@@ -11856,6 +11965,29 @@ export interface SubscriptionCreateEmail {
  * @export
  */
 export type SubscriptionIDFilter = Array<string> | string;
+
+
+/**
+ * 
+ * @export
+ */
+export const SubscriptionSortProperty = {
+    USER: 'user',
+    USER2: '-user',
+    STATUS: 'status',
+    STATUS2: '-status',
+    STARTED_AT: 'started_at',
+    STARTED_AT2: '-started_at',
+    CURRENT_PERIOD_END: 'current_period_end',
+    CURRENT_PERIOD_END2: '-current_period_end',
+    PRICE_AMOUNT: 'price_amount',
+    PRICE_AMOUNT2: '-price_amount',
+    SUBSCRIPTION_TIER_TYPE: 'subscription_tier_type',
+    SUBSCRIPTION_TIER_TYPE2: '-subscription_tier_type',
+    PRODUCT: 'product',
+    PRODUCT2: '-product'
+} as const;
+export type SubscriptionSortProperty = typeof SubscriptionSortProperty[keyof typeof SubscriptionSortProperty];
 
 
 /**
@@ -13047,6 +13179,19 @@ export interface TransactionRepository {
 
 
 /**
+ * 
+ * @export
+ */
+export const TransactionSortProperty = {
+    CREATED_AT: 'created_at',
+    CREATED_AT2: '-created_at',
+    AMOUNT: 'amount',
+    AMOUNT2: '-amount'
+} as const;
+export type TransactionSortProperty = typeof TransactionSortProperty[keyof typeof TransactionSortProperty];
+
+
+/**
  * Type of transactions.
  * @export
  */
@@ -13297,6 +13442,21 @@ export interface UserAdvertisementCampaignUpdate {
      */
     link_url?: string | null;
 }
+
+/**
+ * 
+ * @export
+ */
+export const UserAdvertisementSortProperty = {
+    CREATED_AT: 'created_at',
+    CREATED_AT2: '-created_at',
+    VIEWS: 'views',
+    VIEWS2: '-views',
+    CLICKS: 'clicks',
+    CLICKS2: '-clicks'
+} as const;
+export type UserAdvertisementSortProperty = typeof UserAdvertisementSortProperty[keyof typeof UserAdvertisementSortProperty];
+
 /**
  * 
  * @export
@@ -13334,6 +13494,21 @@ export interface UserBase {
  * @export
  */
 export type UserBenefit = { type: 'ads' } & BenefitAdsSubscriber | { type: 'articles' } & BenefitArticlesSubscriber | { type: 'custom' } & BenefitCustomSubscriber | { type: 'discord' } & BenefitDiscordSubscriber | { type: 'downloadables' } & BenefitDownloadablesSubscriber | { type: 'github_repository' } & BenefitGitHubRepositorySubscriber;
+
+/**
+ * 
+ * @export
+ */
+export const UserBenefitSortProperty = {
+    GRANTED_AT: 'granted_at',
+    GRANTED_AT2: '-granted_at',
+    TYPE: 'type',
+    TYPE2: '-type',
+    ORGANIZATION: 'organization',
+    ORGANIZATION2: '-organization'
+} as const;
+export type UserBenefitSortProperty = typeof UserBenefitSortProperty[keyof typeof UserBenefitSortProperty];
+
 /**
  * 
  * @export
@@ -13594,6 +13769,25 @@ export interface UserOrderProduct {
     medias: Array<ProductMediaFileRead>;
 }
 
+
+
+/**
+ * 
+ * @export
+ */
+export const UserOrderSortProperty = {
+    CREATED_AT: 'created_at',
+    CREATED_AT2: '-created_at',
+    AMOUNT: 'amount',
+    AMOUNT2: '-amount',
+    ORGANIZATION: 'organization',
+    ORGANIZATION2: '-organization',
+    PRODUCT: 'product',
+    PRODUCT2: '-product',
+    SUBSCRIPTION: 'subscription',
+    SUBSCRIPTION2: '-subscription'
+} as const;
+export type UserOrderSortProperty = typeof UserOrderSortProperty[keyof typeof UserOrderSortProperty];
 
 /**
  * 
@@ -13967,6 +14161,25 @@ export interface UserSubscriptionProduct {
     medias: Array<ProductMediaFileRead>;
 }
 
+
+
+/**
+ * 
+ * @export
+ */
+export const UserSubscriptionSortProperty = {
+    STARTED_AT: 'started_at',
+    STARTED_AT2: '-started_at',
+    PRICE_AMOUNT: 'price_amount',
+    PRICE_AMOUNT2: '-price_amount',
+    STATUS: 'status',
+    STATUS2: '-status',
+    ORGANIZATION: 'organization',
+    ORGANIZATION2: '-organization',
+    PRODUCT: 'product',
+    PRODUCT2: '-product'
+} as const;
+export type UserSubscriptionSortProperty = typeof UserSubscriptionSortProperty[keyof typeof UserSubscriptionSortProperty];
 
 /**
  * 

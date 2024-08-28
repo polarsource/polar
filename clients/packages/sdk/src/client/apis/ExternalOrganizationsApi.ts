@@ -15,6 +15,7 @@
 
 import * as runtime from '../runtime';
 import type {
+  ExternalOrganizationSortProperty,
   HTTPValidationError,
   ListResourceExternalOrganization,
   OrganizationIDFilter,
@@ -28,7 +29,7 @@ export interface ExternalOrganizationsApiListRequest {
     organizationId?: OrganizationIDFilter;
     page?: number;
     limit?: number;
-    sorting?: Array<string>;
+    sorting?: Array<ExternalOrganizationSortProperty>;
 }
 
 /**

@@ -27,6 +27,7 @@ import type {
   OrganizationCreate,
   OrganizationCustomerType,
   OrganizationSetAccount,
+  OrganizationSortProperty,
   OrganizationStripePortalSession,
   OrganizationUpdate,
   ResourceNotFound,
@@ -57,7 +58,7 @@ export interface OrganizationsApiListRequest {
     isMember?: boolean;
     page?: number;
     limit?: number;
-    sorting?: Array<string>;
+    sorting?: Array<OrganizationSortProperty>;
 }
 
 export interface OrganizationsApiListOrganizationCustomersRequest {

@@ -3,6 +3,7 @@ import {
   ListResourceTransaction,
   PayoutEstimate,
   ResponseError,
+  TransactionSortProperty,
   TransactionType,
   TransactionsSummary,
 } from '@polar-sh/sdk'
@@ -17,7 +18,7 @@ export const useSearchTransactions = (variables: {
   type?: TransactionType
   page?: number
   limit?: number
-  sorting?: string[]
+  sorting?: TransactionSortProperty[]
 }): UseQueryResult<ListResourceTransaction> =>
   useQuery({
     queryKey: ['transactions', { ...variables }],

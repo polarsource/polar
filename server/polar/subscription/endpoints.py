@@ -154,9 +154,10 @@ async def create(
 @router.post(
     "/import",
     response_model=SubscriptionsImported,
+    summary="Import Subscriptions",
     # Set operation ID manually because `import` is a reserved keyword.
     operation_id="subscriptions:import",
-    summary="Import Subscriptions",
+    openapi_extra={"x-speakeasy-name-override": "import"},
 )
 async def subscriptions_import(
     auth_subject: auth.SubscriptionsWrite,

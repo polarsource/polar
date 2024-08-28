@@ -44,8 +44,13 @@ from ..userinfo import UserInfo, generate_user_info
 router = APIRouter(prefix="/oauth2", tags=["oauth2", APITag.documented])
 
 
-@router.get("/", summary="List Clients", response_model=ListResource[OAuth2Client])
-async def list_clients(
+@router.get(
+    "/",
+    summary="List Clients",
+    tags=["clients"],
+    response_model=ListResource[OAuth2Client],
+)
+async def list(
     auth_subject: WebUser,
     pagination: PaginationParamsQuery,
     session: AsyncSession = Depends(get_db_session),
@@ -59,8 +64,10 @@ async def list_clients(
     )
 
 
-@router.post("/register", summary="Create Client", name="oauth2:create_client")
-async def create_client(
+@router.post(
+    "/register", summary="Create Client", tags=["clients"], name="oauth2:create_client"
+)
+async def create(
     client_configuration: OAuth2ClientConfiguration,
     request: Request,
     auth_subject: WebUser,
@@ -74,8 +81,13 @@ async def create_client(
     )
 
 
-@router.get("/register/{client_id}", summary="Get Client", name="oauth2:get_client")
-async def get_client(
+@router.get(
+    "/register/{client_id}",
+    tags=["clients"],
+    summary="Get Client",
+    name="oauth2:get_client",
+)
+async def get(
     client_id: str,
     request: Request,
     auth_subject: WebUserOrAnonymous,
@@ -89,9 +101,12 @@ async def get_client(
 
 
 @router.put(
-    "/register/{client_id}", summary="Update Client", name="oauth2:update_client"
+    "/register/{client_id}",
+    tags=["clients"],
+    summary="Update Client",
+    name="oauth2:update_client",
 )
-async def update_client(
+async def update(
     client_id: str,
     client_configuration: OAuth2ClientConfigurationUpdate,
     request: Request,
@@ -107,9 +122,12 @@ async def update_client(
 
 
 @router.delete(
-    "/register/{client_id}", summary="Delete Client", name="oauth2:delete_client"
+    "/register/{client_id}",
+    tags=["clients"],
+    summary="Delete Client",
+    name="oauth2:delete_client",
 )
-async def delete_client(
+async def delete(
     client_id: str,
     request: Request,
     auth_subject: WebUserOrAnonymous,
@@ -197,7 +215,7 @@ _request_token_schema_defs = _request_token_schema.pop("$defs")
     },
     response_model=TokenResponse,
 )
-async def request_token(
+async def token(
     request: Request,
     authorization_server: AuthorizationServer = Depends(get_authorization_server),
 ) -> Response:
@@ -220,11 +238,11 @@ async def request_token(
                     "schema": RevokeTokenRequest.model_json_schema()
                 }
             },
-        }
+        },
     },
     response_model=RevokeTokenResponse,
 )
-async def revoke_token(
+async def revoke(
     request: Request,
     authorization_server: AuthorizationServer = Depends(get_authorization_server),
 ) -> Response:
@@ -249,11 +267,11 @@ async def revoke_token(
                     "schema": IntrospectTokenRequest.model_json_schema()
                 }
             },
-        }
+        },
     },
     response_model=IntrospectTokenResponse,
 )
-async def introspect_token(
+async def introspect(
     request: Request,
     authorization_server: AuthorizationServer = Depends(get_authorization_server),
 ) -> Response:
@@ -271,6 +289,7 @@ async def introspect_token(
     operation_id="oauth2:userinfo",
     response_model=UserInfoSchema,
     tags=[APITag.featured],
+    openapi_extra={"x-speakeasy-name-override": "userinfo"},
 )
 async def userinfo_get(token: OAuth2Token = Depends(get_token)) -> UserInfo:
     """Get information about the authenticated user."""

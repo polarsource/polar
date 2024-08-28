@@ -78,7 +78,7 @@ async def get(
 
 
 @router.get("/limits", summary="Get Metrics Limits", response_model=MetricsLimits)
-async def get_limits(auth_subject: auth.MetricsRead) -> MetricsLimits:
+async def limits(auth_subject: auth.MetricsRead) -> MetricsLimits:
     """Get the interval limits for the metrics endpoint."""
     return MetricsLimits.model_validate(
         {

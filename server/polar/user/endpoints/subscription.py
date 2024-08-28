@@ -29,7 +29,9 @@ from ..service.subscription import (
 )
 from ..service.subscription import user_subscription as user_subscription_service
 
-router = APIRouter(prefix="/subscriptions", tags=[APITag.documented, APITag.featured])
+router = APIRouter(
+    prefix="/subscriptions", tags=["subscriptions", APITag.documented, APITag.featured]
+)
 
 SubscriptionID = Annotated[UUID4, Path(description="The subscription ID.")]
 SubscriptionNotFound = {
@@ -44,7 +46,7 @@ ListSorting = Annotated[
 
 
 @router.get("/", response_model=ListResource[UserSubscription])
-async def list_subscriptions(
+async def list(
     auth_subject: auth.UserSubscriptionsRead,
     pagination: PaginationParamsQuery,
     sorting: ListSorting,
@@ -87,7 +89,7 @@ async def list_subscriptions(
     response_model=UserSubscription,
     responses={404: SubscriptionNotFound},
 )
-async def get_subscription(
+async def get(
     id: SubscriptionID,
     auth_subject: auth.UserSubscriptionsRead,
     session: AsyncSession = Depends(get_db_session),
@@ -116,7 +118,7 @@ async def get_subscription(
         404: SubscriptionNotFound,
     },
 )
-async def create_subscription(
+async def create(
     subscription_create: UserFreeSubscriptionCreate,
     auth_subject: auth.UserSubscriptionsWriteOrAnonymous,
     session: AsyncSession = Depends(get_db_session),
@@ -145,7 +147,7 @@ async def create_subscription(
         404: SubscriptionNotFound,
     },
 )
-async def update_subscription(
+async def update(
     id: SubscriptionID,
     subscription_update: UserSubscriptionUpdate,
     auth_subject: auth.UserSubscriptionsWrite,
@@ -177,7 +179,7 @@ async def update_subscription(
         404: SubscriptionNotFound,
     },
 )
-async def cancel_subscription(
+async def cancel(
     id: SubscriptionID,
     auth_subject: auth.UserSubscriptionsWrite,
     session: AsyncSession = Depends(get_db_session),

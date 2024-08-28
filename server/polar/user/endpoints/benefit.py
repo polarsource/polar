@@ -20,7 +20,9 @@ from ..schemas.benefit import UserBenefit, UserBenefitAdapter
 from ..service.benefit import UserBenefitSortProperty
 from ..service.benefit import user_benefit as user_benefit_service
 
-router = APIRouter(prefix="/benefits", tags=[APITag.documented, APITag.featured])
+router = APIRouter(
+    prefix="/benefits", tags=["benefits", APITag.documented, APITag.featured]
+)
 
 BenefitID = Annotated[UUID4, Path(description="The benefit ID.")]
 BenefitNotFound = {
@@ -35,7 +37,7 @@ ListSorting = Annotated[
 
 
 @router.get("/", response_model=ListResource[UserBenefit])
-async def list_benefits(
+async def list(
     auth_subject: auth.UserBenefitsRead,
     pagination: PaginationParamsQuery,
     sorting: ListSorting,
@@ -77,7 +79,7 @@ async def list_benefits(
     response_model=UserBenefit,
     responses={404: BenefitNotFound},
 )
-async def get_benefit(
+async def get(
     id: BenefitID,
     auth_subject: auth.UserBenefitsRead,
     session: AsyncSession = Depends(get_db_session),

@@ -13,14 +13,16 @@ from .. import auth
 from ..schemas.downloadables import DownloadableRead
 from ..service.downloadables import downloadable as downloadable_service
 
-router = APIRouter(prefix="/downloadables", tags=[APITag.documented, APITag.featured])
+router = APIRouter(
+    prefix="/downloadables", tags=["downloadables", APITag.documented, APITag.featured]
+)
 
 
 @router.get(
     "/",
     response_model=ListResource[DownloadableRead],
 )
-async def list_downloadables(
+async def list(
     auth_subject: auth.UserDownloadablesRead,
     pagination: PaginationParamsQuery,
     organization_id: MultipleQueryFilter[OrganizationID] | None = Query(
@@ -59,7 +61,7 @@ async def list_downloadables(
         410: {"description": "Expired signature"},
     },
 )
-async def get_downloadable(
+async def get(
     token: str,
     auth_subject: auth.UserDownloadablesRead,
     session: AsyncSession = Depends(get_db_session),

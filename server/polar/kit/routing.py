@@ -1,10 +1,12 @@
 import functools
+import inspect
 from collections.abc import Callable
 from typing import Any, ParamSpec, TypeVar
 
 from fastapi import APIRouter as _APIRouter
 from fastapi.routing import APIRoute
 
+from polar.kit.pagination import ListResource
 from polar.openapi import APITag
 
 from .db.postgres import AsyncSession
@@ -44,7 +46,7 @@ class AutoCommitAPIRoute(APIRoute):
 
 class SpeakeasyIgnoreAPIRoute(APIRoute):
     """
-    A subclass of `APIRoute` that automatically adds the `x-speakeasy-ignore` property
+    A subclass of `APIRoute` that automatically adds `x-speakeasy-ignore` property
     to the OpenAPI schema if `APITag.documented` is missing.
     """
 
@@ -58,7 +60,7 @@ class SpeakeasyIgnoreAPIRoute(APIRoute):
 
 class SpeakeasyGroupAPIRoute(APIRoute):
     """
-    A subclass of `APIRoute` that automatically adds the `x-speakeasy-group` property
+    A subclass of `APIRoute` that automatically adds `x-speakeasy-group` property
     to the OpenAPI schema following the first tag.
     """
 
@@ -68,6 +70,45 @@ class SpeakeasyGroupAPIRoute(APIRoute):
         if len(tags) > 0:
             openapi_extra = self.openapi_extra or {}
             self.openapi_extra = {**openapi_extra, "x-speakeasy-group": tags[0]}
+
+
+class SpeakeasyPaginationAPIRoute(APIRoute):
+    """
+    A subclass of `APIRoute` that automatically adds `x-speakeasy-pagination` property
+    to the OpenAPI schema if the endpoint response model is a `ListResource`.
+    """
+
+    def __init__(self, path: str, endpoint: Callable[..., Any], **kwargs: Any) -> None:
+        super().__init__(path, endpoint, **kwargs)
+        response_model = self.response_model
+        if (
+            response_model is not None
+            and inspect.isclass(response_model)
+            and ListResource in response_model.mro()
+        ):
+            openapi_extra = self.openapi_extra or {}
+            self.openapi_extra = {
+                **openapi_extra,
+                "x-speakeasy-pagination": {
+                    "type": "offsetLimit",
+                    "inputs": [
+                        {
+                            "name": "page",
+                            "in": "parameters",
+                            "type": "page",
+                        },
+                        {
+                            "name": "limit",
+                            "in": "parameters",
+                            "type": "limit",
+                        },
+                    ],
+                    "outputs": {
+                        "results": "$.items",
+                        "numPages": "$.pagination.max_page",
+                    },
+                },
+            }
 
 
 _P = ParamSpec("_P")

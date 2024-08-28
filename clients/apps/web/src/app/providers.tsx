@@ -1,5 +1,6 @@
 'use client'
 
+import { cookieConsentGiven } from '@/components/Privacy/CookieConsent'
 import { queryClient } from '@/utils/api'
 import { CONFIG } from '@/utils/config'
 import { QueryClientProvider } from '@tanstack/react-query'
@@ -15,6 +16,8 @@ if (CONFIG.POSTHOG_TOKEN && typeof window !== 'undefined') {
   posthog.init(CONFIG.POSTHOG_TOKEN, {
     api_host: '/ingest',
     ui_host: 'https://us.posthog.com',
+    persistence:
+      cookieConsentGiven() === 'yes' ? 'localStorage+cookie' : 'memory',
   })
 }
 

@@ -5,7 +5,7 @@ from polar.kit.db.postgres import AsyncSession
 from polar.kit.pagination import PaginationParams
 from polar.kit.sorting import Sorting
 from polar.models import Benefit, Subscription, User
-from polar.user.service.benefit import SortProperty
+from polar.user.service.benefit import UserBenefitSortProperty
 from polar.user.service.benefit import user_benefit as user_benefit_service
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_benefit_grant
@@ -84,7 +84,7 @@ class TestList:
     @pytest.mark.auth
     async def test_sorting(
         self,
-        sorting: list[Sorting[SortProperty]],
+        sorting: list[Sorting[UserBenefitSortProperty]],
         auth_subject: AuthSubject[User],
         save_fixture: SaveFixture,
         session: AsyncSession,

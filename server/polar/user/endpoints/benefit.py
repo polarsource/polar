@@ -17,7 +17,7 @@ from polar.routing import APIRouter
 
 from .. import auth
 from ..schemas.benefit import UserBenefit, UserBenefitAdapter
-from ..service.benefit import SortProperty
+from ..service.benefit import UserBenefitSortProperty
 from ..service.benefit import user_benefit as user_benefit_service
 
 router = APIRouter(prefix="/benefits", tags=[APITag.documented, APITag.featured])
@@ -29,8 +29,8 @@ BenefitNotFound = {
 }
 
 ListSorting = Annotated[
-    list[Sorting[SortProperty]],
-    Depends(SortingGetter(SortProperty, ["-granted_at"])),
+    list[Sorting[UserBenefitSortProperty]],
+    Depends(SortingGetter(UserBenefitSortProperty, ["-granted_at"])),
 ]
 
 

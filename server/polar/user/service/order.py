@@ -27,7 +27,7 @@ class InvoiceNotAvailable(UserOrderError):
         super().__init__(message, 404)
 
 
-class SortProperty(StrEnum):
+class UserOrderSortProperty(StrEnum):
     created_at = "created_at"
     amount = "amount"
     organization = "organization"
@@ -47,7 +47,9 @@ class UserOrderService(ResourceServiceReader[Order]):
         subscription_id: Sequence[uuid.UUID] | None = None,
         query: str | None = None,
         pagination: PaginationParams,
-        sorting: list[Sorting[SortProperty]] = [(SortProperty.created_at, True)],
+        sorting: list[Sorting[UserOrderSortProperty]] = [
+            (UserOrderSortProperty.created_at, True)
+        ],
     ) -> tuple[Sequence[Order], int]:
         statement = self._get_readable_order_statement(auth_subject)
 
@@ -84,15 +86,15 @@ class UserOrderService(ResourceServiceReader[Order]):
         order_by_clauses: list[UnaryExpression[Any]] = []
         for criterion, is_desc in sorting:
             clause_function = desc if is_desc else asc
-            if criterion == SortProperty.created_at:
+            if criterion == UserOrderSortProperty.created_at:
                 order_by_clauses.append(clause_function(Order.created_at))
-            elif criterion == SortProperty.amount:
+            elif criterion == UserOrderSortProperty.amount:
                 order_by_clauses.append(clause_function(Order.amount))
-            elif criterion == SortProperty.organization:
+            elif criterion == UserOrderSortProperty.organization:
                 order_by_clauses.append(clause_function(Organization.slug))
-            elif criterion == SortProperty.product:
+            elif criterion == UserOrderSortProperty.product:
                 order_by_clauses.append(clause_function(Product.name))
-            elif criterion == SortProperty.subscription:
+            elif criterion == UserOrderSortProperty.subscription:
                 order_by_clauses.append(clause_function(Order.subscription_id))
         statement = statement.order_by(*order_by_clauses)
 

@@ -25,7 +25,7 @@ from ..schemas.subscription import (
 from ..service.subscription import (
     AlreadyCanceledSubscription,
     FreeSubscriptionUpgrade,
-    SortProperty,
+    UserSubscriptionSortProperty,
 )
 from ..service.subscription import user_subscription as user_subscription_service
 
@@ -38,8 +38,8 @@ SubscriptionNotFound = {
 }
 
 ListSorting = Annotated[
-    list[Sorting[SortProperty]],
-    Depends(SortingGetter(SortProperty, ["-started_at"])),
+    list[Sorting[UserSubscriptionSortProperty]],
+    Depends(SortingGetter(UserSubscriptionSortProperty, ["-started_at"])),
 ]
 
 

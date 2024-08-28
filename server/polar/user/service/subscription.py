@@ -49,7 +49,7 @@ class AlreadyCanceledSubscription(UserSubscriptionError):
         super().__init__(message, 403)
 
 
-class SortProperty(StrEnum):
+class UserSubscriptionSortProperty(StrEnum):
     started_at = "started_at"
     price_amount = "price_amount"
     status = "status"
@@ -68,7 +68,9 @@ class UserSubscriptionService(ResourceServiceReader[Subscription]):
         active: bool | None = None,
         query: str | None = None,
         pagination: PaginationParams,
-        sorting: list[Sorting[SortProperty]] = [(SortProperty.started_at, True)],
+        sorting: list[Sorting[UserSubscriptionSortProperty]] = [
+            (UserSubscriptionSortProperty.started_at, True)
+        ],
     ) -> tuple[Sequence[Subscription], int]:
         statement = self._get_readable_subscription_statement(auth_subject).where(
             Subscription.started_at.is_not(None)
@@ -114,17 +116,17 @@ class UserSubscriptionService(ResourceServiceReader[Subscription]):
         order_by_clauses: list[UnaryExpression[Any]] = []
         for criterion, is_desc in sorting:
             clause_function = desc if is_desc else asc
-            if criterion == SortProperty.started_at:
+            if criterion == UserSubscriptionSortProperty.started_at:
                 order_by_clauses.append(clause_function(Subscription.started_at))
-            elif criterion == SortProperty.price_amount:
+            elif criterion == UserSubscriptionSortProperty.price_amount:
                 order_by_clauses.append(
                     nulls_first(clause_function(SubscriptionProductPrice.price_amount))
                 )
-            elif criterion == SortProperty.status:
+            elif criterion == UserSubscriptionSortProperty.status:
                 order_by_clauses.append(clause_function(Subscription.status))
-            elif criterion == SortProperty.organization:
+            elif criterion == UserSubscriptionSortProperty.organization:
                 order_by_clauses.append(clause_function(Organization.slug))
-            elif criterion == SortProperty.product:
+            elif criterion == UserSubscriptionSortProperty.product:
                 order_by_clauses.append(clause_function(Product.name))
         statement = statement.order_by(*order_by_clauses)
 

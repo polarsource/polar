@@ -31,7 +31,7 @@ from ..product.service.product import product as product_service
 from . import auth
 from .schemas import Subscription as SubscriptionSchema
 from .schemas import SubscriptionCreateEmail, SubscriptionsImported
-from .service import AlreadySubscribed, SearchSortProperty
+from .service import AlreadySubscribed, SubscriptionSortProperty
 from .service import subscription as subscription_service
 
 log = structlog.get_logger()
@@ -40,8 +40,8 @@ router = APIRouter(prefix="/subscriptions", tags=["subscriptions", APITag.docume
 
 
 SearchSorting = Annotated[
-    list[Sorting[SearchSortProperty]],
-    Depends(SortingGetter(SearchSortProperty, ["-started_at"])),
+    list[Sorting[SubscriptionSortProperty]],
+    Depends(SortingGetter(SubscriptionSortProperty, ["-started_at"])),
 ]
 
 

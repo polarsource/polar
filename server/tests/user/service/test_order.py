@@ -5,7 +5,7 @@ from polar.kit.db.postgres import AsyncSession
 from polar.kit.pagination import PaginationParams
 from polar.kit.sorting import Sorting
 from polar.models import Product, User
-from polar.user.service.order import SortProperty
+from polar.user.service.order import UserOrderSortProperty
 from polar.user.service.order import user_order as user_order_service
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_order
@@ -63,7 +63,7 @@ class TestList:
     @pytest.mark.auth
     async def test_sorting(
         self,
-        sorting: list[Sorting[SortProperty]],
+        sorting: list[Sorting[UserOrderSortProperty]],
         auth_subject: AuthSubject[User],
         save_fixture: SaveFixture,
         session: AsyncSession,

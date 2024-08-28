@@ -13,7 +13,7 @@ from polar.models import AdvertisementCampaign, BenefitGrant
 from polar.models.benefit import BenefitAds
 
 
-class SortProperty(StrEnum):
+class AdvertisementSortProperty(StrEnum):
     created_at = "created_at"
     granted_at = "granted_at"
     views = "views"
@@ -27,7 +27,9 @@ class AdvertisementCampaignService(ResourceServiceReader[AdvertisementCampaign])
         *,
         benefit_id: uuid.UUID,
         pagination: PaginationParams,
-        sorting: list[Sorting[SortProperty]] = [(SortProperty.granted_at, False)],
+        sorting: list[Sorting[AdvertisementSortProperty]] = [
+            (AdvertisementSortProperty.granted_at, False)
+        ],
     ) -> tuple[Sequence[AdvertisementCampaign], int]:
         statement = self._get_readable_advertisement_statement().where(
             BenefitAds.id == benefit_id
@@ -36,15 +38,15 @@ class AdvertisementCampaignService(ResourceServiceReader[AdvertisementCampaign])
         order_by_clauses: list[UnaryExpression[Any]] = []
         for criterion, is_desc in sorting:
             clause_function = desc if is_desc else asc
-            if criterion == SortProperty.created_at:
+            if criterion == AdvertisementSortProperty.created_at:
                 order_by_clauses.append(
                     clause_function(AdvertisementCampaign.created_at)
                 )
-            elif criterion == SortProperty.granted_at:
+            elif criterion == AdvertisementSortProperty.granted_at:
                 order_by_clauses.append(clause_function(BenefitGrant.granted_at))
-            elif criterion == SortProperty.views:
+            elif criterion == AdvertisementSortProperty.views:
                 order_by_clauses.append(clause_function(AdvertisementCampaign.views))
-            elif criterion == SortProperty.clicks:
+            elif criterion == AdvertisementSortProperty.clicks:
                 order_by_clauses.append(clause_function(AdvertisementCampaign.clicks))
         statement = statement.order_by(*order_by_clauses)
 

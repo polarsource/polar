@@ -31,7 +31,7 @@ from .schemas import (
     RepositoryProfileSettings,
     RepositoryUpdate,
 )
-from .sorting import SortProperty
+from .sorting import RepositorySortProperty
 
 log = structlog.get_logger()
 
@@ -50,7 +50,9 @@ class RepositoryService(
         is_private: bool | None = None,
         organization_id: Sequence[uuid.UUID] | None = None,
         pagination: PaginationParams,
-        sorting: list[Sorting[SortProperty]] = [(SortProperty.created_at, True)],
+        sorting: list[Sorting[RepositorySortProperty]] = [
+            (RepositorySortProperty.created_at, True)
+        ],
     ) -> tuple[Sequence[Repository], int]:
         statement = self._get_readable_repository_statement(auth_subject).options(
             joinedload(Repository.organization)
@@ -86,11 +88,11 @@ class RepositoryService(
         order_by_clauses: list[UnaryExpression[Any]] = []
         for criterion, is_desc in sorting:
             clause_function = desc if is_desc else asc
-            if criterion == SortProperty.created_at:
+            if criterion == RepositorySortProperty.created_at:
                 order_by_clauses.append(clause_function(Repository.created_at))
-            elif criterion == SortProperty.name:
+            elif criterion == RepositorySortProperty.name:
                 order_by_clauses.append(clause_function(Repository.name))
-            elif criterion == SortProperty.stars:
+            elif criterion == RepositorySortProperty.stars:
                 order_by_clauses.append(clause_function(Repository.stars))
         statement = statement.order_by(*order_by_clauses)
 

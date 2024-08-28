@@ -18,7 +18,7 @@ from polar.routing import APIRouter
 
 from .. import auth
 from ..schemas.order import UserOrder, UserOrderInvoice
-from ..service.order import SortProperty
+from ..service.order import UserOrderSortProperty
 from ..service.order import user_order as user_order_service
 
 router = APIRouter(prefix="/orders", tags=[APITag.documented, APITag.featured])
@@ -27,8 +27,8 @@ OrderID = Annotated[UUID4, Path(description="The order ID.")]
 OrderNotFound = {"description": "Order not found.", "model": ResourceNotFound.schema()}
 
 ListSorting = Annotated[
-    list[Sorting[SortProperty]],
-    Depends(SortingGetter(SortProperty, ["-created_at"])),
+    list[Sorting[UserOrderSortProperty]],
+    Depends(SortingGetter(UserOrderSortProperty, ["-created_at"])),
 ]
 
 

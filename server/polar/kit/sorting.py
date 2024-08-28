@@ -61,6 +61,11 @@ def SortingGetter(
         enum_values.append(value.value)
         enum_values.append(f"-{value.value}")
 
+    sort_property_full_enum = StrEnum(  # type: ignore[misc]
+        sort_property_enum.__name__,
+        enum_values,
+    )
+
     parameters: list[Parameter] = [
         Parameter(name="self", kind=Parameter.POSITIONAL_OR_KEYWORD),
         Parameter(
@@ -73,9 +78,8 @@ def SortingGetter(
                     "Several criteria can be used simultaneously and will be applied in order. "
                     "Add a minus sign `-` before the criteria name to sort by descending order."
                 ),
-                json_schema_extra={"type": "string", "enum": enum_values},
             ),
-            annotation=list[str] | None,
+            annotation=list[sort_property_full_enum] | None,
         ),
     ]
     signature = Signature(parameters)

@@ -46,7 +46,7 @@ from polar.models.pledge import PledgeState
 from polar.postgres import AsyncSession, sql
 
 from .schemas import IssueCreate, IssueUpdate
-from .sorting import SortProperty
+from .sorting import IssueSortProperty
 
 
 class IssueService(ResourceService[Issue, IssueCreate, IssueUpdate]):
@@ -62,7 +62,9 @@ class IssueService(ResourceService[Issue, IssueCreate, IssueUpdate]):
         organization_id: Sequence[uuid.UUID] | None = None,
         is_badged: bool | None = None,
         pagination: PaginationParams,
-        sorting: list[Sorting[SortProperty]] = [(SortProperty.modified_at, True)],
+        sorting: list[Sorting[IssueSortProperty]] = [
+            (IssueSortProperty.modified_at, True)
+        ],
     ) -> tuple[Sequence[Issue], int]:
         IssueExternalOrganization = aliased(ExternalOrganization)
         statement = (
@@ -107,15 +109,15 @@ class IssueService(ResourceService[Issue, IssueCreate, IssueUpdate]):
         order_by_clauses: list[UnaryExpression[Any]] = []
         for criterion, is_desc in sorting:
             clause_function = desc if is_desc else asc
-            if criterion == SortProperty.created_at:
+            if criterion == IssueSortProperty.created_at:
                 order_by_clauses.append(clause_function(Issue.created_at))
-            elif criterion == SortProperty.modified_at:
+            elif criterion == IssueSortProperty.modified_at:
                 order_by_clauses.append(clause_function(Issue.modified_at))
-            elif criterion == SortProperty.engagement:
+            elif criterion == IssueSortProperty.engagement:
                 order_by_clauses.append(clause_function(Issue.total_engagement_count))
-            elif criterion == SortProperty.positive_reactions:
+            elif criterion == IssueSortProperty.positive_reactions:
                 order_by_clauses.append(clause_function(Issue.positive_reactions_count))
-            elif criterion == SortProperty.funding_goal:
+            elif criterion == IssueSortProperty.funding_goal:
                 order_by_clauses.append(nullslast(clause_function(Issue.funding_goal)))
         statement = statement.order_by(*order_by_clauses)
 

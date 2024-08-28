@@ -6,7 +6,7 @@ from fastapi import Depends
 from polar.kit.sorting import Sorting, SortingGetter
 
 
-class SortProperty(StrEnum):
+class OrderSortProperty(StrEnum):
     created_at = "created_at"
     amount = "amount"
     user = "user"
@@ -15,6 +15,6 @@ class SortProperty(StrEnum):
 
 
 ListSorting = Annotated[
-    list[Sorting[SortProperty]],
-    Depends(SortingGetter(SortProperty, ["-created_at"])),
+    list[Sorting[OrderSortProperty]],
+    Depends(SortingGetter(OrderSortProperty, ["-created_at"])),
 ]

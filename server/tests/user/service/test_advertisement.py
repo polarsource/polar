@@ -13,7 +13,7 @@ from polar.user.schemas.advertisement import (
     UserAdvertisementCampaignEnable,
     UserAdvertisementCampaignUpdate,
 )
-from polar.user.service.advertisement import SortProperty
+from polar.user.service.advertisement import UserAdvertisementSortProperty
 from polar.user.service.advertisement import (
     user_advertisement as user_advertisement_service,
 )
@@ -73,7 +73,7 @@ class TestList:
     @pytest.mark.auth
     async def test_sorting(
         self,
-        sorting: list[Sorting[SortProperty]],
+        sorting: list[Sorting[UserAdvertisementSortProperty]],
         auth_subject: AuthSubject[User],
         save_fixture: SaveFixture,
         session: AsyncSession,

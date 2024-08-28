@@ -24,7 +24,7 @@ from polar.models.benefit import BenefitType
 class UserBenefitError(PolarError): ...
 
 
-class SortProperty(StrEnum):
+class UserBenefitSortProperty(StrEnum):
     granted_at = "granted_at"
     type = "type"
     organization = "organization"
@@ -41,7 +41,9 @@ class UserBenefitService(ResourceServiceReader[Benefit]):
         order_id: Sequence[uuid.UUID] | None = None,
         subscription_id: Sequence[uuid.UUID] | None = None,
         pagination: PaginationParams,
-        sorting: list[Sorting[SortProperty]] = [(SortProperty.granted_at, True)],
+        sorting: list[Sorting[UserBenefitSortProperty]] = [
+            (UserBenefitSortProperty.granted_at, True)
+        ],
     ) -> tuple[Sequence[Benefit], int]:
         statement = self._get_readable_benefit_statement(auth_subject)
 
@@ -72,7 +74,7 @@ class UserBenefitService(ResourceServiceReader[Benefit]):
         order_by_clauses: list[UnaryExpression[Any]] = []
         for criterion, is_desc in sorting:
             clause_function = desc if is_desc else asc
-            if criterion == SortProperty.granted_at:
+            if criterion == UserBenefitSortProperty.granted_at:
                 # Join only the most recent/oldest grant
                 statement = statement.join(
                     BenefitGrant,
@@ -89,9 +91,9 @@ class UserBenefitService(ResourceServiceReader[Benefit]):
                     .scalar_subquery(),
                 )
                 order_by_clauses.append(clause_function(BenefitGrant.granted_at))
-            elif criterion == SortProperty.type:
+            elif criterion == UserBenefitSortProperty.type:
                 order_by_clauses.append(clause_function(Benefit.type))
-            elif criterion == SortProperty.organization:
+            elif criterion == UserBenefitSortProperty.organization:
                 statement = statement.join(
                     Organization, onclause=Benefit.organization_id == Organization.id
                 )

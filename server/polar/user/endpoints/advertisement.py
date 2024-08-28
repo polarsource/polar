@@ -19,7 +19,7 @@ from ..schemas.advertisement import (
     UserAdvertisementCampaignEnable,
     UserAdvertisementCampaignUpdate,
 )
-from ..service.advertisement import SortProperty
+from ..service.advertisement import UserAdvertisementSortProperty
 from ..service.advertisement import user_advertisement as user_advertisement_service
 
 router = APIRouter(prefix="/advertisements", tags=[APITag.documented])
@@ -33,8 +33,8 @@ AdvertisementCampaignNotFound = {
 }
 
 ListSorting = Annotated[
-    list[Sorting[SortProperty]],
-    Depends(SortingGetter(SortProperty, ["-created_at"])),
+    list[Sorting[UserAdvertisementSortProperty]],
+    Depends(SortingGetter(UserAdvertisementSortProperty, ["-created_at"])),
 ]
 
 

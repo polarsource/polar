@@ -35,7 +35,7 @@ from polar.worker import enqueue_job
 
 from .auth import OrganizationsWrite
 from .schemas import OrganizationCreate, OrganizationCustomerType, OrganizationUpdate
-from .sorting import SortProperty
+from .sorting import OrganizationSortProperty
 
 log = structlog.get_logger()
 
@@ -62,7 +62,9 @@ class OrganizationService(ResourceServiceReader[Organization]):
         slug: str | None = None,
         is_member: bool | None = None,
         pagination: PaginationParams,
-        sorting: list[Sorting[SortProperty]] = [(SortProperty.created_at, False)],
+        sorting: list[Sorting[OrganizationSortProperty]] = [
+            (OrganizationSortProperty.created_at, False)
+        ],
     ) -> tuple[Sequence[Organization], int]:
         statement = self._get_readable_organization_statement(auth_subject)
 
@@ -101,9 +103,9 @@ class OrganizationService(ResourceServiceReader[Organization]):
         order_by_clauses: list[UnaryExpression[Any]] = []
         for criterion, is_desc in sorting:
             clause_function = desc if is_desc else asc
-            if criterion == SortProperty.created_at:
+            if criterion == OrganizationSortProperty.created_at:
                 order_by_clauses.append(clause_function(Organization.created_at))
-            elif criterion == SortProperty.name:
+            elif criterion == OrganizationSortProperty.name:
                 order_by_clauses.append(clause_function(Organization.slug))
         statement = statement.order_by(*order_by_clauses)
 

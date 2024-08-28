@@ -58,7 +58,7 @@ export default async function Page({
     ? fromISODate(searchParams.end_date)
     : defaultEndDate
 
-  const limits = await api.metrics.getLimits()
+  const limits = await api.metrics.limits()
   const minDate = fromISODate(limits.min_date)
   const maxDate = addDays(startDate, limits.intervals[interval].max_days - 1)
 

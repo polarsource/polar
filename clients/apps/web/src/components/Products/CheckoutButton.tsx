@@ -156,7 +156,7 @@ const AuthenticatedRecurringCheckoutButton: React.FC<
     ) {
       router.push(`${checkoutPath}?price=${price.id}`)
     } else {
-      await api.users.updateSubscription({
+      await api.usersSubscriptions.update({
         id: upgradableSubscription.id,
         body: {
           product_price_id: price.id,

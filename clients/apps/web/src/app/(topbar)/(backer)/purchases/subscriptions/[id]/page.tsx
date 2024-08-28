@@ -9,7 +9,7 @@ export default async function Page({ params }: { params: { id: string } }) {
   let subscription: UserSubscription | undefined
 
   try {
-    subscription = await api.users.getSubscription({ id: params.id })
+    subscription = await api.usersSubscriptions.get({ id: params.id })
   } catch (e) {
     if (e instanceof ResponseError && e.response.status === 404) {
       notFound()

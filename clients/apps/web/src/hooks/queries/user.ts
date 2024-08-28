@@ -4,11 +4,11 @@ import {
   UserAdvertisementCampaignCreate,
   UserAdvertisementCampaignUpdate,
   UserFreeSubscriptionCreate,
-  UsersApiEnableAdvertisementCampaignRequest,
-  UsersApiListAdvertisementCampaignsRequest,
-  UsersApiListBenefitsRequest,
-  UsersApiListOrdersRequest,
-  UsersApiListSubscriptionsRequest,
+  UsersAdvertisementsApiEnableRequest,
+  UsersAdvertisementsApiListRequest,
+  UsersBenefitsApiListRequest,
+  UsersOrdersApiListRequest,
+  UsersSubscriptionsApiListRequest,
 } from '@polar-sh/sdk'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { defaultRetry } from './retry'
@@ -45,18 +45,18 @@ export const useDeletePersonalAccessToken = () =>
   })
 
 export const useUserSubscriptions = (
-  parameters: UsersApiListSubscriptionsRequest = {},
+  parameters: UsersSubscriptionsApiListRequest = {},
 ) =>
   useQuery({
     queryKey: ['user', 'subscriptions', parameters],
-    queryFn: () => api.users.listSubscriptions(parameters),
+    queryFn: () => api.usersSubscriptions.list(parameters),
     retry: defaultRetry,
   })
 
 export const useCreateSubscription = () =>
   useMutation({
     mutationFn: (body: UserFreeSubscriptionCreate) => {
-      return api.users.createSubscription({ body })
+      return api.usersSubscriptions.create({ body })
     },
     onSuccess: (_result, _variables, _ctx) => {
       queryClient.invalidateQueries({
@@ -65,24 +65,24 @@ export const useCreateSubscription = () =>
     },
   })
 
-export const useUserOrders = (parameters: UsersApiListOrdersRequest = {}) =>
+export const useUserOrders = (parameters: UsersOrdersApiListRequest = {}) =>
   useQuery({
     queryKey: ['user', 'orders', parameters],
-    queryFn: () => api.users.listOrders(parameters),
+    queryFn: () => api.usersOrders.list(parameters),
     retry: defaultRetry,
   })
 
 export const useUserOrderInvoice = () =>
   useMutation({
     mutationFn: (id: string) => {
-      return api.users.getOrderInvoice({ id })
+      return api.usersOrders.invoice({ id })
     },
   })
 
 export const useCancelSubscription = (id: string) =>
   useMutation({
     mutationFn: () => {
-      return api.users.cancelSubscription({ id })
+      return api.usersSubscriptions.cancel({ id })
     },
     onSuccess: (_result, _variables, _ctx) => {
       queryClient.invalidateQueries({
@@ -91,26 +91,26 @@ export const useCancelSubscription = (id: string) =>
     },
   })
 
-export const useUserBenefits = (parameters: UsersApiListBenefitsRequest = {}) =>
+export const useUserBenefits = (parameters: UsersBenefitsApiListRequest = {}) =>
   useQuery({
     queryKey: ['user', 'benefits', parameters],
-    queryFn: () => api.users.listBenefits(parameters),
+    queryFn: () => api.usersBenefits.list(parameters),
     retry: defaultRetry,
   })
 
 export const useUserAdvertisementCampaigns = (
-  parameters: UsersApiListAdvertisementCampaignsRequest = {},
+  parameters: UsersAdvertisementsApiListRequest = {},
 ) =>
   useQuery({
     queryKey: ['user', 'advertisementCampaigns', parameters],
-    queryFn: () => api.users.listAdvertisementCampaigns(parameters),
+    queryFn: () => api.usersAdvertisements.list(parameters),
     retry: defaultRetry,
   })
 
 export const useUserCreateAdvertisementCampaign = () =>
   useMutation({
     mutationFn: (body: UserAdvertisementCampaignCreate) => {
-      return api.users.createAdvertisementCampaign({
+      return api.usersAdvertisements.create({
         body,
       })
     },
@@ -124,7 +124,7 @@ export const useUserCreateAdvertisementCampaign = () =>
 export const useUserUpdateAdvertisementCampaign = (id: string) =>
   useMutation({
     mutationFn: (body: UserAdvertisementCampaignUpdate) => {
-      return api.users.updateAdvertisementCampaign({
+      return api.usersAdvertisements.update({
         id,
         body,
       })
@@ -138,10 +138,8 @@ export const useUserUpdateAdvertisementCampaign = (id: string) =>
 
 export const useUserEnableAdvertisementCampaign = () =>
   useMutation({
-    mutationFn: (
-      requestParameters: UsersApiEnableAdvertisementCampaignRequest,
-    ) => {
-      return api.users.enableAdvertisementCampaign(requestParameters)
+    mutationFn: (requestParameters: UsersAdvertisementsApiEnableRequest) => {
+      return api.usersAdvertisements.enable(requestParameters)
     },
     onSuccess: (_result, _variables, _ctx) => {
       queryClient.invalidateQueries({
@@ -153,7 +151,7 @@ export const useUserEnableAdvertisementCampaign = () =>
 export const useUserDeleteAdvertisementCampaign = (id: string) =>
   useMutation({
     mutationFn: () => {
-      return api.users.deleteAdvertisementCampaign({
+      return api.usersAdvertisements.delete({
         id,
       })
     },

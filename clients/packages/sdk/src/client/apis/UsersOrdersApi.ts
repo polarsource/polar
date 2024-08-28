@@ -53,7 +53,7 @@ export class UsersOrdersApi extends runtime.BaseAPI {
 
     /**
      * Get an order by ID.
-     * Get
+     * Get Order
      */
     async getRaw(requestParameters: UsersOrdersApiGetRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<UserOrder>> {
         if (requestParameters['id'] == null) {
@@ -87,7 +87,7 @@ export class UsersOrdersApi extends runtime.BaseAPI {
 
     /**
      * Get an order by ID.
-     * Get
+     * Get Order
      */
     async get(requestParameters: UsersOrdersApiGetRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<UserOrder> {
         const response = await this.getRaw(requestParameters, initOverrides);
@@ -96,7 +96,7 @@ export class UsersOrdersApi extends runtime.BaseAPI {
 
     /**
      * Get an order\'s invoice data.
-     * Invoice
+     * Get Order Invoice
      */
     async invoiceRaw(requestParameters: UsersOrdersApiInvoiceRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<UserOrderInvoice>> {
         if (requestParameters['id'] == null) {
@@ -130,7 +130,7 @@ export class UsersOrdersApi extends runtime.BaseAPI {
 
     /**
      * Get an order\'s invoice data.
-     * Invoice
+     * Get Order Invoice
      */
     async invoice(requestParameters: UsersOrdersApiInvoiceRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<UserOrderInvoice> {
         const response = await this.invoiceRaw(requestParameters, initOverrides);
@@ -139,7 +139,7 @@ export class UsersOrdersApi extends runtime.BaseAPI {
 
     /**
      * List my orders.
-     * List
+     * List Orders
      */
     async listRaw(requestParameters: UsersOrdersApiListRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListResourceUserOrder>> {
         const queryParameters: any = {};
@@ -198,7 +198,7 @@ export class UsersOrdersApi extends runtime.BaseAPI {
 
     /**
      * List my orders.
-     * List
+     * List Orders
      */
     async list(requestParameters: UsersOrdersApiListRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ListResourceUserOrder> {
         const response = await this.listRaw(requestParameters, initOverrides);

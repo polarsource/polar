@@ -177,7 +177,7 @@
                 "tags": [
                     "users.benefits"
                 ],
-                "summary": "List",
+                "summary": "List Benefits",
                 "description": "List my granted benefits.",
                 "operationId": "list",
                 "security": [
@@ -409,7 +409,7 @@
                 "tags": [
                     "users.benefits"
                 ],
-                "summary": "Get",
+                "summary": "Get Benefit",
                 "description": "Get a granted benefit by ID.",
                 "operationId": "get",
                 "security": [
@@ -511,7 +511,7 @@
                 "tags": [
                     "users.orders"
                 ],
-                "summary": "List",
+                "summary": "List Orders",
                 "description": "List my orders.",
                 "operationId": "list",
                 "security": [
@@ -773,7 +773,7 @@
                 "tags": [
                     "users.orders"
                 ],
-                "summary": "Get",
+                "summary": "Get Order",
                 "description": "Get an order by ID.",
                 "operationId": "get",
                 "security": [
@@ -844,7 +844,7 @@
                 "tags": [
                     "users.orders"
                 ],
-                "summary": "Invoice",
+                "summary": "Get Order Invoice",
                 "description": "Get an order's invoice data.",
                 "operationId": "invoice",
                 "security": [
@@ -915,7 +915,7 @@
                 "tags": [
                     "users.subscriptions"
                 ],
-                "summary": "List",
+                "summary": "List Subscriptions",
                 "description": "List my subscriptions.",
                 "operationId": "list",
                 "security": [
@@ -1143,7 +1143,7 @@
                 "tags": [
                     "users.subscriptions"
                 ],
-                "summary": "Create",
+                "summary": "Create Free Subscription",
                 "description": "Create a subscription on a **free** tier.\n\nIf you want to subscribe to a paid tier, you need to create a checkout session.",
                 "operationId": "create",
                 "security": [
@@ -1221,7 +1221,7 @@
                 "tags": [
                     "users.subscriptions"
                 ],
-                "summary": "Get",
+                "summary": "Get Subscription",
                 "description": "Get a subscription by ID.",
                 "operationId": "get",
                 "security": [
@@ -1290,7 +1290,7 @@
                 "tags": [
                     "users.subscriptions"
                 ],
-                "summary": "Update",
+                "summary": "Update Subscription",
                 "description": "Update a subscription.",
                 "operationId": "update",
                 "security": [
@@ -1379,7 +1379,7 @@
                 "tags": [
                     "users.subscriptions"
                 ],
-                "summary": "Cancel",
+                "summary": "Cancel Subscription",
                 "description": "Cancel a subscription.",
                 "operationId": "cancel",
                 "security": [
@@ -1460,7 +1460,7 @@
                 "tags": [
                     "users.advertisements"
                 ],
-                "summary": "List",
+                "summary": "List Advertisements",
                 "description": "List advertisement campaigns.",
                 "operationId": "list",
                 "security": [
@@ -1576,7 +1576,7 @@
                 "tags": [
                     "users.advertisements"
                 ],
-                "summary": "Create",
+                "summary": "Create Advertisement",
                 "description": "Create an advertisement campaign.",
                 "operationId": "create",
                 "security": [
@@ -1633,7 +1633,7 @@
                 "tags": [
                     "users.advertisements"
                 ],
-                "summary": "Get",
+                "summary": "Get Advertisement",
                 "description": "Get an advertisement campaign by ID.",
                 "operationId": "get",
                 "security": [
@@ -1702,7 +1702,7 @@
                 "tags": [
                     "users.advertisements"
                 ],
-                "summary": "Update",
+                "summary": "Update Advertisement",
                 "description": "Update an advertisement campaign.",
                 "operationId": "update",
                 "security": [
@@ -1781,7 +1781,7 @@
                 "tags": [
                     "users.advertisements"
                 ],
-                "summary": "Delete",
+                "summary": "Delete Advertisement",
                 "description": "Delete an advertisement campaign.\n\nIt'll be automatically disabled on all granted benefits.",
                 "operationId": "delete",
                 "security": [
@@ -1853,7 +1853,7 @@
                 "tags": [
                     "users.advertisements"
                 ],
-                "summary": "Enable",
+                "summary": "Enable Advertisement",
                 "description": "Enable an advertisement campaign on a granted benefit.",
                 "operationId": "enable",
                 "security": [
@@ -1927,7 +1927,7 @@
                 "tags": [
                     "users.downloadables"
                 ],
-                "summary": "List",
+                "summary": "List Downloadables",
                 "operationId": "list",
                 "security": [
                     {
@@ -2096,7 +2096,7 @@
                 "tags": [
                     "users.downloadables"
                 ],
-                "summary": "Get",
+                "summary": "Get Downloadable",
                 "operationId": "get",
                 "security": [
                     {
@@ -4805,8 +4805,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "repositories:write",
-                            "repositories:read"
+                            "repositories:read",
+                            "repositories:write"
                         ]
                     },
                     {
@@ -5054,8 +5054,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "repositories:write",
-                            "repositories:read"
+                            "repositories:read",
+                            "repositories:write"
                         ]
                     },
                     {
@@ -12180,8 +12180,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "benefits:read",
-                            "benefits:write"
+                            "benefits:write",
+                            "benefits:read"
                         ]
                     },
                     {
@@ -12441,8 +12441,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "benefits:read",
-                            "benefits:write"
+                            "benefits:write",
+                            "benefits:read"
                         ]
                     },
                     {
@@ -12749,8 +12749,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "benefits:read",
-                            "benefits:write"
+                            "benefits:write",
+                            "benefits:read"
                         ]
                     },
                     {

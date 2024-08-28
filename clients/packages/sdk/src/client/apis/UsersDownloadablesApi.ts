@@ -38,7 +38,7 @@ export interface UsersDownloadablesApiListRequest {
 export class UsersDownloadablesApi extends runtime.BaseAPI {
 
     /**
-     * Get
+     * Get Downloadable
      */
     async getRaw(requestParameters: UsersDownloadablesApiGetRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<any>> {
         if (requestParameters['token'] == null) {
@@ -75,7 +75,7 @@ export class UsersDownloadablesApi extends runtime.BaseAPI {
     }
 
     /**
-     * Get
+     * Get Downloadable
      */
     async get(requestParameters: UsersDownloadablesApiGetRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<any> {
         const response = await this.getRaw(requestParameters, initOverrides);
@@ -83,7 +83,7 @@ export class UsersDownloadablesApi extends runtime.BaseAPI {
     }
 
     /**
-     * List
+     * List Downloadables
      */
     async listRaw(requestParameters: UsersDownloadablesApiListRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListResourceDownloadableRead>> {
         const queryParameters: any = {};
@@ -125,7 +125,7 @@ export class UsersDownloadablesApi extends runtime.BaseAPI {
     }
 
     /**
-     * List
+     * List Downloadables
      */
     async list(requestParameters: UsersDownloadablesApiListRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ListResourceDownloadableRead> {
         const response = await this.listRaw(requestParameters, initOverrides);

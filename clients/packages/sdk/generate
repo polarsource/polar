@@ -21,5 +21,4 @@ docker run \
     --additional-properties=supportsES6=true \
     --additional-properties=prefixParameterInterfaces=true \
     --additional-properties=withoutRuntimeChecks=true \
-    --openapi-normalizer KEEP_ONLY_FIRST_TAG_IN_OPERATION=true \
     --reserved-words-mappings import=import,export=export,delete=delete # Force to ignore some reserved keywords to generate proper method names

@@ -20,6 +20,7 @@ import {
   MagicLinkApi,
   NotificationsApi,
   Oauth2Api,
+  Oauth2ClientsApi,
   OrdersApi,
   OrganizationsApi,
   PaymentMethodsApi,
@@ -34,6 +35,11 @@ import {
   TransactionsApi,
   UsersApi,
   WebhooksApi,
+  UsersAdvertisementsApi,
+  UsersBenefitsApi,
+  UsersDownloadablesApi,
+  UsersOrdersApi,
+  UsersSubscriptionsApi,
 } from '.'
 
 export class PolarAPI {
@@ -56,6 +62,7 @@ export class PolarAPI {
   public readonly metrics: MetricsApi
   public readonly notifications: NotificationsApi
   public readonly oauth2: Oauth2Api
+  public readonly oauth2Clients: Oauth2ClientsApi
   public readonly orders: OrdersApi
   public readonly organizations: OrganizationsApi
   public readonly paymentMethods: PaymentMethodsApi
@@ -68,7 +75,12 @@ export class PolarAPI {
   public readonly subscriptions: SubscriptionsApi
   public readonly traffic: TrafficApi
   public readonly transactions: TransactionsApi
+  public readonly usersAdvertisements: UsersAdvertisementsApi
   public readonly users: UsersApi
+  public readonly usersBenefits: UsersBenefitsApi
+  public readonly usersDownloadables: UsersDownloadablesApi
+  public readonly usersOrders: UsersOrdersApi
+  public readonly usersSubscriptions: UsersSubscriptionsApi
   public readonly webhooks: WebhooksApi
   public readonly files: FilesApi
 
@@ -93,6 +105,7 @@ export class PolarAPI {
     this.metrics = new MetricsApi(config)
     this.notifications = new NotificationsApi(config)
     this.oauth2 = new Oauth2Api(config)
+    this.oauth2Clients = new Oauth2ClientsApi(config)
     this.orders = new OrdersApi(config)
     this.organizations = new OrganizationsApi(config)
     this.paymentMethods = new PaymentMethodsApi(config)
@@ -105,7 +118,12 @@ export class PolarAPI {
     this.subscriptions = new SubscriptionsApi(config)
     this.traffic = new TrafficApi(config)
     this.transactions = new TransactionsApi(config)
+    this.usersAdvertisements = new UsersAdvertisementsApi(config)
     this.users = new UsersApi(config)
+    this.usersBenefits = new UsersBenefitsApi(config)
+    this.usersDownloadables = new UsersDownloadablesApi(config)
+    this.usersOrders = new UsersOrdersApi(config)
+    this.usersSubscriptions = new UsersSubscriptionsApi(config)
     this.webhooks = new WebhooksApi(config)
     this.files = new FilesApi(config)
   }

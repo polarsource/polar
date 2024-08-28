@@ -15,63 +15,54 @@
 
 import * as runtime from '../runtime';
 import type {
-  BenefitCreate,
-  BenefitTypeFilter,
-  BenefitUpdate,
   HTTPValidationError,
-  ListResourceBenefitGrant,
-  ListResourceUnionBenefitArticlesBenefitAdsBenefitCustomBenefitDiscordBenefitGitHubRepositoryBenefitDownloadables,
-  NotPermitted,
-  OrganizationIDFilter,
+  ListResourceUserAdvertisementCampaign,
   ResourceNotFound,
-  ResponseBenefitsCreate,
-  ResponseBenefitsGet,
-  ResponseBenefitsUpdate,
+  UserAdvertisementCampaign,
+  UserAdvertisementCampaignCreate,
+  UserAdvertisementCampaignEnable,
+  UserAdvertisementCampaignUpdate,
+  UserAdvertisementSortProperty,
 } from '../models/index';
 
-export interface BenefitsApiCreateRequest {
-    body: BenefitCreate;
+export interface UsersAdvertisementsApiCreateRequest {
+    body: UserAdvertisementCampaignCreate;
 }
 
-export interface BenefitsApiDeleteRequest {
+export interface UsersAdvertisementsApiDeleteRequest {
     id: string;
 }
 
-export interface BenefitsApiGetRequest {
+export interface UsersAdvertisementsApiEnableRequest {
+    id: string;
+    body: UserAdvertisementCampaignEnable;
+}
+
+export interface UsersAdvertisementsApiGetRequest {
     id: string;
 }
 
-export interface BenefitsApiGrantsRequest {
-    id: string;
-    isGranted?: boolean;
-    userId?: string;
-    githubUserId?: number;
+export interface UsersAdvertisementsApiListRequest {
     page?: number;
     limit?: number;
+    sorting?: Array<UserAdvertisementSortProperty>;
 }
 
-export interface BenefitsApiListRequest {
-    organizationId?: OrganizationIDFilter;
-    type?: BenefitTypeFilter;
-    page?: number;
-    limit?: number;
-}
-
-export interface BenefitsApiUpdateRequest {
+export interface UsersAdvertisementsApiUpdateRequest {
     id: string;
-    body: BenefitUpdate;
+    body: UserAdvertisementCampaignUpdate;
 }
 
 /**
  * 
  */
-export class BenefitsApi extends runtime.BaseAPI {
+export class UsersAdvertisementsApi extends runtime.BaseAPI {
 
     /**
-     * Create a benefit.
-     * Create Benefit
+     * Create an advertisement campaign.
+     * Create
      */
-    async createRaw(requestParameters: BenefitsApiCreateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ResponseBenefitsCreate>> {
+    async createRaw(requestParameters: UsersAdvertisementsApiCreateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<UserAdvertisementCampaign>> {
         if (requestParameters['body'] == null) {
             throw new runtime.RequiredError(
                 'body',
@@ -94,7 +85,7 @@ export class BenefitsApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/v1/benefits/`,
+            path: `/v1/users/advertisements/`,
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,
@@ -105,19 +96,19 @@ export class BenefitsApi extends runtime.BaseAPI {
     }
 
     /**
-     * Create a benefit.
-     * Create Benefit
+     * Create an advertisement campaign.
+     * Create
      */
-    async create(requestParameters: BenefitsApiCreateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ResponseBenefitsCreate> {
+    async create(requestParameters: UsersAdvertisementsApiCreateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<UserAdvertisementCampaign> {
         const response = await this.createRaw(requestParameters, initOverrides);
         return await response.value();
     }
 
     /**
-     * Delete a benefit.  > [!WARNING] > Every grants associated with the benefit will be revoked. > Users will lose access to the benefit.
-     * Delete Benefit
+     * Delete an advertisement campaign.  It\'ll be automatically disabled on all granted benefits.
+     * Delete
      */
-    async deleteRaw(requestParameters: BenefitsApiDeleteRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<void>> {
+    async deleteRaw(requestParameters: UsersAdvertisementsApiDeleteRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<any>> {
         if (requestParameters['id'] == null) {
             throw new runtime.RequiredError(
                 'id',
@@ -138,28 +129,92 @@ export class BenefitsApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/v1/benefits/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
+            path: `/v1/users/advertisements/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
             method: 'DELETE',
             headers: headerParameters,
             query: queryParameters,
+        }, initOverrides);
+
+        if (this.isJsonMime(response.headers.get('content-type'))) {
+            return new runtime.JSONApiResponse<any>(response);
+        } else {
+            return new runtime.TextApiResponse(response) as any;
+        }
+    }
+
+    /**
+     * Delete an advertisement campaign.  It\'ll be automatically disabled on all granted benefits.
+     * Delete
+     */
+    async delete(requestParameters: UsersAdvertisementsApiDeleteRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<any | null | undefined > {
+        const response = await this.deleteRaw(requestParameters, initOverrides);
+        switch (response.raw.status) {
+            case 200:
+                return await response.value();
+            case 204:
+                return null;
+            default:
+                return await response.value();
+        }
+    }
+
+    /**
+     * Enable an advertisement campaign on a granted benefit.
+     * Enable
+     */
+    async enableRaw(requestParameters: UsersAdvertisementsApiEnableRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<void>> {
+        if (requestParameters['id'] == null) {
+            throw new runtime.RequiredError(
+                'id',
+                'Required parameter "id" was null or undefined when calling enable().'
+            );
+        }
+
+        if (requestParameters['body'] == null) {
+            throw new runtime.RequiredError(
+                'body',
+                'Required parameter "body" was null or undefined when calling enable().'
+            );
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        headerParameters['Content-Type'] = 'application/json';
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("HTTPBearer", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+        const response = await this.request({
+            path: `/v1/users/advertisements/{id}/enable`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
+            method: 'POST',
+            headers: headerParameters,
+            query: queryParameters,
+            body: requestParameters['body'],
         }, initOverrides);
 
         return new runtime.VoidApiResponse(response);
     }
 
     /**
-     * Delete a benefit.  > [!WARNING] > Every grants associated with the benefit will be revoked. > Users will lose access to the benefit.
-     * Delete Benefit
+     * Enable an advertisement campaign on a granted benefit.
+     * Enable
      */
-    async delete(requestParameters: BenefitsApiDeleteRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<void> {
-        await this.deleteRaw(requestParameters, initOverrides);
+    async enable(requestParameters: UsersAdvertisementsApiEnableRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<void> {
+        await this.enableRaw(requestParameters, initOverrides);
     }
 
     /**
-     * Get a benefit by ID.
-     * Get Benefit
+     * Get an advertisement campaign by ID.
+     * Get
      */
-    async getRaw(requestParameters: BenefitsApiGetRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ResponseBenefitsGet>> {
+    async getRaw(requestParameters: UsersAdvertisementsApiGetRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<UserAdvertisementCampaign>> {
         if (requestParameters['id'] == null) {
             throw new runtime.RequiredError(
                 'id',
@@ -180,7 +235,7 @@ export class BenefitsApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/v1/benefits/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
+            path: `/v1/users/advertisements/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
@@ -190,39 +245,20 @@ export class BenefitsApi extends runtime.BaseAPI {
     }
 
     /**
-     * Get a benefit by ID.
-     * Get Benefit
+     * Get an advertisement campaign by ID.
+     * Get
      */
-    async get(requestParameters: BenefitsApiGetRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ResponseBenefitsGet> {
+    async get(requestParameters: UsersAdvertisementsApiGetRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<UserAdvertisementCampaign> {
         const response = await this.getRaw(requestParameters, initOverrides);
         return await response.value();
     }
 
     /**
-     * List the individual grants for a benefit.  It\'s especially useful to check if a user has been granted a benefit.
-     * List Benefit Grants
+     * List advertisement campaigns.
+     * List
      */
-    async grantsRaw(requestParameters: BenefitsApiGrantsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListResourceBenefitGrant>> {
-        if (requestParameters['id'] == null) {
-            throw new runtime.RequiredError(
-                'id',
-                'Required parameter "id" was null or undefined when calling grants().'
-            );
-        }
-
+    async listRaw(requestParameters: UsersAdvertisementsApiListRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListResourceUserAdvertisementCampaign>> {
         const queryParameters: any = {};
-
-        if (requestParameters['isGranted'] != null) {
-            queryParameters['is_granted'] = requestParameters['isGranted'];
-        }
-
-        if (requestParameters['userId'] != null) {
-            queryParameters['user_id'] = requestParameters['userId'];
-        }
-
-        if (requestParameters['githubUserId'] != null) {
-            queryParameters['github_user_id'] = requestParameters['githubUserId'];
-        }
 
         if (requestParameters['page'] != null) {
             queryParameters['page'] = requestParameters['page'];
@@ -230,6 +266,10 @@ export class BenefitsApi extends runtime.BaseAPI {
 
         if (requestParameters['limit'] != null) {
             queryParameters['limit'] = requestParameters['limit'];
+        }
+
+        if (requestParameters['sorting'] != null) {
+            queryParameters['sorting'] = requestParameters['sorting'];
         }
 
         const headerParameters: runtime.HTTPHeaders = {};
@@ -243,7 +283,7 @@ export class BenefitsApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/v1/benefits/{id}/grants`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
+            path: `/v1/users/advertisements/`,
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
@@ -253,71 +293,19 @@ export class BenefitsApi extends runtime.BaseAPI {
     }
 
     /**
-     * List the individual grants for a benefit.  It\'s especially useful to check if a user has been granted a benefit.
-     * List Benefit Grants
+     * List advertisement campaigns.
+     * List
      */
-    async grants(requestParameters: BenefitsApiGrantsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ListResourceBenefitGrant> {
-        const response = await this.grantsRaw(requestParameters, initOverrides);
-        return await response.value();
-    }
-
-    /**
-     * List benefits.
-     * List Benefits
-     */
-    async listRaw(requestParameters: BenefitsApiListRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListResourceUnionBenefitArticlesBenefitAdsBenefitCustomBenefitDiscordBenefitGitHubRepositoryBenefitDownloadables>> {
-        const queryParameters: any = {};
-
-        if (requestParameters['organizationId'] != null) {
-            queryParameters['organization_id'] = requestParameters['organizationId'];
-        }
-
-        if (requestParameters['type'] != null) {
-            queryParameters['type'] = requestParameters['type'];
-        }
-
-        if (requestParameters['page'] != null) {
-            queryParameters['page'] = requestParameters['page'];
-        }
-
-        if (requestParameters['limit'] != null) {
-            queryParameters['limit'] = requestParameters['limit'];
-        }
-
-        const headerParameters: runtime.HTTPHeaders = {};
-
-        if (this.configuration && this.configuration.accessToken) {
-            const token = this.configuration.accessToken;
-            const tokenString = await token("HTTPBearer", []);
-
-            if (tokenString) {
-                headerParameters["Authorization"] = `Bearer ${tokenString}`;
-            }
-        }
-        const response = await this.request({
-            path: `/v1/benefits/`,
-            method: 'GET',
-            headers: headerParameters,
-            query: queryParameters,
-        }, initOverrides);
-
-        return new runtime.JSONApiResponse(response);
-    }
-
-    /**
-     * List benefits.
-     * List Benefits
-     */
-    async list(requestParameters: BenefitsApiListRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ListResourceUnionBenefitArticlesBenefitAdsBenefitCustomBenefitDiscordBenefitGitHubRepositoryBenefitDownloadables> {
+    async list(requestParameters: UsersAdvertisementsApiListRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ListResourceUserAdvertisementCampaign> {
         const response = await this.listRaw(requestParameters, initOverrides);
         return await response.value();
     }
 
     /**
-     * Update a benefit.
-     * Update Benefit
+     * Update an advertisement campaign.
+     * Update
      */
-    async updateRaw(requestParameters: BenefitsApiUpdateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ResponseBenefitsUpdate>> {
+    async updateRaw(requestParameters: UsersAdvertisementsApiUpdateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<UserAdvertisementCampaign>> {
         if (requestParameters['id'] == null) {
             throw new runtime.RequiredError(
                 'id',
@@ -347,7 +335,7 @@ export class BenefitsApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/v1/benefits/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
+            path: `/v1/users/advertisements/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
             method: 'PATCH',
             headers: headerParameters,
             query: queryParameters,
@@ -358,10 +346,10 @@ export class BenefitsApi extends runtime.BaseAPI {
     }
 
     /**
-     * Update a benefit.
-     * Update Benefit
+     * Update an advertisement campaign.
+     * Update
      */
-    async update(requestParameters: BenefitsApiUpdateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ResponseBenefitsUpdate> {
+    async update(requestParameters: UsersAdvertisementsApiUpdateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<UserAdvertisementCampaign> {
         const response = await this.updateRaw(requestParameters, initOverrides);
         return await response.value();
     }

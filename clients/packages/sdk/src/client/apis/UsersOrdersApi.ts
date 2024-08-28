@@ -16,45 +16,46 @@
 import * as runtime from '../runtime';
 import type {
   HTTPValidationError,
-  ListResourceOrder,
-  Order,
-  OrderInvoice,
-  OrderSortProperty,
+  ListResourceUserOrder,
   OrganizationIDFilter,
   ProductIDFilter,
   ProductPriceTypeFilter,
   ResourceNotFound,
-  UserIDFilter,
+  SubscriptionIDFilter,
+  UserOrder,
+  UserOrderInvoice,
+  UserOrderSortProperty,
 } from '../models/index';
 
-export interface OrdersApiGetRequest {
+export interface UsersOrdersApiGetRequest {
     id: string;
 }
 
-export interface OrdersApiInvoiceRequest {
+export interface UsersOrdersApiInvoiceRequest {
     id: string;
 }
 
-export interface OrdersApiListRequest {
+export interface UsersOrdersApiListRequest {
     organizationId?: OrganizationIDFilter;
     productId?: ProductIDFilter;
     productPriceType?: ProductPriceTypeFilter;
-    userId?: UserIDFilter;
+    subscriptionId?: SubscriptionIDFilter;
+    query?: string;
     page?: number;
     limit?: number;
-    sorting?: Array<OrderSortProperty>;
+    sorting?: Array<UserOrderSortProperty>;
 }
 
 /**
  * 
  */
-export class OrdersApi extends runtime.BaseAPI {
+export class UsersOrdersApi extends runtime.BaseAPI {
 
     /**
      * Get an order by ID.
-     * Get Order
+     * Get
      */
-    async getRaw(requestParameters: OrdersApiGetRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Order>> {
+    async getRaw(requestParameters: UsersOrdersApiGetRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<UserOrder>> {
         if (requestParameters['id'] == null) {
             throw new runtime.RequiredError(
                 'id',
@@ -75,7 +76,7 @@ export class OrdersApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/v1/orders/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
+            path: `/v1/users/orders/{id}`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
@@ -86,18 +87,18 @@ export class OrdersApi extends runtime.BaseAPI {
 
     /**
      * Get an order by ID.
-     * Get Order
+     * Get
      */
-    async get(requestParameters: OrdersApiGetRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Order> {
+    async get(requestParameters: UsersOrdersApiGetRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<UserOrder> {
         const response = await this.getRaw(requestParameters, initOverrides);
         return await response.value();
     }
 
     /**
      * Get an order\'s invoice data.
-     * Get Order Invoice
+     * Invoice
      */
-    async invoiceRaw(requestParameters: OrdersApiInvoiceRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<OrderInvoice>> {
+    async invoiceRaw(requestParameters: UsersOrdersApiInvoiceRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<UserOrderInvoice>> {
         if (requestParameters['id'] == null) {
             throw new runtime.RequiredError(
                 'id',
@@ -118,7 +119,7 @@ export class OrdersApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/v1/orders/{id}/invoice`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
+            path: `/v1/users/orders/{id}/invoice`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
@@ -129,18 +130,18 @@ export class OrdersApi extends runtime.BaseAPI {
 
     /**
      * Get an order\'s invoice data.
-     * Get Order Invoice
+     * Invoice
      */
-    async invoice(requestParameters: OrdersApiInvoiceRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<OrderInvoice> {
+    async invoice(requestParameters: UsersOrdersApiInvoiceRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<UserOrderInvoice> {
         const response = await this.invoiceRaw(requestParameters, initOverrides);
         return await response.value();
     }
 
     /**
-     * List orders.
-     * List Orders
+     * List my orders.
+     * List
      */
-    async listRaw(requestParameters: OrdersApiListRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListResourceOrder>> {
+    async listRaw(requestParameters: UsersOrdersApiListRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListResourceUserOrder>> {
         const queryParameters: any = {};
 
         if (requestParameters['organizationId'] != null) {
@@ -155,8 +156,12 @@ export class OrdersApi extends runtime.BaseAPI {
             queryParameters['product_price_type'] = requestParameters['productPriceType'];
         }
 
-        if (requestParameters['userId'] != null) {
-            queryParameters['user_id'] = requestParameters['userId'];
+        if (requestParameters['subscriptionId'] != null) {
+            queryParameters['subscription_id'] = requestParameters['subscriptionId'];
+        }
+
+        if (requestParameters['query'] != null) {
+            queryParameters['query'] = requestParameters['query'];
         }
 
         if (requestParameters['page'] != null) {
@@ -182,7 +187,7 @@ export class OrdersApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/v1/orders/`,
+            path: `/v1/users/orders/`,
             method: 'GET',
             headers: headerParameters,
             query: queryParameters,
@@ -192,10 +197,10 @@ export class OrdersApi extends runtime.BaseAPI {
     }
 
     /**
-     * List orders.
-     * List Orders
+     * List my orders.
+     * List
      */
-    async list(requestParameters: OrdersApiListRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ListResourceOrder> {
+    async list(requestParameters: UsersOrdersApiListRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ListResourceUserOrder> {
         const response = await this.listRaw(requestParameters, initOverrides);
         return await response.value();
     }

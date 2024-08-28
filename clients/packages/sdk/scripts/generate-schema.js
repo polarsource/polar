@@ -26,6 +26,16 @@ const createOperationId = (currentOperationId) => {
   return parts[parts.length - 1]
 }
 
+const GENERIC_TAGS = ['documented', 'featured', 'issue_funding']
+
+// Remove generic tags and join them in a dotted string
+// * ['users', 'documented', 'featured'] -> ['users']
+// * ['users', 'benefits', 'documented', 'featured'] -> ['users.benefits']
+const handleTags = (operation) => {
+  const tags = operation.tags || []
+  return [tags.filter((tag) => !GENERIC_TAGS.some((g) => g === tag)).join('.')]
+}
+
 const convert = (schema) => {
   console.log('🛠️  createOperationId')
   let newOperationId, currentOperationId
@@ -38,9 +48,9 @@ const convert = (schema) => {
         `${key} -> ${currentOperationId} -> (${schema.tags[0]}.)${newOperationId}`,
       )
       schema.operationId = newOperationId
+      schema.tags = handleTags(schema)
     }
   }
-  console.log()
 
   // Hack! Pretend the schema is OpenAPI 3.0
   schema.openapi = '3.0.3'

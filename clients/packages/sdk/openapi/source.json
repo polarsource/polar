@@ -42,6 +42,7 @@
                 "x-polar-allowed-subjects": [
                     "User"
                 ],
+                "x-speakeasy-name-override": "get_authenticated",
                 "x-speakeasy-ignore": true,
                 "x-speakeasy-group": "users"
             }
@@ -76,6 +77,7 @@
                 "x-polar-allowed-subjects": [
                     "User"
                 ],
+                "x-speakeasy-name-override": "scopes",
                 "x-speakeasy-ignore": true,
                 "x-speakeasy-group": "users"
             }
@@ -130,6 +132,7 @@
                 "x-polar-allowed-subjects": [
                     "User"
                 ],
+                "x-speakeasy-name-override": "set_account",
                 "x-speakeasy-ignore": true,
                 "x-speakeasy-group": "users"
             }
@@ -164,6 +167,7 @@
                 "x-polar-allowed-subjects": [
                     "User"
                 ],
+                "x-speakeasy-name-override": "create_stripe_customer_portal",
                 "x-speakeasy-ignore": true,
                 "x-speakeasy-group": "users"
             }
@@ -172,12 +176,13 @@
             "get": {
                 "tags": [
                     "users",
+                    "benefits",
                     "documented",
                     "featured"
                 ],
-                "summary": "List Benefits",
+                "summary": "List",
                 "description": "List my granted benefits.",
-                "operationId": "users:list_benefits",
+                "operationId": "users:benefits:list",
                 "security": [
                     {
                         "OpenIdConnect": [
@@ -398,19 +403,21 @@
                         "numPages": "$.pagination.max_page"
                     }
                 },
-                "x-speakeasy-group": "users"
+                "x-speakeasy-group": "users.benefits",
+                "x-speakeasy-name-override": "list"
             }
         },
         "/v1/users/benefits/{id}": {
             "get": {
                 "tags": [
                     "users",
+                    "benefits",
                     "documented",
                     "featured"
                 ],
-                "summary": "Get Benefit",
+                "summary": "Get",
                 "description": "Get a granted benefit by ID.",
-                "operationId": "users:get_benefit",
+                "operationId": "users:benefits:get",
                 "security": [
                     {
                         "OpenIdConnect": [
@@ -472,7 +479,7 @@
                                             "downloadables": "#/components/schemas/BenefitDownloadablesSubscriber"
                                         }
                                     },
-                                    "title": "Response Users:Get Benefit"
+                                    "title": "Response Users:Benefits:Get"
                                 }
                             }
                         }
@@ -501,19 +508,21 @@
                 "x-polar-allowed-subjects": [
                     "User"
                 ],
-                "x-speakeasy-group": "users"
+                "x-speakeasy-group": "users.benefits",
+                "x-speakeasy-name-override": "retrieve"
             }
         },
         "/v1/users/orders/": {
             "get": {
                 "tags": [
                     "users",
+                    "orders",
                     "documented",
                     "featured"
                 ],
-                "summary": "List Orders",
+                "summary": "List",
                 "description": "List my orders.",
-                "operationId": "users:list_orders",
+                "operationId": "users:orders:list",
                 "security": [
                     {
                         "OpenIdConnect": [
@@ -764,19 +773,21 @@
                         "numPages": "$.pagination.max_page"
                     }
                 },
-                "x-speakeasy-group": "users"
+                "x-speakeasy-group": "users.orders",
+                "x-speakeasy-name-override": "list"
             }
         },
         "/v1/users/orders/{id}": {
             "get": {
                 "tags": [
                     "users",
+                    "orders",
                     "documented",
                     "featured"
                 ],
-                "summary": "Get Order",
+                "summary": "Get",
                 "description": "Get an order by ID.",
-                "operationId": "users:get_order",
+                "operationId": "users:orders:get",
                 "security": [
                     {
                         "OpenIdConnect": [
@@ -836,19 +847,21 @@
                 "x-polar-allowed-subjects": [
                     "User"
                 ],
-                "x-speakeasy-group": "users"
+                "x-speakeasy-group": "users.orders",
+                "x-speakeasy-name-override": "retrieve"
             }
         },
         "/v1/users/orders/{id}/invoice": {
             "get": {
                 "tags": [
                     "users",
+                    "orders",
                     "documented",
                     "featured"
                 ],
-                "summary": "Get Order Invoice",
+                "summary": "Invoice",
                 "description": "Get an order's invoice data.",
-                "operationId": "users:get_order_invoice",
+                "operationId": "users:orders:invoice",
                 "security": [
                     {
                         "OpenIdConnect": [
@@ -908,19 +921,21 @@
                 "x-polar-allowed-subjects": [
                     "User"
                 ],
-                "x-speakeasy-group": "users"
+                "x-speakeasy-group": "users.orders",
+                "x-speakeasy-name-override": "invoice"
             }
         },
         "/v1/users/subscriptions/": {
             "get": {
                 "tags": [
                     "users",
+                    "subscriptions",
                     "documented",
                     "featured"
                 ],
-                "summary": "List Subscriptions",
+                "summary": "List",
                 "description": "List my subscriptions.",
-                "operationId": "users:list_subscriptions",
+                "operationId": "users:subscriptions:list",
                 "security": [
                     {
                         "OpenIdConnect": [
@@ -1139,17 +1154,19 @@
                         "numPages": "$.pagination.max_page"
                     }
                 },
-                "x-speakeasy-group": "users"
+                "x-speakeasy-group": "users.subscriptions",
+                "x-speakeasy-name-override": "list"
             },
             "post": {
                 "tags": [
                     "users",
+                    "subscriptions",
                     "documented",
                     "featured"
                 ],
-                "summary": "Create Subscription",
+                "summary": "Create",
                 "description": "Create a subscription on a **free** tier.\n\nIf you want to subscribe to a paid tier, you need to create a checkout session.",
-                "operationId": "users:create_subscription",
+                "operationId": "users:subscriptions:create",
                 "security": [
                     {
                         "OpenIdConnect": [
@@ -1216,19 +1233,21 @@
                     "Anonymous",
                     "User"
                 ],
-                "x-speakeasy-group": "users"
+                "x-speakeasy-group": "users.subscriptions",
+                "x-speakeasy-name-override": "create"
             }
         },
         "/v1/users/subscriptions/{id}": {
             "get": {
                 "tags": [
                     "users",
+                    "subscriptions",
                     "documented",
                     "featured"
                 ],
-                "summary": "Get Subscription",
+                "summary": "Get",
                 "description": "Get a subscription by ID.",
-                "operationId": "users:get_subscription",
+                "operationId": "users:subscriptions:get",
                 "security": [
                     {
                         "OpenIdConnect": [
@@ -1288,17 +1307,19 @@
                 "x-polar-allowed-subjects": [
                     "User"
                 ],
-                "x-speakeasy-group": "users"
+                "x-speakeasy-group": "users.subscriptions",
+                "x-speakeasy-name-override": "retrieve"
             },
             "patch": {
                 "tags": [
                     "users",
+                    "subscriptions",
                     "documented",
                     "featured"
                 ],
-                "summary": "Update Subscription",
+                "summary": "Update",
                 "description": "Update a subscription.",
-                "operationId": "users:update_subscription",
+                "operationId": "users:subscriptions:update",
                 "security": [
                     {
                         "OpenIdConnect": [
@@ -1378,17 +1399,19 @@
                 "x-polar-allowed-subjects": [
                     "User"
                 ],
-                "x-speakeasy-group": "users"
+                "x-speakeasy-group": "users.subscriptions",
+                "x-speakeasy-name-override": "update"
             },
             "delete": {
                 "tags": [
                     "users",
+                    "subscriptions",
                     "documented",
                     "featured"
                 ],
-                "summary": "Cancel Subscription",
+                "summary": "Cancel",
                 "description": "Cancel a subscription.",
-                "operationId": "users:cancel_subscription",
+                "operationId": "users:subscriptions:cancel",
                 "security": [
                     {
                         "OpenIdConnect": [
@@ -1458,18 +1481,20 @@
                 "x-polar-allowed-subjects": [
                     "User"
                 ],
-                "x-speakeasy-group": "users"
+                "x-speakeasy-group": "users.subscriptions",
+                "x-speakeasy-name-override": "cancel"
             }
         },
         "/v1/users/advertisements/": {
             "get": {
                 "tags": [
                     "users",
+                    "advertisements",
                     "documented"
                 ],
-                "summary": "List Advertisement Campaigns",
+                "summary": "List",
                 "description": "List advertisement campaigns.",
-                "operationId": "users:list_advertisement_campaigns",
+                "operationId": "users:advertisements:list",
                 "security": [
                     {
                         "OpenIdConnect": [
@@ -1576,16 +1601,18 @@
                         "numPages": "$.pagination.max_page"
                     }
                 },
-                "x-speakeasy-group": "users"
+                "x-speakeasy-group": "users.advertisements",
+                "x-speakeasy-name-override": "list"
             },
             "post": {
                 "tags": [
                     "users",
+                    "advertisements",
                     "documented"
                 ],
-                "summary": "Create Advertisement Campaign",
+                "summary": "Create",
                 "description": "Create an advertisement campaign.",
-                "operationId": "users:create_advertisement_campaign",
+                "operationId": "users:advertisements:create",
                 "security": [
                     {
                         "OpenIdConnect": [
@@ -1631,18 +1658,20 @@
                 "x-polar-allowed-subjects": [
                     "User"
                 ],
-                "x-speakeasy-group": "users"
+                "x-speakeasy-group": "users.advertisements",
+                "x-speakeasy-name-override": "create"
             }
         },
         "/v1/users/advertisements/{id}": {
             "get": {
                 "tags": [
                     "users",
+                    "advertisements",
                     "documented"
                 ],
-                "summary": "Get Advertisement Campaign",
+                "summary": "Get",
                 "description": "Get an advertisement campaign by ID.",
-                "operationId": "users:get_advertisement_campaign",
+                "operationId": "users:advertisements:get",
                 "security": [
                     {
                         "OpenIdConnect": [
@@ -1702,16 +1731,18 @@
                 "x-polar-allowed-subjects": [
                     "User"
                 ],
-                "x-speakeasy-group": "users"
+                "x-speakeasy-group": "users.advertisements",
+                "x-speakeasy-name-override": "retrieve"
             },
             "patch": {
                 "tags": [
                     "users",
+                    "advertisements",
                     "documented"
                 ],
-                "summary": "Update Advertisement Campaign",
+                "summary": "Update",
                 "description": "Update an advertisement campaign.",
-                "operationId": "users:update_advertisement_campaign",
+                "operationId": "users:advertisements:update",
                 "security": [
                     {
                         "OpenIdConnect": [
@@ -1781,16 +1812,18 @@
                 "x-polar-allowed-subjects": [
                     "User"
                 ],
-                "x-speakeasy-group": "users"
+                "x-speakeasy-group": "users.advertisements",
+                "x-speakeasy-name-override": "update"
             },
             "delete": {
                 "tags": [
                     "users",
+                    "advertisements",
                     "documented"
                 ],
-                "summary": "Delete Advertisement Campaign",
+                "summary": "Delete",
                 "description": "Delete an advertisement campaign.\n\nIt'll be automatically disabled on all granted benefits.",
-                "operationId": "users:delete_advertisement_campaign",
+                "operationId": "users:advertisements:delete",
                 "security": [
                     {
                         "OpenIdConnect": [
@@ -1851,18 +1884,20 @@
                 "x-polar-allowed-subjects": [
                     "User"
                 ],
-                "x-speakeasy-group": "users"
+                "x-speakeasy-group": "users.advertisements",
+                "x-speakeasy-name-override": "delete"
             }
         },
         "/v1/users/advertisements/{id}/enable": {
             "post": {
                 "tags": [
                     "users",
+                    "advertisements",
                     "documented"
                 ],
-                "summary": "Enable Advertisement Campaign",
+                "summary": "Enable",
                 "description": "Enable an advertisement campaign on a granted benefit.",
-                "operationId": "users:enable_advertisement_campaign",
+                "operationId": "users:advertisements:enable",
                 "security": [
                     {
                         "OpenIdConnect": [
@@ -1925,18 +1960,20 @@
                 "x-polar-allowed-subjects": [
                     "User"
                 ],
-                "x-speakeasy-group": "users"
+                "x-speakeasy-group": "users.advertisements",
+                "x-speakeasy-name-override": "enable"
             }
         },
         "/v1/users/downloadables/": {
             "get": {
                 "tags": [
                     "users",
+                    "downloadables",
                     "documented",
                     "featured"
                 ],
-                "summary": "List Downloadables",
-                "operationId": "users:list_downloadables",
+                "summary": "List",
+                "operationId": "users:downloadables:list",
                 "security": [
                     {
                         "OpenIdConnect": [
@@ -2095,18 +2132,20 @@
                         "numPages": "$.pagination.max_page"
                     }
                 },
-                "x-speakeasy-group": "users"
+                "x-speakeasy-group": "users.downloadables",
+                "x-speakeasy-name-override": "list"
             }
         },
         "/v1/users/downloadables/{token}": {
             "get": {
                 "tags": [
                     "users",
+                    "downloadables",
                     "documented",
                     "featured"
                 ],
-                "summary": "Get Downloadable",
-                "operationId": "users:get_downloadable",
+                "summary": "Get",
+                "operationId": "users:downloadables:get",
                 "security": [
                     {
                         "OpenIdConnect": [
@@ -2163,7 +2202,8 @@
                 "x-polar-allowed-subjects": [
                     "User"
                 ],
-                "x-speakeasy-group": "users"
+                "x-speakeasy-group": "users.downloadables",
+                "x-speakeasy-name-override": "retrieve"
             }
         },
         "/v1/integrations/github/authorize": {
@@ -2720,6 +2760,7 @@
                     "User"
                 ],
                 "x-speakeasy-group": "integrations_github_repository_benefit",
+                "x-speakeasy-name-override": "user_authorize",
                 "x-speakeasy-ignore": true
             }
         },
@@ -2828,6 +2869,7 @@
                     "User"
                 ],
                 "x-speakeasy-group": "integrations_github_repository_benefit",
+                "x-speakeasy-name-override": "user_callback",
                 "x-speakeasy-ignore": true
             }
         },
@@ -2863,6 +2905,7 @@
                     "User"
                 ],
                 "x-speakeasy-group": "integrations_github_repository_benefit",
+                "x-speakeasy-name-override": "user_repositories",
                 "x-speakeasy-ignore": true
             }
         },
@@ -2895,6 +2938,7 @@
                     "User"
                 ],
                 "x-speakeasy-group": "integrations_github_repository_benefit",
+                "x-speakeasy-name-override": "installation_install",
                 "x-speakeasy-ignore": true
             }
         },
@@ -2927,6 +2971,7 @@
                     "User"
                 ],
                 "x-speakeasy-group": "integrations_github_repository_benefit",
+                "x-speakeasy-name-override": "installation_callback",
                 "x-speakeasy-ignore": true
             }
         },
@@ -2987,6 +3032,7 @@
                     "User"
                 ],
                 "x-speakeasy-group": "integrations_discord",
+                "x-speakeasy-name-override": "discord_bot_authorize",
                 "x-speakeasy-ignore": true
             }
         },
@@ -3088,6 +3134,7 @@
                     "User"
                 ],
                 "x-speakeasy-group": "integrations_discord",
+                "x-speakeasy-name-override": "discord_bot_callback",
                 "x-speakeasy-ignore": true
             }
         },
@@ -3148,6 +3195,7 @@
                     "User"
                 ],
                 "x-speakeasy-group": "integrations_discord",
+                "x-speakeasy-name-override": "discord_user_authorize",
                 "x-speakeasy-ignore": true
             }
         },
@@ -3249,6 +3297,7 @@
                     "User"
                 ],
                 "x-speakeasy-group": "integrations_discord",
+                "x-speakeasy-name-override": "discord_user_callback",
                 "x-speakeasy-ignore": true
             }
         },
@@ -3304,6 +3353,7 @@
                     "User"
                 ],
                 "x-speakeasy-group": "integrations_discord",
+                "x-speakeasy-name-override": "discord_guild_lookup",
                 "x-speakeasy-ignore": true
             }
         },
@@ -3342,6 +3392,7 @@
                     "User"
                 ],
                 "x-speakeasy-group": "backoffice",
+                "x-speakeasy-name-override": "pledges",
                 "x-speakeasy-ignore": true
             }
         },
@@ -3424,6 +3475,7 @@
                     }
                 },
                 "x-speakeasy-group": "backoffice",
+                "x-speakeasy-name-override": "rewards",
                 "x-speakeasy-ignore": true
             }
         },
@@ -3477,6 +3529,7 @@
                     }
                 },
                 "x-speakeasy-group": "backoffice",
+                "x-speakeasy-name-override": "rewards_pending",
                 "x-speakeasy-ignore": true
             }
         },
@@ -3533,6 +3586,7 @@
                     "User"
                 ],
                 "x-speakeasy-group": "backoffice",
+                "x-speakeasy-name-override": "issue",
                 "x-speakeasy-ignore": true
             }
         },
@@ -3587,6 +3641,7 @@
                     "User"
                 ],
                 "x-speakeasy-group": "backoffice",
+                "x-speakeasy-name-override": "pledge_reward_transfer",
                 "x-speakeasy-ignore": true
             }
         },
@@ -3643,6 +3698,7 @@
                     "User"
                 ],
                 "x-speakeasy-group": "backoffice",
+                "x-speakeasy-name-override": "pledge_create_invoice",
                 "x-speakeasy-ignore": true
             }
         },
@@ -3699,6 +3755,7 @@
                     "User"
                 ],
                 "x-speakeasy-group": "backoffice",
+                "x-speakeasy-name-override": "pledge_mark_disputed",
                 "x-speakeasy-ignore": true
             }
         },
@@ -3753,6 +3810,7 @@
                     "User"
                 ],
                 "x-speakeasy-group": "backoffice",
+                "x-speakeasy-name-override": "manage_badge",
                 "x-speakeasy-ignore": true
             }
         },
@@ -3818,6 +3876,7 @@
                     "User"
                 ],
                 "x-speakeasy-group": "backoffice",
+                "x-speakeasy-name-override": "update_badge_contents",
                 "x-speakeasy-ignore": true
             }
         },
@@ -3936,6 +3995,7 @@
                     "User"
                 ],
                 "x-speakeasy-group": "dashboard",
+                "x-speakeasy-name-override": "get_personal_dashboard",
                 "x-speakeasy-ignore": true
             }
         },
@@ -4092,6 +4152,7 @@
                     "User"
                 ],
                 "x-speakeasy-group": "dashboard",
+                "x-speakeasy-name-override": "get_dashboard",
                 "x-speakeasy-ignore": true
             }
         },
@@ -4115,6 +4176,7 @@
                     }
                 },
                 "x-speakeasy-group": "dashboard",
+                "x-speakeasy-name-override": "dummy_do_not_use",
                 "x-speakeasy-ignore": true
             }
         },
@@ -4310,6 +4372,7 @@
                     }
                 },
                 "x-speakeasy-group": "funding",
+                "x-speakeasy-name-override": "search",
                 "x-speakeasy-ignore": true
             }
         },
@@ -4367,6 +4430,7 @@
                     "User"
                 ],
                 "x-speakeasy-group": "funding",
+                "x-speakeasy-name-override": "lookup",
                 "x-speakeasy-ignore": true
             }
         },
@@ -4408,6 +4472,7 @@
                     }
                 },
                 "x-speakeasy-group": "magic_link",
+                "x-speakeasy-name-override": "request_magic_link",
                 "x-speakeasy-ignore": true
             }
         },
@@ -4479,6 +4544,7 @@
                     "User"
                 ],
                 "x-speakeasy-group": "magic_link",
+                "x-speakeasy-name-override": "authenticate_magic_link",
                 "x-speakeasy-ignore": true
             }
         },
@@ -4513,6 +4579,7 @@
                     "User"
                 ],
                 "x-speakeasy-group": "notifications",
+                "x-speakeasy-name-override": "retrieve",
                 "x-speakeasy-ignore": true
             }
         },
@@ -4565,6 +4632,7 @@
                     "User"
                 ],
                 "x-speakeasy-group": "notifications",
+                "x-speakeasy-name-override": "mark_read",
                 "x-speakeasy-ignore": true
             }
         },
@@ -4772,7 +4840,8 @@
                         "numPages": "$.pagination.max_page"
                     }
                 },
-                "x-speakeasy-group": "external_organizations"
+                "x-speakeasy-group": "external_organizations",
+                "x-speakeasy-name-override": "list"
             }
         },
         "/v1/repositories/": {
@@ -4788,8 +4857,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "repositories:read",
-                            "repositories:write"
+                            "repositories:write",
+                            "repositories:read"
                         ]
                     },
                     {
@@ -5022,7 +5091,8 @@
                         "numPages": "$.pagination.max_page"
                     }
                 },
-                "x-speakeasy-group": "repositories"
+                "x-speakeasy-group": "repositories",
+                "x-speakeasy-name-override": "list"
             }
         },
         "/v1/repositories/{id}": {
@@ -5038,8 +5108,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "repositories:read",
-                            "repositories:write"
+                            "repositories:write",
+                            "repositories:read"
                         ]
                     },
                     {
@@ -5101,7 +5171,8 @@
                     "Organization",
                     "User"
                 ],
-                "x-speakeasy-group": "repositories"
+                "x-speakeasy-group": "repositories",
+                "x-speakeasy-name-override": "retrieve"
             },
             "patch": {
                 "tags": [
@@ -5196,7 +5267,8 @@
                     "Organization",
                     "User"
                 ],
-                "x-speakeasy-group": "repositories"
+                "x-speakeasy-group": "repositories",
+                "x-speakeasy-name-override": "update"
             }
         },
         "/v1/rewards/search": {
@@ -5319,6 +5391,7 @@
                     }
                 },
                 "x-speakeasy-group": "rewards",
+                "x-speakeasy-name-override": "search",
                 "x-speakeasy-ignore": true
             }
         },
@@ -5377,6 +5450,7 @@
                     "User"
                 ],
                 "x-speakeasy-group": "rewards",
+                "x-speakeasy-name-override": "summary",
                 "x-speakeasy-ignore": true
             }
         },
@@ -5469,6 +5543,7 @@
                     }
                 },
                 "x-speakeasy-group": "personal_access_token",
+                "x-speakeasy-name-override": "list_personal_access_tokens",
                 "x-speakeasy-ignore": true
             },
             "post": {
@@ -5521,6 +5596,7 @@
                     "User"
                 ],
                 "x-speakeasy-group": "personal_access_token",
+                "x-speakeasy-name-override": "create_personal_access_token",
                 "x-speakeasy-ignore": true
             }
         },
@@ -5570,6 +5646,7 @@
                     "User"
                 ],
                 "x-speakeasy-group": "personal_access_token",
+                "x-speakeasy-name-override": "delete_personal_access_token",
                 "x-speakeasy-ignore": true
             }
         },
@@ -5623,6 +5700,7 @@
                     }
                 },
                 "x-speakeasy-group": "payment_methods",
+                "x-speakeasy-name-override": "list",
                 "x-speakeasy-ignore": true
             }
         },
@@ -5678,6 +5756,7 @@
                     "User"
                 ],
                 "x-speakeasy-group": "payment_methods",
+                "x-speakeasy-name-override": "detach",
                 "x-speakeasy-ignore": true
             }
         },
@@ -5767,6 +5846,7 @@
                     }
                 },
                 "x-speakeasy-group": "pull_requests",
+                "x-speakeasy-name-override": "search",
                 "x-speakeasy-ignore": true
             }
         },
@@ -5858,6 +5938,7 @@
                     }
                 },
                 "x-speakeasy-group": "accounts",
+                "x-speakeasy-name-override": "search",
                 "x-speakeasy-ignore": true
             }
         },
@@ -5914,6 +5995,7 @@
                     "User"
                 ],
                 "x-speakeasy-group": "accounts",
+                "x-speakeasy-name-override": "retrieve",
                 "x-speakeasy-ignore": true
             }
         },
@@ -5979,6 +6061,7 @@
                     "User"
                 ],
                 "x-speakeasy-group": "accounts",
+                "x-speakeasy-name-override": "onboarding_link",
                 "x-speakeasy-ignore": true
             }
         },
@@ -6035,6 +6118,7 @@
                     "User"
                 ],
                 "x-speakeasy-group": "accounts",
+                "x-speakeasy-name-override": "dashboard_link",
                 "x-speakeasy-ignore": true
             }
         },
@@ -6089,6 +6173,7 @@
                     "User"
                 ],
                 "x-speakeasy-group": "accounts",
+                "x-speakeasy-name-override": "create",
                 "x-speakeasy-ignore": true
             }
         },
@@ -6103,8 +6188,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "issues:write",
-                            "issues:read"
+                            "issues:read",
+                            "issues:write"
                         ]
                     },
                     {
@@ -6365,6 +6450,7 @@
                     }
                 },
                 "x-speakeasy-group": "issues",
+                "x-speakeasy-name-override": "list",
                 "x-speakeasy-ignore": true
             }
         },
@@ -6433,6 +6519,7 @@
                     "User"
                 ],
                 "x-speakeasy-group": "issues",
+                "x-speakeasy-name-override": "lookup",
                 "x-speakeasy-ignore": true
             }
         },
@@ -6488,6 +6575,7 @@
                     "User"
                 ],
                 "x-speakeasy-group": "issues",
+                "x-speakeasy-name-override": "get_body",
                 "x-speakeasy-ignore": true
             }
         },
@@ -6541,6 +6629,7 @@
                     }
                 },
                 "x-speakeasy-group": "issues",
+                "x-speakeasy-name-override": "for_you",
                 "x-speakeasy-ignore": true
             }
         },
@@ -6599,6 +6688,7 @@
                     "User"
                 ],
                 "x-speakeasy-group": "issues",
+                "x-speakeasy-name-override": "retrieve",
                 "x-speakeasy-ignore": true
             },
             "post": {
@@ -6664,6 +6754,7 @@
                     "User"
                 ],
                 "x-speakeasy-group": "issues",
+                "x-speakeasy-name-override": "update",
                 "x-speakeasy-ignore": true
             }
         },
@@ -6731,6 +6822,7 @@
                     "User"
                 ],
                 "x-speakeasy-group": "issues",
+                "x-speakeasy-name-override": "confirm",
                 "x-speakeasy-ignore": true
             }
         },
@@ -6787,6 +6879,7 @@
                     "User"
                 ],
                 "x-speakeasy-group": "issues",
+                "x-speakeasy-name-override": "add_polar_badge",
                 "x-speakeasy-ignore": true
             }
         },
@@ -6843,6 +6936,7 @@
                     "User"
                 ],
                 "x-speakeasy-group": "issues",
+                "x-speakeasy-name-override": "remove_polar_badge",
                 "x-speakeasy-ignore": true
             }
         },
@@ -6909,6 +7003,7 @@
                     "User"
                 ],
                 "x-speakeasy-group": "issues",
+                "x-speakeasy-name-override": "add_issue_comment",
                 "x-speakeasy-ignore": true
             }
         },
@@ -6975,6 +7070,7 @@
                     "User"
                 ],
                 "x-speakeasy-group": "issues",
+                "x-speakeasy-name-override": "badge_with_message",
                 "x-speakeasy-ignore": true
             }
         },
@@ -7146,6 +7242,7 @@
                     }
                 },
                 "x-speakeasy-group": "pledges",
+                "x-speakeasy-name-override": "search",
                 "x-speakeasy-ignore": true
             }
         },
@@ -7204,6 +7301,7 @@
                     "User"
                 ],
                 "x-speakeasy-group": "pledges",
+                "x-speakeasy-name-override": "summary",
                 "x-speakeasy-ignore": true
             }
         },
@@ -7263,6 +7361,7 @@
                     "User"
                 ],
                 "x-speakeasy-group": "pledges",
+                "x-speakeasy-name-override": "spending",
                 "x-speakeasy-ignore": true
             }
         },
@@ -7320,6 +7419,7 @@
                     "User"
                 ],
                 "x-speakeasy-group": "pledges",
+                "x-speakeasy-name-override": "retrieve",
                 "x-speakeasy-ignore": true
             }
         },
@@ -7376,6 +7476,7 @@
                     "User"
                 ],
                 "x-speakeasy-group": "pledges",
+                "x-speakeasy-name-override": "create",
                 "x-speakeasy-ignore": true
             }
         },
@@ -7431,6 +7532,7 @@
                     "User"
                 ],
                 "x-speakeasy-group": "pledges",
+                "x-speakeasy-name-override": "create_pay_on_completion",
                 "x-speakeasy-ignore": true
             }
         },
@@ -7488,6 +7590,7 @@
                     "User"
                 ],
                 "x-speakeasy-group": "pledges",
+                "x-speakeasy-name-override": "create_invoice",
                 "x-speakeasy-ignore": true
             }
         },
@@ -7543,6 +7646,7 @@
                     "User"
                 ],
                 "x-speakeasy-group": "pledges",
+                "x-speakeasy-name-override": "create_payment_intent",
                 "x-speakeasy-ignore": true
             }
         },
@@ -7609,6 +7713,7 @@
                     "User"
                 ],
                 "x-speakeasy-group": "pledges",
+                "x-speakeasy-name-override": "update_payment_intent",
                 "x-speakeasy-ignore": true
             }
         },
@@ -7674,6 +7779,7 @@
                     "User"
                 ],
                 "x-speakeasy-group": "pledges",
+                "x-speakeasy-name-override": "dispute_pledge",
                 "x-speakeasy-ignore": true
             }
         },
@@ -7831,7 +7937,8 @@
                         "numPages": "$.pagination.max_page"
                     }
                 },
-                "x-speakeasy-group": "organizations"
+                "x-speakeasy-group": "organizations",
+                "x-speakeasy-name-override": "list"
             },
             "post": {
                 "tags": [
@@ -7887,7 +7994,8 @@
                 "x-polar-allowed-subjects": [
                     "User"
                 ],
-                "x-speakeasy-group": "organizations"
+                "x-speakeasy-group": "organizations",
+                "x-speakeasy-name-override": "create"
             }
         },
         "/v1/organizations/{id}": {
@@ -7965,7 +8073,8 @@
                     "Organization",
                     "User"
                 ],
-                "x-speakeasy-group": "organizations"
+                "x-speakeasy-group": "organizations",
+                "x-speakeasy-name-override": "retrieve"
             },
             "patch": {
                 "tags": [
@@ -8060,18 +8169,18 @@
                     "Organization",
                     "User"
                 ],
-                "x-speakeasy-group": "organizations"
+                "x-speakeasy-group": "organizations",
+                "x-speakeasy-name-override": "update"
             }
         },
         "/v1/organizations/{id}/customers": {
             "get": {
                 "tags": [
-                    "organizations",
-                    "documented"
+                    "organizations"
                 ],
                 "summary": "List Organization Customers",
                 "description": "List organization customers.",
-                "operationId": "organizations:list_organization_customers",
+                "operationId": "organizations:customers",
                 "security": [
                     {
                         "OpenIdConnect": [
@@ -8113,9 +8222,9 @@
                             "description": "Filter by the type of purchase the customer made.",
                             "default": [
                                 "order",
-                                "donation",
+                                "free_subscription",
                                 "paid_subscription",
-                                "free_subscription"
+                                "donation"
                             ],
                             "title": "Customer Types"
                         },
@@ -8203,7 +8312,9 @@
                         "numPages": "$.pagination.max_page"
                     }
                 },
-                "x-speakeasy-group": "organizations"
+                "x-speakeasy-group": "organizations",
+                "x-speakeasy-name-override": "customers",
+                "x-speakeasy-ignore": true
             }
         },
         "/v1/organizations/{id}/account": {
@@ -8289,6 +8400,7 @@
                     "User"
                 ],
                 "x-speakeasy-group": "organizations",
+                "x-speakeasy-name-override": "get_account",
                 "x-speakeasy-ignore": true
             },
             "patch": {
@@ -8383,6 +8495,7 @@
                     "User"
                 ],
                 "x-speakeasy-group": "organizations",
+                "x-speakeasy-name-override": "set_account",
                 "x-speakeasy-ignore": true
             }
         },
@@ -8469,6 +8582,7 @@
                     }
                 },
                 "x-speakeasy-group": "organizations",
+                "x-speakeasy-name-override": "members",
                 "x-speakeasy-ignore": true
             }
         },
@@ -8529,6 +8643,7 @@
                     "User"
                 ],
                 "x-speakeasy-group": "organizations",
+                "x-speakeasy-name-override": "create_stripe_customer_portal",
                 "x-speakeasy-ignore": true
             }
         },
@@ -8589,6 +8704,7 @@
                     "User"
                 ],
                 "x-speakeasy-group": "organizations",
+                "x-speakeasy-name-override": "get_badge_settings",
                 "x-speakeasy-ignore": true
             },
             "post": {
@@ -8657,6 +8773,7 @@
                     "User"
                 ],
                 "x-speakeasy-group": "organizations",
+                "x-speakeasy-name-override": "update_badge_settings",
                 "x-speakeasy-ignore": true
             }
         },
@@ -8672,8 +8789,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "subscriptions:read",
-                            "subscriptions:write"
+                            "subscriptions:write",
+                            "subscriptions:read"
                         ]
                     },
                     {
@@ -8896,7 +9013,8 @@
                         "numPages": "$.pagination.max_page"
                     }
                 },
-                "x-speakeasy-group": "subscriptions"
+                "x-speakeasy-group": "subscriptions",
+                "x-speakeasy-name-override": "list"
             },
             "post": {
                 "tags": [
@@ -8952,7 +9070,8 @@
                     "Organization",
                     "User"
                 ],
-                "x-speakeasy-group": "subscriptions"
+                "x-speakeasy-group": "subscriptions",
+                "x-speakeasy-name-override": "create"
             }
         },
         "/v1/subscriptions/import": {
@@ -9010,6 +9129,7 @@
                     "Organization",
                     "User"
                 ],
+                "x-speakeasy-name-override": "import",
                 "x-speakeasy-group": "subscriptions"
             }
         },
@@ -9025,8 +9145,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "subscriptions:read",
-                            "subscriptions:write"
+                            "subscriptions:write",
+                            "subscriptions:read"
                         ]
                     },
                     {
@@ -9097,7 +9217,8 @@
                     "Organization",
                     "User"
                 ],
-                "x-speakeasy-group": "subscriptions"
+                "x-speakeasy-group": "subscriptions",
+                "x-speakeasy-name-override": "export"
             }
         },
         "/v1/articles/": {
@@ -9328,7 +9449,8 @@
                         "numPages": "$.pagination.max_page"
                     }
                 },
-                "x-speakeasy-group": "articles"
+                "x-speakeasy-group": "articles",
+                "x-speakeasy-name-override": "list"
             },
             "post": {
                 "tags": [
@@ -9385,7 +9507,8 @@
                     "Organization",
                     "User"
                 ],
-                "x-speakeasy-group": "articles"
+                "x-speakeasy-group": "articles",
+                "x-speakeasy-name-override": "create"
             }
         },
         "/v1/articles/{id}": {
@@ -9463,7 +9586,8 @@
                     "Organization",
                     "User"
                 ],
-                "x-speakeasy-group": "articles"
+                "x-speakeasy-group": "articles",
+                "x-speakeasy-name-override": "retrieve"
             },
             "patch": {
                 "tags": [
@@ -9558,7 +9682,8 @@
                     "Organization",
                     "User"
                 ],
-                "x-speakeasy-group": "articles"
+                "x-speakeasy-group": "articles",
+                "x-speakeasy-name-override": "update"
             },
             "delete": {
                 "tags": [
@@ -9636,7 +9761,8 @@
                     "Organization",
                     "User"
                 ],
-                "x-speakeasy-group": "articles"
+                "x-speakeasy-group": "articles",
+                "x-speakeasy-name-override": "delete"
             }
         },
         "/v1/articles/{id}/receivers": {
@@ -9648,7 +9774,7 @@
                 ],
                 "summary": "Get Article Receivers Count",
                 "description": "Get number of potential receivers for an article.",
-                "operationId": "articles:get_receivers",
+                "operationId": "articles:receivers",
                 "security": [
                     {
                         "OpenIdConnect": [
@@ -9703,7 +9829,8 @@
                     "Organization",
                     "User"
                 ],
-                "x-speakeasy-group": "articles"
+                "x-speakeasy-group": "articles",
+                "x-speakeasy-name-override": "receivers"
             }
         },
         "/v1/articles/{id}/preview": {
@@ -9715,7 +9842,7 @@
                 ],
                 "summary": "Send Article Preview",
                 "description": "Send an article preview by email.",
-                "operationId": "articles:send_preview",
+                "operationId": "articles:preview",
                 "security": [
                     {
                         "OpenIdConnect": [
@@ -9798,7 +9925,8 @@
                     "Organization",
                     "User"
                 ],
-                "x-speakeasy-group": "articles"
+                "x-speakeasy-group": "articles",
+                "x-speakeasy-name-override": "preview"
             }
         },
         "/v1/articles/{id}/send": {
@@ -9886,7 +10014,8 @@
                     "Organization",
                     "User"
                 ],
-                "x-speakeasy-group": "articles"
+                "x-speakeasy-group": "articles",
+                "x-speakeasy-name-override": "send"
             }
         },
         "/v1/articles/unsubscribe": {
@@ -9925,7 +10054,8 @@
                         }
                     }
                 },
-                "x-speakeasy-group": "articles"
+                "x-speakeasy-group": "articles",
+                "x-speakeasy-name-override": "email_unsubscribe"
             }
         },
         "/v1/transactions/search": {
@@ -10117,6 +10247,7 @@
                     }
                 },
                 "x-speakeasy-group": "transactions",
+                "x-speakeasy-name-override": "search_transactions",
                 "x-speakeasy-ignore": true
             }
         },
@@ -10173,6 +10304,7 @@
                     "User"
                 ],
                 "x-speakeasy-group": "transactions",
+                "x-speakeasy-name-override": "lookup_transaction",
                 "x-speakeasy-ignore": true
             }
         },
@@ -10229,6 +10361,7 @@
                     "User"
                 ],
                 "x-speakeasy-group": "transactions",
+                "x-speakeasy-name-override": "get_summary",
                 "x-speakeasy-ignore": true
             }
         },
@@ -10285,6 +10418,7 @@
                     "User"
                 ],
                 "x-speakeasy-group": "transactions",
+                "x-speakeasy-name-override": "get_payout_estimate",
                 "x-speakeasy-ignore": true
             },
             "post": {
@@ -10337,6 +10471,7 @@
                     "User"
                 ],
                 "x-speakeasy-group": "transactions",
+                "x-speakeasy-name-override": "create_payout",
                 "x-speakeasy-ignore": true
             }
         },
@@ -10391,6 +10526,7 @@
                     "User"
                 ],
                 "x-speakeasy-group": "transactions",
+                "x-speakeasy-name-override": "get_payout_csv",
                 "x-speakeasy-ignore": true
             }
         },
@@ -10512,7 +10648,8 @@
                         "numPages": "$.pagination.max_page"
                     }
                 },
-                "x-speakeasy-group": "advertisements"
+                "x-speakeasy-group": "advertisements",
+                "x-speakeasy-name-override": "list"
             }
         },
         "/v1/advertisements/{id}": {
@@ -10570,7 +10707,8 @@
                         }
                     }
                 },
-                "x-speakeasy-group": "advertisements"
+                "x-speakeasy-group": "advertisements",
+                "x-speakeasy-name-override": "retrieve"
             }
         },
         "/v1/advertisements/{id}/view": {
@@ -10621,7 +10759,8 @@
                         }
                     }
                 },
-                "x-speakeasy-group": "advertisements"
+                "x-speakeasy-group": "advertisements",
+                "x-speakeasy-name-override": "track_view"
             }
         },
         "/v1/traffic/track_page_view": {
@@ -10664,6 +10803,7 @@
                     }
                 },
                 "x-speakeasy-group": "traffic",
+                "x-speakeasy-name-override": "track_page_view",
                 "x-speakeasy-ignore": true
             }
         },
@@ -10794,6 +10934,7 @@
                     "User"
                 ],
                 "x-speakeasy-group": "traffic",
+                "x-speakeasy-name-override": "statistics",
                 "x-speakeasy-ignore": true
             }
         },
@@ -10915,6 +11056,7 @@
                     }
                 },
                 "x-speakeasy-group": "traffic",
+                "x-speakeasy-name-override": "referrers",
                 "x-speakeasy-ignore": true
             }
         },
@@ -10936,6 +11078,7 @@
                     }
                 },
                 "x-speakeasy-group": "auth",
+                "x-speakeasy-name-override": "logout",
                 "x-speakeasy-ignore": true
             }
         },
@@ -11061,6 +11204,7 @@
                     }
                 },
                 "x-speakeasy-group": "donations",
+                "x-speakeasy-name-override": "search_donations",
                 "x-speakeasy-ignore": true
             }
         },
@@ -11116,6 +11260,7 @@
                     "User"
                 ],
                 "x-speakeasy-group": "donations",
+                "x-speakeasy-name-override": "create_payment_intent",
                 "x-speakeasy-ignore": true
             }
         },
@@ -11182,6 +11327,7 @@
                     "User"
                 ],
                 "x-speakeasy-group": "donations",
+                "x-speakeasy-name-override": "update_payment_intent",
                 "x-speakeasy-ignore": true
             }
         },
@@ -11272,6 +11418,7 @@
                     "User"
                 ],
                 "x-speakeasy-group": "donations",
+                "x-speakeasy-name-override": "statistics",
                 "x-speakeasy-ignore": true
             }
         },
@@ -11392,6 +11539,7 @@
                     }
                 },
                 "x-speakeasy-group": "donations",
+                "x-speakeasy-name-override": "donations_public_search",
                 "x-speakeasy-ignore": true
             }
         },
@@ -11399,11 +11547,12 @@
             "get": {
                 "tags": [
                     "oauth2",
-                    "documented"
+                    "documented",
+                    "clients"
                 ],
                 "summary": "List Clients",
                 "description": "List OAuth2 clients.",
-                "operationId": "oauth2:list_clients",
+                "operationId": "oauth2:clients:list",
                 "security": [
                     {
                         "OpenIdConnect": []
@@ -11484,18 +11633,20 @@
                         "numPages": "$.pagination.max_page"
                     }
                 },
-                "x-speakeasy-group": "oauth2"
+                "x-speakeasy-group": "oauth2.clients",
+                "x-speakeasy-name-override": "list"
             }
         },
         "/v1/oauth2/register": {
             "post": {
                 "tags": [
                     "oauth2",
-                    "documented"
+                    "documented",
+                    "clients"
                 ],
                 "summary": "Create Client",
                 "description": "Create an OAuth2 client.",
-                "operationId": "oauth2:oauth2:create_client",
+                "operationId": "oauth2:clients:oauth2:create_client",
                 "requestBody": {
                     "content": {
                         "application/json": {
@@ -11537,18 +11688,20 @@
                 "x-polar-allowed-subjects": [
                     "User"
                 ],
-                "x-speakeasy-group": "oauth2"
+                "x-speakeasy-group": "oauth2.clients",
+                "x-speakeasy-name-override": "create"
             }
         },
         "/v1/oauth2/register/{client_id}": {
             "get": {
                 "tags": [
                     "oauth2",
-                    "documented"
+                    "documented",
+                    "clients"
                 ],
                 "summary": "Get Client",
                 "description": "Get an OAuth2 client by Client ID.",
-                "operationId": "oauth2:oauth2:get_client",
+                "operationId": "oauth2:clients:oauth2:get_client",
                 "security": [
                     {
                         "OpenIdConnect": []
@@ -11592,16 +11745,18 @@
                     "Anonymous",
                     "User"
                 ],
-                "x-speakeasy-group": "oauth2"
+                "x-speakeasy-group": "oauth2.clients",
+                "x-speakeasy-name-override": "retrieve"
             },
             "put": {
                 "tags": [
                     "oauth2",
-                    "documented"
+                    "documented",
+                    "clients"
                 ],
                 "summary": "Update Client",
                 "description": "Update an OAuth2 client.",
-                "operationId": "oauth2:oauth2:update_client",
+                "operationId": "oauth2:clients:oauth2:update_client",
                 "security": [
                     {
                         "OpenIdConnect": []
@@ -11655,16 +11810,18 @@
                     "Anonymous",
                     "User"
                 ],
-                "x-speakeasy-group": "oauth2"
+                "x-speakeasy-group": "oauth2.clients",
+                "x-speakeasy-name-override": "update"
             },
             "delete": {
                 "tags": [
                     "oauth2",
-                    "documented"
+                    "documented",
+                    "clients"
                 ],
                 "summary": "Delete Client",
                 "description": "Delete an OAuth2 client.",
-                "operationId": "oauth2:oauth2:delete_client",
+                "operationId": "oauth2:clients:oauth2:delete_client",
                 "security": [
                     {
                         "OpenIdConnect": []
@@ -11708,7 +11865,8 @@
                     "Anonymous",
                     "User"
                 ],
-                "x-speakeasy-group": "oauth2"
+                "x-speakeasy-group": "oauth2.clients",
+                "x-speakeasy-name-override": "delete"
             }
         },
         "/v1/oauth2/authorize": {
@@ -11758,7 +11916,8 @@
                     "Anonymous",
                     "User"
                 ],
-                "x-speakeasy-group": "oauth2"
+                "x-speakeasy-group": "oauth2",
+                "x-speakeasy-name-override": "authorize"
             }
         },
         "/v1/oauth2/consent": {
@@ -11810,7 +11969,8 @@
                 "x-polar-allowed-subjects": [
                     "User"
                 ],
-                "x-speakeasy-group": "oauth2"
+                "x-speakeasy-group": "oauth2",
+                "x-speakeasy-name-override": "consent"
             }
         },
         "/v1/oauth2/token": {
@@ -11933,7 +12093,8 @@
                         "type": "object"
                     }
                 },
-                "x-speakeasy-group": "oauth2"
+                "x-speakeasy-group": "oauth2",
+                "x-speakeasy-name-override": "token"
             }
         },
         "/v1/oauth2/revoke": {
@@ -12003,7 +12164,8 @@
                         }
                     }
                 },
-                "x-speakeasy-group": "oauth2"
+                "x-speakeasy-group": "oauth2",
+                "x-speakeasy-name-override": "revoke"
             }
         },
         "/v1/oauth2/introspect": {
@@ -12073,7 +12235,8 @@
                         }
                     }
                 },
-                "x-speakeasy-group": "oauth2"
+                "x-speakeasy-group": "oauth2",
+                "x-speakeasy-name-override": "introspect"
             }
         },
         "/v1/oauth2/userinfo": {
@@ -12111,6 +12274,7 @@
                         "OpenIdConnect": []
                     }
                 ],
+                "x-speakeasy-name-override": "userinfo",
                 "x-speakeasy-group": "oauth2"
             }
         },
@@ -12269,7 +12433,8 @@
                         "numPages": "$.pagination.max_page"
                     }
                 },
-                "x-speakeasy-group": "benefits"
+                "x-speakeasy-group": "benefits",
+                "x-speakeasy-name-override": "list"
             },
             "post": {
                 "tags": [
@@ -12372,7 +12537,8 @@
                     "Organization",
                     "User"
                 ],
-                "x-speakeasy-group": "benefits"
+                "x-speakeasy-group": "benefits",
+                "x-speakeasy-name-override": "create"
             }
         },
         "/v1/benefits/{id}": {
@@ -12469,7 +12635,8 @@
                     "Organization",
                     "User"
                 ],
-                "x-speakeasy-group": "benefits"
+                "x-speakeasy-group": "benefits",
+                "x-speakeasy-name-override": "retrieve"
             },
             "patch": {
                 "tags": [
@@ -12603,7 +12770,8 @@
                     "Organization",
                     "User"
                 ],
-                "x-speakeasy-group": "benefits"
+                "x-speakeasy-group": "benefits",
+                "x-speakeasy-name-override": "update"
             },
             "delete": {
                 "tags": [
@@ -12680,7 +12848,8 @@
                     "Organization",
                     "User"
                 ],
-                "x-speakeasy-group": "benefits"
+                "x-speakeasy-group": "benefits",
+                "x-speakeasy-name-override": "delete"
             }
         },
         "/v1/benefits/{id}/grants": {
@@ -12691,7 +12860,7 @@
                 ],
                 "summary": "List Benefit Grants",
                 "description": "List the individual grants for a benefit.\n\nIt's especially useful to check if a user has been granted a benefit.",
-                "operationId": "benefits:list_grants",
+                "operationId": "benefits:grants",
                 "security": [
                     {
                         "OpenIdConnect": [
@@ -12857,7 +13026,8 @@
                         "numPages": "$.pagination.max_page"
                     }
                 },
-                "x-speakeasy-group": "benefits"
+                "x-speakeasy-group": "benefits",
+                "x-speakeasy-name-override": "grants"
             }
         },
         "/v1/webhooks/endpoints": {
@@ -12871,8 +13041,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "webhooks:read",
-                            "webhooks:write"
+                            "webhooks:write",
+                            "webhooks:read"
                         ]
                     },
                     {
@@ -12997,6 +13167,7 @@
                     }
                 },
                 "x-speakeasy-group": "webhooks",
+                "x-speakeasy-name-override": "list_webhook_endpoints",
                 "x-speakeasy-ignore": true
             },
             "post": {
@@ -13053,6 +13224,7 @@
                     "User"
                 ],
                 "x-speakeasy-group": "webhooks",
+                "x-speakeasy-name-override": "create_webhook_endpoint",
                 "x-speakeasy-ignore": true
             }
         },
@@ -13067,8 +13239,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "webhooks:read",
-                            "webhooks:write"
+                            "webhooks:write",
+                            "webhooks:read"
                         ]
                     },
                     {
@@ -13126,6 +13298,7 @@
                     "User"
                 ],
                 "x-speakeasy-group": "webhooks",
+                "x-speakeasy-name-override": "get_webhook_endpoint",
                 "x-speakeasy-ignore": true
             },
             "patch": {
@@ -13216,6 +13389,7 @@
                     "User"
                 ],
                 "x-speakeasy-group": "webhooks",
+                "x-speakeasy-name-override": "update_webhook_endpoint",
                 "x-speakeasy-ignore": true
             },
             "delete": {
@@ -13289,6 +13463,7 @@
                     "User"
                 ],
                 "x-speakeasy-group": "webhooks",
+                "x-speakeasy-name-override": "delete_webhook_endpoint",
                 "x-speakeasy-ignore": true
             }
         },
@@ -13303,8 +13478,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "webhooks:read",
-                            "webhooks:write"
+                            "webhooks:write",
+                            "webhooks:read"
                         ]
                     },
                     {
@@ -13404,6 +13579,7 @@
                     }
                 },
                 "x-speakeasy-group": "webhooks",
+                "x-speakeasy-name-override": "list_webhook_deliveries",
                 "x-speakeasy-ignore": true
             }
         },
@@ -13474,6 +13650,7 @@
                     "User"
                 ],
                 "x-speakeasy-group": "webhooks",
+                "x-speakeasy-name-override": "redeliver_webhook_event",
                 "x-speakeasy-ignore": true
             }
         },
@@ -13490,8 +13667,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "products:read",
-                            "products:write"
+                            "products:write",
+                            "products:read"
                         ]
                     },
                     {
@@ -13708,7 +13885,8 @@
                         "numPages": "$.pagination.max_page"
                     }
                 },
-                "x-speakeasy-group": "products"
+                "x-speakeasy-group": "products",
+                "x-speakeasy-name-override": "list"
             },
             "post": {
                 "tags": [
@@ -13773,7 +13951,8 @@
                     "Organization",
                     "User"
                 ],
-                "x-speakeasy-group": "products"
+                "x-speakeasy-group": "products",
+                "x-speakeasy-name-override": "create"
             }
         },
         "/v1/products/{id}": {
@@ -13789,8 +13968,8 @@
                 "security": [
                     {
                         "OpenIdConnect": [
-                            "products:read",
-                            "products:write"
+                            "products:write",
+                            "products:read"
                         ]
                     },
                     {
@@ -13852,7 +14031,8 @@
                     "Organization",
                     "User"
                 ],
-                "x-speakeasy-group": "products"
+                "x-speakeasy-group": "products",
+                "x-speakeasy-name-override": "retrieve"
             },
             "patch": {
                 "tags": [
@@ -13947,7 +14127,8 @@
                     "Organization",
                     "User"
                 ],
-                "x-speakeasy-group": "products"
+                "x-speakeasy-group": "products",
+                "x-speakeasy-name-override": "update"
             }
         },
         "/v1/products/{id}/benefits": {
@@ -14044,7 +14225,8 @@
                     "Organization",
                     "User"
                 ],
-                "x-speakeasy-group": "products"
+                "x-speakeasy-group": "products",
+                "x-speakeasy-name-override": "update_benefits"
             }
         },
         "/v1/orders/": {
@@ -14289,7 +14471,8 @@
                         "numPages": "$.pagination.max_page"
                     }
                 },
-                "x-speakeasy-group": "orders"
+                "x-speakeasy-group": "orders",
+                "x-speakeasy-name-override": "list"
             }
         },
         "/v1/orders/{id}": {
@@ -14361,7 +14544,8 @@
                     "Organization",
                     "User"
                 ],
-                "x-speakeasy-group": "orders"
+                "x-speakeasy-group": "orders",
+                "x-speakeasy-name-override": "retrieve"
             }
         },
         "/v1/orders/{id}/invoice": {
@@ -14372,7 +14556,7 @@
                 ],
                 "summary": "Get Order Invoice",
                 "description": "Get an order's invoice data.",
-                "operationId": "orders:get_invoice",
+                "operationId": "orders:invoice",
                 "security": [
                     {
                         "OpenIdConnect": [
@@ -14433,7 +14617,8 @@
                     "Organization",
                     "User"
                 ],
-                "x-speakeasy-group": "orders"
+                "x-speakeasy-group": "orders",
+                "x-speakeasy-name-override": "invoice"
             }
         },
         "/v1/checkouts/": {
@@ -14490,7 +14675,8 @@
                     "Anonymous",
                     "User"
                 ],
-                "x-speakeasy-group": "checkouts"
+                "x-speakeasy-group": "checkouts",
+                "x-speakeasy-name-override": "create"
             }
         },
         "/v1/checkouts/{id}": {
@@ -14536,7 +14722,8 @@
                         }
                     }
                 },
-                "x-speakeasy-group": "checkouts"
+                "x-speakeasy-group": "checkouts",
+                "x-speakeasy-name-override": "retrieve"
             }
         },
         "/v1/files/": {
@@ -14676,7 +14863,8 @@
                         "numPages": "$.pagination.max_page"
                     }
                 },
-                "x-speakeasy-group": "files"
+                "x-speakeasy-group": "files",
+                "x-speakeasy-name-override": "list"
             },
             "post": {
                 "tags": [
@@ -14751,7 +14939,8 @@
                     "Organization",
                     "User"
                 ],
-                "x-speakeasy-group": "files"
+                "x-speakeasy-group": "files",
+                "x-speakeasy-name-override": "create"
             }
         },
         "/v1/files/{id}/uploaded": {
@@ -14842,7 +15031,8 @@
                     "Organization",
                     "User"
                 ],
-                "x-speakeasy-group": "files"
+                "x-speakeasy-group": "files",
+                "x-speakeasy-name-override": "uploaded"
             }
         },
         "/v1/files/{id}": {
@@ -14933,7 +15123,8 @@
                     "Organization",
                     "User"
                 ],
-                "x-speakeasy-group": "files"
+                "x-speakeasy-group": "files",
+                "x-speakeasy-name-override": "update"
             },
             "delete": {
                 "tags": [
@@ -15004,7 +15195,8 @@
                     "Organization",
                     "User"
                 ],
-                "x-speakeasy-group": "files"
+                "x-speakeasy-group": "files",
+                "x-speakeasy-name-override": "delete"
             }
         },
         "/v1/metrics/": {
@@ -15194,7 +15386,8 @@
                     "Organization",
                     "User"
                 ],
-                "x-speakeasy-group": "metrics"
+                "x-speakeasy-group": "metrics",
+                "x-speakeasy-name-override": "retrieve"
             }
         },
         "/v1/metrics/limits": {
@@ -15205,7 +15398,7 @@
                 ],
                 "summary": "Get Metrics Limits",
                 "description": "Get the interval limits for the metrics endpoint.",
-                "operationId": "metrics:get_limits",
+                "operationId": "metrics:limits",
                 "responses": {
                     "200": {
                         "description": "Successful Response",
@@ -15232,7 +15425,8 @@
                     "Organization",
                     "User"
                 ],
-                "x-speakeasy-group": "metrics"
+                "x-speakeasy-group": "metrics",
+                "x-speakeasy-name-override": "limits"
             }
         },
         "/v1/integrations/google/authorize": {
@@ -15309,6 +15503,7 @@
                     "User"
                 ],
                 "x-speakeasy-group": "integrations_google",
+                "x-speakeasy-name-override": "google_authorize",
                 "x-speakeasy-ignore": true
             }
         },
@@ -15418,6 +15613,7 @@
                     "User"
                 ],
                 "x-speakeasy-group": "integrations_google",
+                "x-speakeasy-name-override": "google_callback",
                 "x-speakeasy-ignore": true
             }
         }
@@ -34241,28 +34437,6 @@
         {
             "name": "issue_funding",
             "description": "Endpoints related to issue funding and rewards in the Polar API."
-        }
-    ],
-    "x-speakeasy-name-override": [
-        {
-            "operationId": ".*:list$",
-            "methodNameOverride": "list"
-        },
-        {
-            "operationId": ".*:get$",
-            "methodNameOverride": "retrieve"
-        },
-        {
-            "operationId": ".*:create$",
-            "methodNameOverride": "create"
-        },
-        {
-            "operationId": ".*:update$",
-            "methodNameOverride": "update"
-        },
-        {
-            "operationId": ".*:delete$",
-            "methodNameOverride": "delete"
         }
     ]
 }

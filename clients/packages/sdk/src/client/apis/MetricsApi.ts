@@ -123,7 +123,7 @@ export class MetricsApi extends runtime.BaseAPI {
      * Get the interval limits for the metrics endpoint.
      * Get Metrics Limits
      */
-    async getLimitsRaw(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<MetricsLimits>> {
+    async limitsRaw(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<MetricsLimits>> {
         const queryParameters: any = {};
 
         const headerParameters: runtime.HTTPHeaders = {};
@@ -150,8 +150,8 @@ export class MetricsApi extends runtime.BaseAPI {
      * Get the interval limits for the metrics endpoint.
      * Get Metrics Limits
      */
-    async getLimits(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<MetricsLimits> {
-        const response = await this.getLimitsRaw(initOverrides);
+    async limits(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<MetricsLimits> {
+        const response = await this.limitsRaw(initOverrides);
         return await response.value();
     }
 

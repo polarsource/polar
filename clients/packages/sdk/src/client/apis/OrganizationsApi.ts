@@ -41,6 +41,13 @@ export interface OrganizationsApiCreateStripeCustomerPortalRequest {
     id: string;
 }
 
+export interface OrganizationsApiCustomersRequest {
+    id: string;
+    customerTypes?: Set<OrganizationCustomerType>;
+    page?: number;
+    limit?: number;
+}
+
 export interface OrganizationsApiGetRequest {
     id: string;
 }
@@ -59,13 +66,6 @@ export interface OrganizationsApiListRequest {
     page?: number;
     limit?: number;
     sorting?: Array<OrganizationSortProperty>;
-}
-
-export interface OrganizationsApiListOrganizationCustomersRequest {
-    id: string;
-    customerTypes?: Set<OrganizationCustomerType>;
-    page?: number;
-    limit?: number;
 }
 
 export interface OrganizationsApiMembersRequest {
@@ -178,6 +178,61 @@ export class OrganizationsApi extends runtime.BaseAPI {
      */
     async createStripeCustomerPortal(requestParameters: OrganizationsApiCreateStripeCustomerPortalRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<OrganizationStripePortalSession> {
         const response = await this.createStripeCustomerPortalRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
+     * List organization customers.
+     * List Organization Customers
+     */
+    async customersRaw(requestParameters: OrganizationsApiCustomersRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListResourceOrganizationCustomer>> {
+        if (requestParameters['id'] == null) {
+            throw new runtime.RequiredError(
+                'id',
+                'Required parameter "id" was null or undefined when calling customers().'
+            );
+        }
+
+        const queryParameters: any = {};
+
+        if (requestParameters['customerTypes'] != null) {
+            queryParameters['customer_types'] = requestParameters['customerTypes'];
+        }
+
+        if (requestParameters['page'] != null) {
+            queryParameters['page'] = requestParameters['page'];
+        }
+
+        if (requestParameters['limit'] != null) {
+            queryParameters['limit'] = requestParameters['limit'];
+        }
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("HTTPBearer", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+        const response = await this.request({
+            path: `/v1/organizations/{id}/customers`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
+            method: 'GET',
+            headers: headerParameters,
+            query: queryParameters,
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse(response);
+    }
+
+    /**
+     * List organization customers.
+     * List Organization Customers
+     */
+    async customers(requestParameters: OrganizationsApiCustomersRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ListResourceOrganizationCustomer> {
+        const response = await this.customersRaw(requestParameters, initOverrides);
         return await response.value();
     }
 
@@ -363,61 +418,6 @@ export class OrganizationsApi extends runtime.BaseAPI {
      */
     async list(requestParameters: OrganizationsApiListRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ListResourceOrganization> {
         const response = await this.listRaw(requestParameters, initOverrides);
-        return await response.value();
-    }
-
-    /**
-     * List organization customers.
-     * List Organization Customers
-     */
-    async listOrganizationCustomersRaw(requestParameters: OrganizationsApiListOrganizationCustomersRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListResourceOrganizationCustomer>> {
-        if (requestParameters['id'] == null) {
-            throw new runtime.RequiredError(
-                'id',
-                'Required parameter "id" was null or undefined when calling listOrganizationCustomers().'
-            );
-        }
-
-        const queryParameters: any = {};
-
-        if (requestParameters['customerTypes'] != null) {
-            queryParameters['customer_types'] = requestParameters['customerTypes'];
-        }
-
-        if (requestParameters['page'] != null) {
-            queryParameters['page'] = requestParameters['page'];
-        }
-
-        if (requestParameters['limit'] != null) {
-            queryParameters['limit'] = requestParameters['limit'];
-        }
-
-        const headerParameters: runtime.HTTPHeaders = {};
-
-        if (this.configuration && this.configuration.accessToken) {
-            const token = this.configuration.accessToken;
-            const tokenString = await token("HTTPBearer", []);
-
-            if (tokenString) {
-                headerParameters["Authorization"] = `Bearer ${tokenString}`;
-            }
-        }
-        const response = await this.request({
-            path: `/v1/organizations/{id}/customers`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
-            method: 'GET',
-            headers: headerParameters,
-            query: queryParameters,
-        }, initOverrides);
-
-        return new runtime.JSONApiResponse(response);
-    }
-
-    /**
-     * List organization customers.
-     * List Organization Customers
-     */
-    async listOrganizationCustomers(requestParameters: OrganizationsApiListOrganizationCustomersRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ListResourceOrganizationCustomer> {
-        const response = await this.listOrganizationCustomersRaw(requestParameters, initOverrides);
         return await response.value();
     }
 

@@ -11406,11 +11406,11 @@ export type ResponseOauth2Authorize = { sub_type: 'organization' } & AuthorizeRe
 export type ResponseOauth2Userinfo = UserInfoOrganization | UserInfoUser;
 
 /**
- * @type ResponseUsersGetBenefit
+ * @type ResponseUsersBenefitsGet
  * 
  * @export
  */
-export type ResponseUsersGetBenefit = { type: 'ads' } & BenefitAdsSubscriber | { type: 'articles' } & BenefitArticlesSubscriber | { type: 'custom' } & BenefitCustomSubscriber | { type: 'discord' } & BenefitDiscordSubscriber | { type: 'downloadables' } & BenefitDownloadablesSubscriber | { type: 'github_repository' } & BenefitGitHubRepositorySubscriber;
+export type ResponseUsersBenefitsGet = { type: 'ads' } & BenefitAdsSubscriber | { type: 'articles' } & BenefitArticlesSubscriber | { type: 'custom' } & BenefitCustomSubscriber | { type: 'discord' } & BenefitDiscordSubscriber | { type: 'downloadables' } & BenefitDownloadablesSubscriber | { type: 'github_repository' } & BenefitGitHubRepositorySubscriber;
 /**
  * 
  * @export

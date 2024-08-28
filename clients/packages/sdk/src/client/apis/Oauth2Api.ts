@@ -17,9 +17,6 @@ import * as runtime from '../runtime';
 import type {
   HTTPValidationError,
   IntrospectTokenResponse,
-  ListResourceOAuth2Client,
-  OAuth2ClientConfiguration,
-  OAuth2ClientConfigurationUpdate,
   ResponseOauth2Authorize,
   ResponseOauth2Userinfo,
   TokenResponse,
@@ -29,18 +26,6 @@ export interface Oauth2ApiConsentRequest {
     action: ConsentActionEnum;
 }
 
-export interface Oauth2ApiCreateClientRequest {
-    body: OAuth2ClientConfiguration;
-}
-
-export interface Oauth2ApiDeleteClientRequest {
-    clientId: string;
-}
-
-export interface Oauth2ApiGetClientRequest {
-    clientId: string;
-}
-
 export interface Oauth2ApiIntrospectTokenRequest {
     token: string;
     clientId: string;
@@ -48,21 +33,11 @@ export interface Oauth2ApiIntrospectTokenRequest {
     tokenTypeHint?: IntrospectTokenTokenTypeHintEnum;
 }
 
-export interface Oauth2ApiListClientsRequest {
-    page?: number;
-    limit?: number;
-}
-
 export interface Oauth2ApiRevokeTokenRequest {
     token: string;
     clientId: string;
     clientSecret: string;
     tokenTypeHint?: RevokeTokenTokenTypeHintEnum;
-}
-
-export interface Oauth2ApiUpdateClientRequest {
-    clientId: string;
-    body: OAuth2ClientConfigurationUpdate;
 }
 
 /**
@@ -169,150 +144,6 @@ export class Oauth2Api extends runtime.BaseAPI {
     }
 
     /**
-     * Create an OAuth2 client.
-     * Create Client
-     */
-    async createClientRaw(requestParameters: Oauth2ApiCreateClientRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<any>> {
-        if (requestParameters['body'] == null) {
-            throw new runtime.RequiredError(
-                'body',
-                'Required parameter "body" was null or undefined when calling createClient().'
-            );
-        }
-
-        const queryParameters: any = {};
-
-        const headerParameters: runtime.HTTPHeaders = {};
-
-        headerParameters['Content-Type'] = 'application/json';
-
-        if (this.configuration && this.configuration.accessToken) {
-            const token = this.configuration.accessToken;
-            const tokenString = await token("HTTPBearer", []);
-
-            if (tokenString) {
-                headerParameters["Authorization"] = `Bearer ${tokenString}`;
-            }
-        }
-        const response = await this.request({
-            path: `/v1/oauth2/register`,
-            method: 'POST',
-            headers: headerParameters,
-            query: queryParameters,
-            body: requestParameters['body'],
-        }, initOverrides);
-
-        if (this.isJsonMime(response.headers.get('content-type'))) {
-            return new runtime.JSONApiResponse<any>(response);
-        } else {
-            return new runtime.TextApiResponse(response) as any;
-        }
-    }
-
-    /**
-     * Create an OAuth2 client.
-     * Create Client
-     */
-    async createClient(requestParameters: Oauth2ApiCreateClientRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<any> {
-        const response = await this.createClientRaw(requestParameters, initOverrides);
-        return await response.value();
-    }
-
-    /**
-     * Delete an OAuth2 client.
-     * Delete Client
-     */
-    async deleteClientRaw(requestParameters: Oauth2ApiDeleteClientRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<any>> {
-        if (requestParameters['clientId'] == null) {
-            throw new runtime.RequiredError(
-                'clientId',
-                'Required parameter "clientId" was null or undefined when calling deleteClient().'
-            );
-        }
-
-        const queryParameters: any = {};
-
-        const headerParameters: runtime.HTTPHeaders = {};
-
-        if (this.configuration && this.configuration.accessToken) {
-            const token = this.configuration.accessToken;
-            const tokenString = await token("HTTPBearer", []);
-
-            if (tokenString) {
-                headerParameters["Authorization"] = `Bearer ${tokenString}`;
-            }
-        }
-        const response = await this.request({
-            path: `/v1/oauth2/register/{client_id}`.replace(`{${"client_id"}}`, encodeURIComponent(String(requestParameters['clientId']))),
-            method: 'DELETE',
-            headers: headerParameters,
-            query: queryParameters,
-        }, initOverrides);
-
-        if (this.isJsonMime(response.headers.get('content-type'))) {
-            return new runtime.JSONApiResponse<any>(response);
-        } else {
-            return new runtime.TextApiResponse(response) as any;
-        }
-    }
-
-    /**
-     * Delete an OAuth2 client.
-     * Delete Client
-     */
-    async deleteClient(requestParameters: Oauth2ApiDeleteClientRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<any> {
-        const response = await this.deleteClientRaw(requestParameters, initOverrides);
-        return await response.value();
-    }
-
-    /**
-     * Get an OAuth2 client by Client ID.
-     * Get Client
-     */
-    async getClientRaw(requestParameters: Oauth2ApiGetClientRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<any>> {
-        if (requestParameters['clientId'] == null) {
-            throw new runtime.RequiredError(
-                'clientId',
-                'Required parameter "clientId" was null or undefined when calling getClient().'
-            );
-        }
-
-        const queryParameters: any = {};
-
-        const headerParameters: runtime.HTTPHeaders = {};
-
-        if (this.configuration && this.configuration.accessToken) {
-            const token = this.configuration.accessToken;
-            const tokenString = await token("HTTPBearer", []);
-
-            if (tokenString) {
-                headerParameters["Authorization"] = `Bearer ${tokenString}`;
-            }
-        }
-        const response = await this.request({
-            path: `/v1/oauth2/register/{client_id}`.replace(`{${"client_id"}}`, encodeURIComponent(String(requestParameters['clientId']))),
-            method: 'GET',
-            headers: headerParameters,
-            query: queryParameters,
-        }, initOverrides);
-
-        if (this.isJsonMime(response.headers.get('content-type'))) {
-            return new runtime.JSONApiResponse<any>(response);
-        } else {
-            return new runtime.TextApiResponse(response) as any;
-        }
-    }
-
-    /**
-     * Get an OAuth2 client by Client ID.
-     * Get Client
-     */
-    async getClient(requestParameters: Oauth2ApiGetClientRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<any> {
-        const response = await this.getClientRaw(requestParameters, initOverrides);
-        return await response.value();
-    }
-
-    /**
      * Get information about an access token.
      * Introspect Token
      */
@@ -389,50 +220,6 @@ export class Oauth2Api extends runtime.BaseAPI {
      */
     async introspectToken(requestParameters: Oauth2ApiIntrospectTokenRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<IntrospectTokenResponse> {
         const response = await this.introspectTokenRaw(requestParameters, initOverrides);
-        return await response.value();
-    }
-
-    /**
-     * List OAuth2 clients.
-     * List Clients
-     */
-    async listClientsRaw(requestParameters: Oauth2ApiListClientsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListResourceOAuth2Client>> {
-        const queryParameters: any = {};
-
-        if (requestParameters['page'] != null) {
-            queryParameters['page'] = requestParameters['page'];
-        }
-
-        if (requestParameters['limit'] != null) {
-            queryParameters['limit'] = requestParameters['limit'];
-        }
-
-        const headerParameters: runtime.HTTPHeaders = {};
-
-        if (this.configuration && this.configuration.accessToken) {
-            const token = this.configuration.accessToken;
-            const tokenString = await token("HTTPBearer", []);
-
-            if (tokenString) {
-                headerParameters["Authorization"] = `Bearer ${tokenString}`;
-            }
-        }
-        const response = await this.request({
-            path: `/v1/oauth2/`,
-            method: 'GET',
-            headers: headerParameters,
-            query: queryParameters,
-        }, initOverrides);
-
-        return new runtime.JSONApiResponse(response);
-    }
-
-    /**
-     * List OAuth2 clients.
-     * List Clients
-     */
-    async listClients(requestParameters: Oauth2ApiListClientsRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ListResourceOAuth2Client> {
-        const response = await this.listClientsRaw(requestParameters, initOverrides);
         return await response.value();
     }
 
@@ -541,63 +328,6 @@ export class Oauth2Api extends runtime.BaseAPI {
      */
     async revokeToken(requestParameters: Oauth2ApiRevokeTokenRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<object> {
         const response = await this.revokeTokenRaw(requestParameters, initOverrides);
-        return await response.value();
-    }
-
-    /**
-     * Update an OAuth2 client.
-     * Update Client
-     */
-    async updateClientRaw(requestParameters: Oauth2ApiUpdateClientRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<any>> {
-        if (requestParameters['clientId'] == null) {
-            throw new runtime.RequiredError(
-                'clientId',
-                'Required parameter "clientId" was null or undefined when calling updateClient().'
-            );
-        }
-
-        if (requestParameters['body'] == null) {
-            throw new runtime.RequiredError(
-                'body',
-                'Required parameter "body" was null or undefined when calling updateClient().'
-            );
-        }
-
-        const queryParameters: any = {};
-
-        const headerParameters: runtime.HTTPHeaders = {};
-
-        headerParameters['Content-Type'] = 'application/json';
-
-        if (this.configuration && this.configuration.accessToken) {
-            const token = this.configuration.accessToken;
-            const tokenString = await token("HTTPBearer", []);
-
-            if (tokenString) {
-                headerParameters["Authorization"] = `Bearer ${tokenString}`;
-            }
-        }
-        const response = await this.request({
-            path: `/v1/oauth2/register/{client_id}`.replace(`{${"client_id"}}`, encodeURIComponent(String(requestParameters['clientId']))),
-            method: 'PUT',
-            headers: headerParameters,
-            query: queryParameters,
-            body: requestParameters['body'],
-        }, initOverrides);
-
-        if (this.isJsonMime(response.headers.get('content-type'))) {
-            return new runtime.JSONApiResponse<any>(response);
-        } else {
-            return new runtime.TextApiResponse(response) as any;
-        }
-    }
-
-    /**
-     * Update an OAuth2 client.
-     * Update Client
-     */
-    async updateClient(requestParameters: Oauth2ApiUpdateClientRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<any> {
-        const response = await this.updateClientRaw(requestParameters, initOverrides);
         return await response.value();
     }
 

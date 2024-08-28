@@ -19,6 +19,7 @@ apis/MagicLinkApi.ts
 apis/MetricsApi.ts
 apis/NotificationsApi.ts
 apis/Oauth2Api.ts
+apis/Oauth2ClientsApi.ts
 apis/OrdersApi.ts
 apis/OrganizationsApi.ts
 apis/PaymentMethodsApi.ts
@@ -31,7 +32,12 @@ apis/RewardsApi.ts
 apis/SubscriptionsApi.ts
 apis/TrafficApi.ts
 apis/TransactionsApi.ts
+apis/UsersAdvertisementsApi.ts
 apis/UsersApi.ts
+apis/UsersBenefitsApi.ts
+apis/UsersDownloadablesApi.ts
+apis/UsersOrdersApi.ts
+apis/UsersSubscriptionsApi.ts
 apis/WebhooksApi.ts
 apis/index.ts
 models/index.ts

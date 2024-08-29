@@ -206,10 +206,24 @@ class LicenseKeyService(
         validate: LicenseKeyValidate,
     ) -> tuple[LicenseKey, LicenseKeyActivation | None]:
         if not license_key.is_active():
+            log.info(
+                "license_key.validate.invalid_status",
+                license_key_id=license_key.id,
+                organization_id=license_key.organization_id,
+                user=license_key.user_id,
+                benefit_id=license_key.benefit_id,
+            )
             raise ResourceNotFound("License key is no longer active.")
 
         if license_key.expires_at:
             if utc_now() >= license_key.expires_at:
+                log.info(
+                    "license_key.validate.invalid_ttl",
+                    license_key_id=license_key.id,
+                    organization_id=license_key.organization_id,
+                    user=license_key.user_id,
+                    benefit_id=license_key.benefit_id,
+                )
                 raise ResourceNotFound("License key has expired.")
 
         activation = None
@@ -220,21 +234,61 @@ class LicenseKeyService(
                 activation_id=validate.activation_id,
             )
             if activation.conditions and validate.conditions != activation.conditions:
+                # Skip logging UGC conditions
+                log.info(
+                    "license_key.validate.invalid_conditions",
+                    license_key_id=license_key.id,
+                    organization_id=license_key.organization_id,
+                    user=license_key.user_id,
+                    benefit_id=license_key.benefit_id,
+                )
                 raise ResourceNotFound("License key does not match required conditions")
 
         if validate.benefit_id and validate.benefit_id != license_key.benefit_id:
+            log.info(
+                "license_key.validate.invalid_benefit",
+                license_key_id=license_key.id,
+                organization_id=license_key.organization_id,
+                user=license_key.user_id,
+                benefit_id=license_key.benefit_id,
+                validate_benefit_id=validate.benefit_id,
+            )
             raise ResourceNotFound("License key does not match given benefit.")
 
         if validate.user_id and validate.user_id != license_key.user_id:
+            log.warn(
+                "license_key.validate.invalid_owner",
+                license_key_id=license_key.id,
+                organization_id=license_key.organization_id,
+                user=license_key.user_id,
+                benefit_id=license_key.benefit_id,
+                validate_user_id=validate.user_id,
+            )
             raise ResourceNotFound("License key does not match given user.")
 
         if validate.increment_usage and license_key.limit_usage:
             remaining = license_key.limit_usage - license_key.usage
             if validate.increment_usage > remaining:
+                log.info(
+                    "license_key.validate.insufficient_usage",
+                    license_key_id=license_key.id,
+                    organization_id=license_key.organization_id,
+                    user=license_key.user_id,
+                    benefit_id=license_key.benefit_id,
+                    usage_remaining=remaining,
+                    usage_requested=validate.increment_usage,
+                )
                 raise BadRequest(f"License key only has {remaining} more usages.")
 
         license_key.mark_validated(increment_usage=validate.increment_usage)
         session.add(license_key)
+        log.info(
+            "license_key.validate",
+            license_key_id=license_key.id,
+            organization_id=license_key.organization_id,
+            user=license_key.user_id,
+            benefit_id=license_key.benefit_id,
+        )
         return (license_key, activation)
 
     async def get_activation_count(
@@ -266,6 +320,13 @@ class LicenseKeyService(
             license_key=license_key,
         )
         if current_activation_count >= license_key.limit_activations:
+            log.info(
+                "license_key.activate.limit_reached",
+                license_key_id=license_key.id,
+                organization_id=license_key.organization_id,
+                user=license_key.user_id,
+                benefit_id=license_key.benefit_id,
+            )
             raise NotPermitted("License key activation limit already reached")
 
         instance = LicenseKeyActivation(
@@ -277,6 +338,14 @@ class LicenseKeyService(
         session.add(instance)
         await session.flush()
         assert instance.id
+        log.info(
+            "license_key.activate",
+            license_key_id=license_key.id,
+            organization_id=license_key.organization_id,
+            user=license_key.user_id,
+            benefit_id=license_key.benefit_id,
+            activation_id=instance.id,
+        )
         return instance
 
     async def deactivate(
@@ -294,6 +363,14 @@ class LicenseKeyService(
         session.add(activation)
         await session.flush()
         assert activation.deleted_at is not None
+        log.info(
+            "license_key.deactivate",
+            license_key_id=license_key.id,
+            organization_id=license_key.organization_id,
+            user=license_key.user_id,
+            benefit_id=license_key.benefit_id,
+            activation_id=activation.id,
+        )
         return True
 
     async def user_grant(
@@ -313,6 +390,12 @@ class LicenseKeyService(
             limit_usage=props.get("limit_usage", None),
             activations=props.get("activations", None),
             expires=props.get("expires", None),
+        )
+        log.info(
+            "license_key.grant.request",
+            organization_id=benefit.organization_id,
+            user=user.id,
+            benefit_id=benefit.id,
         )
         if license_key_id:
             return await self.user_update_grant(
@@ -356,6 +439,13 @@ class LicenseKeyService(
         session.add(key)
         await session.flush()
         assert key.id is not None
+        log.info(
+            "license_key.grant.update",
+            license_key_id=key.id,
+            organization_id=key.organization_id,
+            user=key.user_id,
+            benefit_id=key.benefit_id,
+        )
         return key
 
     async def user_create_grant(
@@ -368,6 +458,13 @@ class LicenseKeyService(
         session.add(key)
         await session.flush()
         assert key.id is not None
+        log.info(
+            "license_key.grant.create",
+            license_key_id=key.id,
+            organization_id=key.organization_id,
+            user=key.user_id,
+            benefit_id=key.benefit_id,
+        )
         return key
 
     async def user_revoke(
@@ -387,6 +484,13 @@ class LicenseKeyService(
         key.mark_revoked()
         session.add(key)
         await session.flush()
+        log.info(
+            "license_key.revoke",
+            license_key_id=key.id,
+            organization_id=key.organization_id,
+            user=key.user_id,
+            benefit_id=key.benefit_id,
+        )
         return key
 
     def _get_select_base(self) -> Select[tuple[LicenseKey]]:

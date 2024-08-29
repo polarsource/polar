@@ -15,7 +15,7 @@ from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 from polar.kit.db.models import RecordModel
 from polar.kit.utils import utc_now
 
-from .benefit import Benefit
+from .benefit import BenefitLicenseKeys
 from .user import User
 
 if TYPE_CHECKING:
@@ -62,8 +62,8 @@ class LicenseKey(RecordModel):
     )
 
     @declared_attr
-    def benefit(cls) -> Mapped[Benefit]:
-        return relationship("Benefit", lazy="raise")
+    def benefit(cls) -> Mapped[BenefitLicenseKeys]:
+        return relationship("BenefitLicenseKeys", lazy="raise")
 
     key: Mapped[str] = mapped_column(String, nullable=False)
 

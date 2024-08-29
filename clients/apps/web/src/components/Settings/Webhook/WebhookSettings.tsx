@@ -30,7 +30,7 @@ const WebhookSettings = (props: { org: Organization }) => {
     <>
       <ShadowListGroup>
         {endpoints.data?.items && endpoints.data.items.length > 0 ? (
-          endpoints.data?.items?.map((e) => {
+          endpoints.data?.items.map((e) => {
             return (
               <ShadowListGroup.Item key={e.id}>
                 <Endpoint organization={props.org} endpoint={e} />

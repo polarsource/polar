@@ -37,7 +37,7 @@ const getArticle = async (
         },
       },
     )
-    if (!articles.items?.length) {
+    if (!articles.items.length) {
       notFound()
     }
     return articles.items[0]

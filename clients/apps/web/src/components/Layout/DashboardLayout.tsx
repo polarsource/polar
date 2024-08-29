@@ -66,7 +66,7 @@ const DashboardSidebar = () => {
     : ''
 
   const products = useProducts(currentOrg.id)
-  const nonFreeProducts = products.data?.items?.filter(
+  const nonFreeProducts = products.data?.items.filter(
     (product) => product.type !== 'free',
   )
 

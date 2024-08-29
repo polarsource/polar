@@ -31,7 +31,7 @@ export default function ClientPage({
   )
 
   const highlightedTiers = useMemo(() => {
-    return products.items?.filter((tier) => tier.is_highlighted) ?? []
+    return products.items.filter((tier) => tier.is_highlighted) ?? []
   }, [products])
   const [recurringInterval, setRecurringInterval, hasBothIntervals] =
     useRecurringInterval(highlightedTiers)

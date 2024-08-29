@@ -24,7 +24,7 @@ export const OrganizationPublicPageNav = ({
   const { data: products } = useProducts(organization.id, {
     isRecurring: false,
   })
-  const renderProductsTab = (products?.items?.length ?? 0) > 0
+  const renderProductsTab = (products?.items.length ?? 0) > 0
 
   const hasLinkedExternalOrganizations =
     useHasLinkedExternalOrganizations(organization)

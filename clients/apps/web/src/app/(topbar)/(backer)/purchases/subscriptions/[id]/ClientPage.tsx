@@ -205,7 +205,7 @@ const ClientPage = ({ subscription }: { subscription: UserSubscription }) => {
             <List>
               {orders?.items &&
                 orders.items.length > 0 &&
-                orders.items?.map((order) => (
+                orders.items.map((order) => (
                   <ListItem
                     key={order.id}
                     className="flex flex-row items-center justify-between"

@@ -145,7 +145,7 @@ const ClientPage = ({
             />
 
             {organization.feature_settings?.issue_funding_enabled &&
-              (issuesFunding.items?.length ?? 0) > 0 && (
+              (issuesFunding.items.length ?? 0) > 0 && (
                 <ShadowBoxOnMd>
                   <div className="p-4">
                     <div className="flex flex-row items-start justify-between pb-8">

@@ -31,7 +31,7 @@ const shouldUpsellCreateProduct = (
   if (!org.feature_settings?.subscriptions_enabled) return false
 
   const nonFreeProducts =
-    products?.items?.filter((tier) => tier.type !== 'free') ?? []
+    products?.items.filter((tier) => tier.type !== 'free') ?? []
 
   return nonFreeProducts.length === 0
 }

@@ -32,14 +32,14 @@ const PaymentMethodSettings = () => {
 
   return (
     <div className="dark:text-polar-200 dark:border-polar-700 dark:bg-polar-900 flex w-full flex-col divide-y rounded-xl border text-gray-900">
-      {paymentMethods.data?.items?.length === 0 && (
+      {paymentMethods.data?.items.length === 0 && (
         <div className="dark:text-polar:300 dark:text-polar-400 p-4 text-sm text-gray-500">
           You don&apos;t have any saved payment methods yet. You can add one
           when making your next payment.
         </div>
       )}
 
-      {paymentMethods.data?.items?.map((pm) => (
+      {paymentMethods.data?.items.map((pm) => (
         <PaymentMethodItem key={pm.stripe_payment_method_id} pm={pm} />
       ))}
 

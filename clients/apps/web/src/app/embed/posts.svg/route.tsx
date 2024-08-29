@@ -19,7 +19,7 @@ const getOrg = async (org: string): Promise<Organization> => {
   })
   const data = (await response.json()) as ListResourceOrganization
 
-  const organization = data.items?.[0]
+  const organization = data.items[0]
 
   if (!organization) {
     notFound()

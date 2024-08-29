@@ -17,7 +17,7 @@ export default function Layout({ children }: PropsWithChildren) {
 
   const shouldShowProductsUpsell =
     !products.isLoading &&
-    (products?.data?.items?.filter((p) => p.type !== 'free').length ?? 0) < 1
+    (products?.data?.items.filter((p) => p.type !== 'free').length ?? 0) < 1
 
   return (
     <div className="flex h-full flex-col gap-12 md:flex-row">

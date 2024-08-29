@@ -19,7 +19,7 @@ const getIssueBy = async (
     },
     initOverrides,
   )
-  return data.items?.[0]
+  return data.items[0]
 }
 
 export const resolveIssuePath = async (

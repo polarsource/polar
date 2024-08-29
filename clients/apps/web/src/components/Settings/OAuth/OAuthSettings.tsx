@@ -56,7 +56,7 @@ const OAuthSettings = () => {
   return (
     <ShadowListGroup>
       {oauthClients.data?.items && oauthClients.data.items.length > 0 ? (
-        oauthClients.data?.items?.map((client) => {
+        oauthClients.data?.items.map((client) => {
           return (
             <ShadowListGroup.Item key={client.client_id}>
               <OAuthClientDetails client={client} onClick={onOpen} />

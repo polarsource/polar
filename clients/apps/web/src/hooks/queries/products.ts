@@ -67,7 +67,7 @@ export const useFreeTier = (organizationId?: string) =>
           organizationId: organizationId ?? '',
           type: SubscriptionTierType.FREE,
         })
-        .then((res) => res.items?.[0]),
+        .then((res) => res.items[0]),
     retry: defaultRetry,
     enabled: !!organizationId,
   })

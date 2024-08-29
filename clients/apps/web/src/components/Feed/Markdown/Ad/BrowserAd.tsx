@@ -9,11 +9,7 @@ const BrowserAd = (props: { subscriptionBenefitId: string }) => {
     return <div className="bg-gray-200 p-2 text-red-800">Invalid Ad</div>
   }
 
-  if (
-    !display.data ||
-    !display.data.items ||
-    display.data.items?.length === 0
-  ) {
+  if (!display.data || !display.data.items || display.data.items.length === 0) {
     // No ad found
     return <></>
   }

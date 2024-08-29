@@ -43,7 +43,7 @@ export default function ClientPage() {
           </Button>
         </div>
         <ShadowListGroup>
-          {externalOrganizations.data?.items?.map((externalOrganization) => (
+          {externalOrganizations.data?.items.map((externalOrganization) => (
             <ShadowListGroup.Item key={externalOrganization.id}>
               <div className="flex flex-row items-center justify-between">
                 <div className="flex items-center gap-2">

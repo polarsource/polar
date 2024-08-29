@@ -277,7 +277,7 @@ const useCreateBaselineTier = (
   }, [organization])
 
   const organizationBenefits = useBenefits(organization.id, 99)
-  const premiumArticlesBenefit = organizationBenefits.data?.items?.filter(
+  const premiumArticlesBenefit = organizationBenefits.data?.items.filter(
     isPremiumArticlesBenefit,
   )[0]
 

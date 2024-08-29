@@ -245,7 +245,7 @@ export default async function Page({
                 .catch((err) => console.error(err)),
             ),
           )
-        : repositories.items?.slice(0, 2) ?? []
+        : repositories.items.slice(0, 2) ?? []
 
     const fallbackLinks = [
       ...(organization.blog

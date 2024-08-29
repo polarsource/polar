@@ -52,7 +52,7 @@ export const SubscribeEditor = ({
   const freeSubscriptionTier = products.find(
     (tier) => tier.type === SubscriptionTierType.FREE,
   )
-  const customerCount = customerList?.items?.length ?? 0
+  const customerCount = customerList?.items.length ?? 0
   const showCount = customerList && customerCount > 0 && settings.show_count
 
   return (
@@ -68,7 +68,7 @@ export const SubscribeEditor = ({
         {showCount && (
           <div className="flex flex-row items-center gap-x-4">
             <div className="flex w-fit flex-shrink-0 flex-row items-center md:hidden lg:flex">
-              {customerList.items?.map((user, i, array) => (
+              {customerList.items.map((user, i, array) => (
                 <Avatar
                   className={twMerge(
                     'h-10 w-10',

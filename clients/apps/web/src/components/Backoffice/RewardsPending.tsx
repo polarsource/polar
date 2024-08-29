@@ -58,7 +58,7 @@ const Pledges = () => {
       groupRewardsByPledge(r),
     )
     // const byIssue =
-    //   rewards.data?.items?.reduce(
+    //   rewards.data?.items.reduce(
     //     (hash: Record<string, Array<BackofficeReward>>, obj) => ({
     //       ...hash,
     //       [obj.pledge.issue.id]: (hash[obj.pledge.issue.id] || []).concat(obj),

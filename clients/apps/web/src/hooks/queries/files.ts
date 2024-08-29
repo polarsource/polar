@@ -16,7 +16,7 @@ export const useFiles = (organizationId: string, fileIds: string[]) =>
           ids: fileIds,
         })
         .then((response) => {
-          const files = response.items?.reduce(
+          const files = response.items.reduce(
             (lookup: Record<string, FileRead>, file) => {
               lookup[file.id] = file
               return lookup

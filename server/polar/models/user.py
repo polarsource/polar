@@ -10,6 +10,7 @@ from sqlalchemy import (
     ForeignKey,
     Integer,
     String,
+    Text,
     Uuid,
     func,
 )
@@ -89,9 +90,7 @@ class User(RecordModel):
     username: Mapped[str] = mapped_column(String(50), unique=True, nullable=False)
     email: Mapped[str] = mapped_column(String(320), nullable=False)
     email_verified: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
-    avatar_url: Mapped[str | None] = mapped_column(
-        String(1024), nullable=True, default=None
-    )
+    avatar_url: Mapped[str | None] = mapped_column(Text, nullable=True, default=None)
 
     account_id: Mapped[UUID | None] = mapped_column(
         Uuid,

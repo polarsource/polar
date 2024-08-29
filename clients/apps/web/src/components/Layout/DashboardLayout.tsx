@@ -24,7 +24,6 @@ import { CommandPaletteTrigger } from '../CommandPalette/CommandPaletteTrigger'
 import MaintainerNavigation from '../Dashboard/DashboardNavigation'
 import { DashboardProvider, useDashboard } from '../Dashboard/DashboardProvider'
 import MaintainerRepoSelection from '../Dashboard/MaintainerRepoSelection'
-import MetaNavigation from '../Dashboard/MetaNavigation'
 import DashboardProfileDropdown from '../Navigation/DashboardProfileDropdown'
 import { BrandingMenu } from './Public/BrandingMenu'
 
@@ -108,7 +107,6 @@ const DashboardSidebar = () => {
                 onClick={showCommandPalette}
               />
             </div>
-            <MetaNavigation />
           </div>
         </div>
       </div>

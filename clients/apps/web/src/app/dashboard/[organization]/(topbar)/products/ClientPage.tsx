@@ -37,7 +37,7 @@ export default function ClientPage() {
           </div>
         </div>
         {(products.data?.items.length ?? 0) > 0 && (
-          <List>
+          <List size="small">
             {products.data?.items.map((product) => (
               <ProductListItem
                 key={product.id}

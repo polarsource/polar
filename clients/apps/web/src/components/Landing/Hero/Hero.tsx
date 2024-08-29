@@ -1,14 +1,24 @@
 'use client'
 
 import GetStartedButton from '@/components/Auth/GetStartedButton'
+import { ChevronRight } from '@mui/icons-material'
+import Link from 'next/link'
 import Button from 'polarkit/components/ui/atoms/button'
 
 export const Hero = () => {
   return (
     <div className="flex w-full flex-col items-center gap-24 md:pb-16">
       <div className="relative z-20 flex w-full flex-col items-center gap-y-12 text-center">
+        <Link
+          className="bg-polar-900 flex flex-row items-center gap-x-2 rounded-full px-4 py-2 text-center text-sm"
+          href={`https://dub.sh/polarhunt`}
+          target="_blank"
+        >
+          <span>Polar launching on Product Hunt on September 5th</span>
+          <ChevronRight className="hidden md:inline" fontSize="inherit" />
+        </Link>
         <div className="z-20 flex flex-col items-center gap-y-8">
-          <h1 className="text-balance text-4xl !leading-tight text-gray-950 md:text-7xl dark:text-white">
+          <h1 className="text-balance text-5xl !leading-tight text-gray-950 md:text-7xl dark:text-white">
             The best monetization platform for developers
           </h1>
           <div className="flex flex-col items-center gap-y-4 xl:w-2/3">

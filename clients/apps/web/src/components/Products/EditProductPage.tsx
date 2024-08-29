@@ -57,6 +57,8 @@ export const EditProductPage = ({
     },
   })
 
+  const [isLoading, setLoading] = useState(false)
+
   const { handleSubmit, setError } = form
 
   const updateProduct = useUpdateProduct(organization?.id)
@@ -65,6 +67,7 @@ export const EditProductPage = ({
   const onSubmit = useCallback(
     async (productUpdate: ProductUpdate & ProductFullMediasMixin) => {
       try {
+        setLoading(true)
         const { full_medias, ...productUpdateRest } = productUpdate
         await updateProduct.mutateAsync({
           id: product.id,
@@ -85,6 +88,7 @@ export const EditProductPage = ({
 
         router.push(`/dashboard/${organization.slug}/products`)
       } catch (e) {
+        setLoading(false)
         if (e instanceof ResponseError) {
           const body = await e.response.json()
           if (e.response.status === 422) {
@@ -250,7 +254,9 @@ export const EditProductPage = ({
             )}
           </div>
           <div className="flex flex-row items-center gap-2">
-            <Button onClick={handleSubmit(onSubmit)}>Save Product</Button>
+            <Button onClick={handleSubmit(onSubmit)} loading={isLoading}>
+              Save Product
+            </Button>
           </div>
         </div>
       </DashboardBody>

@@ -2314,18 +2314,40 @@
                     {
                         "name": "organization_id",
                         "in": "query",
-                        "required": true,
+                        "required": false,
                         "schema": {
-                            "type": "string",
-                            "format": "uuid4",
-                            "description": "The organization ID.",
-                            "x-polar-selector-widget": {
-                                "resourceRoot": "/v1/organizations",
-                                "resourceName": "Organization",
-                                "displayProperty": "name"
-                            },
-                            "title": "Organization Id"
-                        }
+                            "anyOf": [
+                                {
+                                    "type": "string",
+                                    "format": "uuid4",
+                                    "description": "The organization ID.",
+                                    "x-polar-selector-widget": {
+                                        "resourceRoot": "/v1/organizations",
+                                        "resourceName": "Organization",
+                                        "displayProperty": "name"
+                                    }
+                                },
+                                {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "string",
+                                        "format": "uuid4",
+                                        "description": "The organization ID.",
+                                        "x-polar-selector-widget": {
+                                            "resourceRoot": "/v1/organizations",
+                                            "resourceName": "Organization",
+                                            "displayProperty": "name"
+                                        }
+                                    }
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "OrganizationID Filter",
+                            "description": "Filter by organization ID."
+                        },
+                        "description": "Filter by organization ID."
                     },
                     {
                         "name": "benefit_id",
@@ -8633,10 +8655,10 @@
                             },
                             "description": "Filter by the type of purchase the customer made.",
                             "default": [
-                                "free_subscription",
-                                "donation",
                                 "order",
-                                "paid_subscription"
+                                "paid_subscription",
+                                "free_subscription",
+                                "donation"
                             ],
                             "title": "Customer Types"
                         },
@@ -16070,12 +16092,40 @@
                     {
                         "name": "organization_id",
                         "in": "query",
-                        "required": true,
+                        "required": false,
                         "schema": {
-                            "type": "string",
-                            "format": "uuid4",
-                            "title": "Organization Id"
-                        }
+                            "anyOf": [
+                                {
+                                    "type": "string",
+                                    "format": "uuid4",
+                                    "description": "The organization ID.",
+                                    "x-polar-selector-widget": {
+                                        "resourceRoot": "/v1/organizations",
+                                        "resourceName": "Organization",
+                                        "displayProperty": "name"
+                                    }
+                                },
+                                {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "string",
+                                        "format": "uuid4",
+                                        "description": "The organization ID.",
+                                        "x-polar-selector-widget": {
+                                            "resourceRoot": "/v1/organizations",
+                                            "resourceName": "Organization",
+                                            "displayProperty": "name"
+                                        }
+                                    }
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "OrganizationID Filter",
+                            "description": "Filter by organization ID."
+                        },
+                        "description": "Filter by organization ID."
                     },
                     {
                         "name": "page",

@@ -16,7 +16,7 @@ const GetStartedButton: React.FC<GetStartedButtonProps> = ({
   size = 'lg',
   ...props
 }) => {
-  const text = _text || 'Start for free'
+  const text = _text || 'Get started'
   const href = _href ? _href : '/signup'
   return (
     <Link href={href}>

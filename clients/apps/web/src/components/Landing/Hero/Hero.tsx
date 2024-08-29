@@ -10,12 +10,12 @@ export const Hero = () => {
     <div className="flex w-full flex-col items-center gap-24 md:pb-16">
       <div className="relative z-20 flex w-full flex-col items-center gap-y-12 text-center">
         <Link
-          className="bg-polar-900 flex flex-row items-center gap-x-2 rounded-full px-4 py-2 text-center text-sm"
+          className="bg-polar-900 flex flex-row items-center gap-x-2 text-balance rounded-full px-4 py-2 text-center text-sm"
           href={`https://dub.sh/polarhunt`}
           target="_blank"
         >
           <span>Polar launching on Product Hunt on September 5th</span>
-          <ChevronRight className="hidden md:inline" fontSize="inherit" />
+          <ChevronRight fontSize="inherit" />
         </Link>
         <div className="z-20 flex flex-col items-center gap-y-8">
           <h1 className="text-balance text-5xl !leading-tight text-gray-950 md:text-7xl dark:text-white">

@@ -1,6 +1,5 @@
 import { Organization } from '@polar-sh/sdk'
 
-import { ArrowUpRightIcon } from '@heroicons/react/20/solid'
 import {
   AllInclusiveOutlined,
   AttachMoneyOutlined,
@@ -373,87 +372,5 @@ const organizationRoutesList = (org: Organization): Route[] => [
     checkIsActive: (currentRoute: string): boolean => {
       return currentRoute.startsWith(`/dashboard/${org.slug}/settings/webhooks`)
     },
-  },
-]
-
-export type MetaRoute = Route & {
-  postIcon?: React.ReactElement
-}
-
-export const metaRoutes: MetaRoute[] = [
-  {
-    id: 'blog',
-    title: 'Blog',
-    link: `https://polar.sh/polarsource`,
-    icon: undefined,
-    postIcon: <ArrowUpRightIcon className="h-4 w-4" />,
-    if: true,
-    subs: undefined,
-  },
-  {
-    id: 'docs',
-    title: 'Docs & Support',
-    link: '/docs',
-    icon: undefined,
-    postIcon: <ArrowUpRightIcon className="h-4 w-4" />,
-    if: true,
-    subs: undefined,
-  },
-  {
-    id: 'github',
-    title: 'GitHub',
-    link: `https://github.com/polarsource/polar`,
-    icon: undefined,
-    postIcon: <ArrowUpRightIcon className="h-4 w-4" />,
-    if: true,
-    subs: undefined,
-  },
-  {
-    id: 'discord',
-    title: 'Join our Discord',
-    link: `https://discord.gg/STfRufb32V`,
-    icon: undefined,
-    postIcon: <ArrowUpRightIcon className="h-4 w-4" />,
-    if: true,
-    subs: undefined,
-  },
-]
-
-export const unauthenticatedRoutes: MetaRoute[] = [
-  {
-    id: 'polar',
-    title: 'Polar',
-    link: `/`,
-    icon: undefined,
-    postIcon: <ArrowUpRightIcon className="h-4 w-4" />,
-    if: true,
-    subs: undefined,
-  },
-  {
-    id: 'blog',
-    title: 'Blog',
-    link: `https://polar.sh/polarsource`,
-    icon: undefined,
-    postIcon: <ArrowUpRightIcon className="h-4 w-4" />,
-    if: true,
-    subs: undefined,
-  },
-  {
-    id: 'faq',
-    title: 'FAQ',
-    link: '/docs/faq/for-maintainers',
-    icon: undefined,
-    postIcon: <ArrowUpRightIcon className="h-4 w-4" />,
-    if: true,
-    subs: undefined,
-  },
-  {
-    id: 'docs',
-    title: 'Docs',
-    link: '/docs',
-    icon: undefined,
-    postIcon: <ArrowUpRightIcon className="h-4 w-4" />,
-    if: true,
-    subs: undefined,
   },
 ]

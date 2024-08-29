@@ -110,6 +110,7 @@ const AccessTokensSettings = () => {
     defaultValues: { scopes: [] },
   })
   const { control, handleSubmit, reset } = form
+  const [allSelected, setSelectAll] = useState(false)
 
   const onCreate = useCallback(
     async (data: PersonalAccessTokenCreate) => {
@@ -120,6 +121,15 @@ const AccessTokensSettings = () => {
     },
     [createToken, reset],
   )
+
+  const onToggleAll = () => {
+    let values: Array<AvailableScope> = []
+    if (!allSelected) {
+      values = Object.values(AvailableScope)
+    }
+    form.setValue('scopes', values)
+    setSelectAll(!allSelected)
+  }
 
   return (
     <div className="flex w-full flex-col">
@@ -180,6 +190,12 @@ const AccessTokensSettings = () => {
                       </Button>
                     </PopoverTrigger>
                     <PopoverContent className="flex w-80 flex-col gap-2">
+                      <Button
+                        onClick={onToggleAll}
+                        variant={!allSelected ? 'default' : 'destructive'}
+                      >
+                        {!allSelected ? 'Select All' : 'Unselect All'}
+                      </Button>
                       {Object.values(AvailableScope).map((scope) => (
                         <FormField
                           key={scope}

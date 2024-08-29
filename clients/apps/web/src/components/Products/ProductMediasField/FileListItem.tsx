@@ -57,7 +57,7 @@ export const FileListItem = ({
       <img
         src={imageURL}
         alt={file.name}
-        className="rounded-4xl relative aspect-square w-full cursor-grab object-cover"
+        className="relative aspect-square w-full cursor-grab rounded-2xl object-cover"
         ref={sortable ? sortable.setDraggableNodeRef : undefined}
         {...sortable?.attributes}
         {...sortable?.listeners}

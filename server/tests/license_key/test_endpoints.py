@@ -2,6 +2,7 @@ import pytest
 from dateutil.relativedelta import relativedelta
 from httpx import AsyncClient
 
+from polar.auth.models import AuthSubject
 from polar.benefit.schemas import (
     BenefitLicenseKeyActivationProperties,
     BenefitLicenseKeysCreateProperties,
@@ -147,6 +148,7 @@ class TestLicenseKeyEndpoints:
         session: AsyncSession,
         client: AsyncClient,
         save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User | Organization],
         user: User,
         user_organization: UserOrganization,
         organization: Organization,
@@ -174,7 +176,8 @@ class TestLicenseKeyEndpoints:
         )
         keys, count = await license_key_service.get_list(
             session,
-            organization_id=organization.id,
+            auth_subject,
+            organization_ids=[organization.id],
             pagination=PaginationParams(1, 50),
         )
         assert count >= 2

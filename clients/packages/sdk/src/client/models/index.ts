@@ -186,7 +186,7 @@ export interface AdvertisementCampaignListResource {
      * @type {Array<AdvertisementCampaign>}
      * @memberof AdvertisementCampaignListResource
      */
-    items?: Array<AdvertisementCampaign>;
+    items: Array<AdvertisementCampaign>;
     /**
      * 
      * @type {Pagination}
@@ -5859,7 +5859,7 @@ export interface ListResourceAccount {
      * @type {Array<Account>}
      * @memberof ListResourceAccount
      */
-    items?: Array<Account>;
+    items: Array<Account>;
     /**
      * 
      * @type {Pagination}
@@ -5878,7 +5878,7 @@ export interface ListResourceAnnotatedUnionBenefitArticlesSubscriberBenefitAdsSu
      * @type {Array<UserBenefit>}
      * @memberof ListResourceAnnotatedUnionBenefitArticlesSubscriberBenefitAdsSubscriberBenefitDiscordSubscriberBenefitCustomSubscriberBenefitGitHubRepositorySubscriberBenefitDownloadablesSubscriberDiscriminatorMergeJSONSchema
      */
-    items?: Array<UserBenefit>;
+    items: Array<UserBenefit>;
     /**
      * 
      * @type {Pagination}
@@ -5897,7 +5897,7 @@ export interface ListResourceAnnotatedUnionDownloadableFileReadProductMediaFileR
      * @type {Array<FileRead>}
      * @memberof ListResourceAnnotatedUnionDownloadableFileReadProductMediaFileReadOrganizationAvatarFileReadDiscriminatorMergeJSONSchema
      */
-    items?: Array<FileRead>;
+    items: Array<FileRead>;
     /**
      * 
      * @type {Pagination}
@@ -5916,7 +5916,7 @@ export interface ListResourceArticle {
      * @type {Array<Article>}
      * @memberof ListResourceArticle
      */
-    items?: Array<Article>;
+    items: Array<Article>;
     /**
      * 
      * @type {Pagination}
@@ -5935,7 +5935,7 @@ export interface ListResourceBackofficeReward {
      * @type {Array<BackofficeReward>}
      * @memberof ListResourceBackofficeReward
      */
-    items?: Array<BackofficeReward>;
+    items: Array<BackofficeReward>;
     /**
      * 
      * @type {Pagination}
@@ -5954,7 +5954,7 @@ export interface ListResourceBenefitGrant {
      * @type {Array<BenefitGrant>}
      * @memberof ListResourceBenefitGrant
      */
-    items?: Array<BenefitGrant>;
+    items: Array<BenefitGrant>;
     /**
      * 
      * @type {Pagination}
@@ -5973,7 +5973,7 @@ export interface ListResourceDonation {
      * @type {Array<Donation>}
      * @memberof ListResourceDonation
      */
-    items?: Array<Donation>;
+    items: Array<Donation>;
     /**
      * 
      * @type {Pagination}
@@ -5992,7 +5992,7 @@ export interface ListResourceDownloadableRead {
      * @type {Array<DownloadableRead>}
      * @memberof ListResourceDownloadableRead
      */
-    items?: Array<DownloadableRead>;
+    items: Array<DownloadableRead>;
     /**
      * 
      * @type {Pagination}
@@ -6011,7 +6011,7 @@ export interface ListResourceExternalOrganization {
      * @type {Array<ExternalOrganization>}
      * @memberof ListResourceExternalOrganization
      */
-    items?: Array<ExternalOrganization>;
+    items: Array<ExternalOrganization>;
     /**
      * 
      * @type {Pagination}
@@ -6030,7 +6030,7 @@ export interface ListResourceIssue {
      * @type {Array<Issue>}
      * @memberof ListResourceIssue
      */
-    items?: Array<Issue>;
+    items: Array<Issue>;
     /**
      * 
      * @type {Pagination}
@@ -6049,7 +6049,7 @@ export interface ListResourceIssueFunding {
      * @type {Array<IssueFunding>}
      * @memberof ListResourceIssueFunding
      */
-    items?: Array<IssueFunding>;
+    items: Array<IssueFunding>;
     /**
      * 
      * @type {Pagination}
@@ -6068,7 +6068,7 @@ export interface ListResourceOAuth2Client {
      * @type {Array<OAuth2Client>}
      * @memberof ListResourceOAuth2Client
      */
-    items?: Array<OAuth2Client>;
+    items: Array<OAuth2Client>;
     /**
      * 
      * @type {Pagination}
@@ -6087,7 +6087,7 @@ export interface ListResourceOrder {
      * @type {Array<Order>}
      * @memberof ListResourceOrder
      */
-    items?: Array<Order>;
+    items: Array<Order>;
     /**
      * 
      * @type {Pagination}
@@ -6106,7 +6106,7 @@ export interface ListResourceOrganization {
      * @type {Array<Organization>}
      * @memberof ListResourceOrganization
      */
-    items?: Array<Organization>;
+    items: Array<Organization>;
     /**
      * 
      * @type {Pagination}
@@ -6125,7 +6125,7 @@ export interface ListResourceOrganizationCustomer {
      * @type {Array<OrganizationCustomer>}
      * @memberof ListResourceOrganizationCustomer
      */
-    items?: Array<OrganizationCustomer>;
+    items: Array<OrganizationCustomer>;
     /**
      * 
      * @type {Pagination}
@@ -6144,7 +6144,7 @@ export interface ListResourceOrganizationMember {
      * @type {Array<OrganizationMember>}
      * @memberof ListResourceOrganizationMember
      */
-    items?: Array<OrganizationMember>;
+    items: Array<OrganizationMember>;
     /**
      * 
      * @type {Pagination}
@@ -6163,7 +6163,7 @@ export interface ListResourcePaymentMethod {
      * @type {Array<PaymentMethod>}
      * @memberof ListResourcePaymentMethod
      */
-    items?: Array<PaymentMethod>;
+    items: Array<PaymentMethod>;
     /**
      * 
      * @type {Pagination}
@@ -6182,7 +6182,7 @@ export interface ListResourcePersonalAccessToken {
      * @type {Array<PersonalAccessToken>}
      * @memberof ListResourcePersonalAccessToken
      */
-    items?: Array<PersonalAccessToken>;
+    items: Array<PersonalAccessToken>;
     /**
      * 
      * @type {Pagination}
@@ -6201,7 +6201,7 @@ export interface ListResourcePledge {
      * @type {Array<Pledge>}
      * @memberof ListResourcePledge
      */
-    items?: Array<Pledge>;
+    items: Array<Pledge>;
     /**
      * 
      * @type {Pagination}
@@ -6220,7 +6220,7 @@ export interface ListResourceProduct {
      * @type {Array<Product>}
      * @memberof ListResourceProduct
      */
-    items?: Array<Product>;
+    items: Array<Product>;
     /**
      * 
      * @type {Pagination}
@@ -6239,7 +6239,7 @@ export interface ListResourcePublicDonation {
      * @type {Array<PublicDonation>}
      * @memberof ListResourcePublicDonation
      */
-    items?: Array<PublicDonation>;
+    items: Array<PublicDonation>;
     /**
      * 
      * @type {Pagination}
@@ -6258,7 +6258,7 @@ export interface ListResourcePullRequest {
      * @type {Array<PullRequest>}
      * @memberof ListResourcePullRequest
      */
-    items?: Array<PullRequest>;
+    items: Array<PullRequest>;
     /**
      * 
      * @type {Pagination}
@@ -6277,7 +6277,7 @@ export interface ListResourceRepository {
      * @type {Array<Repository>}
      * @memberof ListResourceRepository
      */
-    items?: Array<Repository>;
+    items: Array<Repository>;
     /**
      * 
      * @type {Pagination}
@@ -6296,7 +6296,7 @@ export interface ListResourceReward {
      * @type {Array<Reward>}
      * @memberof ListResourceReward
      */
-    items?: Array<Reward>;
+    items: Array<Reward>;
     /**
      * 
      * @type {Pagination}
@@ -6315,7 +6315,7 @@ export interface ListResourceSubscription {
      * @type {Array<Subscription>}
      * @memberof ListResourceSubscription
      */
-    items?: Array<Subscription>;
+    items: Array<Subscription>;
     /**
      * 
      * @type {Pagination}
@@ -6334,7 +6334,7 @@ export interface ListResourceTrafficReferrer {
      * @type {Array<TrafficReferrer>}
      * @memberof ListResourceTrafficReferrer
      */
-    items?: Array<TrafficReferrer>;
+    items: Array<TrafficReferrer>;
     /**
      * 
      * @type {Pagination}
@@ -6353,7 +6353,7 @@ export interface ListResourceTransaction {
      * @type {Array<Transaction>}
      * @memberof ListResourceTransaction
      */
-    items?: Array<Transaction>;
+    items: Array<Transaction>;
     /**
      * 
      * @type {Pagination}
@@ -6372,7 +6372,7 @@ export interface ListResourceUnionBenefitArticlesBenefitAdsBenefitCustomBenefitD
      * @type {Array<ItemsInner>}
      * @memberof ListResourceUnionBenefitArticlesBenefitAdsBenefitCustomBenefitDiscordBenefitGitHubRepositoryBenefitDownloadables
      */
-    items?: Array<ItemsInner>;
+    items: Array<ItemsInner>;
     /**
      * 
      * @type {Pagination}
@@ -6391,7 +6391,7 @@ export interface ListResourceUserAdvertisementCampaign {
      * @type {Array<UserAdvertisementCampaign>}
      * @memberof ListResourceUserAdvertisementCampaign
      */
-    items?: Array<UserAdvertisementCampaign>;
+    items: Array<UserAdvertisementCampaign>;
     /**
      * 
      * @type {Pagination}
@@ -6410,7 +6410,7 @@ export interface ListResourceUserOrder {
      * @type {Array<UserOrder>}
      * @memberof ListResourceUserOrder
      */
-    items?: Array<UserOrder>;
+    items: Array<UserOrder>;
     /**
      * 
      * @type {Pagination}
@@ -6429,7 +6429,7 @@ export interface ListResourceUserSubscription {
      * @type {Array<UserSubscription>}
      * @memberof ListResourceUserSubscription
      */
-    items?: Array<UserSubscription>;
+    items: Array<UserSubscription>;
     /**
      * 
      * @type {Pagination}
@@ -6448,7 +6448,7 @@ export interface ListResourceWebhookDelivery {
      * @type {Array<WebhookDelivery>}
      * @memberof ListResourceWebhookDelivery
      */
-    items?: Array<WebhookDelivery>;
+    items: Array<WebhookDelivery>;
     /**
      * 
      * @type {Pagination}
@@ -6467,7 +6467,7 @@ export interface ListResourceWebhookEndpoint {
      * @type {Array<WebhookEndpoint>}
      * @memberof ListResourceWebhookEndpoint
      */
-    items?: Array<WebhookEndpoint>;
+    items: Array<WebhookEndpoint>;
     /**
      * 
      * @type {Pagination}

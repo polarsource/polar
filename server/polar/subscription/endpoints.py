@@ -157,7 +157,7 @@ async def create(
     summary="Import Subscriptions",
     # Set operation ID manually because `import` is a reserved keyword.
     operation_id="subscriptions:import",
-    openapi_extra={"x-speakeasy-name-override": "import"},
+    openapi_extra={"x-speakeasy-name-override": "import_subscriptions"},
 )
 async def subscriptions_import(
     auth_subject: auth.SubscriptionsWrite,

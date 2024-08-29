@@ -165,7 +165,7 @@ const nextConfig = {
 
       {
         source:
-          '/:rootPath(dashboard|feed|for-you|posts|purchases|funding|rewards|settings|backoffice|maintainer|finance):subPath(/?.*)',
+          '/:rootPath(start|dashboard|feed|for-you|posts|purchases|funding|rewards|settings|backoffice|maintainer|finance):subPath(/?.*)',
         destination: '/login?return_to=/:rootPath:subPath',
         missing: [
           {
@@ -189,7 +189,7 @@ const nextConfig = {
       // Logged-in user redirections
       {
         source: '/',
-        destination: '/dashboard',
+        destination: '/start',
         has: [
           {
             type: 'cookie',

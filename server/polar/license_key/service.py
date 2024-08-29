@@ -5,11 +5,19 @@ import structlog
 from sqlalchemy import Select, and_, func, select
 from sqlalchemy.orm import contains_eager
 
+from polar.auth.models import AuthSubject, is_organization, is_user
 from polar.exceptions import BadRequest, NotPermitted, ResourceNotFound
 from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.services import ResourceService
 from polar.kit.utils import utc_now
-from polar.models import Benefit, LicenseKey, LicenseKeyActivation, User
+from polar.models import (
+    Benefit,
+    LicenseKey,
+    LicenseKeyActivation,
+    Organization,
+    User,
+    UserOrganization,
+)
 from polar.models.benefit import BenefitLicenseKeys
 from polar.postgres import AsyncSession
 
@@ -130,15 +138,27 @@ class LicenseKeyService(
     async def get_list(
         self,
         session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
         *,
-        organization_id: UUID,
         pagination: PaginationParams,
+        organization_ids: Sequence[UUID] | None = None,
     ) -> tuple[Sequence[LicenseKey], int]:
-        query = (
-            self._get_select_base()
-            .where(LicenseKey.organization_id == organization_id)
-            .order_by(LicenseKey.created_at.asc())
-        )
+        query = self._get_select_base().order_by(LicenseKey.created_at.asc())
+
+        if is_user(auth_subject):
+            user = auth_subject.subject
+            query = query.join(
+                UserOrganization,
+                onclause=UserOrganization.organization_id == LicenseKey.organization_id,
+            ).where(UserOrganization.user_id == user.id)
+        elif is_organization(auth_subject):
+            query = query.where(LicenseKey.organization_id == auth_subject.subject.id)
+        else:
+            raise ValueError("Invalid auth_subject given to license keys")
+
+        if organization_ids:
+            query = query.where(LicenseKey.organization_id.in_(organization_ids))
+
         return await paginate(session, query, pagination=pagination)
 
     async def get_user_list(

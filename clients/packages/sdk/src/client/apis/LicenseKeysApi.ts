@@ -21,6 +21,7 @@ import type {
   LicenseKeyUpdate,
   LicenseKeyWithActivations,
   ListResourceLicenseKeyRead,
+  OrganizationIDFilter,
   ResourceNotFound,
   Unauthorized,
 } from '../models/index';
@@ -35,7 +36,7 @@ export interface LicenseKeysApiGetActivationRequest {
 }
 
 export interface LicenseKeysApiListRequest {
-    organizationId: string;
+    organizationId?: OrganizationIDFilter;
     page?: number;
     limit?: number;
 }
@@ -148,13 +149,6 @@ export class LicenseKeysApi extends runtime.BaseAPI {
      * List
      */
     async listRaw(requestParameters: LicenseKeysApiListRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListResourceLicenseKeyRead>> {
-        if (requestParameters['organizationId'] == null) {
-            throw new runtime.RequiredError(
-                'organizationId',
-                'Required parameter "organizationId" was null or undefined when calling list().'
-            );
-        }
-
         const queryParameters: any = {};
 
         if (requestParameters['organizationId'] != null) {
@@ -193,7 +187,7 @@ export class LicenseKeysApi extends runtime.BaseAPI {
      * Get license keys connected to the given organization & filters.
      * List
      */
-    async list(requestParameters: LicenseKeysApiListRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ListResourceLicenseKeyRead> {
+    async list(requestParameters: LicenseKeysApiListRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ListResourceLicenseKeyRead> {
         const response = await this.listRaw(requestParameters, initOverrides);
         return await response.value();
     }

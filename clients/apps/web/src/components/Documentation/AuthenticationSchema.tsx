@@ -8,15 +8,11 @@ export const AuthenticationSchema = ({
   operation: OpenAPIV3_1.OperationObject
 }) => {
   const hasOpenIdConnect = operation.security?.some(
-    (security) => 'OpenIdConnect' in security,
+    (security) => 'oidc' in security,
   )
-  const hasPAT = operation.security?.some(
-    (security) => 'HTTPBearer' in security,
-  )
+  const hasPAT = operation.security?.some((security) => 'pat' in security)
   const scopes: string[] =
-    operation.security?.find((security) => 'OpenIdConnect' in security)?.[
-      'OpenIdConnect'
-    ] || []
+    operation.security?.find((security) => 'oidc' in security)?.['oidc'] || []
 
   if (!hasOpenIdConnect && !hasPAT && scopes.length === 0) {
     return null

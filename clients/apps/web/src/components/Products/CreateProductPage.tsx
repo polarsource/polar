@@ -47,6 +47,8 @@ export const CreateProductPage = ({ organization }: CreateProductPageProps) => {
     BenefitPublicInner['id'][]
   >([])
 
+  const [isLoading, setLoading] = useState(false)
+
   const form = useForm<ProductCreate & ProductFullMediasMixin>({
     defaultValues: {
       ...{
@@ -75,6 +77,7 @@ export const CreateProductPage = ({ organization }: CreateProductPageProps) => {
   const onSubmit = useCallback(
     async (productCreate: ProductCreate & ProductFullMediasMixin) => {
       try {
+        setLoading(true)
         const { full_medias, ...productCreateRest } = productCreate
         const product = await createProduct.mutateAsync({
           ...productCreateRest,
@@ -94,6 +97,7 @@ export const CreateProductPage = ({ organization }: CreateProductPageProps) => {
 
         router.push(`/dashboard/${organization.slug}/products`)
       } catch (e) {
+        setLoading(false)
         if (e instanceof ResponseError) {
           const body = await e.response.json()
           if (e.response.status === 422) {
@@ -181,7 +185,9 @@ export const CreateProductPage = ({ organization }: CreateProductPageProps) => {
             />
           </div>
           <div className="flex flex-row items-center gap-2">
-            <Button onClick={handleSubmit(onSubmit)}>Create Product</Button>
+            <Button onClick={handleSubmit(onSubmit)} loading={isLoading}>
+              Create Product
+            </Button>
           </div>
         </div>
       </DashboardBody>

@@ -33,10 +33,10 @@
                 },
                 "security": [
                     {
-                        "OpenIdConnect": []
+                        "oidc": []
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "x-polar-allowed-subjects": [
@@ -68,10 +68,10 @@
                 },
                 "security": [
                     {
-                        "OpenIdConnect": []
+                        "oidc": []
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "x-polar-allowed-subjects": [
@@ -123,10 +123,10 @@
                 },
                 "security": [
                     {
-                        "OpenIdConnect": []
+                        "oidc": []
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "x-polar-allowed-subjects": [
@@ -158,10 +158,10 @@
                 },
                 "security": [
                     {
-                        "OpenIdConnect": []
+                        "oidc": []
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "x-polar-allowed-subjects": [
@@ -182,12 +182,12 @@
                 "operationId": "list",
                 "security": [
                     {
-                        "OpenIdConnect": [
+                        "oidc": [
                             "user:benefits:read"
                         ]
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "parameters": [
@@ -414,12 +414,12 @@
                 "operationId": "get",
                 "security": [
                     {
-                        "OpenIdConnect": [
+                        "oidc": [
                             "user:benefits:read"
                         ]
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "parameters": [
@@ -516,12 +516,12 @@
                 "operationId": "list",
                 "security": [
                     {
-                        "OpenIdConnect": [
+                        "oidc": [
                             "user:orders:read"
                         ]
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "parameters": [
@@ -778,12 +778,12 @@
                 "operationId": "get",
                 "security": [
                     {
-                        "OpenIdConnect": [
+                        "oidc": [
                             "user:orders:read"
                         ]
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "parameters": [
@@ -849,12 +849,12 @@
                 "operationId": "invoice",
                 "security": [
                     {
-                        "OpenIdConnect": [
+                        "oidc": [
                             "user:orders:read"
                         ]
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "parameters": [
@@ -920,12 +920,12 @@
                 "operationId": "list",
                 "security": [
                     {
-                        "OpenIdConnect": [
+                        "oidc": [
                             "user:subscriptions:read"
                         ]
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "parameters": [
@@ -1148,12 +1148,12 @@
                 "operationId": "create",
                 "security": [
                     {
-                        "OpenIdConnect": [
+                        "oidc": [
                             "user:subscriptions:write"
                         ]
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "requestBody": {
@@ -1226,12 +1226,12 @@
                 "operationId": "get",
                 "security": [
                     {
-                        "OpenIdConnect": [
+                        "oidc": [
                             "user:subscriptions:read"
                         ]
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "parameters": [
@@ -1295,12 +1295,12 @@
                 "operationId": "update",
                 "security": [
                     {
-                        "OpenIdConnect": [
+                        "oidc": [
                             "user:subscriptions:write"
                         ]
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "parameters": [
@@ -1384,12 +1384,12 @@
                 "operationId": "cancel",
                 "security": [
                     {
-                        "OpenIdConnect": [
+                        "oidc": [
                             "user:subscriptions:write"
                         ]
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "parameters": [
@@ -1465,12 +1465,12 @@
                 "operationId": "list",
                 "security": [
                     {
-                        "OpenIdConnect": [
+                        "oidc": [
                             "user:advertisement_campaigns:read"
                         ]
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "parameters": [
@@ -1581,12 +1581,12 @@
                 "operationId": "create",
                 "security": [
                     {
-                        "OpenIdConnect": [
+                        "oidc": [
                             "user:advertisement_campaigns:write"
                         ]
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "requestBody": {
@@ -1638,12 +1638,12 @@
                 "operationId": "get",
                 "security": [
                     {
-                        "OpenIdConnect": [
+                        "oidc": [
                             "user:advertisement_campaigns:read"
                         ]
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "parameters": [
@@ -1707,12 +1707,12 @@
                 "operationId": "update",
                 "security": [
                     {
-                        "OpenIdConnect": [
+                        "oidc": [
                             "user:advertisement_campaigns:write"
                         ]
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "parameters": [
@@ -1786,12 +1786,12 @@
                 "operationId": "delete",
                 "security": [
                     {
-                        "OpenIdConnect": [
+                        "oidc": [
                             "user:advertisement_campaigns:write"
                         ]
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "parameters": [
@@ -1858,12 +1858,12 @@
                 "operationId": "enable",
                 "security": [
                     {
-                        "OpenIdConnect": [
+                        "oidc": [
                             "user:advertisement_campaigns:write"
                         ]
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "parameters": [
@@ -1931,12 +1931,12 @@
                 "operationId": "list",
                 "security": [
                     {
-                        "OpenIdConnect": [
+                        "oidc": [
                             "user:downloadables:read"
                         ]
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "parameters": [
@@ -2100,12 +2100,12 @@
                 "operationId": "get",
                 "security": [
                     {
-                        "OpenIdConnect": [
+                        "oidc": [
                             "user:downloadables:read"
                         ]
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "parameters": [
@@ -2167,10 +2167,10 @@
                 "operationId": "integrations.github.authorize",
                 "security": [
                     {
-                        "OpenIdConnect": []
+                        "oidc": []
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "parameters": [
@@ -2254,10 +2254,10 @@
                 "operationId": "integrations.github.callback",
                 "security": [
                     {
-                        "OpenIdConnect": []
+                        "oidc": []
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "parameters": [
@@ -2389,10 +2389,10 @@
                 },
                 "security": [
                     {
-                        "OpenIdConnect": []
+                        "oidc": []
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ]
             }
@@ -2406,10 +2406,10 @@
                 "operationId": "redirect_to_organization_installation",
                 "security": [
                     {
-                        "OpenIdConnect": []
+                        "oidc": []
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "parameters": [
@@ -2477,10 +2477,10 @@
                 "operationId": "check_organization_permissions",
                 "security": [
                     {
-                        "OpenIdConnect": []
+                        "oidc": []
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "parameters": [
@@ -2537,10 +2537,10 @@
                 "operationId": "get_organization_billing_plan",
                 "security": [
                     {
-                        "OpenIdConnect": []
+                        "oidc": []
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "parameters": [
@@ -2626,10 +2626,10 @@
                 },
                 "security": [
                     {
-                        "OpenIdConnect": []
+                        "oidc": []
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ]
             }
@@ -2664,10 +2664,10 @@
                 "operationId": "integrations.github_repository_benefit.user_authorize",
                 "security": [
                     {
-                        "OpenIdConnect": []
+                        "oidc": []
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "parameters": [
@@ -2725,10 +2725,10 @@
                 "operationId": "integrations.github_repository_benefit.user_callback",
                 "security": [
                     {
-                        "OpenIdConnect": []
+                        "oidc": []
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "parameters": [
@@ -2847,10 +2847,10 @@
                 },
                 "security": [
                     {
-                        "OpenIdConnect": []
+                        "oidc": []
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "x-polar-allowed-subjects": [
@@ -2880,10 +2880,10 @@
                 },
                 "security": [
                     {
-                        "OpenIdConnect": []
+                        "oidc": []
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "x-polar-allowed-subjects": [
@@ -2913,10 +2913,10 @@
                 },
                 "security": [
                     {
-                        "OpenIdConnect": []
+                        "oidc": []
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "x-polar-allowed-subjects": [
@@ -2936,10 +2936,10 @@
                 "operationId": "integrations.discord.bot_authorize",
                 "security": [
                     {
-                        "OpenIdConnect": []
+                        "oidc": []
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "parameters": [
@@ -2997,10 +2997,10 @@
                 "operationId": "integrations.discord.bot_callback",
                 "security": [
                     {
-                        "OpenIdConnect": []
+                        "oidc": []
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "parameters": [
@@ -3099,10 +3099,10 @@
                 "operationId": "integrations.discord.user_authorize",
                 "security": [
                     {
-                        "OpenIdConnect": []
+                        "oidc": []
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "parameters": [
@@ -3160,10 +3160,10 @@
                 "operationId": "integrations.discord.user_callback",
                 "security": [
                     {
-                        "OpenIdConnect": []
+                        "oidc": []
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "parameters": [
@@ -3262,10 +3262,10 @@
                 "operationId": "discord_guild_lookup",
                 "security": [
                     {
-                        "OpenIdConnect": []
+                        "oidc": []
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "parameters": [
@@ -3334,10 +3334,10 @@
                 },
                 "security": [
                     {
-                        "OpenIdConnect": []
+                        "oidc": []
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "x-polar-allowed-subjects": [
@@ -3357,10 +3357,10 @@
                 "operationId": "rewards",
                 "security": [
                     {
-                        "OpenIdConnect": []
+                        "oidc": []
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "parameters": [
@@ -3452,10 +3452,10 @@
                 },
                 "security": [
                     {
-                        "OpenIdConnect": []
+                        "oidc": []
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "x-polar-allowed-subjects": [
@@ -3494,10 +3494,10 @@
                 "operationId": "issue",
                 "security": [
                     {
-                        "OpenIdConnect": []
+                        "oidc": []
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "parameters": [
@@ -3583,10 +3583,10 @@
                 },
                 "security": [
                     {
-                        "OpenIdConnect": []
+                        "oidc": []
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "x-polar-allowed-subjects": [
@@ -3606,10 +3606,10 @@
                 "operationId": "pledge_create_invoice",
                 "security": [
                     {
-                        "OpenIdConnect": []
+                        "oidc": []
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "parameters": [
@@ -3663,10 +3663,10 @@
                 "operationId": "pledge_mark_disputed",
                 "security": [
                     {
-                        "OpenIdConnect": []
+                        "oidc": []
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "parameters": [
@@ -3752,10 +3752,10 @@
                 },
                 "security": [
                     {
-                        "OpenIdConnect": []
+                        "oidc": []
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "x-polar-allowed-subjects": [
@@ -3775,10 +3775,10 @@
                 "operationId": "update_badge_contents",
                 "security": [
                     {
-                        "OpenIdConnect": []
+                        "oidc": []
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "parameters": [
@@ -3841,10 +3841,10 @@
                 "operationId": "get_personal_dashboard",
                 "security": [
                     {
-                        "OpenIdConnect": []
+                        "oidc": []
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "parameters": [
@@ -3960,10 +3960,10 @@
                 "operationId": "get_dashboard",
                 "security": [
                     {
-                        "OpenIdConnect": []
+                        "oidc": []
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "parameters": [
@@ -4141,10 +4141,10 @@
                 "operationId": "search",
                 "security": [
                     {
-                        "OpenIdConnect": []
+                        "oidc": []
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "parameters": [
@@ -4337,10 +4337,10 @@
                 "operationId": "lookup",
                 "security": [
                     {
-                        "OpenIdConnect": []
+                        "oidc": []
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "parameters": [
@@ -4437,10 +4437,10 @@
                 "operationId": "magic_link.authenticate",
                 "security": [
                     {
-                        "OpenIdConnect": []
+                        "oidc": []
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "parameters": [
@@ -4521,10 +4521,10 @@
                 },
                 "security": [
                     {
-                        "OpenIdConnect": []
+                        "oidc": []
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "x-polar-allowed-subjects": [
@@ -4574,10 +4574,10 @@
                 },
                 "security": [
                     {
-                        "OpenIdConnect": []
+                        "oidc": []
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "x-polar-allowed-subjects": [
@@ -4598,12 +4598,12 @@
                 "operationId": "list",
                 "security": [
                     {
-                        "OpenIdConnect": [
+                        "oidc": [
                             "external_organizations:read"
                         ]
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "parameters": [
@@ -4804,13 +4804,13 @@
                 "operationId": "list",
                 "security": [
                     {
-                        "OpenIdConnect": [
-                            "repositories:read",
-                            "repositories:write"
+                        "oidc": [
+                            "repositories:write",
+                            "repositories:read"
                         ]
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "parameters": [
@@ -5053,13 +5053,13 @@
                 "operationId": "get",
                 "security": [
                     {
-                        "OpenIdConnect": [
-                            "repositories:read",
-                            "repositories:write"
+                        "oidc": [
+                            "repositories:write",
+                            "repositories:read"
                         ]
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "parameters": [
@@ -5129,12 +5129,12 @@
                 "operationId": "update",
                 "security": [
                     {
-                        "OpenIdConnect": [
+                        "oidc": [
                             "repositories:write"
                         ]
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "parameters": [
@@ -5225,10 +5225,10 @@
                 "operationId": "search",
                 "security": [
                     {
-                        "OpenIdConnect": []
+                        "oidc": []
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "parameters": [
@@ -5349,10 +5349,10 @@
                 "operationId": "summary",
                 "security": [
                     {
-                        "OpenIdConnect": []
+                        "oidc": []
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "parameters": [
@@ -5408,10 +5408,10 @@
                 "operationId": "list_personal_access_tokens",
                 "security": [
                     {
-                        "OpenIdConnect": []
+                        "oidc": []
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "parameters": [
@@ -5498,10 +5498,10 @@
                 "operationId": "create_personal_access_token",
                 "security": [
                     {
-                        "OpenIdConnect": []
+                        "oidc": []
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "requestBody": {
@@ -5553,10 +5553,10 @@
                 "operationId": "delete_personal_access_token",
                 "security": [
                     {
-                        "OpenIdConnect": []
+                        "oidc": []
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "parameters": [
@@ -5615,10 +5615,10 @@
                 },
                 "security": [
                     {
-                        "OpenIdConnect": []
+                        "oidc": []
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "x-polar-allowed-subjects": [
@@ -5657,10 +5657,10 @@
                 "operationId": "detach",
                 "security": [
                     {
-                        "OpenIdConnect": []
+                        "oidc": []
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "parameters": [
@@ -5714,10 +5714,10 @@
                 "operationId": "search",
                 "security": [
                     {
-                        "OpenIdConnect": []
+                        "oidc": []
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "parameters": [
@@ -5803,10 +5803,10 @@
                 "operationId": "search",
                 "security": [
                     {
-                        "OpenIdConnect": []
+                        "oidc": []
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "parameters": [
@@ -5895,10 +5895,10 @@
                 "operationId": "get",
                 "security": [
                     {
-                        "OpenIdConnect": []
+                        "oidc": []
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "parameters": [
@@ -5952,10 +5952,10 @@
                 "operationId": "onboarding_link",
                 "security": [
                     {
-                        "OpenIdConnect": []
+                        "oidc": []
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "parameters": [
@@ -6018,10 +6018,10 @@
                 "operationId": "dashboard_link",
                 "security": [
                     {
-                        "OpenIdConnect": []
+                        "oidc": []
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "parameters": [
@@ -6107,10 +6107,10 @@
                 },
                 "security": [
                     {
-                        "OpenIdConnect": []
+                        "oidc": []
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "x-polar-allowed-subjects": [
@@ -6131,13 +6131,13 @@
                 "operationId": "list",
                 "security": [
                     {
-                        "OpenIdConnect": [
-                            "issues:read",
-                            "issues:write"
+                        "oidc": [
+                            "issues:write",
+                            "issues:read"
                         ]
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "parameters": [
@@ -6407,10 +6407,10 @@
                 "operationId": "lookup",
                 "security": [
                     {
-                        "OpenIdConnect": []
+                        "oidc": []
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "parameters": [
@@ -6476,10 +6476,10 @@
                 "operationId": "get_body",
                 "security": [
                     {
-                        "OpenIdConnect": []
+                        "oidc": []
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "parameters": [
@@ -6544,10 +6544,10 @@
                 },
                 "security": [
                     {
-                        "OpenIdConnect": []
+                        "oidc": []
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "x-polar-allowed-subjects": [
@@ -6587,10 +6587,10 @@
                 "operationId": "get",
                 "security": [
                     {
-                        "OpenIdConnect": []
+                        "oidc": []
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "parameters": [
@@ -6644,10 +6644,10 @@
                 "operationId": "update",
                 "security": [
                     {
-                        "OpenIdConnect": []
+                        "oidc": []
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "parameters": [
@@ -6712,10 +6712,10 @@
                 "operationId": "confirm",
                 "security": [
                     {
-                        "OpenIdConnect": []
+                        "oidc": []
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "parameters": [
@@ -6779,10 +6779,10 @@
                 "operationId": "add_polar_badge",
                 "security": [
                     {
-                        "OpenIdConnect": []
+                        "oidc": []
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "parameters": [
@@ -6836,10 +6836,10 @@
                 "operationId": "remove_polar_badge",
                 "security": [
                     {
-                        "OpenIdConnect": []
+                        "oidc": []
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "parameters": [
@@ -6893,10 +6893,10 @@
                 "operationId": "add_issue_comment",
                 "security": [
                     {
-                        "OpenIdConnect": []
+                        "oidc": []
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "parameters": [
@@ -6960,10 +6960,10 @@
                 "operationId": "badge_with_message",
                 "security": [
                     {
-                        "OpenIdConnect": []
+                        "oidc": []
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "parameters": [
@@ -7028,10 +7028,10 @@
                 "operationId": "search",
                 "security": [
                     {
-                        "OpenIdConnect": []
+                        "oidc": []
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "parameters": [
@@ -7200,10 +7200,10 @@
                 "operationId": "summary",
                 "security": [
                     {
-                        "OpenIdConnect": []
+                        "oidc": []
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "parameters": [
@@ -7259,10 +7259,10 @@
                 "operationId": "spending",
                 "security": [
                     {
-                        "OpenIdConnect": []
+                        "oidc": []
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "parameters": [
@@ -7319,10 +7319,10 @@
                 "operationId": "get",
                 "security": [
                     {
-                        "OpenIdConnect": []
+                        "oidc": []
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "parameters": [
@@ -7409,10 +7409,10 @@
                 },
                 "security": [
                     {
-                        "OpenIdConnect": []
+                        "oidc": []
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "x-polar-allowed-subjects": [
@@ -7466,10 +7466,10 @@
                 },
                 "security": [
                     {
-                        "OpenIdConnect": []
+                        "oidc": []
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "x-polar-allowed-subjects": [
@@ -7490,10 +7490,10 @@
                 "operationId": "create_invoice",
                 "security": [
                     {
-                        "OpenIdConnect": []
+                        "oidc": []
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "parameters": [
@@ -7579,10 +7579,10 @@
                 },
                 "security": [
                     {
-                        "OpenIdConnect": []
+                        "oidc": []
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "x-polar-allowed-subjects": [
@@ -7603,10 +7603,10 @@
                 "operationId": "update_payment_intent",
                 "security": [
                     {
-                        "OpenIdConnect": []
+                        "oidc": []
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "parameters": [
@@ -7670,10 +7670,10 @@
                 "operationId": "dispute_pledge",
                 "security": [
                     {
-                        "OpenIdConnect": []
+                        "oidc": []
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "parameters": [
@@ -7737,13 +7737,13 @@
                 "operationId": "list",
                 "security": [
                     {
-                        "OpenIdConnect": [
+                        "oidc": [
                             "organizations:write",
                             "organizations:read"
                         ]
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "parameters": [
@@ -7891,12 +7891,12 @@
                 "operationId": "create",
                 "security": [
                     {
-                        "OpenIdConnect": [
+                        "oidc": [
                             "organizations:write"
                         ]
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "requestBody": {
@@ -7948,13 +7948,13 @@
                 "operationId": "get",
                 "security": [
                     {
-                        "OpenIdConnect": [
+                        "oidc": [
                             "organizations:write",
                             "organizations:read"
                         ]
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "parameters": [
@@ -8023,12 +8023,12 @@
                 "operationId": "update",
                 "security": [
                     {
-                        "OpenIdConnect": [
+                        "oidc": [
                             "organizations:write"
                         ]
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "parameters": [
@@ -8119,13 +8119,13 @@
                 "operationId": "customers",
                 "security": [
                     {
-                        "OpenIdConnect": [
+                        "oidc": [
                             "organizations:write",
                             "organizations:read"
                         ]
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "parameters": [
@@ -8158,8 +8158,8 @@
                             "description": "Filter by the type of purchase the customer made.",
                             "default": [
                                 "order",
-                                "free_subscription",
                                 "paid_subscription",
+                                "free_subscription",
                                 "donation"
                             ],
                             "title": "Customer Types"
@@ -8263,12 +8263,12 @@
                 "operationId": "get_account",
                 "security": [
                     {
-                        "OpenIdConnect": [
+                        "oidc": [
                             "organizations:write"
                         ]
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "parameters": [
@@ -8348,12 +8348,12 @@
                 "operationId": "set_account",
                 "security": [
                     {
-                        "OpenIdConnect": [
+                        "oidc": [
                             "organizations:write"
                         ]
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "parameters": [
@@ -8445,12 +8445,12 @@
                 "operationId": "members",
                 "security": [
                     {
-                        "OpenIdConnect": [
+                        "oidc": [
                             "organizations:write"
                         ]
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "parameters": [
@@ -8532,12 +8532,12 @@
                 "operationId": "create_stripe_customer_portal",
                 "security": [
                     {
-                        "OpenIdConnect": [
+                        "oidc": [
                             "organizations:write"
                         ]
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "parameters": [
@@ -8593,12 +8593,12 @@
                 "operationId": "get_badge_settings",
                 "security": [
                     {
-                        "OpenIdConnect": [
+                        "oidc": [
                             "organizations:write"
                         ]
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "parameters": [
@@ -8652,12 +8652,12 @@
                 "operationId": "update_badge_settings",
                 "security": [
                     {
-                        "OpenIdConnect": [
+                        "oidc": [
                             "organizations:write"
                         ]
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "parameters": [
@@ -8723,13 +8723,13 @@
                 "operationId": "list",
                 "security": [
                     {
-                        "OpenIdConnect": [
-                            "subscriptions:write",
-                            "subscriptions:read"
+                        "oidc": [
+                            "subscriptions:read",
+                            "subscriptions:write"
                         ]
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "parameters": [
@@ -8960,12 +8960,12 @@
                 "operationId": "create",
                 "security": [
                     {
-                        "OpenIdConnect": [
+                        "oidc": [
                             "subscriptions:write"
                         ]
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "requestBody": {
@@ -9050,19 +9050,19 @@
                 },
                 "security": [
                     {
-                        "OpenIdConnect": [
+                        "oidc": [
                             "subscriptions:write"
                         ]
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "x-polar-allowed-subjects": [
                     "Organization",
                     "User"
                 ],
-                "x-speakeasy-name-override": "import",
+                "x-speakeasy-name-override": "import_subscriptions",
                 "x-speakeasy-group": "subscriptions"
             }
         },
@@ -9076,13 +9076,13 @@
                 "operationId": "export",
                 "security": [
                     {
-                        "OpenIdConnect": [
-                            "subscriptions:write",
-                            "subscriptions:read"
+                        "oidc": [
+                            "subscriptions:read",
+                            "subscriptions:write"
                         ]
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "parameters": [
@@ -9163,12 +9163,12 @@
                 "operationId": "list",
                 "security": [
                     {
-                        "OpenIdConnect": [
+                        "oidc": [
                             "articles:read"
                         ]
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "parameters": [
@@ -9391,12 +9391,12 @@
                 "operationId": "create",
                 "security": [
                     {
-                        "OpenIdConnect": [
+                        "oidc": [
                             "articles:write"
                         ]
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "requestBody": {
@@ -9449,12 +9449,12 @@
                 "operationId": "get",
                 "security": [
                     {
-                        "OpenIdConnect": [
+                        "oidc": [
                             "articles:read"
                         ]
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "parameters": [
@@ -9524,12 +9524,12 @@
                 "operationId": "update",
                 "security": [
                     {
-                        "OpenIdConnect": [
+                        "oidc": [
                             "articles:write"
                         ]
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "parameters": [
@@ -9618,12 +9618,12 @@
                 "operationId": "delete",
                 "security": [
                     {
-                        "OpenIdConnect": [
+                        "oidc": [
                             "articles:write"
                         ]
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "parameters": [
@@ -9697,12 +9697,12 @@
                 "operationId": "receivers",
                 "security": [
                     {
-                        "OpenIdConnect": [
+                        "oidc": [
                             "articles:write"
                         ]
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "parameters": [
@@ -9763,12 +9763,12 @@
                 "operationId": "preview",
                 "security": [
                     {
-                        "OpenIdConnect": [
+                        "oidc": [
                             "articles:write"
                         ]
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "parameters": [
@@ -9857,12 +9857,12 @@
                 "operationId": "send",
                 "security": [
                     {
-                        "OpenIdConnect": [
+                        "oidc": [
                             "articles:write"
                         ]
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "parameters": [
@@ -9981,10 +9981,10 @@
                 "operationId": "search_transactions",
                 "security": [
                     {
-                        "OpenIdConnect": []
+                        "oidc": []
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "parameters": [
@@ -10174,10 +10174,10 @@
                 "operationId": "lookup_transaction",
                 "security": [
                     {
-                        "OpenIdConnect": []
+                        "oidc": []
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "parameters": [
@@ -10231,10 +10231,10 @@
                 "operationId": "get_summary",
                 "security": [
                     {
-                        "OpenIdConnect": []
+                        "oidc": []
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "parameters": [
@@ -10288,10 +10288,10 @@
                 "operationId": "get_payout_estimate",
                 "security": [
                     {
-                        "OpenIdConnect": []
+                        "oidc": []
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "parameters": [
@@ -10343,10 +10343,10 @@
                 "operationId": "create_payout",
                 "security": [
                     {
-                        "OpenIdConnect": []
+                        "oidc": []
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "requestBody": {
@@ -10398,10 +10398,10 @@
                 "operationId": "get_payout_csv",
                 "security": [
                     {
-                        "OpenIdConnect": []
+                        "oidc": []
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "parameters": [
@@ -10727,10 +10727,10 @@
                 "operationId": "statistics",
                 "security": [
                     {
-                        "OpenIdConnect": []
+                        "oidc": []
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "parameters": [
@@ -10858,10 +10858,10 @@
                 "operationId": "referrers",
                 "security": [
                     {
-                        "OpenIdConnect": []
+                        "oidc": []
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "parameters": [
@@ -11002,10 +11002,10 @@
                 "operationId": "search_donations",
                 "security": [
                     {
-                        "OpenIdConnect": []
+                        "oidc": []
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "parameters": [
@@ -11160,10 +11160,10 @@
                 },
                 "security": [
                     {
-                        "OpenIdConnect": []
+                        "oidc": []
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "x-polar-allowed-subjects": [
@@ -11184,10 +11184,10 @@
                 "operationId": "update_payment_intent",
                 "security": [
                     {
-                        "OpenIdConnect": []
+                        "oidc": []
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "parameters": [
@@ -11251,10 +11251,10 @@
                 "operationId": "statistics",
                 "security": [
                     {
-                        "OpenIdConnect": []
+                        "oidc": []
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "parameters": [
@@ -11464,10 +11464,10 @@
                 "operationId": "list",
                 "security": [
                     {
-                        "OpenIdConnect": []
+                        "oidc": []
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "parameters": [
@@ -11586,10 +11586,10 @@
                 },
                 "security": [
                     {
-                        "OpenIdConnect": []
+                        "oidc": []
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "x-polar-allowed-subjects": [
@@ -11609,10 +11609,10 @@
                 "operationId": "get_client",
                 "security": [
                     {
-                        "OpenIdConnect": []
+                        "oidc": []
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "parameters": [
@@ -11662,10 +11662,10 @@
                 "operationId": "update_client",
                 "security": [
                     {
-                        "OpenIdConnect": []
+                        "oidc": []
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "parameters": [
@@ -11725,10 +11725,10 @@
                 "operationId": "delete_client",
                 "security": [
                     {
-                        "OpenIdConnect": []
+                        "oidc": []
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "parameters": [
@@ -11806,10 +11806,10 @@
                 },
                 "security": [
                     {
-                        "OpenIdConnect": []
+                        "oidc": []
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "x-polar-allowed-subjects": [
@@ -11817,7 +11817,8 @@
                     "User"
                 ],
                 "x-speakeasy-group": "oauth2",
-                "x-speakeasy-name-override": "authorize"
+                "x-speakeasy-name-override": "authorize",
+                "x-speakeasy-ignore": true
             }
         },
         "/v1/oauth2/consent": {
@@ -11859,17 +11860,18 @@
                 },
                 "security": [
                     {
-                        "OpenIdConnect": []
+                        "oidc": []
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "x-polar-allowed-subjects": [
                     "User"
                 ],
                 "x-speakeasy-group": "oauth2",
-                "x-speakeasy-name-override": "consent"
+                "x-speakeasy-name-override": "consent",
+                "x-speakeasy-ignore": true
             }
         },
         "/v1/oauth2/token": {
@@ -12162,7 +12164,7 @@
                 },
                 "security": [
                     {
-                        "OpenIdConnect": []
+                        "oidc": []
                     }
                 ],
                 "x-speakeasy-name-override": "userinfo",
@@ -12179,13 +12181,13 @@
                 "operationId": "list",
                 "security": [
                     {
-                        "OpenIdConnect": [
+                        "oidc": [
                             "benefits:write",
                             "benefits:read"
                         ]
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "parameters": [
@@ -12335,12 +12337,12 @@
                 "operationId": "create",
                 "security": [
                     {
-                        "OpenIdConnect": [
+                        "oidc": [
                             "benefits:write"
                         ]
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "requestBody": {
@@ -12440,13 +12442,13 @@
                 "operationId": "get",
                 "security": [
                     {
-                        "OpenIdConnect": [
+                        "oidc": [
                             "benefits:write",
                             "benefits:read"
                         ]
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "parameters": [
@@ -12535,12 +12537,12 @@
                 "operationId": "update",
                 "security": [
                     {
-                        "OpenIdConnect": [
+                        "oidc": [
                             "benefits:write"
                         ]
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "parameters": [
@@ -12669,12 +12671,12 @@
                 "operationId": "delete",
                 "security": [
                     {
-                        "OpenIdConnect": [
+                        "oidc": [
                             "benefits:write"
                         ]
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "parameters": [
@@ -12748,13 +12750,13 @@
                 "operationId": "grants",
                 "security": [
                     {
-                        "OpenIdConnect": [
+                        "oidc": [
                             "benefits:write",
                             "benefits:read"
                         ]
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "parameters": [
@@ -12925,13 +12927,13 @@
                 "operationId": "list_webhook_endpoints",
                 "security": [
                     {
-                        "OpenIdConnect": [
-                            "webhooks:write",
-                            "webhooks:read"
+                        "oidc": [
+                            "webhooks:read",
+                            "webhooks:write"
                         ]
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "parameters": [
@@ -13064,12 +13066,12 @@
                 "operationId": "create_webhook_endpoint",
                 "security": [
                     {
-                        "OpenIdConnect": [
+                        "oidc": [
                             "webhooks:write"
                         ]
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "requestBody": {
@@ -13123,13 +13125,13 @@
                 "operationId": "get_webhook_endpoint",
                 "security": [
                     {
-                        "OpenIdConnect": [
-                            "webhooks:write",
-                            "webhooks:read"
+                        "oidc": [
+                            "webhooks:read",
+                            "webhooks:write"
                         ]
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "parameters": [
@@ -13195,12 +13197,12 @@
                 "operationId": "update_webhook_endpoint",
                 "security": [
                     {
-                        "OpenIdConnect": [
+                        "oidc": [
                             "webhooks:write"
                         ]
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "parameters": [
@@ -13286,12 +13288,12 @@
                 "operationId": "delete_webhook_endpoint",
                 "security": [
                     {
-                        "OpenIdConnect": [
+                        "oidc": [
                             "webhooks:write"
                         ]
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "parameters": [
@@ -13362,13 +13364,13 @@
                 "operationId": "list_webhook_deliveries",
                 "security": [
                     {
-                        "OpenIdConnect": [
-                            "webhooks:write",
-                            "webhooks:read"
+                        "oidc": [
+                            "webhooks:read",
+                            "webhooks:write"
                         ]
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "parameters": [
@@ -13478,12 +13480,12 @@
                 "operationId": "redeliver_webhook_event",
                 "security": [
                     {
-                        "OpenIdConnect": [
+                        "oidc": [
                             "webhooks:write"
                         ]
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "parameters": [
@@ -13549,13 +13551,13 @@
                 "operationId": "list",
                 "security": [
                     {
-                        "OpenIdConnect": [
+                        "oidc": [
                             "products:write",
                             "products:read"
                         ]
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "parameters": [
@@ -13780,12 +13782,12 @@
                 "operationId": "create",
                 "security": [
                     {
-                        "OpenIdConnect": [
+                        "oidc": [
                             "products:write"
                         ]
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "requestBody": {
@@ -13846,13 +13848,13 @@
                 "operationId": "get",
                 "security": [
                     {
-                        "OpenIdConnect": [
+                        "oidc": [
                             "products:write",
                             "products:read"
                         ]
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "parameters": [
@@ -13922,12 +13924,12 @@
                 "operationId": "update",
                 "security": [
                     {
-                        "OpenIdConnect": [
+                        "oidc": [
                             "products:write"
                         ]
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "parameters": [
@@ -14018,12 +14020,12 @@
                 "operationId": "update_benefits",
                 "security": [
                     {
-                        "OpenIdConnect": [
+                        "oidc": [
                             "products:write"
                         ]
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "parameters": [
@@ -14114,12 +14116,12 @@
                 "operationId": "list",
                 "security": [
                     {
-                        "OpenIdConnect": [
+                        "oidc": [
                             "orders:read"
                         ]
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "parameters": [
@@ -14359,12 +14361,12 @@
                 "operationId": "get",
                 "security": [
                     {
-                        "OpenIdConnect": [
+                        "oidc": [
                             "orders:read"
                         ]
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "parameters": [
@@ -14431,12 +14433,12 @@
                 "operationId": "invoice",
                 "security": [
                     {
-                        "OpenIdConnect": [
+                        "oidc": [
                             "orders:read"
                         ]
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "parameters": [
@@ -14535,10 +14537,10 @@
                 },
                 "security": [
                     {
-                        "OpenIdConnect": []
+                        "oidc": []
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "x-polar-allowed-subjects": [
@@ -14604,12 +14606,12 @@
                 "operationId": "list",
                 "security": [
                     {
-                        "OpenIdConnect": [
+                        "oidc": [
                             "files:write"
                         ]
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "parameters": [
@@ -14742,12 +14744,12 @@
                 "operationId": "create",
                 "security": [
                     {
-                        "OpenIdConnect": [
+                        "oidc": [
                             "files:write"
                         ]
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "requestBody": {
@@ -14819,12 +14821,12 @@
                 "operationId": "uploaded",
                 "security": [
                     {
-                        "OpenIdConnect": [
+                        "oidc": [
                             "files:write"
                         ]
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "parameters": [
@@ -14910,12 +14912,12 @@
                 "operationId": "update",
                 "security": [
                     {
-                        "OpenIdConnect": [
+                        "oidc": [
                             "files:write"
                         ]
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "parameters": [
@@ -14999,12 +15001,12 @@
                 "operationId": "delete",
                 "security": [
                     {
-                        "OpenIdConnect": [
+                        "oidc": [
                             "files:write"
                         ]
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "parameters": [
@@ -15072,12 +15074,12 @@
                 "operationId": "get",
                 "security": [
                     {
-                        "OpenIdConnect": [
+                        "oidc": [
                             "metrics:read"
                         ]
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "parameters": [
@@ -15274,12 +15276,12 @@
                 },
                 "security": [
                     {
-                        "OpenIdConnect": [
+                        "oidc": [
                             "metrics:read"
                         ]
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "x-polar-allowed-subjects": [
@@ -15299,10 +15301,10 @@
                 "operationId": "integrations.google.authorize",
                 "security": [
                     {
-                        "OpenIdConnect": []
+                        "oidc": []
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "parameters": [
@@ -15377,10 +15379,10 @@
                 "operationId": "integrations.google.callback",
                 "security": [
                     {
-                        "OpenIdConnect": []
+                        "oidc": []
                     },
                     {
-                        "HTTPBearer": []
+                        "pat": []
                     }
                 ],
                 "parameters": [
@@ -32526,11 +32528,11 @@
             }
         },
         "securitySchemes": {
-            "OpenIdConnect": {
+            "oidc": {
                 "type": "openIdConnect",
                 "openIdConnectUrl": "/.well-known/openid-configuration"
             },
-            "HTTPBearer": {
+            "pat": {
                 "type": "http",
                 "description": "You can generate a **Personal Access Token** from your [settings](https://polar.sh/settings).",
                 "scheme": "bearer"

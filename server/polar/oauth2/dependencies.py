@@ -15,7 +15,9 @@ from .exceptions import InvalidTokenError
 from .service.oauth2_token import oauth2_token as oauth2_token_service
 
 openid_scheme = OpenIdConnect(
-    openIdConnectUrl="/.well-known/openid-configuration", auto_error=False
+    scheme_name="oidc",
+    openIdConnectUrl="/.well-known/openid-configuration",
+    auto_error=False,
 )
 
 

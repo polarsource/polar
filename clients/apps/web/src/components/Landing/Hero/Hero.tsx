@@ -1,7 +1,6 @@
 'use client'
 
 import GetStartedButton from '@/components/Auth/GetStartedButton'
-import Link from 'next/link'
 import Button from 'polarkit/components/ui/atoms/button'
 
 export const Hero = () => {
@@ -16,25 +15,6 @@ export const Hero = () => {
             <p className="dark:text-polar-400 text-lg leading-relaxed text-gray-500">
               An open source Lemon Squeezy alternative. Get paid coding on your
               passion.
-            </p>
-            <p className="dark:text-polar-600 text-xs leading-normal text-gray-400">
-              By using Polar you agree to our{' '}
-              <Link
-                className="dark:text-polar-500 text-blue-500"
-                href="/legal/terms"
-                target="_blank"
-              >
-                Terms of Service
-              </Link>{' '}
-              and{' '}
-              <Link
-                className="dark:text-polar-500 text-blue-500"
-                href="/legal/privacy"
-                target="_blank"
-              >
-                Privacy Policy
-              </Link>
-              .
             </p>
           </div>
         </div>

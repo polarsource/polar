@@ -286,10 +286,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
                       'border-transparent',
                   )}
                 >
-                  <div className="flex items-center gap-2">
-                    One-time purchase
-                  </div>
-                  <div className="font-normal">Charge a one-time fee</div>
+                  <div className="flex items-center gap-2">Pay Once</div>
                 </ToggleGroupItem>
                 <ToggleGroupItem
                   value={ProductPriceType.RECURRING}
@@ -300,7 +297,6 @@ const ProductForm: React.FC<ProductFormProps> = ({
                   )}
                 >
                   <div className="flex items-center gap-2">Subscription</div>
-                  <div className="font-normal">Charge an ongoing fee</div>
                 </ToggleGroupItem>
               </ToggleGroup>
             )}

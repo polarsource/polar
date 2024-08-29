@@ -14,7 +14,8 @@ export const Hero = () => {
           </h1>
           <div className="flex flex-col items-center gap-y-4 xl:w-2/3">
             <p className="dark:text-polar-400 text-lg leading-relaxed text-gray-500">
-              An open source Lemon Squeezy alternative with better pricing
+              An open source Lemon Squeezy alternative. Get paid coding on your
+              passion.
             </p>
             <p className="dark:text-polar-600 text-xs leading-normal text-gray-400">
               By using Polar you agree to our{' '}

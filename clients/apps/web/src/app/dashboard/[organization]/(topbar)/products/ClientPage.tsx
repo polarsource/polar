@@ -52,6 +52,21 @@ export default function ClientPage() {
   )
 }
 
+const ProductListCoverImage = ({ product }: { product: Product }) => {
+  let coverUrl = null
+  if (product.medias.length > 0) {
+    coverUrl = product.medias[0].public_url
+  }
+
+  return (
+    <div className="h-7 w-8 rounded bg-blue-50 dark:bg-gray-900">
+      {coverUrl ? (
+        <img src={coverUrl} alt={product.name} className="h-7 w-8 rounded" />
+      ) : null}
+    </div>
+  )
+}
+
 interface ProductListItemProps {
   product: Product
   organization: Organization
@@ -65,6 +80,7 @@ const ProductListItem = ({ product, organization }: ProductListItemProps) => {
     >
       <ListItem className="dark:hover:bg-polar-800 dark:bg-polar-900 flex flex-row items-center justify-between bg-white">
         <div className="flex flex-row items-center gap-x-4">
+          <ProductListCoverImage product={product} />
           <span>{product.name}</span>
         </div>
         <div className="flex flex-row items-center gap-x-4">

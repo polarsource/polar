@@ -166,18 +166,18 @@ class LicenseKeyService(
         session: AsyncSession,
         *,
         user: User,
-        organization_id: UUID,
         pagination: PaginationParams,
         benefit_id: UUID | None = None,
+        organization_ids: Sequence[UUID] | None = None,
     ) -> tuple[Sequence[LicenseKey], int]:
         query = (
             self._get_select_base()
-            .where(
-                LicenseKey.user_id == user.id,
-                LicenseKey.organization_id == organization_id,
-            )
+            .where(LicenseKey.user_id == user.id)
             .order_by(LicenseKey.created_at.asc())
         )
+        if organization_ids:
+            query = query.where(LicenseKey.organization_id.in_(organization_ids))
+
         if benefit_id:
             query = query.where(LicenseKey.benefit_id == benefit_id)
 

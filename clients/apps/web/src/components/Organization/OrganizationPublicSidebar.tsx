@@ -121,7 +121,7 @@ export const OrganizationPublicSidebar = ({
             maxLength={160}
           />
           <div className="flex flex-row flex-wrap items-center gap-3 text-lg">
-            {externalGitHubOrganizations.data?.items?.map(
+            {externalGitHubOrganizations.data?.items.map(
               (externalOrganization) => (
                 <SocialLink
                   key={externalOrganization.id}

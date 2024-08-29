@@ -15,5 +15,5 @@ export const getExternalOrganizationByName = async (
     },
     initOverrides,
   )
-  return data.items?.[0]
+  return data.items[0]
 }

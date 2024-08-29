@@ -125,7 +125,7 @@ const AccessTokensSettings = () => {
     <div className="flex w-full flex-col">
       <ShadowListGroup>
         {tokens.data?.items && tokens.data.items.length > 0 ? (
-          tokens.data?.items?.map((token) => {
+          tokens.data?.items.map((token) => {
             const shouldRenderJWT =
               token.id === createdToken?.personal_access_token.id
 

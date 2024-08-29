@@ -77,7 +77,7 @@ export default function ClientPage() {
         <div className="flex w-full flex-col gap-y-6">
           <h3 className="text-lg">Subscriptions</h3>
           <List className="w-full">
-            {subscriptions?.items?.map((order) => (
+            {subscriptions?.items.map((order) => (
               <Link
                 key={order.id}
                 className="flex w-full flex-row items-center justify-between"

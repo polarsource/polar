@@ -70,7 +70,7 @@ const ConfigureAdCampaigns = ({
         })
       } else {
         setCreate(false)
-        const campaign = campaigns?.items?.find((c) => c.id === value)
+        const campaign = campaigns?.items.find((c) => c.id === value)
         setSelectedCampaign(campaign)
         reset({ ...campaign })
       }
@@ -110,12 +110,12 @@ const ConfigureAdCampaigns = ({
           <SelectValue placeholder="Select an existing campaign" />
         </SelectTrigger>
         <SelectContent>
-          {campaigns?.items?.map((campaign) => (
+          {campaigns?.items.map((campaign) => (
             <SelectItem key={campaign.id} value={campaign.id}>
               {campaign.text}
             </SelectItem>
           ))}
-          {campaigns?.items && campaigns?.items?.length > 0 && (
+          {campaigns?.items && campaigns?.items.length > 0 && (
             <SelectSeparator />
           )}
           <SelectItem value="create">Create New Campaign</SelectItem>

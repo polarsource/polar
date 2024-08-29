@@ -82,7 +82,7 @@ export const OrdersWidget = ({ className }: OrdersWidgetProps) => {
       className={twMerge('h-80', className)}
       href={`/dashboard/${org.slug}/sales`}
     >
-      {(orders.data?.items?.length ?? 0) > 0 ? (
+      {(orders.data?.items.length ?? 0) > 0 ? (
         <div className="relative h-full">
           {orders.data?.items
             ?.slice()

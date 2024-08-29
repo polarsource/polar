@@ -52,7 +52,7 @@ export default function ClientPage() {
       ) : (
         <div className="flex flex-col">
           <div className="grid h-full grid-cols-1 gap-6 md:grid-cols-3">
-            {orders?.items?.map((order) => (
+            {orders?.items.map((order) => (
               <OrderItem key={order.id} order={order} />
             ))}
           </div>

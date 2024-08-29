@@ -21,7 +21,7 @@ const getOrg = async (org: string): Promise<Organization> => {
   })
   const data = (await response.json()) as ListResourceOrganization
 
-  const organization = data.items?.[0]
+  const organization = data.items[0]
 
   if (!organization) {
     notFound()
@@ -44,7 +44,7 @@ const getHighlightedSubscriptions = async (
     method: 'GET',
   })
   const d = (await response.json()) as ListResourceProduct
-  return (d.items?.filter(
+  return (d.items.filter(
     (tier) => tier.is_highlighted || tier.type === 'free',
   ) || []) as (Product & { type: SubscriptionTierType })[]
 }

@@ -17,7 +17,7 @@ const _getOrganizationBySlug = async (
       },
     },
   )
-  return data.items?.[0]
+  return data.items[0]
 }
 
 // Tell React to memoize it for the duration of the request

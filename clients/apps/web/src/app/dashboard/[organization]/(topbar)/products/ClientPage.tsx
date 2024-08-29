@@ -36,9 +36,9 @@ export default function ClientPage() {
             </Link>
           </div>
         </div>
-        {(products.data?.items?.length ?? 0) > 0 && (
+        {(products.data?.items.length ?? 0) > 0 && (
           <List>
-            {products.data?.items?.map((product) => (
+            {products.data?.items.map((product) => (
               <ProductListItem
                 key={product.id}
                 organization={org}

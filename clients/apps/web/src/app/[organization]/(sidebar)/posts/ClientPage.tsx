@@ -58,9 +58,9 @@ const ClientPage = ({
   return (
     <div className="flex w-full flex-col gap-y-6">
       <div className="flex w-full flex-col gap-y-16">
-        {(pinnedArticles.items?.length ?? 0) > 0 ? (
+        {(pinnedArticles.items.length ?? 0) > 0 ? (
           <div className="flex w-full flex-col gap-y-6">
-            {pinnedArticles.items?.map((post) => (
+            {pinnedArticles.items.map((post) => (
               <PostComponent article={post} key={post.id} highlightPinned />
             ))}
           </div>
@@ -77,7 +77,7 @@ const ClientPage = ({
           <>
             {posts.isFetched &&
             infinitePosts.length === 0 &&
-            (pinnedArticles.items?.length ?? 0) === 0 ? (
+            (pinnedArticles.items.length ?? 0) === 0 ? (
               <div className="dark:text-polar-400 flex h-full w-full flex-col items-center gap-y-4 pt-32 text-gray-600">
                 <StickyNote2Outlined fontSize="large" />
                 <div className="flex w-full flex-col items-center gap-y-2 px-12 text-center">

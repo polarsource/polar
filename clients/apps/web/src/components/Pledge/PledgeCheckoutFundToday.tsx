@@ -309,7 +309,7 @@ const PledgeCheckoutFundToday = ({
   }
 
   const onPaymentMethodChange = (id: string) => {
-    const pm = savedPaymentMethods.data?.items?.find(
+    const pm = savedPaymentMethods.data?.items.find(
       (p) => p.stripe_payment_method_id === id,
     )
     setPaymentMethod(pm)
@@ -411,7 +411,7 @@ const PledgeCheckoutFundToday = ({
       </div>
 
       {savedPaymentMethods.data?.items &&
-        savedPaymentMethods.data?.items?.length > 0 && (
+        savedPaymentMethods.data?.items.length > 0 && (
           <div>
             <label
               htmlFor="payment_method"

@@ -140,7 +140,7 @@ const updateIssuesCache = (result: Issue) => {
 
       return {
         ...data,
-        items: data.items?.map((i) => {
+        items: data.items.map((i) => {
           if (i.issue.id === result.id) {
             return {
               ...i,
@@ -164,7 +164,7 @@ const updateIssuesCache = (result: Issue) => {
 
       return {
         ...data,
-        items: data.items?.map((i) => {
+        items: data.items.map((i) => {
           if (i.issue.id === result.id) {
             return {
               ...i,
@@ -187,7 +187,7 @@ const updateIssuesCache = (result: Issue) => {
       }
       return {
         ...data,
-        items: data.items?.map((i) => {
+        items: data.items.map((i) => {
           if (i.id === result.id) {
             return result
           }
@@ -207,7 +207,7 @@ const updateIssuesCache = (result: Issue) => {
       }
       return {
         ...data,
-        items: data.items?.map((i) => {
+        items: data.items.map((i) => {
           if (i.id === result.id) {
             return result
           }

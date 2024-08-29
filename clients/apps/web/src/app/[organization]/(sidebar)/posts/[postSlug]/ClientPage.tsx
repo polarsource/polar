@@ -45,7 +45,7 @@ export default async function Page({ article, products }: PostPageProps) {
       limit: 100,
     })
     hasPaidArticlesBenefit =
-      benefits?.items?.some(
+      benefits?.items.some(
         (b) => b.type === 'articles' && b.properties.paid_articles,
       ) || false
   } catch (err) {}

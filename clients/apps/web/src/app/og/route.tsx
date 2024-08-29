@@ -155,7 +155,7 @@ const getOrg = async (org: string): Promise<Organization> => {
   })
   const data = (await response.json()) as ListResourceOrganization
 
-  const organization = data.items?.[0]
+  const organization = data.items[0]
 
   if (!organization) {
     notFound()
@@ -173,7 +173,7 @@ const getRepo = async (orgId: string, repo: string): Promise<Repository> => {
   )
   const data = (await response.json()) as ListResourceRepository
 
-  const repository = data.items?.[0]
+  const repository = data.items[0]
 
   if (!repository) {
     notFound()

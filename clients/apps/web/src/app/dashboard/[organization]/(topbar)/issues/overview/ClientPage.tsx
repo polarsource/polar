@@ -43,7 +43,7 @@ export default function ClientPage() {
     },
     !!repoSlug,
   )
-  const repo = repositories.data?.items?.[0]
+  const repo = repositories.data?.items[0]
 
   if (!org.feature_settings?.issue_funding_enabled) {
     return <EnableIssuesView organization={org} />

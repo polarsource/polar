@@ -141,7 +141,7 @@ export const useArticleBySlug = (
     queryFn: () =>
       api.articles
         .list({ organizationId, slug, limit: 1 })
-        .then((r) => r.items?.[0]),
+        .then((r) => r.items[0]),
     retry: defaultRetry,
     enabled: !!organizationId,
   })

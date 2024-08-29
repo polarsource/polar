@@ -86,13 +86,13 @@ export const useProductsByPriceType = (
   return useMemo(
     () => ({
       [ProductPriceType.ONE_TIME]:
-        products?.items?.filter((product) =>
+        products?.items.filter((product) =>
           product.prices.some(
             (price) => price.type === ProductPriceType.ONE_TIME,
           ),
         ) || [],
       [ProductPriceType.RECURRING]:
-        products?.items?.filter((product) =>
+        products?.items.filter((product) =>
           product.prices.some(
             (price) => price.type === ProductPriceType.RECURRING,
           ),

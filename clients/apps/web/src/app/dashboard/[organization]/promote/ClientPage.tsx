@@ -28,7 +28,7 @@ export default function ClientPage({
     },
     !!repoSlug,
   )
-  const currentRepo = repositories.data?.items?.[0]
+  const currentRepo = repositories.data?.items[0]
 
   const orgSlashRepo = currentRepo
     ? `${organization.slug}/${currentRepo.name}`

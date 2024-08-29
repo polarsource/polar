@@ -59,7 +59,7 @@ const ClientPage = ({ organization }: { organization: Organization }) => {
     useState<CreateBenefitModalParams>()
 
   useEffect(() => {
-    setSelectedBenefit(benefits?.items?.[0])
+    setSelectedBenefit(benefits?.items[0])
   }, [benefits])
 
   return (
@@ -73,7 +73,7 @@ const ClientPage = ({ organization }: { organization: Organization }) => {
             </Button>
           </div>
           <List>
-            {benefits?.items?.map((benefit) => (
+            {benefits?.items.map((benefit) => (
               <ListItem
                 key={benefit.id}
                 className={twMerge(
@@ -113,7 +113,7 @@ const ClientPage = ({ organization }: { organization: Organization }) => {
             <div className="flex flex-col gap-y-4">
               <h3 className="font-medium">Products</h3>
 
-              {benefitProducts?.items?.length ? (
+              {benefitProducts?.items.length ? (
                 <List size="small">
                   {benefitProducts.items.map((product) => (
                     <Link

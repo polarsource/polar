@@ -4,7 +4,18 @@ import { getServerSideAPI } from '@/utils/api/serverside'
 import { getUserOrganizations } from '@/utils/user'
 import { redirect } from 'next/navigation'
 
-export default async function SignupPage() {
+export default async function Page({
+  searchParams: { return_to, ...rest },
+}: {
+  searchParams: {
+    return_to?: string
+  }
+}) {
+  const restParams = new URLSearchParams(rest)
+  const returnTo = return_to
+    ? `${return_to || ''}?${restParams.toString()}`
+    : undefined
+
   const api = getServerSideAPI()
   const userOrganizations = await getUserOrganizations(api)
 
@@ -35,7 +46,7 @@ export default async function SignupPage() {
               </label>
               <Input name="org-name" autoFocus />
             </div> */}
-            <Login />
+            <Login returnTo={returnTo} />
           </div>
         </div>
         <div className="dark:bg-polar-950 dark:border-polar-700 rounded-4xl bg-gray-75 col-span-2 hidden overflow-hidden rounded-r-none border border-r-0 border-gray-100 py-2 pl-2 md:flex">

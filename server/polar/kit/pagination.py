@@ -107,7 +107,7 @@ class Pagination(Schema):
 
 
 class ListResource(BaseModel, Generic[T]):
-    items: list[T] = []
+    items: list[T]
     pagination: Pagination
 
     @classmethod

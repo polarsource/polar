@@ -9,6 +9,7 @@ from polar.worker import enqueue_job
 from .service import personal_access_token as personal_access_token_service
 
 auth_header_scheme = HTTPBearer(
+    scheme_name="pat",
     auto_error=False,
     description="You can generate a **Personal Access Token** from your [settings](https://polar.sh/settings).",
 )

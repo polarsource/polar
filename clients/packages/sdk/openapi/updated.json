@@ -6132,8 +6132,8 @@
                 "security": [
                     {
                         "oidc": [
-                            "issues:write",
-                            "issues:read"
+                            "issues:read",
+                            "issues:write"
                         ]
                     },
                     {
@@ -7738,8 +7738,8 @@
                 "security": [
                     {
                         "oidc": [
-                            "organizations:write",
-                            "organizations:read"
+                            "organizations:read",
+                            "organizations:write"
                         ]
                     },
                     {
@@ -7949,8 +7949,8 @@
                 "security": [
                     {
                         "oidc": [
-                            "organizations:write",
-                            "organizations:read"
+                            "organizations:read",
+                            "organizations:write"
                         ]
                     },
                     {
@@ -8120,8 +8120,8 @@
                 "security": [
                     {
                         "oidc": [
-                            "organizations:write",
-                            "organizations:read"
+                            "organizations:read",
+                            "organizations:write"
                         ]
                     },
                     {
@@ -8157,10 +8157,10 @@
                             },
                             "description": "Filter by the type of purchase the customer made.",
                             "default": [
+                                "donation",
                                 "order",
-                                "paid_subscription",
                                 "free_subscription",
-                                "donation"
+                                "paid_subscription"
                             ],
                             "title": "Customer Types"
                         },
@@ -12182,8 +12182,8 @@
                 "security": [
                     {
                         "oidc": [
-                            "benefits:write",
-                            "benefits:read"
+                            "benefits:read",
+                            "benefits:write"
                         ]
                     },
                     {
@@ -12443,8 +12443,8 @@
                 "security": [
                     {
                         "oidc": [
-                            "benefits:write",
-                            "benefits:read"
+                            "benefits:read",
+                            "benefits:write"
                         ]
                     },
                     {
@@ -12751,8 +12751,8 @@
                 "security": [
                     {
                         "oidc": [
-                            "benefits:write",
-                            "benefits:read"
+                            "benefits:read",
+                            "benefits:write"
                         ]
                     },
                     {
@@ -13552,8 +13552,8 @@
                 "security": [
                     {
                         "oidc": [
-                            "products:write",
-                            "products:read"
+                            "products:read",
+                            "products:write"
                         ]
                     },
                     {
@@ -13849,8 +13849,8 @@
                 "security": [
                     {
                         "oidc": [
-                            "products:write",
-                            "products:read"
+                            "products:read",
+                            "products:write"
                         ]
                     },
                     {
@@ -15698,8 +15698,7 @@
                             "$ref": "#/components/schemas/AdvertisementCampaign"
                         },
                         "type": "array",
-                        "title": "Items",
-                        "default": []
+                        "title": "Items"
                     },
                     "pagination": {
                         "$ref": "#/components/schemas/Pagination"
@@ -15725,6 +15724,7 @@
                 },
                 "type": "object",
                 "required": [
+                    "items",
                     "pagination",
                     "dimensions"
                 ],
@@ -21529,8 +21529,7 @@
                             "$ref": "#/components/schemas/Account"
                         },
                         "type": "array",
-                        "title": "Items",
-                        "default": []
+                        "title": "Items"
                     },
                     "pagination": {
                         "$ref": "#/components/schemas/Pagination"
@@ -21538,6 +21537,7 @@
                 },
                 "type": "object",
                 "required": [
+                    "items",
                     "pagination"
                 ],
                 "title": "ListResource[Account]"
@@ -21580,8 +21580,7 @@
                             }
                         },
                         "type": "array",
-                        "title": "Items",
-                        "default": []
+                        "title": "Items"
                     },
                     "pagination": {
                         "$ref": "#/components/schemas/Pagination"
@@ -21589,6 +21588,7 @@
                 },
                 "type": "object",
                 "required": [
+                    "items",
                     "pagination"
                 ],
                 "title": "ListResource[Annotated[Union[BenefitArticlesSubscriber, BenefitAdsSubscriber, BenefitDiscordSubscriber, BenefitCustomSubscriber, BenefitGitHubRepositorySubscriber, BenefitDownloadablesSubscriber], Discriminator, MergeJSONSchema]]"
@@ -21619,8 +21619,7 @@
                             }
                         },
                         "type": "array",
-                        "title": "Items",
-                        "default": []
+                        "title": "Items"
                     },
                     "pagination": {
                         "$ref": "#/components/schemas/Pagination"
@@ -21628,6 +21627,7 @@
                 },
                 "type": "object",
                 "required": [
+                    "items",
                     "pagination"
                 ],
                 "title": "ListResource[Annotated[Union[DownloadableFileRead, ProductMediaFileRead, OrganizationAvatarFileRead], Discriminator, MergeJSONSchema]]"
@@ -21639,8 +21639,7 @@
                             "$ref": "#/components/schemas/Article"
                         },
                         "type": "array",
-                        "title": "Items",
-                        "default": []
+                        "title": "Items"
                     },
                     "pagination": {
                         "$ref": "#/components/schemas/Pagination"
@@ -21648,6 +21647,7 @@
                 },
                 "type": "object",
                 "required": [
+                    "items",
                     "pagination"
                 ],
                 "title": "ListResource[Article]"
@@ -21659,8 +21659,7 @@
                             "$ref": "#/components/schemas/BackofficeReward"
                         },
                         "type": "array",
-                        "title": "Items",
-                        "default": []
+                        "title": "Items"
                     },
                     "pagination": {
                         "$ref": "#/components/schemas/Pagination"
@@ -21668,6 +21667,7 @@
                 },
                 "type": "object",
                 "required": [
+                    "items",
                     "pagination"
                 ],
                 "title": "ListResource[BackofficeReward]"
@@ -21679,8 +21679,7 @@
                             "$ref": "#/components/schemas/BenefitGrant"
                         },
                         "type": "array",
-                        "title": "Items",
-                        "default": []
+                        "title": "Items"
                     },
                     "pagination": {
                         "$ref": "#/components/schemas/Pagination"
@@ -21688,6 +21687,7 @@
                 },
                 "type": "object",
                 "required": [
+                    "items",
                     "pagination"
                 ],
                 "title": "ListResource[BenefitGrant]"
@@ -21699,8 +21699,7 @@
                             "$ref": "#/components/schemas/Donation"
                         },
                         "type": "array",
-                        "title": "Items",
-                        "default": []
+                        "title": "Items"
                     },
                     "pagination": {
                         "$ref": "#/components/schemas/Pagination"
@@ -21708,6 +21707,7 @@
                 },
                 "type": "object",
                 "required": [
+                    "items",
                     "pagination"
                 ],
                 "title": "ListResource[Donation]"
@@ -21719,8 +21719,7 @@
                             "$ref": "#/components/schemas/DownloadableRead"
                         },
                         "type": "array",
-                        "title": "Items",
-                        "default": []
+                        "title": "Items"
                     },
                     "pagination": {
                         "$ref": "#/components/schemas/Pagination"
@@ -21728,6 +21727,7 @@
                 },
                 "type": "object",
                 "required": [
+                    "items",
                     "pagination"
                 ],
                 "title": "ListResource[DownloadableRead]"
@@ -21739,8 +21739,7 @@
                             "$ref": "#/components/schemas/ExternalOrganization"
                         },
                         "type": "array",
-                        "title": "Items",
-                        "default": []
+                        "title": "Items"
                     },
                     "pagination": {
                         "$ref": "#/components/schemas/Pagination"
@@ -21748,6 +21747,7 @@
                 },
                 "type": "object",
                 "required": [
+                    "items",
                     "pagination"
                 ],
                 "title": "ListResource[ExternalOrganization]"
@@ -21759,8 +21759,7 @@
                             "$ref": "#/components/schemas/IssueFunding"
                         },
                         "type": "array",
-                        "title": "Items",
-                        "default": []
+                        "title": "Items"
                     },
                     "pagination": {
                         "$ref": "#/components/schemas/Pagination"
@@ -21768,6 +21767,7 @@
                 },
                 "type": "object",
                 "required": [
+                    "items",
                     "pagination"
                 ],
                 "title": "ListResource[IssueFunding]"
@@ -21779,8 +21779,7 @@
                             "$ref": "#/components/schemas/Issue"
                         },
                         "type": "array",
-                        "title": "Items",
-                        "default": []
+                        "title": "Items"
                     },
                     "pagination": {
                         "$ref": "#/components/schemas/Pagination"
@@ -21788,6 +21787,7 @@
                 },
                 "type": "object",
                 "required": [
+                    "items",
                     "pagination"
                 ],
                 "title": "ListResource[Issue]"
@@ -21799,8 +21799,7 @@
                             "$ref": "#/components/schemas/OAuth2Client"
                         },
                         "type": "array",
-                        "title": "Items",
-                        "default": []
+                        "title": "Items"
                     },
                     "pagination": {
                         "$ref": "#/components/schemas/Pagination"
@@ -21808,6 +21807,7 @@
                 },
                 "type": "object",
                 "required": [
+                    "items",
                     "pagination"
                 ],
                 "title": "ListResource[OAuth2Client]"
@@ -21819,8 +21819,7 @@
                             "$ref": "#/components/schemas/Order"
                         },
                         "type": "array",
-                        "title": "Items",
-                        "default": []
+                        "title": "Items"
                     },
                     "pagination": {
                         "$ref": "#/components/schemas/Pagination"
@@ -21828,6 +21827,7 @@
                 },
                 "type": "object",
                 "required": [
+                    "items",
                     "pagination"
                 ],
                 "title": "ListResource[Order]"
@@ -21839,8 +21839,7 @@
                             "$ref": "#/components/schemas/OrganizationCustomer"
                         },
                         "type": "array",
-                        "title": "Items",
-                        "default": []
+                        "title": "Items"
                     },
                     "pagination": {
                         "$ref": "#/components/schemas/Pagination"
@@ -21848,6 +21847,7 @@
                 },
                 "type": "object",
                 "required": [
+                    "items",
                     "pagination"
                 ],
                 "title": "ListResource[OrganizationCustomer]"
@@ -21859,8 +21859,7 @@
                             "$ref": "#/components/schemas/OrganizationMember"
                         },
                         "type": "array",
-                        "title": "Items",
-                        "default": []
+                        "title": "Items"
                     },
                     "pagination": {
                         "$ref": "#/components/schemas/Pagination"
@@ -21868,6 +21867,7 @@
                 },
                 "type": "object",
                 "required": [
+                    "items",
                     "pagination"
                 ],
                 "title": "ListResource[OrganizationMember]"
@@ -21879,8 +21879,7 @@
                             "$ref": "#/components/schemas/Organization"
                         },
                         "type": "array",
-                        "title": "Items",
-                        "default": []
+                        "title": "Items"
                     },
                     "pagination": {
                         "$ref": "#/components/schemas/Pagination"
@@ -21888,6 +21887,7 @@
                 },
                 "type": "object",
                 "required": [
+                    "items",
                     "pagination"
                 ],
                 "title": "ListResource[Organization]"
@@ -21899,8 +21899,7 @@
                             "$ref": "#/components/schemas/PaymentMethod"
                         },
                         "type": "array",
-                        "title": "Items",
-                        "default": []
+                        "title": "Items"
                     },
                     "pagination": {
                         "$ref": "#/components/schemas/Pagination"
@@ -21908,6 +21907,7 @@
                 },
                 "type": "object",
                 "required": [
+                    "items",
                     "pagination"
                 ],
                 "title": "ListResource[PaymentMethod]"
@@ -21919,8 +21919,7 @@
                             "$ref": "#/components/schemas/PersonalAccessToken"
                         },
                         "type": "array",
-                        "title": "Items",
-                        "default": []
+                        "title": "Items"
                     },
                     "pagination": {
                         "$ref": "#/components/schemas/Pagination"
@@ -21928,6 +21927,7 @@
                 },
                 "type": "object",
                 "required": [
+                    "items",
                     "pagination"
                 ],
                 "title": "ListResource[PersonalAccessToken]"
@@ -21939,8 +21939,7 @@
                             "$ref": "#/components/schemas/Pledge"
                         },
                         "type": "array",
-                        "title": "Items",
-                        "default": []
+                        "title": "Items"
                     },
                     "pagination": {
                         "$ref": "#/components/schemas/Pagination"
@@ -21948,6 +21947,7 @@
                 },
                 "type": "object",
                 "required": [
+                    "items",
                     "pagination"
                 ],
                 "title": "ListResource[Pledge]"
@@ -21959,8 +21959,7 @@
                             "$ref": "#/components/schemas/Product"
                         },
                         "type": "array",
-                        "title": "Items",
-                        "default": []
+                        "title": "Items"
                     },
                     "pagination": {
                         "$ref": "#/components/schemas/Pagination"
@@ -21968,6 +21967,7 @@
                 },
                 "type": "object",
                 "required": [
+                    "items",
                     "pagination"
                 ],
                 "title": "ListResource[Product]"
@@ -21979,8 +21979,7 @@
                             "$ref": "#/components/schemas/PublicDonation"
                         },
                         "type": "array",
-                        "title": "Items",
-                        "default": []
+                        "title": "Items"
                     },
                     "pagination": {
                         "$ref": "#/components/schemas/Pagination"
@@ -21988,6 +21987,7 @@
                 },
                 "type": "object",
                 "required": [
+                    "items",
                     "pagination"
                 ],
                 "title": "ListResource[PublicDonation]"
@@ -21999,8 +21999,7 @@
                             "$ref": "#/components/schemas/PullRequest"
                         },
                         "type": "array",
-                        "title": "Items",
-                        "default": []
+                        "title": "Items"
                     },
                     "pagination": {
                         "$ref": "#/components/schemas/Pagination"
@@ -22008,6 +22007,7 @@
                 },
                 "type": "object",
                 "required": [
+                    "items",
                     "pagination"
                 ],
                 "title": "ListResource[PullRequest]"
@@ -22019,8 +22019,7 @@
                             "$ref": "#/components/schemas/Repository"
                         },
                         "type": "array",
-                        "title": "Items",
-                        "default": []
+                        "title": "Items"
                     },
                     "pagination": {
                         "$ref": "#/components/schemas/Pagination"
@@ -22028,6 +22027,7 @@
                 },
                 "type": "object",
                 "required": [
+                    "items",
                     "pagination"
                 ],
                 "title": "ListResource[Repository]"
@@ -22039,8 +22039,7 @@
                             "$ref": "#/components/schemas/Reward"
                         },
                         "type": "array",
-                        "title": "Items",
-                        "default": []
+                        "title": "Items"
                     },
                     "pagination": {
                         "$ref": "#/components/schemas/Pagination"
@@ -22048,6 +22047,7 @@
                 },
                 "type": "object",
                 "required": [
+                    "items",
                     "pagination"
                 ],
                 "title": "ListResource[Reward]"
@@ -22059,8 +22059,7 @@
                             "$ref": "#/components/schemas/Subscription"
                         },
                         "type": "array",
-                        "title": "Items",
-                        "default": []
+                        "title": "Items"
                     },
                     "pagination": {
                         "$ref": "#/components/schemas/Pagination"
@@ -22068,6 +22067,7 @@
                 },
                 "type": "object",
                 "required": [
+                    "items",
                     "pagination"
                 ],
                 "title": "ListResource[Subscription]"
@@ -22079,8 +22079,7 @@
                             "$ref": "#/components/schemas/TrafficReferrer"
                         },
                         "type": "array",
-                        "title": "Items",
-                        "default": []
+                        "title": "Items"
                     },
                     "pagination": {
                         "$ref": "#/components/schemas/Pagination"
@@ -22088,6 +22087,7 @@
                 },
                 "type": "object",
                 "required": [
+                    "items",
                     "pagination"
                 ],
                 "title": "ListResource[TrafficReferrer]"
@@ -22099,8 +22099,7 @@
                             "$ref": "#/components/schemas/Transaction"
                         },
                         "type": "array",
-                        "title": "Items",
-                        "default": []
+                        "title": "Items"
                     },
                     "pagination": {
                         "$ref": "#/components/schemas/Pagination"
@@ -22108,6 +22107,7 @@
                 },
                 "type": "object",
                 "required": [
+                    "items",
                     "pagination"
                 ],
                 "title": "ListResource[Transaction]"
@@ -22138,8 +22138,7 @@
                             ]
                         },
                         "type": "array",
-                        "title": "Items",
-                        "default": []
+                        "title": "Items"
                     },
                     "pagination": {
                         "$ref": "#/components/schemas/Pagination"
@@ -22147,6 +22146,7 @@
                 },
                 "type": "object",
                 "required": [
+                    "items",
                     "pagination"
                 ],
                 "title": "ListResource[Union[BenefitArticles, BenefitAds, BenefitCustom, BenefitDiscord, BenefitGitHubRepository, BenefitDownloadables]]"
@@ -22158,8 +22158,7 @@
                             "$ref": "#/components/schemas/UserAdvertisementCampaign"
                         },
                         "type": "array",
-                        "title": "Items",
-                        "default": []
+                        "title": "Items"
                     },
                     "pagination": {
                         "$ref": "#/components/schemas/Pagination"
@@ -22167,6 +22166,7 @@
                 },
                 "type": "object",
                 "required": [
+                    "items",
                     "pagination"
                 ],
                 "title": "ListResource[UserAdvertisementCampaign]"
@@ -22178,8 +22178,7 @@
                             "$ref": "#/components/schemas/UserOrder"
                         },
                         "type": "array",
-                        "title": "Items",
-                        "default": []
+                        "title": "Items"
                     },
                     "pagination": {
                         "$ref": "#/components/schemas/Pagination"
@@ -22187,6 +22186,7 @@
                 },
                 "type": "object",
                 "required": [
+                    "items",
                     "pagination"
                 ],
                 "title": "ListResource[UserOrder]"
@@ -22198,8 +22198,7 @@
                             "$ref": "#/components/schemas/UserSubscription"
                         },
                         "type": "array",
-                        "title": "Items",
-                        "default": []
+                        "title": "Items"
                     },
                     "pagination": {
                         "$ref": "#/components/schemas/Pagination"
@@ -22207,6 +22206,7 @@
                 },
                 "type": "object",
                 "required": [
+                    "items",
                     "pagination"
                 ],
                 "title": "ListResource[UserSubscription]"
@@ -22218,8 +22218,7 @@
                             "$ref": "#/components/schemas/WebhookDelivery"
                         },
                         "type": "array",
-                        "title": "Items",
-                        "default": []
+                        "title": "Items"
                     },
                     "pagination": {
                         "$ref": "#/components/schemas/Pagination"
@@ -22227,6 +22226,7 @@
                 },
                 "type": "object",
                 "required": [
+                    "items",
                     "pagination"
                 ],
                 "title": "ListResource[WebhookDelivery]"
@@ -22238,8 +22238,7 @@
                             "$ref": "#/components/schemas/WebhookEndpoint"
                         },
                         "type": "array",
-                        "title": "Items",
-                        "default": []
+                        "title": "Items"
                     },
                     "pagination": {
                         "$ref": "#/components/schemas/Pagination"
@@ -22247,6 +22246,7 @@
                 },
                 "type": "object",
                 "required": [
+                    "items",
                     "pagination"
                 ],
                 "title": "ListResource[WebhookEndpoint]"

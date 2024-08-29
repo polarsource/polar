@@ -52,13 +52,14 @@ export const LicenseKeysBenefitForm = () => {
         control={control}
         name="properties.prefix"
         render={({ field }) => {
+          const value = field.value || ''
           return (
             <FormItem>
               <div className="flex flex-row items-center justify-between">
                 <FormLabel>Key prefix</FormLabel>
               </div>
               <FormControl>
-                <Input {...field} />
+                <Input type="text" {...{ ...field, value }} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -220,10 +221,11 @@ export const LicenseKeysBenefitForm = () => {
             control={control}
             name="properties.limit_usage"
             render={({ field }) => {
+              const value = field.value || ''
               return (
                 <FormItem>
                   <FormControl>
-                    <Input {...field} />
+                    <Input type="number" {...{ ...field, value }} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

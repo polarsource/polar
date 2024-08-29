@@ -17,7 +17,7 @@ const GetStartedButton: React.FC<GetStartedButtonProps> = ({
   ...props
 }) => {
   const text = _text || 'Get started'
-  const href = _href ? _href : '/signup'
+  const href = _href ? _href : '/signup?return_to=/dashboard'
   return (
     <Link href={href}>
       <Button

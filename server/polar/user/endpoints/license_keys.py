@@ -5,6 +5,7 @@ from polar.benefit.schemas import BenefitID
 from polar.exceptions import NotPermitted, ResourceNotFound, Unauthorized
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.pagination import ListResource, PaginationParamsQuery
+from polar.kit.schemas import MultipleQueryFilter
 from polar.license_key.schemas import (
     LicenseKeyActivate,
     LicenseKeyActivationBase,
@@ -78,7 +79,9 @@ async def get_license_key(
 async def list_license_keys(
     auth_subject: auth.UserLicenseKeysRead,
     pagination: PaginationParamsQuery,
-    organization_id: OrganizationID,
+    organization_id: MultipleQueryFilter[OrganizationID] | None = Query(
+        None, title="OrganizationID Filter", description="Filter by organization ID."
+    ),
     benefit_id: BenefitID | None = Query(
         None, description="Filter by a specific benefit"
     ),
@@ -87,7 +90,7 @@ async def list_license_keys(
     results, count = await license_key_service.get_user_list(
         session,
         user=auth_subject.subject,
-        organization_id=organization_id,
+        organization_ids=organization_id,
         benefit_id=benefit_id,
         pagination=pagination,
     )

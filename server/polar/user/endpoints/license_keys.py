@@ -59,10 +59,8 @@ async def get_license_key(
         raise Unauthorized()
 
     ret = LicenseKeyWithActivations.model_validate(lk)
-    expose_activations = lk.benefit.properties.get("activations", {}).get(
-        "enable_user_admin", False
-    )
-    if not expose_activations:
+    activations = lk.benefit.properties.get("activations")
+    if not (activations and activations.get("enable_user_admin")):
         ret.activations = []
 
     return ret

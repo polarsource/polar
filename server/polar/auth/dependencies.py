@@ -139,9 +139,13 @@ def Authenticator(
             kind=Parameter.POSITIONAL_OR_KEYWORD,
             default=Security(
                 get_auth_subject,
-                scopes=[
-                    s.value for s in (required_scopes or {}) if s not in RESERVED_SCOPES
-                ],
+                scopes=sorted(
+                    [
+                        s.value
+                        for s in (required_scopes or {})
+                        if s not in RESERVED_SCOPES
+                    ]
+                ),
             ),
         ),
     ]

@@ -41,13 +41,13 @@ from ..service.oauth2_client import oauth2_client as oauth2_client_service
 from ..sub_type import SubType
 from ..userinfo import UserInfo, generate_user_info
 
-router = APIRouter(prefix="/oauth2", tags=["oauth2", APITag.documented])
+router = APIRouter(prefix="/oauth2", tags=["oauth2"])
 
 
 @router.get(
     "/",
     summary="List Clients",
-    tags=["clients"],
+    tags=["clients", APITag.documented],
     response_model=ListResource[OAuth2Client],
 )
 async def list(
@@ -65,7 +65,10 @@ async def list(
 
 
 @router.post(
-    "/register", summary="Create Client", tags=["clients"], name="oauth2:create_client"
+    "/register",
+    summary="Create Client",
+    tags=["clients", APITag.documented],
+    name="oauth2:create_client",
 )
 async def create(
     client_configuration: OAuth2ClientConfiguration,
@@ -83,7 +86,7 @@ async def create(
 
 @router.get(
     "/register/{client_id}",
-    tags=["clients"],
+    tags=["clients", APITag.documented],
     summary="Get Client",
     name="oauth2:get_client",
 )
@@ -102,7 +105,7 @@ async def get(
 
 @router.put(
     "/register/{client_id}",
-    tags=["clients"],
+    tags=["clients", APITag.documented],
     summary="Update Client",
     name="oauth2:update_client",
 )
@@ -123,7 +126,7 @@ async def update(
 
 @router.delete(
     "/register/{client_id}",
-    tags=["clients"],
+    tags=["clients", APITag.documented],
     summary="Delete Client",
     name="oauth2:delete_client",
 )
@@ -203,7 +206,7 @@ _request_token_schema_defs = _request_token_schema.pop("$defs")
     summary="Request Token",
     name="oauth2:request_token",
     operation_id="oauth2:request_token",
-    tags=[APITag.featured],
+    tags=[APITag.featured, APITag.documented],
     openapi_extra={
         "x-components": _request_token_schema_defs,
         "requestBody": {
@@ -229,7 +232,7 @@ async def token(
     summary="Revoke Token",
     name="oauth2:revoke_token",
     operation_id="oauth2:revoke_token",
-    tags=[APITag.featured],
+    tags=[APITag.featured, APITag.documented],
     openapi_extra={
         "requestBody": {
             "required": True,
@@ -258,7 +261,7 @@ async def revoke(
     summary="Introspect Token",
     name="oauth2:introspect_token",
     operation_id="oauth2:introspect_token",
-    tags=[APITag.featured],
+    tags=[APITag.featured, APITag.documented],
     openapi_extra={
         "requestBody": {
             "required": True,
@@ -288,7 +291,7 @@ async def introspect(
     name="oauth2:userinfo",
     operation_id="oauth2:userinfo",
     response_model=UserInfoSchema,
-    tags=[APITag.featured],
+    tags=[APITag.featured, APITag.documented],
     openapi_extra={"x-speakeasy-name-override": "userinfo"},
 )
 async def userinfo_get(token: OAuth2Token = Depends(get_token)) -> UserInfo:

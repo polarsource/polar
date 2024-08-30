@@ -319,7 +319,7 @@ const PostCommentForm = (props: {
           className="h-6 w-6 rounded-full"
         />
       )}
-      <div className="flex h-full flex-1 flex-col overflow-hidden">
+      <div className="flex h-full flex-col gap-y-4">
         <TextArea
           className="max-h-[10rem] w-full flex-1 overflow-hidden"
           resizable={false}
@@ -329,7 +329,7 @@ const PostCommentForm = (props: {
             setMessage(e.target.value)
           }}
         />
-        <div className="flex items-center justify-between border-t bg-blue-50 px-4 py-2 dark:bg-blue-500/30">
+        <div className="flex flex-row items-center justify-between rounded-full bg-blue-50 px-4 py-2 dark:bg-blue-500/30">
           <div className="text-xs text-gray-900 dark:text-white/90">
             🔔 Comments on your behalf
           </div>

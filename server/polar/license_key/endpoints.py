@@ -34,6 +34,7 @@ router = APIRouter(
 
 @router.get(
     "",
+    summary="List License Keys",
     response_model=ListResource[LicenseKeyRead],
     responses={
         401: UnauthorizedResponse,
@@ -65,6 +66,7 @@ async def list(
 
 @router.get(
     "/{id}",
+    summary="Get License Key",
     response_model=LicenseKeyWithActivations,
     responses={
         401: UnauthorizedResponse,
@@ -90,6 +92,7 @@ async def get(
 
 @router.patch(
     "/{id}",
+    summary="Update License Key",
     response_model=LicenseKeyRead,
     responses={
         401: UnauthorizedResponse,
@@ -122,6 +125,7 @@ async def update(
 
 @router.get(
     "/{id}/activations/{activation_id}",
+    summary="Get License Key Activation",
     response_model=LicenseKeyActivationRead,
     responses={
         401: UnauthorizedResponse,

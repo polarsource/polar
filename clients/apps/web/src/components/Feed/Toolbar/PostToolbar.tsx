@@ -27,7 +27,7 @@ export const PostToolbar = ({
   )
 
   return (
-    <div className="sticky top-0 z-10 flex w-full flex-col bg-white dark:bg-transparent">
+    <div className="dark:bg-polar-950 sticky top-0 z-10 flex w-full flex-col bg-white">
       <div className="relative mx-auto flex w-full min-w-0 max-w-screen-xl flex-row items-center justify-between gap-x-4 px-4 py-4 sm:px-6 md:px-16">
         <TabsList>
           <TabsTrigger value="edit" size="small">

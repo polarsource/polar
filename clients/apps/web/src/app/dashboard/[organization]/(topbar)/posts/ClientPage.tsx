@@ -297,7 +297,7 @@ const PostItem = (post: Article) => {
                   <span>
                     {post.notify_subscribers
                       ? 'Publishing and sending in'
-                      : 'Publising in'}{' '}
+                      : 'Publishing in'}{' '}
                     <PolarTimeAgo
                       date={new Date(post.published_at)}
                       suffix=""

@@ -52,7 +52,16 @@ class BenefitLicenseKeysService(
         *,
         attempt: int = 1,
     ) -> dict[str, Any]:
-        license_key_id = grant_properties["license_key_id"]
+        license_key_id = grant_properties.get("license_key_id")
+        if not license_key_id:
+            log.info(
+                "license_key.revoke.skip",
+                user_id=user.id,
+                benefit_id=benefit.id,
+                message="No license key to revoke",
+            )
+            return grant_properties
+
         await license_key_service.user_revoke(
             self.session,
             user=user,

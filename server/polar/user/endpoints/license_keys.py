@@ -27,7 +27,9 @@ from polar.routing import APIRouter
 
 from .. import auth
 
-router = APIRouter(prefix="/license-keys", tags=[APITag.documented, APITag.featured])
+router = APIRouter(
+    prefix="/license-keys", tags=["license_keys", APITag.documented, APITag.featured]
+)
 
 
 ActivationNotPermitted = {
@@ -37,44 +39,15 @@ ActivationNotPermitted = {
 
 
 @router.get(
-    "/{id}",
-    response_model=LicenseKeyWithActivations,
-    responses={
-        401: UnauthorizedResponse,
-        404: NotFoundResponse,
-    },
-)
-async def get_license_key(
-    auth_subject: auth.UserLicenseKeysRead,
-    id: UUID4,
-    session: AsyncSession = Depends(get_db_session),
-) -> LicenseKeyWithActivations:
-    """Get a license key."""
-    lk = await license_key_service.get_loaded(session, id)
-    if not lk:
-        raise ResourceNotFound()
-
-    user_id = auth_subject.subject.id
-    if user_id != lk.user_id:
-        raise Unauthorized()
-
-    ret = LicenseKeyWithActivations.model_validate(lk)
-    activations = lk.benefit.properties.get("activations")
-    if not (activations and activations.get("enable_user_admin")):
-        ret.activations = []
-
-    return ret
-
-
-@router.get(
-    "",
+    "/",
+    summary="List License Keys",
     response_model=ListResource[LicenseKeyRead],
     responses={
         401: UnauthorizedResponse,
         404: NotFoundResponse,
     },
 )
-async def list_license_keys(
+async def list(
     auth_subject: auth.UserLicenseKeysRead,
     pagination: PaginationParamsQuery,
     organization_id: MultipleQueryFilter[OrganizationID] | None = Query(
@@ -100,14 +73,46 @@ async def list_license_keys(
     )
 
 
+@router.get(
+    "/{id}",
+    summary="Get License Key",
+    response_model=LicenseKeyWithActivations,
+    responses={
+        401: UnauthorizedResponse,
+        404: NotFoundResponse,
+    },
+)
+async def get(
+    auth_subject: auth.UserLicenseKeysRead,
+    id: UUID4,
+    session: AsyncSession = Depends(get_db_session),
+) -> LicenseKeyWithActivations:
+    """Get a license key."""
+    lk = await license_key_service.get_loaded(session, id)
+    if not lk:
+        raise ResourceNotFound()
+
+    user_id = auth_subject.subject.id
+    if user_id != lk.user_id:
+        raise Unauthorized()
+
+    ret = LicenseKeyWithActivations.model_validate(lk)
+    activations = lk.benefit.properties.get("activations")
+    if not (activations and activations.get("enable_user_admin")):
+        ret.activations = []
+
+    return ret
+
+
 @router.post(
     "/validate",
+    summary="Validate License Key",
     response_model=ValidatedLicenseKey,
     responses={
         404: NotFoundResponse,
     },
 )
-async def validate_license_key(
+async def validate(
     validate: LicenseKeyValidate,
     session: AsyncSession = Depends(get_db_session),
 ) -> ValidatedLicenseKey:
@@ -133,13 +138,14 @@ async def validate_license_key(
 
 @router.post(
     "/activate",
+    summary="Activate License Key",
     response_model=LicenseKeyActivationRead,
     responses={
         403: ActivationNotPermitted,
         404: NotFoundResponse,
     },
 )
-async def activate_license_key(
+async def activate(
     activate: LicenseKeyActivate,
     session: AsyncSession = Depends(get_db_session),
 ) -> LicenseKeyActivation:
@@ -156,14 +162,14 @@ async def activate_license_key(
 
 @router.post(
     "/deactivate",
-    summary="Deactivate license key activation",
+    summary="Deactivate License Key",
     status_code=204,
     responses={
         204: {"description": "License key activation deactivated."},
         404: NotFoundResponse,
     },
 )
-async def deactivate_license_key(
+async def deactivate(
     deactivate: LicenseKeyDeactivate,
     session: AsyncSession = Depends(get_db_session),
 ) -> None:

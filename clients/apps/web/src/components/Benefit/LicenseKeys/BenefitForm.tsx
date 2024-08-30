@@ -17,6 +17,7 @@ import {
 import { Checkbox } from 'polarkit/components/ui/checkbox'
 import {
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -54,9 +55,12 @@ export const LicenseKeysBenefitForm = () => {
         render={({ field }) => {
           const value = field.value || ''
           return (
-            <FormItem>
-              <div className="flex flex-row items-center justify-between">
+            <FormItem className="flex flex-col gap-y-2">
+              <div className="flex flex-col gap-y-2">
                 <FormLabel>Key prefix</FormLabel>
+                <FormDescription>
+                  A prefix to identify license keys
+                </FormDescription>
               </div>
               <FormControl>
                 <Input type="text" {...{ ...field, value }} />
@@ -167,7 +171,7 @@ export const LicenseKeysBenefitForm = () => {
             }}
           />
 
-          <div className="flex flex-row items-center space-x-4">
+          <div className="flex flex-row items-center gap-x-3">
             <FormField
               control={control}
               name="properties.activations.enable_user_admin"

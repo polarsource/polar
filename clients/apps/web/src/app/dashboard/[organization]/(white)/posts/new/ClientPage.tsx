@@ -41,7 +41,9 @@ const ClientPage = () => {
   const router = useRouter()
   const create = useCreateArticle()
 
-  const canCreate = localArticle.title.length > 0
+  const titleLength = localArticle.title.length
+  const bodyLength = localArticle.body?.length ?? 0
+  const canCreate = titleLength > 0 && bodyLength > 0
 
   const createAndRedirect = async (extraPath?: string) => {
     if (!canCreate) {

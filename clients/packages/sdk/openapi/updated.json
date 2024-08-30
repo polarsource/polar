@@ -2162,92 +2162,13 @@
                 "x-speakeasy-name-override": "retrieve"
             }
         },
-        "/v1/users/license-keys/{id}": {
+        "/v1/users/license-keys/": {
             "get": {
                 "tags": [
-                    "users"
-                ],
-                "summary": "Get License Key",
-                "description": "Get a license key.",
-                "operationId": "get_license_key",
-                "security": [
-                    {
-                        "oidc": [
-                            "user:license_keys:read"
-                        ]
-                    },
-                    {
-                        "pat": []
-                    }
-                ],
-                "parameters": [
-                    {
-                        "name": "id",
-                        "in": "path",
-                        "required": true,
-                        "schema": {
-                            "type": "string",
-                            "format": "uuid4",
-                            "title": "Id"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Successful Response",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/LicenseKeyWithActivations"
-                                }
-                            }
-                        }
-                    },
-                    "401": {
-                        "description": "Not authorized to manage license key.",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/Unauthorized"
-                                }
-                            }
-                        }
-                    },
-                    "404": {
-                        "description": "License key not found.",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/ResourceNotFound"
-                                }
-                            }
-                        }
-                    },
-                    "422": {
-                        "description": "Validation Error",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/HTTPValidationError"
-                                }
-                            }
-                        }
-                    }
-                },
-                "x-polar-allowed-subjects": [
-                    "User"
-                ],
-                "x-speakeasy-name-override": "get_license_key",
-                "x-speakeasy-group": "users"
-            }
-        },
-        "/v1/users/license-keys": {
-            "get": {
-                "tags": [
-                    "users"
+                    "users.license_keys"
                 ],
                 "summary": "List License Keys",
-                "operationId": "list_license_keys",
+                "operationId": "list",
                 "security": [
                     {
                         "oidc": [
@@ -2413,18 +2334,97 @@
                         "numPages": "$.pagination.max_page"
                     }
                 },
-                "x-speakeasy-name-override": "list_license_keys",
-                "x-speakeasy-group": "users"
+                "x-speakeasy-group": "users.license_keys",
+                "x-speakeasy-name-override": "list"
+            }
+        },
+        "/v1/users/license-keys/{id}": {
+            "get": {
+                "tags": [
+                    "users.license_keys"
+                ],
+                "summary": "Get License Key",
+                "description": "Get a license key.",
+                "operationId": "get",
+                "security": [
+                    {
+                        "oidc": [
+                            "user:license_keys:read"
+                        ]
+                    },
+                    {
+                        "pat": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid4",
+                            "title": "Id"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/LicenseKeyWithActivations"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Not authorized to manage license key.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Unauthorized"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "License key not found.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ResourceNotFound"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                },
+                "x-polar-allowed-subjects": [
+                    "User"
+                ],
+                "x-speakeasy-group": "users.license_keys",
+                "x-speakeasy-name-override": "retrieve"
             }
         },
         "/v1/users/license-keys/validate": {
             "post": {
                 "tags": [
-                    "users"
+                    "users.license_keys"
                 ],
                 "summary": "Validate License Key",
                 "description": "Validate a license key.",
-                "operationId": "validate_license_key",
+                "operationId": "validate",
                 "requestBody": {
                     "content": {
                         "application/json": {
@@ -2467,18 +2467,18 @@
                         }
                     }
                 },
-                "x-speakeasy-name-override": "validate_license_key",
-                "x-speakeasy-group": "users"
+                "x-speakeasy-group": "users.license_keys",
+                "x-speakeasy-name-override": "validate"
             }
         },
         "/v1/users/license-keys/activate": {
             "post": {
                 "tags": [
-                    "users"
+                    "users.license_keys"
                 ],
                 "summary": "Activate License Key",
                 "description": "Activate a license key instance.",
-                "operationId": "activate_license_key",
+                "operationId": "activate",
                 "requestBody": {
                     "content": {
                         "application/json": {
@@ -2531,18 +2531,18 @@
                         }
                     }
                 },
-                "x-speakeasy-name-override": "activate_license_key",
-                "x-speakeasy-group": "users"
+                "x-speakeasy-group": "users.license_keys",
+                "x-speakeasy-name-override": "activate"
             }
         },
         "/v1/users/license-keys/deactivate": {
             "post": {
                 "tags": [
-                    "users"
+                    "users.license_keys"
                 ],
-                "summary": "Deactivate license key activation",
+                "summary": "Deactivate License Key",
                 "description": "Deactivate a license key instance.",
-                "operationId": "deactivate_license_key",
+                "operationId": "deactivate",
                 "requestBody": {
                     "content": {
                         "application/json": {
@@ -2578,8 +2578,8 @@
                         }
                     }
                 },
-                "x-speakeasy-name-override": "deactivate_license_key",
-                "x-speakeasy-group": "users"
+                "x-speakeasy-group": "users.license_keys",
+                "x-speakeasy-name-override": "deactivate"
             }
         },
         "/v1/integrations/github/authorize": {
@@ -8581,10 +8581,10 @@
                             },
                             "description": "Filter by the type of purchase the customer made.",
                             "default": [
-                                "paid_subscription",
-                                "donation",
                                 "free_subscription",
-                                "order"
+                                "order",
+                                "paid_subscription",
+                                "donation"
                             ],
                             "title": "Customer Types"
                         },
@@ -16248,7 +16248,7 @@
                 "tags": [
                     "license_keys"
                 ],
-                "summary": "Get License Key Activation",
+                "summary": "Get Activation",
                 "description": "Get a license key activation.",
                 "operationId": "get_activation",
                 "security": [

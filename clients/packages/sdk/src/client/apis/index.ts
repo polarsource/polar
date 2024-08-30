@@ -39,6 +39,7 @@ export * from './UsersApi';
 export * from './UsersAdvertisementsApi';
 export * from './UsersBenefitsApi';
 export * from './UsersDownloadablesApi';
+export * from './UsersLicenseKeysApi';
 export * from './UsersOrdersApi';
 export * from './UsersSubscriptionsApi';
 export * from './WebhooksApi';

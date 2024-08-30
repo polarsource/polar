@@ -38,6 +38,7 @@ import {
   UsersAdvertisementsApi,
   UsersBenefitsApi,
   UsersDownloadablesApi,
+  UsersLicenseKeysApi,
   UsersOrdersApi,
   UsersSubscriptionsApi,
 } from '.'
@@ -79,6 +80,7 @@ export class PolarAPI {
   public readonly users: UsersApi
   public readonly usersBenefits: UsersBenefitsApi
   public readonly usersDownloadables: UsersDownloadablesApi
+  public readonly usersLicenseKeys: UsersLicenseKeysApi
   public readonly usersOrders: UsersOrdersApi
   public readonly usersSubscriptions: UsersSubscriptionsApi
   public readonly webhooks: WebhooksApi
@@ -122,6 +124,7 @@ export class PolarAPI {
     this.users = new UsersApi(config)
     this.usersBenefits = new UsersBenefitsApi(config)
     this.usersDownloadables = new UsersDownloadablesApi(config)
+    this.usersLicenseKeys = new UsersLicenseKeysApi(config)
     this.usersOrders = new UsersOrdersApi(config)
     this.usersSubscriptions = new UsersSubscriptionsApi(config)
     this.webhooks = new WebhooksApi(config)

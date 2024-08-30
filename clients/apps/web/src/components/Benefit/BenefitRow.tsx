@@ -56,7 +56,9 @@ export const BenefitRow = ({
       {benefit.type === 'discord' && !discordAccount && (
         <Button asChild>
           <a
-            href={getUserDiscordAuthorizeURL({ returnTo: pathname || '/feed' })}
+            href={getUserDiscordAuthorizeURL({
+              returnTo: pathname || '/purchases',
+            })}
           >
             Connect with Discord
           </a>
@@ -64,7 +66,11 @@ export const BenefitRow = ({
       )}
       {benefit.type === 'github_repository' && !gitHubAccount && (
         <Button asChild>
-          <a href={getGitHubAuthorizeURL({ returnTo: pathname || '/feed' })}>
+          <a
+            href={getGitHubAuthorizeURL({
+              returnTo: pathname || '/purchases',
+            })}
+          >
             Connect with GitHub
           </a>
         </Button>

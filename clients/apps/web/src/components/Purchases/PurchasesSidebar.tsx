@@ -72,9 +72,6 @@ const PurchaseSidebar: React.FC<React.PropsWithChildren<{}>> = ({
       </div>
       <div className="flex flex-col gap-y-3">
         <div className="-mx-4 flex flex-col">
-          <PurchaseLink href="/feed">
-            <span className="flex flex-row items-center gap-x-2">Feed</span>
-          </PurchaseLink>
           <PurchaseLink href="/purchases/products">
             <span className="flex flex-row items-center gap-x-2">Products</span>
             <span>{orders?.pagination.total_count || 0}</span>
@@ -84,6 +81,11 @@ const PurchaseSidebar: React.FC<React.PropsWithChildren<{}>> = ({
               Subscriptions
             </span>
             <span>{subscriptions?.pagination.total_count || 0}</span>
+          </PurchaseLink>
+          <PurchaseLink href="/feed">
+            <span className="flex flex-row items-center gap-x-2">
+              Newsletters
+            </span>
           </PurchaseLink>
           <PurchaseLink href="/funding">
             <span className="flex flex-row items-center gap-x-2">

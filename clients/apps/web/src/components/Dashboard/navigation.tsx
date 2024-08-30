@@ -266,18 +266,18 @@ const dashboardRoutesList = (org: Organization): Route[] => [
 
 const backerRoutesList = (): Route[] => [
   {
-    id: 'posts',
-    title: 'Feed',
-    link: `/feed`,
-    icon: <AllInclusiveOutlined className="h-5 w-5" fontSize="inherit" />,
-    if: true,
-    subs: undefined,
-  },
-  {
     id: 'purchases',
     title: 'Purchases',
     link: `/purchases`,
     icon: <DiamondOutlined className="h-5 w-5" fontSize="inherit" />,
+    if: true,
+    subs: undefined,
+  },
+  {
+    id: 'posts',
+    title: 'Newsletters',
+    link: `/feed`,
+    icon: <AllInclusiveOutlined className="h-5 w-5" fontSize="inherit" />,
     if: true,
     subs: undefined,
   },

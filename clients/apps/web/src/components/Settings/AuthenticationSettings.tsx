@@ -147,13 +147,13 @@ const AuthenticationSettings = () => {
           <ShadowListGroup.Item>
             <GitHubAuthenticationMethod
               oauthAccount={githubAccount}
-              returnTo={pathname || '/feed'}
+              returnTo={pathname || '/purchases'}
             />
           </ShadowListGroup.Item>
           <ShadowListGroup.Item>
             <GoogleAuthenticationMethod
               oauthAccount={googleAccount}
-              returnTo={pathname || '/feed'}
+              returnTo={pathname || '/purchases'}
             />
           </ShadowListGroup.Item>
           <ShadowListGroup.Item>

@@ -13,7 +13,7 @@ const TopbarRight = ({
   authenticatedUser?: UserRead
 }) => {
   const pathname = usePathname()
-  const loginReturnTo = pathname ?? '/feed'
+  const loginReturnTo = pathname ?? '/purchases'
 
   return (
     <>

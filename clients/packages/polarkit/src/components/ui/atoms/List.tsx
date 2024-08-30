@@ -10,7 +10,7 @@ export const List = ({ children, className, size = 'default' }: ListProps) => {
   return children ? (
     <div
       className={twMerge(
-        'dark:divide-polar-700 dark:border-polar-700 flex flex-col divide-y divide-gray-100 overflow-hidden border border-gray-100',
+        'dark:divide-polar-700 dark:border-polar-700 dark:bg-polar-900 flex flex-col divide-y divide-gray-100 overflow-hidden border border-gray-100 bg-white',
         size === 'default' ? 'rounded-4xl' : 'rounded-2xl',
         className,
       )}
@@ -41,7 +41,7 @@ export const ListItem = ({
         'flex flex-row items-center justify-between',
         selected
           ? 'dark:bg-polar-800 bg-gray-75'
-          : 'dark:hover:bg-polar-900 hover:bg-gray-50',
+          : 'dark:hover:bg-polar-800 hover:bg-gray-50',
         onSelect && 'cursor-pointer',
         size === 'default' ? 'px-6 py-4' : 'px-4 py-2',
         className,

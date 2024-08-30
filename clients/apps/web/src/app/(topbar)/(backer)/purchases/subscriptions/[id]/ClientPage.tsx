@@ -180,7 +180,7 @@ const ClientPage = ({ subscription }: { subscription: UserSubscription }) => {
                 <Button
                   size="lg"
                   variant="ghost"
-                  className="text-red-500 dark:text-red-400"
+                  className="text-red-500 dark:text-red-500"
                   fullWidth
                   onClick={() => setShowCancelModal(true)}
                 >

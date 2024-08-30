@@ -63,7 +63,7 @@ const LicenseKey = ({
   }
 
   const onDeactivate = async (activationId: string) => {
-    await api.users.deactivateLicenseKey({
+    await api.usersLicenseKeys.deactivate({
       body: {
         key: licenseKey.key,
         organization_id: licenseKey.organization_id,

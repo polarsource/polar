@@ -1,4 +1,3 @@
-import { PublicOutlined } from '@mui/icons-material'
 import { Article, ArticleVisibility } from '@polar-sh/sdk'
 import {
   TabsContent,
@@ -56,10 +55,9 @@ export const PostToolbar = ({
               value="settings"
               size="small"
               disabled={canCreate === false}
-              className="rounded-4xl flex flex-row space-x-2 border border-gray-800 py-2 pl-3 pr-4 text-gray-700 data-[state=active]:border-none dark:border-gray-800 dark:text-gray-200"
+              className="rounded-4xl flex flex-row space-x-2 border border-gray-800 px-4 py-2 text-gray-700 data-[state=active]:border-none dark:border-gray-800 dark:text-gray-200"
             >
-              <PublicOutlined className="h-5" />
-              <span>{isPublished ? 'Settings' : 'Publish'}</span>
+              {isPublished ? 'Settings' : 'Publish'}
             </TabsTrigger>
           </div>
         </TabsList>

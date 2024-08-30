@@ -69,6 +69,24 @@ HttpUrlToStr = Annotated[HttpUrl, PlainSerializer(lambda v: str(v), return_type=
 
 
 @dataclasses.dataclass(slots=True)
+class ClassName:
+    """
+    Used as an annotation metadata, it allows us to customize the name generated
+    by Pydantic for a type; in particular, a long union.
+
+    It does **nothing** on its own, but it can be used by other classes.
+
+    Currently, it's used by `ListResource` to generate a shorter name for the
+    OpenAPI schema, when we list a resource having a long union type.
+    """
+
+    name: str
+
+    def __hash__(self) -> int:
+        return hash(type(self.name))
+
+
+@dataclasses.dataclass(slots=True)
 class MergeJSONSchema:
     json_schema: JsonSchemaValue
     mode: Literal["validation", "serialization"] | None = None

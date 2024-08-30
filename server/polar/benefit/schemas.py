@@ -14,6 +14,7 @@ from pydantic import (
 from polar.config import settings
 from polar.kit import jwt
 from polar.kit.schemas import (
+    ClassName,
     IDSchema,
     MergeJSONSchema,
     Schema,
@@ -499,15 +500,17 @@ class BenefitLicenseKeys(BenefitBase):
     properties: BenefitLicenseKeysProperties
 
 
-Benefit = (
+Benefit = Annotated[
     BenefitArticles
     | BenefitAds
     | BenefitCustom
     | BenefitDiscord
     | BenefitGitHubRepository
     | BenefitDownloadables
-    | BenefitLicenseKeys
-)
+    | BenefitLicenseKeys,
+    MergeJSONSchema({"title": "Benefit"}),
+    ClassName("Benefit"),
+]
 
 benefit_schema_map: dict[BenefitType, type[Benefit]] = {
     BenefitType.discord: BenefitDiscord,

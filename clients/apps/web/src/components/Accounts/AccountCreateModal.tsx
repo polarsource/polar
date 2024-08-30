@@ -20,13 +20,11 @@ import {
 import { ChangeEvent, useState } from 'react'
 
 const AccountCreateModal = ({
-  onClose,
   forOrganizationId,
   forUserId,
   accountTypes,
   returnPath,
 }: {
-  onClose: () => void
   forOrganizationId?: string
   forUserId?: string
   accountTypes: AccountType[]

@@ -8655,10 +8655,10 @@
                             },
                             "description": "Filter by the type of purchase the customer made.",
                             "default": [
-                                "free_subscription",
                                 "order",
+                                "donation",
                                 "paid_subscription",
-                                "donation"
+                                "free_subscription"
                             ],
                             "title": "Customer Types"
                         },
@@ -24536,6 +24536,11 @@
                         "format": "uuid4",
                         "title": "Id"
                     },
+                    "organization_id": {
+                        "type": "string",
+                        "format": "uuid4",
+                        "title": "Organization Id"
+                    },
                     "user_id": {
                         "type": "string",
                         "format": "uuid4",
@@ -24621,6 +24626,7 @@
                 "type": "object",
                 "required": [
                     "id",
+                    "organization_id",
                     "user_id",
                     "benefit_id",
                     "key",
@@ -24786,6 +24792,11 @@
                         "format": "uuid4",
                         "title": "Id"
                     },
+                    "organization_id": {
+                        "type": "string",
+                        "format": "uuid4",
+                        "title": "Organization Id"
+                    },
                     "user_id": {
                         "type": "string",
                         "format": "uuid4",
@@ -24878,6 +24889,7 @@
                 "type": "object",
                 "required": [
                     "id",
+                    "organization_id",
                     "user_id",
                     "benefit_id",
                     "key",
@@ -35787,6 +35799,11 @@
                         "format": "uuid4",
                         "title": "Id"
                     },
+                    "organization_id": {
+                        "type": "string",
+                        "format": "uuid4",
+                        "title": "Organization Id"
+                    },
                     "user_id": {
                         "type": "string",
                         "format": "uuid4",
@@ -35882,6 +35899,7 @@
                 "type": "object",
                 "required": [
                     "id",
+                    "organization_id",
                     "user_id",
                     "benefit_id",
                     "key",

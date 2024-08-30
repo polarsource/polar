@@ -60,6 +60,7 @@ class LicenseKeyDeactivate(Schema):
 
 class LicenseKeyRead(Schema):
     id: UUID4
+    organization_id: UUID4
     user_id: UUID4
     benefit_id: BenefitID
     key: str

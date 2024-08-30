@@ -43,6 +43,7 @@ export const useTransactionsSummary = (
         accountId,
       }),
     retry: defaultRetry,
+    enabled: !!accountId,
   })
 
 export const usePayoutEstimate = (

@@ -296,15 +296,17 @@ const CountryPicker = ({
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <RawButton
+          size="lg"
           variant="outline"
           role="combobox"
           aria-expanded={open}
           className="w-full"
         >
-          <div className="inline-flex w-full items-center justify-between">
+          <div className="inline-flex w-full items-center justify-between dark:text-white">
             {currentCountry ? (
-              <span className="flex-1  text-left">
-                {currentCountry[1].emoji} {currentCountry[1].name}
+              <span className="flex flex-row items-center gap-x-2">
+                <span>{currentCountry[1].emoji}</span>
+                <span>{currentCountry[1].name}</span>
               </span>
             ) : (
               <span className="flex-1 text-left">Select country</span>
@@ -318,7 +320,10 @@ const CountryPicker = ({
         align="start"
       >
         <Command>
-          <CommandInput placeholder="Search country..." className="my-2 h-8" />
+          <CommandInput
+            placeholder="Search country..."
+            className="my-2 h-8 dark:text-white"
+          />
           <CommandEmpty>No country found.</CommandEmpty>
           <CommandGroup>
             {availableCountries.map(([countryCode, country]) => (

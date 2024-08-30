@@ -53,7 +53,7 @@ export class LicenseKeysApi extends runtime.BaseAPI {
 
     /**
      * Get a license key.
-     * Get
+     * Get License Key
      */
     async getRaw(requestParameters: LicenseKeysApiGetRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<LicenseKeyWithActivations>> {
         if (requestParameters['id'] == null) {
@@ -87,7 +87,7 @@ export class LicenseKeysApi extends runtime.BaseAPI {
 
     /**
      * Get a license key.
-     * Get
+     * Get License Key
      */
     async get(requestParameters: LicenseKeysApiGetRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<LicenseKeyWithActivations> {
         const response = await this.getRaw(requestParameters, initOverrides);
@@ -96,7 +96,7 @@ export class LicenseKeysApi extends runtime.BaseAPI {
 
     /**
      * Get a license key activation.
-     * Get Activation
+     * Get License Key Activation
      */
     async getActivationRaw(requestParameters: LicenseKeysApiGetActivationRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<LicenseKeyActivationRead>> {
         if (requestParameters['id'] == null) {
@@ -137,7 +137,7 @@ export class LicenseKeysApi extends runtime.BaseAPI {
 
     /**
      * Get a license key activation.
-     * Get Activation
+     * Get License Key Activation
      */
     async getActivation(requestParameters: LicenseKeysApiGetActivationRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<LicenseKeyActivationRead> {
         const response = await this.getActivationRaw(requestParameters, initOverrides);
@@ -146,7 +146,7 @@ export class LicenseKeysApi extends runtime.BaseAPI {
 
     /**
      * Get license keys connected to the given organization & filters.
-     * List
+     * List License Keys
      */
     async listRaw(requestParameters: LicenseKeysApiListRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListResourceLicenseKeyRead>> {
         const queryParameters: any = {};
@@ -185,7 +185,7 @@ export class LicenseKeysApi extends runtime.BaseAPI {
 
     /**
      * Get license keys connected to the given organization & filters.
-     * List
+     * List License Keys
      */
     async list(requestParameters: LicenseKeysApiListRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ListResourceLicenseKeyRead> {
         const response = await this.listRaw(requestParameters, initOverrides);
@@ -194,7 +194,7 @@ export class LicenseKeysApi extends runtime.BaseAPI {
 
     /**
      * Update a license key.
-     * Update
+     * Update License Key
      */
     async updateRaw(requestParameters: LicenseKeysApiUpdateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<LicenseKeyRead>> {
         if (requestParameters['id'] == null) {
@@ -238,7 +238,7 @@ export class LicenseKeysApi extends runtime.BaseAPI {
 
     /**
      * Update a license key.
-     * Update
+     * Update License Key
      */
     async update(requestParameters: LicenseKeysApiUpdateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<LicenseKeyRead> {
         const response = await this.updateRaw(requestParameters, initOverrides);

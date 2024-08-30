@@ -19,8 +19,8 @@ import type {
   BenefitTypeFilter,
   BenefitUpdate,
   HTTPValidationError,
+  ListResourceBenefit,
   ListResourceBenefitGrant,
-  ListResourceUnionBenefitArticlesBenefitAdsBenefitCustomBenefitDiscordBenefitGitHubRepositoryBenefitDownloadablesBenefitLicenseKeys,
   NotPermitted,
   OrganizationIDFilter,
   ResourceNotFound,
@@ -265,7 +265,7 @@ export class BenefitsApi extends runtime.BaseAPI {
      * List benefits.
      * List Benefits
      */
-    async listRaw(requestParameters: BenefitsApiListRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListResourceUnionBenefitArticlesBenefitAdsBenefitCustomBenefitDiscordBenefitGitHubRepositoryBenefitDownloadablesBenefitLicenseKeys>> {
+    async listRaw(requestParameters: BenefitsApiListRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ListResourceBenefit>> {
         const queryParameters: any = {};
 
         if (requestParameters['organizationId'] != null) {
@@ -308,7 +308,7 @@ export class BenefitsApi extends runtime.BaseAPI {
      * List benefits.
      * List Benefits
      */
-    async list(requestParameters: BenefitsApiListRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ListResourceUnionBenefitArticlesBenefitAdsBenefitCustomBenefitDiscordBenefitGitHubRepositoryBenefitDownloadablesBenefitLicenseKeys> {
+    async list(requestParameters: BenefitsApiListRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ListResourceBenefit> {
         const response = await this.listRaw(requestParameters, initOverrides);
         return await response.value();
     }

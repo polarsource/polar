@@ -319,7 +319,7 @@ const PostCommentForm = (props: {
           className="h-6 w-6 rounded-full"
         />
       )}
-      <div className="flex h-full flex-1 flex-col overflow-hidden rounded-md border ">
+      <div className="flex h-full flex-1 flex-col overflow-hidden">
         <TextArea
           className="max-h-[10rem] w-full flex-1 overflow-hidden"
           resizable={false}

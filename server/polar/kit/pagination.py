@@ -3,7 +3,9 @@ from collections.abc import Sequence
 from typing import Annotated, Any, Generic, NamedTuple, Self, TypeVar, overload
 
 from fastapi import Depends, Query
-from pydantic import BaseModel
+from pydantic import BaseModel, GetCoreSchemaHandler
+from pydantic._internal._repr import display_as_type
+from pydantic_core import CoreSchema
 from sqlalchemy import Select, func, over
 from sqlalchemy.sql._typing import _ColumnsClauseArgument
 
@@ -11,7 +13,7 @@ from polar.config import settings
 from polar.kit.db.models import RecordModel
 from polar.kit.db.models.base import Model
 from polar.kit.db.postgres import AsyncSession
-from polar.kit.schemas import Schema
+from polar.kit.schemas import ClassName, Schema
 
 T = TypeVar("T", bound=Any)
 RM = TypeVar("RM", bound=RecordModel)
@@ -121,3 +123,33 @@ class ListResource(BaseModel, Generic[T]):
                 max_page=math.ceil(total_count / pagination_params.limit),
             ),
         )
+
+    @classmethod
+    def model_parametrized_name(cls, params: tuple[type[Any], ...]) -> str:
+        """
+        Override default model name implementation to detect `ClassName` metadata.
+
+        It's useful to shorten the name when a long union type is used.
+        """
+        param_names = []
+        for param in params:
+            if hasattr(param, "__metadata__"):
+                for metadata in param.__metadata__:
+                    if isinstance(metadata, ClassName):
+                        param_names.append(metadata.name)
+            else:
+                param_names.append(display_as_type(param))
+
+        params_component = ", ".join(param_names)
+        return f"{cls.__name__}[{params_component}]"
+
+    @classmethod
+    def __get_pydantic_core_schema__(
+        cls, source: type[BaseModel], handler: GetCoreSchemaHandler, /
+    ) -> CoreSchema:
+        """
+        Override the schema to set the `ref` field to the overridden class name.
+        """
+        result = super().__get_pydantic_core_schema__(source, handler)
+        result["ref"] = cls.__name__  # type: ignore
+        return result

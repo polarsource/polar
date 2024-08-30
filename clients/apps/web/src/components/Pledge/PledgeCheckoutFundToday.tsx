@@ -83,7 +83,7 @@ const PledgeCheckoutFundToday = ({
 
   // Redirect to personal dashboard if authenticated unless gotoURL is set
   if (!gotoURL && currentUser) {
-    gotoURL = '/feed'
+    gotoURL = '/funding'
   }
 
   const { resolvedTheme } = useTheme()

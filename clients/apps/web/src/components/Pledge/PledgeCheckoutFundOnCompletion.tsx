@@ -62,7 +62,7 @@ const PledgeCheckoutFundOnCompletion = ({
         },
       })
 
-      router.push('/feed')
+      router.push('/funding')
     } catch (e) {
       setErrorMessage('Something went wrong, please try again.')
       setIsLoading(false)
@@ -209,7 +209,7 @@ const NotLoggedInBanner = () => {
         size="large"
         text="Continue with GitHub"
         fullWidth={true}
-        returnTo={pathname || '/feed'}
+        returnTo={pathname || '/funding'}
         userSignupType={UserSignupType.BACKER}
       />
     </div>

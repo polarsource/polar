@@ -263,7 +263,7 @@ const nextConfig = {
       },
       {
         source: '/dependencies(.*)',
-        destination: '/feed',
+        destination: '/purchases',
         permanent: false,
       },
       {

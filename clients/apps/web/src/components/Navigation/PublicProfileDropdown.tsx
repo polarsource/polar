@@ -69,7 +69,10 @@ const PublicProfileDropdown = ({
               'dark:bg-polar-900 dark:text-polar-400 dark:border-polar-700 absolute right-0 top-12 z-50 w-[300px] overflow-hidden rounded-3xl bg-white p-2 shadow-xl dark:border',
             )}
           >
-            <Link href={`${CONFIG.FRONTEND_BASE_URL}/feed`} className="w-full">
+            <Link
+              href={`${CONFIG.FRONTEND_BASE_URL}/purchases`}
+              className="w-full"
+            >
               <ListItem current={true}>
                 <Profile
                   name={loggedUser.username}

@@ -131,7 +131,7 @@ const ConnectedAppSettings = () => {
           <ShadowListGroup.Item>
             <DiscordConnectedApp
               oauthAccount={discordAccount}
-              returnTo={pathname || '/feed'}
+              returnTo={pathname || '/purchases'}
             />
           </ShadowListGroup.Item>
         </ShadowListGroup>

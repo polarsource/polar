@@ -71,6 +71,7 @@ export const FieldFormat = () => {
 
   const url = watch('url')
   useEffect(() => {
+    console.log('url', url)
     if (!url) {
       return
     }
@@ -94,7 +95,11 @@ export const FieldFormat = () => {
             <FormLabel>Format</FormLabel>
           </div>
           <FormControl>
-            <Select {...field} value={field.value || undefined}>
+            <Select
+              {...field}
+              value={field.value || undefined}
+              onValueChange={field.onChange}
+            >
               <SelectTrigger>
                 <SelectValue placeholder="Select a payload format" />
               </SelectTrigger>

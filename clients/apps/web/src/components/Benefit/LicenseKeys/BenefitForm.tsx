@@ -30,21 +30,21 @@ export const LicenseKeysBenefitForm = () => {
     useFormContext<BenefitLicenseKeysCreate>()
 
   const expires = watch('properties.expires', undefined)
-  const showExpirationFields = expires !== undefined
+  const showExpirationFields = !!expires
   const defaultExpiration: BenefitLicenseKeyExpirationProperties = {
     ttl: 1,
     timeframe: 'year',
   }
 
   const activations = watch('properties.activations', undefined)
-  const showActivationFields = activations !== undefined
+  const showActivationFields = !!activations
   const defaultActivations: BenefitLicenseKeyActivationProperties = {
     limit: 5,
     enable_user_admin: true,
   }
 
   const limitUsage = watch('properties.limit_usage', undefined)
-  const [showLimitUsage, setShowLimitUsage] = useState(limitUsage !== undefined)
+  const [showLimitUsage, setShowLimitUsage] = useState(!!limitUsage)
 
   return (
     <>

@@ -281,7 +281,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
                 <ToggleGroupItem
                   value={ProductPriceType.ONE_TIME}
                   className={twMerge(
-                    'h-20 w-full flex-col items-start gap-2 rounded-xl border p-4',
+                    'dark:border-polar-700 w-full flex-col items-start gap-2 rounded-xl border p-4',
                     pricingType === ProductPriceType.ONE_TIME &&
                       'border-transparent',
                   )}
@@ -291,7 +291,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
                 <ToggleGroupItem
                   value={ProductPriceType.RECURRING}
                   className={twMerge(
-                    'h-20 w-full flex-col items-start gap-2 rounded-xl border p-4',
+                    'dark:border-polar-700 w-full flex-col items-start gap-2 rounded-xl border p-4',
                     pricingType === ProductPriceType.RECURRING &&
                       'border-transparent',
                   )}

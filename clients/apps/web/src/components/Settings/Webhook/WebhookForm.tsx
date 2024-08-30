@@ -71,7 +71,6 @@ export const FieldFormat = () => {
 
   const url = watch('url')
   useEffect(() => {
-    console.log('url', url)
     if (!url) {
       return
     }

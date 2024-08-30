@@ -84,7 +84,6 @@ export default function ClientPage() {
         hide={hideSetupModal}
         modalContent={
           <AccountCreateModal
-            onClose={hideSetupModal}
             accountTypes={ALL_ACCOUNT_TYPES}
             forUserId={currentUser?.id}
             returnPath="/finance/account"

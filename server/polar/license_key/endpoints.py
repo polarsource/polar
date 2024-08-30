@@ -125,7 +125,7 @@ async def update(
 
 @router.get(
     "/{id}/activations/{activation_id}",
-    summary="Get License Key Activation",
+    summary="Get Activation",
     response_model=LicenseKeyActivationRead,
     responses={
         401: UnauthorizedResponse,

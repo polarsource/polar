@@ -37,6 +37,7 @@ apis/UsersAdvertisementsApi.ts
 apis/UsersApi.ts
 apis/UsersBenefitsApi.ts
 apis/UsersDownloadablesApi.ts
+apis/UsersLicenseKeysApi.ts
 apis/UsersOrdersApi.ts
 apis/UsersSubscriptionsApi.ts
 apis/WebhooksApi.ts

@@ -96,7 +96,7 @@ export class LicenseKeysApi extends runtime.BaseAPI {
 
     /**
      * Get a license key activation.
-     * Get License Key Activation
+     * Get Activation
      */
     async getActivationRaw(requestParameters: LicenseKeysApiGetActivationRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<LicenseKeyActivationRead>> {
         if (requestParameters['id'] == null) {
@@ -137,7 +137,7 @@ export class LicenseKeysApi extends runtime.BaseAPI {
 
     /**
      * Get a license key activation.
-     * Get License Key Activation
+     * Get Activation
      */
     async getActivation(requestParameters: LicenseKeysApiGetActivationRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<LicenseKeyActivationRead> {
         const response = await this.getActivationRaw(requestParameters, initOverrides);

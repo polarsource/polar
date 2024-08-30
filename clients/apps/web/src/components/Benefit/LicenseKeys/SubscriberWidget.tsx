@@ -62,6 +62,7 @@ const LicenseKey = ({
     await api.users.deactivateLicenseKey({
       body: {
         key: licenseKey.key,
+        organization_id: licenseKey.organization_id,
         activation_id: activationId,
       },
     })
@@ -160,7 +161,7 @@ const LicenseKey = ({
                         onDeactivate(activation.id)
                       }}
                     >
-                      <CloseOutlined size="inherit" />
+                      <CloseOutlined />
                     </Button>
                   </td>
                 </tr>

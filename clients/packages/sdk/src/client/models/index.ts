@@ -1918,6 +1918,12 @@ export interface BackofficeReward {
 
 
 /**
+ * @type Benefit
+ * @export
+ */
+export type Benefit = BenefitAds | BenefitArticles | BenefitCustom | BenefitDiscord | BenefitDownloadables | BenefitGitHubRepository | BenefitLicenseKeys;
+
+/**
  * A benefit of type `ads`.
  * 
  * Use it so your backers can display ads on your README, website, etc.
@@ -4540,12 +4546,6 @@ export interface CurrencyAmount {
     amount: number;
 }
 /**
- * @type Data
- * @export
- */
-export type Data = BenefitAds | BenefitArticles | BenefitCustom | BenefitDiscord | BenefitDownloadables | BenefitGitHubRepository | BenefitLicenseKeys;
-
-/**
  * 
  * @export
  * @interface DiscordGuild
@@ -6279,12 +6279,6 @@ export interface IssueUpdateBadgeMessage {
     message: string;
 }
 /**
- * @type ItemsInner
- * @export
- */
-export type ItemsInner = BenefitAds | BenefitArticles | BenefitCustom | BenefitDiscord | BenefitDownloadables | BenefitGitHubRepository | BenefitLicenseKeys;
-
-/**
  * 
  * @export
  * @interface Label
@@ -6773,44 +6767,6 @@ export interface ListResourceAccount {
 /**
  * 
  * @export
- * @interface ListResourceAnnotatedUnionBenefitArticlesSubscriberBenefitAdsSubscriberBenefitDiscordSubscriberBenefitCustomSubscriberBenefitGitHubRepositorySubscriberBenefitDownloadablesSubscriberBenefitLicenseKeysSubscriberDiscriminatorMergeJSONSchema
- */
-export interface ListResourceAnnotatedUnionBenefitArticlesSubscriberBenefitAdsSubscriberBenefitDiscordSubscriberBenefitCustomSubscriberBenefitGitHubRepositorySubscriberBenefitDownloadablesSubscriberBenefitLicenseKeysSubscriberDiscriminatorMergeJSONSchema {
-    /**
-     * 
-     * @type {Array<UserBenefit>}
-     * @memberof ListResourceAnnotatedUnionBenefitArticlesSubscriberBenefitAdsSubscriberBenefitDiscordSubscriberBenefitCustomSubscriberBenefitGitHubRepositorySubscriberBenefitDownloadablesSubscriberBenefitLicenseKeysSubscriberDiscriminatorMergeJSONSchema
-     */
-    items: Array<UserBenefit>;
-    /**
-     * 
-     * @type {Pagination}
-     * @memberof ListResourceAnnotatedUnionBenefitArticlesSubscriberBenefitAdsSubscriberBenefitDiscordSubscriberBenefitCustomSubscriberBenefitGitHubRepositorySubscriberBenefitDownloadablesSubscriberBenefitLicenseKeysSubscriberDiscriminatorMergeJSONSchema
-     */
-    pagination: Pagination;
-}
-/**
- * 
- * @export
- * @interface ListResourceAnnotatedUnionDownloadableFileReadProductMediaFileReadOrganizationAvatarFileReadDiscriminatorMergeJSONSchema
- */
-export interface ListResourceAnnotatedUnionDownloadableFileReadProductMediaFileReadOrganizationAvatarFileReadDiscriminatorMergeJSONSchema {
-    /**
-     * 
-     * @type {Array<FileRead>}
-     * @memberof ListResourceAnnotatedUnionDownloadableFileReadProductMediaFileReadOrganizationAvatarFileReadDiscriminatorMergeJSONSchema
-     */
-    items: Array<FileRead>;
-    /**
-     * 
-     * @type {Pagination}
-     * @memberof ListResourceAnnotatedUnionDownloadableFileReadProductMediaFileReadOrganizationAvatarFileReadDiscriminatorMergeJSONSchema
-     */
-    pagination: Pagination;
-}
-/**
- * 
- * @export
  * @interface ListResourceArticle
  */
 export interface ListResourceArticle {
@@ -6843,6 +6799,25 @@ export interface ListResourceBackofficeReward {
      * 
      * @type {Pagination}
      * @memberof ListResourceBackofficeReward
+     */
+    pagination: Pagination;
+}
+/**
+ * 
+ * @export
+ * @interface ListResourceBenefit
+ */
+export interface ListResourceBenefit {
+    /**
+     * 
+     * @type {Array<Benefit>}
+     * @memberof ListResourceBenefit
+     */
+    items: Array<Benefit>;
+    /**
+     * 
+     * @type {Pagination}
+     * @memberof ListResourceBenefit
      */
     pagination: Pagination;
 }
@@ -6919,6 +6894,25 @@ export interface ListResourceExternalOrganization {
      * 
      * @type {Pagination}
      * @memberof ListResourceExternalOrganization
+     */
+    pagination: Pagination;
+}
+/**
+ * 
+ * @export
+ * @interface ListResourceFileRead
+ */
+export interface ListResourceFileRead {
+    /**
+     * 
+     * @type {Array<FileRead>}
+     * @memberof ListResourceFileRead
+     */
+    items: Array<FileRead>;
+    /**
+     * 
+     * @type {Pagination}
+     * @memberof ListResourceFileRead
      */
     pagination: Pagination;
 }
@@ -7286,25 +7280,6 @@ export interface ListResourceTransaction {
 /**
  * 
  * @export
- * @interface ListResourceUnionBenefitArticlesBenefitAdsBenefitCustomBenefitDiscordBenefitGitHubRepositoryBenefitDownloadablesBenefitLicenseKeys
- */
-export interface ListResourceUnionBenefitArticlesBenefitAdsBenefitCustomBenefitDiscordBenefitGitHubRepositoryBenefitDownloadablesBenefitLicenseKeys {
-    /**
-     * 
-     * @type {Array<ItemsInner>}
-     * @memberof ListResourceUnionBenefitArticlesBenefitAdsBenefitCustomBenefitDiscordBenefitGitHubRepositoryBenefitDownloadablesBenefitLicenseKeys
-     */
-    items: Array<ItemsInner>;
-    /**
-     * 
-     * @type {Pagination}
-     * @memberof ListResourceUnionBenefitArticlesBenefitAdsBenefitCustomBenefitDiscordBenefitGitHubRepositoryBenefitDownloadablesBenefitLicenseKeys
-     */
-    pagination: Pagination;
-}
-/**
- * 
- * @export
  * @interface ListResourceUserAdvertisementCampaign
  */
 export interface ListResourceUserAdvertisementCampaign {
@@ -7318,6 +7293,25 @@ export interface ListResourceUserAdvertisementCampaign {
      * 
      * @type {Pagination}
      * @memberof ListResourceUserAdvertisementCampaign
+     */
+    pagination: Pagination;
+}
+/**
+ * 
+ * @export
+ * @interface ListResourceUserBenefit
+ */
+export interface ListResourceUserBenefit {
+    /**
+     * 
+     * @type {Array<UserBenefit>}
+     * @memberof ListResourceUserBenefit
+     */
+    items: Array<UserBenefit>;
+    /**
+     * 
+     * @type {Pagination}
+     * @memberof ListResourceUserBenefit
      */
     pagination: Pagination;
 }
@@ -15282,10 +15276,10 @@ export interface WebhookBenefitCreatedPayload {
     type: WebhookBenefitCreatedPayloadTypeEnum;
     /**
      * 
-     * @type {Data}
+     * @type {Benefit}
      * @memberof WebhookBenefitCreatedPayload
      */
-    data: Data;
+    data: Benefit;
 }
 
 
@@ -15313,10 +15307,10 @@ export interface WebhookBenefitUpdatedPayload {
     type: WebhookBenefitUpdatedPayloadTypeEnum;
     /**
      * 
-     * @type {Data}
+     * @type {Benefit}
      * @memberof WebhookBenefitUpdatedPayload
      */
-    data: Data;
+    data: Benefit;
 }
 
 

@@ -365,7 +365,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/ListResource_Annotated_Union_BenefitArticlesSubscriber__BenefitAdsSubscriber__BenefitDiscordSubscriber__BenefitCustomSubscriber__BenefitGitHubRepositorySubscriber__BenefitDownloadablesSubscriber__BenefitLicenseKeysSubscriber___Discriminator__MergeJSONSchema__"
+                                    "$ref": "#/components/schemas/ListResource_UserBenefit_"
                                 }
                             }
                         }
@@ -8655,10 +8655,10 @@
                             },
                             "description": "Filter by the type of purchase the customer made.",
                             "default": [
-                                "order",
-                                "donation",
                                 "paid_subscription",
-                                "free_subscription"
+                                "donation",
+                                "free_subscription",
+                                "order"
                             ],
                             "title": "Customer Types"
                         },
@@ -12828,7 +12828,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/ListResource_Union_BenefitArticles__BenefitAds__BenefitCustom__BenefitDiscord__BenefitGitHubRepository__BenefitDownloadables__BenefitLicenseKeys__"
+                                    "$ref": "#/components/schemas/ListResource_Benefit_"
                                 }
                             }
                         }
@@ -15274,7 +15274,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/ListResource_Annotated_Union_DownloadableFileRead__ProductMediaFileRead__OrganizationAvatarFileRead___Discriminator__MergeJSONSchema__"
+                                    "$ref": "#/components/schemas/ListResource_FileRead_"
                                 }
                             }
                         }
@@ -16074,7 +16074,7 @@
                     "documented",
                     "featured"
                 ],
-                "summary": "List",
+                "summary": "List License Keys",
                 "description": "Get license keys connected to the given organization & filters.",
                 "operationId": "license_keys:list",
                 "security": [
@@ -16230,7 +16230,7 @@
                     "documented",
                     "featured"
                 ],
-                "summary": "Get",
+                "summary": "Get License Key",
                 "description": "Get a license key.",
                 "operationId": "license_keys:get",
                 "security": [
@@ -16311,7 +16311,7 @@
                     "documented",
                     "featured"
                 ],
-                "summary": "Update",
+                "summary": "Update License Key",
                 "description": "Update a license key.",
                 "operationId": "license_keys:update",
                 "security": [
@@ -16403,7 +16403,7 @@
                     "documented",
                     "featured"
                 ],
-                "summary": "Get Activation",
+                "summary": "Get License Key Activation",
                 "description": "Get a license key activation.",
                 "operationId": "license_keys:get_activation",
                 "security": [
@@ -24936,100 +24936,6 @@
                 ],
                 "title": "ListResource[Account]"
             },
-            "ListResource_Annotated_Union_BenefitArticlesSubscriber__BenefitAdsSubscriber__BenefitDiscordSubscriber__BenefitCustomSubscriber__BenefitGitHubRepositorySubscriber__BenefitDownloadablesSubscriber__BenefitLicenseKeysSubscriber___Discriminator__MergeJSONSchema__": {
-                "properties": {
-                    "items": {
-                        "items": {
-                            "oneOf": [
-                                {
-                                    "$ref": "#/components/schemas/BenefitArticlesSubscriber"
-                                },
-                                {
-                                    "$ref": "#/components/schemas/BenefitAdsSubscriber"
-                                },
-                                {
-                                    "$ref": "#/components/schemas/BenefitDiscordSubscriber"
-                                },
-                                {
-                                    "$ref": "#/components/schemas/BenefitCustomSubscriber"
-                                },
-                                {
-                                    "$ref": "#/components/schemas/BenefitGitHubRepositorySubscriber"
-                                },
-                                {
-                                    "$ref": "#/components/schemas/BenefitDownloadablesSubscriber"
-                                },
-                                {
-                                    "$ref": "#/components/schemas/BenefitLicenseKeysSubscriber"
-                                }
-                            ],
-                            "title": "UserBenefit",
-                            "discriminator": {
-                                "propertyName": "type",
-                                "mapping": {
-                                    "ads": "#/components/schemas/BenefitAdsSubscriber",
-                                    "articles": "#/components/schemas/BenefitArticlesSubscriber",
-                                    "custom": "#/components/schemas/BenefitCustomSubscriber",
-                                    "discord": "#/components/schemas/BenefitDiscordSubscriber",
-                                    "downloadables": "#/components/schemas/BenefitDownloadablesSubscriber",
-                                    "github_repository": "#/components/schemas/BenefitGitHubRepositorySubscriber",
-                                    "license_keys": "#/components/schemas/BenefitLicenseKeysSubscriber"
-                                }
-                            }
-                        },
-                        "type": "array",
-                        "title": "Items"
-                    },
-                    "pagination": {
-                        "$ref": "#/components/schemas/Pagination"
-                    }
-                },
-                "type": "object",
-                "required": [
-                    "items",
-                    "pagination"
-                ],
-                "title": "ListResource[Annotated[Union[BenefitArticlesSubscriber, BenefitAdsSubscriber, BenefitDiscordSubscriber, BenefitCustomSubscriber, BenefitGitHubRepositorySubscriber, BenefitDownloadablesSubscriber, BenefitLicenseKeysSubscriber], Discriminator, MergeJSONSchema]]"
-            },
-            "ListResource_Annotated_Union_DownloadableFileRead__ProductMediaFileRead__OrganizationAvatarFileRead___Discriminator__MergeJSONSchema__": {
-                "properties": {
-                    "items": {
-                        "items": {
-                            "oneOf": [
-                                {
-                                    "$ref": "#/components/schemas/DownloadableFileRead"
-                                },
-                                {
-                                    "$ref": "#/components/schemas/ProductMediaFileRead-Output"
-                                },
-                                {
-                                    "$ref": "#/components/schemas/OrganizationAvatarFileRead"
-                                }
-                            ],
-                            "title": "FileRead",
-                            "discriminator": {
-                                "propertyName": "service",
-                                "mapping": {
-                                    "downloadable": "#/components/schemas/DownloadableFileRead",
-                                    "organization_avatar": "#/components/schemas/OrganizationAvatarFileRead",
-                                    "product_media": "#/components/schemas/ProductMediaFileRead-Output"
-                                }
-                            }
-                        },
-                        "type": "array",
-                        "title": "Items"
-                    },
-                    "pagination": {
-                        "$ref": "#/components/schemas/Pagination"
-                    }
-                },
-                "type": "object",
-                "required": [
-                    "items",
-                    "pagination"
-                ],
-                "title": "ListResource[Annotated[Union[DownloadableFileRead, ProductMediaFileRead, OrganizationAvatarFileRead], Discriminator, MergeJSONSchema]]"
-            },
             "ListResource_Article_": {
                 "properties": {
                     "items": {
@@ -25090,6 +24996,49 @@
                 ],
                 "title": "ListResource[BenefitGrant]"
             },
+            "ListResource_Benefit_": {
+                "properties": {
+                    "items": {
+                        "items": {
+                            "anyOf": [
+                                {
+                                    "$ref": "#/components/schemas/BenefitArticles"
+                                },
+                                {
+                                    "$ref": "#/components/schemas/BenefitAds"
+                                },
+                                {
+                                    "$ref": "#/components/schemas/BenefitCustom"
+                                },
+                                {
+                                    "$ref": "#/components/schemas/BenefitDiscord-Output"
+                                },
+                                {
+                                    "$ref": "#/components/schemas/BenefitGitHubRepository"
+                                },
+                                {
+                                    "$ref": "#/components/schemas/BenefitDownloadables"
+                                },
+                                {
+                                    "$ref": "#/components/schemas/BenefitLicenseKeys-Output"
+                                }
+                            ],
+                            "title": "Benefit"
+                        },
+                        "type": "array",
+                        "title": "Items"
+                    },
+                    "pagination": {
+                        "$ref": "#/components/schemas/Pagination"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "items",
+                    "pagination"
+                ],
+                "title": "ListResource[Benefit]"
+            },
             "ListResource_Donation_": {
                 "properties": {
                     "items": {
@@ -25149,6 +25098,45 @@
                     "pagination"
                 ],
                 "title": "ListResource[ExternalOrganization]"
+            },
+            "ListResource_FileRead_": {
+                "properties": {
+                    "items": {
+                        "items": {
+                            "oneOf": [
+                                {
+                                    "$ref": "#/components/schemas/DownloadableFileRead"
+                                },
+                                {
+                                    "$ref": "#/components/schemas/ProductMediaFileRead-Output"
+                                },
+                                {
+                                    "$ref": "#/components/schemas/OrganizationAvatarFileRead"
+                                }
+                            ],
+                            "title": "FileRead",
+                            "discriminator": {
+                                "propertyName": "service",
+                                "mapping": {
+                                    "downloadable": "#/components/schemas/DownloadableFileRead",
+                                    "organization_avatar": "#/components/schemas/OrganizationAvatarFileRead",
+                                    "product_media": "#/components/schemas/ProductMediaFileRead-Output"
+                                }
+                            }
+                        },
+                        "type": "array",
+                        "title": "Items"
+                    },
+                    "pagination": {
+                        "$ref": "#/components/schemas/Pagination"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "items",
+                    "pagination"
+                ],
+                "title": "ListResource[FileRead]"
             },
             "ListResource_IssueFunding_": {
                 "properties": {
@@ -25530,48 +25518,6 @@
                 ],
                 "title": "ListResource[Transaction]"
             },
-            "ListResource_Union_BenefitArticles__BenefitAds__BenefitCustom__BenefitDiscord__BenefitGitHubRepository__BenefitDownloadables__BenefitLicenseKeys__": {
-                "properties": {
-                    "items": {
-                        "items": {
-                            "anyOf": [
-                                {
-                                    "$ref": "#/components/schemas/BenefitArticles"
-                                },
-                                {
-                                    "$ref": "#/components/schemas/BenefitAds"
-                                },
-                                {
-                                    "$ref": "#/components/schemas/BenefitCustom"
-                                },
-                                {
-                                    "$ref": "#/components/schemas/BenefitDiscord-Output"
-                                },
-                                {
-                                    "$ref": "#/components/schemas/BenefitGitHubRepository"
-                                },
-                                {
-                                    "$ref": "#/components/schemas/BenefitDownloadables"
-                                },
-                                {
-                                    "$ref": "#/components/schemas/BenefitLicenseKeys-Output"
-                                }
-                            ]
-                        },
-                        "type": "array",
-                        "title": "Items"
-                    },
-                    "pagination": {
-                        "$ref": "#/components/schemas/Pagination"
-                    }
-                },
-                "type": "object",
-                "required": [
-                    "items",
-                    "pagination"
-                ],
-                "title": "ListResource[Union[BenefitArticles, BenefitAds, BenefitCustom, BenefitDiscord, BenefitGitHubRepository, BenefitDownloadables, BenefitLicenseKeys]]"
-            },
             "ListResource_UserAdvertisementCampaign_": {
                 "properties": {
                     "items": {
@@ -25591,6 +25537,61 @@
                     "pagination"
                 ],
                 "title": "ListResource[UserAdvertisementCampaign]"
+            },
+            "ListResource_UserBenefit_": {
+                "properties": {
+                    "items": {
+                        "items": {
+                            "oneOf": [
+                                {
+                                    "$ref": "#/components/schemas/BenefitArticlesSubscriber"
+                                },
+                                {
+                                    "$ref": "#/components/schemas/BenefitAdsSubscriber"
+                                },
+                                {
+                                    "$ref": "#/components/schemas/BenefitDiscordSubscriber"
+                                },
+                                {
+                                    "$ref": "#/components/schemas/BenefitCustomSubscriber"
+                                },
+                                {
+                                    "$ref": "#/components/schemas/BenefitGitHubRepositorySubscriber"
+                                },
+                                {
+                                    "$ref": "#/components/schemas/BenefitDownloadablesSubscriber"
+                                },
+                                {
+                                    "$ref": "#/components/schemas/BenefitLicenseKeysSubscriber"
+                                }
+                            ],
+                            "title": "UserBenefit",
+                            "discriminator": {
+                                "propertyName": "type",
+                                "mapping": {
+                                    "ads": "#/components/schemas/BenefitAdsSubscriber",
+                                    "articles": "#/components/schemas/BenefitArticlesSubscriber",
+                                    "custom": "#/components/schemas/BenefitCustomSubscriber",
+                                    "discord": "#/components/schemas/BenefitDiscordSubscriber",
+                                    "downloadables": "#/components/schemas/BenefitDownloadablesSubscriber",
+                                    "github_repository": "#/components/schemas/BenefitGitHubRepositorySubscriber",
+                                    "license_keys": "#/components/schemas/BenefitLicenseKeysSubscriber"
+                                }
+                            }
+                        },
+                        "type": "array",
+                        "title": "Items"
+                    },
+                    "pagination": {
+                        "$ref": "#/components/schemas/Pagination"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "items",
+                    "pagination"
+                ],
+                "title": "ListResource[UserBenefit]"
             },
             "ListResource_UserOrder_": {
                 "properties": {
@@ -35981,7 +35982,7 @@
                                 "$ref": "#/components/schemas/BenefitLicenseKeys-Input"
                             }
                         ],
-                        "title": "Data"
+                        "title": "Benefit"
                     }
                 },
                 "type": "object",
@@ -36026,7 +36027,7 @@
                                 "$ref": "#/components/schemas/BenefitLicenseKeys-Input"
                             }
                         ],
-                        "title": "Data"
+                        "title": "Benefit"
                     }
                 },
                 "type": "object",

@@ -34,8 +34,8 @@ if (!process.env.POLAR_ACCESS_TOKEN) {
   throw Error('POLAR_ACCESS_TOKEN is not set')
 }
 
-if (!process.env.POLAR_ORGANIZATION_NAME) {
-  throw Error('POLAR_ORGANIZATION_NAME is not set')
+if (!process.env.POLAR_ORGANIZATION_ID) {
+  throw Error('POLAR_ORGANIZATION_ID is not set')
 }
 
 /**
@@ -49,7 +49,7 @@ const polar = new Polar({
 // Upload all posts to Polar
 const { error: postUploadError } = await polar
   .upload(posts, {
-    organizationName: process.env.POLAR_ORGANIZATION_NAME,
+    organizationId: process.env.POLAR_ORGANIZATION_ID,
   })
   // Filter for only new posts
   .filter(({ exists }) => !exists)

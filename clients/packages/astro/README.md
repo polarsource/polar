@@ -64,7 +64,7 @@ const posts = await getCollection('blog');
 const polar = new Polar({ accessToken });
 
 const { data, error } = await polar.upload(posts, {
-  organizationName,
+  organizationId,
 });
 ```
 
@@ -102,7 +102,7 @@ deduplicated by slug.
 ```typescript
 const { data, error } = await polar
   .upload(posts, {
-    organizationName,
+    organizationId,
   })
   .filter(({ exists }) => !exists);
 ```
@@ -114,7 +114,7 @@ This assumes you have a title in your content collection frontmatter.
 ```typescript
 const { data, error } = await polar
   .upload(posts, {
-    organizationName,
+    organizationId,
   })
   .transform(
     ({
@@ -141,7 +141,6 @@ you can add them as markdown images.
 const { data, error } = await polar
   .upload(posts, {
     organizationId,
-    organizationName,
   })
   .filter(({ exists }) => exists)
   .transform(({ entry, article }) => {
@@ -161,7 +160,7 @@ the properties exist under a `polar` key in your frontmatter.
 ```typescript
 const { data, error } = await polar
   .upload(posts, {
-    organizationName,
+    organizationId,
   })
   .filter(({ exists }) => exists)
   .transform(({ entry, article }) => {

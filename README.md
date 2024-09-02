@@ -43,32 +43,14 @@
 <hr />
 
 ## Polar.sh: All-in-one funding & monetization platform for developers
-Focus on building your passion. We'll focus on the infrastructure to get you paid. From first donation to IPO.
+Focus on building your passion, while we focus on the infrastructure to get you paid.
 
-- All-in-one funding & monetization (soon) platform for open source- and indie developers.
-- Build your own audience with Polar Newsletters/Posts
-- 1% OSS Program - setup automatic rewards to upstream contributors/dependencies (soon)
+- All-in-one funding & monetization platform for open source- and indie developers.
+- Sell access to GitHub repositories, Discord Support channels, File Downloads, License Keys & much more with Digital Products & Subscriptions.
+- Setup crowdfunding on your GitHub issues
 - We're the merchant of record handling the...
   - ...boilerplate (billing, receipts, customer accounts etc)
   - ...headaches (sales tax, VAT)
-
-## Serving world-class open source- and indie developers
-
-|     | Developer/Initiative    |  How they're using Polar   |
-| --- | --- | --- |
-|  <img src="https://avatars.githubusercontent.com/u/50811782?s=200&v=4" height="20" width="20" alt="SerenityOS" />  |  [SerenityOS & Ladybird](https://polar.sh/SerenityOS)   |  Uses issue funding & rewarding contributors 100%   |
-|  <img src="https://avatars.githubusercontent.com/u/78011399?s=200&v=4" height="20" width="20" alt="tRPC" />  | [tRPC](https://polar.sh/trpc)   |  All their issues are fundable with contributors getting 70%   |
-|  <img src="https://avatars.githubusercontent.com/u/85560643?v=4" height="20" width="20" alt="tRPC" />  | [Bela Bohlender](https://polar.sh/bbohlender)    |  Blogging (incl. premium posts for members) and sponsorship    |
-|  <img src="https://avatars.githubusercontent.com/u/159799280?s=200&v=4" height="20" width="20" alt="Your next store" />  | [Your Next Store](https://yournextstore.com/)   |  Selling access via their website to private GitHub repo of their Next.js storefront    |
-|  <img src="https://avatars.githubusercontent.com/u/140182603?s=200&v=4" height="20" width="20" alt="tRPC" />  | [Biome](https://polar.sh/biomejs)  | Uses issue funding & rewarding contributors 70%     |
-|  <img src="https://avatars.githubusercontent.com/u/48071860?s=200&v=4" height="20" width="20" alt="tRPC" />  | [Strawberry GraphQL](https://polar.sh/strawberry-graphql)  | Membership benefits, newsletter & sponsorship + Discord invites     |
-|  <img src="https://avatars.githubusercontent.com/u/1939362?v=4" height="20" width="20" alt="tRPC" />  | [David Hewitt](https://polar.sh/davidhewitt)  |  Blogging (incl. premium posts for members) and sponsorship    |
-|  <img src="https://avatars.githubusercontent.com/u/136892265?s=200&v=4" height="20" width="20" alt="Your next store" />  | [Open Status](https://polar.sh/openstatusHQ)   |  Funding towards their issues/backlog    |
-|  <img src="https://avatars.githubusercontent.com/u/47423046?v=4" height="20" width="20" alt="tRPC" />  | [Isaac Harris-Holt](https://polar.sh/davidhewitt)  |  Blogging (incl. premium posts for members) and sponsorship    |
-
-
-... and thousands more. Join us!
-
 
 ## Pricing
 
@@ -109,7 +91,6 @@ You can also develop on Polar locally on your computer, which is the recommended
   * [polarkit](./clients/packages/polarkit) - Shared React components
   * [`@polar-sh/sdk`](./clients/packages/sdk) - Polar JS SDK
   * [`@polar-sh/astro`](./clients/packages/astro) - Polar Astro SDK
-  * [next-js-example](./clients/examples/next-js-example) - [NextJS App example app](https://polar-next-js-example.vercel.app) powered by `@polar-sh/sdk`
   * [astro-example](./clients/examples/astro-example) - Astro Example app powered by `@polar-sh/astro`
 
 <sub>♥️🙏 To our `pyproject.toml` friends: [FastAPI](https://github.com/tiangolo/fastapi), [Pydantic](https://github.com/pydantic/pydantic), [Arq](https://github.com/samuelcolvin/arq), [SQLAlchemy](https://github.com/sqlalchemy/sqlalchemy), [Githubkit](https://github.com/yanyongyu/githubkit), [sse-starlette](https://github.com/sysid/sse-starlette), [Uvicorn](https://github.com/encode/uvicorn), [httpx-oauth](https://github.com/frankie567/httpx-oauth), [jinja](https://github.com/pallets/jinja), [blinker](https://github.com/pallets-eco/blinker), [pyjwt](https://github.com/jpadilla/pyjwt), [Sentry](https://github.com/getsentry/sentry) + more</sub><br />

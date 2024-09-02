@@ -36,23 +36,8 @@ jobs:
         run: |
           curl -fsSL https://raw.githubusercontent.com/speakeasy-api/speakeasy/main/install.sh | sh
 
-      - name: Download schema and convert to YAML
-        run: |
-          curl -o source.json ${{ github.event.inputs.schema_url }}
-          cat source.json | yq -P > source.yml
-
-      - name: Download code samples overlays and combine them
-        run: |
-          IFS=',' read -r -a languages <<< "${{ github.event.inputs.languages }}"
-          for lang in "${languages[@]}"; do
-            curl -o "codeSamples.${lang}.yml" "https://raw.githubusercontent.com/polarsource/polar-${lang}/main/codeSamples.yaml"
-          done
-          yq eval-all 'select(fileIndex == 0) as $first | .actions as $actions ireduce ({}; .actions += $actions) | .overlay = $first.overlay | .info = $first.info' codeSamples.* > overlay.yml
-
-      - name: Apply code samples overlay and convert to JSON
-        run: |
-          speakeasy overlay apply -s source.yml -o overlay.yml --out schema.yml
-          cat schema.yml | yq -o json > schema.json
+      - name: Download and apply code samples overlay to OpenAPI schema
+        run: ./code_samples.sh ${{ github.event.inputs.schema_url }} ${{ github.event.inputs.languages }}
 
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v6

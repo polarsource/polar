@@ -2,10 +2,30 @@ name: Update SDK code samples
 
 on:
   workflow_dispatch:
+    inputs:
+      schema_url:
+        description: 'URL of the base OpenAPI schema'
+        required: true
+        default: 'https://api.polar.sh/openapi.json'
+      languages:
+          description: 'Comma-separated list of languages to generate code samples for'
+          required: true
+          default: 'python,js'
+
+concurrency:
+  group: update-sdk-code-samples
+  cancel-in-progress: true
 
 jobs:
   build:
     runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: ${{ github.workspace }}/sdk
+
+    permissions:
+      contents: write
 
     steps:
       - name: Checkout code
@@ -15,6 +35,19 @@ jobs:
         run: |
           curl -fsSL https://raw.githubusercontent.com/speakeasy-api/speakeasy/main/install.sh | sh
 
-      - name: Test Speakeasy CLI
+      - name: Download schema and convert to YAML
         run: |
-          speakeasy --version
+          curl -o source.json ${{ github.event.inputs.schema_url }}
+          cat source.json | yq -P > source.yml
+
+      - name: Download code samples overlays and combine them
+        run: |
+          IFS=',' read -r -a languages <<< "${{ github.event.inputs.languages }}"
+          for lang in "${languages[@]}"; do
+            curl -o "codeSamples.${lang}.yml" "https://raw.githubusercontent.com/polarsource/polar-${lang}/main/codeSamples.yaml"
+          done
+          yq eval-all 'select(fileIndex == 0) as $first | .actions as $actions ireduce ({}; .actions += $actions) | .overlay = $first.overlay | .info = $first.info' codeSamples.* > overlay.yml
+
+      - name: Apply code samples overlay and convert to JSON
+        run: |
+          speakeasy overlay apply -s source.yml -o overlay.yml --out schema.yml

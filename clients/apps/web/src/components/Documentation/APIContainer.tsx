@@ -1,4 +1,3 @@
-import { CONFIG } from '@/utils/config'
 import { OpenAPIV3_1 } from 'openapi-types'
 import {
   Tabs,
@@ -11,7 +10,8 @@ import { twMerge } from 'tailwind-merge'
 import SyntaxHighlighterServer, {
   Highlighter,
 } from '@/components/SyntaxHighlighterShiki/SyntaxHighlighterServer'
-import { CURLCommandBuilder, NodeJSCommandBuilder } from './openapi'
+import { CONFIG } from '@/utils/config'
+import { COMMAND_BUILDERS } from './openapi'
 
 export const APIContainer = ({
   className,
@@ -29,18 +29,6 @@ export const APIContainer = ({
   params?: Record<string, any>
 }) => {
   const triggerClassName = 'py-1'
-  const curlCommand = new CURLCommandBuilder(
-    method,
-    `${CONFIG.BASE_URL}${path}`,
-    operation,
-    params,
-  ).buildCommand()
-  const nodeJSCommand = new NodeJSCommandBuilder(
-    method,
-    `${CONFIG.BASE_URL}${path}`,
-    operation,
-    params,
-  ).buildCommand()
 
   return (
     <div
@@ -49,35 +37,39 @@ export const APIContainer = ({
         className,
       )}
     >
-      <Tabs defaultValue="curl">
+      <Tabs defaultValue={COMMAND_BUILDERS[0].lang}>
         <TabsList className="dark:border-polar-700 flex w-full flex-row items-center justify-between gap-x-4 rounded-none border-b border-gray-100 px-4 py-3">
           <div className="flex w-full flex-row items-center">
-            <TabsTrigger className={triggerClassName} value="curl" size="small">
-              cURL
-            </TabsTrigger>
-            <TabsTrigger
-              className={triggerClassName}
-              value="nodejs"
-              size="small"
-            >
-              NodeJS
-            </TabsTrigger>
+            {COMMAND_BUILDERS.map(({ lang, displayName }) => {
+              return (
+                <TabsTrigger
+                  key={lang}
+                  className={triggerClassName}
+                  value={lang}
+                  size="small"
+                >
+                  {displayName}
+                </TabsTrigger>
+              )
+            })}
           </div>
         </TabsList>
-        <TabsContent value="curl" className="p-4 text-xs">
-          <SyntaxHighlighterServer
-            lang="bash"
-            code={curlCommand}
-            highlighter={highlighter}
-          />
-        </TabsContent>
-        <TabsContent value="nodejs" className="p-4 text-xs">
-          <SyntaxHighlighterServer
-            lang="js"
-            code={nodeJSCommand}
-            highlighter={highlighter}
-          />
-        </TabsContent>
+        {COMMAND_BUILDERS.map(({ builder, lang }) => {
+          return (
+            <TabsContent key={lang} value={lang} className="p-4 text-xs">
+              <SyntaxHighlighterServer
+                highlighter={highlighter}
+                lang={lang}
+                code={builder.buildCommand(
+                  method,
+                  `${CONFIG.BASE_URL}${path}`,
+                  operation,
+                  params,
+                )}
+              />
+            </TabsContent>
+          )
+        })}
       </Tabs>
     </div>
   )

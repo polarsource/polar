@@ -1,5 +1,4 @@
 import openapiSchema from '@/openapi.json'
-import { CONFIG } from '@/utils/config'
 import SwaggerParser from '@apidevtools/swagger-parser'
 import { OpenAPIV3_1 } from 'openapi-types'
 
@@ -17,16 +16,8 @@ export enum HttpMethod {
 }
 
 export const fetchSchema = async (): Promise<OpenAPIV3_1.Document> => {
-  let schema = openapiSchema as any
-  // Fetch the schema from the server in development
-  if (CONFIG.ENVIRONMENT === 'development') {
-    const schemaResponse = await fetch(`${CONFIG.BASE_URL}/openapi.json`, {
-      cache: 'no-store',
-    })
-    schema = await schemaResponse.json()
-  }
   return new Promise((resolve) =>
-    swaggerParser.dereference(schema).then((parsedSchema) => {
+    swaggerParser.dereference(openapiSchema as any).then((parsedSchema) => {
       resolve(parsedSchema as OpenAPIV3_1.Document)
     }),
   )
@@ -172,6 +163,7 @@ export const resolveSchemaMinMax = (
 const generateScalarSchemaExample = (
   schema: OpenAPIV3_1.SchemaObject,
   defaults: Record<string, any> | string,
+  requiredOnly: boolean = false,
   depth: number = 0,
 ) => {
   if (schema.type === 'object') {
@@ -179,12 +171,16 @@ const generateScalarSchemaExample = (
       return {}
     }
     if (depth > 1) return {}
-    return generateSchemaExample(schema, defaults, depth + 1)
+    return generateSchemaExample(schema, defaults, requiredOnly, depth + 1)
   }
 
   if (schema.type === 'array') {
     return [
-      generateSchemaExample(schema.items as OpenAPIV3_1.SchemaObject, defaults),
+      generateSchemaExample(
+        schema.items as OpenAPIV3_1.SchemaObject,
+        defaults,
+        requiredOnly,
+      ),
     ]
   }
 
@@ -269,6 +265,7 @@ const parseDefaultParameterValue = (
 export const generateSchemaExample = (
   schema: OpenAPIV3_1.SchemaObject,
   defaults: Record<string, any> | string = {},
+  requiredOnly: boolean = false,
   depth: number = 0,
 ): Record<string, any> | string => {
   const unionSchemas = getUnionSchemas(schema)
@@ -278,21 +275,26 @@ export const generateSchemaExample = (
     return generateSchemaExample(
       unionSchemas.filter(isDereferenced)[0],
       defaults,
+      requiredOnly,
     )
   }
 
   if (schema.properties) {
     return Object.entries(schema.properties).reduce((acc, [key, value]) => {
+      console.log(requiredOnly, schema.required, key)
+      if (requiredOnly && !schema.required?.includes(key)) {
+        return acc
+      }
       const childDefaults =
         defaults && typeof defaults === 'object' ? defaults[key] : {}
       return {
         ...acc,
-        [key]: generateSchemaExample(value, childDefaults),
+        [key]: generateSchemaExample(value, childDefaults, requiredOnly),
       }
     }, {})
   }
 
-  return generateScalarSchemaExample(schema, defaults, depth + 1)
+  return generateScalarSchemaExample(schema, defaults, requiredOnly, depth + 1)
 }
 
 const getParameters = (
@@ -368,53 +370,58 @@ const getLocationFromPrefix = (prefix: string): 'path' | 'query' | 'body' => {
   }
 }
 
-abstract class CommandBuilder {
-  protected method: HttpMethod
-  protected url: string
-  protected endpoint: OpenAPIV3_1.OperationObject
-  protected params: Record<string, string>
-
-  public constructor(
+interface ICommandBuilder {
+  buildCommand(
     method: string | HttpMethod,
     url: string,
-    endpoint: OpenAPIV3_1.OperationObject,
-    params: Record<string, string> = {},
-  ) {
-    if (!isMethod(method)) {
-      throw new Error(`Invalid method: ${method}`)
-    }
-    this.method = method
-    this.url = url
-    this.endpoint = endpoint
-    this.params = params
+    operation: OpenAPIV3_1.OperationObject,
+    params: Record<string, string> | undefined,
+  ): string
+}
+
+abstract class ManualCommandBuilder implements ICommandBuilder {
+  public abstract buildCommand(
+    method: string | HttpMethod,
+    url: string,
+    operation: OpenAPIV3_1.OperationObject,
+    params: Record<string, string> | undefined,
+  ): string
+
+  protected getPathParameters(
+    operation: OpenAPIV3_1.OperationObject,
+    params: Record<string, string>,
+  ): Record<string, string> {
+    const explodedParams = this.explodeParams(params, ['path'])
+    return getParametersExample(operation, ['path'], explodedParams)
   }
 
-  public abstract buildCommand(): string
-
-  protected getPathParameters(): Record<string, string> {
-    const explodedParams = this.explodeParams(this.params, ['path'])
-    return getParametersExample(this.endpoint, ['path'], explodedParams)
+  protected getQueryParameters(
+    operation: OpenAPIV3_1.OperationObject,
+    params: Record<string, string>,
+  ): Record<string, string> {
+    const explodedParams = this.explodeParams(params, ['query'])
+    return getParametersExample(operation, ['query'], explodedParams)
   }
 
-  protected getQueryParameters(): Record<string, string> {
-    const explodedParams = this.explodeParams(this.params, ['query'])
-    return getParametersExample(this.endpoint, ['query'], explodedParams)
-  }
-
-  protected getBody(): Record<string, any> | undefined {
-    const bodySchema = getRequestBodySchema(this.endpoint)
+  protected getBody(
+    operation: OpenAPIV3_1.OperationObject,
+    params: Record<string, string>,
+  ): Record<string, any> | undefined {
+    const bodySchema = getRequestBodySchema(operation)
     if (!bodySchema) {
       return undefined
     }
-    const explodedParams = this.explodeParams(this.params, ['body'])
-    return generateSchemaExample(bodySchema[0], explodedParams) as Record<
+    const explodedParams = this.explodeParams(params, ['body'])
+    return generateSchemaExample(bodySchema[0], explodedParams, true) as Record<
       string,
       any
     >
   }
 
-  protected getMediaType(): MediaType | undefined {
-    const bodySchema = getRequestBodySchema(this.endpoint)
+  protected getMediaType(
+    operation: OpenAPIV3_1.OperationObject,
+  ): MediaType | undefined {
+    const bodySchema = getRequestBodySchema(operation)
     return bodySchema ? bodySchema[1] : undefined
   }
 
@@ -459,18 +466,23 @@ abstract class CommandBuilder {
   }
 }
 
-export class CURLCommandBuilder extends CommandBuilder {
-  public buildCommand(): string {
+class CURLCommandBuilder extends ManualCommandBuilder {
+  public buildCommand(
+    method: string | HttpMethod,
+    url: string,
+    operation: OpenAPIV3_1.OperationObject,
+    params: Record<string, string> = {},
+  ): string {
     const queryParameters = new URLSearchParams(
-      this.getQueryParameters(),
+      this.getQueryParameters(operation, params),
     ).toString()
-    const body = this.getBody()
-    const mediaType = this.getMediaType()
+    const body = this.getBody(operation, params)
+    const mediaType = this.getMediaType(operation)
     const bodyString =
       body && mediaType ? `-d '${this.encodeBody(body, mediaType)}'` : ''
 
     const hasSecurityScheme =
-      this.endpoint.security && this.endpoint.security.length > 0
+      operation.security && operation.security.length > 0
 
     const headers = [
       ...(mediaType ? [`-H "Content-Type: ${mediaType}"`] : []),
@@ -478,15 +490,19 @@ export class CURLCommandBuilder extends CommandBuilder {
       ...(hasSecurityScheme ? ['-H "Authorization: Bearer <token>"'] : []),
     ]
 
-    return `curl -X ${this.method.toUpperCase()} \\
-    ${this.getURL()}${queryParameters ? '?' + queryParameters : ''} \\
+    return `curl -X ${method.toUpperCase()} \\
+    ${this.getURL(url, operation, params)}${queryParameters ? '?' + queryParameters : ''} \\
     ${headers.join(' \\\n    ')} \\
     ${bodyString}`
   }
 
-  private getURL(): string {
-    let resultURL = this.url
-    const pathParameters = this.getPathParameters()
+  private getURL(
+    url: string,
+    operation: OpenAPIV3_1.OperationObject,
+    params: Record<string, string>,
+  ): string {
+    let resultURL = url
+    const pathParameters = this.getPathParameters(operation, params)
     Object.entries(pathParameters).forEach(([key, value]) => {
       resultURL = resultURL.replace(`{${key}}`, value)
     })
@@ -504,119 +520,81 @@ export class CURLCommandBuilder extends CommandBuilder {
   }
 }
 
-export class NodeJSCommandBuilder extends CommandBuilder {
-  public buildCommand(): string {
-    const pathParameters = this.getPathParameters()
-    const queryParameters = this.getQueryParameters()
-    const body = this.getBody()
-    const mediaType = this.getMediaType()
+interface XCodeSamples {
+  'x-codeSamples': {
+    lang: string
+    source: string
+  }[]
+}
 
-    const requestParameters = {
-      ...(pathParameters ? this.convertToCamelCase(pathParameters) : {}),
-      ...(queryParameters ? this.convertToCamelCase(queryParameters) : {}),
-      ...(body && mediaType ? this.getBodyObject(body, mediaType) : {}),
-    }
+const hasCodeSamples = (
+  operation: OpenAPIV3_1.OperationObject,
+): operation is OpenAPIV3_1.OperationObject<XCodeSamples> => {
+  return 'x-codeSamples' in operation
+}
 
-    let [namespace, endpointName] = this.endpoint.operationId?.split(':') ?? [
-      '',
-      '',
-    ]
-    endpointName = this.snakeToCamel(endpointName)
+class GeneratedCommandBuilder implements ICommandBuilder {
+  private lang: string
 
-    return `
-import { PolarAPI, Configuration } from '@polar-sh/sdk'
-
-const polar = new PolarAPI(
-  new Configuration({
-    headers: {
-      Authorization: \`Bearer \${process.env.POLAR_ACCESS_TOKEN}\`,
-    },
-  }),
-)
-
-polar.${namespace}
-  .${endpointName}(${this.objectToString(requestParameters, 1)})
-  .then(console.log)
-  .catch(console.error);
-`.trim()
+  public constructor(lang: string) {
+    this.lang = lang
   }
 
-  private getBodyObject(
-    body: Record<string, any>,
-    mediaType: MediaType,
-  ): Record<string, any> {
-    if (mediaType === MediaType.JSON) {
-      return { body }
+  public buildCommand(
+    _method: string | HttpMethod,
+    _url: string,
+    operation: OpenAPIV3_1.OperationObject,
+    _params: Record<string, string> = {},
+  ): string {
+    if (!hasCodeSamples(operation)) {
+      return ''
     }
-    if (mediaType === MediaType.FORM) {
-      return this.convertToCamelCase(body)
-    }
-    throw new Error(`Unsupported media type: ${mediaType}`)
-  }
 
-  private snakeToCamel(str: string): string {
-    return str
-      .toLowerCase()
-      .replace(/([-_][a-z])/g, (group: string) =>
-        group.toUpperCase().replace('-', '').replace('_', ''),
-      )
-  }
-
-  private convertToCamelCase(obj: Record<string, any>): Record<string, any> {
-    return Object.keys(obj).reduce(
-      (acc, key) => {
-        const newKey = this.snakeToCamel(key)
-        return {
-          ...acc,
-          [newKey]: obj[key],
-        }
-      },
-      {} as Record<string, any>,
+    const codeSample = operation['x-codeSamples'].find(
+      (sample) => sample.lang === this.lang,
     )
-  }
 
-  private objectToString(obj: any, indent: number = 0): string {
-    const indentBase = '  '
-    let result = '{\n'
-    const entries = Object.entries(obj)
+    if (!codeSample) {
+      return ''
+    }
 
-    entries.forEach(([key, value], index) => {
-      const isLast = index === entries.length - 1
-      const lineIndent = indentBase.repeat(indent + 1)
-      const nextIndent = indent + 1
-      let valueString
-
-      if (
-        typeof value === 'object' &&
-        !Array.isArray(value) &&
-        value !== null
-      ) {
-        valueString = this.objectToString(value, nextIndent)
-      } else if (Array.isArray(value)) {
-        valueString = `[${value
-          .map((v) => {
-            if (typeof v === 'object' && !Array.isArray(v) && v !== null) {
-              return this.objectToString(v, nextIndent)
-            } else if (typeof v === 'string') {
-              return `'${v}'`
-            } else {
-              return v
-            }
-          })
-          .join(', ')}]`
-      } else if (typeof value === 'string') {
-        valueString = `'${value}'`
-      } else {
-        valueString = value
-      }
-
-      result += `${lineIndent}${key}: ${valueString}${isLast ? '' : ','}\n`
-    })
-
-    result += `${indentBase.repeat(indent)}}`
-    return result
+    return codeSample.source
   }
 }
+
+class PythonCommandBuilder extends GeneratedCommandBuilder {
+  public constructor() {
+    super('python')
+  }
+}
+
+class JavaScriptCommandBuilder extends GeneratedCommandBuilder {
+  public constructor() {
+    super('typescript')
+  }
+}
+
+export const COMMAND_BUILDERS: {
+  lang: string
+  displayName: string
+  builder: ICommandBuilder
+}[] = [
+  {
+    lang: 'bash',
+    displayName: 'cURL',
+    builder: new CURLCommandBuilder(),
+  },
+  {
+    lang: 'javascript',
+    displayName: 'JavaScript',
+    builder: new JavaScriptCommandBuilder(),
+  },
+  {
+    lang: 'python',
+    displayName: 'Python',
+    builder: new PythonCommandBuilder(),
+  },
+]
 
 enum APITags {
   documented = 'documented',

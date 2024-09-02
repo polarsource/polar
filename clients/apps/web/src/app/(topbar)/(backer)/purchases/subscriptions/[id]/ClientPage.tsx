@@ -168,9 +168,7 @@ const ClientPage = ({ subscription }: { subscription: UserSubscription }) => {
             </div>
             <div className="flex flex-col gap-2">
               {organization && (
-                <Link
-                  href={organizationPageLink(organization, 'subscriptions')}
-                >
+                <Link href={organizationPageLink(organization)}>
                   <Button size="lg" fullWidth>
                     Upgrade
                   </Button>

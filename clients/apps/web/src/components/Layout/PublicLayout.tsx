@@ -6,10 +6,8 @@ import EmptyLayout from './EmptyLayout'
 const PublicLayout = ({
   children,
   wide,
-  showUpsellFooter,
 }: PropsWithChildren<{
   wide?: boolean
-  showUpsellFooter: boolean
 }>) => {
   return (
     <EmptyLayout>
@@ -21,7 +19,7 @@ const PublicLayout = ({
       >
         {children}
       </div>
-      <Footer wide={wide} showUpsellFooter={showUpsellFooter} />
+      <Footer wide={wide} />
     </EmptyLayout>
   )
 }

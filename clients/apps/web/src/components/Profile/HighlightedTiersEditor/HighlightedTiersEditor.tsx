@@ -90,7 +90,7 @@ export const HighlightedTiersEditor = ({
             <h2>Subscriptions</h2>
             <Link
               className="text-sm text-blue-500 dark:text-blue-400"
-              href={organizationPageLink(organization, 'subscriptions')}
+              href={organizationPageLink(organization)}
             >
               <span>View all</span>
             </Link>

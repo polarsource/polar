@@ -136,15 +136,12 @@ const UpsellNonSubscriber = ({ article }: { article: RenderArticle }) => (
         name={article.organization.name}
       />
       <h2 className="text-center text-xl font-medium">
-        Subscribe to{' '}
-        {article.organization.name}
+        Subscribe to {article.organization.name}
       </h2>
       <p className="dark:text-polar-300 text-center text-gray-500">
         {article.organization?.bio
           ? article.organization?.bio
-          : `Support ${
-              article.organization.name
-            } by subscribing to their work and get access to exclusive content.`}
+          : `Support ${article.organization.name} by subscribing to their work and get access to exclusive content.`}
       </p>
 
       <SubscribeNowWithModal
@@ -170,17 +167,14 @@ const UpsellFreeSubscriberToPaid = ({
         name={article.organization.name}
       />
       <h2 className="text-xl font-medium">
-        Upgrade your subscription to{' '}
-        {article.organization.name}
+        Upgrade your subscription to {article.organization.name}
       </h2>
       <p className="dark:text-polar-300 text-center text-gray-500">
         {article.organization?.bio
           ? article.organization?.bio
-          : `Support ${
-              article.organization.name
-            } by subscribing to their work and get access to exclusive content.`}
+          : `Support ${article.organization.name} by subscribing to their work and get access to exclusive content.`}
       </p>
-      <Link href={organizationPageLink(article.organization, 'subscriptions')}>
+      <Link href={organizationPageLink(article.organization)}>
         <Button className="mt-4">Upgrade</Button>
       </Link>
     </div>

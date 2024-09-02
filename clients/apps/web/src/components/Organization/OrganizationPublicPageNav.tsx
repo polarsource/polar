@@ -1,7 +1,6 @@
 'use client'
 
 import { useHasLinkedExternalOrganizations } from '@/hooks'
-import { useProducts } from '@/hooks/queries'
 import { organizationPageLink } from '@/utils/nav'
 import { Organization } from '@polar-sh/sdk'
 import Link from 'next/link'
@@ -21,11 +20,6 @@ export const OrganizationPublicPageNav = ({
   const routeSegment = useSelectedLayoutSegment()
   const currentTab = routeSegment ?? 'overview'
 
-  const { data: products } = useProducts(organization.id, {
-    isRecurring: false,
-  })
-  const renderProductsTab = (products?.items.length ?? 0) > 0
-
   const hasLinkedExternalOrganizations =
     useHasLinkedExternalOrganizations(organization)
 
@@ -42,22 +36,6 @@ export const OrganizationPublicPageNav = ({
             Overview
           </TabsTrigger>
         </Link>
-
-        {organization.feature_settings?.subscriptions_enabled && (
-          <Link href={organizationPageLink(organization, 'subscriptions')}>
-            <TabsTrigger value="subscriptions" size="small">
-              Subscriptions
-            </TabsTrigger>
-          </Link>
-        )}
-
-        {renderProductsTab && (
-          <Link href={organizationPageLink(organization, 'products')}>
-            <TabsTrigger value="products" size="small">
-              Products
-            </TabsTrigger>
-          </Link>
-        )}
 
         {organization.feature_settings?.articles_enabled && (
           <Link href={organizationPageLink(organization, 'posts')}>

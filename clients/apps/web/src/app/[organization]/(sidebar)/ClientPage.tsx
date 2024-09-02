@@ -1,26 +1,24 @@
 'use client'
 
-import { Post as PostComponent } from '@/components/Feed/Posts/Post'
+import { FreeTierSubscribe } from '@/components/Organization/FreeTierSubscribe'
 import { OrganizationIssueSummaryList } from '@/components/Organization/OrganizationIssueSummaryList'
-import { CreatorsEditor } from '@/components/Profile/CreatorEditor/CreatorsEditor'
-import { HighlightedTiersEditor } from '@/components/Profile/HighlightedTiersEditor/HighlightedTiersEditor'
-import {
-  Link as LinkItem,
-  LinksEditor,
-} from '@/components/Profile/LinksEditor/LinksEditor'
-import { ProjectsEditor } from '@/components/Profile/ProjectEditor/ProjectsEditor'
-import { useUpdateOrganization } from '@/hooks/queries'
+import CheckoutButton from '@/components/Products/CheckoutButton'
+import { ProductCard } from '@/components/Products/ProductCard'
+import SubscriptionTierCard from '@/components/Subscriptions/SubscriptionTierCard'
+import SubscriptionTierRecurringIntervalSwitch from '@/components/Subscriptions/SubscriptionTierRecurringIntervalSwitch'
+import { hasRecurringInterval } from '@/components/Subscriptions/utils'
+import { useAuth } from '@/hooks'
+import { useRecurringInterval } from '@/hooks/products'
 import { organizationPageLink } from '@/utils/nav'
 import { useTrafficRecordPageView } from '@/utils/traffic'
-import { DraftsOutlined } from '@mui/icons-material'
+import { ArrowForward } from '@mui/icons-material'
 import {
   Article,
   IssueFunding,
   Organization,
-  OrganizationProfileSettings,
   Product,
+  ProductPriceRecurringInterval,
   PublicDonation,
-  Repository,
 } from '@polar-sh/sdk'
 import { formatCurrencyAndAmount } from '@polarkit/lib/money'
 import Link from 'next/link'
@@ -33,155 +31,132 @@ const ClientPage = ({
   organization,
   posts,
   products,
-  featuredOrganizations,
-  repositories,
-  featuredProjects,
-  userOrganizations,
   issues,
-  links,
   donations,
 }: {
   organization: Organization
   posts: Article[]
   products: Product[]
-  featuredOrganizations: Organization[]
-  repositories: Repository[]
-  featuredProjects: Repository[]
-  userOrganizations: Organization[]
   issues: IssueFunding[]
-  links: LinkItem[]
   donations: PublicDonation[]
 }) => {
   useTrafficRecordPageView({ organization })
+  const [recurringInterval, setRecurringInterval, hasBothIntervals] =
+    useRecurringInterval(products)
 
-  const isOrgMember = useMemo(
-    () => userOrganizations?.some((org) => org.id === organization.id),
-    [organization, userOrganizations],
+  const { userOrganizations: orgs } = useAuth()
+
+  const shouldRenderSubscribeButton = useMemo(
+    () => !orgs.map((o) => o.id).includes(organization.id),
+    [organization, orgs],
   )
 
-  const updateOrganizationMutation = useUpdateOrganization()
-
-  const updateOrganization = (
-    setting: Partial<OrganizationProfileSettings>,
-  ) => {
-    return updateOrganizationMutation.mutateAsync({
-      id: organization.id,
-      body: {
-        profile_settings: setting,
-      },
-    })
-  }
-
-  const updateFeaturedCreators = (organizations: Organization[]) => {
-    updateOrganization({
-      featured_organizations: organizations.map((c) => c.id),
-    })
-  }
-
-  const updateLinks = (links: LinkItem[]) => {
-    updateOrganization({
-      links: links.map((l) => l.url),
-    })
-  }
-
-  const PostsEmptyState = () => {
-    return isOrgMember ? (
-      <div className="dark:text-polar-500 flex flex-col items-center gap-y-4 pt-16 text-gray-600">
-        <DraftsOutlined fontSize="large" />
-        <p className="text-center">
-          Build out an audience by writing posts and share it with your
-          subscribers
-        </p>
-      </div>
-    ) : (
-      <div className="dark:text-polar-400 flex h-full w-full flex-col items-center gap-y-4 pt-16 text-gray-600">
-        <DraftsOutlined fontSize="large" />
-        <div className="flex w-full flex-col items-center gap-y-2 px-12 text-center">
-          <h3 className="p-2 text-lg font-medium">
-            {organization.name} is typing...
-          </h3>
-          <p className="dark:text-polar-500 w-full min-w-0 text-gray-500">
-            Subscribe to {organization.name} to get future posts fresh out of
-            the press.
-          </p>
+  const NewsletterBox = () => {
+    return (
+      organization.feature_settings?.articles_enabled &&
+      posts.length > 0 && (
+        <div className="flex flex-col gap-6">
+          <div className="flex flex-row items-center gap-4">
+            <h3 className="text-xl">Newsletters</h3>
+          </div>
+          <div className="flex w-full flex-col divide-y">
+            {posts.map((post) => (
+              <Link
+                key={post.id}
+                href={organizationPageLink(organization, `posts/${post.slug}`)}
+                className="flex w-full flex-col gap-1 py-6 transition-opacity hover:opacity-70"
+              >
+                <h3 className="line-clamp-2 text-xl">{post.title}</h3>
+                <span className="dark:text-polar-500 text-gray-500">
+                  {new Date(post.published_at ?? 0).toLocaleDateString(
+                    'en-US',
+                    {
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric',
+                    },
+                  )}
+                </span>
+              </Link>
+            ))}
+            <Link
+              className="flex flex-row items-center gap-2 py-6 text-blue-500 hover:text-blue-400 dark:text-blue-400 dark:hover:text-blue-300"
+              href={organizationPageLink(organization, 'posts')}
+            >
+              <span>View all</span>
+              <ArrowForward fontSize="inherit" />
+            </Link>
+          </div>
         </div>
-      </div>
+      )
     )
   }
+
+  const showFreeTier = organization.profile_settings?.subscribe?.promote ?? true
+  const subscriptionProducts = useMemo(
+    () =>
+      products.filter(hasRecurringInterval(recurringInterval, !showFreeTier)),
+    [products, showFreeTier, recurringInterval],
+  )
+  const oneTimeProducts = useMemo(
+    () => products.filter((p) => !p.is_recurring),
+    [products],
+  )
 
   return (
     <div className="flex w-full flex-col gap-y-24">
       <div className="flex flex-col gap-24 lg:flex-row lg:gap-16">
-        <div className="flex w-full min-w-0 flex-shrink flex-col gap-y-16 md:max-w-xl xl:max-w-3xl">
-          {organization.feature_settings?.articles_enabled && (
-            <div className="flex w-full flex-col gap-y-6">
-              <div className="flex flex-col gap-y-2 md:flex-row md:justify-between">
-                <h2 className="text-lg">Pinned & Latest Posts</h2>
-                <Link
-                  className="text-sm text-blue-500 dark:text-blue-400"
-                  href={organizationPageLink(organization, 'posts')}
-                >
-                  <span>View all</span>
-                </Link>
-              </div>
-              {(posts.length ?? 0) > 0 ? (
-                <div className="flex flex-col gap-y-8">
-                  <div className="flex flex-col gap-6">
-                    {posts.map((post) => (
-                      <PostComponent
-                        article={post}
-                        key={post.id}
-                        highlightPinned
-                      />
-                    ))}
-                  </div>
-                </div>
-              ) : (
-                <PostsEmptyState />
-              )}
-            </div>
-          )}
-
-          {organization.feature_settings?.subscriptions_enabled && (
-            <div className="flex w-full flex-col lg:hidden">
-              <HighlightedTiersEditor
-                organization={organization}
-                userOrganizations={userOrganizations}
-                products={products}
-              />
-            </div>
-          )}
-
-          {repositories.length > 0 ? (
-            <ProjectsEditor
+        <div className="flex w-full min-w-0 flex-shrink flex-col gap-y-24">
+          {subscriptionProducts.length > 0 && (
+            <ProductsGrid
+              title="Subscriptions"
               organization={organization}
-              repositories={repositories}
-              featuredRepositories={featuredProjects}
-              disabled={!isOrgMember}
-            />
-          ) : null}
+              recurringInterval={recurringInterval}
+              hasBothIntervals={hasBothIntervals}
+              setRecurringInterval={setRecurringInterval}
+            >
+              {subscriptionProducts.map((tier) => (
+                <SubscriptionTierCard
+                  className="w-full self-stretch"
+                  key={tier.id}
+                  subscriptionTier={tier}
+                  recurringInterval={recurringInterval}
+                  variant="small"
+                >
+                  {shouldRenderSubscribeButton &&
+                    (tier.type === 'free' ? (
+                      <FreeTierSubscribe
+                        product={tier}
+                        organization={organization}
+                      />
+                    ) : (
+                      <CheckoutButton
+                        organization={organization}
+                        recurringInterval={recurringInterval}
+                        product={tier}
+                        checkoutPath="/api/checkout"
+                      >
+                        Subscribe
+                      </CheckoutButton>
+                    ))}
+                </SubscriptionTierCard>
+              ))}
+            </ProductsGrid>
+          )}
 
-          <CreatorsEditor
-            organization={organization}
-            featuredOrganizations={featuredOrganizations}
-            onChange={updateFeaturedCreators}
-            disabled={!isOrgMember}
-          />
+          {oneTimeProducts.length > 0 && (
+            <ProductsGrid title="Products" organization={organization}>
+              {oneTimeProducts.map((product) => (
+                <ProductCard key={product.id} product={product} />
+              ))}
+            </ProductsGrid>
+          )}
+
+          <NewsletterBox />
 
           {organization.donations_enabled && (
-            <div className="flex w-full flex-col lg:hidden">
-              <DonationsFeed donations={donations} />
-            </div>
+            <DonationsFeed donations={donations} />
           )}
-
-          <div className="flex w-full flex-col lg:hidden">
-            <LinksEditor
-              links={links}
-              onChange={updateLinks}
-              disabled={!isOrgMember}
-              variant="column"
-            />
-          </div>
 
           {organization.feature_settings?.issue_funding_enabled &&
           issues.length > 0 ? (
@@ -191,33 +166,47 @@ const ClientPage = ({
             />
           ) : null}
         </div>
-
-        <div className="hidden w-full flex-col gap-y-16 md:max-w-52 lg:flex lg:max-w-72">
-          {organization.feature_settings?.subscriptions_enabled && (
-            <HighlightedTiersEditor
-              organization={organization}
-              userOrganizations={userOrganizations}
-              products={products}
-            />
-          )}
-
-          {organization.donations_enabled && (
-            <DonationsFeed donations={donations} />
-          )}
-
-          <LinksEditor
-            links={links}
-            onChange={updateLinks}
-            disabled={!isOrgMember}
-            variant="column"
-          />
-        </div>
       </div>
     </div>
   )
 }
 
 export default ClientPage
+
+interface ProductsGridProps extends React.PropsWithChildren {
+  title: string
+  organization: Organization
+  recurringInterval?: ProductPriceRecurringInterval
+  hasBothIntervals?: boolean
+  setRecurringInterval?: (interval: ProductPriceRecurringInterval) => void
+}
+
+const ProductsGrid = ({
+  title,
+  children,
+  hasBothIntervals,
+  recurringInterval,
+  setRecurringInterval,
+}: ProductsGridProps) => {
+  return (
+    <div className="flex flex-col gap-y-8">
+      <div className="flex flex-col gap-y-2">
+        <h2 className="text-xl">{title}</h2>
+      </div>
+      {hasBothIntervals && recurringInterval && setRecurringInterval && (
+        <div className="flex justify-center">
+          <SubscriptionTierRecurringIntervalSwitch
+            recurringInterval={recurringInterval}
+            onChange={setRecurringInterval}
+          />
+        </div>
+      )}
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+        {children}
+      </div>
+    </div>
+  )
+}
 
 interface DonationsFeedProps {
   donations: PublicDonation[]

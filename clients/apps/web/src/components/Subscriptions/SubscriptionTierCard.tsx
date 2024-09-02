@@ -182,18 +182,23 @@ const SubscriptionTierCard: React.FC<SubscriptionTierCardProps> = ({
           </div>
         </div>
         <div className="flex flex-col gap-y-8 text-[--var-fg-color] dark:text-[--var-dark-fg-color]">
-          {price && (
-            <div className={variantStyles[variant]['priceLabel']}>
-              {formatCurrencyAndAmount(
-                price.price_amount,
-                price.price_currency,
-                0,
-              )}
-              <span className="dark:text-polar-500 ml-2 text-xl font-normal text-gray-500">
-                {recurringBillingLabel}
-              </span>
-            </div>
-          )}
+          <div className={variantStyles[variant]['priceLabel']}>
+            {price ? (
+              <>
+                {formatCurrencyAndAmount(
+                  price.price_amount,
+                  price.price_currency,
+                  0,
+                )}
+                <span className="dark:text-polar-500 ml-2 text-xl font-normal text-gray-500">
+                  {recurringBillingLabel}
+                </span>
+              </>
+            ) : (
+              '$0'
+            )}
+          </div>
+
           {subscriptionTier.description ? (
             <p
               className={twMerge(

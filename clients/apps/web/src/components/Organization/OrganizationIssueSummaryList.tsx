@@ -23,7 +23,7 @@ export const OrganizationIssueSummaryList = ({
   return (
     <div className="flex w-full flex-col gap-y-6">
       <div className="flex flex-col justify-between gap-2 md:flex-row">
-        <h2 className="text-lg">Top Issues</h2>
+        <h2 className="text-xl">Crowdfunded Issues</h2>
         <Link
           className="text-sm text-blue-500 dark:text-blue-400"
           href={organizationPageLink(organization, 'issues')}

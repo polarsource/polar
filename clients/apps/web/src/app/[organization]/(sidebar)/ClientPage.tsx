@@ -1,5 +1,6 @@
 'use client'
 
+import { Post as PostComponent } from '@/components/Feed/Posts/Post'
 import { FreeTierSubscribe } from '@/components/Organization/FreeTierSubscribe'
 import { OrganizationIssueSummaryList } from '@/components/Organization/OrganizationIssueSummaryList'
 import CheckoutButton from '@/components/Products/CheckoutButton'
@@ -56,8 +57,15 @@ const ClientPage = ({
       organization.feature_settings?.articles_enabled &&
       posts.length > 0 && (
         <div className="flex flex-col gap-6">
-          <div className="flex flex-row items-center gap-4">
+          <div className="flex flex-col gap-2">
             <h3 className="text-xl">Newsletters</h3>
+            <Link
+              className="dark:text-polar-500 flex flex-row items-center gap-2 text-sm text-blue-500 transition-colors hover:text-blue-400 dark:hover:text-white"
+              href={organizationPageLink(organization, 'posts')}
+            >
+              <span>View all</span>
+              <ArrowForward fontSize="inherit" />
+            </Link>
           </div>
           <div className="flex w-full flex-col divide-y">
             {posts.map((post) => (
@@ -66,26 +74,9 @@ const ClientPage = ({
                 href={organizationPageLink(organization, `posts/${post.slug}`)}
                 className="flex w-full flex-col gap-1 py-6 transition-opacity hover:opacity-70"
               >
-                <h3 className="line-clamp-2 text-xl">{post.title}</h3>
-                <span className="dark:text-polar-500 text-gray-500">
-                  {new Date(post.published_at ?? 0).toLocaleDateString(
-                    'en-US',
-                    {
-                      year: 'numeric',
-                      month: 'long',
-                      day: 'numeric',
-                    },
-                  )}
-                </span>
+                <PostComponent article={post} highlightPinned />
               </Link>
             ))}
-            <Link
-              className="flex flex-row items-center gap-2 py-6 text-blue-500 hover:text-blue-400 dark:text-blue-400 dark:hover:text-blue-300"
-              href={organizationPageLink(organization, 'posts')}
-            >
-              <span>View all</span>
-              <ArrowForward fontSize="inherit" />
-            </Link>
           </div>
         </div>
       )
@@ -121,7 +112,6 @@ const ClientPage = ({
                   key={tier.id}
                   subscriptionTier={tier}
                   recurringInterval={recurringInterval}
-                  variant="small"
                 >
                   {shouldRenderSubscribeButton &&
                     (tier.type === 'free' ? (
@@ -147,7 +137,15 @@ const ClientPage = ({
           {oneTimeProducts.length > 0 && (
             <ProductsGrid title="Products" organization={organization}>
               {oneTimeProducts.map((product) => (
-                <ProductCard key={product.id} product={product} />
+                <Link
+                  key={product.id}
+                  href={organizationPageLink(
+                    organization,
+                    `products/${product.id}`,
+                  )}
+                >
+                  <ProductCard key={product.id} product={product} />
+                </Link>
               ))}
             </ProductsGrid>
           )}
@@ -201,7 +199,7 @@ const ProductsGrid = ({
           />
         </div>
       )}
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-10 md:grid-cols-2 lg:grid-cols-3">
         {children}
       </div>
     </div>

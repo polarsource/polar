@@ -281,7 +281,6 @@ export const generateSchemaExample = (
 
   if (schema.properties) {
     return Object.entries(schema.properties).reduce((acc, [key, value]) => {
-      console.log(requiredOnly, schema.required, key)
       if (requiredOnly && !schema.required?.includes(key)) {
         return acc
       }

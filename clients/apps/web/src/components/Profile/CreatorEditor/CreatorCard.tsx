@@ -84,7 +84,7 @@ export const CreatorCard = ({
       <CardFooter className="flex flex-row items-center justify-between gap-x-4 p-6">
         <div className="flex w-full flex-row items-center gap-x-4">
           {organization.feature_settings?.subscriptions_enabled && (
-            <Link href={organizationPageLink(organization, 'subscriptions')}>
+            <Link href={organizationPageLink(organization)}>
               <Button size="sm">Subscribe</Button>
             </Link>
           )}

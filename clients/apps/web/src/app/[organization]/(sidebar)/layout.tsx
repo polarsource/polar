@@ -1,6 +1,7 @@
 import LogoIcon from '@/components/Brand/LogoIcon'
 import PolarMenu from '@/components/Layout/PolarMenu'
 import { BrandingMenu } from '@/components/Layout/Public/BrandingMenu'
+import PublicLayout from '@/components/Layout/PublicLayout'
 import { OrganizationPublicPageNav } from '@/components/Organization/OrganizationPublicPageNav'
 import { OrganizationPublicSidebar } from '@/components/Organization/OrganizationPublicSidebar'
 import { getServerSideAPI } from '@/utils/api/serverside'
@@ -80,8 +81,8 @@ export default async function Layout({
   }
 
   return (
-    <div className="flex flex-col">
-      <div className="mx-auto flex w-full max-w-[1440px] flex-col items-start px-4 md:h-full md:flex-row md:gap-8 md:space-y-0 xl:gap-24">
+    <PublicLayout wide>
+      <div className="flex flex-col gap-x-24 md:flex-row">
         <div className="dark:bg-polar-950 sticky top-0 z-20 flex w-full flex-row items-center justify-between bg-white py-4 md:relative md:hidden">
           <a href="/">
             <LogoIcon className="text-blue-500 dark:text-blue-400" size={40} />
@@ -119,6 +120,6 @@ export default async function Layout({
           {children}
         </div>
       </div>
-    </div>
+    </PublicLayout>
   )
 }

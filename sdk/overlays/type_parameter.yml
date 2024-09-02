@@ -1,0 +1,8 @@
+overlay: 1.0.0
+info:
+  title: Overlay to automatically rename "type" parameters
+  version: 0.0.1
+actions:
+  - target: "$.paths.*.*.parameters[?(@.name=='type')]"
+    update:
+      x-speakeasy-name-override: "type_filter"

@@ -13,7 +13,7 @@
     "test": "DOTENV_CONFIG_PATH=.env.test jest",
     "typecheck": "tsc --noEmit",
     "docs:build": "pnpm run docs:schema && pnpm run docs:metadata && pnpm run docs:index",
-    "docs:schema": "node scripts/downloadOpenAPISchema.mjs",
+    "docs:schema": "cp ../../../sdk/schema.json src/openapi.json",
     "docs:metadata": "node scripts/buildSearchMetadata.mjs",
     "docs:index": "node scripts/buildSearchIndex.mjs"
   },

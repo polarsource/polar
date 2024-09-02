@@ -67,8 +67,13 @@ Focus on building your passion, while we focus on the infrastructure to get you 
 **🔓 Found a security vulnerability?** We greatly appreciate responsible and private disclosures to security@polar.sh. See [Security](./README.md#Security)
 
 ### Polar API & SDK
-You can integrate Polar on your docs, sites or services using our [Public API](https://polar.sh/docs/api), [Webhook API](https://api.polar.sh/docs#/webhooks), and/or our [Polar JS SDK](./clients/packages/sdk) (Beta)
 
+You can integrate Polar on your docs, sites or services using our [Public API](https://docs.polar.sh/api/) and [Webhook API](https://docs.polar.sh/api/webhooks).
+
+We also maintain SDK for the following languages:
+
+* JavaScript (Node.js and browsers): [polarsource/polar-js](https://github.com/polarsource/polar-js)
+* Python: [polarsource/polar-python](https://github.com/polarsource/polar-python)
 
 ## Contributions
 
@@ -89,7 +94,6 @@ You can also develop on Polar locally on your computer, which is the recommended
 * **[clients](./clients/README.md)** – Turborepo
   * [web](./clients/apps/web) (Dashboard) – NextJS (TypeScript)
   * [polarkit](./clients/packages/polarkit) - Shared React components
-  * [`@polar-sh/sdk`](./clients/packages/sdk) - Polar JS SDK
   * [`@polar-sh/astro`](./clients/packages/astro) - Polar Astro SDK
   * [astro-example](./clients/examples/astro-example) - Astro Example app powered by `@polar-sh/astro`
 

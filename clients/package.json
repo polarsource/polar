@@ -11,12 +11,9 @@
     "generate": "cd packages/sdk && pnpm generate",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
     "preinstall": "npx only-allow pnpm",
-    "postinstall": "manypkg check",
-    "publish-packages": "pnpm build && pnpm test && changeset version && changeset publish",
-    "version-packages": "changeset version && pnpm install --fix-lockfile"
+    "postinstall": "manypkg check"
   },
   "dependencies": {
-    "@changesets/cli": "^2.27.1",
     "@manypkg/cli": "latest",
     "eslint": "^8.55.0",
     "eslint-config-custom": "workspace:*",

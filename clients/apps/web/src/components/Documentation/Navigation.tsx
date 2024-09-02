@@ -280,6 +280,12 @@ export const MainNavigation = () => {
               File Downloads
             </NavigationItem>
             <NavigationItem
+              href="/docs/benefits/license-keys"
+              icon={<ArrowForward fontSize="inherit" />}
+            >
+              License Keys
+            </NavigationItem>
+            <NavigationItem
               href="/docs/benefits/github-repositories"
               icon={<ArrowForward fontSize="inherit" />}
             >

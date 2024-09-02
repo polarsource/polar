@@ -1,0 +1,20 @@
+overlay: 1.0.0
+info:
+  title: Overlay to fix security definition for Speakeasy
+  version: 0.0.1
+actions:
+  - target: "$"
+    description: Add a global security scheme named `access_token`
+    update:
+      security:
+        - access_token: []
+  - target: "$.components.securitySchemes"
+    description: "Add this scheme to components"
+    update:
+      access_token:
+        type: http
+        scheme: bearer
+  - target: "$.paths.*.*.security"
+    description: Remove security from individual paths
+    remove: true
+

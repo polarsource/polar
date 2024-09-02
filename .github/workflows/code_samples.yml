@@ -51,3 +51,10 @@ jobs:
       - name: Apply code samples overlay and convert to JSON
         run: |
           speakeasy overlay apply -s source.yml -o overlay.yml --out schema.yml
+          cat schema.yml | yq -o json > schema.json
+
+      - name: Commit and push changes
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "docs: update code samples"
+          file_pattern: sdk/schema.json

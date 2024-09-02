@@ -1,4 +1,5 @@
-import { FavoriteBorderOutlined, SyncAltOutlined } from '@mui/icons-material'
+import { DiscountOutlined, FavoriteBorderOutlined } from '@mui/icons-material'
+import { Pill } from 'polarkit/components/ui/atoms'
 import { Section } from './Section'
 
 const PriceItem = ({
@@ -27,12 +28,17 @@ const PriceItem = ({
 
 export const Pricing = () => {
   return (
-    <Section id="pricing" className="gap-y-24">
-      <div className="flex flex-col items-center gap-y-4">
-        <h1 className="text-center text-3xl md:text-5xl">4% + 40c</h1>
-        <p className="dark:text-polar-500 text-center text-xl text-gray-500">
-          Transparent pricing aligned with your success
-        </p>
+    <Section id="pricing" className="items-center gap-y-16">
+      <div className="flex flex-col items-center gap-y-12">
+        <Pill className="px-4 py-2 text-sm font-normal" color="gray">
+          Founding Member
+        </Pill>
+        <div className="flex flex-col items-center gap-y-4">
+          <h1 className="text-center text-3xl md:text-5xl">4% + 40¢</h1>
+          <p className="dark:text-polar-500 text-center text-xl text-gray-500">
+            Transparent pricing aligned with your success
+          </p>
+        </div>
       </div>
       <div className="rounded-4xl flex w-full flex-col items-center divide-y overflow-hidden md:flex-row md:divide-x md:divide-y-0">
         <PriceItem
@@ -41,9 +47,9 @@ export const Pricing = () => {
           description="No hidden or monthly costs"
         />
         <PriceItem
-          icon={<SyncAltOutlined fontSize="large" />}
-          title="Stripe & Open Collective"
-          description="Transaction- and payout fees apply"
+          icon={<DiscountOutlined fontSize="large" />}
+          title="Volume Pricing"
+          description="Reach out to us for volume discounts"
         />
       </div>
     </Section>

@@ -172,12 +172,14 @@ export const resolveSchemaMinMax = (
 const generateScalarSchemaExample = (
   schema: OpenAPIV3_1.SchemaObject,
   defaults: Record<string, any> | string,
+  depth: number = 0,
 ) => {
   if (schema.type === 'object') {
     if (schema.additionalProperties) {
       return {}
     }
-    return generateSchemaExample(schema, defaults)
+    if (depth > 1) return {}
+    return generateSchemaExample(schema, defaults, depth + 1)
   }
 
   if (schema.type === 'array') {
@@ -267,6 +269,7 @@ const parseDefaultParameterValue = (
 export const generateSchemaExample = (
   schema: OpenAPIV3_1.SchemaObject,
   defaults: Record<string, any> | string = {},
+  depth: number = 0,
 ): Record<string, any> | string => {
   const unionSchemas = getUnionSchemas(schema)
 
@@ -289,7 +292,7 @@ export const generateSchemaExample = (
     }, {})
   }
 
-  return generateScalarSchemaExample(schema, defaults)
+  return generateScalarSchemaExample(schema, defaults, depth + 1)
 }
 
 const getParameters = (

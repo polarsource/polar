@@ -53,8 +53,11 @@ jobs:
           speakeasy overlay apply -s source.yml -o overlay.yml --out schema.yml
           cat schema.yml | yq -o json > schema.json
 
-      - name: Commit and push changes
-        uses: stefanzweifel/git-auto-commit-action@v5
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v6
         with:
-          commit_message: "docs: update code samples"
-          file_pattern: sdk/schema.json
+          add-paths: sdk/schema.json
+          commit-message: 'docs: update SDK code samples'
+          title: 'docs: update SDK code samples'
+          branch: update-sdk-code-samples
+          delete-branch: true

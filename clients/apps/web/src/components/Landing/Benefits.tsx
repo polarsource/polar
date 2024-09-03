@@ -64,11 +64,10 @@ export const Benefits = () => {
       <div className="flex w-full flex-col gap-x-24 gap-y-16 md:flex-row">
         <div className="flex h-full flex-col items-center gap-y-4 text-center md:items-start md:gap-y-8 md:text-left">
           <h2 className="text-3xl !leading-tight md:text-5xl">
-            Flexible products with powerful benefits
+            Launch Memberships, Products & SaaS in minutes
           </h2>
           <p className="dark:text-polar-400 text-lg text-gray-600">
-            Start offering developer first products and services in minutes -
-            paid once, monthly or annually
+            Using our built-in benefits designed for developers.
           </p>
           <div className="flex flex-row items-center justify-start gap-x-4">
             <GetStartedButton text="Get Started" />
@@ -84,22 +83,22 @@ export const Benefits = () => {
               ref={benefit1}
               icon={<GitHubIcon />}
               link="/docs/benefits/github-repositories"
-              title="Private Repository Access"
-              description="Gatekeep GitHub repositories to paying customers"
+              title="Private GitHub Repositories"
+              description="Automate collaborator invites to private repositories"
             />
             <Benefit
               ref={benefit2}
               icon={<DiscordIcon />}
               link="/docs/benefits/discord"
-              title="Discord Channel Access"
-              description="Give customers exclusive access to Discord channels"
+              title="Discord Invites & Roles"
+              description="Offer access to premium support- or community channels"
             />
             <Benefit
               ref={benefit3}
               icon={<Key />}
               link="/docs/benefits/license-keys"
               title="License Keys"
-              description="Sell access to your custom software with License Keys"
+              description="Sell access to your premium apps, services or APIs"
             />
           </div>
 

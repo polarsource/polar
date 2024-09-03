@@ -34,7 +34,7 @@ export default async function Layout({ children }: PropsWithChildren) {
           </div>
         </div>
       </div>
-      <Footer showUpsellFooter={false} wide />
+      <Footer wide />
     </div>
   )
 }

@@ -64,7 +64,7 @@ const LandingPageFooter = () => {
       whileInView="animate"
       viewport={{ once: true }}
     >
-      <Footer wide={true} showUpsellFooter={false} />
+      <Footer wide={true} />
     </motion.div>
   )
 }

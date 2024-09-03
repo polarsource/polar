@@ -85,39 +85,39 @@ const PlatformPopover = () => {
             <h3 className="ml-3 text-lg">Benefits</h3>
             <div className="flex flex-col gap-y-2">
               <PopoverLinkItem
-                title="Introducing Benefits"
-                description="Offer exclusive benefits to your supporters"
-                link="/benefits"
-              />
-              <PopoverLinkItem
                 title="Private GitHub Repositories"
                 description="Grant access to private repositories"
-                link="/benefits"
+                link="/docs/benefits/github-repositories"
               />
               <PopoverLinkItem
                 title="Discord Server Access"
                 description="Automatic Discord role assignment"
-                link="/benefits"
+                link="/docs/benefits/discord"
+              />
+              <PopoverLinkItem
+                title="License Keys"
+                description="Sell access to your custom software with License Keys"
+                link="/docs/benefits/license-keys"
               />
               <PopoverLinkItem
                 title="File Downloads"
                 description="Access to exclusive file downloads"
-                link="/benefits"
+                link="/docs/benefits/file-downloads"
               />
               <PopoverLinkItem
                 title="Advertisements"
                 description="Promote your supporters in READMEs & Newsletters"
-                link="/benefits"
+                link="/docs/benefits/ads"
               />
               <PopoverLinkItem
                 title="Premium Newsletters"
                 description="Early & private access to newsletters"
-                link="/benefits"
+                link="/docs/benefits/newsletter"
               />
               <PopoverLinkItem
                 title="Custom"
                 description="Offer custom benefits for your special usecase"
-                link="/benefits"
+                link="/docs/benefits#create-a-custom-benefit"
               />
             </div>
           </div>

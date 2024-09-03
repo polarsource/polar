@@ -53,7 +53,9 @@ const NavigationSection = ({
 }
 
 const NavigationHeadline = ({ children }: { children: React.ReactNode }) => {
-  return <h2 className="mb-4 text-sm font-medium text-gray-700">{children}</h2>
+  return (
+    <h2 className="mb-4 font-medium text-black dark:text-white">{children}</h2>
+  )
 }
 
 const APISections = () => {

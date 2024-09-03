@@ -67,7 +67,7 @@ const ClientPage = ({
               <ArrowForward fontSize="inherit" />
             </Link>
           </div>
-          <div className="flex w-full flex-col divide-y">
+          <div className="flex w-full flex-col">
             {posts.map((post) => (
               <Link
                 key={post.id}
@@ -83,11 +83,9 @@ const ClientPage = ({
     )
   }
 
-  const showFreeTier = organization.profile_settings?.subscribe?.promote ?? true
   const subscriptionProducts = useMemo(
-    () =>
-      products.filter(hasRecurringInterval(recurringInterval, !showFreeTier)),
-    [products, showFreeTier, recurringInterval],
+    () => products.filter(hasRecurringInterval(recurringInterval, true)),
+    [products, recurringInterval],
   )
   const oneTimeProducts = useMemo(
     () => products.filter((p) => !p.is_recurring),
@@ -188,17 +186,17 @@ const ProductsGrid = ({
 }: ProductsGridProps) => {
   return (
     <div className="flex flex-col gap-y-8">
-      <div className="flex flex-col gap-y-2">
+      <div className="flex flex-row items-center justify-between gap-x-8">
         <h2 className="text-xl">{title}</h2>
+        {hasBothIntervals && recurringInterval && setRecurringInterval && (
+          <div className="flex justify-center">
+            <SubscriptionTierRecurringIntervalSwitch
+              recurringInterval={recurringInterval}
+              onChange={setRecurringInterval}
+            />
+          </div>
+        )}
       </div>
-      {hasBothIntervals && recurringInterval && setRecurringInterval && (
-        <div className="flex justify-center">
-          <SubscriptionTierRecurringIntervalSwitch
-            recurringInterval={recurringInterval}
-            onChange={setRecurringInterval}
-          />
-        </div>
-      )}
       <div className="grid grid-cols-1 gap-10 md:grid-cols-2 lg:grid-cols-3">
         {children}
       </div>
@@ -235,12 +233,12 @@ const DonationsFeed = ({ donations }: DonationsFeedProps) => {
           <div
             key={donation.id}
             className={twMerge(
-              'flex w-full flex-row gap-x-4',
+              'flex w-full flex-row gap-x-6',
               !donation.message && 'items-center',
             )}
           >
             <Avatar
-              className="h-8 w-8"
+              className="h-12 w-12"
               avatar_url={donation.donor?.avatar_url ?? null}
               name={getDonorName(donation)}
             />
@@ -250,7 +248,7 @@ const DonationsFeed = ({ donations }: DonationsFeedProps) => {
                 {` donated ${formatCurrencyAndAmount(donation.amount, donation.currency)}`}
               </h3>
               {donation.message && (
-                <p className="dark:bg-polar-700 rounded-lg bg-gray-100 px-3 py-2 text-sm">
+                <p className="dark:bg-polar-700 self-start rounded-full bg-gray-100 px-4 py-3 text-sm">
                   {donation.message}
                 </p>
               )}

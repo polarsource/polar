@@ -34,7 +34,7 @@ export const Default: Story = {
     return (
       <UserContextProvider user={undefined} userOrganizations={[]}>
         <PolarQueryClientProvider>
-          <PublicLayout showUpsellFooter={true}>
+          <PublicLayout>
             <ClientPage {...args} />
           </PublicLayout>
         </PolarQueryClientProvider>

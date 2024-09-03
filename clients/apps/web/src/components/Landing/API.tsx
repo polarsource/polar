@@ -19,11 +19,10 @@ export const API = () => {
             API & Developer First
           </span>
           <h3 className="text-2xl font-medium leading-snug md:text-3xl">
-            The API sits in the front seat
+            Powerful Custom Integrations
           </h3>
           <p className="dark:text-polar-200 h-full leading-relaxed text-gray-500">
-            Use our OAuth, API & Webhooks to ship custom integrations across
-            docs, sites, apps and services.
+            Ship faster with our API, Webhooks, OAuth & SDKs.
           </p>
         </div>
         <APIFirst />

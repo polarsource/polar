@@ -28,7 +28,7 @@ export const Default: Story = {
 
   render: (args) => {
     return (
-      <PublicLayout showUpsellFooter={true}>
+      <PublicLayout>
         <PledgeByLink {...args} />
       </PublicLayout>
     )

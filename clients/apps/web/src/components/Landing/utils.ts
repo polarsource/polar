@@ -198,7 +198,7 @@ export const MOCKED_SUBSCRIPTIONS: (Partial<Product> & {
     name: 'Supporter',
     type: 'individual',
     description:
-      'Access to software releases, my private GitHub repository & support in my Discord server.',
+      'Access to software releases, license keys, my private GitHub repository & support in my Discord server.',
     prices: [
       {
         id: '123',
@@ -224,8 +224,18 @@ export const MOCKED_SUBSCRIPTIONS: (Partial<Product> & {
       },
       {
         id: '789',
-        description: 'Discord Invite',
+        description: 'Discord Support Channel',
         type: 'discord',
+        created_at: new Date().toDateString(),
+        modified_at: null,
+        selectable: false,
+        deletable: false,
+        organization_id: '123',
+      },
+      {
+        id: '852',
+        description: 'License Key',
+        type: 'license_keys',
         created_at: new Date().toDateString(),
         modified_at: null,
         selectable: false,

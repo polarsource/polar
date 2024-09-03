@@ -72,7 +72,7 @@ export const Benefits = () => {
           </p>
           <div className="flex flex-row items-center justify-start gap-x-4">
             <GetStartedButton text="Get Started" />
-            <Link href={`/benefits`}>
+            <Link href={`/docs/benefits`}>
               <Button variant="ghost">More Benefits</Button>
             </Link>
           </div>

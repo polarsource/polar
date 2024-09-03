@@ -1,6 +1,6 @@
 'use client'
 
-import { FileDownloadOutlined } from '@mui/icons-material'
+import { Key } from '@mui/icons-material'
 import { Transition, motion } from 'framer-motion'
 import Link from 'next/link'
 import Button from 'polarkit/components/ui/atoms/button'
@@ -23,7 +23,7 @@ export const Benefits = () => {
   })
 
   const setPoint = useCallback(
-    (index?: number) => (el: HTMLDivElement | null) => {
+    (index?: number) => (el: HTMLAnchorElement | HTMLDivElement | null) => {
       if (el) {
         const boundingBox = el.getBoundingClientRect()
 
@@ -64,7 +64,7 @@ export const Benefits = () => {
       <div className="flex w-full flex-col gap-x-24 gap-y-16 md:flex-row">
         <div className="flex h-full flex-col items-center gap-y-4 text-center md:items-start md:gap-y-8 md:text-left">
           <h2 className="text-3xl !leading-tight md:text-5xl">
-            Powerful products with flexible benefits
+            Flexible products with powerful benefits
           </h2>
           <p className="dark:text-polar-400 text-lg text-gray-600">
             Start offering developer first products and services in minutes -
@@ -83,20 +83,23 @@ export const Benefits = () => {
             <Benefit
               ref={benefit1}
               icon={<GitHubIcon />}
+              link="/docs/benefits/github-repositories"
               title="Private Repository Access"
               description="Gatekeep GitHub repositories to paying customers"
             />
             <Benefit
               ref={benefit2}
               icon={<DiscordIcon />}
+              link="/docs/benefits/discord"
               title="Discord Channel Access"
               description="Give customers exclusive access to Discord channels"
             />
             <Benefit
               ref={benefit3}
-              icon={<FileDownloadOutlined />}
-              title="File Downloads"
-              description="Any kind of file up to 10GB"
+              icon={<Key />}
+              link="/docs/benefits/license-keys"
+              title="License Keys"
+              description="Sell access to your custom software with License Keys"
             />
           </div>
 
@@ -127,15 +130,17 @@ interface BenefitProps {
   icon: React.ReactElement
   title: string
   description: string
+  link: string
 }
 
-const Benefit = forwardRef<HTMLDivElement, BenefitProps>(
-  ({ icon, title, description }, ref) => {
+const Benefit = forwardRef<HTMLAnchorElement, BenefitProps>(
+  ({ icon, title, description, link }, ref) => {
     const iconSize = 20
 
     return (
-      <div
+      <Link
         ref={ref}
+        href={link}
         className="dark:bg-polar-900 dark:border-polar-700 flex flex-col gap-y-4 rounded-3xl border border-gray-100 bg-white p-6"
       >
         <span className="text-2xl">
@@ -152,7 +157,7 @@ const Benefit = forwardRef<HTMLDivElement, BenefitProps>(
             {description}
           </p>
         </div>
-      </div>
+      </Link>
     )
   },
 )

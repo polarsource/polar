@@ -37,8 +37,8 @@ export const Monetization = () => {
                       delay={1}
                       texts={[
                         'capawesome-team',
-                        'serenityos',
-                        'HDInnovations',
+                        'fief-dev',
+                        'LadybirdBrowser',
                         'emilwidlund',
                       ]}
                     />

@@ -433,6 +433,16 @@ class TestSyncStripeFees:
                 {
                     "created": now_timestamp,
                     "id": "STRIPE_BALANCE_TRANSACTION_ID_9",
+                    "net": -150,
+                    "currency": "usd",
+                    "description": "Connections Verification (2024-08-01 - 2024-08-31)",
+                },
+                None,
+            ),
+            stripe_lib.BalanceTransaction.construct_from(
+                {
+                    "created": now_timestamp,
+                    "id": "STRIPE_BALANCE_TRANSACTION_ID_10",
                     "net": -100,
                     "currency": "usd",
                     "description": "Connect (2024-01-01 - 2024-01-31): Payout Fee",
@@ -442,7 +452,7 @@ class TestSyncStripeFees:
             stripe_lib.BalanceTransaction.construct_from(
                 {
                     "created": now_timestamp,
-                    "id": "STRIPE_BALANCE_TRANSACTION_ID_10",
+                    "id": "STRIPE_BALANCE_TRANSACTION_ID_11",
                     "net": -200,
                     "currency": "usd",
                     "description": "Connect (2024-01-01 - 2024-01-31): Account Volume Billing",
@@ -455,7 +465,7 @@ class TestSyncStripeFees:
             balance_transactions
         )
 
-        fee_transaction_10 = Transaction(
+        fee_transaction_11 = Transaction(
             type=TransactionType.processor_fee,
             processor=PaymentProcessor.stripe,
             processor_fee_type=ProcessorFeeType.payout,
@@ -464,9 +474,9 @@ class TestSyncStripeFees:
             account_currency="usd",
             account_amount=-200,
             tax_amount=0,
-            fee_balance_transaction_id="STRIPE_BALANCE_TRANSACTION_ID_10",
+            fee_balance_transaction_id="STRIPE_BALANCE_TRANSACTION_ID_11",
         )
-        fee_transaction_9 = Transaction(
+        fee_transaction_10 = Transaction(
             type=TransactionType.processor_fee,
             processor=PaymentProcessor.stripe,
             processor_fee_type=ProcessorFeeType.payout,
@@ -475,10 +485,10 @@ class TestSyncStripeFees:
             account_currency="usd",
             account_amount=-100,
             tax_amount=0,
-            fee_balance_transaction_id="STRIPE_BALANCE_TRANSACTION_ID_9",
+            fee_balance_transaction_id="STRIPE_BALANCE_TRANSACTION_ID_10",
         )
+        await save_fixture(fee_transaction_11)
         await save_fixture(fee_transaction_10)
-        await save_fixture(fee_transaction_9)
 
         # then
         session.expunge_all()
@@ -487,7 +497,7 @@ class TestSyncStripeFees:
             session
         )
 
-        assert len(fee_transactions) == 8
+        assert len(fee_transactions) == 9
 
         (
             fee_transaction_1,
@@ -498,6 +508,7 @@ class TestSyncStripeFees:
             fee_transaction_6,
             fee_transaction_7,
             fee_transaction_8,
+            fee_transaction_9,
         ) = fee_transactions
 
         assert fee_transaction_1.type == TransactionType.processor_fee
@@ -534,3 +545,7 @@ class TestSyncStripeFees:
         assert fee_transaction_8.type == TransactionType.processor_fee
         assert fee_transaction_8.processor_fee_type == ProcessorFeeType.invoice
         assert fee_transaction_8.amount == -800
+
+        assert fee_transaction_9.type == TransactionType.processor_fee
+        assert fee_transaction_9.processor_fee_type == ProcessorFeeType.payment
+        assert fee_transaction_9.amount == -150

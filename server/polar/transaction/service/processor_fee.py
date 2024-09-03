@@ -34,6 +34,9 @@ def _get_stripe_processor_fee_type(description: str) -> ProcessorFeeType:
         return ProcessorFeeType.tax
     if "invoicing" in description or "post payment invoices" in description:
         return ProcessorFeeType.invoice
+    # Instant Bank Account Validation for ACH payments
+    if "connections verification" in description:
+        return ProcessorFeeType.payment
     raise UnsupportedStripeFeeType(description)
 
 

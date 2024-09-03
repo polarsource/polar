@@ -13,21 +13,21 @@ export const MerchantOfRecord = () => {
               Merchant of Record
             </span>
             <h3 className="text-3xl font-medium leading-tight">
-              Make money without the headaches
+              Focus on your product. Leave the boring stuff to us.
             </h3>
           </div>
           <ul className="dark:text-polar-200 flex flex-col gap-y-2">
+            <li className="flex flex-row gap-x-2">
+              <ArrowForward className="mt-1" fontSize="inherit" />
+              <span>International Billing</span>
+            </li>
             <li className="flex flex-row gap-x-2">
               <ArrowForward className="mt-1" fontSize="inherit" />
               <span>Sales Tax & EU VAT handled</span>
             </li>
             <li className="flex flex-row gap-x-2">
               <ArrowForward className="mt-1" fontSize="inherit" />
-              <span>On-demand Payouts</span>
-            </li>
-            <li className="flex flex-row gap-x-2">
-              <ArrowForward className="mt-1" fontSize="inherit" />
-              <span>Detailed Transactions Overview</span>
+              <span>Payouts on Demand</span>
             </li>
           </ul>
         </div>

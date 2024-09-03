@@ -53,8 +53,6 @@ class SpeakeasyNameOverrideAPIRoute(APIRoute):
     def __init__(self, path: str, endpoint: Callable[..., Any], **kwargs: Any) -> None:
         super().__init__(path, endpoint, **kwargs)
         endpoint_name = endpoint.__name__
-        if endpoint_name == "get":
-            endpoint_name = "retrieve"
         openapi_extra = self.openapi_extra or {}
         if "x-speakeasy-name-override" not in openapi_extra:
             self.openapi_extra = {

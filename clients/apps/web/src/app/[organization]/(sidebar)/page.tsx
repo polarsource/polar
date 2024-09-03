@@ -99,7 +99,6 @@ export default async function Page({
             organizationId: organization.id,
             isPublished: true,
             visibility: ArticleVisibility.PUBLIC,
-            isPinned: false,
             limit: 3,
           },
           {

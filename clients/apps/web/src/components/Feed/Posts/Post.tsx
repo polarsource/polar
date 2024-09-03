@@ -49,7 +49,7 @@ export const Post = (props: FeedPost) => {
       }}
     >
       <Avatar
-        className="hidden h-12 w-12 md:block"
+        className="hidden h-12 w-12 md:flex"
         avatar_url={props.article.byline.avatar_url}
         name={props.article.byline.name}
       />

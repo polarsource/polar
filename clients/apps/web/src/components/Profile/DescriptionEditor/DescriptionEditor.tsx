@@ -27,12 +27,14 @@ export const DescriptionEditor = ({
 
   const [isDirty, setIsDirty] = useState(false)
   const [contentLength, setContentLength] = useState(description?.length ?? 0)
+  const [isFocused, setFocused] = useState(false)
 
   const onBlur: FormEventHandler<HTMLParagraphElement> = useCallback(
     (e) => {
       if (!paragraphRef.current) return
       setIsDirty(false)
       onChange((e.target as HTMLParagraphElement).innerText ?? '')
+      setFocused(false)
     },
     [onChange],
   )
@@ -46,6 +48,11 @@ export const DescriptionEditor = ({
 
   const showLength = isDirty || contentLength > maxLength
 
+  // If user is not authored to edit description and description is empty, do not render
+  if (disabled && !description) {
+    return null
+  }
+
   return (
     <div
       className={twMerge(
@@ -55,6 +62,7 @@ export const DescriptionEditor = ({
           : 'md:dark:hover:border-polar-700 md:transition-colors md:hover:border-gray-200',
         failed ? '!border-red-400' : '',
         size === 'default' ? '-m-6 p-6' : '-m-4 p-4',
+        description?.length === 0 && !disabled && 'italic',
       )}
     >
       <p
@@ -73,8 +81,11 @@ export const DescriptionEditor = ({
             e.preventDefault()
           }
         }}
+        onFocus={() => setFocused(true)}
       >
-        {description}
+        {description?.length === 0 && !disabled && !isFocused
+          ? 'Add profile description...'
+          : description}
       </p>
 
       {showLength ? (

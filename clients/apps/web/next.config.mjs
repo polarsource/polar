@@ -122,6 +122,28 @@ const nextConfig = {
         permanent: true,
       },
 
+      // Feature pages
+      {
+        source: '/products',
+        destination: '/docs/products',
+        permanent: true,
+      },
+      {
+        source: '/newsletters',
+        destination: '/docs/newsletters',
+        permanent: true,
+      },
+      {
+        source: '/issue-funding',
+        destination: '/docs/issue-funding',
+        permanent: true,
+      },
+      {
+        source: '/donations',
+        destination: '/docs/donations',
+        permanent: true,
+      },
+
       // Redirect /docs/overview/:path to /docs/:path
       {
         source: '/docs/overview/:path*',

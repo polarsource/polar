@@ -60,29 +60,29 @@ const PlatformPopover = () => {
             <h3 className="ml-3 text-lg">Features</h3>
             <div className="flex flex-col gap-y-2">
               <PopoverLinkItem
-                title="Issue Funding & Rewards"
-                description="Crowdfunded GitHub issues on steroids"
-                link="/issue-funding"
-              />
-              <PopoverLinkItem
                 title="Products & Subscriptions"
-                description="One-time & recurring funding in exchange for benefits"
-                link="/products"
-              />
-              <PopoverLinkItem
-                title="Donations"
-                description="A tip jar for your projects"
-                link="/donations"
+                description="Offer digital products or subscriptions"
+                link="/docs/products"
               />
               <PopoverLinkItem
                 title="Newsletters"
-                description="Reach your community with insightful posts"
-                link="/newsletters"
+                description="Reach and engage with your free- or paid subscribers"
+                link="/docs/newsletters"
+              />
+              <PopoverLinkItem
+                title="Issue Funding & Rewards"
+                description="Crowdfunding for GitHub issues with contributor rewards"
+                link="/docs/issue-funding"
+              />
+              <PopoverLinkItem
+                title="Donations"
+                description="Get ad-hoc support from your community"
+                link="/docs/donations"
               />
             </div>
           </div>
           <div className="flex w-1/2 flex-col gap-y-4 pl-8">
-            <h3 className="ml-3 text-lg">Benefits</h3>
+            <h3 className="ml-3 text-lg">Offer Built-in Benefits</h3>
             <div className="flex flex-col gap-y-2">
               <PopoverLinkItem
                 title="Private GitHub Repositories"

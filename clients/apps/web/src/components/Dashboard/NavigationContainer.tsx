@@ -80,7 +80,7 @@ export const NavigationContainer = ({
                     ) : undefined}
                     <span className="text-sm font-medium">{route.title}</span>
                   </span>
-                  <Pill className="self-end" color="gray">
+                  <Pill className="self-end px-2 py-1" color="gray">
                     Coming Soon
                   </Pill>
                 </div>

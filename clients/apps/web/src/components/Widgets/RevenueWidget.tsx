@@ -41,7 +41,6 @@ export const RevenueWidget = ({ className }: RevenueWidgetProps) => {
           <span className="dark:text-polar-500 text-gray-400">Revenue</span>
           <span className="dark:text-polar-500 text-gray-400">
             {new Date().toLocaleDateString('en-US', {
-              month: 'long',
               year: 'numeric',
             })}
           </span>

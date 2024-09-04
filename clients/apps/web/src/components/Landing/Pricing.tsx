@@ -1,8 +1,5 @@
-import {
-  DiscountOutlined,
-  FavoriteBorderOutlined,
-  SyncAlt,
-} from '@mui/icons-material'
+import { DiscountOutlined, FavoriteBorderOutlined } from '@mui/icons-material'
+import Link from 'next/link'
 import { Pill } from 'polarkit/components/ui/atoms'
 import { PropsWithChildren } from 'react'
 import { Section } from './Section'
@@ -58,8 +55,12 @@ export const Pricing = () => {
         <div className="flex flex-col items-center gap-y-4">
           <h1 className="text-center text-3xl md:text-5xl">4% + 40¢</h1>
           <p className="dark:text-polar-500 text-center text-xl text-gray-500">
-            Transparent pricing aligned with your success
+            We only earn when you do.{' '}
+            <Link href="/docs/fees" className="underline">
+              See how our fees apply.
+            </Link>
           </p>
+          <p className="dark:text-polar-500 text-center text-xl text-gray-500"></p>
         </div>
       </div>
       <div className="rounded-4xl flex w-full flex-col items-center divide-y overflow-hidden md:flex-row md:divide-x md:divide-y-0">
@@ -73,12 +74,6 @@ export const Pricing = () => {
           icon={<DiscountOutlined fontSize="large" />}
           title="Volume Pricing"
           description="Large or fast-growing business? Reach out to us."
-          link="/docs/fees"
-        />
-        <PriceItem
-          icon={<SyncAlt fontSize="large" />}
-          title="Additional Stripe Fees"
-          description="International, billing & payout fees may apply"
           link="/docs/fees"
         />
       </div>

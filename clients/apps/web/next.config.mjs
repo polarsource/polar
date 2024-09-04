@@ -125,7 +125,7 @@ const nextConfig = {
       // Feature pages
       {
         source: '/products',
-        destination: '/docs/products',
+        destination: 'https://docs.polar.sh/products',
         has: [
           {
             type: 'host',
@@ -136,7 +136,7 @@ const nextConfig = {
       },
       {
         source: '/newsletters',
-        destination: '/docs/newsletters',
+        destination: 'https://docs.polar.sh/newsletters',
         has: [
           {
             type: 'host',
@@ -147,7 +147,7 @@ const nextConfig = {
       },
       {
         source: '/issue-funding',
-        destination: '/docs/issue-funding',
+        destination: 'https://docs.polar.sh/issue-funding',
         has: [
           {
             type: 'host',
@@ -158,7 +158,7 @@ const nextConfig = {
       },
       {
         source: '/donations',
-        destination: '/docs/donations',
+        destination: 'https://docs.polar.sh/donations',
         has: [
           {
             type: 'host',

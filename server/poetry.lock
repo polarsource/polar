@@ -1124,17 +1124,17 @@ python-dateutil = ">=2.7"
 
 [[package]]
 name = "githubkit"
-version = "0.11.4"
+version = "0.11.8"
 description = "GitHub SDK for Python"
 optional = false
 python-versions = "<4.0,>=3.8"
 files = [
-    {file = "githubkit-0.11.4-py3-none-any.whl", hash = "sha256:281af76e9ec24a1f3dc1c99ed4e50785898220d47f84acb2f87be8d7a572769a"},
-    {file = "githubkit-0.11.4.tar.gz", hash = "sha256:e629d833f98157cb4b1c14b69fdb54f7f960fb0da6906f1fa30fca14c347c0d4"},
+    {file = "githubkit-0.11.8-py3-none-any.whl", hash = "sha256:fb6cf775ef38c21d38226565219606009cecd67358e46db99c2499199ab3b94b"},
+    {file = "githubkit-0.11.8.tar.gz", hash = "sha256:e6114f66cd1fcf9fa1c58987366ce75b98325d5ea708a0108533ab7417701c8f"},
 ]
 
 [package.dependencies]
-hishel = ">=0.0.21,<=0.0.26"
+hishel = ">=0.0.21,<=0.0.30"
 httpx = ">=0.23.0,<1.0.0"
 pydantic = ">=1.9.1,<2.5.0 || >2.5.0,<2.5.1 || >2.5.1,<3.0.0"
 typing-extensions = ">=4.3.0,<5.0.0"
@@ -4067,4 +4067,4 @@ test = ["big-O", "importlib-resources", "jaraco.functools", "jaraco.itertools", 
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.12"
-content-hash = "9a3d2e06a2838ded09e02e372e00c9c04a4f23936afabc88a1bd7616a45a3135"
+content-hash = "784feebe08ee4bf9a1bc93a5f93f60184c8ba82acf5d3c085a5691ef4fd62336"

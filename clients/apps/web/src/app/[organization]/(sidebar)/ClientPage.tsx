@@ -156,10 +156,12 @@ const ClientPage = ({
 
           {organization.feature_settings?.issue_funding_enabled &&
           issues.length > 0 ? (
-            <OrganizationIssueSummaryList
-              issues={issues}
-              organization={organization}
-            />
+            <div className="flex flex-col">
+              <OrganizationIssueSummaryList
+                issues={issues}
+                organization={organization}
+              />
+            </div>
           ) : null}
         </div>
       </div>

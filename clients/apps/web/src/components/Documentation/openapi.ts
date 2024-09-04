@@ -164,14 +164,12 @@ const generateScalarSchemaExample = (
   schema: OpenAPIV3_1.SchemaObject,
   defaults: Record<string, any> | string,
   requiredOnly: boolean = false,
-  depth: number = 0,
 ) => {
   if (schema.type === 'object') {
-    if (schema.additionalProperties) {
+    if (schema.additionalProperties || !schema.properties) {
       return {}
     }
-    if (depth > 1) return {}
-    return generateSchemaExample(schema, defaults, requiredOnly, depth + 1)
+    return generateSchemaExample(schema, defaults, requiredOnly)
   }
 
   if (schema.type === 'array') {
@@ -266,7 +264,6 @@ export const generateSchemaExample = (
   schema: OpenAPIV3_1.SchemaObject,
   defaults: Record<string, any> | string = {},
   requiredOnly: boolean = false,
-  depth: number = 0,
 ): Record<string, any> | string => {
   const unionSchemas = getUnionSchemas(schema)
 
@@ -297,7 +294,7 @@ export const generateSchemaExample = (
     }, {})
   }
 
-  return generateScalarSchemaExample(schema, defaults, requiredOnly, depth + 1)
+  return generateScalarSchemaExample(schema, defaults, requiredOnly)
 }
 
 const getParameters = (

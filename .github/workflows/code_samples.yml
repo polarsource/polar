@@ -43,7 +43,7 @@ jobs:
         uses: peter-evans/create-pull-request@v6
         with:
           add-paths: sdk/schema.json
-          commit-message: 'docs: update SDK code samples'
+          commit-message: 'docs: update SDK code samples [vercel build]'
           title: 'docs: update SDK code samples'
           branch: update-sdk-code-samples
           delete-branch: true

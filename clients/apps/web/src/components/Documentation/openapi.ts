@@ -281,7 +281,11 @@ export const generateSchemaExample = (
 
   if (schema.properties) {
     return Object.entries(schema.properties).reduce((acc, [key, value]) => {
-      if (requiredOnly && !schema.required?.includes(key)) {
+      if (
+        requiredOnly &&
+        !schema.required?.includes(key) &&
+        (!defaults || !(typeof defaults === 'object') || !defaults[key])
+      ) {
         return acc
       }
       const childDefaults =

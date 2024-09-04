@@ -49,7 +49,7 @@ netaddr = "^1.2.1"
 makefun = "^1.15.4"
 boto3 = "^1.35.10"
 itsdangerous = "^2.2.0"
-cryptography = "^43.0.0"
+cryptography = "^43.0.1"
 babel = "^2.16.0"
 
 [tool.poetry.group.backoffice]

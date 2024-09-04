@@ -14,7 +14,10 @@ export const Hero = () => {
           href={`https://dub.sh/polarhunt`}
           target="_blank"
         >
-          <span>We&apos;re live on Product Hunt</span>
+          <span>
+            We&apos;re live on Product Hunt - help us get to #1 Product of the
+            Day
+          </span>
           <ChevronRight fontSize="inherit" />
         </Link>
         <div className="z-20 flex flex-col items-center gap-y-8">

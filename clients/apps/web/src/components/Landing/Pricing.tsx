@@ -37,7 +37,7 @@ export const Pricing = () => {
         <div className="flex flex-col items-center gap-y-4">
           <h1 className="text-center text-3xl md:text-5xl">4% + 40¢</h1>
           <p className="dark:text-polar-500 text-center text-xl text-gray-500">
-            Fees that don't leave you squeezed
+            Fees that don&apos;t leave you squeezed
           </p>
           <p className="dark:text-polar-500 text-center text-sm text-gray-500">
             International, billing and payout fees apply in addition.{' '}

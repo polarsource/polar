@@ -65,10 +65,20 @@ const APISections = () => {
       <NavigationItem href="/docs/api/authentication">
         Authentication
       </NavigationItem>
-      <NavigationItem href="/docs/api/polar-sdk">Polar SDK</NavigationItem>
-      <NavigationItem href="/docs/api/github-actions">
-        GitHub Actions
-      </NavigationItem>
+    </div>
+  )
+}
+
+const SDKReferenceSections = () => {
+  return (
+    <div className="flex flex-col gap-y-6">
+      <h3>SDK & Integrations</h3>
+      <div className="flex flex-col">
+        <NavigationItem href="/docs/api/sdk">SDK</NavigationItem>
+        <NavigationItem href="/docs/api/sdk/github-actions">
+          GitHub Actions
+        </NavigationItem>
+      </div>
     </div>
   )
 }
@@ -417,6 +427,7 @@ export const APINavigation = ({
   return (
     <>
       <APISections />
+      <SDKReferenceSections />
       <WebhooksReferenceSections />
       <APIReferenceSections
         openAPISchema={openAPISchema}

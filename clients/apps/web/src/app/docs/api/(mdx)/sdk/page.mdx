@@ -1,0 +1,70 @@
+import Button from 'polarkit/components/ui/atoms/button'
+
+# SDK
+
+We officially maintain client libraries and SDK for a variety of languages. It'll help you integrate Polar API into your project in no time!
+
+## JavaScript
+
+We maintain a SDK for JavaScript runtimes (Node.js and browsers). It's available on `npm`.
+
+### Quickstart
+
+```bash
+npm add @polar-sh/sdk
+```
+
+```ts
+import { Polar } from "@polar-sh/sdk";
+
+const polar = new Polar({
+    accessToken: process.env["POLAR_ACCESS_TOKEN"] ?? "",
+});
+
+async function run() {
+    const result = await polar.users.benefits.list({});
+
+    for await (const page of result) {
+        // Handle the page
+        console.log(page);
+    }
+}
+
+run();
+```
+
+[<p className="text-xl text-center">Read more</p>](https://github.com/polarsource/polar-js)
+
+## Python
+
+We maintain a SDK for Python. It's fully type-hinted and allows both synchronous and asynchronous usage, thanks to [HTTPX](https://www.python-httpx.org/). Under the hood, schemas are validated by [Pydantic](https://docs.pydantic.dev/latest/).
+
+It's available on PyPI.
+
+### Quickstart
+
+```bash
+pip install polar-sdk
+```
+
+```py
+# Synchronous Example
+from polar_sdk import Polar
+
+s = Polar(
+    access_token="<YOUR_BEARER_TOKEN_HERE>",
+)
+
+
+res = s.users.benefits.list()
+
+if res is not None:
+    while True:
+        # handle items
+
+        res = res.Next()
+        if res is None:
+            break
+```
+
+[<p className="text-xl text-center">Read more</p>](https://github.com/polarsource/polar-python)

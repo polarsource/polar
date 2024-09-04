@@ -27,11 +27,10 @@ export const PageContent = () => {
         <MerchantOfRecord />
       </Section>
 
+      <Pricing />
       <API />
 
       <Testamonials />
-
-      <Pricing />
     </>
   )
 }

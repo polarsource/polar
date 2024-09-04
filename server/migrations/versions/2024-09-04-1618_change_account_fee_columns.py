@@ -2,7 +2,7 @@
 
 Revision ID: 24eb2507aa2e
 Revises: 806a7aac6884
-Create Date: 2024-08-19 16:18:55.948273
+Create Date: 2024-09-04 16:18:55.948273
 
 """
 
@@ -13,7 +13,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "24eb2507aa2e"
-down_revision = "806a7aac6884"
+down_revision = "0c4fde7a00b3"
 branch_labels: tuple[str] | None = None
 depends_on: tuple[str] | None = None
 

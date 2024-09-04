@@ -50,13 +50,13 @@ export default async function Page({
           </div>
         </div>
         <div className="dark:bg-polar-950 dark:border-polar-700 rounded-4xl bg-gray-75 col-span-2 hidden overflow-hidden rounded-r-none border border-r-0 border-gray-100 py-2 pl-2 md:flex">
-          <picture>
+          <picture className="flex h-full">
             <source
               media="(prefers-color-scheme: dark)"
               srcSet={`/assets/landing/overview_dark.png`}
             />
             <img
-              className="h-full object-cover object-left"
+              className="flex h-full flex-1 object-cover object-left"
               src="/assets/landing/overview.png"
               alt="Dashboard Home"
             />

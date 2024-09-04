@@ -365,17 +365,17 @@
           "User"
         ],
         "x-speakeasy-group": "users.benefits",
-        "x-speakeasy-name-override": "retrieve",
+        "x-speakeasy-name-override": "get",
         "x-codeSamples": [
           {
             "lang": "typescript",
             "label": "get",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.users.benefits.retrieve({\n    id: \"<value>\",\n  });\n\n  // Handle the result\n  console.log(result)\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.users.benefits.get({\n    id: \"<value>\",\n  });\n\n  // Handle the result\n  console.log(result)\n}\n\nrun();"
           },
           {
             "lang": "python",
             "label": "get",
-            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\n\nres = s.users.benefits.retrieve(id=\"<value>\")\n\nif res is not None:\n    # handle response\n    pass"
+            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\n\nres = s.users.benefits.get(id=\"<value>\")\n\nif res is not None:\n    # handle response\n    pass"
           }
         ]
       }
@@ -728,17 +728,17 @@
           "User"
         ],
         "x-speakeasy-group": "users.orders",
-        "x-speakeasy-name-override": "retrieve",
+        "x-speakeasy-name-override": "get",
         "x-codeSamples": [
           {
             "lang": "typescript",
             "label": "get",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.users.orders.retrieve({\n    id: \"<value>\",\n  });\n\n  // Handle the result\n  console.log(result)\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.users.orders.get({\n    id: \"<value>\",\n  });\n\n  // Handle the result\n  console.log(result)\n}\n\nrun();"
           },
           {
             "lang": "python",
             "label": "get",
-            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\n\nres = s.users.orders.retrieve(id=\"<value>\")\n\nif res is not None:\n    # handle response\n    pass"
+            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\n\nres = s.users.orders.get(id=\"<value>\")\n\nif res is not None:\n    # handle response\n    pass"
           }
         ]
       }
@@ -1236,17 +1236,17 @@
           "User"
         ],
         "x-speakeasy-group": "users.subscriptions",
-        "x-speakeasy-name-override": "retrieve",
+        "x-speakeasy-name-override": "get",
         "x-codeSamples": [
           {
             "lang": "typescript",
             "label": "get",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.users.subscriptions.retrieve({\n    id: \"<value>\",\n  });\n\n  // Handle the result\n  console.log(result)\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.users.subscriptions.get({\n    id: \"<value>\",\n  });\n\n  // Handle the result\n  console.log(result)\n}\n\nrun();"
           },
           {
             "lang": "python",
             "label": "get",
-            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\n\nres = s.users.subscriptions.retrieve(id=\"<value>\")\n\nif res is not None:\n    # handle response\n    pass"
+            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\n\nres = s.users.subscriptions.get(id=\"<value>\")\n\nif res is not None:\n    # handle response\n    pass"
           }
         ]
       },
@@ -1720,17 +1720,17 @@
           "User"
         ],
         "x-speakeasy-group": "users.advertisements",
-        "x-speakeasy-name-override": "retrieve",
+        "x-speakeasy-name-override": "get",
         "x-codeSamples": [
           {
             "lang": "typescript",
             "label": "get",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.users.advertisements.retrieve({\n    id: \"<value>\",\n  });\n\n  // Handle the result\n  console.log(result)\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.users.advertisements.get({\n    id: \"<value>\",\n  });\n\n  // Handle the result\n  console.log(result)\n}\n\nrun();"
           },
           {
             "lang": "python",
             "label": "get",
-            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\n\nres = s.users.advertisements.retrieve(id=\"<value>\")\n\nif res is not None:\n    # handle response\n    pass"
+            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\n\nres = s.users.advertisements.get(id=\"<value>\")\n\nif res is not None:\n    # handle response\n    pass"
           }
         ]
       },
@@ -2251,17 +2251,17 @@
           "User"
         ],
         "x-speakeasy-group": "users.downloadables",
-        "x-speakeasy-name-override": "retrieve",
+        "x-speakeasy-name-override": "get",
         "x-codeSamples": [
           {
             "lang": "typescript",
             "label": "get",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.users.downloadables.retrieve({\n    token: \"<value>\",\n  });\n\n  // Handle the result\n  console.log(result)\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.users.downloadables.get({\n    token: \"<value>\",\n  });\n\n  // Handle the result\n  console.log(result)\n}\n\nrun();"
           },
           {
             "lang": "python",
             "label": "get",
-            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\n\nres = s.users.downloadables.retrieve(token=\"<value>\")\n\nif res is not None:\n    # handle response\n    pass"
+            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\n\nres = s.users.downloadables.get(token=\"<value>\")\n\nif res is not None:\n    # handle response\n    pass"
           }
         ]
       }
@@ -2536,17 +2536,17 @@
           "User"
         ],
         "x-speakeasy-group": "users.license_keys",
-        "x-speakeasy-name-override": "retrieve",
+        "x-speakeasy-name-override": "get",
         "x-codeSamples": [
           {
             "lang": "typescript",
             "label": "get",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.users.licenseKeys.retrieve({\n    id: \"<value>\",\n  });\n\n  // Handle the result\n  console.log(result)\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.users.licenseKeys.get({\n    id: \"<value>\",\n  });\n\n  // Handle the result\n  console.log(result)\n}\n\nrun();"
           },
           {
             "lang": "python",
             "label": "get",
-            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\n\nres = s.users.license_keys.retrieve(id=\"<value>\")\n\nif res is not None:\n    # handle response\n    pass"
+            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\n\nres = s.users.license_keys.get(id=\"<value>\")\n\nif res is not None:\n    # handle response\n    pass"
           }
         ]
       }
@@ -3575,17 +3575,17 @@
           "User"
         ],
         "x-speakeasy-group": "repositories",
-        "x-speakeasy-name-override": "retrieve",
+        "x-speakeasy-name-override": "get",
         "x-codeSamples": [
           {
             "lang": "typescript",
             "label": "get",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.repositories.retrieve({\n    id: \"<value>\",\n  });\n\n  // Handle the result\n  console.log(result)\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.repositories.get({\n    id: \"<value>\",\n  });\n\n  // Handle the result\n  console.log(result)\n}\n\nrun();"
           },
           {
             "lang": "python",
             "label": "get",
-            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\n\nres = s.repositories.retrieve(id=\"<value>\")\n\nif res is not None:\n    # handle response\n    pass"
+            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\n\nres = s.repositories.get(id=\"<value>\")\n\nif res is not None:\n    # handle response\n    pass"
           }
         ]
       },
@@ -4116,7 +4116,7 @@
           "User"
         ],
         "x-speakeasy-group": "accounts",
-        "x-speakeasy-name-override": "retrieve",
+        "x-speakeasy-name-override": "get",
         "x-speakeasy-ignore": true
       }
     },
@@ -4755,7 +4755,7 @@
           "User"
         ],
         "x-speakeasy-group": "issues",
-        "x-speakeasy-name-override": "retrieve",
+        "x-speakeasy-name-override": "get",
         "x-speakeasy-ignore": true
       },
       "post": {
@@ -5238,7 +5238,7 @@
           "User"
         ],
         "x-speakeasy-group": "pledges",
-        "x-speakeasy-name-override": "retrieve",
+        "x-speakeasy-name-override": "get",
         "x-speakeasy-ignore": true
       }
     },
@@ -5557,17 +5557,17 @@
           "User"
         ],
         "x-speakeasy-group": "organizations",
-        "x-speakeasy-name-override": "retrieve",
+        "x-speakeasy-name-override": "get",
         "x-codeSamples": [
           {
             "lang": "typescript",
             "label": "get",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.organizations.retrieve({\n    id: \"<value>\",\n  });\n\n  // Handle the result\n  console.log(result)\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.organizations.get({\n    id: \"<value>\",\n  });\n\n  // Handle the result\n  console.log(result)\n}\n\nrun();"
           },
           {
             "lang": "python",
             "label": "get",
-            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\n\nres = s.organizations.retrieve(id=\"<value>\")\n\nif res is not None:\n    # handle response\n    pass"
+            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\n\nres = s.organizations.get(id=\"<value>\")\n\nif res is not None:\n    # handle response\n    pass"
           }
         ]
       },
@@ -6067,7 +6067,7 @@
           {
             "lang": "python",
             "label": "import",
-            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\n\nres = s.subscriptions.import_subscriptions(request={\n    \"file\": {\n        \"file_name\": \"your_file_here\",\n        \"content\": open(\"<file_path>\", \"rb\"),\n    },\n    \"organization_id\": \"<value>\",\n})\n\nif res is not None:\n    # handle response\n    pass"
+            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\n\nres = s.subscriptions.import_subscriptions(request={\n    \"file\": {\n        \"file_name\": \"your_file_here\",\n        \"content\": open(\"example.file\", \"rb\"),\n    },\n    \"organization_id\": \"<value>\",\n})\n\nif res is not None:\n    # handle response\n    pass"
           }
         ]
       }
@@ -6562,17 +6562,17 @@
           "User"
         ],
         "x-speakeasy-group": "articles",
-        "x-speakeasy-name-override": "retrieve",
+        "x-speakeasy-name-override": "get",
         "x-codeSamples": [
           {
             "lang": "typescript",
             "label": "get",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.articles.retrieve({\n    id: \"<value>\",\n  });\n\n  // Handle the result\n  console.log(result)\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.articles.get({\n    id: \"<value>\",\n  });\n\n  // Handle the result\n  console.log(result)\n}\n\nrun();"
           },
           {
             "lang": "python",
             "label": "get",
-            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\n\nres = s.articles.retrieve(id=\"<value>\")\n\nif res is not None:\n    # handle response\n    pass"
+            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\n\nres = s.articles.get(id=\"<value>\")\n\nif res is not None:\n    # handle response\n    pass"
           }
         ]
       },
@@ -7727,17 +7727,17 @@
           }
         },
         "x-speakeasy-group": "advertisements",
-        "x-speakeasy-name-override": "retrieve",
+        "x-speakeasy-name-override": "get",
         "x-codeSamples": [
           {
             "lang": "typescript",
             "label": "get",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.advertisements.retrieve({\n    id: \"<value>\",\n  });\n\n  // Handle the result\n  console.log(result)\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.advertisements.get({\n    id: \"<value>\",\n  });\n\n  // Handle the result\n  console.log(result)\n}\n\nrun();"
           },
           {
             "lang": "python",
             "label": "get",
-            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\n\nres = s.advertisements.retrieve(id=\"<value>\")\n\nif res is not None:\n    # handle response\n    pass"
+            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\n\nres = s.advertisements.get(id=\"<value>\")\n\nif res is not None:\n    # handle response\n    pass"
           }
         ]
       }
@@ -8430,17 +8430,17 @@
           "User"
         ],
         "x-speakeasy-group": "oauth2.clients",
-        "x-speakeasy-name-override": "retrieve",
+        "x-speakeasy-name-override": "get",
         "x-codeSamples": [
           {
             "lang": "typescript",
             "label": "get_client",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.oauth2.clients.retrieve({\n    clientId: \"<value>\",\n  });\n\n  // Handle the result\n  console.log(result)\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.oauth2.clients.get({\n    clientId: \"<value>\",\n  });\n\n  // Handle the result\n  console.log(result)\n}\n\nrun();"
           },
           {
             "lang": "python",
             "label": "get_client",
-            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\n\nres = s.oauth2.clients.retrieve(client_id=\"<value>\")\n\nif res is not None:\n    # handle response\n    pass"
+            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\n\nres = s.oauth2.clients.get(client_id=\"<value>\")\n\nif res is not None:\n    # handle response\n    pass"
           }
         ]
       },
@@ -9385,17 +9385,17 @@
           "User"
         ],
         "x-speakeasy-group": "benefits",
-        "x-speakeasy-name-override": "retrieve",
+        "x-speakeasy-name-override": "get",
         "x-codeSamples": [
           {
             "lang": "typescript",
             "label": "get",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.benefits.retrieve({\n    id: \"<value>\",\n  });\n\n  // Handle the result\n  console.log(result)\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.benefits.get({\n    id: \"<value>\",\n  });\n\n  // Handle the result\n  console.log(result)\n}\n\nrun();"
           },
           {
             "lang": "python",
             "label": "get",
-            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\n\nres = s.benefits.retrieve(id=\"<value>\")\n\nif res is not None:\n    # handle response\n    pass"
+            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\n\nres = s.benefits.get(id=\"<value>\")\n\nif res is not None:\n    # handle response\n    pass"
           }
         ]
       },
@@ -10859,17 +10859,17 @@
           "User"
         ],
         "x-speakeasy-group": "products",
-        "x-speakeasy-name-override": "retrieve",
+        "x-speakeasy-name-override": "get",
         "x-codeSamples": [
           {
             "lang": "typescript",
             "label": "get",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.products.retrieve({\n    id: \"<value>\",\n  });\n\n  // Handle the result\n  console.log(result)\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.products.get({\n    id: \"<value>\",\n  });\n\n  // Handle the result\n  console.log(result)\n}\n\nrun();"
           },
           {
             "lang": "python",
             "label": "get",
-            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\n\nres = s.products.retrieve(id=\"<value>\")\n\nif res is not None:\n    # handle response\n    pass"
+            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\n\nres = s.products.get(id=\"<value>\")\n\nif res is not None:\n    # handle response\n    pass"
           }
         ]
       },
@@ -11420,17 +11420,17 @@
           "User"
         ],
         "x-speakeasy-group": "orders",
-        "x-speakeasy-name-override": "retrieve",
+        "x-speakeasy-name-override": "get",
         "x-codeSamples": [
           {
             "lang": "typescript",
             "label": "get",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.orders.retrieve({\n    id: \"<value>\",\n  });\n\n  // Handle the result\n  console.log(result)\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.orders.get({\n    id: \"<value>\",\n  });\n\n  // Handle the result\n  console.log(result)\n}\n\nrun();"
           },
           {
             "lang": "python",
             "label": "get",
-            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\n\nres = s.orders.retrieve(id=\"<value>\")\n\nif res is not None:\n    # handle response\n    pass"
+            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\n\nres = s.orders.get(id=\"<value>\")\n\nif res is not None:\n    # handle response\n    pass"
           }
         ]
       }
@@ -11634,17 +11634,17 @@
           }
         },
         "x-speakeasy-group": "checkouts",
-        "x-speakeasy-name-override": "retrieve",
+        "x-speakeasy-name-override": "get",
         "x-codeSamples": [
           {
             "lang": "typescript",
             "label": "get",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.checkouts.retrieve({\n    id: \"<id>\",\n  });\n\n  // Handle the result\n  console.log(result)\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.checkouts.get({\n    id: \"<id>\",\n  });\n\n  // Handle the result\n  console.log(result)\n}\n\nrun();"
           },
           {
             "lang": "python",
             "label": "get",
-            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\n\nres = s.checkouts.retrieve(id=\"<value>\")\n\nif res is not None:\n    # handle response\n    pass"
+            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\n\nres = s.checkouts.get(id=\"<id>\")\n\nif res is not None:\n    # handle response\n    pass"
           }
         ]
       }
@@ -12370,17 +12370,17 @@
           "User"
         ],
         "x-speakeasy-group": "metrics",
-        "x-speakeasy-name-override": "retrieve",
+        "x-speakeasy-name-override": "get",
         "x-codeSamples": [
           {
             "lang": "typescript",
             "label": "get",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\nimport { RFCDate } from \"@polar-sh/sdk/types\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.metrics.retrieve({\n    startDate: new RFCDate(\"2023-02-11\"),\n    endDate: new RFCDate(\"2024-11-01\"),\n    interval: \"hour\",\n  });\n\n  // Handle the result\n  console.log(result)\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\nimport { RFCDate } from \"@polar-sh/sdk/types\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.metrics.get({\n    startDate: new RFCDate(\"2024-02-07\"),\n    endDate: new RFCDate(\"2022-04-09\"),\n    interval: \"week\",\n  });\n\n  // Handle the result\n  console.log(result)\n}\n\nrun();"
           },
           {
             "lang": "python",
             "label": "get",
-            "source": "import dateutil.parser\nimport polar_sdk\nfrom polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\n\nres = s.metrics.retrieve(start_date=dateutil.parser.parse(\"2023-02-11\").date(), end_date=dateutil.parser.parse(\"2024-11-01\").date(), interval=polar_sdk.Interval.HOUR)\n\nif res is not None:\n    # handle response\n    pass"
+            "source": "import dateutil.parser\nimport polar_sdk\nfrom polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\n\nres = s.metrics.get(start_date=dateutil.parser.parse(\"2024-02-07\").date(), end_date=dateutil.parser.parse(\"2022-04-09\").date(), interval=polar_sdk.Interval.WEEK)\n\nif res is not None:\n    # handle response\n    pass"
           }
         ]
       }
@@ -12684,17 +12684,17 @@
           "User"
         ],
         "x-speakeasy-group": "license_keys",
-        "x-speakeasy-name-override": "retrieve",
+        "x-speakeasy-name-override": "get",
         "x-codeSamples": [
           {
             "lang": "typescript",
             "label": "get",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.licenseKeys.retrieve({\n    id: \"<value>\",\n  });\n\n  // Handle the result\n  console.log(result)\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.licenseKeys.get({\n    id: \"<value>\",\n  });\n\n  // Handle the result\n  console.log(result)\n}\n\nrun();"
           },
           {
             "lang": "python",
             "label": "get",
-            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\n\nres = s.license_keys.retrieve(id=\"<value>\")\n\nif res is not None:\n    # handle response\n    pass"
+            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\n\nres = s.license_keys.get(id=\"<value>\")\n\nif res is not None:\n    # handle response\n    pass"
           }
         ]
       },

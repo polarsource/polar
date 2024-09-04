@@ -32,7 +32,8 @@ export default async function Page({
           <div className="flex flex-col gap-y-4">
             <h1 className="text-3xl">Sign Up</h1>
             <p className="dark:text-polar-500 text-xl text-gray-500">
-              Join thousands of developers monetizing their coding adventures
+              Join thousands of developers getting paid to code on their
+              passions
             </p>
           </div>
 

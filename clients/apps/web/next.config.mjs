@@ -126,21 +126,45 @@ const nextConfig = {
       {
         source: '/products',
         destination: '/docs/products',
+        has: [
+          {
+            type: 'host',
+            value: 'polar.sh',
+          },
+        ],
         permanent: true,
       },
       {
         source: '/newsletters',
         destination: '/docs/newsletters',
+        has: [
+          {
+            type: 'host',
+            value: 'polar.sh',
+          },
+        ],
         permanent: true,
       },
       {
         source: '/issue-funding',
         destination: '/docs/issue-funding',
+        has: [
+          {
+            type: 'host',
+            value: 'polar.sh',
+          },
+        ],
         permanent: true,
       },
       {
         source: '/donations',
         destination: '/docs/donations',
+        has: [
+          {
+            type: 'host',
+            value: 'polar.sh',
+          },
+        ],
         permanent: true,
       },
 

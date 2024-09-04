@@ -79,13 +79,13 @@ const IssueSummary: React.FC<IssueSummaryProps> = ({
           <div className="flex flex-wrap items-start gap-x-4 gap-y-2">
             {linkToFunding ? (
               <Link
-                className="text-md text-nowrap font-medium dark:text-white"
+                className="text-md min-w-0 max-w-96 flex-1 truncate text-nowrap font-medium dark:text-white"
                 href={fundingLink}
               >
                 {markdownTitle}
               </Link>
             ) : (
-              <span className="text-md text-nowrap font-medium dark:text-white">
+              <span className="text-md min-w-0 max-w-96 flex-1 truncate text-nowrap font-medium dark:text-white">
                 {markdownTitle}
               </span>
             )}

@@ -80,9 +80,12 @@ export default function ClientPage({
 
   useEffect(() => {
     if (!editedSlug && name) {
-      setValue('slug', slugify(name, { lower: true }))
+      setValue('slug', slugify(name, { lower: true, strict: true }))
     } else if (slug) {
-      setValue('slug', slugify(slug, { lower: true, trim: false }))
+      setValue(
+        'slug',
+        slugify(slug, { lower: true, trim: false, strict: true }),
+      )
     }
   }, [name, editedSlug, slug, setValue])
 
@@ -186,6 +189,7 @@ export default function ClientPage({
                         className="dark:bg-polar-700 ml-1 rounded-md border-0 bg-gray-100 px-2 py-1 text-sm text-black focus:outline-none focus:ring-0 dark:text-white"
                         onFocus={() => setEditedSlug(true)}
                       />
+                      <FormMessage />
                     </>
                   )}
                 />

@@ -1,3 +1,4 @@
+import { CONFIG } from '@/utils/config'
 import { ArrowForwardOutlined } from '@mui/icons-material'
 import Link from 'next/link'
 import Button from 'polarkit/components/ui/atoms/button'
@@ -17,7 +18,10 @@ const GetStartedButton: React.FC<GetStartedButtonProps> = ({
   ...props
 }) => {
   const text = _text || 'Get started'
-  const href = _href ? _href : '/signup?return_to=/dashboard'
+
+  const signupPath = `${CONFIG.FRONTEND_BASE_URL}/signup?return_to/dashboard`
+  const href = _href ? _href : signupPath
+
   return (
     <Link href={href}>
       <Button

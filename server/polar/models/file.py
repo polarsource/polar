@@ -5,9 +5,9 @@ from uuid import UUID
 
 from sqlalchemy import (
     TIMESTAMP,
+    BigInteger,
     Boolean,
     ForeignKey,
-    Integer,
     String,
     Uuid,
 )
@@ -50,7 +50,7 @@ class File(RecordModel):
     version: Mapped[str | None] = mapped_column(String, nullable=True)
     path: Mapped[str] = mapped_column(String, nullable=False)
     mime_type: Mapped[str] = mapped_column(String, nullable=False)
-    size: Mapped[int] = mapped_column(Integer, nullable=False)
+    size: Mapped[int] = mapped_column(BigInteger, nullable=False)
 
     service: Mapped[FileServiceTypes] = mapped_column(String, nullable=False)
 

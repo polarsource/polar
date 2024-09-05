@@ -262,9 +262,10 @@ class TestCreateFeesReversalBalances:
             {
                 "id": "STRIPE_CHARGE_ID",
                 "payment_method_details": {
+                    "type": "card",
                     "card": {
                         "country": "FR",
-                    }
+                    },
                 },
             },
             None,
@@ -325,6 +326,81 @@ class TestCreateFeesReversalBalances:
 
         # Subscription fee
         reversal_outgoing, reversal_incoming = fees_reversal_balances[2]
+
+        assert reversal_outgoing.amount == -50
+        assert reversal_outgoing.account == incoming.account
+        assert reversal_outgoing.platform_fee_type == PlatformFeeType.subscription
+        assert reversal_outgoing.incurred_by_transaction == incoming
+
+        assert reversal_incoming.amount == 50
+        assert reversal_incoming.account is None
+        assert reversal_incoming.platform_fee_type == PlatformFeeType.subscription
+        assert reversal_incoming.incurred_by_transaction == outgoing
+
+    async def test_link_payment(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        account_processor_fees: Account,
+        transaction_order_subscription: Order,
+    ) -> None:
+        stripe_service_mock = MagicMock(spec=StripeService)
+        mocker.patch(
+            "polar.transaction.service.platform_fee.stripe_service",
+            new=stripe_service_mock,
+        )
+        stripe_service_mock.get_charge.return_value = stripe_lib.Charge.construct_from(
+            {
+                "id": "STRIPE_CHARGE_ID",
+                "payment_method_details": {
+                    "type": "link",
+                    "link": {
+                        "country": "US",
+                    },
+                },
+            },
+            None,
+        )
+
+        balance_transactions = await create_balance_transactions(
+            save_fixture,
+            account=account_processor_fees,
+            order=transaction_order_subscription,
+            payment_charge_id="STRIPE_CHARGE_ID",
+        )
+
+        # then
+        session.expunge_all()
+
+        balance_transactions = await load_balance_transactions(
+            session, balance_transactions
+        )
+        outgoing, incoming = balance_transactions
+
+        fees_reversal_balances = (
+            await platform_fee_transaction_service.create_fees_reversal_balances(
+                session, balance_transactions=balance_transactions
+            )
+        )
+
+        assert len(fees_reversal_balances) == 2
+
+        # Payment fee
+        reversal_outgoing, reversal_incoming = fees_reversal_balances[0]
+
+        assert reversal_outgoing.amount == -440
+        assert reversal_outgoing.account == incoming.account
+        assert reversal_outgoing.platform_fee_type == PlatformFeeType.payment
+        assert reversal_outgoing.incurred_by_transaction == incoming
+
+        assert reversal_incoming.amount == 440
+        assert reversal_incoming.account is None
+        assert reversal_incoming.platform_fee_type == PlatformFeeType.payment
+        assert reversal_incoming.incurred_by_transaction == outgoing
+
+        # Subscription fee
+        reversal_outgoing, reversal_incoming = fees_reversal_balances[1]
 
         assert reversal_outgoing.amount == -50
         assert reversal_outgoing.account == incoming.account

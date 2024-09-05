@@ -205,10 +205,19 @@ class PlatformFeeTransactionService(BaseTransactionService):
         if (payment_method_details := charge.payment_method_details) is None:
             return False
 
-        if (card := payment_method_details.card) is None:
-            return False
+        if (
+            payment_method_details.type == "card"
+            and payment_method_details.card is not None
+        ):
+            return payment_method_details.card.country != "US"
 
-        return card.country != "US"
+        if (
+            payment_method_details.type == "link"
+            and payment_method_details.link is not None
+        ):
+            return payment_method_details.link.country != "US"
+
+        return False
 
     async def _get_last_payout(
         self, session: AsyncSession, account: Account

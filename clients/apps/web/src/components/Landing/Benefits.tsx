@@ -10,7 +10,7 @@ import { DiscordIcon } from '../Benefit/utils'
 import GitHubIcon from '../Icons/GitHubIcon'
 import SubscriptionTierCard from '../Subscriptions/SubscriptionTierCard'
 import { quadraticCurve } from './Hero/Hero.utils'
-import { MOCKED_SUBSCRIPTIONS } from './utils'
+import { MOCKED_WEBSITE_SUBSCRIPTION } from './utils'
 
 export const Benefits = () => {
   const [points, setPoints] = useState({
@@ -105,7 +105,7 @@ export const Benefits = () => {
           <div className="flex h-full flex-col" ref={subscription}>
             <SubscriptionTierCard
               className="h-full"
-              subscriptionTier={MOCKED_SUBSCRIPTIONS[0]}
+              subscriptionTier={MOCKED_WEBSITE_SUBSCRIPTION}
             />
           </div>
           <motion.svg

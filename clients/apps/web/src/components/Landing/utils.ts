@@ -365,7 +365,7 @@ export const MOCKED_WEBSITE_SUBSCRIPTION: Partial<Product> & {
   name: 'Just an Example',
   type: 'individual',
   description:
-    'Polar has no monthly fees. This tier is only and example of what you could offer your audience in minutes using Polar.',
+    'Polar has no monthly fees. This tier is only an example of what you could offer your audience in minutes using Polar.',
   prices: [
     {
       id: '123',

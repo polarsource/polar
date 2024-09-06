@@ -4,7 +4,6 @@
 
 import { CONFIG } from '@/utils/config'
 import * as Sentry from '@sentry/nextjs'
-import posthog from 'posthog-js'
 
 Sentry.init({
   dsn: CONFIG.SENTRY_DSN,
@@ -29,11 +28,11 @@ Sentry.init({
       maskAllText: true,
       blockAllMedia: true,
     }),
-    // @ts-ignore
-    posthog.sentryIntegration({
-      organization: 'polar-sh',
-      projectId: 4505047079976960,
-    }),
+    /* Disable PostHog integration for now until they resolve their compatibility issue */
+    // posthog.sentryIntegration({
+    //   organization: 'polar-sh',
+    //   projectId: 4505047079976960,
+    // }),
   ],
 
   beforeSend(event, hint) {

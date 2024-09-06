@@ -1,8 +1,15 @@
 'use client'
+import * as Sentry from '@sentry/nextjs'
+import Error from 'next/error'
+import { useEffect } from 'react'
 
 import Button from 'polarkit/components/ui/atoms/button'
 
 export default function GlobalError({ error }: { error: Error }) {
+  useEffect(() => {
+    Sentry.captureException(error)
+  }, [error])
+
   return (
     <html>
       <body className="bg-blue-100">

@@ -45,3 +45,6 @@ storybook-static
 **/*/searchIndex.json
 **/*/searchMetadata.json
 /src/openapi.json
+
+# Sentry Config File
+.env.sentry-build-plugin

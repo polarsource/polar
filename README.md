@@ -54,8 +54,9 @@ Focus on building your passion, while we focus on the infrastructure to get you 
 
 ## Pricing
 
+- 4% + 40¢
 - No fixed, monthly, costs
-- 5% + payment & payout fees
+- Additional fees may apply. [Read more](https://polar.sh/docs/fees)
 
 ## Roadmap, Issues & Feature Requests
 **🎯 v1.0 North Star.** [Checkout what we're building towards](https://github.com/polarsource/polar/issues/3242)

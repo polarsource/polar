@@ -128,7 +128,7 @@
     "autoprefixer": "^10.4.20",
     "eslint": "^8.55.0",
     "eslint-config-custom": "workspace:*",
-    "eslint-config-next": "14.0.4",
+    "eslint-config-next": "^14.2",
     "eslint-plugin-polar-rules": "workspace:^",
     "gzip-size": "6",
     "jest": "^29.7.0",

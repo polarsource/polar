@@ -6,6 +6,7 @@
   "globalEnv": [
     "GITHUB_TOKEN",
     "NODE_ENV",
+    "NEXT_RUNTIME",
     "NEXT_PUBLIC_API_URL",
     "NEXT_PUBLIC_STRIPE_KEY",
     "NEXT_PUBLIC_CODESPACE_NAME",

@@ -601,7 +601,6 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
         assert featured_organization is not None
         user = subscription.user
 
-        # Render the cancellation email using the updated template
         subject, body = email_renderer.render_from_template(
             "Your {{ product.name }} subscription cancellation",
             "subscription/cancellation.html",

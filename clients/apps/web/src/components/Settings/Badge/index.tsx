@@ -297,7 +297,7 @@ const BadgeSetup = ({
               onChangeFundingGoal={() => {}}
               innerClassNames="border"
               funding={{
-                pledges_sum: { amount: 5000, currency: 'USD' },
+                pledges_sum: { amount: 5000, currency: 'usd' },
               }}
               canSetFundingGoal={false}
               title="Badge defaults"
@@ -317,16 +317,11 @@ const BadgeSetup = ({
                   <MoneyInput
                     id="minimum-pledge"
                     name="minimum-pledge"
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                      let amount = parseInt(e.target.value)
-                      if (isNaN(amount)) {
-                        amount = 0
-                      }
-
+                    onChange={(amount: number) => {
                       setSettings((prev) => {
                         return {
                           ...prev,
-                          minimum_amount: amount * 100,
+                          minimum_amount: amount,
                         }
                       })
                       setAnyBadgeSettingChanged(true)

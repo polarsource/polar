@@ -110,7 +110,7 @@ const PledgeCheckoutFundByTeam = ({
           <MoneyInput
             id="amount"
             name="amount"
-            onAmountChangeInCents={onAmountChange}
+            onChange={onAmountChange}
             placeholder={organization.pledge_minimum_amount}
             value={formState.amount}
             onFocus={(event) => {

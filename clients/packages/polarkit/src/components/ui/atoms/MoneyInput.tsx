@@ -1,24 +1,22 @@
 import { AttachMoneyOutlined } from '@mui/icons-material'
-import { ChangeEvent, FocusEvent } from 'react'
+import { ChangeEvent, FocusEvent, useCallback, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
-import { getCentsInDollarString } from '../../../lib/money'
 import Input from './Input'
 
 interface Props {
   id: string
   name: string
-  onChange?: (e: ChangeEvent<HTMLInputElement>) => void
   placeholder: number
+  onChange?: (value: number) => void
   onBlur?: (e: ChangeEvent<HTMLInputElement>) => void
   onFocus?: (e: FocusEvent<HTMLInputElement>) => void
   value?: number
   className?: string
-  onAmountChangeInCents?: (cents: number) => void
   postSlot?: React.ReactNode
 }
 
-const getCents = (event: ChangeEvent<HTMLInputElement>) => {
-  let newAmount = parseInt(event.target.value)
+const getCents = (value: string): number => {
+  let newAmount = Number.parseFloat(value)
   if (isNaN(newAmount)) {
     newAmount = 0
   }
@@ -27,45 +25,56 @@ const getCents = (event: ChangeEvent<HTMLInputElement>) => {
 }
 
 const MoneyInput = (props: Props) => {
-  let { id, name } = props
+  let {
+    id,
+    name,
+    value,
+    placeholder,
+    postSlot,
+    onChange: _onChange,
+    onBlur,
+    onFocus,
+  } = props
+  const [internalValue, setInternalValue] = useState<string | undefined>(
+    value ? (value / 100).toFixed(2) : undefined,
+  )
 
-  let other: {
-    value?: string
-    onBlur?: (e: ChangeEvent<HTMLInputElement>) => void
-    onFocus?: (e: FocusEvent<HTMLInputElement>) => void
-  } = {}
-  if (props.value && props.value > 0) {
-    other.value = getCentsInDollarString(props.value)
-  } else {
-    other.value = ''
-  }
-  other.onBlur = props.onBlur
-  other.onFocus = props.onFocus
+  const onChange = useCallback(
+    (e: ChangeEvent<HTMLInputElement>) => {
+      if (_onChange) {
+        _onChange(getCents(e.target.value))
+      }
+      setInternalValue(e.target.value)
+    },
+    [_onChange],
+  )
 
-  const onChanged = (e: ChangeEvent<HTMLInputElement>) => {
-    if (props.onChange) {
-      props.onChange(e)
-    }
-
-    if (props.onAmountChangeInCents) {
-      props.onAmountChangeInCents(getCents(e))
+  const onInput = (e: ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value
+    const regex = /^\d+([\.,]\d{0,2})?$/
+    if (!regex.test(value)) {
+      e.target.value = Number.parseFloat(value).toFixed(2)
     }
   }
 
   return (
     <Input
-      type="text"
+      type="number"
+      step={0.1}
       id={id}
       name={name}
       className={twMerge(
         'dark:placeholder:text-polar-500 block w-full px-4 pl-8 text-base placeholder:text-gray-400',
         props.className ?? '',
       )}
-      onChange={onChanged}
-      placeholder={getCentsInDollarString(props.placeholder)}
+      value={internalValue}
+      onChange={onChange}
+      onInput={onInput}
+      placeholder={placeholder ? `${placeholder / 100}` : undefined}
       preSlot={<AttachMoneyOutlined className="text-lg" fontSize="inherit" />}
-      postSlot={props.postSlot}
-      {...other}
+      postSlot={postSlot}
+      onBlur={onBlur}
+      onFocus={onFocus}
     />
   )
 }

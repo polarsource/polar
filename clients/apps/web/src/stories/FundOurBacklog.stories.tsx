@@ -12,8 +12,8 @@ const meta: Meta<typeof FundOurBacklog> = {
       {
         ...issue,
         funding: {
-          funding_goal: { amount: 500000, currency: 'USD' },
-          pledges_sum: { amount: 450000, currency: 'USD' },
+          funding_goal: { amount: 500000, currency: 'usd' },
+          pledges_sum: { amount: 450000, currency: 'usd' },
         },
         reactions: {
           total_count: 0,
@@ -32,7 +32,7 @@ const meta: Meta<typeof FundOurBacklog> = {
         title: 'short ❤️',
         funding: {
           funding_goal: undefined,
-          pledges_sum: { amount: 40000, currency: 'USD' },
+          pledges_sum: { amount: 40000, currency: 'usd' },
         },
       },
       {
@@ -40,8 +40,8 @@ const meta: Meta<typeof FundOurBacklog> = {
         title:
           'server/github: Updated badge context and how we generate default',
         funding: {
-          funding_goal: { amount: 50000, currency: 'USD' },
-          pledges_sum: { amount: 0, currency: 'USD' },
+          funding_goal: { amount: 50000, currency: 'usd' },
+          pledges_sum: { amount: 0, currency: 'usd' },
         },
       },
       {

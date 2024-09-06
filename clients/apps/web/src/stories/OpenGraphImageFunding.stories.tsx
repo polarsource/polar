@@ -260,8 +260,8 @@ export const LargeIssueFundingGoal: Story = {
       {
         ...issue,
         funding: {
-          funding_goal: { amount: 5000, currency: 'USD' },
-          pledges_sum: { amount: 2000, currency: 'USD' },
+          funding_goal: { amount: 5000, currency: 'usd' },
+          pledges_sum: { amount: 2000, currency: 'usd' },
         },
       },
     ],

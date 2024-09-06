@@ -312,7 +312,7 @@ async def update(
         if update.funding_goal.currency != "usd":
             raise HTTPException(
                 status_code=400,
-                detail="Unexpected currency. Currency must be USD.",
+                detail="Unexpected currency. Currency must be usd.",
             )
 
         issue.funding_goal = update.funding_goal.amount

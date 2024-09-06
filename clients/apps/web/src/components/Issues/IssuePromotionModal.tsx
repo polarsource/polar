@@ -631,7 +631,7 @@ const RewardsTab = (props: { issue: Issue; user: UserRead }) => {
                   name="self_pledge"
                   placeholder={1000}
                   value={selfPledgeAmount}
-                  onAmountChangeInCents={setSelfPledgeAmount}
+                  onChange={setSelfPledgeAmount}
                   className="max-w-[150px]"
                 />
 

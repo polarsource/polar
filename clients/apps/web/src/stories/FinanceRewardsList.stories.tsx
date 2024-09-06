@@ -38,7 +38,7 @@ const reward: Reward = {
     username: 'foobar',
     avatar_url: 'https://avatars.githubusercontent.com/u/4314092?s=200&v=4',
   },
-  amount: { amount: 800, currency: 'USD' },
+  amount: { amount: 800, currency: 'usd' },
   state: RewardState.PENDING,
 }
 

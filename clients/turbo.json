@@ -25,7 +25,7 @@
     "NEXT_PUBLIC_STRIPE_COUNTRIES_WHITELIST",
     "NEXT_PUBLIC_APPLE_DOMAIN_ASSOCIATION"
   ],
-  "pipeline": {
+  "tasks": {
     "build": {
       "dependsOn": [
         "^build"

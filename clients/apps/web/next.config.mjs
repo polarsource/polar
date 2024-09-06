@@ -527,6 +527,9 @@ const createConfig = async () => {
       org: "polar-sh",
       project: "dashboard",
 
+      // Pass the auth token
+      authToken: process.env.SENTRY_AUTH_TOKEN,
+
       // Only print logs for uploading source maps in CI
       silent: !process.env.CI,
 

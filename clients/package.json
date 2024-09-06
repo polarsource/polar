@@ -14,14 +14,14 @@
     "postinstall": "manypkg check"
   },
   "dependencies": {
-    "@manypkg/cli": "latest",
+    "@manypkg/cli": "^0.21.4",
     "eslint": "^8.55.0",
     "eslint-config-custom": "workspace:*",
     "only-allow": "1.1.1",
-    "prettier": "^3.1.1",
+    "prettier": "^3.3.3",
     "prettier-plugin-organize-imports": "^3.2.3",
-    "prettier-plugin-tailwindcss": "^0.5.9",
-    "turbo": "^1.12.4"
+    "prettier-plugin-tailwindcss": "^0.5.14",
+    "turbo": "^1.13.4"
   },
   "resolutions": {
     "sharp": "0.33.3"

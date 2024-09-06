@@ -226,7 +226,7 @@ const renderArticle = async (
 
   const highlighter = await getHighlighter()
 
-  const html = render(
+  const html = await render(
     <Html lang="en">
       <Tailwind config={twConfig}>
         <Head>

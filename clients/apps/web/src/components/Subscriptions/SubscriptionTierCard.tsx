@@ -13,6 +13,7 @@ import {
   ProductPriceRecurringInterval,
   SubscriptionTierType,
 } from '@polar-sh/sdk'
+import Markdown from 'markdown-to-jsx'
 import {
   Card,
   CardContent,
@@ -25,6 +26,7 @@ import { formatCurrencyAndAmount } from 'polarkit/lib/money'
 import { MouseEventHandler, useCallback, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { resolveBenefitIcon } from '../Benefit/utils'
+import { markdownOpts } from '../Feed/Markdown/markdown'
 import SubscriptionGroupIcon from './SubscriptionGroupIcon'
 import { getSubscriptionColorByType } from './utils'
 
@@ -200,14 +202,26 @@ const SubscriptionTierCard: React.FC<SubscriptionTierCardProps> = ({
           </div>
 
           {subscriptionTier.description ? (
-            <p
+            <div
               className={twMerge(
                 variantStyles[variant].description,
-                'dark:text-polar-500 leading-relaxed text-gray-500',
+                'prose dark:prose-invert prose-headings:mt-8 prose-headings:font-semibold prose-headings:text-black prose-h1:text-3xl prose-h2:text-2xl prose-h3:text-xl prose-h4:text-lg prose-h5:text-md prose-h6:text-sm dark:prose-headings:text-polar-50 dark:text-polar-300 max-h-64 max-w-4xl overflow-hidden text-gray-800',
               )}
             >
-              {subscriptionTier.description}
-            </p>
+              <Markdown
+                options={{
+                  ...markdownOpts,
+                  overrides: {
+                    ...markdownOpts.overrides,
+                    a: (props) => (
+                      <a {...props} rel="noopener noreferrer nofollow" />
+                    ),
+                  },
+                }}
+              >
+                {subscriptionTier.description}
+              </Markdown>
+            </div>
           ) : (
             <>
               {isEditing ? (

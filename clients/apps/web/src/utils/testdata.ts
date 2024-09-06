@@ -159,21 +159,21 @@ export const pledger: Pledger = {
 }
 
 export const pledgesSummaries: PledgesTypeSummaries = {
-  pay_directly: { total: { currency: 'USD', amount: 0 }, pledgers: [] },
+  pay_directly: { total: { currency: 'usd', amount: 0 }, pledgers: [] },
   pay_on_completion: {
-    total: { currency: 'USD', amount: 40000 },
+    total: { currency: 'usd', amount: 40000 },
     pledgers: [pledger, pledger],
   },
   pay_upfront: {
-    total: { currency: 'USD', amount: 10000 },
+    total: { currency: 'usd', amount: 10000 },
     pledgers: [pledger],
   },
 }
 
 export const issueFunding: IssueFunding = {
   issue,
-  funding_goal: { currency: 'USD', amount: 60000 },
-  total: { currency: 'USD', amount: 50000 },
+  funding_goal: { currency: 'usd', amount: 60000 },
+  total: { currency: 'usd', amount: 50000 },
   pledges_summaries: pledgesSummaries,
 }
 

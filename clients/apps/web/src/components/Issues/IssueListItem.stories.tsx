@@ -280,7 +280,7 @@ const meta: Meta<typeof IssueListItem> = {
       ...pledgesSummaries,
       pay_upfront: {
         ...pledgesSummaries.pay_upfront,
-        total: { currency: 'USD', amount: 4000 },
+        total: { currency: 'usd', amount: 4000 },
       },
     },
   },
@@ -602,7 +602,7 @@ export const FundingGoal: Story = {
     issue: {
       ...issueClosed,
       funding: {
-        funding_goal: { currency: 'USD', amount: 60000 },
+        funding_goal: { currency: 'usd', amount: 60000 },
       },
     },
     references: referencesMerged,
@@ -620,7 +620,7 @@ export const SelfSummaryFundingGoal: Story = {
     issue: {
       ...issueClosed,
       funding: {
-        funding_goal: { currency: 'USD', amount: 60000 },
+        funding_goal: { currency: 'usd', amount: 60000 },
       },
     },
     references: referencesMerged,
@@ -651,11 +651,11 @@ export const SelfSummaryFundingGoal: Story = {
     pledgesSummary: {
       ...pledgesSummaries,
       pay_upfront: {
-        total: { currency: 'USD', amount: 4000 },
+        total: { currency: 'usd', amount: 4000 },
         pledgers: [pledger, pledger, pledger],
       },
       pay_on_completion: {
-        total: { currency: 'USD', amount: 4000 },
+        total: { currency: 'usd', amount: 4000 },
         pledgers: [pledger, pledger, pledger],
       },
     },
@@ -708,11 +708,11 @@ export const SelfSummaryNoGoal: Story = {
     pledgesSummary: {
       ...pledgesSummaries,
       pay_upfront: {
-        total: { currency: 'USD', amount: 4000 },
+        total: { currency: 'usd', amount: 4000 },
         pledgers: [pledger, pledger, pledger],
       },
       pay_on_completion: {
-        total: { currency: 'USD', amount: 4000 },
+        total: { currency: 'usd', amount: 4000 },
         pledgers: [pledger, pledger, pledger],
       },
     },
@@ -801,7 +801,7 @@ export const PublicReward: Story = {
 const reward: Reward = {
   pledge: pledgePublicAPI,
   state: RewardState.PENDING,
-  amount: { currency: 'USD', amount: 4000 },
+  amount: { currency: 'usd', amount: 4000 },
 }
 
 export const RewardsStatusAll: Story = {
@@ -811,7 +811,7 @@ export const RewardsStatusAll: Story = {
       ...issueClosed,
       upfront_split_to_contributors: 90,
       funding: {
-        pledges_sum: { amount: 8000, currency: 'USD' },
+        pledges_sum: { amount: 8000, currency: 'usd' },
       },
     },
     references: [],
@@ -819,11 +819,11 @@ export const RewardsStatusAll: Story = {
     pledgesSummary: {
       ...pledgesSummaries,
       pay_upfront: {
-        total: { currency: 'USD', amount: 4000 },
+        total: { currency: 'usd', amount: 4000 },
         pledgers: [pledger, pledger, pledger],
       },
       pay_on_completion: {
-        total: { currency: 'USD', amount: 4000 },
+        total: { currency: 'usd', amount: 4000 },
         pledgers: [pledger, pledger, pledger],
       },
     },
@@ -833,17 +833,17 @@ export const RewardsStatusAll: Story = {
         ...reward,
         state: RewardState.PENDING,
 
-        amount: { currency: 'USD', amount: 1000 },
+        amount: { currency: 'usd', amount: 1000 },
       },
       {
         ...reward,
         state: RewardState.PAID,
-        amount: { currency: 'USD', amount: 2000 },
+        amount: { currency: 'usd', amount: 2000 },
       },
       {
         ...reward,
         state: RewardState.PENDING,
-        amount: { currency: 'USD', amount: 3000 },
+        amount: { currency: 'usd', amount: 3000 },
         pledge: {
           ...reward.pledge,
           refunded_at: dateConv(new Date('2023-10-03')),
@@ -860,7 +860,7 @@ export const RewardsStatusPaidOnly: Story = {
       ...issueClosed,
       upfront_split_to_contributors: 90,
       funding: {
-        pledges_sum: { amount: 8000, currency: 'USD' },
+        pledges_sum: { amount: 8000, currency: 'usd' },
       },
     },
     references: [],
@@ -868,11 +868,11 @@ export const RewardsStatusPaidOnly: Story = {
     pledgesSummary: {
       ...pledgesSummaries,
       pay_upfront: {
-        total: { currency: 'USD', amount: 4000 },
+        total: { currency: 'usd', amount: 4000 },
         pledgers: [pledger, pledger, pledger],
       },
       pay_on_completion: {
-        total: { currency: 'USD', amount: 4000 },
+        total: { currency: 'usd', amount: 4000 },
         pledgers: [pledger, pledger, pledger],
       },
     },
@@ -881,7 +881,7 @@ export const RewardsStatusPaidOnly: Story = {
       {
         ...reward,
         state: RewardState.PAID,
-        amount: { currency: 'USD', amount: 2000 },
+        amount: { currency: 'usd', amount: 2000 },
       },
     ],
   },
@@ -894,7 +894,7 @@ export const RewardsStatusPaidOnlyZero: Story = {
       ...issueClosed,
       upfront_split_to_contributors: 0,
       funding: {
-        pledges_sum: { amount: 8000, currency: 'USD' },
+        pledges_sum: { amount: 8000, currency: 'usd' },
       },
     },
     references: [],
@@ -902,11 +902,11 @@ export const RewardsStatusPaidOnlyZero: Story = {
     pledgesSummary: {
       ...pledgesSummaries,
       pay_upfront: {
-        total: { currency: 'USD', amount: 4000 },
+        total: { currency: 'usd', amount: 4000 },
         pledgers: [pledger, pledger, pledger],
       },
       pay_on_completion: {
-        total: { currency: 'USD', amount: 4000 },
+        total: { currency: 'usd', amount: 4000 },
         pledgers: [pledger, pledger, pledger],
       },
     },
@@ -915,7 +915,7 @@ export const RewardsStatusPaidOnlyZero: Story = {
       {
         ...reward,
         state: RewardState.PAID,
-        amount: { currency: 'USD', amount: 2000 },
+        amount: { currency: 'usd', amount: 2000 },
       },
     ],
   },

@@ -49,7 +49,7 @@ const PolarBadge = ({ showAmount }: { showAmount: boolean }) => {
     <IssueBadge
       showAmountRaised={showAmount}
       funding={{
-        pledges_sum: { currency: 'USD', amount: 2500 },
+        pledges_sum: { currency: 'usd', amount: 2500 },
       }}
       darkmode={resolvedTheme === 'dark' ? true : false}
       avatarsUrls={[]}

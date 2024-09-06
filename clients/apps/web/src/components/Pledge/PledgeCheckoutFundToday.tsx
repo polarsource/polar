@@ -214,16 +214,10 @@ const PledgeCheckoutFundToday = ({
     }
   }, [currentUser, formState, synchronizePledge])
 
-  const onAmountChange = (event: ChangeEvent<HTMLInputElement>) => {
-    let newAmount = parseInt(event.target.value)
-    if (isNaN(newAmount)) {
-      newAmount = 0
-    }
-    const amountInCents = newAmount * 100
-
+  const onAmountChange = (amount: number) => {
     if (formState.amount === organization.pledge_minimum_amount) {
       posthog.capture('Pledge amount changed', {
-        Amount: newAmount,
+        Amount: amount,
         'Organization ID': issue.repository.organization.id,
         'Organization Name': issue.repository.organization.name,
         'Repository ID': issue.repository.id,
@@ -234,12 +228,12 @@ const PledgeCheckoutFundToday = ({
     }
 
     if (onAmountChangeProp) {
-      onAmountChangeProp(amountInCents)
+      onAmountChangeProp(amount)
     }
 
     const n = {
       ...formState,
-      amount: amountInCents,
+      amount,
     }
     setFormState(n)
     debouncedSync(n)
@@ -357,7 +351,6 @@ const PledgeCheckoutFundToday = ({
             id="amount"
             name="amount"
             onChange={onAmountChange}
-            onBlur={onAmountChange}
             placeholder={organization.pledge_minimum_amount}
             value={formState.amount}
             onFocus={(event) => {

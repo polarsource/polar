@@ -44,11 +44,11 @@ export const HeroGraphic = () => {
               funding={{
                 funding_goal: {
                   amount: 90000,
-                  currency: 'USD',
+                  currency: 'usd',
                 },
                 pledges_sum: {
                   amount: 45000,
-                  currency: 'USD',
+                  currency: 'usd',
                 },
               }}
               avatarsUrls={[
@@ -69,11 +69,11 @@ export const HeroGraphic = () => {
               funding={{
                 funding_goal: {
                   amount: 90000,
-                  currency: 'USD',
+                  currency: 'usd',
                 },
                 pledges_sum: {
                   amount: 45000,
-                  currency: 'USD',
+                  currency: 'usd',
                 },
               }}
               avatarsUrls={[

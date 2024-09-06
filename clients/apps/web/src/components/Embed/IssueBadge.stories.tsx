@@ -53,7 +53,7 @@ export const AmountRaised: Story = {
     ...Default.args,
     showAmountRaised: true,
     funding: {
-      pledges_sum: { currency: 'USD', amount: 5000 },
+      pledges_sum: { currency: 'usd', amount: 5000 },
     },
     avatarsUrls: avatars,
   },
@@ -65,7 +65,7 @@ export const AmountRaisedSingleAvatar: Story = {
     ...Default.args,
     showAmountRaised: true,
     funding: {
-      pledges_sum: { currency: 'USD', amount: 5000 },
+      pledges_sum: { currency: 'usd', amount: 5000 },
     },
     avatarsUrls: [avatars[0]],
   },
@@ -77,7 +77,7 @@ export const AmountRaisedFiveAvatars: Story = {
     ...Default.args,
     showAmountRaised: true,
     funding: {
-      pledges_sum: { currency: 'USD', amount: 5000 },
+      pledges_sum: { currency: 'usd', amount: 5000 },
     },
     avatarsUrls: [...avatars, ...avatars].slice(0, 5),
   },
@@ -89,7 +89,7 @@ export const AmountRaisedTwentyAvatars: Story = {
     ...Default.args,
     showAmountRaised: true,
     funding: {
-      pledges_sum: { currency: 'USD', amount: 5000 },
+      pledges_sum: { currency: 'usd', amount: 5000 },
     },
     avatarsUrls: [
       ...avatars,
@@ -108,7 +108,7 @@ export const LargeAmountRaised: Story = {
     ...Default.args,
     showAmountRaised: true,
     funding: {
-      pledges_sum: { currency: 'USD', amount: 800000 },
+      pledges_sum: { currency: 'usd', amount: 800000 },
     },
   },
 }
@@ -119,8 +119,8 @@ export const FundingGoal: Story = {
     ...Default.args,
     showAmountRaised: true,
     funding: {
-      funding_goal: { currency: 'USD', amount: 12000 },
-      pledges_sum: { currency: 'USD', amount: 6000 },
+      funding_goal: { currency: 'usd', amount: 12000 },
+      pledges_sum: { currency: 'usd', amount: 6000 },
     },
   },
 }
@@ -131,8 +131,8 @@ export const FundingGoalAvatars: Story = {
     ...Default.args,
     showAmountRaised: true,
     funding: {
-      funding_goal: { currency: 'USD', amount: 12000 },
-      pledges_sum: { currency: 'USD', amount: 6000 },
+      funding_goal: { currency: 'usd', amount: 12000 },
+      pledges_sum: { currency: 'usd', amount: 6000 },
     },
     avatarsUrls: [...avatars, ...avatars],
   },
@@ -143,8 +143,8 @@ export const FundingGoalAvatarsVeryWide: Story = {
     ...Default.args,
     showAmountRaised: true,
     funding: {
-      funding_goal: { currency: 'USD', amount: 1200000000 },
-      pledges_sum: { currency: 'USD', amount: 600000000 },
+      funding_goal: { currency: 'usd', amount: 1200000000 },
+      pledges_sum: { currency: 'usd', amount: 600000000 },
     },
     avatarsUrls: [...avatars, ...avatars],
   },
@@ -156,8 +156,8 @@ export const FundingGoalZero: Story = {
     ...Default.args,
     showAmountRaised: true,
     funding: {
-      funding_goal: { currency: 'USD', amount: 12000 },
-      pledges_sum: { currency: 'USD', amount: 0 },
+      funding_goal: { currency: 'usd', amount: 12000 },
+      pledges_sum: { currency: 'usd', amount: 0 },
     },
   },
 }
@@ -168,8 +168,8 @@ export const FundingGoalOver: Story = {
     ...Default.args,
     showAmountRaised: true,
     funding: {
-      funding_goal: { currency: 'USD', amount: 12000 },
-      pledges_sum: { currency: 'USD', amount: 3000000 },
+      funding_goal: { currency: 'usd', amount: 12000 },
+      pledges_sum: { currency: 'usd', amount: 3000000 },
     },
   },
 }
@@ -189,7 +189,7 @@ export const UpfrontSplitPledge: Story = {
     ...Default.args,
     showAmountRaised: true,
     funding: {
-      pledges_sum: { currency: 'USD', amount: 5000 },
+      pledges_sum: { currency: 'usd', amount: 5000 },
     },
     avatarsUrls: [...avatars, ...avatars].slice(0, 1),
     upfront_split_to_contributors: 80,
@@ -202,8 +202,8 @@ export const UpfrontSplitFundingGoal: Story = {
     ...Default.args,
     showAmountRaised: true,
     funding: {
-      funding_goal: { currency: 'USD', amount: 12000 },
-      pledges_sum: { currency: 'USD', amount: 6000 },
+      funding_goal: { currency: 'usd', amount: 12000 },
+      pledges_sum: { currency: 'usd', amount: 6000 },
     },
     avatarsUrls: [...avatars, ...avatars].slice(0, 1),
     upfront_split_to_contributors: 80,
@@ -217,7 +217,7 @@ export const UpfrontSplitPledgeLongName: Story = {
     orgName: 'zegloforkozegloforko',
     showAmountRaised: true,
     funding: {
-      pledges_sum: { currency: 'USD', amount: 5000 },
+      pledges_sum: { currency: 'usd', amount: 5000 },
     },
     avatarsUrls: [...avatars, ...avatars].slice(0, 1),
     upfront_split_to_contributors: 80,
@@ -230,7 +230,7 @@ export const UpfrontSplitZero: Story = {
     ...Default.args,
     showAmountRaised: true,
     funding: {
-      pledges_sum: { currency: 'USD', amount: 5000 },
+      pledges_sum: { currency: 'usd', amount: 5000 },
     },
     avatarsUrls: [...avatars, ...avatars].slice(0, 1),
     upfront_split_to_contributors: 0,
@@ -246,7 +246,7 @@ export const ClosedIssueCanDonate: Story = {
 
     showAmountRaised: true,
     funding: {
-      pledges_sum: { currency: 'USD', amount: 5000 },
+      pledges_sum: { currency: 'usd', amount: 5000 },
     },
     avatarsUrls: avatars,
     upfront_split_to_contributors: 80,
@@ -263,7 +263,7 @@ export const ClosedIssue: Story = {
 
     showAmountRaised: true,
     funding: {
-      pledges_sum: { currency: 'USD', amount: 5000 },
+      pledges_sum: { currency: 'usd', amount: 5000 },
     },
     avatarsUrls: avatars,
     upfront_split_to_contributors: 80,

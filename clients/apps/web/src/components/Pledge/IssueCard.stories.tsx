@@ -27,7 +27,7 @@ export const FundingNoGoal: Story = {
     issue: {
       ...issue,
       funding: {
-        pledges_sum: { currency: 'USD', amount: 5000 },
+        pledges_sum: { currency: 'usd', amount: 5000 },
       },
     },
   },
@@ -40,8 +40,8 @@ export const FundingGoal: Story = {
     issue: {
       ...issue,
       funding: {
-        funding_goal: { currency: 'USD', amount: 15000 },
-        pledges_sum: { currency: 'USD', amount: 5000 },
+        funding_goal: { currency: 'usd', amount: 15000 },
+        pledges_sum: { currency: 'usd', amount: 5000 },
       },
     },
   },
@@ -54,8 +54,8 @@ export const FundingGoalZero: Story = {
     issue: {
       ...issue,
       funding: {
-        funding_goal: { currency: 'USD', amount: 15000 },
-        pledges_sum: { currency: 'USD', amount: 0 },
+        funding_goal: { currency: 'usd', amount: 15000 },
+        pledges_sum: { currency: 'usd', amount: 0 },
       },
     },
   },
@@ -68,8 +68,8 @@ export const FundingGoalOver: Story = {
     issue: {
       ...issue,
       funding: {
-        funding_goal: { currency: 'USD', amount: 15000 },
-        pledges_sum: { currency: 'USD', amount: 30000 },
+        funding_goal: { currency: 'usd', amount: 15000 },
+        pledges_sum: { currency: 'usd', amount: 30000 },
       },
     },
   },
@@ -82,8 +82,8 @@ export const FundingGoalPlusCurrent: Story = {
     issue: {
       ...issue,
       funding: {
-        funding_goal: { currency: 'USD', amount: 15000 },
-        pledges_sum: { currency: 'USD', amount: 5000 },
+        funding_goal: { currency: 'usd', amount: 15000 },
+        pledges_sum: { currency: 'usd', amount: 5000 },
       },
     },
     currentPledgeAmount: 800,

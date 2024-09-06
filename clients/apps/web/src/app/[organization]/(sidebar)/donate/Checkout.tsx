@@ -311,8 +311,7 @@ const DonationAmount = () => {
                   name={'amount-amount'}
                   placeholder={2000}
                   value={field.value}
-                  onChange={undefined}
-                  onAmountChangeInCents={(cents) => field.onChange(cents)}
+                  onChange={field.onChange}
                 />
               </div>
             </FormControl>

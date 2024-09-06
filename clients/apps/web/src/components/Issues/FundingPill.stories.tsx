@@ -7,11 +7,11 @@ const meta: Meta<typeof FundingPill> = {
   args: {
     total: {
       amount: 25000,
-      currency: 'USD',
+      currency: 'usd',
     },
     goal: {
       amount: 50000,
-      currency: 'USD',
+      currency: 'usd',
     },
   },
 }

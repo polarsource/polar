@@ -52,7 +52,7 @@ const BadgeMessageForm = (props: {
     funding_goal: {
       ...props.funding.funding_goal,
       amount: fundingGoal,
-      currency: 'USD',
+      currency: 'usd',
     },
   }
 
@@ -70,16 +70,11 @@ const BadgeMessageForm = (props: {
 
   const { resolvedTheme } = useTheme()
 
-  const onFundingGoalChange = (e: ChangeEvent<HTMLInputElement>) => {
-    let newAmount = parseInt(e.target.value)
-    if (isNaN(newAmount)) {
-      newAmount = 0
-    }
-    const amountInCents = newAmount * 100
-    setFundingGoal(amountInCents)
-    setCanSave(amountInCents !== props.funding?.funding_goal?.amount)
+  const onFundingGoalChange = (amount: number) => {
+    setFundingGoal(amount)
+    setCanSave(amount !== props.funding?.funding_goal?.amount)
     if (props.onChangeFundingGoal) {
-      props.onChangeFundingGoal({ currency: 'USD', amount: amountInCents })
+      props.onChangeFundingGoal({ currency: 'usd', amount })
     }
   }
 
@@ -156,7 +151,6 @@ const BadgeMessageForm = (props: {
               id={'fundingGoal'}
               name={'fundingGoal'}
               onChange={onFundingGoalChange}
-              onBlur={onFundingGoalChange}
               placeholder={20000}
               value={fundingGoal}
               className="dark:bg-polar-800 bg-white"

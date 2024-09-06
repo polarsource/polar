@@ -126,9 +126,9 @@ const IssueListItemDecoration = ({
   const haveReferences = references && references.length > 0
 
   const pledgesSummaryOrDefault = pledgesSummary ?? {
-    pay_directly: { total: { currency: 'USD', amount: 0 }, pledgers: [] },
-    pay_on_completion: { total: { currency: 'USD', amount: 0 }, pledgers: [] },
-    pay_upfront: { total: { currency: 'USD', amount: 0 }, pledgers: [] },
+    pay_directly: { total: { currency: 'usd', amount: 0 }, pledgers: [] },
+    pay_on_completion: { total: { currency: 'usd', amount: 0 }, pledgers: [] },
+    pay_upfront: { total: { currency: 'usd', amount: 0 }, pledgers: [] },
   }
 
   return (

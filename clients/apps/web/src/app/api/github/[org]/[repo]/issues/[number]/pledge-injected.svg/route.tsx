@@ -60,9 +60,9 @@ export async function GET(request: Request) {
 
   const funding = {
     funding_goal: withFundingGoal
-      ? { currency: 'USD', amount: 25000 }
+      ? { currency: 'usd', amount: 25000 }
       : undefined,
-    pledges_sum: { currency: 'USD', amount: amount },
+    pledges_sum: { currency: 'usd', amount: amount },
   }
 
   const svg = await renderBadge({

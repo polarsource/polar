@@ -93,7 +93,7 @@ const ProductPriceItem: React.FC<ProductPriceItemProps> = ({
                     id="monthly-price"
                     name={field.name}
                     value={field.value}
-                    onAmountChangeInCents={(v) => {
+                    onChange={(v) => {
                       field.onChange(v)
                       setValue(`prices.${index}.id`, '')
                     }}

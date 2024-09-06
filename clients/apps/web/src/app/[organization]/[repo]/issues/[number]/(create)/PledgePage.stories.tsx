@@ -68,8 +68,8 @@ export const FundingGoal: Story = {
     issue: {
       ...issue,
       funding: {
-        funding_goal: { currency: 'USD', amount: 15000 },
-        pledges_sum: { currency: 'USD', amount: 5000 },
+        funding_goal: { currency: 'usd', amount: 15000 },
+        pledges_sum: { currency: 'usd', amount: 5000 },
       },
     },
   },

@@ -64,7 +64,7 @@ const paidRewardUser: Reward = {
     avatar_url: 'https://avatars.githubusercontent.com/u/1426460?v=4',
   },
   organization: undefined,
-  amount: { currency: 'USD', amount: 4000 },
+  amount: { currency: 'usd', amount: 4000 },
   state: RewardState.PAID,
 }
 

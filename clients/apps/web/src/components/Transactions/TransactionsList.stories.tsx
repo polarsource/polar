@@ -29,9 +29,9 @@ const tx: Transaction = {
   id: '',
   type: 'payment',
   processor: 'stripe',
-  currency: 'USD',
+  currency: 'usd',
   amount: 12300,
-  account_currency: 'USD',
+  account_currency: 'usd',
   account_amount: 12300,
   account_incurred_transactions: [],
   incurred_amount: 300,
@@ -149,7 +149,7 @@ const product_price: ProductPrice = {
   type: 'recurring',
   recurring_interval: 'month',
   price_amount: 4000,
-  price_currency: 'USD',
+  price_currency: 'usd',
   is_archived: false,
 }
 

@@ -15,7 +15,7 @@ const meta: Meta<typeof PledgeSummaryPill.Funded> = {
       pledgers: [pledger, pledger, pledger],
       total: {
         amount: 25000,
-        currency: 'USD',
+        currency: 'usd',
       },
     },
   },
@@ -43,7 +43,7 @@ export const OnePledger: Story = {
       pledgers: [pledger],
       total: {
         amount: 25000,
-        currency: 'USD',
+        currency: 'usd',
       },
     },
   },

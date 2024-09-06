@@ -249,12 +249,12 @@
           {
             "lang": "typescript",
             "label": "list",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.users.benefits.list({});\n\n  for await (const page of result) {\n    // Handle the page\n    console.log(page);\n  }\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.users.benefits.list({});\n  \n  for await (const page of result) {\n    // Handle the page\n    console.log(page);\n  }\n}\n\nrun();"
           },
           {
             "lang": "python",
             "label": "list",
-            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\n\nres = s.users.benefits.list()\n\nif res is not None:\n    while True:\n        # handle items\n\n        res = res.Next()\n        if res is None:\n            break"
+            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\nres = s.users.benefits.list()\n\nif res is not None:\n    while True:\n        # handle items\n\n        res = res.Next()\n        if res is None:\n            break"
           }
         ]
       }
@@ -370,12 +370,12 @@
           {
             "lang": "typescript",
             "label": "get",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.users.benefits.get({\n    id: \"<value>\",\n  });\n\n  // Handle the result\n  console.log(result)\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.users.benefits.get({\n    id: \"<value>\",\n  });\n  \n  // Handle the result\n  console.log(result)\n}\n\nrun();"
           },
           {
             "lang": "python",
             "label": "get",
-            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\n\nres = s.users.benefits.get(id=\"<value>\")\n\nif res is not None:\n    # handle response\n    pass"
+            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\nres = s.users.benefits.get(id=\"<value>\")\n\nif res is not None:\n    # handle response\n    pass"
           }
         ]
       }
@@ -647,12 +647,12 @@
           {
             "lang": "typescript",
             "label": "list",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.users.orders.list({});\n\n  for await (const page of result) {\n    // Handle the page\n    console.log(page);\n  }\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.users.orders.list({});\n  \n  for await (const page of result) {\n    // Handle the page\n    console.log(page);\n  }\n}\n\nrun();"
           },
           {
             "lang": "python",
             "label": "list",
-            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\n\nres = s.users.orders.list()\n\nif res is not None:\n    while True:\n        # handle items\n\n        res = res.Next()\n        if res is None:\n            break"
+            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\nres = s.users.orders.list()\n\nif res is not None:\n    while True:\n        # handle items\n\n        res = res.Next()\n        if res is None:\n            break"
           }
         ]
       }
@@ -733,12 +733,12 @@
           {
             "lang": "typescript",
             "label": "get",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.users.orders.get({\n    id: \"<value>\",\n  });\n\n  // Handle the result\n  console.log(result)\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.users.orders.get({\n    id: \"<value>\",\n  });\n  \n  // Handle the result\n  console.log(result)\n}\n\nrun();"
           },
           {
             "lang": "python",
             "label": "get",
-            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\n\nres = s.users.orders.get(id=\"<value>\")\n\nif res is not None:\n    # handle response\n    pass"
+            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\nres = s.users.orders.get(id=\"<value>\")\n\nif res is not None:\n    # handle response\n    pass"
           }
         ]
       }
@@ -819,12 +819,12 @@
           {
             "lang": "typescript",
             "label": "invoice",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.users.orders.invoice({\n    id: \"<value>\",\n  });\n\n  // Handle the result\n  console.log(result)\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.users.orders.invoice({\n    id: \"<value>\",\n  });\n  \n  // Handle the result\n  console.log(result)\n}\n\nrun();"
           },
           {
             "lang": "python",
             "label": "invoice",
-            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\n\nres = s.users.orders.invoice(id=\"<value>\")\n\nif res is not None:\n    # handle response\n    pass"
+            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\nres = s.users.orders.invoice(id=\"<value>\")\n\nif res is not None:\n    # handle response\n    pass"
           }
         ]
       }
@@ -1064,12 +1064,12 @@
           {
             "lang": "typescript",
             "label": "list",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.users.subscriptions.list({});\n\n  for await (const page of result) {\n    // Handle the page\n    console.log(page);\n  }\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.users.subscriptions.list({});\n  \n  for await (const page of result) {\n    // Handle the page\n    console.log(page);\n  }\n}\n\nrun();"
           },
           {
             "lang": "python",
             "label": "list",
-            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\n\nres = s.users.subscriptions.list()\n\nif res is not None:\n    while True:\n        # handle items\n\n        res = res.Next()\n        if res is None:\n            break"
+            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\nres = s.users.subscriptions.list()\n\nif res is not None:\n    while True:\n        # handle items\n\n        res = res.Next()\n        if res is None:\n            break"
           }
         ]
       },
@@ -1155,12 +1155,12 @@
           {
             "lang": "typescript",
             "label": "create",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.users.subscriptions.create({\n    productId: \"<value>\",\n  });\n\n  // Handle the result\n  console.log(result)\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.users.subscriptions.create({\n    productId: \"<value>\",\n  });\n  \n  // Handle the result\n  console.log(result)\n}\n\nrun();"
           },
           {
             "lang": "python",
             "label": "create",
-            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\n\nres = s.users.subscriptions.create(request={\n    \"product_id\": \"<value>\",\n})\n\nif res is not None:\n    # handle response\n    pass"
+            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\nres = s.users.subscriptions.create(request={\n    \"product_id\": \"<value>\",\n})\n\nif res is not None:\n    # handle response\n    pass"
           }
         ]
       }
@@ -1241,12 +1241,12 @@
           {
             "lang": "typescript",
             "label": "get",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.users.subscriptions.get({\n    id: \"<value>\",\n  });\n\n  // Handle the result\n  console.log(result)\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.users.subscriptions.get({\n    id: \"<value>\",\n  });\n  \n  // Handle the result\n  console.log(result)\n}\n\nrun();"
           },
           {
             "lang": "python",
             "label": "get",
-            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\n\nres = s.users.subscriptions.get(id=\"<value>\")\n\nif res is not None:\n    # handle response\n    pass"
+            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\nres = s.users.subscriptions.get(id=\"<value>\")\n\nif res is not None:\n    # handle response\n    pass"
           }
         ]
       },
@@ -1345,12 +1345,12 @@
           {
             "lang": "typescript",
             "label": "update",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.users.subscriptions.update({\n    id: \"<value>\",\n    userSubscriptionUpdate: {\n      productPriceId: \"<value>\",\n    },\n  });\n\n  // Handle the result\n  console.log(result)\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.users.subscriptions.update({\n    id: \"<value>\",\n    userSubscriptionUpdate: {\n      productPriceId: \"<value>\",\n    },\n  });\n  \n  // Handle the result\n  console.log(result)\n}\n\nrun();"
           },
           {
             "lang": "python",
             "label": "update",
-            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\n\nres = s.users.subscriptions.update(id=\"<value>\", user_subscription_update={\n    \"product_price_id\": \"<value>\",\n})\n\nif res is not None:\n    # handle response\n    pass"
+            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\nres = s.users.subscriptions.update(id=\"<value>\", user_subscription_update={\n    \"product_price_id\": \"<value>\",\n})\n\nif res is not None:\n    # handle response\n    pass"
           }
         ]
       },
@@ -1439,12 +1439,12 @@
           {
             "lang": "typescript",
             "label": "cancel",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.users.subscriptions.cancel({\n    id: \"<value>\",\n  });\n\n  // Handle the result\n  console.log(result)\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.users.subscriptions.cancel({\n    id: \"<value>\",\n  });\n  \n  // Handle the result\n  console.log(result)\n}\n\nrun();"
           },
           {
             "lang": "python",
             "label": "cancel",
-            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\n\nres = s.users.subscriptions.cancel(id=\"<value>\")\n\nif res is not None:\n    # handle response\n    pass"
+            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\nres = s.users.subscriptions.cancel(id=\"<value>\")\n\nif res is not None:\n    # handle response\n    pass"
           }
         ]
       }
@@ -1571,12 +1571,12 @@
           {
             "lang": "typescript",
             "label": "list",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.users.advertisements.list({});\n\n  for await (const page of result) {\n    // Handle the page\n    console.log(page);\n  }\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.users.advertisements.list({});\n  \n  for await (const page of result) {\n    // Handle the page\n    console.log(page);\n  }\n}\n\nrun();"
           },
           {
             "lang": "python",
             "label": "list",
-            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\n\nres = s.users.advertisements.list()\n\nif res is not None:\n    while True:\n        # handle items\n\n        res = res.Next()\n        if res is None:\n            break"
+            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\nres = s.users.advertisements.list()\n\nif res is not None:\n    while True:\n        # handle items\n\n        res = res.Next()\n        if res is None:\n            break"
           }
         ]
       },
@@ -1640,12 +1640,12 @@
           {
             "lang": "typescript",
             "label": "create",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.users.advertisements.create({\n    imageUrl: \"http://limp-pastry.org\",\n    text: \"<value>\",\n    linkUrl: \"http://flashy-cartload.net\",\n  });\n\n  // Handle the result\n  console.log(result)\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.users.advertisements.create({\n    imageUrl: \"http://limp-pastry.org\",\n    text: \"<value>\",\n    linkUrl: \"http://flashy-cartload.net\",\n  });\n  \n  // Handle the result\n  console.log(result)\n}\n\nrun();"
           },
           {
             "lang": "python",
             "label": "create",
-            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\n\nres = s.users.advertisements.create(request={\n    \"image_url\": \"http://limp-pastry.org\",\n    \"text\": \"<value>\",\n    \"link_url\": \"http://flashy-cartload.net\",\n})\n\nif res is not None:\n    # handle response\n    pass"
+            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\nres = s.users.advertisements.create(request={\n    \"image_url\": \"http://limp-pastry.org\",\n    \"text\": \"<value>\",\n    \"link_url\": \"http://flashy-cartload.net\",\n})\n\nif res is not None:\n    # handle response\n    pass"
           }
         ]
       }
@@ -1725,12 +1725,12 @@
           {
             "lang": "typescript",
             "label": "get",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.users.advertisements.get({\n    id: \"<value>\",\n  });\n\n  // Handle the result\n  console.log(result)\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.users.advertisements.get({\n    id: \"<value>\",\n  });\n  \n  // Handle the result\n  console.log(result)\n}\n\nrun();"
           },
           {
             "lang": "python",
             "label": "get",
-            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\n\nres = s.users.advertisements.get(id=\"<value>\")\n\nif res is not None:\n    # handle response\n    pass"
+            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\nres = s.users.advertisements.get(id=\"<value>\")\n\nif res is not None:\n    # handle response\n    pass"
           }
         ]
       },
@@ -1818,12 +1818,12 @@
           {
             "lang": "typescript",
             "label": "update",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.users.advertisements.update({\n    id: \"<value>\",\n    userAdvertisementCampaignUpdate: {},\n  });\n\n  // Handle the result\n  console.log(result)\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.users.advertisements.update({\n    id: \"<value>\",\n    userAdvertisementCampaignUpdate: {},\n  });\n  \n  // Handle the result\n  console.log(result)\n}\n\nrun();"
           },
           {
             "lang": "python",
             "label": "update",
-            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\n\nres = s.users.advertisements.update(id=\"<value>\", user_advertisement_campaign_update={})\n\nif res is not None:\n    # handle response\n    pass"
+            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\nres = s.users.advertisements.update(id=\"<value>\", user_advertisement_campaign_update={})\n\nif res is not None:\n    # handle response\n    pass"
           }
         ]
       },
@@ -1902,12 +1902,12 @@
           {
             "lang": "typescript",
             "label": "delete",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.users.advertisements.delete({\n    id: \"<value>\",\n  });\n\n  // Handle the result\n  console.log(result)\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.users.advertisements.delete({\n    id: \"<value>\",\n  });\n  \n  // Handle the result\n  console.log(result)\n}\n\nrun();"
           },
           {
             "lang": "python",
             "label": "delete",
-            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\n\nres = s.users.advertisements.delete(id=\"<value>\")\n\nif res is not None:\n    # handle response\n    pass"
+            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\nres = s.users.advertisements.delete(id=\"<value>\")\n\nif res is not None:\n    # handle response\n    pass"
           }
         ]
       }
@@ -1990,12 +1990,12 @@
           {
             "lang": "typescript",
             "label": "enable",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  await polar.users.advertisements.enable({\n    id: \"<value>\",\n    userAdvertisementCampaignEnable: {\n      benefitId: \"<value>\",\n    },\n  });\n\n  \n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  await polar.users.advertisements.enable({\n    id: \"<value>\",\n    userAdvertisementCampaignEnable: {\n      benefitId: \"<value>\",\n    },\n  });\n}\n\nrun();"
           },
           {
             "lang": "python",
             "label": "enable",
-            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\n\ns.users.advertisements.enable(id=\"<value>\", user_advertisement_campaign_enable={\n    \"benefit_id\": \"<value>\",\n})\n\n# Use the SDK ..."
+            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\ns.users.advertisements.enable(id=\"<value>\", user_advertisement_campaign_enable={\n    \"benefit_id\": \"<value>\",\n})\n\n# Use the SDK ..."
           }
         ]
       }
@@ -2174,12 +2174,12 @@
           {
             "lang": "typescript",
             "label": "list",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.users.downloadables.list({});\n\n  for await (const page of result) {\n    // Handle the page\n    console.log(page);\n  }\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.users.downloadables.list({});\n  \n  for await (const page of result) {\n    // Handle the page\n    console.log(page);\n  }\n}\n\nrun();"
           },
           {
             "lang": "python",
             "label": "list",
-            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\n\nres = s.users.downloadables.list()\n\nif res is not None:\n    while True:\n        # handle items\n\n        res = res.Next()\n        if res is None:\n            break"
+            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\nres = s.users.downloadables.list()\n\nif res is not None:\n    while True:\n        # handle items\n\n        res = res.Next()\n        if res is None:\n            break"
           }
         ]
       }
@@ -2256,12 +2256,12 @@
           {
             "lang": "typescript",
             "label": "get",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.users.downloadables.get({\n    token: \"<value>\",\n  });\n\n  // Handle the result\n  console.log(result)\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.users.downloadables.get({\n    token: \"<value>\",\n  });\n  \n  // Handle the result\n  console.log(result)\n}\n\nrun();"
           },
           {
             "lang": "python",
             "label": "get",
-            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\n\nres = s.users.downloadables.get(token=\"<value>\")\n\nif res is not None:\n    # handle response\n    pass"
+            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\nres = s.users.downloadables.get(token=\"<value>\")\n\nif res is not None:\n    # handle response\n    pass"
           }
         ]
       }
@@ -2447,12 +2447,12 @@
           {
             "lang": "typescript",
             "label": "list",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.users.licenseKeys.list({});\n\n  for await (const page of result) {\n    // Handle the page\n    console.log(page);\n  }\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.users.licenseKeys.list({});\n  \n  for await (const page of result) {\n    // Handle the page\n    console.log(page);\n  }\n}\n\nrun();"
           },
           {
             "lang": "python",
             "label": "list",
-            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\n\nres = s.users.license_keys.list()\n\nif res is not None:\n    while True:\n        # handle items\n\n        res = res.Next()\n        if res is None:\n            break"
+            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\nres = s.users.license_keys.list()\n\nif res is not None:\n    while True:\n        # handle items\n\n        res = res.Next()\n        if res is None:\n            break"
           }
         ]
       }
@@ -2541,12 +2541,12 @@
           {
             "lang": "typescript",
             "label": "get",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.users.licenseKeys.get({\n    id: \"<value>\",\n  });\n\n  // Handle the result\n  console.log(result)\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.users.licenseKeys.get({\n    id: \"<value>\",\n  });\n  \n  // Handle the result\n  console.log(result)\n}\n\nrun();"
           },
           {
             "lang": "python",
             "label": "get",
-            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\n\nres = s.users.license_keys.get(id=\"<value>\")\n\nif res is not None:\n    # handle response\n    pass"
+            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\nres = s.users.license_keys.get(id=\"<value>\")\n\nif res is not None:\n    # handle response\n    pass"
           }
         ]
       }
@@ -2610,12 +2610,12 @@
           {
             "lang": "typescript",
             "label": "validate",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.users.licenseKeys.validate({\n    key: \"<key>\",\n    organizationId: \"<value>\",\n  });\n\n  // Handle the result\n  console.log(result)\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.users.licenseKeys.validate({\n    key: \"<key>\",\n    organizationId: \"<value>\",\n  });\n  \n  // Handle the result\n  console.log(result)\n}\n\nrun();"
           },
           {
             "lang": "python",
             "label": "validate",
-            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\n\nres = s.users.license_keys.validate(request={\n    \"key\": \"<key>\",\n    \"organization_id\": \"<value>\",\n})\n\nif res is not None:\n    # handle response\n    pass"
+            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\nres = s.users.license_keys.validate(request={\n    \"key\": \"<key>\",\n    \"organization_id\": \"<value>\",\n})\n\nif res is not None:\n    # handle response\n    pass"
           }
         ]
       }
@@ -2689,12 +2689,12 @@
           {
             "lang": "typescript",
             "label": "activate",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.users.licenseKeys.activate({\n    key: \"<key>\",\n    organizationId: \"<value>\",\n    label: \"<value>\",\n  });\n\n  // Handle the result\n  console.log(result)\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.users.licenseKeys.activate({\n    key: \"<key>\",\n    organizationId: \"<value>\",\n    label: \"<value>\",\n  });\n  \n  // Handle the result\n  console.log(result)\n}\n\nrun();"
           },
           {
             "lang": "python",
             "label": "activate",
-            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\n\nres = s.users.license_keys.activate(request={\n    \"key\": \"<key>\",\n    \"organization_id\": \"<value>\",\n    \"label\": \"<value>\",\n})\n\nif res is not None:\n    # handle response\n    pass"
+            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\nres = s.users.license_keys.activate(request={\n    \"key\": \"<key>\",\n    \"organization_id\": \"<value>\",\n    \"label\": \"<value>\",\n})\n\nif res is not None:\n    # handle response\n    pass"
           }
         ]
       }
@@ -2751,12 +2751,12 @@
           {
             "lang": "typescript",
             "label": "deactivate",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  await polar.users.licenseKeys.deactivate({\n    key: \"<key>\",\n    organizationId: \"<value>\",\n    activationId: \"<value>\",\n  });\n\n  \n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  await polar.users.licenseKeys.deactivate({\n    key: \"<key>\",\n    organizationId: \"<value>\",\n    activationId: \"<value>\",\n  });\n}\n\nrun();"
           },
           {
             "lang": "python",
             "label": "deactivate",
-            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\n\ns.users.license_keys.deactivate(request={\n    \"key\": \"<key>\",\n    \"organization_id\": \"<value>\",\n    \"activation_id\": \"<value>\",\n})\n\n# Use the SDK ..."
+            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\ns.users.license_keys.deactivate(request={\n    \"key\": \"<key>\",\n    \"organization_id\": \"<value>\",\n    \"activation_id\": \"<value>\",\n})\n\n# Use the SDK ..."
           }
         ]
       }
@@ -3225,12 +3225,12 @@
           {
             "lang": "typescript",
             "label": "list",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.externalOrganizations.list({});\n\n  for await (const page of result) {\n    // Handle the page\n    console.log(page);\n  }\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.externalOrganizations.list({});\n  \n  for await (const page of result) {\n    // Handle the page\n    console.log(page);\n  }\n}\n\nrun();"
           },
           {
             "lang": "python",
             "label": "list",
-            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\n\nres = s.external_organizations.list()\n\nif res is not None:\n    while True:\n        # handle items\n\n        res = res.Next()\n        if res is None:\n            break"
+            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\nres = s.external_organizations.list()\n\nif res is not None:\n    while True:\n        # handle items\n\n        res = res.Next()\n        if res is None:\n            break"
           }
         ]
       }
@@ -3488,12 +3488,12 @@
           {
             "lang": "typescript",
             "label": "list",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.repositories.list({});\n\n  for await (const page of result) {\n    // Handle the page\n    console.log(page);\n  }\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.repositories.list({});\n  \n  for await (const page of result) {\n    // Handle the page\n    console.log(page);\n  }\n}\n\nrun();"
           },
           {
             "lang": "python",
             "label": "list",
-            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\n\nres = s.repositories.list()\n\nif res is not None:\n    while True:\n        # handle items\n\n        res = res.Next()\n        if res is None:\n            break"
+            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\nres = s.repositories.list()\n\nif res is not None:\n    while True:\n        # handle items\n\n        res = res.Next()\n        if res is None:\n            break"
           }
         ]
       }
@@ -3580,12 +3580,12 @@
           {
             "lang": "typescript",
             "label": "get",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.repositories.get({\n    id: \"<value>\",\n  });\n\n  // Handle the result\n  console.log(result)\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.repositories.get({\n    id: \"<value>\",\n  });\n  \n  // Handle the result\n  console.log(result)\n}\n\nrun();"
           },
           {
             "lang": "python",
             "label": "get",
-            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\n\nres = s.repositories.get(id=\"<value>\")\n\nif res is not None:\n    # handle response\n    pass"
+            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\nres = s.repositories.get(id=\"<value>\")\n\nif res is not None:\n    # handle response\n    pass"
           }
         ]
       },
@@ -3688,12 +3688,12 @@
           {
             "lang": "typescript",
             "label": "update",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.repositories.update({\n    id: \"<value>\",\n    repositoryUpdate: {},\n  });\n\n  // Handle the result\n  console.log(result)\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.repositories.update({\n    id: \"<value>\",\n    repositoryUpdate: {},\n  });\n  \n  // Handle the result\n  console.log(result)\n}\n\nrun();"
           },
           {
             "lang": "python",
             "label": "update",
-            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\n\nres = s.repositories.update(id=\"<value>\", repository_update={})\n\nif res is not None:\n    # handle response\n    pass"
+            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\nres = s.repositories.update(id=\"<value>\", repository_update={})\n\nif res is not None:\n    # handle response\n    pass"
           }
         ]
       }
@@ -5402,12 +5402,12 @@
           {
             "lang": "typescript",
             "label": "list",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.organizations.list({});\n\n  for await (const page of result) {\n    // Handle the page\n    console.log(page);\n  }\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.organizations.list({});\n  \n  for await (const page of result) {\n    // Handle the page\n    console.log(page);\n  }\n}\n\nrun();"
           },
           {
             "lang": "python",
             "label": "list",
-            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\n\nres = s.organizations.list()\n\nif res is not None:\n    while True:\n        # handle items\n\n        res = res.Next()\n        if res is None:\n            break"
+            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\nres = s.organizations.list()\n\nif res is not None:\n    while True:\n        # handle items\n\n        res = res.Next()\n        if res is None:\n            break"
           }
         ]
       },
@@ -5471,12 +5471,12 @@
           {
             "lang": "typescript",
             "label": "create",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.organizations.create({\n    name: \"<value>\",\n    slug: \"<value>\",\n  });\n\n  // Handle the result\n  console.log(result)\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.organizations.create({\n    name: \"<value>\",\n    slug: \"<value>\",\n  });\n  \n  // Handle the result\n  console.log(result)\n}\n\nrun();"
           },
           {
             "lang": "python",
             "label": "create",
-            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\n\nres = s.organizations.create(request={\n    \"name\": \"<value>\",\n    \"slug\": \"<value>\",\n})\n\nif res is not None:\n    # handle response\n    pass"
+            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\nres = s.organizations.create(request={\n    \"name\": \"<value>\",\n    \"slug\": \"<value>\",\n})\n\nif res is not None:\n    # handle response\n    pass"
           }
         ]
       }
@@ -5562,12 +5562,12 @@
           {
             "lang": "typescript",
             "label": "get",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.organizations.get({\n    id: \"<value>\",\n  });\n\n  // Handle the result\n  console.log(result)\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.organizations.get({\n    id: \"<value>\",\n  });\n  \n  // Handle the result\n  console.log(result)\n}\n\nrun();"
           },
           {
             "lang": "python",
             "label": "get",
-            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\n\nres = s.organizations.get(id=\"<value>\")\n\nif res is not None:\n    # handle response\n    pass"
+            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\nres = s.organizations.get(id=\"<value>\")\n\nif res is not None:\n    # handle response\n    pass"
           }
         ]
       },
@@ -5670,12 +5670,12 @@
           {
             "lang": "typescript",
             "label": "update",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.organizations.update({\n    id: \"<value>\",\n    organizationUpdate: {},\n  });\n\n  // Handle the result\n  console.log(result)\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.organizations.update({\n    id: \"<value>\",\n    organizationUpdate: {},\n  });\n  \n  // Handle the result\n  console.log(result)\n}\n\nrun();"
           },
           {
             "lang": "python",
             "label": "update",
-            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\n\nres = s.organizations.update(id=\"<value>\", organization_update={})\n\nif res is not None:\n    # handle response\n    pass"
+            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\nres = s.organizations.update(id=\"<value>\", organization_update={})\n\nif res is not None:\n    # handle response\n    pass"
           }
         ]
       }
@@ -5922,12 +5922,12 @@
           {
             "lang": "typescript",
             "label": "list",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.subscriptions.list({});\n\n  for await (const page of result) {\n    // Handle the page\n    console.log(page);\n  }\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.subscriptions.list({});\n  \n  for await (const page of result) {\n    // Handle the page\n    console.log(page);\n  }\n}\n\nrun();"
           },
           {
             "lang": "python",
             "label": "list",
-            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\n\nres = s.subscriptions.list()\n\nif res is not None:\n    while True:\n        # handle items\n\n        res = res.Next()\n        if res is None:\n            break"
+            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\nres = s.subscriptions.list()\n\nif res is not None:\n    while True:\n        # handle items\n\n        res = res.Next()\n        if res is None:\n            break"
           }
         ]
       },
@@ -5991,12 +5991,12 @@
           {
             "lang": "typescript",
             "label": "create",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.subscriptions.create({\n    email: \"Jena.Nienow28@yahoo.com\",\n    productId: \"<value>\",\n  });\n\n  // Handle the result\n  console.log(result)\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.subscriptions.create({\n    email: \"Jena.Nienow28@yahoo.com\",\n    productId: \"<value>\",\n  });\n  \n  // Handle the result\n  console.log(result)\n}\n\nrun();"
           },
           {
             "lang": "python",
             "label": "create",
-            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\n\nres = s.subscriptions.create(request={\n    \"email\": \"Jena.Nienow28@yahoo.com\",\n    \"product_id\": \"<value>\",\n})\n\nif res is not None:\n    # handle response\n    pass"
+            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\nres = s.subscriptions.create(request={\n    \"email\": \"Jena.Nienow28@yahoo.com\",\n    \"product_id\": \"<value>\",\n})\n\nif res is not None:\n    # handle response\n    pass"
           }
         ]
       }
@@ -6062,12 +6062,12 @@
           {
             "lang": "typescript",
             "label": "import",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\nimport { openAsBlob } from \"node:fs\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.subscriptions.importSubscriptions({\n    file: await openAsBlob(\"./sample-file\"),\n    organizationId: \"<value>\",\n  });\n\n  // Handle the result\n  console.log(result)\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\nimport { openAsBlob } from \"node:fs\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.subscriptions.importSubscriptions({\n    file: await openAsBlob(\"./sample-file\"),\n    organizationId: \"<value>\",\n  });\n  \n  // Handle the result\n  console.log(result)\n}\n\nrun();"
           },
           {
             "lang": "python",
             "label": "import",
-            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\n\nres = s.subscriptions.import_subscriptions(request={\n    \"file\": {\n        \"file_name\": \"your_file_here\",\n        \"content\": open(\"example.file\", \"rb\"),\n    },\n    \"organization_id\": \"<value>\",\n})\n\nif res is not None:\n    # handle response\n    pass"
+            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\nres = s.subscriptions.import_subscriptions(request={\n    \"file\": {\n        \"file_name\": \"your_file_here\",\n        \"content\": open(\"example.file\", \"rb\"),\n    },\n    \"organization_id\": \"<value>\",\n})\n\nif res is not None:\n    # handle response\n    pass"
           }
         ]
       }
@@ -6162,12 +6162,12 @@
           {
             "lang": "typescript",
             "label": "export",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.subscriptions.export({});\n\n  // Handle the result\n  console.log(result)\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.subscriptions.export({});\n  \n  // Handle the result\n  console.log(result)\n}\n\nrun();"
           },
           {
             "lang": "python",
             "label": "export",
-            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\n\nres = s.subscriptions.export()\n\nif res is not None:\n    # handle response\n    pass"
+            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\nres = s.subscriptions.export()\n\nif res is not None:\n    # handle response\n    pass"
           }
         ]
       }
@@ -6406,12 +6406,12 @@
           {
             "lang": "typescript",
             "label": "list",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.articles.list({});\n\n  for await (const page of result) {\n    // Handle the page\n    console.log(page);\n  }\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.articles.list({});\n  \n  for await (const page of result) {\n    // Handle the page\n    console.log(page);\n  }\n}\n\nrun();"
           },
           {
             "lang": "python",
             "label": "list",
-            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\n\nres = s.articles.list()\n\nif res is not None:\n    while True:\n        # handle items\n\n        res = res.Next()\n        if res is None:\n            break"
+            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\nres = s.articles.list()\n\nif res is not None:\n    while True:\n        # handle items\n\n        res = res.Next()\n        if res is None:\n            break"
           }
         ]
       },
@@ -6476,12 +6476,12 @@
           {
             "lang": "typescript",
             "label": "create",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.articles.create({\n    title: \"<value>\",\n  });\n\n  // Handle the result\n  console.log(result)\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.articles.create({\n    title: \"<value>\",\n  });\n  \n  // Handle the result\n  console.log(result)\n}\n\nrun();"
           },
           {
             "lang": "python",
             "label": "create",
-            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\n\nres = s.articles.create(request={\n    \"title\": \"<value>\",\n})\n\nif res is not None:\n    # handle response\n    pass"
+            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\nres = s.articles.create(request={\n    \"title\": \"<value>\",\n})\n\nif res is not None:\n    # handle response\n    pass"
           }
         ]
       }
@@ -6567,12 +6567,12 @@
           {
             "lang": "typescript",
             "label": "get",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.articles.get({\n    id: \"<value>\",\n  });\n\n  // Handle the result\n  console.log(result)\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.articles.get({\n    id: \"<value>\",\n  });\n  \n  // Handle the result\n  console.log(result)\n}\n\nrun();"
           },
           {
             "lang": "python",
             "label": "get",
-            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\n\nres = s.articles.get(id=\"<value>\")\n\nif res is not None:\n    # handle response\n    pass"
+            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\nres = s.articles.get(id=\"<value>\")\n\nif res is not None:\n    # handle response\n    pass"
           }
         ]
       },
@@ -6675,12 +6675,12 @@
           {
             "lang": "typescript",
             "label": "update",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.articles.update({\n    id: \"<value>\",\n    articleUpdate: {},\n  });\n\n  // Handle the result\n  console.log(result)\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.articles.update({\n    id: \"<value>\",\n    articleUpdate: {},\n  });\n  \n  // Handle the result\n  console.log(result)\n}\n\nrun();"
           },
           {
             "lang": "python",
             "label": "update",
-            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\n\nres = s.articles.update(id=\"<value>\", article_update={})\n\nif res is not None:\n    # handle response\n    pass"
+            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\nres = s.articles.update(id=\"<value>\", article_update={})\n\nif res is not None:\n    # handle response\n    pass"
           }
         ]
       },
@@ -6766,12 +6766,12 @@
           {
             "lang": "typescript",
             "label": "delete",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  await polar.articles.delete({\n    id: \"<value>\",\n  });\n\n  \n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  await polar.articles.delete({\n    id: \"<value>\",\n  });\n}\n\nrun();"
           },
           {
             "lang": "python",
             "label": "delete",
-            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\n\ns.articles.delete(id=\"<value>\")\n\n# Use the SDK ..."
+            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\ns.articles.delete(id=\"<value>\")\n\n# Use the SDK ..."
           }
         ]
       }
@@ -6846,12 +6846,12 @@
           {
             "lang": "typescript",
             "label": "receivers",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.articles.receivers({\n    id: \"<value>\",\n  });\n\n  // Handle the result\n  console.log(result)\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.articles.receivers({\n    id: \"<value>\",\n  });\n  \n  // Handle the result\n  console.log(result)\n}\n\nrun();"
           },
           {
             "lang": "python",
             "label": "receivers",
-            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\n\nres = s.articles.receivers(id=\"<value>\")\n\nif res is not None:\n    # handle response\n    pass"
+            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\nres = s.articles.receivers(id=\"<value>\")\n\nif res is not None:\n    # handle response\n    pass"
           }
         ]
       }
@@ -6954,12 +6954,12 @@
           {
             "lang": "typescript",
             "label": "preview",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.articles.preview({\n    id: \"<value>\",\n    articlePreview: {\n      email: \"Eileen56@yahoo.com\",\n    },\n  });\n\n  // Handle the result\n  console.log(result)\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.articles.preview({\n    id: \"<value>\",\n    articlePreview: {\n      email: \"Eileen56@yahoo.com\",\n    },\n  });\n  \n  // Handle the result\n  console.log(result)\n}\n\nrun();"
           },
           {
             "lang": "python",
             "label": "preview",
-            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\n\nres = s.articles.preview(id=\"<value>\", article_preview={\n    \"email\": \"Eileen56@yahoo.com\",\n})\n\nif res is not None:\n    # handle response\n    pass"
+            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\nres = s.articles.preview(id=\"<value>\", article_preview={\n    \"email\": \"Eileen56@yahoo.com\",\n})\n\nif res is not None:\n    # handle response\n    pass"
           }
         ]
       }
@@ -7055,12 +7055,12 @@
           {
             "lang": "typescript",
             "label": "send",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.articles.send({\n    id: \"<value>\",\n  });\n\n  // Handle the result\n  console.log(result)\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.articles.send({\n    id: \"<value>\",\n  });\n  \n  // Handle the result\n  console.log(result)\n}\n\nrun();"
           },
           {
             "lang": "python",
             "label": "send",
-            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\n\nres = s.articles.send(id=\"<value>\")\n\nif res is not None:\n    # handle response\n    pass"
+            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\nres = s.articles.send(id=\"<value>\")\n\nif res is not None:\n    # handle response\n    pass"
           }
         ]
       }
@@ -7661,12 +7661,12 @@
           {
             "lang": "typescript",
             "label": "list",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.advertisements.list({\n    benefitId: \"<value>\",\n  });\n\n  for await (const page of result) {\n    // Handle the page\n    console.log(page);\n  }\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.advertisements.list({\n    benefitId: \"<value>\",\n  });\n  \n  for await (const page of result) {\n    // Handle the page\n    console.log(page);\n  }\n}\n\nrun();"
           },
           {
             "lang": "python",
             "label": "list",
-            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\n\nres = s.advertisements.list(benefit_id=\"<value>\")\n\nif res is not None:\n    while True:\n        # handle items\n\n        res = res.Next()\n        if res is None:\n            break"
+            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\nres = s.advertisements.list(benefit_id=\"<value>\")\n\nif res is not None:\n    while True:\n        # handle items\n\n        res = res.Next()\n        if res is None:\n            break"
           }
         ]
       }
@@ -7732,12 +7732,12 @@
           {
             "lang": "typescript",
             "label": "get",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.advertisements.get({\n    id: \"<value>\",\n  });\n\n  // Handle the result\n  console.log(result)\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.advertisements.get({\n    id: \"<value>\",\n  });\n  \n  // Handle the result\n  console.log(result)\n}\n\nrun();"
           },
           {
             "lang": "python",
             "label": "get",
-            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\n\nres = s.advertisements.get(id=\"<value>\")\n\nif res is not None:\n    # handle response\n    pass"
+            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\nres = s.advertisements.get(id=\"<value>\")\n\nif res is not None:\n    # handle response\n    pass"
           }
         ]
       }
@@ -8299,12 +8299,12 @@
           {
             "lang": "typescript",
             "label": "list",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.oauth2.clients.list({});\n\n  for await (const page of result) {\n    // Handle the page\n    console.log(page);\n  }\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.oauth2.clients.list({});\n  \n  for await (const page of result) {\n    // Handle the page\n    console.log(page);\n  }\n}\n\nrun();"
           },
           {
             "lang": "python",
             "label": "list",
-            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\n\nres = s.oauth2.clients.list()\n\nif res is not None:\n    while True:\n        # handle items\n\n        res = res.Next()\n        if res is None:\n            break"
+            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\nres = s.oauth2.clients.list()\n\nif res is not None:\n    while True:\n        # handle items\n\n        res = res.Next()\n        if res is None:\n            break"
           }
         ]
       }
@@ -8366,12 +8366,12 @@
           {
             "lang": "typescript",
             "label": "create_client",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.oauth2.clients.create({\n    redirectUris: [\n      \"http://limp-pastry.org\",\n    ],\n    clientName: \"<value>\",\n  });\n\n  // Handle the result\n  console.log(result)\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.oauth2.clients.create({\n    redirectUris: [\n      \"http://limp-pastry.org\",\n    ],\n    clientName: \"<value>\",\n  });\n  \n  // Handle the result\n  console.log(result)\n}\n\nrun();"
           },
           {
             "lang": "python",
             "label": "create_client",
-            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\n\nres = s.oauth2.clients.create(request={\n    \"redirect_uris\": [\n        \"http://limp-pastry.org\",\n    ],\n    \"client_name\": \"<value>\",\n})\n\nif res is not None:\n    # handle response\n    pass"
+            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\nres = s.oauth2.clients.create(request={\n    \"redirect_uris\": [\n        \"http://limp-pastry.org\",\n    ],\n    \"client_name\": \"<value>\",\n})\n\nif res is not None:\n    # handle response\n    pass"
           }
         ]
       }
@@ -8435,12 +8435,12 @@
           {
             "lang": "typescript",
             "label": "get_client",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.oauth2.clients.get({\n    clientId: \"<value>\",\n  });\n\n  // Handle the result\n  console.log(result)\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.oauth2.clients.get({\n    clientId: \"<value>\",\n  });\n  \n  // Handle the result\n  console.log(result)\n}\n\nrun();"
           },
           {
             "lang": "python",
             "label": "get_client",
-            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\n\nres = s.oauth2.clients.get(client_id=\"<value>\")\n\nif res is not None:\n    # handle response\n    pass"
+            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\nres = s.oauth2.clients.get(client_id=\"<value>\")\n\nif res is not None:\n    # handle response\n    pass"
           }
         ]
       },
@@ -8512,12 +8512,12 @@
           {
             "lang": "typescript",
             "label": "update_client",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.oauth2.clients.update({\n    clientId: \"<value>\",\n    oAuth2ClientConfigurationUpdate: {\n      redirectUris: [\n        \"https://alarming-nondisclosure.com\",\n      ],\n      clientName: \"<value>\",\n      clientId: \"<value>\",\n    },\n  });\n\n  // Handle the result\n  console.log(result)\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.oauth2.clients.update({\n    clientId: \"<value>\",\n    oAuth2ClientConfigurationUpdate: {\n      redirectUris: [\n        \"https://alarming-nondisclosure.com\",\n      ],\n      clientName: \"<value>\",\n      clientId: \"<value>\",\n    },\n  });\n  \n  // Handle the result\n  console.log(result)\n}\n\nrun();"
           },
           {
             "lang": "python",
             "label": "update_client",
-            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\n\nres = s.oauth2.clients.update(client_id=\"<value>\", o_auth2_client_configuration_update={\n    \"redirect_uris\": [\n        \"https://alarming-nondisclosure.com\",\n    ],\n    \"client_name\": \"<value>\",\n    \"client_id\": \"<value>\",\n})\n\nif res is not None:\n    # handle response\n    pass"
+            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\nres = s.oauth2.clients.update(client_id=\"<value>\", o_auth2_client_configuration_update={\n    \"redirect_uris\": [\n        \"https://alarming-nondisclosure.com\",\n    ],\n    \"client_name\": \"<value>\",\n    \"client_id\": \"<value>\",\n})\n\nif res is not None:\n    # handle response\n    pass"
           }
         ]
       },
@@ -8579,12 +8579,12 @@
           {
             "lang": "typescript",
             "label": "delete_client",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.oauth2.clients.delete({\n    clientId: \"<value>\",\n  });\n\n  // Handle the result\n  console.log(result)\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.oauth2.clients.delete({\n    clientId: \"<value>\",\n  });\n  \n  // Handle the result\n  console.log(result)\n}\n\nrun();"
           },
           {
             "lang": "python",
             "label": "delete_client",
-            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\n\nres = s.oauth2.clients.delete(client_id=\"<value>\")\n\nif res is not None:\n    # handle response\n    pass"
+            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\nres = s.oauth2.clients.delete(client_id=\"<value>\")\n\nif res is not None:\n    # handle response\n    pass"
           }
         ]
       }
@@ -8766,12 +8766,12 @@
           {
             "lang": "typescript",
             "label": "request_token",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.oauth2.token({\n    clientId: \"<value>\",\n    clientSecret: \"<value>\",\n    code: \"<value>\",\n    redirectUri: \"http://multicolored-chivalry.name\",\n  });\n\n  // Handle the result\n  console.log(result)\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.oauth2.token({\n    clientId: \"<value>\",\n    clientSecret: \"<value>\",\n    code: \"<value>\",\n    redirectUri: \"http://multicolored-chivalry.name\",\n  });\n  \n  // Handle the result\n  console.log(result)\n}\n\nrun();"
           },
           {
             "lang": "python",
             "label": "request_token",
-            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\n\nres = s.oauth2.token(request={\n    \"client_id\": \"<value>\",\n    \"client_secret\": \"<value>\",\n    \"code\": \"<value>\",\n    \"redirect_uri\": \"http://multicolored-chivalry.name\",\n})\n\nif res is not None:\n    # handle response\n    pass"
+            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\nres = s.oauth2.token(request={\n    \"client_id\": \"<value>\",\n    \"client_secret\": \"<value>\",\n    \"code\": \"<value>\",\n    \"redirect_uri\": \"http://multicolored-chivalry.name\",\n})\n\nif res is not None:\n    # handle response\n    pass"
           }
         ]
       }
@@ -8849,12 +8849,12 @@
           {
             "lang": "typescript",
             "label": "revoke_token",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.oauth2.revoke({\n    token: \"<value>\",\n    clientId: \"<value>\",\n    clientSecret: \"<value>\",\n  });\n\n  // Handle the result\n  console.log(result)\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.oauth2.revoke({\n    token: \"<value>\",\n    clientId: \"<value>\",\n    clientSecret: \"<value>\",\n  });\n  \n  // Handle the result\n  console.log(result)\n}\n\nrun();"
           },
           {
             "lang": "python",
             "label": "revoke_token",
-            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\n\nres = s.oauth2.revoke(request={\n    \"token\": \"<value>\",\n    \"client_id\": \"<value>\",\n    \"client_secret\": \"<value>\",\n})\n\nif res is not None:\n    # handle response\n    pass"
+            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\nres = s.oauth2.revoke(request={\n    \"token\": \"<value>\",\n    \"client_id\": \"<value>\",\n    \"client_secret\": \"<value>\",\n})\n\nif res is not None:\n    # handle response\n    pass"
           }
         ]
       }
@@ -8932,12 +8932,12 @@
           {
             "lang": "typescript",
             "label": "introspect_token",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.oauth2.introspect({\n    token: \"<value>\",\n    clientId: \"<value>\",\n    clientSecret: \"<value>\",\n  });\n\n  // Handle the result\n  console.log(result)\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.oauth2.introspect({\n    token: \"<value>\",\n    clientId: \"<value>\",\n    clientSecret: \"<value>\",\n  });\n  \n  // Handle the result\n  console.log(result)\n}\n\nrun();"
           },
           {
             "lang": "python",
             "label": "introspect_token",
-            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\n\nres = s.oauth2.introspect(request={\n    \"token\": \"<value>\",\n    \"client_id\": \"<value>\",\n    \"client_secret\": \"<value>\",\n})\n\nif res is not None:\n    # handle response\n    pass"
+            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\nres = s.oauth2.introspect(request={\n    \"token\": \"<value>\",\n    \"client_id\": \"<value>\",\n    \"client_secret\": \"<value>\",\n})\n\nif res is not None:\n    # handle response\n    pass"
           }
         ]
       }
@@ -8983,12 +8983,12 @@
           {
             "lang": "typescript",
             "label": "userinfo",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.oauth2.userinfo();\n\n  // Handle the result\n  console.log(result)\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.oauth2.userinfo();\n  \n  // Handle the result\n  console.log(result)\n}\n\nrun();"
           },
           {
             "lang": "python",
             "label": "userinfo",
-            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\n\nres = s.oauth2.userinfo()\n\nif res is not None:\n    # handle response\n    pass"
+            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\nres = s.oauth2.userinfo()\n\nif res is not None:\n    # handle response\n    pass"
           }
         ]
       }
@@ -9154,12 +9154,12 @@
           {
             "lang": "typescript",
             "label": "list",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.benefits.list({});\n\n  for await (const page of result) {\n    // Handle the page\n    console.log(page);\n  }\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.benefits.list({});\n  \n  for await (const page of result) {\n    // Handle the page\n    console.log(page);\n  }\n}\n\nrun();"
           },
           {
             "lang": "python",
             "label": "list",
-            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\n\nres = s.benefits.list()\n\nif res is not None:\n    while True:\n        # handle items\n\n        res = res.Next()\n        if res is None:\n            break"
+            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\nres = s.benefits.list()\n\nif res is not None:\n    while True:\n        # handle items\n\n        res = res.Next()\n        if res is None:\n            break"
           }
         ]
       },
@@ -9277,12 +9277,12 @@
           {
             "lang": "typescript",
             "label": "create",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.benefits.create({\n    description: \"Multi-tiered motivating standardization\",\n    properties: {\n      guildToken: \"<value>\",\n      roleId: \"<value>\",\n    },\n  });\n\n  // Handle the result\n  console.log(result)\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.benefits.create({\n    description: \"Multi-tiered motivating standardization\",\n    properties: {\n      guildToken: \"<value>\",\n      roleId: \"<value>\",\n    },\n  });\n  \n  // Handle the result\n  console.log(result)\n}\n\nrun();"
           },
           {
             "lang": "python",
             "label": "create",
-            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\n\nres = s.benefits.create(request={\n    \"description\": \"Multi-tiered motivating standardization\",\n    \"properties\": {\n        \"guild_token\": \"<value>\",\n        \"role_id\": \"<value>\",\n    },\n})\n\nif res is not None:\n    # handle response\n    pass"
+            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\nres = s.benefits.create(request={\n    \"description\": \"Multi-tiered motivating standardization\",\n    \"properties\": {\n        \"guild_token\": \"<value>\",\n        \"role_id\": \"<value>\",\n    },\n})\n\nif res is not None:\n    # handle response\n    pass"
           }
         ]
       }
@@ -9390,12 +9390,12 @@
           {
             "lang": "typescript",
             "label": "get",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.benefits.get({\n    id: \"<value>\",\n  });\n\n  // Handle the result\n  console.log(result)\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.benefits.get({\n    id: \"<value>\",\n  });\n  \n  // Handle the result\n  console.log(result)\n}\n\nrun();"
           },
           {
             "lang": "python",
             "label": "get",
-            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\n\nres = s.benefits.get(id=\"<value>\")\n\nif res is not None:\n    # handle response\n    pass"
+            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\nres = s.benefits.get(id=\"<value>\")\n\nif res is not None:\n    # handle response\n    pass"
           }
         ]
       },
@@ -9543,12 +9543,12 @@
           {
             "lang": "typescript",
             "label": "update",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.benefits.update({\n    id: \"<value>\",\n    requestBody: {},\n  });\n\n  // Handle the result\n  console.log(result)\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.benefits.update({\n    id: \"<value>\",\n    requestBody: {},\n  });\n  \n  // Handle the result\n  console.log(result)\n}\n\nrun();"
           },
           {
             "lang": "python",
             "label": "update",
-            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\n\nres = s.benefits.update(id=\"<value>\", request_body={})\n\nif res is not None:\n    # handle response\n    pass"
+            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\nres = s.benefits.update(id=\"<value>\", request_body={})\n\nif res is not None:\n    # handle response\n    pass"
           }
         ]
       },
@@ -9633,12 +9633,12 @@
           {
             "lang": "typescript",
             "label": "delete",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  await polar.benefits.delete({\n    id: \"<value>\",\n  });\n\n  \n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  await polar.benefits.delete({\n    id: \"<value>\",\n  });\n}\n\nrun();"
           },
           {
             "lang": "python",
             "label": "delete",
-            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\n\ns.benefits.delete(id=\"<value>\")\n\n# Use the SDK ..."
+            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\ns.benefits.delete(id=\"<value>\")\n\n# Use the SDK ..."
           }
         ]
       }
@@ -9823,12 +9823,12 @@
           {
             "lang": "typescript",
             "label": "grants",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.benefits.grants({\n    id: \"<value>\",\n  });\n\n  for await (const page of result) {\n    // Handle the page\n    console.log(page);\n  }\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.benefits.grants({\n    id: \"<value>\",\n  });\n  \n  for await (const page of result) {\n    // Handle the page\n    console.log(page);\n  }\n}\n\nrun();"
           },
           {
             "lang": "python",
             "label": "grants",
-            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\n\nres = s.benefits.grants(id=\"<value>\")\n\nif res is not None:\n    while True:\n        # handle items\n\n        res = res.Next()\n        if res is None:\n            break"
+            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\nres = s.benefits.grants(id=\"<value>\")\n\nif res is not None:\n    while True:\n        # handle items\n\n        res = res.Next()\n        if res is None:\n            break"
           }
         ]
       }
@@ -10694,12 +10694,12 @@
           {
             "lang": "typescript",
             "label": "list",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.products.list({});\n\n  for await (const page of result) {\n    // Handle the page\n    console.log(page);\n  }\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.products.list({});\n  \n  for await (const page of result) {\n    // Handle the page\n    console.log(page);\n  }\n}\n\nrun();"
           },
           {
             "lang": "python",
             "label": "list",
-            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\n\nres = s.products.list()\n\nif res is not None:\n    while True:\n        # handle items\n\n        res = res.Next()\n        if res is None:\n            break"
+            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\nres = s.products.list()\n\nif res is not None:\n    while True:\n        # handle items\n\n        res = res.Next()\n        if res is None:\n            break"
           }
         ]
       },
@@ -10772,12 +10772,12 @@
           {
             "lang": "typescript",
             "label": "create",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.products.create({\n    name: \"<value>\",\n    prices: [\n      {\n        recurringInterval: \"month\",\n        priceAmount: 638424,\n      },\n    ],\n  });\n\n  // Handle the result\n  console.log(result)\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.products.create({\n    name: \"<value>\",\n    prices: [\n      {\n        recurringInterval: \"month\",\n        priceAmount: 638424,\n      },\n    ],\n  });\n  \n  // Handle the result\n  console.log(result)\n}\n\nrun();"
           },
           {
             "lang": "python",
             "label": "create",
-            "source": "import polar_sdk\nfrom polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\n\nres = s.products.create(request={\n    \"name\": \"<value>\",\n    \"prices\": [\n        {\n            \"recurring_interval\": polar_sdk.ProductPriceRecurringInterval.MONTH,\n            \"price_amount\": 638424,\n        },\n    ],\n})\n\nif res is not None:\n    # handle response\n    pass"
+            "source": "import polar_sdk\nfrom polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\nres = s.products.create(request={\n    \"name\": \"<value>\",\n    \"prices\": [\n        {\n            \"recurring_interval\": polar_sdk.ProductPriceRecurringInterval.MONTH,\n            \"price_amount\": 638424,\n        },\n    ],\n})\n\nif res is not None:\n    # handle response\n    pass"
           }
         ]
       }
@@ -10864,12 +10864,12 @@
           {
             "lang": "typescript",
             "label": "get",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.products.get({\n    id: \"<value>\",\n  });\n\n  // Handle the result\n  console.log(result)\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.products.get({\n    id: \"<value>\",\n  });\n  \n  // Handle the result\n  console.log(result)\n}\n\nrun();"
           },
           {
             "lang": "python",
             "label": "get",
-            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\n\nres = s.products.get(id=\"<value>\")\n\nif res is not None:\n    # handle response\n    pass"
+            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\nres = s.products.get(id=\"<value>\")\n\nif res is not None:\n    # handle response\n    pass"
           }
         ]
       },
@@ -10972,12 +10972,12 @@
           {
             "lang": "typescript",
             "label": "update",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.products.update({\n    id: \"<value>\",\n    productUpdate: {},\n  });\n\n  // Handle the result\n  console.log(result)\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.products.update({\n    id: \"<value>\",\n    productUpdate: {},\n  });\n  \n  // Handle the result\n  console.log(result)\n}\n\nrun();"
           },
           {
             "lang": "python",
             "label": "update",
-            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\n\nres = s.products.update(id=\"<value>\", product_update={})\n\nif res is not None:\n    # handle response\n    pass"
+            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\nres = s.products.update(id=\"<value>\", product_update={})\n\nif res is not None:\n    # handle response\n    pass"
           }
         ]
       }
@@ -11082,12 +11082,12 @@
           {
             "lang": "typescript",
             "label": "update_benefits",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.products.updateBenefits({\n    id: \"<value>\",\n    productBenefitsUpdate: {\n      benefits: [\n        \"<value>\",\n      ],\n    },\n  });\n\n  // Handle the result\n  console.log(result)\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.products.updateBenefits({\n    id: \"<value>\",\n    productBenefitsUpdate: {\n      benefits: [\n        \"<value>\",\n      ],\n    },\n  });\n  \n  // Handle the result\n  console.log(result)\n}\n\nrun();"
           },
           {
             "lang": "python",
             "label": "update_benefits",
-            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\n\nres = s.products.update_benefits(id=\"<value>\", product_benefits_update={\n    \"benefits\": [\n        \"<value>\",\n    ],\n})\n\nif res is not None:\n    # handle response\n    pass"
+            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\nres = s.products.update_benefits(id=\"<value>\", product_benefits_update={\n    \"benefits\": [\n        \"<value>\",\n    ],\n})\n\nif res is not None:\n    # handle response\n    pass"
           }
         ]
       }
@@ -11340,12 +11340,12 @@
           {
             "lang": "typescript",
             "label": "list",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.orders.list({});\n\n  for await (const page of result) {\n    // Handle the page\n    console.log(page);\n  }\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.orders.list({});\n  \n  for await (const page of result) {\n    // Handle the page\n    console.log(page);\n  }\n}\n\nrun();"
           },
           {
             "lang": "python",
             "label": "list",
-            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\n\nres = s.orders.list()\n\nif res is not None:\n    while True:\n        # handle items\n\n        res = res.Next()\n        if res is None:\n            break"
+            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\nres = s.orders.list()\n\nif res is not None:\n    while True:\n        # handle items\n\n        res = res.Next()\n        if res is None:\n            break"
           }
         ]
       }
@@ -11425,12 +11425,12 @@
           {
             "lang": "typescript",
             "label": "get",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.orders.get({\n    id: \"<value>\",\n  });\n\n  // Handle the result\n  console.log(result)\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.orders.get({\n    id: \"<value>\",\n  });\n  \n  // Handle the result\n  console.log(result)\n}\n\nrun();"
           },
           {
             "lang": "python",
             "label": "get",
-            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\n\nres = s.orders.get(id=\"<value>\")\n\nif res is not None:\n    # handle response\n    pass"
+            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\nres = s.orders.get(id=\"<value>\")\n\nif res is not None:\n    # handle response\n    pass"
           }
         ]
       }
@@ -11510,12 +11510,12 @@
           {
             "lang": "typescript",
             "label": "invoice",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.orders.invoice({\n    id: \"<value>\",\n  });\n\n  // Handle the result\n  console.log(result)\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.orders.invoice({\n    id: \"<value>\",\n  });\n  \n  // Handle the result\n  console.log(result)\n}\n\nrun();"
           },
           {
             "lang": "python",
             "label": "invoice",
-            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\n\nres = s.orders.invoice(id=\"<value>\")\n\nif res is not None:\n    # handle response\n    pass"
+            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\nres = s.orders.invoice(id=\"<value>\")\n\nif res is not None:\n    # handle response\n    pass"
           }
         ]
       }
@@ -11580,12 +11580,12 @@
           {
             "lang": "typescript",
             "label": "create",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.checkouts.create({\n    productPriceId: \"<value>\",\n    successUrl: \"http://limp-pastry.org\",\n  });\n\n  // Handle the result\n  console.log(result)\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.checkouts.create({\n    productPriceId: \"<value>\",\n    successUrl: \"http://limp-pastry.org\",\n  });\n  \n  // Handle the result\n  console.log(result)\n}\n\nrun();"
           },
           {
             "lang": "python",
             "label": "create",
-            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\n\nres = s.checkouts.create(request={\n    \"product_price_id\": \"<value>\",\n    \"success_url\": \"http://limp-pastry.org\",\n})\n\nif res is not None:\n    # handle response\n    pass"
+            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\nres = s.checkouts.create(request={\n    \"product_price_id\": \"<value>\",\n    \"success_url\": \"http://limp-pastry.org\",\n})\n\nif res is not None:\n    # handle response\n    pass"
           }
         ]
       }
@@ -11639,12 +11639,12 @@
           {
             "lang": "typescript",
             "label": "get",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.checkouts.get({\n    id: \"<id>\",\n  });\n\n  // Handle the result\n  console.log(result)\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.checkouts.get({\n    id: \"<id>\",\n  });\n  \n  // Handle the result\n  console.log(result)\n}\n\nrun();"
           },
           {
             "lang": "python",
             "label": "get",
-            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\n\nres = s.checkouts.get(id=\"<id>\")\n\nif res is not None:\n    # handle response\n    pass"
+            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\nres = s.checkouts.get(id=\"<id>\")\n\nif res is not None:\n    # handle response\n    pass"
           }
         ]
       }
@@ -11792,12 +11792,12 @@
           {
             "lang": "typescript",
             "label": "list",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.files.list({});\n\n  for await (const page of result) {\n    // Handle the page\n    console.log(page);\n  }\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.files.list({});\n  \n  for await (const page of result) {\n    // Handle the page\n    console.log(page);\n  }\n}\n\nrun();"
           },
           {
             "lang": "python",
             "label": "list",
-            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\n\nres = s.files.list()\n\nif res is not None:\n    while True:\n        # handle items\n\n        res = res.Next()\n        if res is None:\n            break"
+            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\nres = s.files.list()\n\nif res is not None:\n    while True:\n        # handle items\n\n        res = res.Next()\n        if res is None:\n            break"
           }
         ]
       },
@@ -11880,12 +11880,12 @@
           {
             "lang": "typescript",
             "label": "create",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.files.create({\n    name: \"<value>\",\n    mimeType: \"<value>\",\n    size: 489382,\n    upload: {\n      parts: [\n        {\n          number: 638424,\n          chunkStart: 859213,\n          chunkEnd: 417458,\n        },\n      ],\n    },\n  });\n\n  // Handle the result\n  console.log(result)\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.files.create({\n    name: \"<value>\",\n    mimeType: \"<value>\",\n    size: 489382,\n    upload: {\n      parts: [\n        {\n          number: 638424,\n          chunkStart: 859213,\n          chunkEnd: 417458,\n        },\n      ],\n    },\n  });\n  \n  // Handle the result\n  console.log(result)\n}\n\nrun();"
           },
           {
             "lang": "python",
             "label": "create",
-            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\n\nres = s.files.create(request={\n    \"name\": \"<value>\",\n    \"mime_type\": \"<value>\",\n    \"size\": 489382,\n    \"upload\": {\n        \"parts\": [\n            {\n                \"number\": 638424,\n                \"chunk_start\": 859213,\n                \"chunk_end\": 417458,\n            },\n        ],\n    },\n})\n\nif res is not None:\n    # handle response\n    pass"
+            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\nres = s.files.create(request={\n    \"name\": \"<value>\",\n    \"mime_type\": \"<value>\",\n    \"size\": 489382,\n    \"upload\": {\n        \"parts\": [\n            {\n                \"number\": 638424,\n                \"chunk_start\": 859213,\n                \"chunk_end\": 417458,\n            },\n        ],\n    },\n})\n\nif res is not None:\n    # handle response\n    pass"
           }
         ]
       }
@@ -11984,12 +11984,12 @@
           {
             "lang": "typescript",
             "label": "uploaded",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.files.uploaded({\n    id: \"<value>\",\n    fileUploadCompleted: {\n      id: \"<id>\",\n      path: \"/sys\",\n      parts: [\n        {\n          number: 241210,\n          checksumEtag: \"<value>\",\n          checksumSha256Base64: \"<value>\",\n        },\n      ],\n    },\n  });\n\n  // Handle the result\n  console.log(result)\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.files.uploaded({\n    id: \"<value>\",\n    fileUploadCompleted: {\n      id: \"<id>\",\n      path: \"/sys\",\n      parts: [\n        {\n          number: 241210,\n          checksumEtag: \"<value>\",\n          checksumSha256Base64: \"<value>\",\n        },\n      ],\n    },\n  });\n  \n  // Handle the result\n  console.log(result)\n}\n\nrun();"
           },
           {
             "lang": "python",
             "label": "uploaded",
-            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\n\nres = s.files.uploaded(id=\"<value>\", file_upload_completed={\n    \"id\": \"<id>\",\n    \"path\": \"/sys\",\n    \"parts\": [\n        {\n            \"number\": 241210,\n            \"checksum_etag\": \"<value>\",\n            \"checksum_sha256_base64\": \"<value>\",\n        },\n    ],\n})\n\nif res is not None:\n    # handle response\n    pass"
+            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\nres = s.files.uploaded(id=\"<value>\", file_upload_completed={\n    \"id\": \"<id>\",\n    \"path\": \"/sys\",\n    \"parts\": [\n        {\n            \"number\": 241210,\n            \"checksum_etag\": \"<value>\",\n            \"checksum_sha256_base64\": \"<value>\",\n        },\n    ],\n})\n\nif res is not None:\n    # handle response\n    pass"
           }
         ]
       }
@@ -12088,12 +12088,12 @@
           {
             "lang": "typescript",
             "label": "update",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.files.update({\n    id: \"<value>\",\n    filePatch: {},\n  });\n\n  // Handle the result\n  console.log(result)\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.files.update({\n    id: \"<value>\",\n    filePatch: {},\n  });\n  \n  // Handle the result\n  console.log(result)\n}\n\nrun();"
           },
           {
             "lang": "python",
             "label": "update",
-            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\n\nres = s.files.update(id=\"<value>\", file_patch={})\n\nif res is not None:\n    # handle response\n    pass"
+            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\nres = s.files.update(id=\"<value>\", file_patch={})\n\nif res is not None:\n    # handle response\n    pass"
           }
         ]
       },
@@ -12172,12 +12172,12 @@
           {
             "lang": "typescript",
             "label": "delete",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  await polar.files.delete({\n    id: \"<value>\",\n  });\n\n  \n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  await polar.files.delete({\n    id: \"<value>\",\n  });\n}\n\nrun();"
           },
           {
             "lang": "python",
             "label": "delete",
-            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\n\ns.files.delete(id=\"<value>\")\n\n# Use the SDK ..."
+            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\ns.files.delete(id=\"<value>\")\n\n# Use the SDK ..."
           }
         ]
       }
@@ -12375,12 +12375,12 @@
           {
             "lang": "typescript",
             "label": "get",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\nimport { RFCDate } from \"@polar-sh/sdk/types\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.metrics.get({\n    startDate: new RFCDate(\"2024-02-07\"),\n    endDate: new RFCDate(\"2022-04-09\"),\n    interval: \"week\",\n  });\n\n  // Handle the result\n  console.log(result)\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\nimport { RFCDate } from \"@polar-sh/sdk/types\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.metrics.get({\n    startDate: new RFCDate(\"2024-02-07\"),\n    endDate: new RFCDate(\"2022-04-09\"),\n    interval: \"week\",\n  });\n  \n  // Handle the result\n  console.log(result)\n}\n\nrun();"
           },
           {
             "lang": "python",
             "label": "get",
-            "source": "import dateutil.parser\nimport polar_sdk\nfrom polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\n\nres = s.metrics.get(start_date=dateutil.parser.parse(\"2024-02-07\").date(), end_date=dateutil.parser.parse(\"2022-04-09\").date(), interval=polar_sdk.Interval.WEEK)\n\nif res is not None:\n    # handle response\n    pass"
+            "source": "import dateutil.parser\nimport polar_sdk\nfrom polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\nres = s.metrics.get(start_date=dateutil.parser.parse(\"2024-02-07\").date(), end_date=dateutil.parser.parse(\"2022-04-09\").date(), interval=polar_sdk.Interval.WEEK)\n\nif res is not None:\n    # handle response\n    pass"
           }
         ]
       }
@@ -12426,12 +12426,12 @@
           {
             "lang": "typescript",
             "label": "limits",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.metrics.limits();\n\n  // Handle the result\n  console.log(result)\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.metrics.limits();\n  \n  // Handle the result\n  console.log(result)\n}\n\nrun();"
           },
           {
             "lang": "python",
             "label": "limits",
-            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\n\nres = s.metrics.limits()\n\nif res is not None:\n    # handle response\n    pass"
+            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\nres = s.metrics.limits()\n\nif res is not None:\n    # handle response\n    pass"
           }
         ]
       }
@@ -12594,12 +12594,12 @@
           {
             "lang": "typescript",
             "label": "list",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.licenseKeys.list({});\n\n  for await (const page of result) {\n    // Handle the page\n    console.log(page);\n  }\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.licenseKeys.list({});\n  \n  for await (const page of result) {\n    // Handle the page\n    console.log(page);\n  }\n}\n\nrun();"
           },
           {
             "lang": "python",
             "label": "list",
-            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\n\nres = s.license_keys.list()\n\nif res is not None:\n    while True:\n        # handle items\n\n        res = res.Next()\n        if res is None:\n            break"
+            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\nres = s.license_keys.list()\n\nif res is not None:\n    while True:\n        # handle items\n\n        res = res.Next()\n        if res is None:\n            break"
           }
         ]
       }
@@ -12689,12 +12689,12 @@
           {
             "lang": "typescript",
             "label": "get",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.licenseKeys.get({\n    id: \"<value>\",\n  });\n\n  // Handle the result\n  console.log(result)\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.licenseKeys.get({\n    id: \"<value>\",\n  });\n  \n  // Handle the result\n  console.log(result)\n}\n\nrun();"
           },
           {
             "lang": "python",
             "label": "get",
-            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\n\nres = s.license_keys.get(id=\"<value>\")\n\nif res is not None:\n    # handle response\n    pass"
+            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\nres = s.license_keys.get(id=\"<value>\")\n\nif res is not None:\n    # handle response\n    pass"
           }
         ]
       },
@@ -12791,12 +12791,12 @@
           {
             "lang": "typescript",
             "label": "update",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.licenseKeys.update({\n    id: \"<value>\",\n    licenseKeyUpdate: {},\n  });\n\n  // Handle the result\n  console.log(result)\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.licenseKeys.update({\n    id: \"<value>\",\n    licenseKeyUpdate: {},\n  });\n  \n  // Handle the result\n  console.log(result)\n}\n\nrun();"
           },
           {
             "lang": "python",
             "label": "update",
-            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\n\nres = s.license_keys.update(id=\"<value>\", license_key_update={})\n\nif res is not None:\n    # handle response\n    pass"
+            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\nres = s.license_keys.update(id=\"<value>\", license_key_update={})\n\nif res is not None:\n    # handle response\n    pass"
           }
         ]
       }
@@ -12896,12 +12896,12 @@
           {
             "lang": "typescript",
             "label": "get_activation",
-            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.licenseKeys.getActivation({\n    id: \"<value>\",\n    activationId: \"<value>\",\n  });\n\n  // Handle the result\n  console.log(result)\n}\n\nrun();"
+            "source": "import { Polar } from \"@polar-sh/sdk\";\n\nconst polar = new Polar({\n  accessToken: process.env[\"POLAR_ACCESS_TOKEN\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await polar.licenseKeys.getActivation({\n    id: \"<value>\",\n    activationId: \"<value>\",\n  });\n  \n  // Handle the result\n  console.log(result)\n}\n\nrun();"
           },
           {
             "lang": "python",
             "label": "get_activation",
-            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\n\nres = s.license_keys.get_activation(id=\"<value>\", activation_id=\"<value>\")\n\nif res is not None:\n    # handle response\n    pass"
+            "source": "from polar_sdk import Polar\n\ns = Polar(\n    access_token=\"<YOUR_BEARER_TOKEN_HERE>\",\n)\n\nres = s.license_keys.get_activation(id=\"<value>\", activation_id=\"<value>\")\n\nif res is not None:\n    # handle response\n    pass"
           }
         ]
       }
@@ -22837,13 +22837,14 @@
       "PlatformFeeType": {
         "type": "string",
         "enum": [
-          "platform",
           "payment",
+          "international_payment",
           "subscription",
           "invoice",
           "cross_border_transfer",
           "payout",
-          "account"
+          "account",
+          "platform"
         ],
         "title": "PlatformFeeType",
         "description": "Type of fees applied by Polar, and billed to the users."

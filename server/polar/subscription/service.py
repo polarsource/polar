@@ -616,7 +616,6 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
             },
         )
 
-        # Send the email to the user
         email_sender.send_to_user(
             to_email_addr=user.email,
             subject=subject,

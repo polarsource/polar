@@ -10,7 +10,7 @@ export default async function Page({
 }) {
   const api = getServerSideAPI()
 
-  let checkout: Checkout | undefined
+  let checkout: Checkout
 
   try {
     checkout = await api.checkouts.get({
@@ -24,7 +24,7 @@ export default async function Page({
     }
   }
 
-  let organization: Organization | undefined
+  let organization: Organization
   try {
     organization = await api.organizations.get({
       id: checkout.product.organization_id,

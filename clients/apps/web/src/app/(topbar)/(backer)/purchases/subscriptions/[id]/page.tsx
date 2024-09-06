@@ -6,7 +6,7 @@ import ClientPage from './ClientPage'
 export default async function Page({ params }: { params: { id: string } }) {
   const api = getServerSideAPI()
 
-  let subscription: UserSubscription | undefined
+  let subscription: UserSubscription
 
   try {
     subscription = await api.usersSubscriptions.get({ id: params.id })

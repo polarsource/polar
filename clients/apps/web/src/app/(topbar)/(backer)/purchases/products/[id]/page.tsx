@@ -6,7 +6,7 @@ import ClientPage from './ClientPage'
 export default async function Page({ params }: { params: { id: string } }) {
   const api = getServerSideAPI()
 
-  let order: UserOrder | undefined
+  let order: UserOrder
 
   try {
     order = await api.usersOrders.get({ id: params.id })

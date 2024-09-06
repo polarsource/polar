@@ -506,6 +506,7 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
             and subscription.started_at is not None
             and subscription.started_at.date()
             == subscription.current_period_start.date()
+            and not subscription.cancel_at_period_end
         ):
             await self.send_confirmation_email(session, subscription)
 
@@ -580,6 +581,43 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
             },
         )
 
+        email_sender.send_to_user(
+            to_email_addr=user.email,
+            subject=subject,
+            html_content=body,
+            from_email_addr="noreply@notifications.polar.sh",
+        )
+
+    async def send_cancellation_email(
+        self, session: AsyncSession, subscription: Subscription
+    ) -> None:
+        email_renderer = get_email_renderer({"subscription": "polar.subscription"})
+        email_sender = get_email_sender()
+
+        product = subscription.product
+        featured_organization = await organization_service.get(
+            session, product.organization_id
+        )
+        assert featured_organization is not None
+        user = subscription.user
+
+        # Render the cancellation email using the updated template
+        subject, body = email_renderer.render_from_template(
+            "Your {{ product.name }} subscription cancellation",
+            "subscription/cancellation.html",
+            {
+                "featured_organization": featured_organization,
+                "product": product,
+                "subscription": subscription,
+                "url": (
+                    f"{settings.FRONTEND_BASE_URL}"
+                    f"/purchases/subscriptions/{subscription.id}"
+                ),
+                "current_year": datetime.now().year,
+            },
+        )
+
+        # Send the email to the user
         email_sender.send_to_user(
             to_email_addr=user.email,
             subject=subject,

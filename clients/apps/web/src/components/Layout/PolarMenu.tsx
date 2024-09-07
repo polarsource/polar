@@ -12,15 +12,23 @@ import GetStartedButton from '../Auth/GetStartedButton'
 const PolarMenu = ({
   authenticatedUser,
   userOrganizations,
+  organization,
 }: {
   authenticatedUser?: UserRead
   userOrganizations: Organization[]
+  organization: Organization
 }) => {
   const loginLink = useLoginLink()
 
   const hasOrgs = Boolean(userOrganizations && userOrganizations.length > 0)
 
-  const creatorPath = `${CONFIG.FRONTEND_BASE_URL}/dashboard/${userOrganizations?.[0]?.slug}`
+  const organizationExistsInUserOrgs = userOrganizations.some(
+    (userOrg) => userOrg.id === organization.id
+  )
+
+  const creatorPath = `${CONFIG.FRONTEND_BASE_URL}/dashboard/${
+    organizationExistsInUserOrgs ? organization?.slug : userOrganizations?.[0]?.slug
+  }`
 
   return (
     <div className="flex h-9 flex-row items-center gap-x-6">
@@ -58,5 +66,6 @@ const PolarMenu = ({
     </div>
   )
 }
+
 
 export default PolarMenu

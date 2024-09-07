@@ -268,9 +268,22 @@ const ExpandedRow = (props: CellContext<DeliveryRow, unknown>) => {
         </Button>
       </div>
       <hr />
-      <pre className="whitespace-pre-wrap">
-        {JSON.stringify(payload, undefined, 2)}
-      </pre>
+      <div>
+        <h3 className="font-bold">Request Payload</h3>
+        <pre className="whitespace-pre-wrap">
+          {JSON.stringify(payload, undefined, 2)}
+        </pre>
+      </div>
+      <hr />
+      {delivery.webhook_event.response && (
+        <div>
+          <h3 className="font-bold">Response</h3>
+          <pre className="whitespace-pre-wrap">
+            {delivery.webhook_event.response}
+          </pre>
+        </div>
+      )}
     </div>
   )
 }
+

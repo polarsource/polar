@@ -26,3 +26,5 @@ class WebhookEvent(RecordModel):
     succeeded: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
 
     payload: Mapped[str] = mapped_column(String, nullable=False)
+
+    response: Mapped[str] = mapped_column(String, nullable=False)

@@ -1,11 +1,19 @@
 import structlog
 
+from polar.config import settings
+
 from .client import get_app_client
 
 log = structlog.get_logger()
 
 
 async def verify_app_configuration() -> None:
+    if settings.GITHUB_APP_IDENTIFIER == "__UNSET__":
+        log.info(
+            "github.verify-app", message="GitHub App is not configured", all_ok=False
+        )
+        return
+
     client = get_app_client()
     app = await client.rest.apps.async_get_authenticated()
 

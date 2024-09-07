@@ -67,5 +67,4 @@ const PolarMenu = ({
   )
 }
 
-
 export default PolarMenu

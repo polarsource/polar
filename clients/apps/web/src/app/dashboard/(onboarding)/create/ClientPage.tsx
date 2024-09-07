@@ -67,8 +67,10 @@ export default function ClientPage({
     }
     if (error) {
       setError('root', { message: error })
+    } else {
+      clearErrors('root')
     }
-  }, [validationErrors, error, setError])
+  }, [validationErrors, error, setError, clearErrors])
 
   const name = watch('name')
   const slug = watch('slug')

@@ -90,6 +90,7 @@ export default async function Layout({
           <PolarMenu
             authenticatedUser={authenticatedUser}
             userOrganizations={userOrganizations}
+            organization={organization}
           />
         </div>
         <div className="relative flex w-fit flex-shrink-0 flex-col justify-between py-8 md:sticky md:top-0 md:py-16">

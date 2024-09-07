@@ -1,5 +1,5 @@
 :8080 {
-	route /api/v1/* {
+	route /v1/* {
 		reverse_proxy 127.0.0.1:8000 {
 			trusted_proxies private_ranges
 		}

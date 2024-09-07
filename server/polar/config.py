@@ -4,7 +4,7 @@ from datetime import timedelta
 from enum import Enum
 from typing import Literal
 
-from pydantic import Field, PostgresDsn, field_validator
+from pydantic import Field, PostgresDsn
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from polar.kit.jwk import JWKSFile
@@ -206,16 +206,6 @@ class Settings(BaseSettings):
         env_file=env_file,
         extra="allow",
     )
-
-    @field_validator("GITHUB_APP_PRIVATE_KEY", mode="before")
-    @classmethod
-    def validate_github_rsa_key(cls, v: str) -> str:
-        if not (
-            v.startswith("-----BEGIN RSA PRIVATE KEY")
-            or v.endswith("END RSA PRIVATE KEY-----")
-        ):
-            raise ValueError("GITHUB_APP_PRIVATE_KEY must be a valid RSA key")
-        return v
 
     @property
     def redis_url(self) -> str:

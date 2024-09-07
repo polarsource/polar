@@ -49,11 +49,11 @@
 		}
 	},
 
-	"postCreateCommand": "bash /workspace/.devcontainer/post_create.sh",
+	"postCreateCommand": "bash /workspace/.devcontainer/post-create.sh",
 
 	// Use 'forwardPorts' to make a list of ports inside the container available locally.
 	// This can be used to network with other containers or the host.
-	"forwardPorts": [3000, 3001, 5432, 6006, 6379, 8000, 8080],
+	"forwardPorts": [3000, 5432, 6006, 6379, 8000, 8080],
 	"portsAttributes": {
 		"3000": {
 			"label": "web",
@@ -64,7 +64,7 @@
     },
 		"6006": {
 			"label": "storybook",
-			"onAutoForward": "notify"
+			"onAutoForward": "ignore"
 		},
     "6379": {
       "label": "redis"
@@ -74,7 +74,7 @@
 			"onAutoForward": "ignore"
 		},
 		"8080": {
-			"label": "api",
+			"label": "server",
 			"onAutoForward": "notify"
 		}
 	}

@@ -191,7 +191,7 @@ const DocumentationPopover = () => {
               <PopoverLinkItem
                 title="Polar SDK"
                 description="Our very own TypeScript SDK"
-                link="/docs/api/polar-sdk"
+                link="/docs/api/sdk"
               />
               <PopoverLinkItem
                 title="GitHub Actions"

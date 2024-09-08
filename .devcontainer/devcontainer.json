@@ -59,10 +59,6 @@
 			"label": "web",
 			"onAutoForward": "ignore"
 		},
-		"3001": {
-			"label": "setup-github",
-			"onAutoForward": "notify"
-		},
     "5432": {
       "label": "db"
     },

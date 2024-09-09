@@ -66,8 +66,16 @@ class TestList:
         # then
         session.expunge_all()
 
+        with pytest.raises(NotPermitted):
+            results, count = await product_service.list(
+                session, auth_subject, pagination=PaginationParams(1, 10)
+            )
+
         results, count = await product_service.list(
-            session, auth_subject, pagination=PaginationParams(1, 10)
+            session,
+            auth_subject,
+            organization_id=[p.organization_id for p in products],
+            pagination=PaginationParams(1, 10),
         )
 
         assert count == 4
@@ -260,6 +268,7 @@ class TestList:
             session,
             get_auth_subject(Anonymous()),
             is_archived=False,
+            organization_id=[organization.id],
             pagination=PaginationParams(1, 10),
         )
         assert count == 0
@@ -267,6 +276,7 @@ class TestList:
         results, count = await product_service.list(
             session,
             get_auth_subject(Anonymous()),
+            organization_id=[organization.id],
             pagination=PaginationParams(1, 10),
         )
         assert count == 0
@@ -406,6 +416,7 @@ class TestList:
         results, count = await product_service.list(
             session,
             get_auth_subject(Anonymous()),
+            organization_id=[organization.id],
             pagination=PaginationParams(1, 8),  # page 1, limit 8
         )
         assert 10 == count
@@ -413,6 +424,7 @@ class TestList:
         results, count = await product_service.list(
             session,
             get_auth_subject(Anonymous()),
+            organization_id=[organization.id],
             pagination=PaginationParams(2, 8),  # page 2, limit 8
         )
         assert 10 == count

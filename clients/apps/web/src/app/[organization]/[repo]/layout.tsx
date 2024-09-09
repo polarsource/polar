@@ -50,6 +50,7 @@ export default async function Layout({
           <PolarMenu
             authenticatedUser={authenticatedUser}
             userOrganizations={userOrganizations}
+            organization={organization}
           />
         </div>
         <div className="jusitfy-between flex w-full flex-row items-center gap-x-10">
@@ -82,6 +83,7 @@ export default async function Layout({
             <PolarMenu
               authenticatedUser={authenticatedUser}
               userOrganizations={userOrganizations}
+              organization={organization}
             />
           </div>
         </div>

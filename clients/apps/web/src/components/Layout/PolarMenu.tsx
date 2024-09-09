@@ -16,14 +16,14 @@ const PolarMenu = ({
 }: {
   authenticatedUser?: UserRead
   userOrganizations: Organization[]
-  organization: Organization
+  organization?: Organization
 }) => {
   const loginLink = useLoginLink()
 
   const hasOrgs = Boolean(userOrganizations && userOrganizations.length > 0)
 
   const organizationExistsInUserOrgs = userOrganizations.some(
-    (userOrg) => userOrg.id === organization.id
+    (userOrg) => userOrg.id === organization?.id
   )
 
   const creatorPath = `${CONFIG.FRONTEND_BASE_URL}/dashboard/${

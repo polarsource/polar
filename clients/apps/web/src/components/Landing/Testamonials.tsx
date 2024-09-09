@@ -80,7 +80,18 @@ const testamonials = [
 
 export const Testamonials = () => {
   return (
-    <Section className="gap-y-16">
+    <Section className="flex-col items-center gap-y-24">
+      <a
+        href="https://www.producthunt.com/posts/polar-5?embed=true&utm_source=badge-featured&utm_medium=badge&utm_souce=badge-polar&#0045;5"
+        target="_blank"
+      >
+        <img
+          src="/assets/landing/ph_pod.svg"
+          alt="Polar - An&#0032;open&#0032;source&#0032;monetization&#0032;platform&#0032;for&#0032;developers | Product Hunt"
+          style={{ height: '92px' }}
+          height="92"
+        />
+      </a>
       <h3 className="text-center text-2xl leading-snug md:text-5xl">
         Serving world-class developers, world-wide
       </h3>

@@ -104,12 +104,6 @@ We use [Poetry](https://python-poetry.org/docs/#installation) to manage our Pyth
 poetry install
 ```
 
-**3. Apply the database migrations**
-
-```sh
-poetry run task db_migrate
-```
-
 ### Setup frontend
 
 > [!TIP]
@@ -139,6 +133,17 @@ The backend consists of an API server, a general-purpose worker and a worker ded
 ```sh
 cd server
 ```
+
+**1. Apply the database migrations**
+
+```sh
+poetry run task db_migrate
+```
+
+> [!NOTE]
+> You don't necessarily need to run it each time you start the server, but it's a good idea to regularly do it nonetheless.
+
+**2. Start server and workers**
 
 ```sh
 poetry run task api
@@ -176,3 +181,6 @@ By default, the web client will be available at [http://127.0.0.1:3000](http://1
 
 > [!TIP]
 > The processes will restart automatically if you make changes to the code.
+
+> [!NOTE]
+> On **GitHub Codespaces**, both API backend and web frontend will be routed on the 8080 port.

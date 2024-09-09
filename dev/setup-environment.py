@@ -221,6 +221,16 @@ def _write_server_env_file(github_app: dict[str, typing.Any] | None = None) -> N
     template_file_path = ROOT_PATH / "server" / ".env.template"
     env_file_path = ROOT_PATH / "server" / ".env"
     replacements: dict[str, str] = {}
+    if IS_CODESPACES:
+        replacements = {
+            **replacements,
+            "POLAR_ALLOWED_HOSTS": json.dumps([
+                f"{os.environ["CODESPACE_NAME"]}-8080.{os.environ["GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN"]}",
+                "localhost:3000",
+                "127.0.0.1:3000",
+            ]),
+            "POLAR_FRONTEND_BASE_URL": f"https://{os.environ["CODESPACE_NAME"]}-8080.{os.environ["GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN"]}",
+        }
     if github_app is not None:
         replacements = {
             **replacements,

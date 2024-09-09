@@ -20,7 +20,7 @@
 		// Auto open these files when running on GitHub Codespaces
 		"codespaces": {
 			"openFiles": [
-			  ".devcontainer/README.md"
+			  "DEVELOPMENT.md"
 			]
 		},
 

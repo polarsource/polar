@@ -52,8 +52,8 @@ class OrganizationSubscribePromoteSettings(Schema):
 
 
 class OrganizationProfileSettings(Schema):
-    enabled: bool = Field(
-        False, description="If this organization has a profile enabled"
+    enabled: bool | None = Field(
+        description="If this organization has a profile enabled"
     )
     description: Annotated[
         str | None,

@@ -40,7 +40,7 @@ jobs:
         run: ./code_samples.sh ${{ github.event.inputs.schema_url }} ${{ github.event.inputs.languages }}
 
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v6
+        uses: peter-evans/create-pull-request@v7
         with:
           add-paths: sdk/schema.json
           commit-message: 'docs: update SDK code samples [vercel build]'

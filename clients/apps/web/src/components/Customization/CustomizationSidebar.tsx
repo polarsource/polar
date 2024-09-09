@@ -7,6 +7,7 @@ import {
   ResponseError,
   ValidationError,
 } from '@polar-sh/sdk'
+import { Switch } from 'polarkit/components/ui/atoms'
 import Avatar from 'polarkit/components/ui/atoms/avatar'
 import Button from 'polarkit/components/ui/atoms/button'
 import Input from 'polarkit/components/ui/atoms/input'
@@ -28,16 +29,33 @@ import {
   useState,
 } from 'react'
 import { useForm, useFormContext } from 'react-hook-form'
+import { twMerge } from 'tailwind-merge'
 import { useCustomizationContext } from './CustomizationProvider'
 
 const SidebarContentWrapper = ({
   title,
+  enabled,
+  onEnabledChange,
   children,
-}: PropsWithChildren<{ title: string }>) => {
+}: PropsWithChildren<{
+  title: string
+  enabled: boolean
+  onEnabledChange: (enabled: boolean) => void
+}>) => {
   return (
     <div className="flex flex-col gap-y-8">
-      <h2 className="text-lg">{title}</h2>
-      <div className="flex flex-col gap-y-8">{children}</div>
+      <div className="flex flex-row items-center justify-between">
+        <h2 className="text-lg">{title}</h2>
+        <Switch checked={enabled} onCheckedChange={onEnabledChange} />
+      </div>
+      <div
+        className={twMerge(
+          'flex flex-col gap-y-8',
+          enabled ? '' : 'pointer-events-none opacity-30',
+        )}
+      >
+        {children}
+      </div>
     </div>
   )
 }
@@ -87,6 +105,7 @@ const PublicPageCustomizationContent = () => {
   const { organization } = useContext(MaintainerOrganizationContext)
 
   const [isLoading, setLoading] = useState(false)
+  const [enabled, setEnabled] = useState(false)
 
   const form = useForm<OrganizationUpdate>({
     defaultValues: {
@@ -122,7 +141,11 @@ const PublicPageCustomizationContent = () => {
   )
 
   return (
-    <SidebarContentWrapper title="Public Page">
+    <SidebarContentWrapper
+      title="Public Page"
+      enabled={enabled}
+      onEnabledChange={setEnabled}
+    >
       <div className="flex flex-row items-center gap-x-4">
         <Avatar
           className="h-12 w-12"
@@ -144,6 +167,7 @@ const PublicPageCustomizationContent = () => {
         >
           <PublicPageForm />
           <Button
+            className="self-start"
             type="submit"
             loading={isLoading}
             disabled={!formState.isDirty}
@@ -158,8 +182,14 @@ const PublicPageCustomizationContent = () => {
 
 const CheckoutCustomizationContent = () => {
   const { organization } = useContext(MaintainerOrganizationContext)
+  const [enabled, setEnabled] = useState(false)
+
   return (
-    <SidebarContentWrapper title="Checkout">
+    <SidebarContentWrapper
+      title="Checkout"
+      enabled={enabled}
+      onEnabledChange={setEnabled}
+    >
       <Input placeholder="Organization Name" value={organization.name} />
     </SidebarContentWrapper>
   )
@@ -167,8 +197,14 @@ const CheckoutCustomizationContent = () => {
 
 const ReceiptCustomizationContent = () => {
   const { organization } = useContext(MaintainerOrganizationContext)
+  const [enabled, setEnabled] = useState(false)
+
   return (
-    <SidebarContentWrapper title="Receipt">
+    <SidebarContentWrapper
+      title="Receipt"
+      enabled={enabled}
+      onEnabledChange={setEnabled}
+    >
       <Input placeholder="Organization Name" value={organization.name} />
     </SidebarContentWrapper>
   )

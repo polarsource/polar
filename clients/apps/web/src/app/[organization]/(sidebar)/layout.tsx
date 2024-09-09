@@ -115,6 +115,7 @@ export default async function Layout({
               <PolarMenu
                 authenticatedUser={authenticatedUser}
                 userOrganizations={userOrganizations}
+                organization={organization}
               />
             </div>
           </div>

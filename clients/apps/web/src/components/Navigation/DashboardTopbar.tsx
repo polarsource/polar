@@ -71,7 +71,7 @@ const DashboardTopbar = ({
           </h4>
           <div className="flex w-full flex-1 flex-row items-center justify-end gap-x-6 md:justify-end">
             {children}
-            {org ? (
+            {org.profile_settings?.enabled ? (
               <Link href={organizationPageLink(org)}>
                 <Button>
                   <div className="flex flex-row items-center gap-x-2">

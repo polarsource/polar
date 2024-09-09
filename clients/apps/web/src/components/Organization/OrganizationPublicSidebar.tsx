@@ -89,7 +89,7 @@ export const OrganizationPublicSidebar = ({
         <div className="flex w-full flex-col gap-y-6">
           <p
             className={twMerge(
-              'w-full text-pretty break-words text-3xl !font-normal leading-normal text-gray-950 focus-visible:outline-0 dark:text-white',
+              'dark:text-polar-500 w-full text-pretty break-words !font-normal leading-normal text-gray-500',
             )}
           >
             {organization.profile_settings?.description ??

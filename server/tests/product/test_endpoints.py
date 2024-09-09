@@ -38,6 +38,23 @@ class TestListProducts:
         json = response.json()
         assert json["pagination"]["total_count"] == 3
 
+    async def test_anonymous_without_filter_403(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+        products: list[Product],
+    ) -> None:
+        response = await client.get(
+            "/v1/products/",
+        )
+
+        assert response.status_code == 403
+        response = await client.get(
+            "/v1/products/",
+            params={"organization_id": str(organization.id)},
+        )
+        assert response.status_code == 200
+
     async def test_with_benefits(
         self,
         session: AsyncSession,

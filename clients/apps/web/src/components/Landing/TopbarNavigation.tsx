@@ -155,18 +155,18 @@ const DocumentationPopover = () => {
             <div className="flex flex-col gap-y-2">
               <PopoverLinkItem
                 title="Getting Started"
-                description="Start your journey with Polar"
+                description="How-to setup an account and start monetizing"
                 link="/docs"
-              />
-              <PopoverLinkItem
-                title="FAQ"
-                description="Frequently Asked Questions"
-                link="/docs/support/faq"
               />
               <PopoverLinkItem
                 title="Support"
                 description="Get help from the Polar team"
                 link="/docs/support"
+              />
+              <PopoverLinkItem
+                title="FAQ"
+                description="Common support questions"
+                link="/docs/support/faq"
               />
             </div>
           </div>
@@ -180,7 +180,7 @@ const DocumentationPopover = () => {
               />
               <PopoverLinkItem
                 title="OAuth"
-                description="Authentication with the Polar API"
+                description="Streamline authentication and unlocking user benefits"
                 link="/docs/api/authentication"
               />
               <PopoverLinkItem
@@ -189,8 +189,8 @@ const DocumentationPopover = () => {
                 link="/docs/api/webhooks"
               />
               <PopoverLinkItem
-                title="Polar SDK"
-                description="Our very own TypeScript SDK"
+                title="Polar SDKs"
+                description="Build with our JavaScript & Python SDKs"
                 link="/docs/api/sdk"
               />
               <PopoverLinkItem

@@ -43,19 +43,21 @@ const SidebarContentWrapper = ({
   onEnabledChange: (enabled: boolean) => void
 }>) => {
   return (
-    <div className="flex flex-col gap-y-8">
+    <div className="flex h-full flex-col gap-y-8">
       <div className="flex flex-row items-center justify-between">
         <h2 className="text-lg">{title}</h2>
         <Switch checked={enabled} onCheckedChange={onEnabledChange} />
       </div>
-      <div
-        className={twMerge(
-          'flex flex-col gap-y-8',
-          enabled ? '' : 'pointer-events-none opacity-30',
-        )}
-      >
-        {children}
-      </div>
+      {enabled ? (
+        <div className={twMerge('flex flex-col gap-y-8')}>{children}</div>
+      ) : (
+        <div className="flex h-full flex-col items-center justify-center gap-y-2 text-center">
+          <h3 className="font-medium">{title} is disabled</h3>
+          <p className="dark:text-polar-500 text-sm text-gray-500">
+            Press the switch in the upper right corner to enable & customize it
+          </p>
+        </div>
+      )}
     </div>
   )
 }
@@ -84,7 +86,11 @@ const PublicPageForm = () => {
               </span>
             </div>
             <FormControl>
-              <TextArea {...field} value={field.value || ''} />
+              <TextArea
+                {...field}
+                value={field.value || ''}
+                resizable={false}
+              />
             </FormControl>
             <FormMessage />
           </FormItem>

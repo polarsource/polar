@@ -33,11 +33,16 @@ export default async function Layout({
   let organizationCustomers: ListResourceOrganizationCustomer | undefined
   let products: ListResourceProduct | undefined
 
-  const authenticatedUser = await getAuthenticatedUser(api)
   const organization = await getOrganizationBySlugOrNotFound(
     api,
     params.organization,
   )
+
+  if (!organization.profile_settings?.enabled) {
+    notFound()
+  }
+
+  const authenticatedUser = await getAuthenticatedUser(api)
   const userOrganizations = await getUserOrganizations(api)
 
   try {

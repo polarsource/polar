@@ -161,7 +161,7 @@ const DocumentationPopover = () => {
               <PopoverLinkItem
                 title="FAQ"
                 description="Frequently Asked Questions"
-                link="/docs/faq/overview"
+                link="/docs/support/faq"
               />
               <PopoverLinkItem
                 title="Support"

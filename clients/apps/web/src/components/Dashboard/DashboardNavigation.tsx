@@ -1,7 +1,7 @@
 'use client'
 
 import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
-import { Face, LooksOutlined } from '@mui/icons-material'
+import { Face } from '@mui/icons-material'
 import { useContext } from 'react'
 import { NavigationContainer } from './NavigationContainer'
 import {
@@ -26,12 +26,7 @@ const MaintainerNavigation = () => {
 
   return (
     <div className="flex flex-col gap-y-10">
-      <NavigationContainer
-        routes={generalRoutesList}
-        dummyRoutes={[
-          { title: 'Customize', icon: <LooksOutlined fontSize="inherit" /> },
-        ]}
-      />
+      <NavigationContainer routes={generalRoutesList} />
       <NavigationContainer title="Funding" routes={fundingRoutes} />
       <NavigationContainer
         title="Community"

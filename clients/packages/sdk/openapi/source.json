@@ -513,7 +513,7 @@
                     "User"
                 ],
                 "x-speakeasy-group": "users.benefits",
-                "x-speakeasy-name-override": "retrieve"
+                "x-speakeasy-name-override": "get"
             }
         },
         "/v1/users/orders/": {
@@ -852,7 +852,7 @@
                     "User"
                 ],
                 "x-speakeasy-group": "users.orders",
-                "x-speakeasy-name-override": "retrieve"
+                "x-speakeasy-name-override": "get"
             }
         },
         "/v1/users/orders/{id}/invoice": {
@@ -1312,7 +1312,7 @@
                     "User"
                 ],
                 "x-speakeasy-group": "users.subscriptions",
-                "x-speakeasy-name-override": "retrieve"
+                "x-speakeasy-name-override": "get"
             },
             "patch": {
                 "tags": [
@@ -1736,7 +1736,7 @@
                     "User"
                 ],
                 "x-speakeasy-group": "users.advertisements",
-                "x-speakeasy-name-override": "retrieve"
+                "x-speakeasy-name-override": "get"
             },
             "patch": {
                 "tags": [
@@ -2207,7 +2207,7 @@
                     "User"
                 ],
                 "x-speakeasy-group": "users.downloadables",
-                "x-speakeasy-name-override": "retrieve"
+                "x-speakeasy-name-override": "get"
             }
         },
         "/v1/users/license-keys/": {
@@ -2468,7 +2468,7 @@
                     "User"
                 ],
                 "x-speakeasy-group": "users.license_keys",
-                "x-speakeasy-name-override": "retrieve"
+                "x-speakeasy-name-override": "get"
             }
         },
         "/v1/users/license-keys/validate": {
@@ -5018,7 +5018,7 @@
                     "User"
                 ],
                 "x-speakeasy-group": "notifications",
-                "x-speakeasy-name-override": "retrieve",
+                "x-speakeasy-name-override": "get",
                 "x-speakeasy-ignore": true
             }
         },
@@ -5295,9 +5295,9 @@
                 "operationId": "repositories:list",
                 "security": [
                     {
-                        "OpenIdConnect": [
-                            "repositories:write",
-                            "repositories:read"
+                        "oidc": [
+                            "repositories:read",
+                            "repositories:write"
                         ]
                     },
                     {
@@ -5546,9 +5546,9 @@
                 "operationId": "repositories:get",
                 "security": [
                     {
-                        "OpenIdConnect": [
-                            "repositories:write",
-                            "repositories:read"
+                        "oidc": [
+                            "repositories:read",
+                            "repositories:write"
                         ]
                     },
                     {
@@ -5611,7 +5611,7 @@
                     "User"
                 ],
                 "x-speakeasy-group": "repositories",
-                "x-speakeasy-name-override": "retrieve"
+                "x-speakeasy-name-override": "get"
             },
             "patch": {
                 "tags": [
@@ -6434,7 +6434,7 @@
                     "User"
                 ],
                 "x-speakeasy-group": "accounts",
-                "x-speakeasy-name-override": "retrieve",
+                "x-speakeasy-name-override": "get",
                 "x-speakeasy-ignore": true
             }
         },
@@ -6626,9 +6626,9 @@
                 "operationId": "issues:list",
                 "security": [
                     {
-                        "OpenIdConnect": [
-                            "issues:write",
-                            "issues:read"
+                        "oidc": [
+                            "issues:read",
+                            "issues:write"
                         ]
                     },
                     {
@@ -7127,7 +7127,7 @@
                     "User"
                 ],
                 "x-speakeasy-group": "issues",
-                "x-speakeasy-name-override": "retrieve",
+                "x-speakeasy-name-override": "get",
                 "x-speakeasy-ignore": true
             },
             "post": {
@@ -7858,7 +7858,7 @@
                     "User"
                 ],
                 "x-speakeasy-group": "pledges",
-                "x-speakeasy-name-override": "retrieve",
+                "x-speakeasy-name-override": "get",
                 "x-speakeasy-ignore": true
             }
         },
@@ -8234,9 +8234,9 @@
                 "operationId": "organizations:list",
                 "security": [
                     {
-                        "OpenIdConnect": [
-                            "organizations:write",
-                            "organizations:read"
+                        "oidc": [
+                            "organizations:read",
+                            "organizations:write"
                         ]
                     },
                     {
@@ -8449,9 +8449,9 @@
                 "operationId": "organizations:get",
                 "security": [
                     {
-                        "OpenIdConnect": [
-                            "organizations:write",
-                            "organizations:read"
+                        "oidc": [
+                            "organizations:read",
+                            "organizations:write"
                         ]
                     },
                     {
@@ -8513,7 +8513,7 @@
                     "User"
                 ],
                 "x-speakeasy-group": "organizations",
-                "x-speakeasy-name-override": "retrieve"
+                "x-speakeasy-name-override": "get"
             },
             "patch": {
                 "tags": [
@@ -8622,9 +8622,9 @@
                 "operationId": "organizations:customers",
                 "security": [
                     {
-                        "OpenIdConnect": [
-                            "organizations:write",
-                            "organizations:read"
+                        "oidc": [
+                            "organizations:read",
+                            "organizations:write"
                         ]
                     },
                     {
@@ -8660,9 +8660,9 @@
                             },
                             "description": "Filter by the type of purchase the customer made.",
                             "default": [
-                                "free_subscription",
                                 "order",
                                 "paid_subscription",
+                                "free_subscription",
                                 "donation"
                             ],
                             "title": "Customer Types"
@@ -9227,9 +9227,9 @@
                 "operationId": "subscriptions:list",
                 "security": [
                     {
-                        "OpenIdConnect": [
-                            "subscriptions:write",
-                            "subscriptions:read"
+                        "oidc": [
+                            "subscriptions:read",
+                            "subscriptions:write"
                         ]
                     },
                     {
@@ -9583,9 +9583,9 @@
                 "operationId": "subscriptions:export",
                 "security": [
                     {
-                        "OpenIdConnect": [
-                            "subscriptions:write",
-                            "subscriptions:read"
+                        "oidc": [
+                            "subscriptions:read",
+                            "subscriptions:write"
                         ]
                     },
                     {
@@ -10026,7 +10026,7 @@
                     "User"
                 ],
                 "x-speakeasy-group": "articles",
-                "x-speakeasy-name-override": "retrieve"
+                "x-speakeasy-name-override": "get"
             },
             "patch": {
                 "tags": [
@@ -11147,7 +11147,7 @@
                     }
                 },
                 "x-speakeasy-group": "advertisements",
-                "x-speakeasy-name-override": "retrieve"
+                "x-speakeasy-name-override": "get"
             }
         },
         "/v1/advertisements/{id}/view": {
@@ -12185,7 +12185,7 @@
                     "User"
                 ],
                 "x-speakeasy-group": "oauth2.clients",
-                "x-speakeasy-name-override": "retrieve"
+                "x-speakeasy-name-override": "get"
             },
             "put": {
                 "tags": [
@@ -12728,9 +12728,9 @@
                 "operationId": "benefits:list",
                 "security": [
                     {
-                        "OpenIdConnect": [
-                            "benefits:write",
-                            "benefits:read"
+                        "oidc": [
+                            "benefits:read",
+                            "benefits:write"
                         ]
                     },
                     {
@@ -12998,9 +12998,9 @@
                 "operationId": "benefits:get",
                 "security": [
                     {
-                        "OpenIdConnect": [
-                            "benefits:write",
-                            "benefits:read"
+                        "oidc": [
+                            "benefits:read",
+                            "benefits:write"
                         ]
                     },
                     {
@@ -13085,7 +13085,7 @@
                     "User"
                 ],
                 "x-speakeasy-group": "benefits",
-                "x-speakeasy-name-override": "retrieve"
+                "x-speakeasy-name-override": "get"
             },
             "patch": {
                 "tags": [
@@ -13318,9 +13318,9 @@
                 "operationId": "benefits:grants",
                 "security": [
                     {
-                        "OpenIdConnect": [
-                            "benefits:write",
-                            "benefits:read"
+                        "oidc": [
+                            "benefits:read",
+                            "benefits:write"
                         ]
                     },
                     {
@@ -13495,9 +13495,9 @@
                 "operationId": "webhooks:list_webhook_endpoints",
                 "security": [
                     {
-                        "OpenIdConnect": [
-                            "webhooks:write",
-                            "webhooks:read"
+                        "oidc": [
+                            "webhooks:read",
+                            "webhooks:write"
                         ]
                     },
                     {
@@ -13693,9 +13693,9 @@
                 "operationId": "webhooks:get_webhook_endpoint",
                 "security": [
                     {
-                        "OpenIdConnect": [
-                            "webhooks:write",
-                            "webhooks:read"
+                        "oidc": [
+                            "webhooks:read",
+                            "webhooks:write"
                         ]
                     },
                     {
@@ -13932,9 +13932,9 @@
                 "operationId": "webhooks:list_webhook_deliveries",
                 "security": [
                     {
-                        "OpenIdConnect": [
-                            "webhooks:write",
-                            "webhooks:read"
+                        "oidc": [
+                            "webhooks:read",
+                            "webhooks:write"
                         ]
                     },
                     {
@@ -14121,9 +14121,9 @@
                 "operationId": "products:list",
                 "security": [
                     {
-                        "OpenIdConnect": [
-                            "products:write",
-                            "products:read"
+                        "oidc": [
+                            "products:read",
+                            "products:write"
                         ]
                     },
                     {
@@ -14422,9 +14422,9 @@
                 "operationId": "products:get",
                 "security": [
                     {
-                        "OpenIdConnect": [
-                            "products:write",
-                            "products:read"
+                        "oidc": [
+                            "products:read",
+                            "products:write"
                         ]
                     },
                     {
@@ -14487,7 +14487,7 @@
                     "User"
                 ],
                 "x-speakeasy-group": "products",
-                "x-speakeasy-name-override": "retrieve"
+                "x-speakeasy-name-override": "get"
             },
             "patch": {
                 "tags": [
@@ -15000,7 +15000,7 @@
                     "User"
                 ],
                 "x-speakeasy-group": "orders",
-                "x-speakeasy-name-override": "retrieve"
+                "x-speakeasy-name-override": "get"
             }
         },
         "/v1/orders/{id}/invoice": {
@@ -15178,7 +15178,7 @@
                     }
                 },
                 "x-speakeasy-group": "checkouts",
-                "x-speakeasy-name-override": "retrieve"
+                "x-speakeasy-name-override": "get"
             }
         },
         "/v1/files/": {
@@ -15842,7 +15842,7 @@
                     "User"
                 ],
                 "x-speakeasy-group": "metrics",
-                "x-speakeasy-name-override": "retrieve"
+                "x-speakeasy-name-override": "get"
             }
         },
         "/v1/metrics/limits": {
@@ -16308,7 +16308,7 @@
                     "User"
                 ],
                 "x-speakeasy-group": "license_keys",
-                "x-speakeasy-name-override": "retrieve"
+                "x-speakeasy-name-override": "get"
             },
             "patch": {
                 "tags": [
@@ -28943,6 +28943,12 @@
             },
             "OrganizationProfileSettings": {
                 "properties": {
+                    "enabled": {
+                        "type": "boolean",
+                        "title": "Enabled",
+                        "description": "If this organization has a profile enabled",
+                        "default": false
+                    },
                     "description": {
                         "anyOf": [
                             {

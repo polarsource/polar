@@ -10059,6 +10059,12 @@ export interface OrganizationMember {
  */
 export interface OrganizationProfileSettings {
     /**
+     * If this organization has a profile enabled
+     * @type {boolean}
+     * @memberof OrganizationProfileSettings
+     */
+    enabled?: boolean;
+    /**
      * 
      * @type {string}
      * @memberof OrganizationProfileSettings

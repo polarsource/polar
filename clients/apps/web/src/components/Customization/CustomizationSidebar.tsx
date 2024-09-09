@@ -31,6 +31,7 @@ import {
 import { useForm, useFormContext } from 'react-hook-form'
 import { twMerge } from 'tailwind-merge'
 import { useCustomizationContext } from './CustomizationProvider'
+import Link from 'next/link'
 
 const SidebarContentWrapper = ({
   title,
@@ -111,7 +112,6 @@ const PublicPageCustomizationContent = () => {
   const { organization } = useContext(MaintainerOrganizationContext)
 
   const [isLoading, setLoading] = useState(false)
-  const [enabled, setEnabled] = useState(false)
 
   const form = useForm<OrganizationUpdate>({
     defaultValues: {
@@ -146,11 +146,25 @@ const PublicPageCustomizationContent = () => {
     [organization, setError],
   )
 
+  const toggleProfilePage = useCallback(
+    async (enabled: boolean) => {
+      await updateOrganization.mutateAsync({
+        id: organization.id,
+        body: {
+          profile_settings: {
+            enabled,
+          },
+        },
+      })
+    },
+    [organization],
+  )
+
   return (
     <SidebarContentWrapper
       title="Public Page"
-      enabled={enabled}
-      onEnabledChange={setEnabled}
+      enabled={organization.profile_settings?.enabled ?? false}
+      onEnabledChange={toggleProfilePage}
     >
       <div className="flex flex-row items-center gap-x-4">
         <Avatar
@@ -158,11 +172,11 @@ const PublicPageCustomizationContent = () => {
           avatar_url={organization.avatar_url}
           name={organization.name}
         />
-        <div className="flex flex-col">
+        <div className="flex flex-col gap-y-1">
           <h3>{organization.name}</h3>
-          <span className="dark:text-polar-500 text-sm text-gray-500">
-            @{organization.slug}
-          </span>
+          <Link className="dark:text-blue-400 text-xs text-blue-500" href={`/${organization.slug}`} target='_blank'>
+            View Public Page
+          </Link>
         </div>
       </div>
 

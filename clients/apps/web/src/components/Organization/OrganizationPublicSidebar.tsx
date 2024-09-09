@@ -1,7 +1,6 @@
 'use client'
 
 import { useAuth } from '@/hooks'
-import { useUpdateOrganization } from '@/hooks/queries'
 import { useExternalOrganizations } from '@/hooks/queries/externalOrganizations'
 import { api } from '@/utils/api'
 import { CONFIG } from '@/utils/config'
@@ -10,7 +9,6 @@ import { LanguageOutlined, MailOutline } from '@mui/icons-material'
 import {
   ListResourceOrganizationCustomer,
   Organization,
-  OrganizationProfileSettings,
   Platforms,
   Product,
 } from '@polar-sh/sdk'
@@ -26,7 +24,6 @@ import { DonateWidget } from '../Donations/DontateWidget'
 import GitHubIcon from '../Icons/GitHubIcon'
 import { Modal, ModalHeader } from '../Modal'
 import { useModal } from '../Modal/useModal'
-import { DescriptionEditor } from '../Profile/DescriptionEditor/DescriptionEditor'
 import { SubscribeEditor } from '../Profile/SubscribeEditor/SubscribeEditor'
 import Spinner from '../Shared/Spinner'
 
@@ -53,28 +50,12 @@ export const OrganizationPublicSidebar = ({
 
   const isOrgMember = userOrganizations.some((o) => o.id === organization.id)
 
-  const updateOrganizationMutation = useUpdateOrganization()
   const externalGitHubOrganizations = useExternalOrganizations({
     organizationId: organization.id,
     platform: Platforms.GITHUB,
     limit: 1,
     sorting: ['created_at'],
   })
-
-  const updateProfile = (setting: OrganizationProfileSettings) => {
-    return updateOrganizationMutation.mutateAsync({
-      id: organization.id,
-      body: {
-        profile_settings: setting,
-      },
-    })
-  }
-
-  const updateDescription = (description: string) => {
-    updateProfile({
-      description,
-    })
-  }
 
   const isPostView = segment === 'posts'
   const isDonatePage = segment === 'donate'
@@ -106,20 +87,16 @@ export const OrganizationPublicSidebar = ({
         )}
       >
         <div className="flex w-full flex-col gap-y-6">
-          <DescriptionEditor
-            className="dark:text-polar-500 text-md text-start leading-relaxed text-gray-500"
-            description={
-              organization.profile_settings?.description ??
+          <p
+            className={twMerge(
+              'w-full text-pretty break-words text-3xl !font-normal leading-normal text-gray-950 focus-visible:outline-0 dark:text-white',
+            )}
+          >
+            {organization.profile_settings?.description ??
               organization.bio ??
-              ''
-            }
-            onChange={updateDescription}
-            disabled={!isOrgMember}
-            size="small"
-            loading={updateOrganizationMutation.isPending}
-            failed={updateOrganizationMutation.isError}
-            maxLength={160}
-          />
+              ''}
+          </p>
+
           <div className="flex flex-row flex-wrap items-center gap-3 text-lg">
             {externalGitHubOrganizations.data?.items.map(
               (externalOrganization) => (

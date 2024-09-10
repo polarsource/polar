@@ -1,6 +1,6 @@
 'use client'
 
-import { PublicPage } from '@/components/Profile/ProfilePage'
+import { PublicPage } from '@/components/Profile/PublicPage'
 import { useTrafficRecordPageView } from '@/utils/traffic'
 import {
   Article,

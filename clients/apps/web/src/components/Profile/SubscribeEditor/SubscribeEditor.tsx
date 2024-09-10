@@ -87,7 +87,7 @@ export const SubscribeEditor = ({
                 notation: 'compact',
                 compactDisplay: 'short',
               }).format(customerList.pagination.total_count)}{' '}
-              <span className="font-light">
+              <span>
                 {customerList.pagination.total_count === 1
                   ? 'Subscriber'
                   : 'Subscribers'}

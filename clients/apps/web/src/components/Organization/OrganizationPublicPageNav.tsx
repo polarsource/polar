@@ -32,40 +32,30 @@ export const OrganizationPublicPageNav = ({
         )}
       >
         <Link href={organizationPageLink(organization)}>
-          <TabsTrigger value="overview" size="small">
-            Overview
-          </TabsTrigger>
+          <TabsTrigger value="overview">Overview</TabsTrigger>
         </Link>
 
         {organization.feature_settings?.articles_enabled && (
           <Link href={organizationPageLink(organization, 'posts')}>
-            <TabsTrigger value="posts" size="small">
-              Newsletter
-            </TabsTrigger>
+            <TabsTrigger value="posts">Newsletter</TabsTrigger>
           </Link>
         )}
 
         {organization.feature_settings?.issue_funding_enabled && (
           <Link href={organizationPageLink(organization, 'issues')}>
-            <TabsTrigger value="issues" size="small">
-              Issues
-            </TabsTrigger>
+            <TabsTrigger value="issues">Issues</TabsTrigger>
           </Link>
         )}
 
         {hasLinkedExternalOrganizations && (
           <Link href={organizationPageLink(organization, 'repositories')}>
-            <TabsTrigger value="repositories" size="small">
-              Repositories
-            </TabsTrigger>
+            <TabsTrigger value="repositories">Repositories</TabsTrigger>
           </Link>
         )}
 
         {organization.donations_enabled && (
           <Link href={organizationPageLink(organization, 'donate')}>
-            <TabsTrigger value="donate" size="small">
-              Donate
-            </TabsTrigger>
+            <TabsTrigger value="donate">Donate</TabsTrigger>
           </Link>
         )}
       </TabsList>

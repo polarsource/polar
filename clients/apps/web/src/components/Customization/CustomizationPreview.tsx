@@ -13,9 +13,9 @@ import {
   OrganizationCustomerType,
 } from '@polar-sh/sdk'
 import React from 'react'
-import { OrganizationPublicHeader } from '../Organization/OrganizationPublicHeader'
 import { OrganizationPublicPageNav } from '../Organization/OrganizationPublicPageNav'
 import { PublicPage } from '../Profile/PublicPage'
+import { PublicPageHeader } from '../Profile/PublicPageHeader'
 
 interface PublicPagePreviewProps {
   organization: Organization
@@ -77,7 +77,7 @@ const PublicPagePreview = ({ organization }: PublicPagePreviewProps) => {
   return (
     <div className="flex w-full max-w-7xl flex-col overflow-y-auto px-8">
       <div className="flex flex-grow flex-col items-center">
-        <OrganizationPublicHeader
+        <PublicPageHeader
           organizationCustomers={
             subscriberSettings.show_count ? customers.data : undefined
           }

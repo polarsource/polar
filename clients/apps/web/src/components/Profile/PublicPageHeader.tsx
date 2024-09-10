@@ -13,24 +13,23 @@ import { useSelectedLayoutSegment } from 'next/navigation'
 import Avatar from 'polarkit/components/ui/atoms/avatar'
 import { PropsWithChildren } from 'react'
 import { twMerge } from 'tailwind-merge'
-import { externalURL } from '.'
-import { DonateWidget } from '../Donations/DontateWidget'
 import GitHubIcon from '../Icons/GitHubIcon'
-import { SubscribeEditor } from '../Profile/SubscribeEditor/SubscribeEditor'
+import { externalURL } from '../Organization'
+import { SubscribeEditor } from './SubscribeEditor/SubscribeEditor'
 
-interface OrganizationPublicSidebarProps {
+interface PublicPageHeaderProps {
   organization: Organization
   organizationCustomers: ListResourceOrganizationCustomer | undefined
   userOrganizations: Organization[]
   products: Product[]
 }
 
-export const OrganizationPublicHeader = ({
+export const PublicPageHeader = ({
   organization,
   organizationCustomers,
   userOrganizations,
   products,
-}: OrganizationPublicSidebarProps) => {
+}: PublicPageHeaderProps) => {
   const segment = useSelectedLayoutSegment()
 
   const isOrgMember = userOrganizations.some((o) => o.id === organization.id)
@@ -47,7 +46,7 @@ export const OrganizationPublicHeader = ({
 
   return (
     <div className="flex w-full flex-grow flex-col items-center gap-y-6">
-      <div className="rounded-4xl dark:bg-polar-900 h-64 w-full bg-blue-50" />
+      <div className="rounded-4xl dark:from-polar-900 dark:via-polar-800 dark:to-polar-900 h-64 w-full bg-gradient-to-tr from-white via-blue-50 to-white" />
       <div className="flex flex-grow flex-col items-center">
         <Avatar
           className="h-16 w-16 text-lg md:mb-6 md:h-32 md:w-32 md:text-5xl"
@@ -73,7 +72,7 @@ export const OrganizationPublicHeader = ({
         <div className="flex flex-grow flex-col items-center gap-y-6">
           <p
             className={twMerge(
-              'dark:text-polar-500 text-pretty break-words text-center leading-normal text-gray-500',
+              'dark:text-polar-500 text-pretty break-words text-center text-lg leading-normal text-gray-500',
             )}
           >
             {organization.profile_settings?.description ??
@@ -128,10 +127,6 @@ export const OrganizationPublicHeader = ({
           products={products}
           isOrgMember={isOrgMember}
         />
-
-        {organization.donations_enabled && !isDonatePage ? (
-          <DonateWidget organization={organization} />
-        ) : null}
       </div>
     </div>
   )

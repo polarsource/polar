@@ -66,11 +66,6 @@ class TestList:
         # then
         session.expunge_all()
 
-        with pytest.raises(NotPermitted):
-            results, count = await product_service.list(
-                session, auth_subject, pagination=PaginationParams(1, 10)
-            )
-
         results, count = await product_service.list(
             session,
             auth_subject,
@@ -98,7 +93,10 @@ class TestList:
         session.expunge_all()
 
         results, count = await product_service.list(
-            session, auth_subject, pagination=PaginationParams(1, 10)
+            session,
+            auth_subject,
+            organization_id=[p.organization_id for p in products],
+            pagination=PaginationParams(1, 10),
         )
 
         assert count == 4
@@ -120,7 +118,10 @@ class TestList:
         session.expunge_all()
 
         results, count = await product_service.list(
-            session, auth_subject, pagination=PaginationParams(1, 10)
+            session,
+            auth_subject,
+            organization_id=[p.organization_id for p in products],
+            pagination=PaginationParams(1, 10),
         )
 
         assert count == 4
@@ -137,7 +138,10 @@ class TestList:
         session.expunge_all()
 
         results, count = await product_service.list(
-            session, auth_subject, pagination=PaginationParams(1, 10)
+            session,
+            auth_subject,
+            organization_id=[p.organization_id for p in products],
+            pagination=PaginationParams(1, 10),
         )
 
         assert count == 3
@@ -171,6 +175,7 @@ class TestList:
         results, count = await product_service.list(
             session,
             auth_subject,
+            organization_id=[organization.id],
             is_recurring=True,
             pagination=PaginationParams(1, 10),
         )
@@ -182,6 +187,7 @@ class TestList:
         results, count = await product_service.list(
             session,
             auth_subject,
+            organization_id=[organization.id],
             is_recurring=False,
             pagination=PaginationParams(1, 10),
         )
@@ -213,6 +219,7 @@ class TestList:
         results, count = await product_service.list(
             session,
             auth_subject,
+            organization_id=[organization.id],
             type=[SubscriptionTierType.individual],
             pagination=PaginationParams(1, 10),
         )
@@ -287,6 +294,7 @@ class TestList:
         results, count = await product_service.list(
             session,
             auth_subject,
+            organization_id=[user_organization.organization_id],
             is_archived=False,
             pagination=PaginationParams(1, 10),
         )
@@ -295,6 +303,7 @@ class TestList:
         results, count = await product_service.list(
             session,
             auth_subject,
+            organization_id=[user_organization.organization_id],
             pagination=PaginationParams(1, 10),
         )
         assert count == 1
@@ -320,6 +329,7 @@ class TestList:
         results, count = await product_service.list(
             session,
             auth_subject,
+            organization_id=[organization.id],
             is_archived=False,
             pagination=PaginationParams(1, 10),
         )
@@ -328,6 +338,7 @@ class TestList:
         results, count = await product_service.list(
             session,
             auth_subject,
+            organization_id=[organization.id],
             pagination=PaginationParams(1, 10),
         )
         assert count == 0
@@ -435,6 +446,7 @@ class TestList:
         results, count = await product_service.list(
             session,
             auth_subject,
+            organization_id=[user_organization.organization_id],
             pagination=PaginationParams(1, 8),  # page 1, limit 8
         )
         assert 20 == count
@@ -442,6 +454,7 @@ class TestList:
         results, count = await product_service.list(
             session,
             auth_subject,
+            organization_id=[user_organization.organization_id],
             pagination=PaginationParams(2, 8),  # page 2, limit 8
         )
         assert 20 == count
@@ -449,6 +462,7 @@ class TestList:
         results, count = await product_service.list(
             session,
             auth_subject,
+            organization_id=[user_organization.organization_id],
             pagination=PaginationParams(3, 8),  # page 3, limit 8
         )
         assert 20 == count

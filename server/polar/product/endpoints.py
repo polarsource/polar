@@ -31,8 +31,8 @@ ProductNotFound = {
 async def list(
     pagination: PaginationParamsQuery,
     auth_subject: auth.CreatorProductsReadOrAnonymous,
-    organization_id: MultipleQueryFilter[OrganizationID] | None = Query(
-        None, title="OrganizationID Filter", description="Filter by organization ID."
+    organization_id: MultipleQueryFilter[OrganizationID] = Query(
+        title="OrganizationID Filter", description="Filter by organization ID."
     ),
     is_archived: bool | None = Query(None, description="Filter on archived products."),
     is_recurring: bool | None = Query(

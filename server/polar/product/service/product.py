@@ -10,7 +10,6 @@ from sqlalchemy.orm import contains_eager, joinedload, selectinload
 from polar.auth.models import (
     AuthSubject,
     Subject,
-    is_anonymous,
     is_organization,
     is_user,
 )
@@ -68,7 +67,7 @@ class ProductService(ResourceService[Product, ProductCreate, ProductUpdate]):
         session: AsyncSession,
         auth_subject: AuthSubject[Subject],
         *,
-        organization_id: Sequence[uuid.UUID] | None = None,
+        organization_id: Sequence[uuid.UUID],
         is_archived: bool | None = None,
         is_recurring: bool | None = None,
         benefit_id: Sequence[uuid.UUID] | None = None,
@@ -94,10 +93,7 @@ class ProductService(ResourceService[Product, ProductCreate, ProductUpdate]):
             isouter=True,
         )
 
-        is_anonymous_allowed = False
-        if organization_id is not None:
-            statement = statement.where(Product.organization_id.in_(organization_id))
-            is_anonymous_allowed = True
+        statement = statement.where(Product.organization_id.in_(organization_id))
 
         if is_archived is not None:
             statement = statement.where(Product.is_archived.is_(is_archived))
@@ -109,16 +105,11 @@ class ProductService(ResourceService[Product, ProductCreate, ProductUpdate]):
             statement = statement.where(Product.type.in_(type))
 
         if benefit_id is not None:
-            is_anonymous_allowed = True
             statement = (
                 statement.join(Product.product_benefits)
                 .where(ProductBenefit.benefit_id.in_(benefit_id))
                 .options(contains_eager(Product.product_benefits))
             )
-
-        # Ensure specific org/benefit filter in case of anonymous calls
-        if is_anonymous(auth_subject) and not is_anonymous_allowed:
-            raise NotPermitted()
 
         statement = statement.order_by(
             case(

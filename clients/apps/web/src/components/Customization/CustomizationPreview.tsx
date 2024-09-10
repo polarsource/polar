@@ -14,7 +14,7 @@ import {
 } from '@polar-sh/sdk'
 import React from 'react'
 import { OrganizationPublicSidebar } from '../Organization/OrganizationPublicSidebar'
-import { PublicPage } from '../Profile/ProfilePage'
+import { PublicPage } from '../Profile/PublicPage'
 
 interface PublicPagePreviewProps {
   organization: Organization

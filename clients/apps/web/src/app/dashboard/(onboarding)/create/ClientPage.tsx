@@ -210,7 +210,6 @@ export default function ClientPage({
             className="self-start"
             type="submit"
             size="lg"
-            disabled={Object.keys(errors).length > 0}
             loading={createOrganization.isPending}
           >
             Create

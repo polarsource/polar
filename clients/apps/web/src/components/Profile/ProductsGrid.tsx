@@ -17,8 +17,8 @@ export const ProductsGrid = ({
   setRecurringInterval,
 }: ProductsGridProps) => {
   return (
-    <div className="flex flex-grow flex-col items-center gap-y-8">
-      <div className="flex flex-col items-center justify-between gap-y-8">
+    <div className="flex flex-grow flex-col gap-y-8">
+      <div className="flex flex-row items-center justify-between gap-x-8">
         {title && <h2 className="text-2xl">{title}</h2>}
         {hasBothIntervals && recurringInterval && setRecurringInterval && (
           <div className="flex justify-center">

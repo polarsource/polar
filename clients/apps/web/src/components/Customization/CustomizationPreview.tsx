@@ -13,7 +13,6 @@ import {
   OrganizationCustomerType,
 } from '@polar-sh/sdk'
 import React from 'react'
-import { OrganizationPublicPageNav } from '../Organization/OrganizationPublicPageNav'
 import { PublicPage } from '../Profile/PublicPage'
 import { PublicPageHeader } from '../Profile/PublicPageHeader'
 
@@ -75,7 +74,12 @@ const PublicPagePreview = ({ organization }: PublicPagePreviewProps) => {
   const userOrganizations = useListOrganizations({ isMember: true })
 
   return (
-    <div className="flex w-full max-w-7xl flex-col overflow-y-auto px-8">
+    <div className="flex w-full max-w-7xl flex-col gap-y-8 overflow-y-auto px-8">
+      {!organization.profile_settings?.enabled && (
+        <div className="flex flex-row items-center justify-center rounded-full bg-red-100 px-8 py-2 text-sm text-red-500 dark:bg-red-950">
+          This public page is not enabled
+        </div>
+      )}
       <div className="flex flex-grow flex-col items-center">
         <PublicPageHeader
           organizationCustomers={
@@ -86,10 +90,7 @@ const PublicPagePreview = ({ organization }: PublicPagePreviewProps) => {
           products={products}
         />
       </div>
-      <div className="flex flex-col items-center">
-        <OrganizationPublicPageNav organization={organization} />
-      </div>
-      <div className="flex h-full flex-grow flex-col gap-y-8 md:gap-y-16 md:py-12">
+      <div className="flex h-full flex-grow flex-col gap-y-8 md:gap-y-16">
         <PublicPage
           organization={organization}
           posts={posts}

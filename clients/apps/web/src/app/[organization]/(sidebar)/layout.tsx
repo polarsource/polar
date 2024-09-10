@@ -83,21 +83,23 @@ export default async function Layout({
 
   return (
     <PublicLayout wide>
-      <div className="flex flex-grow flex-col items-center py-16">
-        <PublicPageHeader
-          organizationCustomers={
-            subscriberSettings.show_count ? organizationCustomers : undefined
-          }
-          organization={organization}
-          userOrganizations={userOrganizations ?? []}
-          products={products?.items ?? []}
-        />
-      </div>
-      <div className="flex flex-col items-center">
-        <OrganizationPublicPageNav organization={organization} />
-      </div>
-      <div className="flex h-full flex-grow flex-col gap-y-8 md:gap-y-16 md:py-12">
-        {children}
+      <div className="flex flex-col gap-y-8 py-16">
+        <div className="flex flex-grow flex-col items-center">
+          <PublicPageHeader
+            organizationCustomers={
+              subscriberSettings.show_count ? organizationCustomers : undefined
+            }
+            organization={organization}
+            userOrganizations={userOrganizations ?? []}
+            products={products?.items ?? []}
+          />
+        </div>
+        <div className="flex flex-col items-center">
+          <OrganizationPublicPageNav organization={organization} />
+        </div>
+        <div className="flex h-full flex-grow flex-col gap-y-8 md:gap-y-16 md:py-12">
+          {children}
+        </div>
       </div>
     </PublicLayout>
   )

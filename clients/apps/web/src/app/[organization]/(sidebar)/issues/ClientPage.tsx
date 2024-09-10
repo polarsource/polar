@@ -21,8 +21,8 @@ const ClientPage = ({
   }
 
   return (
-    <div className="flex w-full flex-col gap-y-8">
-      <ShadowBoxOnMd>
+    <div className="flex w-full flex-col items-center gap-y-8">
+      <ShadowBoxOnMd className="flex w-full max-w-4xl flex-col">
         <div className="p-4">
           <div className="flex flex-row items-start justify-between pb-8">
             <h2 className="text-lg font-medium">Issues looking for funding</h2>

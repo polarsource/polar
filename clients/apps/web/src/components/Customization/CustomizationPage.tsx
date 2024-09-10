@@ -6,12 +6,9 @@ import {
 } from '@/components/Customization/CustomizationProvider'
 import { CustomizationSidebar } from '@/components/Customization/CustomizationSidebar'
 import { useSearchParams } from 'next/navigation'
+import { CustomizationPreview } from './CustomizationPreview'
 
-export default function ClientLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
+export const CustomizationPage = () => {
   const search = useSearchParams()
 
   return (
@@ -21,7 +18,7 @@ export default function ClientLayout({
       }
     >
       <div className="ml-4 flex h-full flex-grow flex-row gap-x-4">
-        {children}
+        <CustomizationPreview />
         <CustomizationSidebar />
       </div>
     </CustomizationProvider>

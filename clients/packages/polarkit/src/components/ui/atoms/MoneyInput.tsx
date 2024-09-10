@@ -20,8 +20,8 @@ const getCents = (value: string): number => {
   if (isNaN(newAmount)) {
     newAmount = 0
   }
-  const amountInCents = newAmount * 100
-  return amountInCents
+  // Round to avoid floating point errors
+  return Math.round(newAmount * 100)
 }
 
 const MoneyInput = (props: Props) => {

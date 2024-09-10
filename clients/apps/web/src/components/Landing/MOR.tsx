@@ -1,6 +1,7 @@
 'use client'
 
 import { ArrowForward } from '@mui/icons-material'
+import Link from 'next/link'
 import GetStartedButton from '../Auth/GetStartedButton'
 
 export const MerchantOfRecord = () => {
@@ -9,11 +10,8 @@ export const MerchantOfRecord = () => {
       <div className="rounded-4xl dark:bg-polar-900 relative col-span-1 flex w-full flex-col justify-between gap-y-8 p-10">
         <div className="flex w-full flex-col gap-y-8">
           <div className="flex w-full max-w-sm flex-col gap-y-6">
-            <span className="dark:text-polar-400 font-mono text-xs uppercase tracking-wider">
-              Merchant of Record
-            </span>
             <h3 className="text-3xl font-medium leading-tight">
-              Focus on your product. Leave the boring stuff to us.
+              We're the Merchant of Record
             </h3>
           </div>
           <ul className="dark:text-polar-200 flex flex-col gap-y-2">
@@ -28,6 +26,10 @@ export const MerchantOfRecord = () => {
             <li className="flex flex-row gap-x-2">
               <ArrowForward className="mt-1" fontSize="inherit" />
               <span>Payouts on Demand</span>
+            </li>
+            <li className="flex flex-row gap-x-2">
+              <ArrowForward className="mt-1" fontSize="inherit" />
+              <Link href="/docs/merchant-of-record/tax" className="underline">Read more</Link>
             </li>
           </ul>
         </div>

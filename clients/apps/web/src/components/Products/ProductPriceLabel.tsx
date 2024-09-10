@@ -30,8 +30,10 @@ const ProductPriceLabel: React.FC<ProductPriceLabelProps> = ({ price }) => {
 
   return (
     <div>
-      {formatCurrencyAndAmount(price_amount, price_currency, 0)}
-      <span className="text-[0.5em]">{intervalDisplay}</span>
+      <span className="text-sm">
+        {formatCurrencyAndAmount(price_amount, price_currency, 0)}
+      </span>
+      <span className="text-xs">{intervalDisplay}</span>
     </div>
   )
 }

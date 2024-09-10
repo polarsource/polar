@@ -1,10 +1,6 @@
 'use client'
 
-import { useAuth } from '@/hooks'
 import { useExternalOrganizations } from '@/hooks/queries/externalOrganizations'
-import { api } from '@/utils/api'
-import { CONFIG } from '@/utils/config'
-import { RssIcon } from '@heroicons/react/20/solid'
 import { LanguageOutlined, MailOutline } from '@mui/icons-material'
 import {
   ListResourceOrganizationCustomer,
@@ -15,17 +11,12 @@ import {
 import Link from 'next/link'
 import { useSelectedLayoutSegment } from 'next/navigation'
 import Avatar from 'polarkit/components/ui/atoms/avatar'
-import Button from 'polarkit/components/ui/atoms/button'
-import CopyToClipboardInput from 'polarkit/components/ui/atoms/copytoclipboardinput'
-import { PropsWithChildren, useEffect, useState } from 'react'
+import { PropsWithChildren } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { externalURL } from '.'
 import { DonateWidget } from '../Donations/DontateWidget'
 import GitHubIcon from '../Icons/GitHubIcon'
-import { Modal, ModalHeader } from '../Modal'
-import { useModal } from '../Modal/useModal'
 import { SubscribeEditor } from '../Profile/SubscribeEditor/SubscribeEditor'
-import Spinner from '../Shared/Spinner'
 
 interface OrganizationPublicSidebarProps {
   organization: Organization
@@ -34,19 +25,13 @@ interface OrganizationPublicSidebarProps {
   products: Product[]
 }
 
-export const OrganizationPublicSidebar = ({
+export const OrganizationPublicHeader = ({
   organization,
   organizationCustomers,
   userOrganizations,
   products,
 }: OrganizationPublicSidebarProps) => {
   const segment = useSelectedLayoutSegment()
-
-  const {
-    isShown: rssModalIsShown,
-    hide: hideRssModal,
-    show: showRssModal,
-  } = useModal()
 
   const isOrgMember = userOrganizations.some((o) => o.id === organization.id)
 
@@ -61,19 +46,18 @@ export const OrganizationPublicSidebar = ({
   const isDonatePage = segment === 'donate'
 
   return (
-    <div className="flex h-full w-full flex-col items-start gap-y-6 md:max-w-[18rem]">
-      <div className="flex w-full flex-row items-center gap-x-4 gap-y-6 md:flex-col md:items-start md:gap-x-0">
+    <div className="flex w-full flex-grow flex-col items-center gap-y-6">
+      <div className="rounded-4xl dark:bg-polar-900 h-64 w-full bg-blue-50" />
+      <div className="flex flex-grow flex-col items-center">
         <Avatar
-          className="h-16 w-16 text-lg md:mb-6 md:h-32 md:w-32 md:text-6xl lg:h-60 lg:w-60"
+          className="h-16 w-16 text-lg md:mb-6 md:h-32 md:w-32 md:text-5xl"
           name={organization.name}
           avatar_url={organization.avatar_url}
         />
-        <div className="flex flex-col md:gap-y-2">
-          <h1 className="text-xl text-gray-800 md:text-2xl dark:text-white">
-            {organization.name}
-          </h1>
+        <div className="flex flex-col items-center md:gap-y-1">
+          <h1 className="text-xl md:text-2xl">{organization.name}</h1>
           <Link
-            className="text-blue-500 hover:text-blue-400 md:text-lg dark:text-blue-400 dark:hover:text-blue-300"
+            className="dark:text-polar-500 text-gray-500 md:text-lg"
             href={`/${organization.slug}`}
           >
             @{organization.slug}
@@ -82,14 +66,14 @@ export const OrganizationPublicSidebar = ({
       </div>
       <div
         className={twMerge(
-          'flex w-full flex-col items-start gap-y-6 md:max-w-[15rem] lg:w-60',
+          'flex flex-grow flex-col items-center',
           isPostView ? 'hidden  md:flex' : 'flex',
         )}
       >
-        <div className="flex w-full flex-col gap-y-6">
+        <div className="flex flex-grow flex-col items-center gap-y-6">
           <p
             className={twMerge(
-              'dark:text-polar-500 w-full text-pretty break-words !font-normal leading-normal text-gray-500',
+              'dark:text-polar-500 text-pretty break-words text-center leading-normal text-gray-500',
             )}
           >
             {organization.profile_settings?.description ??
@@ -136,13 +120,6 @@ export const OrganizationPublicSidebar = ({
                 <MailOutline fontSize="small" />
               </SocialLink>
             )}
-            <Button
-              className="dark:text-polar-400 flex flex-col items-center justify-center rounded-full border-none bg-transparent p-0 text-gray-500 transition-colors hover:bg-transparent hover:text-blue-500 dark:bg-transparent dark:hover:bg-transparent dark:hover:text-white"
-              onClick={showRssModal}
-              variant="secondary"
-            >
-              <RssIcon className="h-5 w-5" />
-            </Button>
           </div>
         </div>
         <SubscribeEditor
@@ -156,13 +133,6 @@ export const OrganizationPublicSidebar = ({
           <DonateWidget organization={organization} />
         ) : null}
       </div>
-      <Modal
-        isShown={rssModalIsShown}
-        hide={hideRssModal}
-        modalContent={
-          <RssModal hide={hideRssModal} organization={organization} />
-        }
-      />
     </div>
   )
 }
@@ -177,78 +147,5 @@ const SocialLink = (props: PropsWithChildren<{ href: string }>) => {
     >
       {props.children}
     </Link>
-  )
-}
-
-const RssModal = ({
-  hide,
-  organization,
-}: {
-  hide: () => void
-  organization: Organization
-}) => {
-  const { currentUser } = useAuth()
-  const [token, setToken] = useState<string>()
-  const auth = token ? `?auth=${token}` : ''
-  const url = `${CONFIG.FRONTEND_BASE_URL}/${organization.slug}/rss${auth}`
-
-  useEffect(() => {
-    if (!currentUser) {
-      return
-    }
-
-    let active = true
-
-    api.personalAccessToken
-      .createPersonalAccessToken({
-        body: {
-          comment: `RSS for ${organization.slug}`,
-          scopes: ['organizations:read', 'articles:read'],
-        },
-      })
-      .then((res) => {
-        if (active) {
-          setToken(res.token)
-        }
-      })
-
-    return () => {
-      active = false
-    }
-  }, [currentUser, organization])
-
-  return (
-    <>
-      <ModalHeader className="px-8 py-4" hide={hide}>
-        <h3 className="text-lg font-medium text-gray-950 dark:text-white">
-          Subscribe to {organization.name} via RSS
-        </h3>
-      </ModalHeader>
-      <div className="p-8">
-        <div className="flex flex-col gap-y-4">
-          <div className="flex flex-col gap-y-2">
-            <span className="font-medium">
-              {currentUser ? 'Your feed URL' : 'Feed URL'}
-            </span>
-            {currentUser ? (
-              <p className="text-polar-500 dark:text-polar-500 text-sm">
-                This URL is personal, keep it safe.
-              </p>
-            ) : null}
-          </div>
-
-          {url ? (
-            <div className="flex items-center gap-2">
-              <CopyToClipboardInput value={url} id={'rssurl'} />
-              <Link href={`feed:${url}`}>
-                <Button asChild>Open</Button>
-              </Link>
-            </div>
-          ) : (
-            <Spinner />
-          )}
-        </div>
-      </div>
-    </>
   )
 }

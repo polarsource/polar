@@ -509,6 +509,8 @@ class SubscriptionService(ResourceServiceReader[Subscription]):
             and not subscription.cancel_at_period_end
         ):
             await self.send_confirmation_email(session, subscription)
+        elif subscription.cancel_at_period_end:
+            await self.send_cancellation_email(session, subscription)
 
         return subscription
 

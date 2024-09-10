@@ -7,6 +7,7 @@ import {
   ResponseError,
   ValidationError,
 } from '@polar-sh/sdk'
+import Link from 'next/link'
 import { Switch } from 'polarkit/components/ui/atoms'
 import Avatar from 'polarkit/components/ui/atoms/avatar'
 import Button from 'polarkit/components/ui/atoms/button'
@@ -31,7 +32,6 @@ import {
 import { useForm, useFormContext } from 'react-hook-form'
 import { twMerge } from 'tailwind-merge'
 import { useCustomizationContext } from './CustomizationProvider'
-import Link from 'next/link'
 
 const SidebarContentWrapper = ({
   title,
@@ -49,16 +49,7 @@ const SidebarContentWrapper = ({
         <h2 className="text-lg">{title}</h2>
         <Switch checked={enabled} onCheckedChange={onEnabledChange} />
       </div>
-      {enabled ? (
-        <div className={twMerge('flex flex-col gap-y-8')}>{children}</div>
-      ) : (
-        <div className="flex h-full flex-col items-center justify-center gap-y-2 text-center">
-          <h3 className="font-medium">{title} is disabled</h3>
-          <p className="dark:text-polar-500 text-sm text-gray-500">
-            Press the switch in the upper right corner to enable & customize it
-          </p>
-        </div>
-      )}
+      <div className={twMerge('flex flex-col gap-y-8')}>{children}</div>
     </div>
   )
 }
@@ -143,7 +134,7 @@ const PublicPageCustomizationContent = () => {
         setLoading(false)
       }
     },
-    [organization, setError],
+    [organization, setError, updateOrganization],
   )
 
   const toggleProfilePage = useCallback(
@@ -157,7 +148,7 @@ const PublicPageCustomizationContent = () => {
         },
       })
     },
-    [organization],
+    [organization, updateOrganization],
   )
 
   return (
@@ -174,7 +165,11 @@ const PublicPageCustomizationContent = () => {
         />
         <div className="flex flex-col gap-y-1">
           <h3>{organization.name}</h3>
-          <Link className="dark:text-blue-400 text-xs text-blue-500" href={`/${organization.slug}`} target='_blank'>
+          <Link
+            className="text-xs text-blue-500 dark:text-blue-400"
+            href={`/${organization.slug}`}
+            target="_blank"
+          >
             View Public Page
           </Link>
         </div>

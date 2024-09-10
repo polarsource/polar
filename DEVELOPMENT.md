@@ -45,6 +45,11 @@ flowchart TD
 
 ## Setup environment
 
+> [!TIP]
+> Want to get started quickly? Use GitHub Codespaces.
+>
+> [![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/polarsource/polar?machine=standardLinux32gb)
+
 ### Setup backend
 
 > [!TIP]

@@ -86,11 +86,12 @@ We also maintain SDK for the following languages:
 
 ## Contributions
 
-You can develop on Polar in GitHub Codespaces. The environment is pre-configured to contain (most) of the tools that you'll need, and will help you to configure the integration between Polar and GitHub (see [.devcontainer/README](./.devcontainer/README.md)). Using an instance with at least 4 cores is recommended.
+Our [`DEVELOPMENT.md`](./DEVELOPMENT.md) contains all youn need to know to configure your development environment.
 
-[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/polarsource/polar)
-
-You can also develop on Polar locally on your computer, which is the recommended way of working if you want to get into the deep of how Polar works. Documentation on how to setup a development environment is incoming. Until then, if you're feeling adventurous checkout our repository structure below and [clients/README](./clients/README.md) and [server/README](./server/README.md) in particular.
+> [!TIP]
+> Want to get started quickly? Use GitHub Codespaces.
+>
+> [![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/polarsource/polar?machine=standardLinux32gb)
 
 ### Contributors
 <a href="https://github.com/polarsource/polar/graphs/contributors">

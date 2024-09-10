@@ -1,9 +1,9 @@
 import PublicLayout from '@/components/Layout/PublicLayout'
-import { OrganizationPublicHeader } from '@/components/Organization/OrganizationPublicHeader'
 import { OrganizationPublicPageNav } from '@/components/Organization/OrganizationPublicPageNav'
+import { PublicPageHeader } from '@/components/Profile/PublicPageHeader'
 import { getServerSideAPI } from '@/utils/api/serverside'
 import { getOrganizationBySlugOrNotFound } from '@/utils/organization'
-import { getAuthenticatedUser, getUserOrganizations } from '@/utils/user'
+import { getUserOrganizations } from '@/utils/user'
 import {
   ListResourceOrganizationCustomer,
   ListResourceProduct,
@@ -39,7 +39,6 @@ export default async function Layout({
     notFound()
   }
 
-  const authenticatedUser = await getAuthenticatedUser(api)
   const userOrganizations = await getUserOrganizations(api)
 
   try {
@@ -85,7 +84,7 @@ export default async function Layout({
   return (
     <PublicLayout wide>
       <div className="flex flex-grow flex-col items-center py-16">
-        <OrganizationPublicHeader
+        <PublicPageHeader
           organizationCustomers={
             subscriberSettings.show_count ? organizationCustomers : undefined
           }
@@ -94,7 +93,9 @@ export default async function Layout({
           products={products?.items ?? []}
         />
       </div>
-      <OrganizationPublicPageNav organization={organization} />
+      <div className="flex flex-col items-center">
+        <OrganizationPublicPageNav organization={organization} />
+      </div>
       <div className="flex h-full flex-grow flex-col gap-y-8 md:gap-y-16 md:py-12">
         {children}
       </div>

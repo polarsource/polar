@@ -2,7 +2,7 @@ import { Organization, ProductPriceRecurringInterval } from '@polar-sh/sdk'
 import SubscriptionTierRecurringIntervalSwitch from '../Subscriptions/SubscriptionTierRecurringIntervalSwitch'
 
 export interface ProductsGridProps extends React.PropsWithChildren {
-  title: string
+  title?: string
   organization: Organization
   recurringInterval?: ProductPriceRecurringInterval
   hasBothIntervals?: boolean
@@ -19,7 +19,7 @@ export const ProductsGrid = ({
   return (
     <div className="flex flex-grow flex-col items-center gap-y-8">
       <div className="flex flex-col items-center justify-between gap-y-8">
-        <h2 className="text-2xl">{title}</h2>
+        {title && <h2 className="text-2xl">{title}</h2>}
         {hasBothIntervals && recurringInterval && setRecurringInterval && (
           <div className="flex justify-center">
             <SubscriptionTierRecurringIntervalSwitch

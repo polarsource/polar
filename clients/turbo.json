@@ -4,6 +4,9 @@
     "**/.env.*local"
   ],
   "globalEnv": [
+    "CODESPACES",
+    "CODESPACE_NAME",
+    "GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN",
     "GITHUB_TOKEN",
     "NODE_ENV",
     "NEXT_RUNTIME",

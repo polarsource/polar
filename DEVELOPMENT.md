@@ -45,44 +45,12 @@ flowchart TD
 
 ## Setup environment
 
-### Setup environment variables
-
-For the Polar stack to run properly, it needs quite a bunch of settings defined as environment variables. To ease things, we provide a script to bootstrap them:
-
-```sh
-./dev/setup-environment.py
-```
-Once done, the script will automatically create `server/.env` and `clients/apps/web/.env.local` files with the necessary environment variables.
-
-**Optional: setup GitHub App**
-
-If you want to work with GitHub login and issue funding, you'll need to have a [GitHub App](https://docs.github.com/en/apps/creating-github-apps/about-creating-github-apps/about-creating-github-apps) for your development environment. Our script is able to help in this task by passing the following parameters:
-
-```sh
-./dev/setup-environment.py --setup-github-app --backend-external-url mydomain.ngrok.dev
-```
-
-Note that you'll need a valid external URL that'll route to your development server. For this task, we recommend to use [ngrok](https://ngrok.com/).
-
-Your browser will open a new page and you'll be prompted to **create a GitHub App**. You can just proceed, all the necessary configuration is already done automatically. The script will then add the necessary values to the environment files.
-
-> [!TIP]
-> If you run on **GitHub Codespaces**, you can just run it like this:
-> ```sh
-> ./dev/setup-environment.py --setup-github-app
-> ```
-> The script will automatically use your external GitHub Codespace URL.
-
-**Optional: setup Stripe**
-
-Currently, this setup script doesn't support to create a [Stripe Sandbox](https://docs.stripe.com/sandboxes). If you want a ready-to-use Stripe Sandbox, contact us and we'll happily provide you one.
-
 ### Setup backend
 
 > [!TIP]
 > If you run on **GitHub Codespaces**, you can **skip this step**. This is already done for you.
 
-Starting the backend consists of basically three things:
+Setting up the backend consists of basically three things:
 
 **1. Start the development containers**
 
@@ -120,6 +88,38 @@ cd clients
 ```sh
 pnpm install
 ```
+
+### Setup environment variables
+
+For the Polar stack to run properly, it needs quite a bunch of settings defined as environment variables. To ease things, we provide a script to bootstrap them:
+
+```sh
+./dev/setup-environment.py
+```
+Once done, the script will automatically create `server/.env` and `clients/apps/web/.env.local` files with the necessary environment variables.
+
+**Optional: setup GitHub App**
+
+If you want to work with GitHub login and issue funding, you'll need to have a [GitHub App](https://docs.github.com/en/apps/creating-github-apps/about-creating-github-apps/about-creating-github-apps) for your development environment. Our script is able to help in this task by passing the following parameters:
+
+```sh
+./dev/setup-environment.py --setup-github-app --backend-external-url mydomain.ngrok.dev
+```
+
+Note that you'll need a valid external URL that'll route to your development server. For this task, we recommend to use [ngrok](https://ngrok.com/).
+
+Your browser will open a new page and you'll be prompted to **create a GitHub App**. You can just proceed, all the necessary configuration is already done automatically. The script will then add the necessary values to the environment files.
+
+> [!TIP]
+> If you run on **GitHub Codespaces**, you can just run it like this:
+> ```sh
+> ./dev/setup-environment.py --setup-github-app
+> ```
+> The script will automatically use your external GitHub Codespace URL.
+
+**Optional: setup Stripe**
+
+Currently, this setup script doesn't support to create a [Stripe Sandbox](https://docs.stripe.com/sandboxes). If you want a ready-to-use Stripe Sandbox, contact us and we'll happily provide you one.
 
 ## Start environment
 

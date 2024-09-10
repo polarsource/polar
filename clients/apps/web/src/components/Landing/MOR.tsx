@@ -11,21 +11,17 @@ export const MerchantOfRecord = () => {
         <div className="flex w-full flex-col gap-y-8">
           <div className="flex w-full max-w-sm flex-col gap-y-6">
             <h3 className="text-3xl font-medium leading-tight">
-              We're the Merchant of Record
+              Leave upsales, billing and international taxes to us.
             </h3>
           </div>
           <ul className="dark:text-polar-200 flex flex-col gap-y-2">
             <li className="flex flex-row gap-x-2">
               <ArrowForward className="mt-1" fontSize="inherit" />
-              <span>International Billing</span>
+              <span>Polar as Merchant of Record</span>
             </li>
             <li className="flex flex-row gap-x-2">
               <ArrowForward className="mt-1" fontSize="inherit" />
-              <span>Sales Tax & EU VAT handled</span>
-            </li>
-            <li className="flex flex-row gap-x-2">
-              <ArrowForward className="mt-1" fontSize="inherit" />
-              <span>Payouts on Demand</span>
+              <span>US Sales Tax & EU VAT handled</span>
             </li>
             <li className="flex flex-row gap-x-2">
               <ArrowForward className="mt-1" fontSize="inherit" />

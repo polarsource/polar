@@ -64,16 +64,32 @@ const PublicPageForm = () => {
     <>
       <FormField
         control={control}
+        name="name"
+        defaultValue=""
+        render={({ field }) => (
+          <FormItem className="flex flex-col gap-y-1">
+            <div className="flex flex-row items-center justify-between">
+              <FormLabel>Organization Name</FormLabel>
+            </div>
+            <FormControl>
+              <Input {...field} value={field.value || ''} />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+      <FormField
+        control={control}
         name="profile_settings.description"
         rules={{
           maxLength: 160,
         }}
         defaultValue=""
         render={({ field }) => (
-          <FormItem>
+          <FormItem className="flex flex-col gap-y-1">
             <div className="flex flex-row items-center justify-between">
               <FormLabel>Description</FormLabel>
-              <span className="dark:text-polar-400 text-sm text-gray-400">
+              <span className="dark:text-polar-400 text-xs text-gray-400">
                 {field.value?.length ?? 0} / 160
               </span>
             </div>
@@ -88,6 +104,7 @@ const PublicPageForm = () => {
           </FormItem>
         )}
       />
+
       <ErrorMessage
         errors={errors}
         name="prices"
@@ -178,7 +195,7 @@ const PublicPageCustomizationContent = () => {
       <Form {...form}>
         <form
           onSubmit={handleSubmit(onSubmit)}
-          className="flex flex-col gap-y-6"
+          className="flex flex-col gap-y-8"
         >
           <PublicPageForm />
           <Button
@@ -240,7 +257,7 @@ export const CustomizationSidebar = () => {
   }, [customizationMode])
 
   return (
-    <ShadowBox className="flex w-full max-w-96 flex-shrink-0 flex-col p-10">
+    <ShadowBox className="flex w-full max-w-96 flex-shrink-0 flex-col p-8">
       {content}
     </ShadowBox>
   )

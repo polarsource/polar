@@ -11,11 +11,11 @@ import {
 import Link from 'next/link'
 import { useSelectedLayoutSegment } from 'next/navigation'
 import Avatar from 'polarkit/components/ui/atoms/avatar'
-import { PropsWithChildren } from 'react'
+import { PropsWithChildren, useEffect, useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
 import GitHubIcon from '../Icons/GitHubIcon'
 import { externalURL } from '../Organization'
-import { SubscribeEditor } from './SubscribeEditor/SubscribeEditor'
+import { Gradient } from './GradientMesh'
 
 interface PublicPageHeaderProps {
   organization: Organization
@@ -24,15 +24,8 @@ interface PublicPageHeaderProps {
   products: Product[]
 }
 
-export const PublicPageHeader = ({
-  organization,
-  organizationCustomers,
-  userOrganizations,
-  products,
-}: PublicPageHeaderProps) => {
+export const PublicPageHeader = ({ organization }: PublicPageHeaderProps) => {
   const segment = useSelectedLayoutSegment()
-
-  const isOrgMember = userOrganizations.some((o) => o.id === organization.id)
 
   const externalGitHubOrganizations = useExternalOrganizations({
     organizationId: organization.id,
@@ -42,21 +35,39 @@ export const PublicPageHeader = ({
   })
 
   const isPostView = segment === 'posts'
-  const isDonatePage = segment === 'donate'
+
+  const gradient = useMemo(() => new Gradient(), [])
+
+  useEffect(() => {
+    const root = document.documentElement
+
+    root.style.setProperty('--gradient-color-1', '#121316')
+    root.style.setProperty('--gradient-color-2', '#1C1C22')
+    root.style.setProperty('--gradient-color-3', '#1E1F24')
+    root.style.setProperty('--gradient-color-4', '#353641')
+
+    /* @ts-ignore */
+    gradient.initGradient('#gradient-canvas')
+  }, [gradient])
 
   return (
     <div className="flex w-full flex-grow flex-col items-center gap-y-6">
-      <div className="rounded-4xl dark:from-polar-900 dark:via-polar-800 dark:to-polar-900 h-64 w-full bg-gradient-to-tr from-white via-blue-50 to-white" />
-      <div className="flex flex-grow flex-col items-center">
+      <div className="rounded-4xl dark:from-polar-900 dark:via-polar-800 dark:to-polar-900 relative h-64 w-full bg-gradient-to-tr from-white via-blue-50 to-white">
+        <canvas
+          id="gradient-canvas"
+          className="rounded-4xl absolute bottom-0 left-0 right-0 top-0 h-full w-full"
+        />
         <Avatar
-          className="h-16 w-16 text-lg md:mb-6 md:h-32 md:w-32 md:text-5xl"
+          className="dark:border-polar-950 absolute -bottom-16 left-1/2 h-16 w-16 -translate-x-1/2 border-8 text-lg md:h-32 md:w-32 md:text-5xl"
           name={organization.name}
           avatar_url={organization.avatar_url}
         />
+      </div>
+      <div className="mt-16 flex flex-grow flex-col items-center">
         <div className="flex flex-col items-center md:gap-y-1">
           <h1 className="text-xl md:text-2xl">{organization.name}</h1>
           <Link
-            className="dark:text-polar-500 text-gray-500 md:text-lg"
+            className="dark:text-polar-500 text-sm text-gray-500"
             href={`/${organization.slug}`}
           >
             @{organization.slug}
@@ -72,7 +83,7 @@ export const PublicPageHeader = ({
         <div className="flex flex-grow flex-col items-center gap-y-6">
           <p
             className={twMerge(
-              'dark:text-polar-500 text-pretty break-words text-center text-lg leading-normal text-gray-500',
+              'dark:text-polar-500 w-2/3 text-pretty break-words text-center text-lg leading-normal text-gray-500',
             )}
           >
             {organization.profile_settings?.description ??
@@ -121,12 +132,6 @@ export const PublicPageHeader = ({
             )}
           </div>
         </div>
-        <SubscribeEditor
-          organization={organization}
-          customerList={organizationCustomers}
-          products={products}
-          isOrgMember={isOrgMember}
-        />
       </div>
     </div>
   )

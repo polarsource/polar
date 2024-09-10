@@ -60,6 +60,14 @@ export const OrganizationPublicPageNav = ({
             </TabsTrigger>
           </Link>
         )}
+
+        {organization.donations_enabled && (
+          <Link href={organizationPageLink(organization, 'donate')}>
+            <TabsTrigger value="donate" size="small">
+              Donate
+            </TabsTrigger>
+          </Link>
+        )}
       </TabsList>
     </Tabs>
   )

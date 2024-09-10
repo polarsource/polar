@@ -1,9 +1,6 @@
-import LogoIcon from '@/components/Brand/LogoIcon'
-import PolarMenu from '@/components/Layout/PolarMenu'
-import { BrandingMenu } from '@/components/Layout/Public/BrandingMenu'
 import PublicLayout from '@/components/Layout/PublicLayout'
+import { OrganizationPublicHeader } from '@/components/Organization/OrganizationPublicHeader'
 import { OrganizationPublicPageNav } from '@/components/Organization/OrganizationPublicPageNav'
-import { OrganizationPublicSidebar } from '@/components/Organization/OrganizationPublicSidebar'
 import { getServerSideAPI } from '@/utils/api/serverside'
 import { getOrganizationBySlugOrNotFound } from '@/utils/organization'
 import { getAuthenticatedUser, getUserOrganizations } from '@/utils/user'
@@ -87,45 +84,19 @@ export default async function Layout({
 
   return (
     <PublicLayout wide>
-      <div className="flex flex-col gap-x-24 md:flex-row">
-        <div className="dark:bg-polar-950 sticky top-0 z-20 flex w-full flex-row items-center justify-between bg-white py-4 md:relative md:hidden">
-          <a href="/">
-            <LogoIcon className="text-blue-500 dark:text-blue-400" size={40} />
-          </a>
-          <PolarMenu
-            authenticatedUser={authenticatedUser}
-            userOrganizations={userOrganizations}
-            organization={organization}
-          />
-        </div>
-        <div className="relative flex w-fit flex-shrink-0 flex-col justify-between py-8 md:sticky md:top-0 md:py-16">
-          <OrganizationPublicSidebar
-            organizationCustomers={organizationCustomers}
-            organization={organization}
-            userOrganizations={userOrganizations}
-            products={products?.items ?? []}
-          />
-        </div>
-        <div className="flex h-full w-full flex-col gap-y-8 md:gap-y-16 md:py-12">
-          <div className="flex w-full flex-row flex-wrap items-center justify-between gap-x-8 gap-y-4">
-            <div className="flex w-full flex-row items-center gap-x-6 overflow-x-auto md:w-fit md:overflow-x-visible">
-              <div className="hidden md:flex">
-                <BrandingMenu />
-              </div>
-              <div className="flex w-full flex-row items-center pb-2 md:pb-0">
-                <OrganizationPublicPageNav organization={organization} />
-              </div>
-            </div>
-            <div className="ml-auto hidden flex-row md:flex">
-              <PolarMenu
-                authenticatedUser={authenticatedUser}
-                userOrganizations={userOrganizations}
-                organization={organization}
-              />
-            </div>
-          </div>
-          {children}
-        </div>
+      <div className="flex flex-grow flex-col items-center py-16">
+        <OrganizationPublicHeader
+          organizationCustomers={
+            subscriberSettings.show_count ? organizationCustomers : undefined
+          }
+          organization={organization}
+          userOrganizations={userOrganizations ?? []}
+          products={products?.items ?? []}
+        />
+      </div>
+      <OrganizationPublicPageNav organization={organization} />
+      <div className="flex h-full flex-grow flex-col gap-y-8 md:gap-y-16 md:py-12">
+        {children}
       </div>
     </PublicLayout>
   )

@@ -13,7 +13,8 @@ import {
   OrganizationCustomerType,
 } from '@polar-sh/sdk'
 import React from 'react'
-import { OrganizationPublicSidebar } from '../Organization/OrganizationPublicSidebar'
+import { OrganizationPublicHeader } from '../Organization/OrganizationPublicHeader'
+import { OrganizationPublicPageNav } from '../Organization/OrganizationPublicPageNav'
 import { PublicPage } from '../Profile/PublicPage'
 
 interface PublicPagePreviewProps {
@@ -74,9 +75,9 @@ const PublicPagePreview = ({ organization }: PublicPagePreviewProps) => {
   const userOrganizations = useListOrganizations({ isMember: true })
 
   return (
-    <div className="flex w-full flex-grow flex-row gap-x-24 px-12 md:space-y-12">
-      <div className="relative flex w-fit flex-shrink-0 flex-col justify-between py-8 md:sticky md:top-0 md:py-16">
-        <OrganizationPublicSidebar
+    <div className="flex w-full max-w-7xl flex-col overflow-y-auto px-8">
+      <div className="flex flex-grow flex-col items-center">
+        <OrganizationPublicHeader
           organizationCustomers={
             subscriberSettings.show_count ? customers.data : undefined
           }
@@ -84,6 +85,9 @@ const PublicPagePreview = ({ organization }: PublicPagePreviewProps) => {
           userOrganizations={userOrganizations.data?.items ?? []}
           products={products}
         />
+      </div>
+      <div className="flex flex-col items-center">
+        <OrganizationPublicPageNav organization={organization} />
       </div>
       <div className="flex h-full flex-grow flex-col gap-y-8 md:gap-y-16 md:py-12">
         <PublicPage

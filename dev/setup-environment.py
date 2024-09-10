@@ -19,6 +19,7 @@ import httpx
 import pathlib
 import random
 import string
+import subprocess
 from yaspin import yaspin
 from yaspin.spinners import Spinners
 from dotenv import dotenv_values
@@ -267,6 +268,14 @@ def _write_apps_web_env_file(github_app: dict[str, typing.Any] | None = None) ->
         }
     _write_env_file(template_file_path, env_file_path, replacements)
 
+def _generate_jwks() -> None:
+    env = {k: v for k, v in os.environ.copy().items() if k != "VIRTUAL_ENV"}
+    command = ["poetry", "run", "task", "generate_dev_jwks"]
+    process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, cwd=ROOT_PATH / "server", env=env)
+    _, stderr = process.communicate()
+    if process.returncode != 0:
+        raise RuntimeError(stderr)
+
 def _get_options():
     if IS_CODESPACES:
         default_backend_external_url = f"https://{os.environ["CODESPACE_NAME"]}-8080.{os.environ["GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN"]}"
@@ -309,4 +318,5 @@ if __name__ == "__main__":
         spinner.text = "Writing environment files..."
         _write_server_env_file(github_app)
         _write_apps_web_env_file(github_app)
+        _generate_jwks()
         spinner.ok("Environment files have been successfully setup")

@@ -77,6 +77,9 @@ class OrganizationProfileSettings(Schema):
         ),
         description="Subscription promotion settings",
     )
+    accent_color: str | None = Field(
+        None, description="Accent color for the organization"
+    )
 
 
 # Public API

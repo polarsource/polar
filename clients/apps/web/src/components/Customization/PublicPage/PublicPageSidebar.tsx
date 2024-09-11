@@ -189,6 +189,29 @@ const PublicPageForm = () => {
           </FormItem>
         )}
       />
+      <FormField
+        control={control}
+        name="profile_settings.accent_color"
+        defaultValue="#000000"
+        render={({ field }) => (
+          <FormItem className="flex flex-col gap-y-1">
+            <div className="flex flex-row items-center justify-between">
+              <FormLabel>Accent Color</FormLabel>
+            </div>
+            <FormControl>
+              <input
+                className={twMerge(
+                  'dark:border-polar-600 h-10 w-10 cursor-pointer overflow-hidden rounded-full border border-gray-100 [&::-webkit-color-swatch-wrapper]:rounded-none [&::-webkit-color-swatch-wrapper]:p-0 [&::-webkit-color-swatch]:border-none',
+                )}
+                type="color"
+                {...field}
+                value={field.value || ''}
+              />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
 
       <ErrorMessage
         errors={errors}

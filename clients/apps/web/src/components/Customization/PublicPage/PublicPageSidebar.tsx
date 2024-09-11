@@ -1,3 +1,5 @@
+'use client'
+
 import { useUpdateOrganization } from '@/hooks/queries'
 import { MaintainerOrganizationContext } from '@/providers/maintainerOrganization'
 import { setValidationErrors } from '@/utils/api/errors'
@@ -25,7 +27,7 @@ import {
 } from 'polarkit/components/ui/form'
 import { PropsWithChildren, useCallback, useContext, useState } from 'react'
 import { FileRejection } from 'react-dropzone'
-import { useForm, useFormContext } from 'react-hook-form'
+import { useFormContext } from 'react-hook-form'
 import { twMerge } from 'tailwind-merge'
 import { FileObject, useFileUpload } from '../../FileUpload'
 
@@ -201,10 +203,9 @@ const PublicPageForm = () => {
 
 export const PublicPageSidebar = () => {
   const { organization } = useContext(MaintainerOrganizationContext)
-
   const [isLoading, setLoading] = useState(false)
 
-  const { handleSubmit, setError, formState } = useForm()
+  const { handleSubmit, setError, formState } = useFormContext()
 
   const updateOrganization = useUpdateOrganization()
 

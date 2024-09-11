@@ -41,14 +41,17 @@ export const PublicPageHeader = ({ organization }: PublicPageHeaderProps) => {
   useEffect(() => {
     const root = document.documentElement
 
-    root.style.setProperty('--gradient-color-1', '#121316')
+    root.style.setProperty(
+      '--gradient-color-1',
+      organization.profile_settings?.accent_color ?? '#121316',
+    )
     root.style.setProperty('--gradient-color-2', '#1C1C22')
     root.style.setProperty('--gradient-color-3', '#1E1F24')
     // root.style.setProperty('--gradient-color-4', '#353641')
 
     /* @ts-ignore */
     gradient.initGradient('#gradient-canvas')
-  }, [gradient])
+  }, [gradient, organization])
 
   return (
     <div className="flex w-full flex-grow flex-col items-center gap-y-6">

@@ -179,10 +179,16 @@ async def update(
             for org_id in organization_update.profile_settings.featured_organizations:
                 if not await organization_service.get(session, id=org_id):
                     raise ResourceNotFound()
+
         if organization_update.profile_settings.featured_projects is not None:
             for repo_id in organization_update.profile_settings.featured_projects:
                 if not await repository_service.get(session, id=repo_id):
                     raise ResourceNotFound()
+
+        # validate accent color as hexcode
+        if organization_update.profile_settings.accent_color is not None:
+            if not organization_update.profile_settings.accent_color.startswith("#"):
+                raise ValueError("Accent color must be hexadecimal.")
 
     return await organization_service.update(
         session, authz, organization, organization_update, auth_subject

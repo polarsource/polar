@@ -10021,6 +10021,13 @@ export interface OrganizationFeatureSettings {
 export type OrganizationIDFilter = Array<string> | string;
 
 /**
+ * @type OrganizationIDFilter1
+ * Filter by organization ID.
+ * @export
+ */
+export type OrganizationIDFilter1 = Array<string> | string;
+
+/**
  * @type OrganizationId
  * Filter by organization ID.
  * @export
@@ -10059,11 +10066,11 @@ export interface OrganizationMember {
  */
 export interface OrganizationProfileSettings {
     /**
-     * If this organization has a profile enabled
+     * 
      * @type {boolean}
      * @memberof OrganizationProfileSettings
      */
-    enabled?: boolean;
+    enabled: boolean | null;
     /**
      * 
      * @type {string}
@@ -10094,6 +10101,12 @@ export interface OrganizationProfileSettings {
      * @memberof OrganizationProfileSettings
      */
     subscribe?: OrganizationSubscribePromoteSettings | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof OrganizationProfileSettings
+     */
+    accent_color?: string | null;
 }
 /**
  * 

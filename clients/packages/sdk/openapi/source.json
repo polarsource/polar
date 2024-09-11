@@ -8660,9 +8660,9 @@
                             },
                             "description": "Filter by the type of purchase the customer made.",
                             "default": [
-                                "order",
-                                "paid_subscription",
                                 "free_subscription",
+                                "paid_subscription",
+                                "order",
                                 "donation"
                             ],
                             "title": "Customer Types"
@@ -14134,7 +14134,7 @@
                     {
                         "name": "organization_id",
                         "in": "query",
-                        "required": false,
+                        "required": true,
                         "schema": {
                             "anyOf": [
                                 {
@@ -14159,9 +14159,6 @@
                                             "displayProperty": "name"
                                         }
                                     }
-                                },
-                                {
-                                    "type": "null"
                                 }
                             ],
                             "title": "OrganizationID Filter",
@@ -28944,10 +28941,16 @@
             "OrganizationProfileSettings": {
                 "properties": {
                     "enabled": {
-                        "type": "boolean",
+                        "anyOf": [
+                            {
+                                "type": "boolean"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
                         "title": "Enabled",
-                        "description": "If this organization has a profile enabled",
-                        "default": false
+                        "description": "If this organization has a profile enabled"
                     },
                     "description": {
                         "anyOf": [
@@ -29027,9 +29030,24 @@
                             "show_count": true,
                             "count_free": true
                         }
+                    },
+                    "accent_color": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Accent Color",
+                        "description": "Accent color for the organization"
                     }
                 },
                 "type": "object",
+                "required": [
+                    "enabled"
+                ],
                 "title": "OrganizationProfileSettings"
             },
             "OrganizationSetAccount": {
